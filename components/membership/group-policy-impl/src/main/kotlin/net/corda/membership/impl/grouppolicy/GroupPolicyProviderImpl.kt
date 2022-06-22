@@ -20,6 +20,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [GroupPolicyProvider::class])
@@ -39,6 +40,8 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     private interface InnerGroupPolicyProvider : AutoCloseable {
         fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
+
+        fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit)
     }
 
     companion object {
@@ -50,15 +53,18 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
-    private var impl: InnerGroupPolicyProvider = InactiveImpl
+    private var impl: InnerGroupPolicyProvider = InactiveImpl()
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
+    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) = impl.registerListener(callback)
 
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
 
     override val isRunning get() = coordinator.isRunning
+
+    private val listeners: MutableList<(HoldingIdentity, GroupPolicy) -> Unit> = Collections.synchronizedList(mutableListOf())
 
     /**
      * Handle lifecycle events.
@@ -98,7 +104,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private fun deactivate(reason: String) {
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        swapImpl(InactiveImpl)
+        swapImpl(InactiveImpl())
     }
 
     private fun swapImpl(newImpl: InnerGroupPolicyProvider) {
@@ -107,11 +113,15 @@ class GroupPolicyProviderImpl @Activate constructor(
         current.close()
     }
 
-    private object InactiveImpl : InnerGroupPolicyProvider {
+    private inner class InactiveImpl : InnerGroupPolicyProvider {
         override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy =
             throw IllegalStateException("Service is in incorrect state for accessing group policies.")
 
         override fun close() = Unit
+
+        override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+            listeners.add(callback)
+        }
     }
 
     private inner class ActiveImpl : InnerGroupPolicyProvider {
@@ -122,6 +132,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
         ) = groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
+
+        override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+            listeners.add(callback)
+        }
 
         override fun close() {
             virtualNodeInfoCallbackHandle.close()
@@ -183,6 +197,9 @@ class GroupPolicyProviderImpl @Activate constructor(
                             )
                             null
                         }
+                    }
+                    synchronized(listeners) {
+                        listeners.forEach { callback -> callback(it, groupPolicies[it]!!) }
                     }
                 }
             }

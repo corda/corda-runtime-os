@@ -172,7 +172,7 @@ class SessionManagerTest {
         val groupDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
-        on { getGroupInfo(GROUP_ID) } doReturn groupInfo
+        on { getGroupInfo(OUR_PARTY) } doReturn groupInfo
         on { dominoTile } doReturn groupDominoTile
     }
     private val members = mock<LinkManagerMembershipGroupReader> {
@@ -201,6 +201,7 @@ class SessionManagerTest {
         on { getInfo(OUR_PARTY) } doReturn hostingIdentity
         on { getInfo(messageDigest.hash(OUR_KEY.public.encoded), OUR_PARTY.groupId) } doReturn hostingIdentity
         on { dominoTile } doReturn hostingMapDominoTile
+        on { allLocallyHostedIdentities() } doReturn listOf(OUR_PARTY)
     }
     private val cryptoService = mock<StubCryptoProcessor> {
         on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
@@ -401,13 +402,13 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         val anotherInitiatorHello = mock<InitiatorHelloMessage>()
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
 
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
-                " The sessionInit message was not sent.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
+        loggingInterceptor.assertSingleWarningContains("The sessionInit message was not sent.")
     }
 
     @Test
@@ -418,13 +419,13 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         val anotherInitiatorHello = mock<InitiatorHelloMessage>()
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
-                " The sessionInit message was not sent.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
+        loggingInterceptor.assertSingleWarningContains("The sessionInit message was not sent.")
     }
 
     @Test
@@ -528,7 +529,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -536,8 +537,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
-                " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
+        loggingInterceptor.assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -546,7 +547,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -554,8 +555,8 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
-                " The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
+        loggingInterceptor.assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -667,14 +668,14 @@ class SessionManagerTest {
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for groupId " +
-            "$GROUP_ID. The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionId} was discarded.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for " +
+            "$OUR_PARTY. The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionId} was discarded.")
     }
 
     @Test
@@ -891,13 +892,12 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, ECDSA_SHA256_SIGNATURE_SPEC))
             .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the " +
-                "GroupPolicyProvider for groupId $GROUP_ID." +
-                " The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
+        loggingInterceptor.assertSingleWarningContains("The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test

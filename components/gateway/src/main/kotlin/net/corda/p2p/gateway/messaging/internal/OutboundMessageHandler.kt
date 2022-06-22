@@ -92,7 +92,8 @@ internal class OutboundMessageHandler(
             val peerMessage = event.value
             return@withLifecycleLock if (peerMessage != null) {
                 try {
-                    val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
+                    val trustStore = trustStoresMap.getTrustStore(peerMessage.header.sourceIdentity.x500Name,
+                                                                  peerMessage.header.destinationIdentity.groupId)
 
                     val sni = SniCalculator.calculateSni(
                         peerMessage.header.destinationIdentity.x500Name,

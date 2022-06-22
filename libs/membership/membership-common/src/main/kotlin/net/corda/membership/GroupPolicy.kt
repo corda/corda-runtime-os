@@ -14,4 +14,10 @@ interface GroupPolicy : Map<String, Any?> {
      * Fully qualified name of the registration implementation required for the group.
      */
     val registrationProtocol: String
+
+    val p2pProtocolMode: String
+
+    val tlsTrustStore: Array<String>
+
+    val tlsPki: String
 }

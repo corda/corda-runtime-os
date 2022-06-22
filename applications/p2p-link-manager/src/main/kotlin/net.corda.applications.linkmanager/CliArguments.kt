@@ -52,6 +52,9 @@ internal class CliArguments {
     )
     var instanceId = System.getenv("INSTANCE_ID")?.toInt() ?: Random.nextInt()
 
+    @Option(names = ["--without-stubs"])
+    var withoutStubs = false
+
     val bootConfiguration: Config by lazy {
         ConfigFactory.empty()
             .withValue("$BOOT_KAFKA_COMMON.bootstrap.servers", ConfigValueFactory.fromAnyRef(kafkaServers))

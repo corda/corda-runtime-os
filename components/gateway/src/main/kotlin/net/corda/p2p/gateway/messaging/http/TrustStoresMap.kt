@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import net.corda.data.identity.HoldingIdentity
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
@@ -37,7 +38,14 @@ internal class TrustStoresMap(
         Processor(),
         messagingConfiguration
     )
-    private val groupIdToTrustRoots = ConcurrentHashMap<String, TrustedCertificates>()
+
+    /**
+     * We maintain the entries from the compacted topic per key in-memory, so that we can easily delete entries.
+     * We also maintain a secondary collection of certificates indexed by holding identity for fast lookups.
+     */
+    private val entriesPerKey = ConcurrentHashMap<String, GatewayTruststore>()
+    private val trustRootsPerHoldingIdentity = ConcurrentHashMap<TruststoreKey, TrustedCertificates>()
+
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
@@ -45,10 +53,10 @@ internal class TrustStoresMap(
         emptyList()
     )
 
-    fun getTrustStore(groupId: String) =
-        groupIdToTrustRoots[groupId]
+    fun getTrustStore(sourceX500Name: String, destinationGroupId: String) =
+        trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
             ?.trustStore
-            ?: throw IllegalArgumentException("Unknown trust store: $groupId")
+            ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) and group ID ($destinationGroupId)")
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -86,12 +94,14 @@ internal class TrustStoresMap(
         override val valueClass = GatewayTruststore::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            groupIdToTrustRoots.putAll(
-                currentData.mapValues {
-                    TrustedCertificates(it.value.trustedCertificates, certificateFactory)
-                }
-            )
-            logger.info("Received initial set of trust roots for the following groups: ${currentData.keys}")
+            entriesPerKey.putAll(currentData)
+            val newTrustRoots = currentData.map {
+                val truststoreKey = TruststoreKey(it.value.sourceIdentityX500Name, it.value.destinationGroupId)
+                truststoreKey to TrustedCertificates(it.value.trustedCertificates, certificateFactory)
+            }.toMap()
+            trustRootsPerHoldingIdentity.putAll(newTrustRoots)
+            logger.info("Received initial set of trust roots for the following holding x500 names and destination groups: " +
+                    "${newTrustRoots.keys}")
             ready.complete(Unit)
         }
 
@@ -100,17 +110,24 @@ internal class TrustStoresMap(
             oldValue: GatewayTruststore?,
             currentData: Map<String, GatewayTruststore>,
         ) {
-            val store = newRecord.value?.let {
-                TrustedCertificates(it.trustedCertificates, certificateFactory)
-            }
-
-            if (store != null) {
-                groupIdToTrustRoots[newRecord.key] = store
-                logger.info("Trust roots updated for the following groups: ${currentData.keys}")
+            if (newRecord.value != null) {
+                entriesPerKey[newRecord.key] = newRecord.value!!
+                val truststoreKey = TruststoreKey(newRecord.value!!.sourceIdentityX500Name, newRecord.value!!.destinationGroupId)
+                val trustedCertificates = TrustedCertificates(newRecord.value!!.trustedCertificates, certificateFactory)
+                trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
+                logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
+                        "group ID ${truststoreKey.destinationGroupId}.")
             } else {
-                groupIdToTrustRoots.remove(newRecord.key)
-                logger.info("Trust roots removed for the following groups: ${currentData.keys}.")
+                val previousRecord = entriesPerKey.remove(newRecord.key)
+                if (previousRecord != null) {
+                    val truststoreKey = TruststoreKey(previousRecord.sourceIdentityX500Name, previousRecord.destinationGroupId)
+                    trustRootsPerHoldingIdentity.remove(truststoreKey)
+                    logger.info("Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +
+                            "group ID ${truststoreKey.destinationGroupId}.")
+                }
             }
         }
     }
+
+    private data class TruststoreKey(val sourceX500Name: String, val destinationGroupId: String)
 }

@@ -3,6 +3,7 @@ package net.corda.p2p.setup
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
+import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
@@ -26,6 +27,7 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
     companion object {
         internal fun Config.toGroupRecord(topic: String = GROUP_POLICIES_TOPIC): Record<String, GroupPolicyEntry> {
             val groupId = this.getString("groupId")
+            val x500Name = this.getString("x500name")
             val dataConfig = this.getConfig("data")
             val networkType = dataConfig.getEnum(NetworkType::class.java, "networkType")
             val trustRootCertificates = try {
@@ -41,12 +43,12 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
 
             val protocolMode = dataConfig.getEnumList(ProtocolMode::class.java, "protocolModes")
             val entry = GroupPolicyEntry(
-                groupId,
+                HoldingIdentity(x500Name, groupId),
                 networkType,
                 protocolMode,
                 trustRootCertificates,
             )
-            return Record(topic, entry.groupId, entry)
+            return Record(topic, "$x500Name-$groupId", entry)
         }
     }
 

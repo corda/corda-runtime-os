@@ -198,8 +198,8 @@ class InMemorySessionReplayerTest {
         replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the GroupPolicyProvider for group" +
-            " $GROUP_ID. The message was not replayed.")
+            "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the GroupPolicyProvider for" +
+            " $US. The message was not replayed.")
     }
 
     @Test

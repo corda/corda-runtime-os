@@ -4,16 +4,20 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import kotlin.concurrent.thread
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -36,6 +40,12 @@ class LinkManagerApp @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
+    @Reference(service = GroupPolicyProvider::class)
+    private val groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService
 ) : Application {
 
     companion object {
@@ -59,12 +69,20 @@ class LinkManagerApp @Activate constructor(
 
             consoleLogger.info("Starting link manager")
             val messagingConfig = getMessagingConfig(bootConfig)
+            val thirdPartyComponentsMode = when(arguments.withoutStubs) {
+                true -> ThirdPartyComponentsMode.REAL
+                false -> ThirdPartyComponentsMode.STUB
+            }
             linkManager = LinkManager(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configurationReadService,
-                messagingConfig
+                messagingConfig,
+                groupPolicyProvider,
+                virtualNodeInfoReadService,
+                cpiInfoReadService,
+                thirdPartyComponentsMode
             ).also { linkmanager ->
                 linkmanager.start()
 

@@ -75,6 +75,10 @@ internal class StubLinkManagerHostingMap(
         listeners.add(listener)
     }
 
+    override fun allLocallyHostedIdentities(): List<HoldingIdentity> {
+        return locallyHostedIdentityToIdentityInfo.keys().toList()
+    }
+
     private inner class Processor : CompactedProcessor<String, HostedIdentityEntry> {
         override val keyClass = String::class.java
         override val valueClass = HostedIdentityEntry::class.java

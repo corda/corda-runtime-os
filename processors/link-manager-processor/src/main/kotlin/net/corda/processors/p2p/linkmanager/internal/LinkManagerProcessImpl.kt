@@ -1,6 +1,7 @@
 package net.corda.processors.p2p.linkmanager.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
@@ -12,12 +13,15 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,6 +40,12 @@ class LinkManagerProcessImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = GroupPolicyProvider::class)
+    private val groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -77,7 +87,12 @@ class LinkManagerProcessImpl @Activate constructor(
                     publisherFactory,
                     coordinatorFactory,
                     configurationReadService,
-                    configMerger.getMessagingConfig(event.config)
+                    configMerger.getMessagingConfig(event.config),
+                    groupPolicyProvider,
+                    virtualNodeInfoReadService,
+                    cpiInfoReadService,
+                    //This will be removed once integration with MGM/crypto has been completed.
+                    ThirdPartyComponentsMode.STUB
                 )
 
                 this.linkManager = linkManager

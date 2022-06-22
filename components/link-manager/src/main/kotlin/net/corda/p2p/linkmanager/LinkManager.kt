@@ -1,16 +1,19 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -20,9 +23,10 @@ class LinkManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     messagingConfiguration: SmartConfig,
-    groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
-        lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
-    ),
+    groupPolicyProvider: GroupPolicyProvider,
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    cpiInfoReadService: CpiInfoReadService,
+    thirdPartyComponentsMode: ThirdPartyComponentsMode,
     members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
         lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
     ),
@@ -43,10 +47,17 @@ class LinkManager(
         }
     }
 
+    private val stubGroupPolicyProvider = StubGroupPolicyProvider(
+        lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
+    )
+    private val forwardingGroupPolicyProvider =
+        ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, stubGroupPolicyProvider, groupPolicyProvider, thirdPartyComponentsMode,
+            virtualNodeInfoReadService, cpiInfoReadService)
+
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         linkManagerHostingMap = linkManagerHostingMap,
-        groups = groups,
+        groups = forwardingGroupPolicyProvider,
         members = members,
         configurationReaderService = configurationReaderService,
         linkManagerCryptoProcessor = linkManagerCryptoProcessor,
@@ -59,7 +70,7 @@ class LinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         commonComponents = commonComponents,
         linkManagerHostingMap = linkManagerHostingMap,
-        groups = groups,
+        groups = forwardingGroupPolicyProvider,
         members = members,
         configurationReaderService = configurationReaderService,
         linkManagerCryptoProcessor = linkManagerCryptoProcessor,
@@ -71,7 +82,7 @@ class LinkManager(
     private val inboundLinkManager = InboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         commonComponents = commonComponents,
-        groups = groups,
+        groups = forwardingGroupPolicyProvider,
         members = members,
         subscriptionFactory = subscriptionFactory,
         messagingConfiguration = messagingConfiguration,

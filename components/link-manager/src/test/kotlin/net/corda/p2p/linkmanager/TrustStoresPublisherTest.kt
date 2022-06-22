@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -68,7 +69,7 @@ class TrustStoresPublisherTest {
 
     private val certificates = listOf("one", "two")
     private val groupInfo = GroupPolicyListener.GroupInfo(
-        "groupOne",
+        HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "groupOne"),
         NetworkType.CORDA_5,
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         certificates,
@@ -100,7 +101,9 @@ class TrustStoresPublisherTest {
             trustStoresPublisher.groupAdded(groupInfo)
 
             assertThat(publishedRecords.allValues).containsExactly(
-                listOf(Record(GATEWAY_TLS_TRUSTSTORES, groupInfo.groupId, GatewayTruststore(certificates)))
+                listOf(Record(GATEWAY_TLS_TRUSTSTORES,
+                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
+                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId,certificates)))
             )
         }
 
@@ -144,8 +147,16 @@ class TrustStoresPublisherTest {
             )
 
             assertThat(publishedRecords.allValues).containsExactly(
-                listOf(Record(GATEWAY_TLS_TRUSTSTORES, groupInfo.groupId, GatewayTruststore(certificates))),
-                listOf(Record(GATEWAY_TLS_TRUSTSTORES, groupInfo.groupId, GatewayTruststore(certificatesTwo))),
+                listOf(
+                    Record(GATEWAY_TLS_TRUSTSTORES,
+                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
+                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates))
+                ),
+                listOf(
+                    Record(GATEWAY_TLS_TRUSTSTORES,
+                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
+                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificatesTwo))
+                ),
             )
         }
 
@@ -217,9 +228,8 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onSnapshot(
                 mapOf(
-                    groupInfo.groupId to GatewayTruststore(
-                        certificates
-                    )
+                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
+                            GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates)
                 )
             )
 
@@ -233,15 +243,14 @@ class TrustStoresPublisherTest {
             trustStoresPublisher.start()
             processor.firstValue.onSnapshot(
                 mapOf(
-                    groupInfo.groupId to GatewayTruststore(
-                        certificates
-                    )
+                    "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
+                            GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates)
                 )
             )
 
             processor.firstValue.onNext(
                 Record(
-                    "", groupInfo.groupId,
+                    "", "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
                     null
                 ),
                 null, emptyMap()
@@ -258,10 +267,8 @@ class TrustStoresPublisherTest {
 
             processor.firstValue.onNext(
                 Record(
-                    "", groupInfo.groupId,
-                    GatewayTruststore(
-                        certificates
-                    )
+                    "", "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
+                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates)
                 ),
                 null, emptyMap()
             )

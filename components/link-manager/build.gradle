@@ -54,6 +54,9 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(":components:membership:group-policy")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(":components:virtual-node:cpi-info-read-service")
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

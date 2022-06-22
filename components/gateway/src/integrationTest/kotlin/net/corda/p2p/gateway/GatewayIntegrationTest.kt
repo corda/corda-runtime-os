@@ -125,7 +125,7 @@ class GatewayIntegrationTest : TestBase() {
 
         fun publishTrustStore() {
             publish(
-                Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, GatewayTruststore(listOf(truststoreCertificatePem)))
+                Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", GatewayTruststore("alice", GROUP_ID, listOf(truststoreCertificatePem)))
             )
         }
 
@@ -288,7 +288,8 @@ class GatewayIntegrationTest : TestBase() {
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader(
-                    HoldingIdentity("", GROUP_ID),
+                    HoldingIdentity("alice", GROUP_ID),
+                    HoldingIdentity("bob", GROUP_ID),
                     NetworkType.CORDA_5,
                     recipientServerUrl.toString(),
                 )
@@ -517,7 +518,8 @@ class GatewayIntegrationTest : TestBase() {
                     repeat(messageCount) {
                         val msg = LinkOutMessage.newBuilder().apply {
                             header = LinkOutHeader(
-                                HoldingIdentity("", GROUP_ID),
+                                HoldingIdentity("alice", GROUP_ID),
+                                HoldingIdentity("bob", GROUP_ID),
                                 NetworkType.CORDA_5,
                                 url,
                             )
@@ -648,7 +650,8 @@ class GatewayIntegrationTest : TestBase() {
             }.flatMap { (address, node) ->
                 val msg = LinkOutMessage.newBuilder().apply {
                     header = LinkOutHeader(
-                        HoldingIdentity("", GROUP_ID),
+                        HoldingIdentity("alice", GROUP_ID),
+                        HoldingIdentity("bob", GROUP_ID),
                         NetworkType.CORDA_5,
                         address
                     )
@@ -790,8 +793,10 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
 
-        private fun CertificateAuthority.toGatewayTrustStore(): GatewayTruststore {
+        private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String, groupId: String): GatewayTruststore {
             return GatewayTruststore(
+                sourceX500Name,
+                groupId,
                 listOf(
                     this.caCertificate.toPem()
                 )
@@ -841,7 +846,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Publish the trust store
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, firstCertificatesAuthority.toGatewayTrustStore()),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", firstCertificatesAuthority.toGatewayTrustStore("alice", GROUP_ID)),
                 )
 
                 // Client should fail without any keys
@@ -921,7 +926,7 @@ class GatewayIntegrationTest : TestBase() {
                 val secondCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", secondCertificatesAuthority.toGatewayTrustStore("alice", GROUP_ID)),
                 )
 
                 // replace the first pair
@@ -943,7 +948,7 @@ class GatewayIntegrationTest : TestBase() {
                 val thirdCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", thirdCertificatesAuthority.toGatewayTrustStore("alice", GROUP_ID)),
                 )
 
                 // publish new pair with new alias

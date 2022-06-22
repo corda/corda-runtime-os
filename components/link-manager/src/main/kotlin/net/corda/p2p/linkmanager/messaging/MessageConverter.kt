@@ -38,18 +38,21 @@ class MessageConverter {
 
         internal fun createLinkOutMessage(
             payload: Any,
+            source: HoldingIdentity,
             dest: LinkManagerMembershipGroupReader.MemberInfo,
             networkType: NetworkType
         ): LinkOutMessage {
-            val header = generateLinkOutHeaderFromPeer(dest, networkType)
+            val header = generateLinkOutHeaderFromPeer(source, dest, networkType)
             return LinkOutMessage(header, payload)
         }
 
         private fun generateLinkOutHeaderFromPeer(
+            source: HoldingIdentity,
             peer: LinkManagerMembershipGroupReader.MemberInfo,
             networkType: NetworkType
         ): LinkOutHeader {
             return LinkOutHeader(
+                source,
                 peer.holdingIdentity,
                 networkType,
                 peer.endPoint,
@@ -152,16 +155,16 @@ class MessageConverter {
                 return null
             }
 
-            val groupInfo = groups.getGroupInfo(destination.groupId)
+            val groupInfo = groups.getGroupInfo(message.header.source)
             if (groupInfo == null) {
                 logger.warn(
                     "Could not find the group information in the" +
-                        " GroupPolicyProvider for $destination. The message was discarded."
+                        " GroupPolicyProvider for ${message.header.source}. The message was discarded."
                 )
                 return null
             }
 
-            return createLinkOutMessage(message, destMemberInfo, groupInfo.networkType)
+            return createLinkOutMessage(message, message.header.source, destMemberInfo, groupInfo.networkType)
         }
 
         @Suppress("LongParameterList")
@@ -201,7 +204,7 @@ class MessageConverter {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
-            val groupInfo = groups.getGroupInfo(source.groupId)
+            val groupInfo = groups.getGroupInfo(source)
             if (groupInfo == null) {
                 logger.warn(
                     "Could not find the group info in the " +
@@ -210,7 +213,7 @@ class MessageConverter {
                 return null
             }
 
-            return createLinkOutMessage(result, destMemberInfo, groupInfo.networkType)
+            return createLinkOutMessage(result, source, destMemberInfo, groupInfo.networkType)
         }
 
         fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {

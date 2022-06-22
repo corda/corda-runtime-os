@@ -40,8 +40,8 @@ class TrustStoresMapIntegrationTests : TestBase() {
                 listOf(
                     Record(
                         Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
-                        GROUP_ID,
-                        GatewayTruststore(listOf(expectedCertificatePem))
+                        "alice-$GROUP_ID",
+                        GatewayTruststore("alice", GROUP_ID, listOf(expectedCertificatePem))
                     )
                 )
             ).forEach {
@@ -55,7 +55,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             assertThat(map.isRunning).isTrue
 
             val store = assertDoesNotThrow {
-                map.getTrustStore(GROUP_ID)
+                map.getTrustStore("alice", GROUP_ID)
             }
 
             val certificate = store.aliases().toList().map {
