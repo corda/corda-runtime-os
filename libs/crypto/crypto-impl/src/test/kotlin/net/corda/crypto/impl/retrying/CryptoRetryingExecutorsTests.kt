@@ -181,8 +181,11 @@ class CryptoRetryingExecutorsTests {
         assertEquals(3, called)
     }
 
-    @Test
-    fun `Should eventually succeed after retrying recoverable CryptoServiceLibraryException`() {
+    @ParameterizedTest
+    @MethodSource("recoverableExceptions")
+    fun `Should eventually succeed after retrying recoverable exception`(
+        e: Throwable
+    ) {
         var called = 0
         val result = CryptoRetryingExecutor(
             logger,
@@ -190,24 +193,7 @@ class CryptoRetryingExecutorsTests {
         ).executeWithRetry {
             called++
             if (called <= 2) {
-                throw CryptoException("error", true)
-            }
-            "Hello World!"
-        }
-        assertEquals("Hello World!", result)
-        assertEquals(3, called)
-    }
-
-    @Test
-    fun `Should eventually succeed after retrying recoverable crypto library exception`() {
-        var called = 0
-        val result = CryptoRetryingExecutor(
-            logger,
-            LinearRetryStrategy(3, Duration.ofMillis(10))
-        ).executeWithRetry {
-            called++
-            if (called <= 2) {
-                throw CryptoException("error", true)
+                throw e
             }
             "Hello World!"
         }

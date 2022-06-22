@@ -24,17 +24,19 @@ import net.corda.data.crypto.wire.hsm.configuration.queries.HSMQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.failures.CryptoException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
@@ -52,6 +54,12 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class HSMConfigurationClientComponentTests {
+    companion object {
+        @JvmStatic
+        fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
+            exceptionFactories.keys.map { Class.forName(it) }
+    }
+
     private lateinit var sender: RPCSender<HSMConfigurationRequest, HSMConfigurationResponse>
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var configurationReadService: TestConfigurationReadService
@@ -111,7 +119,7 @@ class HSMConfigurationClientComponentTests {
     }
 
     private inline fun <reified OP> assertOperationType(result: SendActResult<HSMConfigurationRequest, *>): OP {
-        Assertions.assertNotNull(result.firstRequest.request)
+        assertNotNull(result.firstRequest.request)
         assertThat(result.firstRequest.request).isInstanceOf(OP::class.java)
         return result.firstRequest.request as OP
     }
@@ -235,7 +243,7 @@ class HSMConfigurationClientComponentTests {
     }
 
     @Test
-    fun `Should fail when response tenant id does not match the request`() {
+    fun `Should throw IllegalStateException when response tenant id does not match the request`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -259,15 +267,13 @@ class HSMConfigurationClientComponentTests {
             )
             future
         }
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        assertThrows(IllegalStateException::class.java) {
             component.lookup(emptyMap())
         }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should fail when requesting component in response does not match the request`() {
+    fun `Should throw IllegalStateException when requesting component in response does not match the request`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -291,15 +297,13 @@ class HSMConfigurationClientComponentTests {
             )
             future
         }
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        assertThrows(IllegalStateException::class.java) {
             component.lookup(emptyMap())
         }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should fail when response class is not expected`() {
+    fun `Should throw IllegalStateException when response class is not expected`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -323,39 +327,46 @@ class HSMConfigurationClientComponentTests {
             )
             future
         }
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        assertThrows(IllegalStateException::class.java) {
             component.lookup(emptyMap())
         }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
-    @Test
-    fun `Should fail when sendRequest throws CryptoServiceLibraryException exception`() {
+    @ParameterizedTest
+    @MethodSource("knownCordaRPCAPIResponderExceptions")
+    @Suppress("MaxLineLength")
+    fun `Should throw exception wrapped in CordaRPCAPIResponderException when sendRequest throws it as errorType`(
+        expected: Class<out Throwable>
+    ) {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val error = CryptoServiceLibraryException("Test failure.")
+        val error = CordaRPCAPIResponderException(
+            errorType = expected.name,
+            message = "Test failure."
+        )
         whenever(sender.sendRequest(any())).thenThrow(error)
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        val exception = assertThrows(expected) {
             component.lookup(emptyMap())
         }
-        assertSame(error, exception)
+        assertEquals(error.message, exception.message)
     }
 
     @Test
-    fun `Should fail when sendRequest throws an exception`() {
+    fun `Should throw CryptoException when sendRequest fails`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val error = RuntimeException("Test failure.")
+        val error = CordaRPCAPIResponderException(
+            errorType = RuntimeException::class.java.name,
+            message = "Test failure."
+        )
         whenever(sender.sendRequest(any())).thenThrow(error)
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        val exception = assertThrows(CryptoException::class.java) {
             component.lookup(emptyMap())
         }
-        assertNotNull(exception.cause)
         assertSame(error, exception.cause)
     }
 
@@ -363,7 +374,7 @@ class HSMConfigurationClientComponentTests {
     fun `Should create active implementation only after the component is up`() {
         assertFalse(component.isRunning)
         assertInstanceOf(HSMConfigurationClientComponent.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
         }
         component.start()
@@ -379,7 +390,7 @@ class HSMConfigurationClientComponentTests {
     fun `Should cleanup created resources when component is stopped`() {
         assertFalse(component.isRunning)
         assertInstanceOf(HSMConfigurationClientComponent.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
         }
         component.start()
@@ -402,7 +413,7 @@ class HSMConfigurationClientComponentTests {
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
         assertInstanceOf(HSMConfigurationClientComponent.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
         }
         component.start()

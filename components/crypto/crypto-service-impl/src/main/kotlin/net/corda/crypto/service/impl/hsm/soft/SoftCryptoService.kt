@@ -127,7 +127,7 @@ open class SoftCryptoService(
         }
     }
 
-    override fun delete(alias: String, context: Map<String, String>) =
+    override fun delete(alias: String, context: Map<String, String>): Boolean =
         throw UnsupportedOperationException("The service does not support key deletion.")
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {

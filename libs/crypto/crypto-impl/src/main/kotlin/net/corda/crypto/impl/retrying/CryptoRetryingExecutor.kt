@@ -28,6 +28,7 @@ open class CryptoRetryingExecutor(
      * @throws CryptoRetryException if the original exception was recoverable (the original is set as the cause) and
      * all attempts to retry haven;t succeeded or if the original exception is not recoverable then it'll be rethrown.
      */
+    @Suppress("NestedBlockDepth")
     fun <R> executeWithRetry(block: () -> R): R {
         var attempt = 1
         var backoff = 0L

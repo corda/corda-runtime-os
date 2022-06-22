@@ -14,7 +14,6 @@ import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -43,9 +42,8 @@ class HSMRegistrationBusProcessor(
             }
             respFuture.complete(result)
         } catch (e: Throwable) {
-            val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"
-            logger.error(message, e)
-            respFuture.completeExceptionally(CryptoServiceLibraryException(message, e))
+            logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
+            respFuture.completeExceptionally(e)
         }
     }
 

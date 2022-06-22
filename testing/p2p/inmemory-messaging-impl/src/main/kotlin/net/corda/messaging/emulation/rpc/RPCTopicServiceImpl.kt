@@ -72,13 +72,17 @@ class RPCTopicServiceImpl(
                     when {
                         it.isCancelled -> {
                             requestCompletion.completeExceptionally(
-                                CordaRPCAPIResponderException("The request was cancelled by the responder.")
+                                CordaRPCAPIResponderException(
+                                    "errorType",
+                                    "The request was cancelled by the responder."
+                                )
                             )
                         }
 
                         it.isCompletedExceptionally -> {
                             requestCompletion.completeExceptionally(
                                 CordaRPCAPIResponderException(
+                                    "errorType",
                                     "The responder failed to process the request.",
                                     error
                                 )
@@ -106,6 +110,7 @@ class RPCTopicServiceImpl(
             } catch (e: Throwable) {
                 responseCompletion.completeExceptionally(
                     CordaRPCAPIResponderException(
+                        "errorType",
                         "The responder failed to process the request.",
                         e
                     )
