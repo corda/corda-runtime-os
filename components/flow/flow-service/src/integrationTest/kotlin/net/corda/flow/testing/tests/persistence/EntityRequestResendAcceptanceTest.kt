@@ -10,7 +10,6 @@ import net.corda.flow.testing.tests.CPK1
 import net.corda.flow.testing.tests.FLOW_ID1
 import net.corda.flow.testing.tests.REQUEST_ID1
 import net.corda.schema.configuration.FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW
-import net.corda.schema.configuration.FlowConfig.PERSISTENCE_RESEND_BUFFER
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -66,8 +65,7 @@ class EntityRequestResendAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a request has been sent and the resend window has been surpased, the request is resent`() {
         given {
-            flowConfiguration(PERSISTENCE_RESEND_BUFFER, 0L)
-            flowConfiguration(PERSISTENCE_MESSAGE_RESEND_WINDOW, 0L)
+            flowConfiguration(PERSISTENCE_MESSAGE_RESEND_WINDOW, -50000L)
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.Find(

@@ -39,7 +39,6 @@ class EntityResponseWaitingForHandlerTest {
         val bytes = ByteBuffer.wrap("bytes".toByteArray())
         val flowConfig: SmartConfig = SmartConfigImpl.empty()
             .withValue(FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(resendWindow))
-            .withValue(FlowConfig.PERSISTENCE_RESEND_BUFFER, ConfigValueFactory.fromAnyRef(100L))
             .withValue(FlowConfig.PERSISTENCE_MAX_RETRIES, ConfigValueFactory.fromAnyRef(maxRetries))
             .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(sleepDuration))
     }

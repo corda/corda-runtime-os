@@ -20,7 +20,7 @@ class VirtualNodeVaultEntitiesIntegrationTest {
     private val entityManagerFactory: EntityManagerFactory
 
     private companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-vault/migration/vnode-vault-creation-v1.0.xml"
+        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-vault/vnode-vault-creation-v1.0.xml"
     }
 
     /**

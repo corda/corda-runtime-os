@@ -24,7 +24,6 @@ class PersistenceManagerImplTest {
         const val requestId = "RequestId1"
         val flowConfig: SmartConfig = SmartConfigImpl.empty()
             .withValue(FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(resendWindow))
-            .withValue(FlowConfig.PERSISTENCE_RESEND_BUFFER, ConfigValueFactory.fromAnyRef(100L))
 
         val persistRequest: EntityRequest = EntityRequest.newBuilder()
             .setRequest(PersistEntity(ByteBuffer.wrap("bytes".toByteArray())))

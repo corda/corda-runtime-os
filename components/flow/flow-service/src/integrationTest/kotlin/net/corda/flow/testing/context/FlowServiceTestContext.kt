@@ -80,7 +80,6 @@ class FlowServiceTestContext @Activate constructor(
     private val testConfig = mutableMapOf<String, Any>(
         FlowConfig.PERSISTENCE_MAX_RETRIES to 2,
         FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW to 500000L,
-        FlowConfig.PERSISTENCE_RESEND_BUFFER to 100L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
