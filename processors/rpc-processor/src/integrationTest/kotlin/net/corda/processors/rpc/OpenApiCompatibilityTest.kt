@@ -17,7 +17,17 @@ class OpenApiCompatibilityTest {
     companion object {
         private val logger = contextLogger()
 
-        @InjectService(service = PluggableRPCOps::class, cardinality = 7, timeout = 10_000)
+        private val importantRpcOps = setOf(
+            "ConfigRPCOps",
+            "CpiUploadRPCOps",
+            "FlowRpcOps",
+            "RoleEndpoint",
+            "VirtualNodeMaintenanceRPCOps",
+            "VirtualNodeRPCOps"
+        )
+
+        // `cardinality` is not equal to `expectedRpcOps.size` as there might be some test RpcOps as well
+        @InjectService(service = PluggableRPCOps::class, cardinality = 8, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RpcOps>
 
         @Suppress("unused")
@@ -37,8 +47,8 @@ class OpenApiCompatibilityTest {
 
     @Test
     fun test() {
-        val allOps = dynamicRpcOps.map { it.javaClass.simpleName }
+        val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface.simpleName }
         logger.info("RPC Ops discovered: $allOps")
-        assertThat(allOps).contains("VirtualNodeMaintenanceRPCOpsImpl")
+        assertThat(allOps).containsAll(importantRpcOps)
     }
 }
