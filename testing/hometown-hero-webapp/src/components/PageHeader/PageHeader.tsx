@@ -15,16 +15,13 @@ const PageHeader: React.FC<Props> = ({ withBackButton, children }) => {
                     onClick={() => {
                         navigate(-1);
                     }}
-                    className="h-8 mt-auto mb-2 -ml-2"
-                    style={{ opacity: 0.5 }}
+                    className="h-8 mt-auto mb-2 -ml-2 opacity-50"
                     icon="ArrowLeft"
                     size="medium"
                     variant="secondary"
                 />
             )}
-            <h1 className="mt-8 ml-4 text-left w-fit text-4xl lg:text-5xl" style={{ opacity: 0.9 }}>
-                {children}
-            </h1>
+            <h1 className="mt-8 ml-4 text-left w-fit text-4xl lg:text-5xl">{children}</h1>
         </div>
     );
 };
