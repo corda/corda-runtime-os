@@ -19,6 +19,3 @@
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
-
--runproperties: \
-    org.osgi.framework.bsnversion=multiple
