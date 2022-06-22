@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.server.impl.utils.TestHttpClient
+import net.corda.httprpc.test.utls.TestHttpClient
 import java.net.ServerSocket
 
 abstract class HttpRpcServerTestBase {

@@ -8,18 +8,17 @@ import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.findFreePort
-import net.corda.httprpc.server.impl.utils.TestHttpClient
-import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
-import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utls.AzureAdMock
+import net.corda.httprpc.test.utls.TestHttpClient
+import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utls.WebRequest
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.nio.file.Path
 import kotlin.test.assertEquals
 
 

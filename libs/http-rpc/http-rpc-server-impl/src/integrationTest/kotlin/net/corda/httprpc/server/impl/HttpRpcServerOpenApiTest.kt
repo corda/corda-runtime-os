@@ -6,8 +6,6 @@ import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.ComposedSchema
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
-import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
-import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
 import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.CalendarRPCOpsImpl
@@ -28,6 +26,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.httprpc.test.TestFileUploadImpl
+import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utls.WebRequest
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
