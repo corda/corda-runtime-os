@@ -61,14 +61,20 @@ class LinkManagerIntegrationTest {
     private val replayPeriod = 2000
     private fun createLinkManagerConfiguration(replayPeriod: Int): Config {
         val innerConfig = ConfigFactory.empty()
-            .withValue(LinkManagerConfiguration.REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
+            .withValue(LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
         return ConfigFactory.empty()
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
             .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
-            .withValue(LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), innerConfig.root())
+            .withValue(
+                LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
+                ConfigFactory.empty().withValue(
+                    LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(),
+                    innerConfig.root()
+                ).root()
+            )
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())

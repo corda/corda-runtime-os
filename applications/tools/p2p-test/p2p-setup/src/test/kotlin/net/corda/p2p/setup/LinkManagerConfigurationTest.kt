@@ -6,15 +6,14 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm.Constant
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
-
 
 class LinkManagerConfigurationTest {
 
@@ -54,8 +53,8 @@ class LinkManagerConfigurationTest {
             it.assertThat(config.getValue(HEARTBEAT_MESSAGE_PERIOD_KEY).unwrapped()).isEqualTo(HEARTBEAT_MESSAGE_REPLAY_PERIOD.toInt())
             it.assertThat(config.getValue(SESSION_TIMEOUT_KEY).unwrapped()).isEqualTo(SESSION_TIMEOUT.toInt())
             it.assertThat(config.getValue(SESSIONS_PER_PEER_KEY).unwrapped()).isEqualTo(SESSIONS_PER_PEER.toInt())
-            val innerConfig = config.getConfig(Constant.configKeyName())
-            it.assertThat(innerConfig.getValue(REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD.toInt())
+            val innerConfig = config.getConfig(REPLAY_ALGORITHM_KEY).getConfig(Constant.configKeyName())
+            it.assertThat(innerConfig.getValue(MESSAGE_REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD.toInt())
         }
     }
 
@@ -81,7 +80,7 @@ class LinkManagerConfigurationTest {
             it.assertThat(config.getValue(HEARTBEAT_MESSAGE_PERIOD_KEY).unwrapped()).isEqualTo(HEARTBEAT_MESSAGE_REPLAY_PERIOD.toInt())
             it.assertThat(config.getValue(SESSION_TIMEOUT_KEY).unwrapped()).isEqualTo(SESSION_TIMEOUT.toInt())
             it.assertThat(config.getValue(SESSIONS_PER_PEER_KEY).unwrapped()).isEqualTo(SESSIONS_PER_PEER.toInt())
-            val innerConfig = config.getConfig(ExponentialBackoff.configKeyName())
+            val innerConfig = config.getConfig(REPLAY_ALGORITHM_KEY).getConfig(ExponentialBackoff.configKeyName())
             it.assertThat(innerConfig.getValue(BASE_REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD_BASE.toInt())
             it.assertThat(innerConfig.getValue(REPLAY_PERIOD_CUTOFF_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_CUT_OFF.toInt())
         }

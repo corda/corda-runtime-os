@@ -84,9 +84,14 @@ class ReplaySchedulerTest {
             clock = mockTimeFacilitiesProvider.clock
         )
         val inner = ConfigFactory.empty()
-            .withValue(LinkManagerConfiguration.REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
+            .withValue(LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
         val config = ConfigFactory.empty()
-            .withValue(LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), inner.root())
+            .withValue(
+                LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
+                ConfigFactory.empty().withValue(
+                    LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), inner.root()
+                ).root()
+            )
             .withValue(LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(MAX_REPLAYING_MESSAGES)
         )
         val replaySchedulerConfig = replayScheduler.fromConfig(config)
@@ -109,7 +114,12 @@ class ReplaySchedulerTest {
             .withValue(LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
             .withValue(LinkManagerConfiguration.REPLAY_PERIOD_CUTOFF_KEY, ConfigValueFactory.fromAnyRef(cutOff))
         val config = ConfigFactory.empty()
-            .withValue(LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff.configKeyName(), inner.root())
+            .withValue(
+                LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
+                ConfigFactory.empty().withValue(
+                    LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff.configKeyName(), inner.root()
+                ).root()
+            )
             .withValue(LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(MAX_REPLAYING_MESSAGES))
         val replaySchedulerConfig = replayScheduler.fromConfig(config)
                 as ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig
