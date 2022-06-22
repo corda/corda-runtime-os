@@ -26,6 +26,13 @@ class PermissionRoleManagerImpl(
 
     private val writerTimeout = config.getEndpointTimeout()
 
+    override fun getRoles(): Set<RoleResponseDto> {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+        return permissionManagementCache.roles.values.map { it.convertToResponseDto() }.toSet()
+    }
+
     override fun createRole(createRoleRequestDto: CreateRoleRequestDto): RoleResponseDto {
         val result = sendPermissionWriteRequest<Role>(
             rpcSender,

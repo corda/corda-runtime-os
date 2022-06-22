@@ -21,6 +21,7 @@ class ConfigMergerImpl @Activate constructor(
         return busConfigMerger.getMessagingConfig(bootConfig, messagingConfig)
     }
 
+    //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
     override fun getCryptoConfig(bootConfig: SmartConfig, cryptoConfig: SmartConfig?): SmartConfig {
         val updatedCryptoConfig = cryptoConfig?: SmartConfigImpl.empty()
         val bootCryptoConfig = bootConfig.getConfigOrEmpty(BOOT_CRYPTO)
