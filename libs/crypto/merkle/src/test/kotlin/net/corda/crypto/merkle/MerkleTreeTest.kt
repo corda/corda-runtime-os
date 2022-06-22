@@ -343,18 +343,7 @@ class MerkleTreeTest {
 
         }
     }
-/*
-    @Test
-    fun `nonce digest serialisation test`() {
-        val provider1 = NonceHashDigestProvider()
-        val serialised = provider1.serialize()
-        val deserialised = NonceHashDigestProvider.deserialize(serialised)
-        assertEquals(provider1, deserialised)
-        assertArrayEquals(provider1.leafNonce(1), deserialised.leafNonce(1))
-        assertEquals(false, provider1.leafNonce(0).contentEquals(provider1.leafNonce(1)))
-        assertEquals(false, provider1.leafNonce(0).contentEquals(provider1.leafNonce(1)))
-    }
-*/
+
     @Test
     fun `test different merkle tree types give different hashes`() {
         val leafData = (0 until 16).map { it.toByteArray() }
