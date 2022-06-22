@@ -6,6 +6,69 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 
+/**
+ *  leaves:         [L0, L1, L2, L3, L4]
+ *                    |   |   |   |   |
+ *  leafHashes:     [H0, H1, H2, H3, H4]
+ *
+ *  nodeHashes:    [[H0, H1, H2, H3, H4]
+ *                     \ /     \ /    |
+ *                  [ H01  ,  H23  , H4]
+ *                      \    /       |
+ *                  [    H03       , H4]
+ *                          \      /
+ *                  [         H04      ]
+ *                  ]
+ *                             |
+ *  root:                     H04
+ *
+ *  Proof calculation example for one leaf:
+ *  createAuditProof([2])
+ *  To generate a proof for a set of indices we need to collect the hashes needed to recalculate the paths
+ *  from the subject leaves towards the root.
+ *  The elements on this route are enclosed by {} on the left:
+ *
+ *                                      inPath          level       outputHashes
+ *                              init:
+ *    H0  H1 {H2}  H3  H4               [0, 0, 1, 0, 0] 0           []
+ *      \ /     \ /    |        1st iter:
+ *     H01     {H23}   H4               [0, 1, 0]       1           [H3 ]
+ *       \    /        |        2nd iter:
+ *        {H03}        H4               [1, 0]          2           [H3, H01]
+ *           \       /          3rd iter:
+ *             {H04}                    [1]             3           [H3, H01, H4]
+ *
+ *
+ * The right section after the tree shows the proof calculation's steps.
+ *
+ *  The proof:
+ *  (
+ *  5 (leaves.size),
+ *  [IndexedMerkleLeaf(2, leafNonce(2), L2)]
+ *  [H3, H01, H4]
+ *  )
+ *
+ *  Proof calculation example for two leaves:
+ *  createAuditProof([1,2])
+ *                                      inPath          level       outputHashes
+ *                              init:
+ *    H0  {H1}{H2} H3  H4               [0, 1, 1, 0, 0] 0           []
+ *      \ /     \ /    |        1st iter:
+ *     {H01}   {H23}   H4               [1, 1, 0]       1           [H0, H3 ]
+ *       \    /        |        2nd iter:
+ *        {H03}        H4               [1, 0]          2           [H0, H3]
+ *           \       /          3rd iter:
+ *             {H04}                    [1]             3           [H0, H3, H4]
+ *
+ *  The proof:
+ *  (
+ *  5 (leaves.size),
+ *  [IndexedMerkleLeaf(1, leafNonce(1), L1), IndexedMerkleLeaf(2, leafNonce(2), L2)]
+ *  [H0, H3, H4]
+ *  )
+ *
+ */
+
 internal class MerkleTreeImpl(
     override val leaves: List<ByteArray>,
     override val digestProvider: MerkleTreeHashDigestProvider
@@ -54,7 +117,8 @@ internal class MerkleTreeImpl(
      * the root element.
      *
      * hashes contain the current level what we are process
-     * hashSet contains the next level what we are calculating now
+     * nodeHashes contains the next level what we are calculating now
+     * hashSet will be the result
      *
      * If any level has odd number of elements, the last one just gets lifted to the next level without
      * more hashing.
@@ -99,11 +163,11 @@ internal class MerkleTreeImpl(
      * - enough hashes of the other elements to be able to reconstruct the tree.
      * - the size of the tree.
      *
-     * The extra hashes order is quite important to fill the gaps between the subject elements.
+     * The extra hashes' order is quite important to fill the gaps between the subject elements.
      *
      * We'll need to calculate the node's hashes on the routes from the subject elements
      * towards the tree's root element in the verification process.
-     * We'll contain the indices of these route elements in inPath for the level what we are processing.
+     * We'll mark the indices of these route elements in inPath for the level what we are processing.
      * Through the processing of a level we'll add a set of hashes to the proof, and we'll calculate the next
      * level's in route elements (next iteration's inPath) in the newInPath variable.
      *
@@ -124,15 +188,15 @@ internal class MerkleTreeImpl(
         require(leafIndices.all { it >= 0 && it < leaves.size }) { "Leaf indices out of bounds" }
         require(leafIndices.toSet().size == leafIndices.size) {"Duplications are not allowed."}
 
-        var inPath = List(leaves.size) { it in leafIndices }    // Initialize inPath with the input elements
+        var inPath = List(leaves.size) { it in leafIndices }    // Initialize inPath from the input elements
         val outputHashes = mutableListOf<SecureHash>()
         var level = 0
         while (inPath.size > 1) {
             val newInPath = mutableListOf<Boolean>()            // This will contain the next
-                                                                // level's in route element's indices
+                                                                // level's in route element's
             for (i in inPath.indices step 2) {
                 if (i <= inPath.size - 2) {                     // We still have a pair to process.
-                    newInPath += inPath[i] || inPath[i + 1]     // If any of them in route, then their parent will be
+                    newInPath += inPath[i] || inPath[i + 1]     // If any are in route, then their parent will be too
                     if (!inPath[i] && inPath[i + 1]) {          // We need to add a hash for the "Only one" cases.
                         outputHashes += nodeHashes[level][i]
                     } else if (inPath[i] && !inPath[i + 1]) {

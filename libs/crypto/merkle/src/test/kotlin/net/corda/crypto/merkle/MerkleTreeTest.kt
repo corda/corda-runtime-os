@@ -248,7 +248,7 @@ class MerkleTreeTest {
                 merkleTree.createAuditProof(listOf(0, treeSize + 1))
             }
 
-            // Should not create proof if indices have been duplicationed
+            // Should not create proof if indices have been duplicated
             assertFailsWith(IllegalArgumentException::class) {
                 merkleTree.createAuditProof(listOf(treeSize - 1, treeSize - 1))
             }
