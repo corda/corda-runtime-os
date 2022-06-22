@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "DistributionMetaData",
-  "namespace": "net.corda.data.membership",
+  "namespace": "net.corda.data.membership.p2p",
   "doc": "Basic information regarding a data distribution package which will be sent over the wire, wrapped into the MembershipPackage and the MembershipSyncRequest.",
   "fields": [
     {

@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "CpiVersionEntries",
-  "namespace": "net.corda.data.membership",
+  "namespace": "net.corda.data.membership.p2p",
   "doc": "Avro representation of a list of WireCpiVersion.",
   "fields": [
     {

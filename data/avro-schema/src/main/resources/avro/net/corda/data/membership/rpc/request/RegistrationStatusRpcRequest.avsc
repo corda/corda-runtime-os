@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "RegistrationStatusRequest",
+  "name": "RegistrationStatusRpcRequest",
   "namespace": "net.corda.data.membership.rpc.request",
   "doc": "Request to check the status of the registration process.",
   "fields": [

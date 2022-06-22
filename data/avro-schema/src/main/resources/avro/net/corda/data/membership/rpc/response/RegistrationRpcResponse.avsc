@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "RegistrationResponse",
+  "name": "RegistrationRpcResponse",
   "namespace": "net.corda.data.membership.rpc.response",
   "doc": "Registration response to submitting the registration request.",
   "fields": [
@@ -17,7 +17,7 @@
       "doc": "Status of the registration request.",
       "type": {
         "type": "enum",
-        "name": "RegistrationStatus",
+        "name": "RegistrationRpcStatus",
         "symbols": ["SUBMITTED", "NOT_SUBMITTED"]
       }
     },

@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "PersistRegistrationRequest",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Update or add a registration request.",
+  "fields": [
+    {
+      "name": "status",
+      "doc": "Indicator of the current status of the request.",
+      "type": {
+        "type": "enum",
+        "name": "RegistrationStatus",
+        "symbols": [
+          "NEW",
+          "PENDING_MEMBER_VERIFICATION",
+          "PENDING_APPROVAL_FLOW",
+          "PENDING_MANUAL_APPROVAL",
+          "DECLINED",
+          "APPROVED"
+        ]
+      }
+    },
+    {
+      "name": "registeringHoldingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Holding identity of the member owning the registration request."
+    },
+    {
+      "name": "registrationRequest",
+      "type": "net.corda.data.membership.p2p.MembershipRegistrationRequest",
+      "doc": "The full registration request to persist as received over the P2P layer."
+    }
+  ]
+}

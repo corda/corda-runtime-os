@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "RegistrationCommand",
+  "namespace": "net.corda.data.membership.command.registration",
+  "doc": "Registration event type",
+  "fields": [
+    {
+      "name": "command",
+      "doc": "Indicator of the type of registration command that was issued.",
+      "type": [
+        "net.corda.data.membership.command.registration.StartRegistration",
+        "net.corda.data.membership.command.registration.VerifyMember",
+        "net.corda.data.membership.command.registration.ProcessMemberVerification",
+        "net.corda.data.membership.command.registration.ApproveRegistration",
+        "net.corda.data.membership.command.registration.DeclineRegistration"
+      ]
+    }
+  ]
+}

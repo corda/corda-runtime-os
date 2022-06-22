@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "MembershipRegistrationRequest",
+  "namespace": "net.corda.data.membership.p2p",
+  "doc": "Request to register with an MGM.",
+  "fields": [
+    {
+      "name": "registrationId",
+      "doc": "UUID identifying this registration request",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "memberContext",
+      "doc": "Member provided data in MemberInfo serialised as byte array by using KeyValuePairList.",
+      "type": "bytes"
+    },
+    {
+      "name": "memberSignature",
+      "doc": "Signature of the member over the memberContext.",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    }
+  ]
+}

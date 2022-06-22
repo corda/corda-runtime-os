@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "MembershipSyncRequest",
-  "namespace": "net.corda.data.membership",
+  "namespace": "net.corda.data.membership.p2p",
   "doc": "Membership data synchronization request which will be processed by the MGM.",
   "fields": [
     {

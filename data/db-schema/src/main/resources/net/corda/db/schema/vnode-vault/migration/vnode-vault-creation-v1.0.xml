@@ -21,5 +21,56 @@
             </column>
         </createTable>
         <addPrimaryKey columnNames="alias" constraintName="vnode_certificate_pk" tableName="vnode_certificate"/>
+
+        <createTable tableName="vnode_registration_request">
+            <column name="registration_id" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="holding_identity_id" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="context" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="registration_id"
+                       constraintName="vnode_registration_request_pk"
+                       tableName="vnode_registration_request"/>
+
+        <createTable tableName="vnode_member_info">
+            <column name="group_id" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_name" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="NVARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_context" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mgm_context" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serial_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="group_id, member_name"
+                       constraintName="vnode_member_info_pkey"
+                       tableName="vnode_member_info"/>
     </changeSet>
 </databaseChangeLog>

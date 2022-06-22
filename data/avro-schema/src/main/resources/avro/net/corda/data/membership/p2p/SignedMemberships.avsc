@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "SignedMemberships",
-  "namespace": "net.corda.data.membership",
+  "namespace": "net.corda.data.membership.p2p",
   "doc": "Avro representation of the membership data part, which will be sent over the wire, wrapped into the MembershipPackage.",
   "fields": [
     {
@@ -14,7 +14,7 @@
       "doc": "List of signed membership updates.",
       "type": {
         "type": "array",
-        "items": "SignedMemberInfo"
+        "items": "net.corda.data.membership.SignedMemberInfo"
       }
     }
   ]

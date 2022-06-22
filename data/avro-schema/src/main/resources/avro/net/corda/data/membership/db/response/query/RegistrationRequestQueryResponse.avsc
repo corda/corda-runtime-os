@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "RegistrationRequestQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for a registration request",
+  "fields": [
+    {
+      "name": "registrationRequest",
+      "type": [
+        "net.corda.data.membership.p2p.MembershipRegistrationRequest",
+        "null"
+      ],
+      "doc": "The registration request queried for or null if the query executed correctly but there were no matches."
+    }
+  ]
+}

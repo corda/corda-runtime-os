@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "QueryFailedResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response for when a query failed.",
+  "fields": [
+    {
+      "name": "errorMessage",
+      "type": "string",
+      "doc": "Error message provided in the case of failure."
+    }
+  ]
+}

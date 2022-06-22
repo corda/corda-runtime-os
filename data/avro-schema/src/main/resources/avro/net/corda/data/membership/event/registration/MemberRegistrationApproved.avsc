@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MemberRegistrationApproved",
+  "namespace": "net.corda.data.membership.event.registration",
+  "doc": "Event for when processing of a registration has finished. Could be for either acceptance or denial.",
+  "fields": [
+    {
+      "name": "approvedMember",
+      "doc": "Holding identity of the member who was approved.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    }
+  ]
+}

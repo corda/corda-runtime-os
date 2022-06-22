@@ -8,12 +8,21 @@ import java.security.PublicKey
  * The member info consist of two parts:
  * Member provided context: Parameters added and signed by member as part of the initial MemberInfo proposal.
  * MGM provided context: Parameters added by MGM as a part of member acceptance.
+ * Internally visible properties are accessible via extension properties.
  */
 @CordaSerializable
 interface MemberInfo {
 
+    /**
+     * Context representing the member set data regarding this members information.
+     * Required data from this context is parsed and returned via other class properties.
+     */
     val memberProvidedContext: MemberContext
 
+    /**
+     * Context representing the MGM set data regarding this members information.
+     * Required data from this context is parsed and returned via other class properties.
+     */
     val mgmProvidedContext: MGMContext
 
     /**

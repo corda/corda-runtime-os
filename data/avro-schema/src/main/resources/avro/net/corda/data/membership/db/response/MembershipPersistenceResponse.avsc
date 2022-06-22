@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "MembershipPersistenceResponse",
+  "namespace": "net.corda.data.membership.db.response",
+  "doc": "Internal response envelope for persistence operations over RPC.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.membership.db.response.MembershipResponseContext",
+      "doc": "Context for the given request"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "null",
+        "net.corda.data.membership.db.response.query.MemberInfoQueryResponse",
+        "net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse",
+        "net.corda.data.membership.db.response.query.QueryFailedResponse"
+      ],
+      "doc": "Response payload which depends on the requested operation."
+    }
+  ]
+}

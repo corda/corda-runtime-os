@@ -11,13 +11,13 @@
     },
     {
       "name": "memberContext",
-      "doc": "Member provided data in MemberInfo serialised as byte array by using KeyValuePairList.",
-      "type": "bytes"
+      "doc": "Member provided data in MemberInfo.",
+      "type": "net.corda.data.KeyValuePairList"
     },
     {
       "name": "mgmContext",
-      "doc": "MGM provided data in MemberInfo serialised as byte array by using KeyValuePairList.",
-      "type": "bytes"
+      "doc": "MGM provided data in MemberInfo.",
+      "type": "net.corda.data.KeyValuePairList"
     }
   ]
 }

@@ -1,0 +1,37 @@
+{
+  "type": "record",
+  "name": "MembershipResponseContext",
+  "namespace": "net.corda.data.membership.db.response",
+  "doc": "Context for a membership persistence response",
+  "fields": [
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the request, copied from the corresponding request."
+    },
+    {
+      "name": "requestId",
+      "doc": "Request id which can be used to track the request progress.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "responseTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the response."
+    },
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Holding identity of the member for which the request was made."
+    }
+  ]
+}

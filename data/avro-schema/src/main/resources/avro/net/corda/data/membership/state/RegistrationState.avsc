@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "RegistrationState",
+  "namespace": "net.corda.data.membership.state",
+  "doc": "State for a registration.",
+  "fields": [
+    {
+      "name": "registrationId",
+      "doc": "UUID identifying this registration request",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "registeringMember",
+      "doc": "Holding identity of the registering member as provided during P2P communication. Used to verify the registration request.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    }
+  ]
+}

@@ -90,19 +90,19 @@ class Schemas {
      */
     class Membership {
         companion object {
-            // Member persistence topics
             const val MEMBER_LIST_TOPIC = "membership.members"
             const val GROUP_PARAMETERS_TOPIC = "membership.group.params"
             const val CPI_WHITELIST_TOPIC = "membership.group.cpi.whitelists"
-            const val PROPOSAL_TOPIC = "membership.proposals"
             const val MEMBERSHIP_RPC_TOPIC = "membership.rpc.ops"
             const val MEMBERSHIP_RPC_RESPONSE_TOPIC = "membership.rpc.ops.resp"
-            const val MEMBERSHIP_OPS_RPC_TOPIC = "membership.ops.rpc"
-            const val MEMBERSHIP_OPS_RPC_RESPONSE_TOPIC = "membership.ops.rpc.resp"
+            const val MEMBERSHIP_DB_RPC_TOPIC = "membership.db.rpc.ops"
+            const val MEMBERSHIP_DB_RPC_RESPONSE_TOPIC = "membership.db.rpc.ops.resp"
 
-            // Member messaging topics
             const val UPDATE_TOPIC = "membership.update"
             const val EVENT_TOPIC = "membership.event"
+
+            const val REGISTRATION_COMMAND_TOPIC = "membership.registration"
+            const val REGISTRATION_STATE_TOPIC = "membership.registration.state"
         }
     }
 

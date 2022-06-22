@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "WireCpiWhitelist",
-  "namespace": "net.corda.data.membership",
+  "namespace": "net.corda.data.membership.p2p",
   "doc": "Avro representation of the CpiWhitelist data part, which will be sent over the wire, wrapped into the MembershipPackage.",
   "fields": [
     {

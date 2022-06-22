@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "StartRegistration",
+  "namespace": "net.corda.data.membership.command.registration",
+  "doc": " Command issued when a member registration request is received and needs to be processed.",
+  "fields": [
+    {
+      "name": "destination",
+      "doc": "Holding identity of the target MGM.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "source",
+      "doc": "Holding identity of the requesting member.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "memberRegistrationRequest",
+      "doc": "The full registration request as received from a registering member.",
+      "type": "net.corda.data.membership.p2p.MembershipRegistrationRequest"
+    }
+  ]
+}

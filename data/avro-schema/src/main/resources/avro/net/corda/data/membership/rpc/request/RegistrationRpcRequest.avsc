@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "RegistrationRequest",
+  "name": "RegistrationRpcRequest",
   "namespace": "net.corda.data.membership.rpc.request",
   "doc": "Request to start the registration process.",
   "fields": [
@@ -14,9 +14,14 @@
       "doc": "The action to take during registration.",
       "type": {
         "type": "enum",
-        "name": "RegistrationAction",
+        "name": "RegistrationRpcAction",
         "symbols": ["REQUEST_JOIN"]
       }
+    },
+    {
+      "name": "context",
+      "doc": "The member or MGM context required for on-boarding within a group.",
+      "type": "net.corda.data.KeyValuePairList"
     }
   ]
 }

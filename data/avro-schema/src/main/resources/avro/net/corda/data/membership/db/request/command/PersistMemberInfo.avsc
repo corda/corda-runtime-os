@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "PersistMemberInfo",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Update or add a member info record.",
+  "fields": [
+    {
+      "name": "members",
+      "doc": "List of MemberInfos to persist.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.PersistentMemberInfo"
+      }
+    }
+  ]
+}

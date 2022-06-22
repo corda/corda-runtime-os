@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "MembershipPersistenceRequest",
+  "namespace": "net.corda.data.membership.db.request",
+  "doc": "Internal request envelope for persistence operations over RPC.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.membership.db.request.MembershipRequestContext",
+      "doc": "Context for the given request"
+    },
+    {
+      "name": "request",
+      "type": [
+        "net.corda.data.membership.db.request.command.PersistRegistrationRequest",
+        "net.corda.data.membership.db.request.command.PersistMemberInfo",
+        "net.corda.data.membership.db.request.query.QueryMemberInfo"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

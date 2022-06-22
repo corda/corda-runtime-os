@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "MembershipRequestContext",
+  "namespace": "net.corda.data.membership.db.request",
+  "doc": "Context for a membership persistence request",
+  "fields": [
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the request."
+    },
+    {
+      "name": "requestId",
+      "doc": "Request id which can be used to track the request progress.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Holding identity of the member for which the request is made."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "MemberInfoQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for one or more member infos",
+  "fields": [
+    {
+      "name": "members",
+      "doc": "Member Infos representing members found for a given query.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.PersistentMemberInfo"
+      }
+    }
+  ]
+}

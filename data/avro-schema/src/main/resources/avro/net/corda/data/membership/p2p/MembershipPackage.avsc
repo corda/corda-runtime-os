@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "MembershipPackage",
-  "namespace": "net.corda.data.membership",
+  "namespace": "net.corda.data.membership.p2p",
   "doc": "Membership data package which will be distributed on the wire across members.",
   "fields": [
     {
