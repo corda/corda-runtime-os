@@ -26,8 +26,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.httprpc.test.TestFileUploadImpl
-import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
-import net.corda.httprpc.test.utls.WebRequest
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {

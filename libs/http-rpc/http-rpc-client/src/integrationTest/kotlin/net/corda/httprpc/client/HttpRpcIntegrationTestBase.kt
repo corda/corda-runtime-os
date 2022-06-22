@@ -2,7 +2,7 @@ package net.corda.httprpc.client
 
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.test.utls.FakeSecurityManager
+import net.corda.httprpc.test.utils.FakeSecurityManager
 import java.nio.file.Path
 
 abstract class HttpRpcIntegrationTestBase {

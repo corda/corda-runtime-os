@@ -8,14 +8,13 @@ import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
-import net.corda.httprpc.test.utls.WebRequest
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.nio.file.Path
 import kotlin.test.assertEquals
 
 

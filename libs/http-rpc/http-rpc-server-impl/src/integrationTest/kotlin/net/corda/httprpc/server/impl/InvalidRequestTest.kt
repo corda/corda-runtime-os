@@ -6,8 +6,8 @@ import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
-import net.corda.httprpc.test.utls.WebRequest
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat

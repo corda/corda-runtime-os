@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
-import net.corda.httprpc.test.utls.ChecksumUtil
-import net.corda.httprpc.test.utls.TestClientFileUpload
-import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
-import net.corda.httprpc.test.utls.WebRequest
+import net.corda.httprpc.test.utils.ChecksumUtil
+import net.corda.httprpc.test.utils.TestClientFileUpload
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
 
 class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     companion object {

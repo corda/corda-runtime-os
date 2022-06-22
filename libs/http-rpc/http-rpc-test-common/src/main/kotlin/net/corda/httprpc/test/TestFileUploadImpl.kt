@@ -3,7 +3,7 @@ package net.corda.httprpc.test
 import java.io.InputStream
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.test.utls.ChecksumUtil
+import net.corda.httprpc.test.utils.ChecksumUtil
 
 class TestFileUploadImpl : TestFileUploadAPI, PluggableRPCOps<TestFileUploadAPI> {
 

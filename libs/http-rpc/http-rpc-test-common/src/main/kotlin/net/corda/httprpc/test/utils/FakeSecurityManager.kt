@@ -1,4 +1,4 @@
-package net.corda.httprpc.test.utls
+package net.corda.httprpc.test.utils
 
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
