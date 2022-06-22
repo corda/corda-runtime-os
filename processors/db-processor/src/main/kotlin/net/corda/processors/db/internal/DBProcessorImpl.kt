@@ -31,6 +31,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.datamodel.CertificateEntities
+import net.corda.membership.datamodel.MembershipEntities
+import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -92,6 +94,8 @@ class DBProcessorImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = VirtualNodeInfoWriteService::class)
     private val virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
+    @Reference(service = MembershipPersistenceService::class)
+    private val membershipPersistenceService: MembershipPersistenceService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -105,7 +109,11 @@ class DBProcessorImpl @Activate constructor(
                     + CertificateEntities.clusterClasses
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
-        entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, CertificateEntities.vnodeClasses)
+        entitiesRegistry.register(
+            CordaDb.Vault.persistenceUnitName,
+            CertificateEntities.vnodeClasses
+                    + MembershipEntities.classes
+        )
     }
 
     companion object {
@@ -130,7 +138,8 @@ class DBProcessorImpl @Activate constructor(
         ::certificatesService,
         ::configPublishService,
         ::virtualNodeInfoReadService,
-        ::virtualNodeInfoWriteService
+        ::virtualNodeInfoWriteService,
+        ::membershipPersistenceService,
     )
 
     private val reconcilers = Reconcilers(
