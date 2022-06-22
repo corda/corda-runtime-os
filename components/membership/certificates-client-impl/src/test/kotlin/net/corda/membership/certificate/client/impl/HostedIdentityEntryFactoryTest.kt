@@ -28,7 +28,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.security.InvalidKeyException
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 
@@ -314,7 +313,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will throw an exception if the group tlsTrustRoots is invalid`() {
         whenever(groupPolicy.get("p2pParameters")).doReturn(mapOf("tlsTrustRoots" to listOf(certificatePem)))
 
-        assertThrows<InvalidKeyException> {
+        assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityId = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,

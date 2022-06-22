@@ -18,6 +18,7 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
+import java.security.InvalidKeyException
 import java.security.cert.CertificateFactory
 
 internal class HostedIdentityEntryFactory(
@@ -133,10 +134,23 @@ internal class HostedIdentityEntryFactory(
             ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} has no p2pParameters")
         val tlsTrustRoots = p2pParameters["tlsTrustRoots"] as? Collection<*>
             ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters has no tlsTrustRoots")
-        val tlsRootCertificateStr = tlsTrustRoots.firstOrNull()?.toString()
-            ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
-        val tlsRootCertificate = CertificateFactory.getInstance("X.509")
-            .generateCertificate(tlsRootCertificateStr.byteInputStream())
-        certificate.verify(tlsRootCertificate.publicKey)
+        if (tlsTrustRoots.isEmpty()) {
+            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
+        }
+        tlsTrustRoots
+            .asSequence()
+            .map { it.toString() }
+            .map { tlsRootCertificateStr ->
+                CertificateFactory.getInstance("X.509")
+                    .generateCertificate(tlsRootCertificateStr.byteInputStream())
+            }.filter { tlsRootCertificate ->
+                try {
+                    certificate.verify(tlsRootCertificate.publicKey)
+                    true
+                } catch (e: InvalidKeyException) {
+                    false
+                }
+            }.firstOrNull()
+            ?: throw CordaRuntimeException("The certificate was not sign with the group TLS certificate authority")
     }
 }
