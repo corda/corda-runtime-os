@@ -19,7 +19,6 @@
 
 -runrequires: \
     bnd.identity;id='net.corda.virtual-node-testing',\
-    bnd.identity;id='ledger-consensual-impl-tests',\
     bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='org.apache.felix.framework.security',\
     bnd.identity;id='net.corda.security-manager',\
@@ -29,6 +28,7 @@
     bnd.identity;id='net.corda.application',\
     bnd.identity;id='net.corda.ledger-consensual',\
     bnd.identity;id='net.corda.ledger-consensual-impl',\
+    bnd.identity;id='ledger-consensual-impl-tests',\
     bnd.identity;id='slf4j.simple'
 
 -runstartlevel: \

@@ -28,10 +28,9 @@ import java.nio.file.Path
 @Suppress("FunctionName")
 class ConsensualLedgerServiceTest {
     companion object {
-        private const val TIMEOUT_MILLIS = 5000L // TODO: temporary high timeout; reduce this to 1s or less
+        private const val TIMEOUT_MILLIS = 2000L
         private const val CPB = "META-INF/consensual-ledger.cpb"
-        private const val CPK_FLOWS_PACKAGE = "net.cordapp.demo.consensual"
-        private const val CPK_BASIC_FLOW = "$CPK_FLOWS_PACKAGE.ConsensualFlow"
+        private const val CPK_BASIC_FLOW = "net.cordapp.demo.consensual.ConsensualFlow"
         val logger = contextLogger()
         init {
             println("ConsensualLedgerServiceTest init static")
@@ -43,7 +42,7 @@ class ConsensualLedgerServiceTest {
 
     private lateinit var virtualNode: VirtualNodeService
 
-    // @InjectService(timeout = TIMEOUT_MILLIS)
+    @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var consensualLedgerService: ConsensualLedgerService
 
     @BeforeAll
@@ -63,14 +62,12 @@ class ConsensualLedgerServiceTest {
 
     @Suppress("unused")
     @BeforeEach
-    fun reset() {
-        // securityManagerService.startRestrictiveMode()
-    }
+    fun reset() {}
 
     @Test
     fun `dummy flow runs`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(CPB)
-        println("ConsensualLedgerServiceTest. sandboxGroupContext: ${sandboxGroupContext}")
+        // TODO: do stuff here after we can actually inject the ledger service
+        // val sandboxGroupContext = virtualNode.loadSandbox(CPB)
         // assertThat(
         //     virtualNode.runFlow<Map<String, String>>(CPK_BASIC_FLOW, sandboxGroupContext)
         // ).isNotNull
