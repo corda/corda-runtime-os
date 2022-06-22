@@ -21,13 +21,15 @@ class OpenApiCompatibilityTest {
             "ConfigRPCOps",
             "CpiUploadRPCOps",
             "FlowRpcOps",
+            "PermissionEndpoint",
             "RoleEndpoint",
+            "UserEndpoint",
             "VirtualNodeMaintenanceRPCOps",
             "VirtualNodeRPCOps"
         )
 
         // `cardinality` is not equal to `expectedRpcOps.size` as there might be some test RpcOps as well
-        @InjectService(service = PluggableRPCOps::class, cardinality = 8, timeout = 10_000)
+        @InjectService(service = PluggableRPCOps::class, cardinality = 10, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RpcOps>
 
         @Suppress("unused")
@@ -47,7 +49,7 @@ class OpenApiCompatibilityTest {
 
     @Test
     fun test() {
-        val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface.simpleName }
+        val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface.simpleName }.sorted()
         logger.info("RPC Ops discovered: $allOps")
         assertThat(allOps).containsAll(importantRpcOps)
     }
