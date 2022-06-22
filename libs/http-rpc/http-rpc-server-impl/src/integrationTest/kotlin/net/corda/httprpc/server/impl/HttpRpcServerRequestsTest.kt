@@ -28,6 +28,7 @@ import net.corda.httprpc.test.utils.ChecksumUtil
 import net.corda.httprpc.test.utils.TestClientFileUpload
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
 
 class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     companion object {

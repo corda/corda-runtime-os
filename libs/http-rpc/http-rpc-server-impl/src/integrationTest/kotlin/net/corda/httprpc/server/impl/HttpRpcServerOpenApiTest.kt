@@ -28,6 +28,7 @@ import kotlin.test.assertTrue
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {

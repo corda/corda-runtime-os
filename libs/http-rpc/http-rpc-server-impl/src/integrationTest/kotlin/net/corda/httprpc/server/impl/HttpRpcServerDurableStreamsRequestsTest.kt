@@ -1,7 +1,6 @@
 package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.findFreePort
 import net.corda.httprpc.server.impl.utils.compact
 import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.CalendarRPCOpsImpl
@@ -10,6 +9,7 @@ import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
