@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -45,6 +46,17 @@ class MemberOpsServiceProcessor(
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
         private val clock = UTCClock()
+
+        /**
+         * Transforms [KeyValuePairList] into map.
+         */
+        fun KeyValuePairList.toMap(): Map<String, String> {
+            val map = mutableMapOf<String, String>()
+            items.forEach {
+                map[it.key] = it.value
+            }
+            return map
+        }
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
@@ -105,7 +117,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
             val result = try {
-                registrationProxy.register(holdingIdentity, request.context)
+                registrationProxy.register(holdingIdentity, request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.")
                 null

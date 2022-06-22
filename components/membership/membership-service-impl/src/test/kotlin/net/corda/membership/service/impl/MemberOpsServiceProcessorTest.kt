@@ -25,6 +25,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import net.corda.test.util.time.TestClock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -40,14 +42,13 @@ class MemberOpsServiceProcessorTest {
         private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
         private val holdingIdentity = HoldingIdentity("test", "0")
-        private val mockProperties: Map<String, String> = mock()
         private const val HOLDING_IDENTITY_STRING = "test"
 
         @JvmStatic
         @BeforeAll
         fun setup() {
             registrationProxy = mock {
-                on { register(holdingIdentity, mockProperties) } doReturn (MembershipRequestRegistrationResult(
+                on { register(eq(holdingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.SUBMITTED
                 ))
             }

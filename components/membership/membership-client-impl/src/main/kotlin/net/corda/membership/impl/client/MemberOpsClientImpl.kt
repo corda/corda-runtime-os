@@ -3,6 +3,7 @@ package net.corda.membership.impl.client
 import net.corda.utilities.time.UTCClock
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -177,7 +178,7 @@ class MemberOpsClientImpl @Activate constructor(
                 RegistrationRpcRequest(
                     memberRegistrationRequest.holdingIdentityId,
                     RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
-                    memberRegistrationRequest.context
+                    memberRegistrationRequest.context.toWire()
                 )
             )
 
@@ -236,6 +237,17 @@ class MemberOpsClientImpl @Activate constructor(
                     "Failed to send request and receive response for membership RPC operation. " + e.message, e
                 )
             }
+        }
+
+        /**
+         * Transforms map into [KeyValuePairList].
+         */
+        private fun Map<String, String>.toWire(): KeyValuePairList {
+            return KeyValuePairList(
+                map {
+                    KeyValuePair(it.key, it.value)
+                }
+            )
         }
     }
 }

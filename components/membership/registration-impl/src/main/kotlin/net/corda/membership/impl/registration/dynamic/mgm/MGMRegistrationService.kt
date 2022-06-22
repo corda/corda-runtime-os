@@ -123,7 +123,7 @@ class MGMRegistrationService @Activate constructor(
             )
         }
         try {
-            validateProperties(context)
+            validateContext(context)
             val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.id)
             val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.id)
             val now = clock.instant().toString()
@@ -173,21 +173,21 @@ class MGMRegistrationService @Activate constructor(
         return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
     }
 
-    private fun validateProperties(properties: Map<String, String>) {
+    private fun validateContext(context: Map<String, String>) {
         for (key in errorMessageMap.keys) {
-            properties[key] ?: throw IllegalArgumentException(errorMessageMap[key])
+            context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
         }
         require(
-            properties.keys.any { URL_KEY.format("[0-9]+").toRegex().matches(it) }
+            context.keys.any { URL_KEY.format("[0-9]+").toRegex().matches(it) }
         ) { "No endpoint URL was provided." }
         require(
-            properties.keys.any { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }
+            context.keys.any { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }
         ) { "No endpoint protocol was provided." }
         require(
-            properties.keys.any { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }
+            context.keys.any { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }
         ) { "No session truststore was provided." }
         require(
-            properties.keys.any { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }
+            context.keys.any { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }
         ) { "No TLS truststore was provided." }
     }
 
