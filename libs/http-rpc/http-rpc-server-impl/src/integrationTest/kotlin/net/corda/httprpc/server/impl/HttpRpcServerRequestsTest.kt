@@ -8,7 +8,6 @@ import io.javalin.core.util.Header.WWW_AUTHENTICATE
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.toExample
-import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.*
 import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.GET
@@ -29,6 +28,7 @@ import net.corda.httprpc.test.utils.TestClientFileUpload
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     companion object {

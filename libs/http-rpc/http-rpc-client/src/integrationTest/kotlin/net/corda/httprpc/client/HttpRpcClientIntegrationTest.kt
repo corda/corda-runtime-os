@@ -38,6 +38,7 @@ import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.test.TestFileUploadAPI
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.ChecksumUtil.generateChecksum
+import net.corda.httprpc.test.utils.multipartDir
 
 internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     companion object {

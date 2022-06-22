@@ -7,7 +7,6 @@ import io.swagger.v3.oas.models.media.ComposedSchema
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.compact
-import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
@@ -29,6 +28,7 @@ import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
