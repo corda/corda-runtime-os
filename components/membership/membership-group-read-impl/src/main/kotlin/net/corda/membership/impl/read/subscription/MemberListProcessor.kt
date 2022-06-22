@@ -1,18 +1,11 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.create
-import net.corda.membership.impl.MGMContextImpl
-import net.corda.membership.impl.MemberContextImpl
-import net.corda.membership.impl.toMemberInfo
-import net.corda.membership.impl.toSortedMap
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.toCorda
-import java.nio.ByteBuffer
 
 /**
  * Processor for handling updates to the member list topic.
@@ -20,14 +13,12 @@ import java.nio.ByteBuffer
  */
 class MemberListProcessor(
     private val membershipGroupReadCache: MembershipGroupReadCache,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val memberInfoFactory: MemberInfoFactory
 ) : CompactedProcessor<String, PersistentMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
     override val valueClass: Class<PersistentMemberInfo>
         get() = PersistentMemberInfo::class.java
-
-    private fun getContextMap(bytes: ByteBuffer) = KeyValuePairList.fromByteBuffer(bytes).toSortedMap()
 
     /**
      * Populate the member list cache on initial snapshot.
@@ -35,16 +26,7 @@ class MemberListProcessor(
     override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
         currentData.entries.groupBy(
             { it.value.viewOwningMember },
-            {
-                toMemberInfo(
-                    layeredPropertyMapFactory.create<MemberContextImpl>(
-                        getContextMap(it.value.memberContext)
-                    ),
-                    layeredPropertyMapFactory.create<MGMContextImpl>(
-                        getContextMap(it.value.mgmContext)
-                    )
-                )
-            }
+            { memberInfoFactory.create(it.value) }
         ).forEach { (owner, memberInfos) ->
             membershipGroupReadCache.memberListCache.put(owner.toCorda(), memberInfos)
         }
@@ -58,18 +40,13 @@ class MemberListProcessor(
         oldValue: PersistentMemberInfo?,
         currentData: Map<String, PersistentMemberInfo>
     ) {
-        toMemberInfo(
-            layeredPropertyMapFactory.create<MemberContextImpl>(
-                getContextMap(newRecord.value!!.memberContext)
-            ),
-            layeredPropertyMapFactory.create<MGMContextImpl>(
-                getContextMap(newRecord.value!!.mgmContext)
-            )
-        ).apply {
-            membershipGroupReadCache.memberListCache.put(
-                newRecord.value!!.viewOwningMember.toCorda(),
-                this
-            )
+        newRecord.value?.let { newMemberInfo ->
+            memberInfoFactory.create(newMemberInfo).apply {
+                membershipGroupReadCache.memberListCache.put(
+                    newMemberInfo.viewOwningMember.toCorda(),
+                    this
+                )
+            }
         }
     }
 }

@@ -60,14 +60,13 @@ class CpiEntitiesIntegrationTest {
             "cpk-checksum-$cpkId",
             ByteArray(2000),
         )
-        val cpkMeta =
-            TestObject.createCpk(
-                cpkData.fileChecksum,
-                cpkId,
-                "1.2.3",
-                signerSummaryHash,
+        val cpiCpk =
+            TestObject.createCpiCpkEntity(
+                cpiId.toString(), "1.0", "test-cpi-hash",
+                cpkId, "1.2.3", signerSummaryHash,
+                "filename", cpkData.fileChecksum,
             )
-        val cpi = TestObject.createCpi(cpiId, listOf(Pair("test-cpk", cpkMeta)))
+        val cpi = TestObject.createCpi(cpiId, listOf(Pair("test-cpk", cpiCpk)))
 
         EntityManagerFactoryFactoryImpl().create(
             "test_unit",
@@ -105,15 +104,13 @@ class CpiEntitiesIntegrationTest {
             "cpk-checksum-$cpkId",
             ByteArray(2000),
         )
-        val cpkMeta =
-            TestObject.createCpk(
-                cpkData.fileChecksum,
-                "test-cpk",
-                "1.2.3",
-                TestObject.randomChecksumString(),
+        val cpiCpk =
+            TestObject.createCpiCpkEntity(
+                cpiId.toString(), "1.0", "test-cpi-hash",
+                cpkId, "1.2.3", TestObject.randomChecksumString(),
+                "filename", cpkData.fileChecksum,
             )
-        val cpi = TestObject.createCpi(cpiId, listOf(Pair("test-cpk", cpkMeta)))
-
+        val cpi = TestObject.createCpi(cpiId, listOf(Pair("test-cpk", cpiCpk)))
         EntityManagerFactoryFactoryImpl().create(
             "test_unit",
             CpiEntities.classes.toList(),
@@ -204,14 +201,13 @@ class CpiEntitiesIntegrationTest {
             "cpk-checksum-$cpkId",
             ByteArray(2000),
         )
-        val cpkMeta1 =
-            TestObject.createCpk(
-                cpkData.fileChecksum,
-                cpkId,
-                cpkVer,
-                cpkSSH,
+        val cpiCpk1 =
+            TestObject.createCpiCpkEntity(
+                cpiId.toString(), "1.0", "test-cpi-hash",
+                cpkId, cpkVer, cpkSSH,
+                "filename", cpkData.fileChecksum,
             )
-        val cpi1 = TestObject.createCpi(cpiId, listOf(Pair("test-cpk", cpkMeta1)))
+        val cpi1 = TestObject.createCpi(cpiId, listOf(Pair("test-cpk", cpiCpk1)))
 
         EntityManagerFactoryFactoryImpl().create(
             "test_unit",
@@ -234,14 +230,13 @@ class CpiEntitiesIntegrationTest {
             "cpk-checksum-${UUID.randomUUID()}",
             ByteArray(2000),
         )
-        val cpkMeta2 = TestObject.createCpk(
-            cpkData2.fileChecksum,
-            cpk2Name,
-            cpk2Ver,
-            cpk2SSH,
-        )
-        val cpi2 = TestObject.createCpi(cpiId, listOf(Pair("test-cpk1", cpkMeta1), Pair("test-cpk2", cpkMeta2)))
-
+        val cpiCpk2 =
+            TestObject.createCpiCpkEntity(
+                cpiId.toString(), "1.0", "test-cpi-hash",
+                cpk2Name, cpk2Ver, cpk2SSH,
+                "filename", cpkData2.fileChecksum,
+            )
+        val cpi2 = TestObject.createCpi(cpiId, listOf(Pair("test-cpk1", cpiCpk1), Pair("test-cpk2", cpiCpk2)))
         EntityManagerFactoryFactoryImpl().create(
             "test_unit",
             CpiEntities.classes.toList(),
@@ -345,11 +340,10 @@ class CpiEntitiesIntegrationTest {
             val cpkVersion = "$i.2.3"
             val cpkSSH = TestObject.randomChecksumString()
             val cpkMetadataEntity =
-                TestObject.createCpk(
-                    TestObject.randomChecksumString(),
-                    cpkName,
-                    cpkVersion,
-                    cpkSSH,
+                TestObject.createCpiCpkEntity(
+                    cpiId.toString(), "1.0", "test-cpi-hash",
+                    cpkName, cpkVersion, cpkSSH,
+                    "filename", TestObject.randomChecksumString(),
                 )
             val cpkData = CpkFileEntity(
                 CpkKey(cpkName, cpkVersion, cpkSSH),

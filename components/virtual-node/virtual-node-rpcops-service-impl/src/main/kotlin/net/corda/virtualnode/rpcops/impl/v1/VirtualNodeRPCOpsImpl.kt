@@ -39,7 +39,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
 ) : VirtualNodeRPCOpsInternal, PluggableRPCOps<VirtualNodeRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
-        private val RPC_CONFIG = RPCConfig(
+        private val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
@@ -64,7 +64,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
 
     override fun createAndStartRpcSender(messagingConfig: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, messagingConfig).apply { start() }
+        rpcSender = publisherFactory.createRPCSender(rpcConfig, messagingConfig).apply { start() }
     }
 
     override fun setTimeout(millis: Int) {

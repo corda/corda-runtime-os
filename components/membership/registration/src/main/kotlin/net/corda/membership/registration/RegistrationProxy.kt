@@ -1,7 +1,7 @@
 package net.corda.membership.registration
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.virtualnode.HoldingIdentity
 
 /**

@@ -19,6 +19,8 @@
     bnd.identity;id='net.corda.layered-property-map',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.membership-service-impl',\
+    bnd.identity;id='net.corda.membership-persistence-client-impl',\
+    bnd.identity;id='net.corda.membership-p2p-impl',\
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-client-impl',\
     bnd.identity;id='net.corda.crypto-db-persistence-impl',\

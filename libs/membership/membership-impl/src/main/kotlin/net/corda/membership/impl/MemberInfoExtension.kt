@@ -38,6 +38,9 @@ class MemberInfoExtension {
         /** Key name for status property. */
         const val STATUS = "corda.status"
 
+        /** Key name for creation time **/
+        const val CREATION_TIME = "corda.creationTime"
+
         /** Key name for endpoints property. */
         const val ENDPOINTS = "corda.endpoints"
 
@@ -64,6 +67,9 @@ class MemberInfoExtension {
 
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
+
+        /** Key name for the ID of the registration in which the current member info was approved. */
+        const val REGISTRATION_ID = "corda.registration.id"
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
