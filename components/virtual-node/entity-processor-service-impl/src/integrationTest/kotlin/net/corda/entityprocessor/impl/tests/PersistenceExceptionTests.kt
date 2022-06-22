@@ -6,6 +6,7 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -111,9 +112,11 @@ class PersistenceExceptionTests {
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
         // The failure is correctly categorised.
         assertThat(responseFailure.errorType).isEqualTo(Error.NOT_READY)
 
@@ -148,9 +151,12 @@ class PersistenceExceptionTests {
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
 
         // The failure is correctly categorised.
         assertThat(responseFailure.errorType).isEqualTo(Error.VIRTUAL_NODE)
@@ -180,9 +186,11 @@ class PersistenceExceptionTests {
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
 
         // The failure is correctly categorised.
         assertThat(responseFailure.errorType).isEqualTo(Error.FATAL)

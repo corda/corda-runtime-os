@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
@@ -195,7 +196,9 @@ class PersistenceServiceInternalTests {
         val responses = processor.onNext(records)
 
         assertThat(responses.size).isEqualTo(1)
-        val response = responses.first().value as EntityResponse
+
+        val flowEvent = responses.first().value  as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         assertThat(response.requestId).isEqualTo(requestId)
     }
 
@@ -235,9 +238,11 @@ class PersistenceServiceInternalTests {
 
         // It's a failure
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
 
         // The failure is correctly categorised - serialization fails within the database path of the code.
         // It can never succeed on retry, therefore, it's fatal.
@@ -357,7 +362,8 @@ class PersistenceServiceInternalTests {
 
         // assert that Bella has been returned
 
-        val entityResponse = responses[0].value as EntityResponse
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
         assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
         val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
         val bytes = entityResponseSuccess.result as ByteBuffer
@@ -462,7 +468,8 @@ class PersistenceServiceInternalTests {
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
@@ -480,7 +487,8 @@ class PersistenceServiceInternalTests {
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
@@ -507,7 +515,8 @@ class PersistenceServiceInternalTests {
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
@@ -610,7 +619,8 @@ class PersistenceServiceInternalTests {
 
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
-            val response = it.value as EntityResponse
+            val flowEvent = it.value as FlowEvent
+            val response = flowEvent.payload as EntityResponse
             if (response.responseType is EntityResponseFailure) {
                 logger.error("$response.responseType")
             }
@@ -621,7 +631,8 @@ class PersistenceServiceInternalTests {
 
     private fun assertFailureResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
-            val response = it.value as EntityResponse
+            val flowEvent = it.value as FlowEvent
+            val response = flowEvent.payload as EntityResponse
             if (response.responseType is EntityResponseSuccess) {
                 logger.error("$response.responseType")
             }
@@ -657,7 +668,8 @@ class PersistenceServiceInternalTests {
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
         assertThat(responses.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
-        val entityResponse = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
 
         return assertThatResponseIsAList(entityResponse)
     }
@@ -718,9 +730,8 @@ class PersistenceServiceInternalTests {
             )
         )
 
-        assertThat(responses.first().value as EntityResponse).isInstanceOf(EntityResponse::class.java)
-
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val success = response.responseType as EntityResponseSuccess
 
         return success.result
