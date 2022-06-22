@@ -24,7 +24,7 @@ class DeleteConnect : Runnable {
 
         try {
             val topicNames = client.listTopics().names().get(wait, TimeUnit.SECONDS)
-                .filter { it.startsWith(delete!!.topic!!.getHyphenatedNamePrefix()) }
+                .filter { it.startsWith(delete!!.topic!!.namePrefix) }
 
             if (topicNames.isEmpty()) {
                 println("No matching topics found")

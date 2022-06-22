@@ -34,7 +34,7 @@ class TopicPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
             names = ["-n", "--name-prefix"],
             description = ["Name prefix for topics"]
         )
-        var namePrefix: String? = null
+        var namePrefix: String = ""
 
         @CommandLine.Option(
             names = ["-b", "--bootstrap-server"],
@@ -72,10 +72,6 @@ class TopicPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 command += " --command-config $kafkaConfig"
             }
             return command
-        }
-
-        fun getHyphenatedNamePrefix(): String {
-            return if (namePrefix == null) "" else "${namePrefix}-"
         }
 
     }

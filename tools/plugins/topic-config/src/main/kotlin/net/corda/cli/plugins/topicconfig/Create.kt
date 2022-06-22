@@ -68,7 +68,7 @@ class Create(
     }
 
     fun getTopicName(topicConfig: TopicConfig): String {
-        return "${topic!!.getHyphenatedNamePrefix()}${topicConfig.name}"
+        return "${topic!!.namePrefix}${topicConfig.name}"
     }
 
     fun collectJars(

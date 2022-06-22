@@ -28,8 +28,8 @@ class DeleteScript(
     }
 
     private fun createFilter(): List<String> {
-        return if (delete!!.topic!!.namePrefix != null) {
-            listOf("grep -e '^${delete!!.topic!!.getHyphenatedNamePrefix()}'")
+        return if (delete!!.topic!!.namePrefix != "") {
+            listOf("grep -e '^${delete!!.topic!!.namePrefix}'")
         } else {
             emptyList()
         }
