@@ -1,14 +1,21 @@
 import { Button, Checkbox, NotificationService, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
 
 import FormContentWrapper from '../components/FormContentWrapper/FormContentWrapper';
+import { LOGIN } from '../constants/routes';
 import PageContentWrapper from '../components/PageContentWrapper/PageContentWrapper';
 import PageHeader from '../components/PageHeader/PageHeader';
 import RegisterViz from '../components/Visualizations/RegisterViz';
 import VisualizationWrapper from '../components/Visualizations/VisualizationWrapper';
 import apiCall from '../api/apiCall';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import useUserContext from '../contexts/userContext';
 
 const Register = () => {
+    const { saveLoginDetails } = useUserContext();
+
+    const navigate = useNavigate();
+
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -48,12 +55,11 @@ const Register = () => {
         } else {
             NotificationService.notify(`Successfully registered!`, 'Success!', 'success');
 
-            // TODO: Update some sort of user Context state here if the "Save user and password checkbox is selected"
             if (isUserAndPasswordSaved) {
-                //SAVE USER AND PASSWORD in UserContext
+                saveLoginDetails(username, password);
             }
 
-            // TODO: Redirect to the Login Page
+            navigate(LOGIN);
         }
     };
 
@@ -99,7 +105,8 @@ const Register = () => {
                     Save username and password
                 </Checkbox>
                 <Button
-                    className="h-12 w-40"
+                    style={{ width: 142 }}
+                    className="h-12"
                     size={'large'}
                     variant={'primary'}
                     disabled={!canSubmit}

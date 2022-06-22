@@ -4,13 +4,20 @@ import FormContentWrapper from '../components/FormContentWrapper/FormContentWrap
 import LoginViz from '../components/Visualizations/LoginViz';
 import PageContentWrapper from '../components/PageContentWrapper/PageContentWrapper';
 import PageHeader from '../components/PageHeader/PageHeader';
+import { VNODE_HOME } from '../constants/routes';
 import VisualizationWrapper from '../components/Visualizations/VisualizationWrapper';
 import apiCall from '../api/apiCall';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import useUserContext from '../contexts/userContext';
 
 const Login = () => {
-    const [username, setUsername] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
+    const { username: savedUsername, password: savedPassword, login } = useUserContext();
+
+    const navigate = useNavigate();
+
+    const [username, setUsername] = useState<string>(savedUsername);
+    const [password, setPassword] = useState<string>(savedPassword);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
@@ -25,22 +32,15 @@ const Login = () => {
     const handleSubmit = async () => {
         //the api spec is not made available yet will just assume it will just assume its /api/login for now
         // TODO: update api to match spec
-        const response = await apiCall({ method: 'post', path: '/api/login', params: { username, password } });
 
-        if (response.error) {
-            NotificationService.notify(
-                `Failed to Sign in with the provided username and password: Error: ${response.error}`,
-                'Error',
-                'danger'
-            );
+        const loggedInSuccessfully = await login(username, password);
+
+        if (!loggedInSuccessfully) {
             setUsername('');
             setPassword('');
         } else {
             NotificationService.notify(`Successfully Signed in!`, 'Success!', 'success');
-
-            // TODO: Update some sort of UserContext state here, saving the username and password for "basic auth"?
-
-            // TODO: Redirect to the V-Node Home
+            navigate(VNODE_HOME);
         }
     };
 
