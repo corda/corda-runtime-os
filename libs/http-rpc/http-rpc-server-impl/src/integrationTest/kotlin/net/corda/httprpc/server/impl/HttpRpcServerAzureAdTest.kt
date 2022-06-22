@@ -11,6 +11,7 @@ import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.findFreePor
 import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utls.AzureAdMock
+import net.corda.httprpc.test.utls.FakeSecurityManager
 import net.corda.httprpc.test.utls.TestHttpClient
 import net.corda.httprpc.test.utls.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utls.WebRequest
