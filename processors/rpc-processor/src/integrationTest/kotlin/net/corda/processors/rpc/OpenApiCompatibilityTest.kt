@@ -18,9 +18,14 @@ class OpenApiCompatibilityTest {
         private val logger = contextLogger()
 
         private val importantRpcOps = setOf(
+            "CertificatesRpcOps",
             "ConfigRPCOps",
             "CpiUploadRPCOps",
             "FlowRpcOps",
+            "HsmRpcOps",
+            "KeysRpcOps",
+            "MemberLookupRpcOps",
+            "MemberRegistrationRpcOps",
             "PermissionEndpoint",
             "RoleEndpoint",
             "UserEndpoint",
@@ -29,7 +34,7 @@ class OpenApiCompatibilityTest {
         )
 
         // `cardinality` is not equal to `expectedRpcOps.size` as there might be some test RpcOps as well
-        @InjectService(service = PluggableRPCOps::class, cardinality = 10, timeout = 10_000)
+        @InjectService(service = PluggableRPCOps::class, cardinality = 15, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RpcOps>
 
         @Suppress("unused")

@@ -15,6 +15,7 @@
     bnd.identity;id='net.corda.rpc-processor',\
     bnd.identity;id='net.corda.virtual-node-rpcops-maintenance-impl',\
     bnd.identity;id='net.corda.permission-rpc-ops-impl',\
+    bnd.identity;id='net.corda.membership-http-rpc-impl',\
     bnd.identity;id='rpc-processor-tests'
 
 -runstartlevel: \
