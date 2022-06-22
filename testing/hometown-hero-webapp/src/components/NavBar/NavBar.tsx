@@ -3,7 +3,7 @@ import logoSrc from '@r3/r3-tooling-design-system/assets/img/logo--r3.svg';
 
 const LOGO = (
     <a href="/">
-        <img alt="r3-logo" style={{ opacity: 0.8 }} src={logoSrc} width="40px" />
+        <img alt="r3-logo" src={logoSrc} width="40px" />
     </a>
 );
 
