@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
 import com.google.cloud.tools.jib.api.buildplan.Platform
@@ -356,6 +357,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 }
 =======
+=======
+>>>>>>> fbf0a423e (disabled jib logic, changed shared pipeline reference in jenkinsfile, added build script and docker files for buildctl replacement)
 // import com.google.cloud.tools.jib.api.*
 // import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
 // import com.google.cloud.tools.jib.api.buildplan.Platform
@@ -691,5 +694,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 //         }
 //     }
 // }
+<<<<<<< HEAD
 >>>>>>> 6d865e408 (disabled jib logic, changed shared pipeline reference in jenkinsfile, added build script and docker files for buildctl replacement)
+=======
+>>>>>>> fbf0a423e (disabled jib logic, changed shared pipeline reference in jenkinsfile, added build script and docker files for buildctl replacement)
 
