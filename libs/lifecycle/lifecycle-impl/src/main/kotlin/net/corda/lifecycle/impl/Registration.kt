@@ -28,7 +28,7 @@ import kotlin.concurrent.withLock
  * @param registeringCoordinator The coordinator to deliver status updates to.
  */
 internal class Registration(
-    private val coordinators: Set<LifecycleCoordinator>,
+    private val coordinators: Set<LifecycleCoordinatorRegistrationAccess>,
     private val registeringCoordinator: LifecycleCoordinator
 ) : RegistrationHandle {
 
@@ -65,7 +65,7 @@ internal class Registration(
      * @param coordinator The coordinator status that has changed.
      * @param status The new status of the coordinator.
      */
-    fun updateCoordinatorStatus(coordinator: LifecycleCoordinator, status: LifecycleStatus) {
+    fun updateCoordinatorStatus(coordinator: LifecycleCoordinatorRegistrationAccess, status: LifecycleStatus) {
         lock.withLock {
             val oldState = currentStatus
             coordinatorStatusMap[coordinator] = status
@@ -114,9 +114,7 @@ internal class Registration(
                 registeringCoordinator.postEvent(StopTrackingRegistration(this))
             }
             coordinators.forEach { coordinator ->
-                closeSafely {
-                    coordinator.postEvent(CancelRegistration(this))
-                }
+                coordinator.postInternalEvent(CancelRegistration(this))
             }
         }
     }

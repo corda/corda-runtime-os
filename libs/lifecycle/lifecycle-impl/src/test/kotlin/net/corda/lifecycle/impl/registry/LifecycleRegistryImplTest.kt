@@ -1,8 +1,8 @@
 package net.corda.lifecycle.impl.registry
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.impl.LifecycleCoordinatorRegistrationAccess
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -82,8 +82,8 @@ class LifecycleRegistryImplTest {
     @Test
     fun `can retrieve registered coordinators by name`() {
         val registry = LifecycleRegistryImpl()
-        val aliceCoordinator = mock<LifecycleCoordinator>()
-        val bobCoordinator = mock<LifecycleCoordinator>()
+        val aliceCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val bobCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         registry.registerCoordinator(aliceName, aliceCoordinator)
         registry.registerCoordinator(bobName, bobCoordinator)
         assertEquals(aliceCoordinator, registry.getCoordinator(aliceName))
@@ -93,8 +93,8 @@ class LifecycleRegistryImplTest {
     @Test
     fun `exception is thrown if an unknown coordinator is requested`() {
         val registry = LifecycleRegistryImpl()
-        val aliceCoordinator = mock<LifecycleCoordinator>()
-        val bobCoordinator = mock<LifecycleCoordinator>()
+        val aliceCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val bobCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         registry.registerCoordinator(aliceName, aliceCoordinator)
         registry.registerCoordinator(bobName, bobCoordinator)
         assertThrows<LifecycleRegistryException> {
@@ -105,9 +105,9 @@ class LifecycleRegistryImplTest {
     @Test
     fun `exception is thrown if attempt made to register a coordinator under an already registered name`() {
         val registry = LifecycleRegistryImpl()
-        val aliceCoordinator = mock<LifecycleCoordinator>()
-        val bobCoordinator = mock<LifecycleCoordinator>()
-        val alice2Coordinator = mock<LifecycleCoordinator>()
+        val aliceCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val bobCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val alice2Coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         registry.registerCoordinator(aliceName, aliceCoordinator)
         registry.registerCoordinator(bobName, bobCoordinator)
         registry.registerCoordinator(aliceName.copy(instanceId = "second"), alice2Coordinator)
@@ -122,8 +122,8 @@ class LifecycleRegistryImplTest {
     @Test
     fun `can register a coordinator with the same name but different instance id`() {
         val registry = LifecycleRegistryImpl()
-        val aliceCoordinator = mock<LifecycleCoordinator>()
-        val alice2Coordinator = mock<LifecycleCoordinator>()
+        val aliceCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val alice2Coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         registry.registerCoordinator(aliceName, aliceCoordinator)
         registry.registerCoordinator(aliceName.copy(instanceId = "second"), alice2Coordinator)
         assertEquals(alice2Coordinator, registry.getCoordinator(aliceName.copy(instanceId = "second")))
@@ -133,7 +133,7 @@ class LifecycleRegistryImplTest {
     @Test
     fun `can remove a registered coordinator`() {
         val registry = LifecycleRegistryImpl()
-        val aliceCoordinator = mock<LifecycleCoordinator>()
+        val aliceCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         registry.registerCoordinator(aliceName, aliceCoordinator)
         assertEquals(aliceCoordinator, registry.getCoordinator(aliceName))
         registry.removeCoordinator(aliceName)

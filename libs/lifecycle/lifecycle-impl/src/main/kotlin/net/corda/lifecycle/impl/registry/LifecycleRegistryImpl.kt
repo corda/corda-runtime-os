@@ -1,8 +1,8 @@
 package net.corda.lifecycle.impl.registry
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.impl.LifecycleCoordinatorRegistrationAccess
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.registry.LifecycleRegistryException
@@ -26,7 +26,8 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
         private val logger = contextLogger()
     }
 
-    private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinator> = ConcurrentHashMap()
+    private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinatorRegistrationAccess> =
+        ConcurrentHashMap()
 
     private val statuses: MutableMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
 
@@ -51,7 +52,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun registerCoordinator(name: LifecycleCoordinatorName, coordinator: LifecycleCoordinator) {
+    override fun registerCoordinator(name: LifecycleCoordinatorName, coordinator: LifecycleCoordinatorRegistrationAccess) {
         val coordinatorStatus = CoordinatorStatus(name, LifecycleStatus.DOWN, NEW_COORDINATOR_REASON)
         val oldValue = coordinators.putIfAbsent(name, coordinator)
         if (oldValue != null) {
@@ -64,7 +65,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun getCoordinator(name: LifecycleCoordinatorName): LifecycleCoordinator {
+    override fun getCoordinator(name: LifecycleCoordinatorName): LifecycleCoordinatorRegistrationAccess {
         return coordinators[name]
             ?: throw LifecycleRegistryException("No coordinator with name $name has been registered")
     }

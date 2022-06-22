@@ -1,7 +1,6 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.ErrorEvent
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
@@ -296,7 +295,7 @@ class LifecycleProcessorTest {
             processedEvents++
         }
         val registration = mock<Registration>()
-        val coordinator = mock<LifecycleCoordinator>()
+        val coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         state.status = LifecycleStatus.DOWN
         state.postEvent(NewRegistration(registration))
         process(processor, coordinator = coordinator)
@@ -315,7 +314,7 @@ class LifecycleProcessorTest {
             processedEvents++
         }
         val registration = mock<Registration>()
-        val coordinator = mock<LifecycleCoordinator>()
+        val coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         state.status = LifecycleStatus.DOWN
         state.registrations.add(registration)
         state.postEvent(CancelRegistration(registration))
@@ -530,7 +529,7 @@ class LifecycleProcessorTest {
     private fun process(
         processor: LifecycleProcessor,
         shouldSucceed: Boolean = true,
-        coordinator: LifecycleCoordinator = mock()
+        coordinator: LifecycleCoordinatorRegistrationAccess = mock()
     ) {
         val succeeded = processor.processEvents(coordinator, ::timerGenerator)
         assertEquals(shouldSucceed, succeeded)
@@ -570,8 +569,8 @@ class LifecycleProcessorTest {
         }
     }
 
-    private fun setupCoordinatorMock(): LifecycleCoordinator {
-        val coordinator = mock<LifecycleCoordinator>()
+    private fun setupCoordinatorMock(): LifecycleCoordinatorRegistrationAccess {
+        val coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         doReturn(NAME).`when`(coordinator).name
         return coordinator
     }

@@ -16,6 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorScheduler
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -1167,11 +1168,37 @@ internal class LifecycleCoordinatorImplTest {
         assertThat(coordinator.status).isEqualTo(LifecycleStatus.DOWN)
     }
 
+    @Test
+    fun `closing a coordinator which is registered against a closed coordinator doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator2.close()
+        coordinator1.close()
+    }
+
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
         scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(executor, timerExecutor),
         processor: LifecycleEventHandler
-    ): LifecycleCoordinator {
+    ): LifecycleCoordinatorRegistrationAccess {
+        return LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
+            BATCH_SIZE,
+            registry,
+            scheduler,
+            processor
+        )
+    }
+
+    private fun createTestCoordinator(
+        registry: LifecycleRegistryCoordinatorAccess = mock(),
+        scheduler: LifecycleCoordinatorScheduler = TestLifecycleCoordinatorScheduler(),
+        processor: LifecycleEventHandler
+    ): LifecycleCoordinatorRegistrationAccess {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,

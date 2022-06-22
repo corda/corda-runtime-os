@@ -101,8 +101,8 @@ class RegistrationTest {
 
     @Test
     fun `custom event is posted to the registering coordinator`() {
-        val registeringCoordinator = mock<LifecycleCoordinator>()
-        val registeredCoordinator = mock<LifecycleCoordinator>()
+        val registeringCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val registeredCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
         val registration = Registration(setOf(registeredCoordinator), registeringCoordinator)
 
         val customEvent = CustomEvent(registration, "hello world")
@@ -122,8 +122,8 @@ class RegistrationTest {
     }
 
     private inner class RegistrationTestHarness {
-        private val childMocks = listOf<LifecycleCoordinator>(mock(), mock(), mock())
-        private val listeningMock = mock<LifecycleCoordinator>()
+        private val childMocks = listOf<LifecycleCoordinatorRegistrationAccess>(mock(), mock(), mock())
+        private val listeningMock = mock<LifecycleCoordinatorRegistrationAccess>()
         private val registration = Registration(childMocks.toSet(), listeningMock)
 
         fun setDependentStatuses(statuses: List<LifecycleStatus>) {
@@ -154,7 +154,7 @@ class RegistrationTest {
         fun closeRegistration() {
             registration.close()
             childMocks.forEach {
-                verify(it).postEvent(CancelRegistration(registration))
+                verify(it).postInternalEvent(CancelRegistration(registration))
             }
         }
 
