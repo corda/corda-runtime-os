@@ -114,13 +114,6 @@ DB client image
 {{- end }}
 
 {{/*
-Kafka client image
-*/}}
-{{- define "corda.kafkaClientImage" -}}
-"{{- if .Values.kafka.clientImage.registry }}{{.Values.kafka.clientImage.registry}}/{{- end }}{{ .Values.kafka.clientImage.repository }}:{{ .Values.kafka.clientImage.tag }}"
-{{- end }}
-
-{{/*
 Resources for the bootstrapper
 */}}
 {{- define "corda.bootstrapResources" }}
