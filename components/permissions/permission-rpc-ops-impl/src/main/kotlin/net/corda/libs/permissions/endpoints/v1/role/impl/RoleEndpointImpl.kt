@@ -43,6 +43,13 @@ class RoleEndpointImpl @Activate constructor(
         PermissionEndpointEventHandler("RoleEndpoint")
     )
 
+    override fun getRoles(): Set<RoleResponseType> {
+        val allRoles = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getRoles()
+        }!!
+        return allRoles.map { it.convertToEndpointType() }.toSet()
+    }
+
     override fun createRole(createRoleType: CreateRoleType): RoleResponseType {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
