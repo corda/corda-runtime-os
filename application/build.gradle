@@ -11,9 +11,10 @@ dependencies {
 
     api platform(project(':corda-api'))
     api project(":base")
-    api project(":membership")
-    api project(":serialization")
     api project(":crypto")
+    api project(":membership")
+    api project(":persistence")
+    api project(":serialization")
 
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'

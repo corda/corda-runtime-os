@@ -25,6 +25,12 @@
       "doc": "A set of attributes used to record the current state of the flow's execution."
     },
     {
+      "name": "persistenceState",
+      "type": ["null", "net.corda.data.flow.state.persistence.PersistenceState"],
+      "default": null,
+      "doc": "Active persistence query. Null if there is no query in progress."
+    },
+    {
       "name": "sessions",
       "type": {
         "type": "array",

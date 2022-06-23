@@ -13,7 +13,8 @@
         "net.corda.data.flow.event.StartFlow",
         "net.corda.data.flow.event.Wakeup",
         "net.corda.data.flow.output.FlowStatus",
-        "net.corda.data.flow.event.SessionEvent"
+        "net.corda.data.flow.event.SessionEvent",
+        "net.corda.data.persistence.EntityResponse"
       ]
     }
   ]

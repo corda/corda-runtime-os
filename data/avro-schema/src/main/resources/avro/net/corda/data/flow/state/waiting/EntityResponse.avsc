@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "EntityResponse",
+  "namespace": "net.corda.data.flow.state.waiting",
+  "fields": [
+    {
+    "name": "requestId",
+    "type": "string",
+    "doc": "The requestId of the response we are waiting for"
+    }
+  ]
+}

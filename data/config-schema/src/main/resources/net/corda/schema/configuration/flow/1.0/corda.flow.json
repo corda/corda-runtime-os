@@ -55,6 +55,25 @@
           "default": 60000
         }
       }
+    },
+    "persistence": {
+      "description": "Settings for persistence store interactions within a flow",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "messageResendWindow": {
+          "description": "Length of time to wait before resending unacknowledged query messages, in milliseconds",
+          "type": "integer",
+          "minimum": 100,
+          "default": 5000
+        },
+        "maxRetries": {
+          "description": "The maximum amount of times to retry a request before returning an exception to the user code.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 5
+        }
+      }
     }
   }
 }

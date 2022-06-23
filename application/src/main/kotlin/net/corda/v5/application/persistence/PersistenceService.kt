@@ -4,6 +4,7 @@ import net.corda.v5.application.persistence.query.NamedQueryFilter
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.stream.Cursor
+import net.corda.v5.persistence.CordaPersistenceException
 
 /**
  * Persistence Service API providing functionality to interact with an entityManager and execute pre-defined named queries.

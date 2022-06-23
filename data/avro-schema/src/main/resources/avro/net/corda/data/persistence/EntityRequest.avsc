@@ -13,9 +13,14 @@
       "doc": "Time ({@link java.time.Instant}) in milliseconds when the record was created."
     },
     {
-      "name": "flowKey",
-      "type": "net.corda.data.flow.FlowKey",
-      "doc": "The unique ID for tracking the flow status"
+      "name": "flowId",
+      "type": "string",
+      "doc": "The unique ID for tracking the flow. Responses will be returned on this key."
+    },
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the user making the db request."
     },
     {
       "name": "request",
