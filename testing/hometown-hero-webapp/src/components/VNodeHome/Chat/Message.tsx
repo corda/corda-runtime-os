@@ -27,7 +27,7 @@ const Message: React.FC<Props> = ({ message, isMyMessage, selectReplyParticipant
             className={`m-2 ${isMyMessage ? 'ml-auto mr-0' : 'mr-auto'}`}
             style={{ maxWidth: '70%' }}
         >
-            <div style={{ width: 'fit-content' }} className={` ${isMyMessage ? 'ml-auto mr-4' : 'mr-auto ml-0'}`}>
+            <div className={` ${isMyMessage ? 'ml-auto mr-4' : 'mr-auto ml-0'}`} style={{ width: 'fit-content' }}>
                 <p className={`text-xs ml-2 ${isMyMessage ? 'font-bold' : 'font-semibold opacity-50'}`}>
                     {isMyMessage ? 'Me' : participantDisplayName}
                 </p>
