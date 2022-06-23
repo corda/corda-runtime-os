@@ -1,5 +1,9 @@
 package net.corda.flow.state.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import kotlin.math.min
+import kotlin.math.pow
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
@@ -8,6 +12,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
@@ -18,8 +23,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
-import java.nio.ByteBuffer
-import java.time.Instant
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -55,6 +58,7 @@ class FlowCheckpointImpl(
     private var nullableWaitingFor: WaitingFor? = null
     private var nullableSessionsMap: MutableMap<String, SessionState>? = null
     private var nullableFlowStack: FlowStackImpl? = null
+    private var nullablePersistenceState: PersistenceState? = null
 
     private val checkpoint: Checkpoint
         get() = checkNotNull(nullableCheckpoint)
@@ -102,6 +106,12 @@ class FlowCheckpointImpl(
 
     override val sessions: List<SessionState>
         get() = sessionMap.values.toList()
+
+    override var persistenceState: PersistenceState?
+        get() = nullablePersistenceState
+        set(value) {
+            nullablePersistenceState = value
+        }
 
     override val doesExist: Boolean
         get() = nullableCheckpoint != null && !deleted
@@ -213,6 +223,7 @@ class FlowCheckpointImpl(
             return null
         }
 
+        checkpoint.persistenceState = nullablePersistenceState
         checkpoint.flowState.suspendedOn = nullableSuspendOn
         checkpoint.flowState.waitingFor = nullableWaitingFor
         checkpoint.sessions = sessionMap.values.toList()
@@ -224,8 +235,12 @@ class FlowCheckpointImpl(
         validateAndAddStateFields()
         validateAndAddSessions()
         validateAndAddFlowStack()
+        validateAndAddPersistenceState()
     }
 
+    private fun validateAndAddPersistenceState() {
+        nullablePersistenceState = checkpoint.persistenceState
+    }
     private fun validateAndAddStateFields() {
         nullableSuspendOn = checkpoint.flowState.suspendedOn
         nullableWaitingFor = checkpoint.flowState.waitingFor

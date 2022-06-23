@@ -1,10 +1,12 @@
 package net.corda.flow.pipeline.impl
 
+import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.FlowMessageFactory
@@ -16,12 +18,13 @@ import net.corda.v5.base.util.minutes
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
     @Reference(service = SessionManager::class)
     private val sessionManager: SessionManager,
+    @Reference(service = PersistenceManager::class)
+    private val persistenceManager: PersistenceManager,
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
@@ -39,6 +42,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         val outputRecords = getSessionEvents(context, now) +
                 getFlowMapperSessionCleanupEvents(context, now) +
+                getPersistenceMessage(context, now) +
                 postProcessRetries(context)
 
         return context.copy(outputRecords = context.outputRecords + outputRecords)
@@ -90,6 +94,27 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val checkpoint = context.checkpoint
         if (checkpoint.doesExist) {
             checkpoint.clearPendingPlatformError()
+        }
+    }
+
+    /**
+     * Check to see if any persistence message need to be sent
+     * or resent due to no response being received within a given time period.
+     */
+    private fun getPersistenceMessage(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
+        val config = context.config
+        val persistenceState = context.checkpoint.persistenceState
+        return if (persistenceState == null) {
+            listOf()
+        } else {
+            persistenceManager.getMessageToSend(persistenceState, now, config ).let { (persistenceState, request) ->
+                if (request != null) {
+                    context.checkpoint.persistenceState = persistenceState
+                    listOf(flowRecordFactory.createEntityRequestRecord(persistenceState.requestId, request))
+                } else {
+                    listOf()
+                }
+            }
         }
     }
 

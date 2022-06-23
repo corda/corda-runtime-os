@@ -14,6 +14,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -106,7 +107,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun flowResumedWith(value: Any) {
+    override fun flowResumedWith(value: Any?) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
             assertEquals(value, (testRun.flowContinuation as FlowContinuation.Run).value)
@@ -245,6 +246,38 @@ class OutputAssertionsImpl(
     override fun markedForDlq() {
         asserts.add {
             assertThat(it.response?.markForDLQ).isTrue
+        }
+    }
+
+    override fun entityRequestSent(expectedRequestPayload: Any) {
+        asserts.add { testRun ->
+            val response = testRun.response
+            assertNotNull(response, "Test run response value")
+
+            val entityRequests = response!!.responseEvents.filter {
+                it.value is EntityRequest
+            }
+
+            assertTrue(entityRequests.size == 1, "More than one entity request found in response output events")
+            val foundEntityRequest = entityRequests.first().value as EntityRequest
+
+            assertNotNull(foundEntityRequest, "No entity request found in response events.")
+            val outputRequestPayload = foundEntityRequest.request
+            assertTrue(outputRequestPayload::class.java == expectedRequestPayload::class.java,
+                "Entity request found is of the wrong type. Expected ${expectedRequestPayload::class.java}, found: ${expectedRequestPayload::class.java}")
+            assertTrue(expectedRequestPayload == outputRequestPayload, "Entity request payload found does not match the expected payload")
+        }
+    }
+
+    override fun noEntityRequestSent() {
+        asserts.add { testRun ->
+            val response = testRun.response
+            assertNotNull(response, "Test run response value")
+
+            val entityRequests = response!!.responseEvents.filter {
+                it.value is EntityRequest
+            }
+            assertTrue(entityRequests.isEmpty(), "Entity request found in response events.")
         }
     }
 
