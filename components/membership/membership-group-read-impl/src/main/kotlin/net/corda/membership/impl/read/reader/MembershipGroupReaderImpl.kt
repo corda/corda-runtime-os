@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.CPIWhiteList
 import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.CPIWhiteList
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.crypto.PublicKeyHash

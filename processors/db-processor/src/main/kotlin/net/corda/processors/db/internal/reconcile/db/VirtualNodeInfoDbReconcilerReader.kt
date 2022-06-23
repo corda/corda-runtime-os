@@ -29,12 +29,17 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
             override val isDeleted = entity.isDeleted
             override val key = holdingIdentity
             override val value by lazy {
+                val signerSummaryHash = if (entity.cpiSignerSummaryHash.isNotBlank()) {
+                    SecureHash.create(entity.cpiSignerSummaryHash)
+                } else {
+                    null
+                }
                 VirtualNodeInfo(
                     holdingIdentity = holdingIdentity,
                     cpiIdentifier = CpiIdentifier(
                         entity.cpiName,
                         entity.cpiVersion,
-                        SecureHash.create(entity.cpiSignerSummaryHash)
+                        signerSummaryHash
                     ),
                     vaultDmlConnectionId = entity.holdingIdentity.vaultDMLConnectionId!!,
                     cryptoDmlConnectionId = entity.holdingIdentity.cryptoDMLConnectionId!!,
