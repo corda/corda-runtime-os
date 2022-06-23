@@ -193,4 +193,11 @@ class FlowGlobalPostProcessorImplTest {
         assertTrue(sessionState1.hasScheduledCleanup)
         assertTrue(sessionState2.hasScheduledCleanup)
     }
+
+    @Test
+    fun `Clears pending platform errors`() {
+        flowGlobalPostProcessor.postProcess(testContext)
+
+        verify(checkpoint).clearPendingPlatformError()
+    }
 }

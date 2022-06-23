@@ -2,6 +2,8 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
+import net.corda.flow.testing.context.flowResumedWithError
+import net.corda.v5.application.flows.exceptions.FlowException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,6 +56,37 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
                 wakeUpEvent()
+            }
+        }
+    }
+
+    @Test
+    fun `Calling 'send' on an invalid session fails and reports the exception to user code`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        `when` {
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1)))
+
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.FlowFailed(Exception()))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1){
+                hasPendingUserException()
+                wakeUpEvent()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<FlowException>()
+                noPendingUserException()
             }
         }
     }
