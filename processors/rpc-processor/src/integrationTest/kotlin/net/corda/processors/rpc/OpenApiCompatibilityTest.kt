@@ -88,7 +88,7 @@ class OpenApiCompatibilityTest {
 
         val server = httpServerFactory.createHttpRpcServer(
             dynamicRpcOps.map { it as PluggableRPCOps<out RpcOps> },
-            FakeSecurityManager(), httpRpcSettings, multipartDir
+            FakeSecurityManager(), httpRpcSettings, multipartDir, devMode = true
         ).apply { start() }
 
         val url = "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/"

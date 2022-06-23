@@ -13,6 +13,7 @@ interface HttpRpcServerFactory {
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
         httpRpcSettings: HttpRpcSettings,
-        multiPartDir: Path
+        multiPartDir: Path,
+        devMode: Boolean = false
     ): HttpRpcServer
 }
