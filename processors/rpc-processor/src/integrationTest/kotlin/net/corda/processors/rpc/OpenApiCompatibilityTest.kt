@@ -14,6 +14,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 @ExtendWith(ServiceExtension::class)
 class OpenApiCompatibilityTest {
@@ -91,16 +95,19 @@ class OpenApiCompatibilityTest {
             FakeSecurityManager(), httpRpcSettings, multipartDir, devMode = true
         ).apply { start() }
 
-        val url = "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/"
-        logger.info("Swagger should be accessible on: $url/swagger.json")
+        val url = "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/swagger.json"
+        logger.info("Swagger should be accessible on: $url")
 
         return server.use {
-            /*val client = TestHttpClientUnirestImpl(
-                "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/")
-            val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger.json"))
-            assertEquals(200, apiSpec.responseStatus)
-            apiSpec.body!!*/
-            "foo"
+
+            //Thread.sleep(1_000_000)
+            val client = HttpClient.newHttpClient()
+            val request = HttpRequest.newBuilder(URI.create(url))
+                .header("accept", "application/json")
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            response.body()
         }
     }
 }
