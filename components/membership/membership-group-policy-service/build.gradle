@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership HTTP RPC definition'
+description 'Member Ops Client'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -11,6 +11,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
-    implementation project(":libs:http-rpc:http-rpc")
-    implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    implementation project(":libs:lifecycle:lifecycle")
 }

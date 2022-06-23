@@ -1,0 +1,5 @@
+workers:
+  rpc:
+    replicaCount: 1
+    debug:
+      enabled: true
