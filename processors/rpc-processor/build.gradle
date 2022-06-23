@@ -65,9 +65,12 @@ dependencies {
 
     integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
+
     integrationTestImplementation project(':libs:http-rpc:http-rpc')
     integrationTestImplementation project(':libs:http-rpc:http-rpc-server')
-    integrationTestImplementation project(":libs:http-rpc:http-rpc-server-impl")
+    integrationTestImplementation project(':libs:http-rpc:http-rpc-test-common')
+    integrationTestImplementation project(':libs:http-rpc:http-rpc-tools')
 
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
 }

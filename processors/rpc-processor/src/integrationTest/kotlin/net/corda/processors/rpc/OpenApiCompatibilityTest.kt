@@ -4,18 +4,24 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.impl.HttpRpcServerImpl
+import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.test.utils.FakeSecurityManager
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
+import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
+import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.net.ServerSocket
-import java.nio.file.Path
 
 @ExtendWith(ServiceExtension::class)
 class OpenApiCompatibilityTest {
@@ -43,6 +49,9 @@ class OpenApiCompatibilityTest {
         @InjectService(service = PluggableRPCOps::class, cardinality = 15, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RpcOps>
 
+        @InjectService(service = HttpRpcServerFactory::class, timeout = 10_000)
+        lateinit var httpServerFactory: HttpRpcServerFactory
+
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
@@ -65,9 +74,8 @@ class OpenApiCompatibilityTest {
         assertThat(allOps).containsAll(importantRpcOps)
 
         val existingSwaggerJson = computeExistingSwagger()
+        assertThat(existingSwaggerJson).contains(""""openapi" : "3.0.1"""")
     }
-
-    private fun findFreePort() = ServerSocket(0).use { it.localPort }
 
     private fun computeExistingSwagger(): String {
         val context = HttpRpcContext(
@@ -76,26 +84,27 @@ class OpenApiCompatibilityTest {
             "HttpRpcContext ${javaClass.simpleName}",
             "HttpRpcContext ${javaClass.simpleName}"
         )
+        val freePort = findFreePort()
+        val serverAddress = NetworkHostAndPort("localhost", freePort)
         val httpRpcSettings = HttpRpcSettings(
-            NetworkHostAndPort("localhost", findFreePort()),
+            serverAddress,
             context,
             null,
             null,
             HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
         )
 
-        val multipartDir = Path.of(System.getProperty("java.io.tmpdir"), "multipart")
-
-        val server = HttpRpcServerImpl(
+        val server = httpServerFactory.createHttpRpcServer(
             dynamicRpcOps.map { it as PluggableRPCOps<out RpcOps> },
-            FakeSecurityManager(),
-            httpRpcSettings,
-            multipartDir,
-            true
+            FakeSecurityManager(), httpRpcSettings, multipartDir
         ).apply { start() }
 
-        server.use {
-
+        return server.use {
+            val client = TestHttpClientUnirestImpl(
+                "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/")
+            val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger.json"))
+            assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+            apiSpec.body!!
         }
     }
 }
