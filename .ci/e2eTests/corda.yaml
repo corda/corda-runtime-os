@@ -10,7 +10,6 @@ kafka:
         name: prereqs-kafka-0-tls
   sasl:
     enabled: true
-    password: admin-secret
 
 db:
   cluster:
