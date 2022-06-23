@@ -108,7 +108,7 @@ class MemberProcessorTestUtils {
         val aliceX500Name = MemberX500Name.parse(aliceName)
         val bobX500Name = MemberX500Name.parse(bobName)
         val charlieX500Name = MemberX500Name.parse(charlieName)
-        val groupId = "ABC123"
+        val groupId = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
         val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
         val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
 
@@ -234,7 +234,7 @@ class MemberProcessorTestUtils {
                 assertNotEquals(new, it)
             }
             assertEquals(groupId, new!!.groupId)
-            assertEquals(5, new.keys.size)
+            assertEquals(7, new.keys.size)
         }
 
         fun assertSecondGroupPolicy(new: GroupPolicy?, old: GroupPolicy?) {
