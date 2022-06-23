@@ -7,7 +7,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -100,7 +101,7 @@ internal class ReplayScheduler<M>(
             override val maxReplayingMessages: Int
         ): ReplaySchedulerConfig(maxReplayingMessages) {
             constructor(config: Config, innerConfig: Config): this(
-                innerConfig.getDuration(REPLAY_PERIOD_KEY),
+                innerConfig.getDuration(MESSAGE_REPLAY_PERIOD_KEY),
                 config.getInt(MAX_REPLAYING_MESSAGES_PER_PEER)
             )
         }
@@ -137,7 +138,7 @@ internal class ReplayScheduler<M>(
                 is ReplaySchedulerConfig.ConstantReplaySchedulerConfig -> {
                     if (newConfiguration.replayPeriod.isNegative) {
                         configUpdateResult.completeExceptionally(
-                            IllegalArgumentException("The duration configurations (with key $REPLAY_PERIOD_KEY) must be positive.")
+                            IllegalArgumentException("The duration configurations (with key $MESSAGE_REPLAY_PERIOD_KEY) must be positive.")
                         )
                         return configUpdateResult
                     }
@@ -174,8 +175,8 @@ internal class ReplayScheduler<M>(
     @VisibleForTesting
     internal fun fromConfig(config: Config): ReplaySchedulerConfig {
         for (replayAlgorithm in LinkManagerConfiguration.ReplayAlgorithm.values()) {
-            if (config.hasPath(replayAlgorithm.configKeyName())) {
-                val innerConfig = config.getConfig(replayAlgorithm.configKeyName())
+            if (config.hasPath(REPLAY_ALGORITHM_KEY) && config.getConfig(REPLAY_ALGORITHM_KEY).hasPath(replayAlgorithm.configKeyName()) ) {
+                val innerConfig = config.getConfig(REPLAY_ALGORITHM_KEY).getConfig(replayAlgorithm.configKeyName())
                 return when (replayAlgorithm) {
                     LinkManagerConfiguration.ReplayAlgorithm.Constant -> {
                         ReplaySchedulerConfig.ConstantReplaySchedulerConfig(config, innerConfig)
