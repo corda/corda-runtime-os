@@ -9,7 +9,6 @@ const Section: React.FC<{ title?: string; children?: React.ReactNode }> = ({ chi
             {title && (
                 <>
                     <h2 className="opacity-75 text-2xl sm:text-4xl md:text-4xl lg:text-4xl">{title}</h2>
-                    <br />
                 </>
             )}
             {children}
