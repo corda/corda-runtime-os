@@ -58,7 +58,7 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
             axiosInstance: axiosInstance,
         });
         if (response.error) {
-            NotificationService.notify(`Failed to fetch messages: Error: ${response.error}`, 'Error', 'danger');
+            NotificationService.notify(`Failed to send message: Error: ${response.error}`, 'Error', 'danger');
         } else {
             fetchMessages();
         }
