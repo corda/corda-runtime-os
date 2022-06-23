@@ -14,7 +14,7 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
     const [networkParticipants, setNetworkParticipants] = useState<string[]>([]);
 
     const fetchNetworkParticipants = useCallback(async () => {
-        //fetch participants here with some api call
+        // TODO: Adjust the api to spec
         const response = await apiCall({ method: 'get', path: '/api/getParticipants', axiosInstance: axiosInstance });
         if (response.error) {
             NotificationService.notify(
@@ -23,14 +23,17 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
                 'danger'
             );
         } else {
-            //Set participants here
+            // TODO: Set participants here from api data response
         }
+        // TODO: Remove this temp data
         setNetworkParticipants(TEMP_PARTICIPANTS);
     }, []);
 
     useEffect(() => {
         fetchNetworkParticipants();
-    }, []);
+
+        // TODO: set a polling interval to fetch participants if web socket implementation will not be available
+    }, [fetchNetworkParticipants]);
 
     const handleCheckboxClicked = (checkBoxChecked: boolean, participant: string) => {
         if (!checkBoxChecked) {
@@ -39,8 +42,6 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
             setSelectedParticipants([...selectedParticipants, participant]);
         }
     };
-
-    console.log('Chat participant', selectedParticipants);
 
     return (
         <div className="pt-6" style={{ width: 400, height: 450 }}>

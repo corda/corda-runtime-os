@@ -17,6 +17,7 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [messageValue, setMessageValue] = useState<string>('');
 
+    // TODO: Set the actual x500, probably in UserContext when this data is available
     const currentUserX500 = TEMP_USER_500;
 
     const fetchMessages = useCallback(async () => {
@@ -24,20 +25,17 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
         if (response.error) {
             NotificationService.notify(`Failed to fetch messages: Error: ${response.error}`, 'Error', 'danger');
         } else {
-            //Set participants here
+            // TODO: Set the messages here from api response data
         }
     }, []);
 
     useEffect(() => {
         fetchMessages();
+
+        // TODO: Remove temp data of messages
         setMessages(TEMP_MESSAGES);
 
-        // const interval = setInterval(() => {
-        //     fetchMessages();
-        // }, 2000);
-        // return () => {
-        //     clearInterval(interval);
-        // };
+        // TODO: Set interval of polling messages if there will be no web socket implementation available
     }, [fetchMessages]);
 
     const handleUserTyping = (e: any) => {
@@ -45,7 +43,7 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
     };
 
     const handleMessageSubmit = async () => {
-        //Do some send message call here
+        // TODO: adjust to api spec
         const response = await apiCall({
             method: 'post',
             path: '/api/sendMessage',
