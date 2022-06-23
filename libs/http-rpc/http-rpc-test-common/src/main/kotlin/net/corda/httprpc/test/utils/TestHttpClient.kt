@@ -1,6 +1,5 @@
-package net.corda.httprpc.server.impl.utils
+package net.corda.httprpc.test.utils
 
-import io.javalin.core.util.Header.ORIGIN
 import java.io.InputStream
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
@@ -64,7 +63,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         )
     }
 
-    private fun HttpRequest<*>.addOriginHeader() = header(ORIGIN, "localhost")
+    private fun HttpRequest<*>.addOriginHeader() = header("Origin", "localhost")
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String, password: String): WebResponse<String> {
         return doCall(verb, webRequest) {

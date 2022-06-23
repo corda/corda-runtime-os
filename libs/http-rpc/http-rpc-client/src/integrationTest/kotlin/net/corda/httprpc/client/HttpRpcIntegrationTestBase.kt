@@ -2,7 +2,7 @@ package net.corda.httprpc.client
 
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcContext
-import java.nio.file.Path
+import net.corda.httprpc.test.utils.FakeSecurityManager
 
 abstract class HttpRpcIntegrationTestBase {
     internal companion object {
@@ -12,6 +12,5 @@ abstract class HttpRpcIntegrationTestBase {
         val userAlice = User("admin", password, setOf())
         val securityManager = FakeSecurityManager()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
-        val multipartDir: Path = Path.of(System.getProperty("java.io.tmpdir"), "multipart")
     }
 }

@@ -1,4 +1,4 @@
-package net.corda.httprpc.test.utls
+package net.corda.httprpc.test.utils
 
 import java.io.InputStream
 import java.security.MessageDigest
