@@ -121,10 +121,9 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
     )
 
     override fun onChunk(onChunkWriteCallback: ChunkWriteCallback) {
-        //TODO - https://r3-cev.atlassian.net/browse/CORE-5279
-        /*if (chunkWriteCallback != null) {
+        if (chunkWriteCallback != null) {
             throw CordaRuntimeException("On chunk callback is already set")
-        }*/
+        }
         chunkWriteCallback = onChunkWriteCallback
     }
 }
