@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "RetrieveCertificateRpcRequest",
+  "namespace": "net.corda.data.certificates.rpc.request",
+  "doc": "RPC request to retrieve a certificate chain.",
+  "fields": [
+    {
+      "name": "alias",
+      "doc": "The certificate alias.",
+      "type": "string"
+    }
+  ]
+}

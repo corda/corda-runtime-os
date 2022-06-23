@@ -8,7 +8,8 @@
       "name": "response",
       "doc": "The response payload.",
       "type": [
-        "CertificateImportedRpcResponse"
+        "CertificateImportedRpcResponse",
+        "CertificateRetrievalRpcResponse"
       ]
     }
   ]

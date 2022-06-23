@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "CertificateRetrievalRpcResponse",
+  "namespace": "net.corda.data.certificates.rpc.response",
+  "doc": "RPC operations response with a certificate chain.",
+  "fields": [
+    {
+      "name": "certificates",
+      "doc": "The certificates in PEM format.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  ]
+}
