@@ -79,6 +79,7 @@ pipeline {
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
                         kubectl describe all -n ${NAMESPACE} > prereqsDescribe.txt
+                        export SASL_SECRET=$(kubectl get secret prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 -D) 
                     '''
                     archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
                     sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
@@ -90,7 +91,7 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh 'helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
+               sh 'helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
             }
             post {
                 unsuccessful {
