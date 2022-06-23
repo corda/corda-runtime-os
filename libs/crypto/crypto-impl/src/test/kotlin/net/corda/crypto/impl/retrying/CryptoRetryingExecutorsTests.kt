@@ -1,7 +1,9 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.retrying
 
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.failures.CryptoRetryException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -15,7 +17,7 @@ import javax.persistence.PessimisticLockException
 import javax.persistence.QueryTimeoutException
 import kotlin.test.assertEquals
 
-class ExecuteUtilsTests {
+class CryptoRetryingExecutorsTests {
     companion object {
         private val logger = contextLogger()
 
@@ -30,40 +32,51 @@ class ExecuteUtilsTests {
             ClassCastException(),
             NotImplementedError(),
             UnsupportedOperationException(),
-            CryptoServiceLibraryException("error", isRecoverable = false),
-            CryptoServiceLibraryException(
+            CryptoException("error"),
+            CryptoException(
                 "error",
-                CryptoServiceLibraryException("error", isRecoverable = true),
-                isRecoverable = false
+                CryptoException("error", true)
             ),
-            CryptoServiceLibraryException(
+            CryptoException(
                 "error",
-                TimeoutException(),
-                isRecoverable = false
+                TimeoutException()
             ),
+            CryptoRetryException("error", TimeoutException()),
             PersistenceException()
         )
 
         @JvmStatic
-        fun retryableExceptions(): List<Throwable> = listOf(
-            CryptoServiceLibraryException("error", isRecoverable = true),
+        fun recoverableExceptions(): List<Throwable> = listOf(
+            CryptoException("error", true),
             TimeoutException(),
             LockTimeoutException(),
             QueryTimeoutException(),
             OptimisticLockException(),
             PessimisticLockException(),
+            java.sql.SQLTransientException(),
+            java.sql.SQLTimeoutException(),
+            org.hibernate.exception.LockAcquisitionException("error", java.sql.SQLException()),
+            org.hibernate.exception.LockTimeoutException("error", java.sql.SQLException()),
             RuntimeException("error", TimeoutException()),
             PersistenceException("error", LockTimeoutException()),
             PersistenceException("error", QueryTimeoutException()),
             PersistenceException("error", OptimisticLockException()),
-            PersistenceException("error", PessimisticLockException())
+            PersistenceException("error", PessimisticLockException()),
+            PersistenceException("error", java.sql.SQLTransientException()),
+            PersistenceException("error", java.sql.SQLTimeoutException()),
+            PersistenceException("error", org.hibernate.exception.LockAcquisitionException(
+                "error", java.sql.SQLException()
+            )),
+            PersistenceException("error", org.hibernate.exception.LockTimeoutException(
+                "error", java.sql.SQLException()
+            ))
         )
     }
 
     @Test
     fun `Should execute without retrying`() {
         var called = 0
-        val result = CryptoRetryingExecutor(logger, 3).executeWithRetry {
+        val result = CryptoRetryingExecutor(logger, LinearRetryStrategy(3)).executeWithRetry {
             called++
             "Hello World!"
         }
@@ -74,7 +87,11 @@ class ExecuteUtilsTests {
     @Test
     fun `Should execute withTimeout without retrying`() {
         var called = 0
-        val result = CryptoRetryingExecutorWithTimeout(logger, 3, Duration.ofSeconds(5)).executeWithRetry {
+        val result = CryptoRetryingExecutorWithTimeout(
+            logger,
+            LinearRetryStrategy(3),
+            Duration.ofSeconds(5)
+        ).executeWithRetry {
             called++
             "Hello World!"
         }
@@ -83,10 +100,14 @@ class ExecuteUtilsTests {
     }
 
     @Test
-    fun `WithTimeout should throw TimeoutException`() {
+    fun `CryptoRetryingExecutorWithTimeout should throw CryptoRetryException`() {
         var called = 0
-        assertThrows<TimeoutException> {
-            CryptoRetryingExecutorWithTimeout(logger, 1, Duration.ofMillis(10)).executeWithRetry {
+        assertThrows<CryptoRetryException> {
+            CryptoRetryingExecutorWithTimeout(
+                logger,
+                LinearRetryStrategy(1),
+                Duration.ofMillis(10)
+            ).executeWithRetry {
                 called++
                 Thread.sleep(100)
             }
@@ -96,10 +117,14 @@ class ExecuteUtilsTests {
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `WithTimeout should not retry common exceptions`(e: Throwable) {
+    fun `CryptoRetryingExecutorWithTimeout should not retry common exceptions`(e: Throwable) {
         var called = 0
         val actual = assertThrows<Throwable> {
-            CryptoRetryingExecutorWithTimeout(logger, 3, Duration.ofMillis(10)).executeWithRetry {
+            CryptoRetryingExecutorWithTimeout(
+                logger,
+                LinearRetryStrategy(3),
+                Duration.ofMillis(10)
+            ).executeWithRetry {
                 called++
                 throw e
             }
@@ -109,12 +134,15 @@ class ExecuteUtilsTests {
     }
 
     @Test
-    fun `WithTimeout should not retry unrecoverable crypto library exception`() {
+    fun `CryptoRetryingExecutorWithTimeout should not retry unrecoverable crypto library exception`() {
         var called = 0
-        assertThrows<CryptoServiceLibraryException> {
-            CryptoRetryingExecutorWithTimeout(logger, 3, Duration.ofMillis(10)).executeWithRetry {
+        assertThrows<CryptoException> {
+            CryptoRetryingExecutorWithTimeout(
+                logger, LinearRetryStrategy(3),
+                Duration.ofMillis(10)
+            ).executeWithRetry {
                 called++
-                throw CryptoServiceLibraryException("error", isRecoverable = false)
+                throw CryptoException("error")
             }
         }
         assertEquals(1, called)
@@ -123,50 +151,29 @@ class ExecuteUtilsTests {
     @Test
     fun `Should eventually fail with retrying`() {
         var called = 0
-        assertThrows<TimeoutException> {
-            CryptoRetryingExecutor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
+        val actual = assertThrows<CryptoRetryException> {
+            CryptoRetryingExecutor(
+                logger,
+                LinearRetryStrategy(3, Duration.ofMillis(10))
+            ).executeWithRetry {
                 called++
                 throw TimeoutException()
             }
         }
         assertEquals(3, called)
+        assertThat(actual.cause).isInstanceOf(TimeoutException::class.java)
     }
 
     @Test
     fun `Should eventually succeed after retrying TimeoutException`() {
         var called = 0
-        val result = CryptoRetryingExecutor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
+        val result = CryptoRetryingExecutor(
+            logger,
+            LinearRetryStrategy(3, Duration.ofMillis(10))
+        ).executeWithRetry {
             called++
             if (called <= 2) {
                 throw TimeoutException()
-            }
-            "Hello World!"
-        }
-        assertEquals("Hello World!", result)
-        assertEquals(3, called)
-    }
-
-    @Test
-    fun `Should eventually succeed after retrying recoverable CryptoServiceLibraryException`() {
-        var called = 0
-        val result = CryptoRetryingExecutor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
-            called++
-            if (called <= 2) {
-                throw CryptoServiceLibraryException("error", isRecoverable = true)
-            }
-            "Hello World!"
-        }
-        assertEquals("Hello World!", result)
-        assertEquals(3, called)
-    }
-
-    @Test
-    fun `Should eventually succeed after retrying recoverable crypto library exception`() {
-        var called = 0
-        val result = CryptoRetryingExecutor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
-            called++
-            if (called <= 2) {
-                throw CryptoServiceLibraryException("error", isRecoverable = true)
             }
             "Hello World!"
         }
@@ -175,10 +182,33 @@ class ExecuteUtilsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("retryableExceptions")
-    fun `Should retry all retryable exceptions`(e: Throwable) {
+    @MethodSource("recoverableExceptions")
+    fun `Should eventually succeed after retrying recoverable exception`(
+        e: Throwable
+    ) {
         var called = 0
-        val result = CryptoRetryingExecutor(logger, 2, Duration.ofMillis(10)).executeWithRetry {
+        val result = CryptoRetryingExecutor(
+            logger,
+            LinearRetryStrategy(3, Duration.ofMillis(10))
+        ).executeWithRetry {
+            called++
+            if (called <= 2) {
+                throw e
+            }
+            "Hello World!"
+        }
+        assertEquals("Hello World!", result)
+        assertEquals(3, called)
+    }
+
+    @ParameterizedTest
+    @MethodSource("recoverableExceptions")
+    fun `Should retry all recoverable exceptions`(e: Throwable) {
+        var called = 0
+        val result = CryptoRetryingExecutor(
+            logger,
+            LinearRetryStrategy(2, Duration.ofMillis(10))
+        ).executeWithRetry {
             called++
             if (called < 2) {
                 throw e

@@ -17,7 +17,7 @@ interface HSMRegistrationClient : Lifecycle {
      *
      * @return info object about the assigned HSM.
      *
-     * @throws CryptoLibraryException if the category is not supported by any
+     * @throws IllegalArgumentException if the category is not supported by any
      */
     fun assignHSM(
         tenantId: String,

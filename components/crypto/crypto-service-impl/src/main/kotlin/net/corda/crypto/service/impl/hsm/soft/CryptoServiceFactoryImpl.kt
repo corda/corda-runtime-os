@@ -2,13 +2,13 @@ package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
+import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -19,7 +19,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -116,16 +115,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 "Getting the crypto service for tenantId=$tenantId, category=$category)"
             }
             return cryptoRefs.computeIfAbsent(tenantId to category) {
-                try {
-                    val association = hsmRegistrar.findAssignedHSM(tenantId, category)
-                        ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
-                    createCryptoServiceRef(association)
-                } catch (e: Throwable) {
-                    throw CryptoServiceException(
-                        "Failed to create ${CryptoService::class.java.name} for $tenantId:$category",
-                        e
-                    )
-                }
+                val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+                    ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
+                createCryptoServiceRef(association)
             }
         }
 
@@ -134,19 +126,12 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 "Getting the crypto service for tenantId=$tenantId, category=$category, associationId=$associationId)"
             }
             return cryptoAssociations.computeIfAbsent(associationId) {
-                try {
-                    val association = hsmRegistrar.findAssignedHSM(tenantId, category)
-                        ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
-                    require(association.tenantId == tenantId && association.category == category) {
-                        "The association $associationId is not for tenant=$tenantId and category=$category"
-                    }
-                    createCryptoServiceRef(association)
-                } catch (e: Throwable) {
-                    throw CryptoServiceException(
-                        "Failed to create ${CryptoService::class.java.name} for $tenantId:$category",
-                        e
-                    )
+                val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+                    ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
+                require(association.tenantId == tenantId && association.category == category) {
+                    "The association $associationId is not for tenant=$tenantId and category=$category"
                 }
+                createCryptoServiceRef(association)
             }.also {
                 require(it.tenantId == tenantId && it.category == category) {
                     "The association $associationId is not for tenant=$tenantId and category=$category"
@@ -155,9 +140,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         override fun getInstance(configId: String): CryptoService {
-            logger.debug {"Getting the crypto service for configId=$configId)" }
+            logger.debug { "Getting the crypto service for configId=$configId)" }
             val config = hsmRegistrar.findHSMConfig(configId)
-                ?: throw CryptoServiceException("The config=$configId is not found.")
+                ?: throw IllegalStateException("The config=$configId is not found.")
             return getInstance(config.info, config.serviceConfig)
         }
 
@@ -175,7 +160,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         @Suppress("UNCHECKED_CAST")
         private fun findCryptoServiceProvider(serviceName: String) =
             cryptoServiceProvidersMap[serviceName] as? CryptoServiceProvider<Any>
-                ?: throw CryptoServiceException("Cannot find $serviceName")
+                ?: throw IllegalStateException("Cannot find $serviceName")
 
         private fun createCryptoServiceRef(association: HSMTenantAssociation): CryptoServiceRef {
             logger.info(

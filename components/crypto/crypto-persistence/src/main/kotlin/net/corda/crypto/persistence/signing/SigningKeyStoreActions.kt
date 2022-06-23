@@ -1,13 +1,12 @@
 package net.corda.crypto.persistence.signing
 
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import java.security.PublicKey
 
 interface SigningKeyStoreActions : AutoCloseable {
     /**
      * Saving a new key information.
      *
-     * @throws [CryptoServiceBadRequestException] if the key already exists.
+     * @throws [IllegalStateException] if the key already exists.
      */
     fun save(context: SigningKeySaveContext)
 

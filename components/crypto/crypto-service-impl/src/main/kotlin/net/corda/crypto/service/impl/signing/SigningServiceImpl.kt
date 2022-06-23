@@ -1,9 +1,9 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.persistence.signing.SigningKeyStoreActions
-import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
@@ -21,7 +21,6 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 
@@ -36,7 +35,7 @@ open class SigningServiceImpl(
     }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        logger.debug {"getSupportedSchemes(tenant=$tenantId, category=$category)" }
+        logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
         return cryptoServiceFactory.getInstance(tenantId = tenantId, category = category).getSupportedSchemes()
     }
 
@@ -61,7 +60,7 @@ open class SigningServiceImpl(
     }
 
     override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
-        logger.debug {"lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
+        logger.debug { "lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
@@ -157,30 +156,24 @@ open class SigningServiceImpl(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey =
-        try {
-            val record = store.act(tenantId) {
-                getKeyRecord(tenantId, it, publicKey)
-            }
-            logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
-            val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
-            val cryptoService = cryptoServiceFactory.getInstance(
-                tenantId = tenantId,
-                category = record.second.category,
-                associationId = record.second.associationId
-            )
-            val signedBytes = cryptoService.sign(record.second, scheme, signatureSpec, data, context)
-            DigitalSignature.WithKey(
-                by = record.first,
-                bytes = signedBytes,
-                context = context
-            )
-        } catch (e: Throwable) {
-            throw CryptoServiceException(
-                "Failed to sign using public key '${publicKey.publicKeyId()}' for tenant $tenantId",
-                e
-            )
+    ): DigitalSignature.WithKey {
+        val record = store.act(tenantId) {
+            getKeyRecord(tenantId, it, publicKey)
         }
+        logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
+        val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
+        val cryptoService = cryptoServiceFactory.getInstance(
+            tenantId = tenantId,
+            category = record.second.category,
+            associationId = record.second.associationId
+        )
+        val signedBytes = cryptoService.sign(record.second, scheme, signatureSpec, data, context)
+        return DigitalSignature.WithKey(
+            by = record.first,
+            bytes = signedBytes,
+            context = context
+        )
+    }
 
     @Suppress("LongParameterList")
     private fun doGenerateKeyPair(
@@ -190,28 +183,22 @@ open class SigningServiceImpl(
         externalId: String?,
         scheme: KeyScheme,
         context: Map<String, String>
-    ): PublicKey =
-        try {
-            logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-            val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
-            store.act(tenantId) {
-                if (alias != null && it.find(alias) != null) {
-                    throw IllegalStateException(
-                        "The key with alias $alias already exist for tenant $tenantId"
-                    )
-                }
+    ): PublicKey {
+        logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
+        val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
+        store.act(tenantId) {
+            if (alias != null && it.find(alias) != null) {
+                throw IllegalStateException(
+                    "The key with alias $alias already exist for tenant $tenantId"
+                )
             }
-            val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
-            store.act(tenantId) {
-                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
-            }
-            schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
-        } catch (e: Throwable) {
-            throw CryptoServiceException(
-                "Cannot generate key pair for category=$category and alias=$alias, tenant=$tenantId",
-                e
-            )
         }
+        val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
+        store.act(tenantId) {
+            it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
+        }
+        return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
+    }
 
     private fun getKeyRecord(
         tenantId: String,
@@ -232,7 +219,7 @@ open class SigningServiceImpl(
             result
         } else {
             storeActions.find(publicKey)?.let { publicKey to it }
-        } ?: throw IllegalStateException(
+        } ?: throw IllegalArgumentException(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
 

@@ -279,7 +279,7 @@ class TestServicesFactory {
             return impl.sign(spec, data, context)
         }
 
-        override fun delete(alias: String, context: Map<String, String>) =
+        override fun delete(alias: String, context: Map<String, String>): Boolean =
             impl.delete(alias, context)
     }
 }
