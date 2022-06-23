@@ -1,5 +1,5 @@
 import { Button, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import Message from './Message';
 import { Message as MessageType } from '@/models/Message';
@@ -16,6 +16,13 @@ type Props = {
 const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipants }) => {
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [messageValue, setMessageValue] = useState<string>('');
+
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!messagesEndRef.current) return;
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     // TODO: Set the actual x500, probably in UserContext when this data is available
     const currentUserX500 = TEMP_USER_500;
@@ -73,7 +80,6 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
 
             {!isChatDisabled && (
                 <div className="h-full flex flex-col gap-6 pt-6 ">
-                    {/* TODO: Add scroll to bottom functionality when a new message comes through */}
                     <div className="border border-light-gray border-opacity-25 overflow-y-scroll p4">
                         {messages.map((message) => {
                             const isMyMessage = message.x500name === currentUserX500;
@@ -85,6 +91,7 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
                                 />
                             );
                         })}
+                        <div ref={messagesEndRef} />
                     </div>
 
                     <div className="flex justify-center align-center gap-4">
