@@ -7,12 +7,11 @@ import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.USERNAME
 import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.toShortHash
-import net.corda.applications.workers.smoketest.virtualnode.helpers.SimpleResponse
+import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
-import org.apache.commons.text.StringEscapeUtils
+import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 import java.security.MessageDigest
 import java.time.Duration
@@ -21,17 +20,14 @@ import java.util.*
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
 const val X500_SESSION_USER2 = "CN=SU2, OU=Application, O=R3, L=London, C=GB"
-const val RPC_FLOW_STATUS_COMPLETED = "COMPLETED"
+const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
-
-fun RpcSmokeTestInput.toJsonString(): String = ObjectMapper().writeValueAsString(this)
-
-fun SimpleResponse.toFlowStatus(): FlowStatus = ObjectMapper().readValue(this.body, FlowStatus::class.java)
 
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
+
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -43,7 +39,7 @@ fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
                     holdingId,
                     requestId,
                     SMOKE_TEST_CLASS_NAME,
-                    """{ "requestBody":  "${StringEscapeUtils.escapeJson(args.toJsonString())}" }"""
+                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
                 )
             }
             condition { it.code == 200 }
@@ -53,19 +49,21 @@ fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
     }
 }
 
-fun awaitRpcFlowCompletion(holdingId: String, requestId: String): FlowStatus {
+fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-        assertWithRetry {
-            command { flowStatus(holdingId, requestId) }
-            timeout(Duration.ofSeconds(20))
-            condition {
-                it.code == 200 &&
-                        (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_COMPLETED ||
-                                it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
-            }
-        }.toFlowStatus()
+        ObjectMapper().readValue(
+            assertWithRetry {
+                command { flowStatus(holdingId, requestId) }
+                timeout(Duration.ofSeconds(20))
+                condition {
+                    it.code == 200 &&
+                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                }
+            }.body, FlowStatus::class.java
+        )
     }
 }
 
@@ -74,7 +72,7 @@ fun createVirtualNodeFor(x500: String): String {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
         val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-        val hash = json["fileChecksum"].textValue().toShortHash()
+        val hash = truncateLongHash(json["fileChecksum"].textValue())
 
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
@@ -97,7 +95,7 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
     val digest: MessageDigest = MessageDigest.getInstance("SHA-256")
     return digest.digest(s.toByteArray())
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
-        .toShortHash()
+        .substring(0,12)
 }
 
 class RpcSmokeTestInput {

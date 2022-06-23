@@ -8,7 +8,7 @@ import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.USERNAME
 import net.corda.applications.workers.smoketest.X500_ALICE
-import net.corda.applications.workers.smoketest.toShortHash
+import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
 import net.corda.applications.workers.smoketest.virtualnode.helpers.SimpleResponse
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
@@ -85,7 +85,7 @@ class VirtualNodeRpcTest {
             // CORE-4475: tests fixed behaviour previously reported as a bug
             val cpis = cpiList().toJson()
             val cpiJson = cpis["cpis"].first()
-            val actualChecksum = cpiJson["fileChecksum"].textValue().toShortHash()
+            val actualChecksum = truncateLongHash(cpiJson["fileChecksum"].textValue())
 
             assertThat(actualChecksum).isNotNull.isNotEmpty
 
@@ -171,7 +171,7 @@ class VirtualNodeRpcTest {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val cpis = cpiList().toJson()["cpis"]
             val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-            val hash = json["fileChecksum"].textValue().toShortHash()
+            val hash = truncateLongHash(json["fileChecksum"].textValue())
 
             val vNodeJson = assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
@@ -190,7 +190,7 @@ class VirtualNodeRpcTest {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val cpis = cpiList().toJson()["cpis"]
             val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-            val hash = json["fileChecksum"].textValue().toShortHash()
+            val hash = truncateLongHash(json["fileChecksum"].textValue())
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }

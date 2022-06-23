@@ -49,10 +49,10 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowCompletion(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_COMPLETED)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("echo")
         assertThat(flowResult.result).isEqualTo("hello")
@@ -69,7 +69,7 @@ class FlowTests {
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
         // 3) check the flow completes as expected
-        val result = awaitRpcFlowCompletion(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
         assertThat(result.flowResult).isNull()
@@ -91,10 +91,10 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowCompletion(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_COMPLETED)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("start_sessions")

@@ -1,6 +1,6 @@
 package net.cordapp.flowworker.development.messages
 
-class RpcSmokeTestOutput {
-    var command: String? = null
-    var result: String? = null
-}
+data class RpcSmokeTestOutput(
+    var command: String,
+    var result: String
+)

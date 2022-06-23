@@ -24,7 +24,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val log = contextLogger()
     }
 
-    private val commandMap: Map<String, (RpcSmokeTestInput) -> RpcSmokeTestOutput> = mapOf(
+    private val commandMap: Map<String, (RpcSmokeTestInput) -> String> = mapOf(
         "echo" to this::echo,
         "throw_error" to this::throwError,
         "start_sessions" to this::startSessions,
@@ -42,19 +42,16 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         return jsonMarshallingService.format(request.execute())
     }
 
-    private fun echo(input: RpcSmokeTestInput): RpcSmokeTestOutput {
-        return RpcSmokeTestOutput().apply {
-            command = "echo"
-            result = input.getValue("echo_value")
-        }
+    private fun echo(input: RpcSmokeTestInput): String {
+         return input.getValue("echo_value")
     }
 
-    private fun throwError(input: RpcSmokeTestInput): RpcSmokeTestOutput {
+    private fun throwError(input: RpcSmokeTestInput): String {
         throw IllegalStateException(input.getValue("error_message"))
     }
 
     @Suspendable
-    private fun startSessions(input: RpcSmokeTestInput): RpcSmokeTestOutput {
+    private fun startSessions(input: RpcSmokeTestInput): String {
         val sessions = input.getValue("sessions").split(";")
         val messages = input.getValue("messages").split(";")
         if (sessions.size != messages.size) {
@@ -77,10 +74,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             outputs.add("${x500}=${response.message}")
         }
 
-        return RpcSmokeTestOutput().apply {
-            command = "start_sessions"
-            result = outputs.joinToString("; ")
-        }
+        return outputs.joinToString("; ")
     }
 
     private fun RpcSmokeTestInput.getValue(key: String): String {
@@ -88,8 +82,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     }
 
     private fun RpcSmokeTestInput.execute(): RpcSmokeTestOutput {
-        val inputCommand = this.command
-        return checkNotNull(commandMap[this.command]) { "command '${this.command}' not recognised" }
-            .invoke(this).apply { command = inputCommand }
+        return RpcSmokeTestOutput(
+            checkNotNull(this.command) { "No smoke test command received" },
+            checkNotNull(commandMap[this.command]) { "command '${this.command}' not recognised" }.invoke(this)
+        )
     }
 }
