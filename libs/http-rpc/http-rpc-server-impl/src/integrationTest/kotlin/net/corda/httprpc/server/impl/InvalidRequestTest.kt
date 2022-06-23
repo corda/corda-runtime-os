@@ -4,10 +4,11 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
-import net.corda.httprpc.server.impl.utils.WebRequest
-import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
@@ -93,8 +94,9 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             password
         )
         assertEquals(HttpStatus.SC_BAD_REQUEST, negateIntResponse.responseStatus)
-        assertNotNull(negateIntResponse.body)
-        assertTrue(negateIntResponse.body.contains("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)"))
+        val responseBody = negateIntResponse.body
+        assertNotNull(responseBody)
+        assertTrue(responseBody.contains("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)"))
     }
 
     @Test
@@ -107,9 +109,10 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             password
         )
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
-        assertNotNull(pingResponse.body)
-        assertTrue(pingResponse.body.contains(MISSING_JSON_FIELD_TITLE))
-        assertTrue(pingResponse.body.contains(MISSING_VALUE_ERROR))
+        val responseBody = pingResponse.body
+        assertNotNull(responseBody)
+        assertTrue(responseBody.contains(MISSING_JSON_FIELD_TITLE))
+        assertTrue(responseBody.contains(MISSING_VALUE_ERROR))
     }
 
     @Test
@@ -118,9 +121,10 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         val pingResponse =
             client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {}}"""), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
-        assertNotNull(pingResponse.body)
-        assertTrue(pingResponse.body.contains(MISSING_JSON_FIELD_TITLE))
-        assertTrue(pingResponse.body.contains(MISSING_VALUE_ERROR))
+        val responseBody = pingResponse.body
+        assertNotNull(responseBody)
+        assertTrue(responseBody.contains(MISSING_JSON_FIELD_TITLE))
+        assertTrue(responseBody.contains(MISSING_VALUE_ERROR))
     }
 
     @Test
@@ -133,9 +137,10 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             password
         )
         assertEquals(HttpStatus.SC_BAD_REQUEST, dateCallResponse.responseStatus)
-        assertNotNull(dateCallResponse.body)
-        assertTrue(dateCallResponse.body.contains(JSON_PROCESSING_ERROR_TITLE))
-        assertTrue(dateCallResponse.body.contains(DATE_PARSE_ERROR))
+        val responseBody = dateCallResponse.body
+        assertNotNull(responseBody)
+        assertTrue(responseBody.contains(JSON_PROCESSING_ERROR_TITLE))
+        assertTrue(responseBody.contains(DATE_PARSE_ERROR))
     }
 
     @Test
@@ -149,12 +154,13 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         )
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, dateCallResponse.responseStatus)
-        assertNotNull(dateCallResponse.body)
-        assertTrue(dateCallResponse.body.contains(JSON_PROCESSING_ERROR_TITLE))
-        assertTrue(dateCallResponse.body.contains(DATE_PARSE_ERROR))
+        val responseBody = dateCallResponse.body
+        assertNotNull(responseBody)
+        assertTrue(responseBody.contains(JSON_PROCESSING_ERROR_TITLE))
+        assertTrue(responseBody.contains(DATE_PARSE_ERROR))
 
         //CORE-2404 case #1 exception contains line break, this is invalid in a json string
-        val json = JsonParser.parseString(dateCallResponse.body) as JsonObject
+        val json = JsonParser.parseString(responseBody) as JsonObject
         val responseTitle = json["title"].asString
         assertThat(responseTitle).doesNotContain("\n")
     }
@@ -165,7 +171,8 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         val parseUuidResponse =
             client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<String>("health/parseuuid/%5C%5C%5C"), userName, password)
         assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, parseUuidResponse.responseStatus)
-        assertNotNull(parseUuidResponse.body)
-        assertDoesNotThrow(parseUuidResponse.body) { JsonParser.parseString(parseUuidResponse.body) }
+        val responseBody = parseUuidResponse.body
+        assertNotNull(responseBody)
+        assertDoesNotThrow(responseBody) { JsonParser.parseString(responseBody) }
     }
 }
