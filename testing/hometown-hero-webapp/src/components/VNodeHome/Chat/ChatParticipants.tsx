@@ -1,4 +1,4 @@
-import { Checkbox, NotificationService } from '@r3/r3-tooling-design-system/exports';
+import { Checkbox, IconButton, NotificationService, Tooltip } from '@r3/r3-tooling-design-system/exports';
 import { useCallback, useEffect, useState } from 'react';
 
 import { TEMP_PARTICIPANTS } from '@/tempData/tempParticipants';
@@ -45,19 +45,30 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
 
     return (
         <div className="pt-6" style={{ width: 400, height: 450 }}>
-            <p
-                className={`mb-4 ml-2 text-md ${
-                    selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
-                }`}
-            >
-                {`Selected: ${
-                    selectedParticipants.length === 0
-                        ? 'Please select at least one!'
-                        : selectedParticipants.length === 1
-                        ? selectedParticipants[0]
-                        : selectedParticipants.length
-                }`}
-            </p>
+            <div className="flex mb-2">
+                <p
+                    className={`ml-2 text-md ${
+                        selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
+                    }`}
+                >
+                    {`Selected: ${
+                        selectedParticipants.length === 0
+                            ? 'Please select at least one!'
+                            : selectedParticipants.length === 1
+                            ? selectedParticipants[0]
+                            : selectedParticipants.length
+                    }`}
+                </p>
+                <IconButton
+                    className="mt-auto mb-auto ml-auto mr-4"
+                    icon={'Nuke'}
+                    size={'small'}
+                    variant={'tertiary'}
+                    onClick={() => {
+                        setSelectedParticipants([]);
+                    }}
+                />
+            </div>
             <div className="overflow-y-scroll" style={{ height: '90%' }}>
                 {networkParticipants.map((nP) => {
                     const selected = selectedParticipants.includes(nP);

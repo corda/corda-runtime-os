@@ -73,6 +73,7 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
 
             {!isChatDisabled && (
                 <div className="h-full flex flex-col gap-6 pt-6 ">
+                    {/* TODO: Add scroll to bottom functionality when a new message comes through */}
                     <div className="border border-light-gray border-opacity-25 overflow-y-scroll p4">
                         {messages.map((message) => {
                             const isMyMessage = message.x500name === currentUserX500;
