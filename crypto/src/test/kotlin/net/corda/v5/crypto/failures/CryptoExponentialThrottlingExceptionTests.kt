@@ -1,13 +1,13 @@
-package net.corda.v5.crypto.exceptions
+package net.corda.v5.crypto.failures
 
-import net.corda.v5.crypto.exceptions.CSLExponentialThrottlingException.Companion.DEFAULT_THROTTLE_INITIAL_BACKOFF
+import net.corda.v5.crypto.failures.CryptoExponentialRetryStrategy.Companion.DEFAULT_THROTTLE_INITIAL_BACKOFF
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class CSLExponentialThrottlingExceptionTests {
+class CryptoExponentialThrottlingExceptionTests {
     @Test
     fun `Should return default increasing backoff`() {
-        val e =  CSLExponentialThrottlingException("Something wrong.", RuntimeException())
+        val e =  CryptoExponentialThrottlingException("Something wrong.", RuntimeException())
         var backOff = 0L
         backOff = e.getBackoff(1, backOff)
         assertEquals(DEFAULT_THROTTLE_INITIAL_BACKOFF, backOff)
@@ -25,11 +25,11 @@ class CSLExponentialThrottlingExceptionTests {
 
     @Test
     fun `Should return custom increasing backoff`() {
-        val e =  CSLExponentialThrottlingException(
+        val e =  CryptoExponentialThrottlingException(
             "Something wrong.",
             3_000L,
             3L,
-            4,
+            5,
             RuntimeException()
         )
         var backOff = 0L

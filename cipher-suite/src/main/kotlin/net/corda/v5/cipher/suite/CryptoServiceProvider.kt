@@ -1,7 +1,5 @@
 package net.corda.v5.cipher.suite
 
-import net.corda.v5.crypto.exceptions.CryptoServiceException
-
 /**
  * Factory to create new instances of the crypto service.
  */
@@ -20,7 +18,8 @@ interface CryptoServiceProvider<T : Any> {
     /**
      * Returns an instance of the [CryptoService].
      * @param config crypto service configuration
-     * @throws [CryptoServiceException] for general cryptographic exceptions.
+     *
+     * @throws [net.corda.v5.crypto.failures.CryptoException] for general cryptographic exceptions.
      */
     fun getInstance(config: T): CryptoService
 }

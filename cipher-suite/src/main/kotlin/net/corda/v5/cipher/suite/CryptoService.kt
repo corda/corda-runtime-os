@@ -2,7 +2,6 @@ package net.corda.v5.cipher.suite
 
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 
 /**
  * Crypto service which can sign as well as create new key pairs.
@@ -16,20 +15,25 @@ import net.corda.v5.crypto.exceptions.CryptoServiceException
  * Exception handling.
  *
  * As the service instances are decorated with decorators taking care of the timeout, throttling handling,
- * and exception normalisation the exceptions listed for each method are as expected to be thrown by the decorators.
+ * and exception normalisation the exceptions listed for each method below are as expected to be thrown by the decorators.
  *
- * The service should throw the most appropriate exception as it sees it, e.g. if the input parameters are wrong it
- * should be [IllegalArgumentException] or if the internal state is wrong for an operation then the most appropriate
- * exception would be [IllegalStateException].
+ * The service should throw the most appropriate exception as it sees it, e.g.:
+ * - [IllegalArgumentException] if the key is not found, the key scheme is not supported, the signature spec
+ * is not supported or in general the input parameters are wrong
+ * - if the internal state is wrong for an operation then the most appropriate exception would be [IllegalStateException]
+ * - any other what is appropriate for the condition.
  *
- * If service encountered throttling situation then it should throw one
- * of concrete implementations of [CSLThrottlingException] (such as [CSLExponentialThrottlingException]) so the
- * library can handle it appropriately.
+ * If service encountered throttling situation and the downstream library doesn't handle that then it should throw one
+ * of concrete implementations of [net.corda.v5.crypto.failures.CryptoThrottlingException]
+ * (such as [net.corda.v5.crypto.failures.CryptoExponentialThrottlingException]) so the upstream service
+ * can handle it appropriately.
  *
- * The following exceptions are retried - [TimeoutException], [CryptoServiceLibraryException] (with the isRecoverable flage
- * set to true), [javax.persistence.LockTimeoutException], [javax.persistence.QueryTimeoutException],
- * [javax.persistence.OptimisticLockException], [javax.persistence.PessimisticLockException].
- * Throw [TimeoutException] only if the service want's that to be handled before the decorator detects it.
+ * The following exceptions are retried - [java.util.concurrent.TimeoutException],
+ * [net.corda.v5.crypto.failures.CryptoException] (with the isRecoverable flag set to true),
+ * some persistence exceptions like [javax.persistence.LockTimeoutException], [javax.persistence.QueryTimeoutException],
+ * [javax.persistence.OptimisticLockException], [javax.persistence.PessimisticLockException] and some others.
+ * Throw [java.util.concurrent.TimeoutException] only if the service want's that to be handled before
+ * the upstream library detects it.
  */
 interface CryptoService {
     /**
@@ -53,7 +57,8 @@ interface CryptoService {
      * Returns information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
      * depending on the generated key type.
      *
-     * @throws [CryptoServiceException]
+     * @throws IllegalArgumentException the key scheme is not supported or in general the input parameters are wrong
+     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
      */
     fun generateKeyPair(
         spec: KeyGenerationSpec,
@@ -69,7 +74,9 @@ interface CryptoService {
      * @param context the optional key/value operation context. The context will have at least one variable defined -
      * 'tenantId'.
      *
-     * @throws [CryptoServiceException]
+     * @throws IllegalArgumentException if the key is not found, the key scheme is not supported, the signature spec
+     * is not supported or in general the input parameters are wrong
+     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
      */
     fun sign(
         spec: SigningSpec,
@@ -87,7 +94,9 @@ interface CryptoService {
      * the provided alias or return normally without overriding the key.
      * @param context the optional key/value operation context.
      *
-     * @throws [CryptoServiceException]
+     * @throws IllegalArgumentException if the [failIfExists] is set to true and the key exists
+     * @throws UnsupportedOperationException if the operation is not supported
+     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
      */
     fun createWrappingKey(
         masterKeyAlias: String,
@@ -97,12 +106,16 @@ interface CryptoService {
 
     /**
      * Deletes the key corresponding to the input alias of the service supports the operations .
-     * This method doesn't throw if the alias is not found. The services which support that operation must list that
-     * in the [CryptoServiceExtensions].
+     * This method doesn't throw if the alias is not found, instead it has to return 'false'.
+     *
+     * @param alias the alias (as it stored in HSM) of the key being deleted.
      * @param context the optional key/value operation context. The context will have at least two variables defined -
      * 'tenantId' and 'keyType'.
      *
-     * @throws [CryptoServiceException]
+     * @return true if the key was deleted false otherwise
+     *
+     * @throws UnsupportedOperationException if the operation is not supported
+     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
      */
-    fun delete(alias: String, context: Map<String, String>)
+    fun delete(alias: String, context: Map<String, String>): Boolean
 }

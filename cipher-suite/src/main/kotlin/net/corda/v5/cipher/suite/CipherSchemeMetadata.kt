@@ -52,28 +52,28 @@ interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncod
     /**
      * Find the corresponding [KeyScheme] based on its [AlgorithmIdentifier]
      *
-     * @throws [IllegalArgumentException] if the scheme is not supported
+     * @throws IllegalArgumentException if the scheme is not supported
      */
     fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme
 
     /**
      * Find the corresponding [KeyScheme] based on the type of the input [PublicKey].
      *
-     * @throws IllegalArgumentException if the requested key type is not supported.
+     * @throws CryptoKeySchemeUnsupportedException if the requested key type is not supported.
      */
     fun findKeyScheme(key: PublicKey): KeyScheme
 
     /**
      * Find the corresponding [KeyScheme] based on the code name.
      *
-     * @throws IllegalArgumentException if the requested key type is not supported.
+     * @throws CryptoKeySchemeUnsupportedException if the requested key type is not supported.
      */
     fun findKeyScheme(codeName: String): KeyScheme
 
     /**
      * Find the corresponding [KeyFactory] based on the [KeyScheme].
      *
-     * @throws IllegalArgumentException if the requested key type is not supported.
+     * @throws CryptoKeySchemeUnsupportedException if the requested key type is not supported.
      */
     fun findKeyFactory(scheme: KeyScheme): KeyFactory
 
