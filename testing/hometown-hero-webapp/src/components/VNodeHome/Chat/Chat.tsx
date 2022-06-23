@@ -21,7 +21,7 @@ const Chat: React.FC<Props> = ({ handleSelectReplyParticipant, selectedParticipa
 
     useEffect(() => {
         if (!messagesEndRef.current) return;
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        messagesEndRef.current.scrollIntoView();
     }, [messages]);
 
     // TODO: Set the actual x500, probably in UserContext when this data is available
