@@ -36,10 +36,10 @@ private fun Paths.diff(baseline: Paths): List<String> {
     entries.forEach { entry ->
         val baselineValue: PathItem? = baseline[entry.key]
         if(baselineValue == null) {
-            differences.add("Current has path: ${entry.value} which is absent in baseline")
+            differences.add("Absent in baseline: Current path: ${entry.key}")
         } else {
             if (entry.value != baselineValue) {
-                differences.add("Current path ${entry.value} is different to baseline: $baselineValue")
+                differences.add("Different path at [${entry.key}]. Current path: ${entry.value} is different to baseline: $baselineValue")
             }
         }
     }

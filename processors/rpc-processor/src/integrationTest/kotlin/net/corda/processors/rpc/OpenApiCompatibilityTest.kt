@@ -37,6 +37,7 @@ class OpenApiCompatibilityTest {
             "KeysRpcOps",
             "MemberLookupRpcOps",
             "MemberRegistrationRpcOps",
+            "NetworkRpcOps",
             "PermissionEndpoint",
             "RoleEndpoint",
             "UserEndpoint",
@@ -45,7 +46,7 @@ class OpenApiCompatibilityTest {
         )
 
         // `cardinality` is not equal to `expectedRpcOps.size` as there might be some test RpcOps as well
-        @InjectService(service = PluggableRPCOps::class, cardinality = 15, timeout = 10_000)
+        @InjectService(service = PluggableRPCOps::class, cardinality = 16, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RpcOps>
 
         @InjectService(service = HttpRpcServerFactory::class, timeout = 10_000)
@@ -79,7 +80,8 @@ class OpenApiCompatibilityTest {
 
         assertThat(diffReport).withFailMessage(
             "Produced Open API content:\n" + existingSwaggerJson.first +
-                    "\nis different to the baseline. Differences noted: $diffReport").isEmpty()
+                    "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}"
+        ).isEmpty()
     }
 
     private fun fetchBaseline(): OpenAPI {

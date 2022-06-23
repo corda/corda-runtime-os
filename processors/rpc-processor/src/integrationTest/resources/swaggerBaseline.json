@@ -56,56 +56,11 @@
   }, {
     "name" : "MemberRegistrationRpcOps",
     "description" : "Membership Registration APIs"
+  }, {
+    "name" : "NetworkRpcOps",
+    "description" : "Network API"
   } ],
   "paths" : {
-    "/flow/{holdershortid}/{clientrequestid}" : {
-      "get" : {
-        "tags" : [ "FlowRPCOps" ],
-        "description" : "Gets the current status for a given flow.",
-        "operationId" : "get_flow__holdershortid___clientrequestid_",
-        "parameters" : [ {
-          "name" : "holdershortid",
-          "in" : "path",
-          "description" : "Short form of the Holder Identifier",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Short form of the Holder Identifier",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "clientrequestid",
-          "in" : "path",
-          "description" : "Client provided flow identifier",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Client provided flow identifier",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/flow/{holdershortid}/{clientrequestid}/{flowclassname}" : {
       "put" : {
         "tags" : [ "FlowRPCOps" ],
@@ -171,6 +126,54 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/HTTPStartFlowResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/flow/{holdershortid}/{clientrequestid}" : {
+      "get" : {
+        "tags" : [ "FlowRPCOps" ],
+        "description" : "Gets the current status for a given flow.",
+        "operationId" : "get_flow__holdershortid___clientrequestid_",
+        "parameters" : [ {
+          "name" : "holdershortid",
+          "in" : "path",
+          "description" : "Short form of the Holder Identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short form of the Holder Identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientrequestid",
+          "in" : "path",
+          "description" : "Client provided flow identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Client provided flow identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
                 }
               }
             }
@@ -411,43 +414,6 @@
         }
       }
     },
-    "/cpi/status/{id}" : {
-      "get" : {
-        "tags" : [ "CpiUploadRPCOps" ],
-        "description" : "Check upload status for given requestId",
-        "operationId" : "get_cpi_status__id_",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "description" : "The requestId",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The requestId",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Status"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/cpi" : {
       "get" : {
         "tags" : [ "CpiUploadRPCOps" ],
@@ -518,6 +484,43 @@
         }
       }
     },
+    "/cpi/status/{id}" : {
+      "get" : {
+        "tags" : [ "CpiUploadRPCOps" ],
+        "description" : "Check upload status for given requestId",
+        "operationId" : "get_cpi_status__id_",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "The requestId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The requestId",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/cpi/getprotocolversion" : {
       "get" : {
         "tags" : [ "CpiUploadRPCOps" ],
@@ -534,43 +537,6 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/permission/{id}" : {
-      "get" : {
-        "tags" : [ "PermissionEndpoint" ],
-        "description" : "Get a Permission by its ID",
-        "operationId" : "get_permission__id_",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "description" : "ID of the permission to be returned.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the permission to be returned.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PermissionResponseType"
                 }
               }
             }
@@ -601,6 +567,43 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PermissionResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/permission/{id}" : {
+      "get" : {
+        "tags" : [ "PermissionEndpoint" ],
+        "description" : "Get a Permission by its ID",
+        "operationId" : "get_permission__id_",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "ID of the permission to be returned.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the permission to be returned.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "Success.",
@@ -687,80 +690,6 @@
         }
       }
     },
-    "/role/addpermission" : {
-      "put" : {
-        "tags" : [ "RoleEndpoint" ],
-        "description" : "Add a permission to a role",
-        "operationId" : "put_role_addpermission",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddPermissionRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RoleResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/role/removepermission" : {
-      "put" : {
-        "tags" : [ "RoleEndpoint" ],
-        "description" : "Removes a permission from a role",
-        "operationId" : "put_role_removepermission",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RemovePermissionRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RoleResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/role" : {
       "get" : {
         "tags" : [ "RoleEndpoint" ],
@@ -827,6 +756,80 @@
         }
       }
     },
+    "/role/removepermission" : {
+      "put" : {
+        "tags" : [ "RoleEndpoint" ],
+        "description" : "Removes a permission from a role",
+        "operationId" : "put_role_removepermission",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RemovePermissionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/role/addpermission" : {
+      "put" : {
+        "tags" : [ "RoleEndpoint" ],
+        "description" : "Add a permission to a role",
+        "operationId" : "put_role_addpermission",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddPermissionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/role/getprotocolversion" : {
       "get" : {
         "tags" : [ "RoleEndpoint" ],
@@ -843,6 +846,43 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/user/permissionsummary/{loginname}" : {
+      "get" : {
+        "tags" : [ "UserEndpoint" ],
+        "description" : "Get a summary of a User's permissions",
+        "operationId" : "get_user_permissionsummary__loginname_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "Login Name of the user.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Login Name of the user.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserPermissionSummaryResponseType"
                 }
               }
             }
@@ -989,43 +1029,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/UserResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/user/permissionsummary/{loginname}" : {
-      "get" : {
-        "tags" : [ "UserEndpoint" ],
-        "description" : "Get a summary of a User's permissions",
-        "operationId" : "get_user_permissionsummary__loginname_",
-        "parameters" : [ {
-          "name" : "loginname",
-          "in" : "path",
-          "description" : "Login Name of the user.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Login Name of the user.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/UserPermissionSummaryResponseType"
                 }
               }
             }
@@ -1233,6 +1236,67 @@
         }
       }
     },
+    "/certificates/{tenantid}" : {
+      "put" : {
+        "tags" : [ "CertificatesRpcOps" ],
+        "description" : "Import certificate.",
+        "operationId" : "put_certificates__tenantid_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
+                    "type" : "string",
+                    "description" : "The certificate alias.",
+                    "nullable" : false,
+                    "example" : "string"
+                  },
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A file to upload.",
+                      "format" : "binary",
+                      "nullable" : false,
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success."
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/certificates/{tenantid}/{keyid}" : {
       "post" : {
         "tags" : [ "CertificatesRpcOps" ],
@@ -1294,62 +1358,6 @@
         }
       }
     },
-    "/certificates/{tenantid}" : {
-      "put" : {
-        "tags" : [ "CertificatesRpcOps" ],
-        "description" : "Import certificate.",
-        "operationId" : "put_certificates__tenantid_",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "alias" : {
-                    "type" : "string",
-                    "description" : "The certificate alias.",
-                    "nullable" : false,
-                    "example" : "string"
-                  },
-                  "certificate" : {
-                    "type" : "string",
-                    "description" : "The certificate",
-                    "format" : "binary",
-                    "nullable" : false,
-                    "example" : "No example available for this type"
-                  }
-                }
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success."
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/certificates/getprotocolversion" : {
       "get" : {
         "tags" : [ "CertificatesRpcOps" ],
@@ -1366,54 +1374,6 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/{tenantid}/hsm/soft" : {
-      "post" : {
-        "tags" : [ "HsmRpcOps" ],
-        "description" : "Assign soft HSM",
-        "operationId" : "post__tenantid__hsm_soft",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "category",
-          "in" : "query",
-          "description" : "Category",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Category",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
                 }
               }
             }
@@ -1481,6 +1441,54 @@
         "tags" : [ "HsmRpcOps" ],
         "description" : "Assign HSM.",
         "operationId" : "post__tenantid__hsm",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "query",
+          "description" : "Category",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Category",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HsmInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/{tenantid}/hsm/soft" : {
+      "post" : {
+        "tags" : [ "HsmRpcOps" ],
+        "description" : "Assign soft HSM",
+        "operationId" : "post__tenantid__hsm_soft",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1790,6 +1798,56 @@
         }
       }
     },
+    "/keys/{tenantid}/{keyid}" : {
+      "get" : {
+        "tags" : [ "KeysRpcOps" ],
+        "description" : "GET key in PEM format.",
+        "operationId" : "get_keys__tenantid___keyid_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "keyid",
+          "in" : "path",
+          "description" : "The Key ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The Key ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/keys/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
         "tags" : [ "KeysRpcOps" ],
@@ -1832,56 +1890,6 @@
                     "nullable" : false,
                     "example" : "string"
                   }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/keys/{tenantid}/{keyid}" : {
-      "get" : {
-        "tags" : [ "KeysRpcOps" ],
-        "description" : "GET key in PEM format.",
-        "operationId" : "get_keys__tenantid___keyid_",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "keyid",
-          "in" : "path",
-          "description" : "The Key ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The Key ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
                 }
               }
             }
@@ -2158,6 +2166,76 @@
           }
         }
       }
+    },
+    "/network/setup/{holdingidentityid}" : {
+      "put" : {
+        "tags" : [ "NetworkRpcOps" ],
+        "description" : "Set up the holding identity on the network.",
+        "operationId" : "put_network_setup__holdingidentityid_",
+        "parameters" : [ {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "ID of the holding identity to set up.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the holding identity to set up.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetupHostedIdentitiesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success."
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/network/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "NetworkRpcOps" ],
+        "description" : "",
+        "operationId" : "get_network_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -2215,7 +2293,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.121800500Z"
+            "example" : "2022-06-23T16:14:46.613719400Z"
           }
         },
         "nullable" : false
@@ -2307,23 +2385,6 @@
         "description" : "Details of the updated configuration",
         "nullable" : false
       },
-      "Status" : {
-        "required" : [ "checksum", "status" ],
-        "type" : "object",
-        "properties" : {
-          "checksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "status" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
       "CpkIdentifier" : {
         "required" : [ "name", "version" ],
         "type" : "object",
@@ -2385,7 +2446,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.154183Z"
+            "example" : "2022-06-23T16:14:46.651200400Z"
           },
           "type" : {
             "type" : "string",
@@ -2446,7 +2507,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.155182200Z"
+            "example" : "2022-06-23T16:14:46.652201100Z"
           }
         },
         "nullable" : false
@@ -2471,6 +2532,23 @@
         "type" : "object",
         "properties" : {
           "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "Status" : {
+        "required" : [ "checksum", "status" ],
+        "type" : "object",
+        "properties" : {
+          "checksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "status" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2506,7 +2584,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.159271Z"
+            "example" : "2022-06-23T16:14:46.664389300Z"
           },
           "version" : {
             "type" : "integer",
@@ -2558,7 +2636,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.166378Z"
+            "example" : "2022-06-23T16:14:46.672455300Z"
           },
           "id" : {
             "type" : "string",
@@ -2599,7 +2677,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.166378Z"
+            "example" : "2022-06-23T16:14:46.672455300Z"
           },
           "version" : {
             "type" : "integer",
@@ -2626,157 +2704,6 @@
           }
         },
         "description" : "Details of the role to be created",
-        "nullable" : false
-      },
-      "PropertyResponseType" : {
-        "required" : [ "key", "lastChangedTimestamp", "value" ],
-        "type" : "object",
-        "properties" : {
-          "key" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "lastChangedTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T11:56:43.175125100Z"
-          },
-          "value" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "RoleAssociationResponseType" : {
-        "required" : [ "createTimestamp", "roleId" ],
-        "type" : "object",
-        "properties" : {
-          "createTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T11:56:43.176127300Z"
-          },
-          "roleId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "UserResponseType" : {
-        "required" : [ "enabled", "fullName", "id", "loginName", "properties", "roleAssociations", "ssoAuth", "updateTimestamp", "version" ],
-        "type" : "object",
-        "properties" : {
-          "enabled" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "fullName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "loginName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "parentGroup" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "passwordExpiry" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-23T11:56:43.173100700Z"
-          },
-          "properties" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/PropertyResponseType"
-            }
-          },
-          "roleAssociations" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/RoleAssociationResponseType"
-            }
-          },
-          "ssoAuth" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "updateTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T11:56:43.176127300Z"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "nullable" : false
-      },
-      "CreateUserType" : {
-        "required" : [ "enabled", "fullName", "loginName" ],
-        "type" : "object",
-        "properties" : {
-          "enabled" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "fullName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "initialPassword" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "loginName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "parentGroup" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "passwordExpiry" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-23T11:56:43.179180600Z"
-          }
-        },
-        "description" : "Details of the user to be created",
         "nullable" : false
       },
       "PermissionSummaryResponseType" : {
@@ -2824,7 +2751,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.181181400Z"
+            "example" : "2022-06-23T16:14:46.677526Z"
           },
           "loginName" : {
             "type" : "string",
@@ -2840,6 +2767,157 @@
             }
           }
         },
+        "nullable" : false
+      },
+      "PropertyResponseType" : {
+        "required" : [ "key", "lastChangedTimestamp", "value" ],
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "lastChangedTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-23T16:14:46.685682300Z"
+          },
+          "value" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "RoleAssociationResponseType" : {
+        "required" : [ "createTimestamp", "roleId" ],
+        "type" : "object",
+        "properties" : {
+          "createTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-23T16:14:46.687679600Z"
+          },
+          "roleId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "UserResponseType" : {
+        "required" : [ "enabled", "fullName", "id", "loginName", "properties", "roleAssociations", "ssoAuth", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "fullName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroup" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "passwordExpiry" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-23T16:14:46.683616400Z"
+          },
+          "properties" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyResponseType"
+            }
+          },
+          "roleAssociations" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RoleAssociationResponseType"
+            }
+          },
+          "ssoAuth" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-23T16:14:46.687679600Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
+      "CreateUserType" : {
+        "required" : [ "enabled", "fullName", "loginName" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "fullName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "initialPassword" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroup" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "passwordExpiry" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-23T16:14:46.690807Z"
+          }
+        },
+        "description" : "Details of the user to be created",
         "nullable" : false
       },
       "SecureHash" : {
@@ -2951,7 +3029,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.254241700Z"
+            "example" : "2022-06-23T16:14:46.764951200Z"
           },
           "vaultDdlConnectionId" : {
             "type" : "string",
@@ -3131,7 +3209,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.264424500Z"
+            "example" : "2022-06-23T16:14:46.780098200Z"
           },
           "description" : {
             "type" : "string",
@@ -3173,7 +3251,7 @@
             "example" : "string"
           }
         },
-        "nullable" : false
+        "nullable" : true
       },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
@@ -3188,7 +3266,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T11:56:43.267441900Z"
+            "example" : "2022-06-23T16:14:46.784153Z"
           },
           "hsmCategory" : {
             "type" : "string",
@@ -3283,7 +3361,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : true,
-            "example" : "2022-06-23T11:56:43.273499500Z"
+            "example" : "2022-06-23T16:14:46.794287400Z"
           },
           "registrationStatus" : {
             "type" : "string",
@@ -3331,23 +3409,14 @@
         "description" : "CreatePermissionRequest",
         "nullable" : false
       },
-      "AddPermissionRequest" : {
-        "required" : [ "permissionId", "roleId" ],
+      "CreateRoleRequest" : {
+        "required" : [ "createRoleType" ],
         "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing permission",
-            "nullable" : false,
-            "example" : "string"
+          "createRoleType" : {
+            "$ref" : "#/components/schemas/CreateRoleType"
           }
         },
-        "description" : "AddPermissionRequest",
+        "description" : "CreateRoleRequest",
         "nullable" : false
       },
       "RemovePermissionRequest" : {
@@ -3369,14 +3438,23 @@
         "description" : "RemovePermissionRequest",
         "nullable" : false
       },
-      "CreateRoleRequest" : {
-        "required" : [ "createRoleType" ],
+      "AddPermissionRequest" : {
+        "required" : [ "permissionId", "roleId" ],
         "properties" : {
-          "createRoleType" : {
-            "$ref" : "#/components/schemas/CreateRoleType"
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
           }
         },
-        "description" : "CreateRoleRequest",
+        "description" : "AddPermissionRequest",
         "nullable" : false
       },
       "CreateUserRequest" : {
@@ -3510,6 +3588,31 @@
           }
         },
         "description" : "StartRegistrationRequest",
+        "nullable" : false
+      },
+      "SetupHostedIdentitiesRequest" : {
+        "required" : [ "certificateChainAlias" ],
+        "properties" : {
+          "certificateChainAlias" : {
+            "type" : "string",
+            "description" : "The certificates chain alias.",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "tlsTenantId" : {
+            "type" : "string",
+            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "sessionKeyId" : {
+            "type" : "string",
+            "description" : "The session key ID (will use the first session one by default).",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "SetupHostedIdentitiesRequest",
         "nullable" : false
       }
     },
