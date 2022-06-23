@@ -48,7 +48,7 @@ class SessionInactivityCompliance : AbstractCompliance() {
             logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
             Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
             logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
-            `Should be able to sign`(
+            `Should be able to sign byte arrays of different lengths`(
                 key,
                 keyScheme,
                 compliance.options.sessionComplianceSpec!!.second

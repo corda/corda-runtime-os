@@ -23,12 +23,14 @@ import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.math.BigInteger
 import java.security.InvalidParameterException
+import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PublicKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
@@ -167,13 +169,19 @@ internal open class LocalCertificatesAuthority(
         val certSerialNumber = nextSerialNumber()
         val endDate = Date(now + validDuration.toMillis())
 
+        val keyFactory = KeyFactory.getInstance(
+            csr.subjectPublicKeyInfo.algorithm.algorithm.id,
+            BouncyCastleProvider()
+        )
+        val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(csr.subjectPublicKeyInfo.encoded))
+
         val certificateGenerator = JcaX509v3CertificateBuilder(
             X500Name("C=UK CN=r3.com"),
             certSerialNumber,
             startDate,
             endDate,
             csr.subject,
-            privateKeyAndCertificate.certificate.publicKey
+            publicKey,
         )
 
         csr.getAttributes(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest)?.flatMap {

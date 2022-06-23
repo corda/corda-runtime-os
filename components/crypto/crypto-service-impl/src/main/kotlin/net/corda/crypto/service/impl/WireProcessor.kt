@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl
 
 import net.corda.data.crypto.wire.CryptoRequestContext
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import java.lang.reflect.Constructor
 import java.util.concurrent.ConcurrentHashMap
 
@@ -29,7 +28,7 @@ abstract class WireProcessor(
     @Suppress("UNCHECKED_CAST")
     protected fun getHandler(request: Class<*>, handlerCtorArg: Any): Handler<Any> {
         val constructor = constructors.computeIfAbsent(request) {
-            val type = handlers[request] ?: throw CryptoServiceBadRequestException(
+            val type = handlers[request] ?: throw IllegalArgumentException(
                 "Unknown request type ${request.name}"
             )
             type.constructors.first {

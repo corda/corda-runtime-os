@@ -11,7 +11,7 @@ import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.failures.CryptoException
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -126,10 +126,10 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
 
     override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
-        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.values?.toList() ?: emptyList()
+        providerMap.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.values?.toList() ?: emptyList()
 
     override fun inferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
-        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.keys?.toList() ?: emptyList()
+        providerMap.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.keys?.toList() ?: emptyList()
 
     @Suppress("UNCHECKED_CAST")
     override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
@@ -158,10 +158,10 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
         val keyFactory = providerMap.keyFactories[scheme]
         keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    } catch (e: CryptoServiceLibraryException) {
+    } catch (e: RuntimeException) {
         throw e
     } catch (e: Throwable) {
-        throw CryptoServiceLibraryException("Failed to decode public key", e)
+        throw CryptoException("Failed to decode public key", e)
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey = try {
@@ -170,10 +170,10 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         val converter = getJcaPEMKeyConverter(publicKeyInfo)
         val publicKey = converter.getPublicKey(publicKeyInfo)
         toSupportedPublicKey(publicKey)
-    } catch (e: CryptoServiceLibraryException) {
+    } catch (e: RuntimeException) {
         throw e
     } catch (e: Throwable) {
-        throw CryptoServiceLibraryException("Failed to decode public key", e)
+        throw CryptoException("Failed to decode public key", e)
     }
 
     override fun deserialize(params: SerializedAlgorithmParameterSpec): AlgorithmParameterSpec {
@@ -184,10 +184,10 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
 
     override fun encodeAsString(publicKey: PublicKey): String = try {
         objectToPem(publicKey)
-    } catch (e: CryptoServiceLibraryException) {
+    } catch (e: RuntimeException) {
         throw e
     } catch (e: Throwable) {
-        throw CryptoServiceLibraryException("Failed to encode public key", e)
+        throw CryptoException("Failed to encode public key in PEM format", e)
     }
 
     override fun toSupportedPublicKey(key: PublicKey): PublicKey {

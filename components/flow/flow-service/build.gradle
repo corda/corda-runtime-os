@@ -43,6 +43,7 @@ dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
 
     implementation project(':libs:flows:session-manager')
+    implementation project(':libs:flows:persistence-manager')
     implementation project(':libs:virtual-node:virtual-node-info')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

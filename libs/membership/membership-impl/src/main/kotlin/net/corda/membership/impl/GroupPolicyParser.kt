@@ -71,7 +71,13 @@ class GroupPolicyParser @Activate constructor(
     @Suppress("UNCHECKED_CAST", "SpreadOperator")
     fun getMgmInfo(groupPolicyJson: String): MemberInfo? {
         val groupPolicy = parse(groupPolicyJson)
-        val mgmInfo = groupPolicy[MGM_INFO] as? Map<String, String> ?: return null
+        val mgmInfo = (groupPolicy[MGM_INFO] as? Map<String, Any?> ?: return null)
+            .filter {
+                it.value != null
+            }
+            .mapValues {
+                it.value?.toString()
+            }
         try {
             val now = clock.instant().toString()
             return MemberInfoImpl(

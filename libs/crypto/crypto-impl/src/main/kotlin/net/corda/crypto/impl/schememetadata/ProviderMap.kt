@@ -14,7 +14,7 @@ class ProviderMap(
 ) {
     private val cordaSecurityProvider = CordaSecurityProvider(keyEncoder)
 
-    private val cordaBouncyCastleProvider: Provider = SecurityProviderWrapper(BouncyCastleProvider())
+    private val cordaBouncyCastleProvider: Provider = BouncyCastleProvider()
 
     private val bouncyCastlePQCProvider = BouncyCastlePQCProvider()
 
@@ -86,13 +86,4 @@ class ProviderMap(
         GOST3410_GOST3411.scheme to GOST3410_GOST3411,
         SPHINCS256.scheme to SPHINCS256
     )
-
-    // Wrapper needed because BC isn't wired to eddsa, so if we use the BC provider
-    // directly we can't access the eddsa contents. By doing this, we force OSGi to
-    // select the crypto bundle, which does have an eddsa wiring.
-    private class SecurityProviderWrapper(source: Provider) : Provider(source.name, source.versionStr, source.info) {
-        init {
-            putAll(source)
-        }
-    }
 }

@@ -8,16 +8,15 @@ import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
 import net.corda.crypto.persistence.db.model.HSMConfigEntity
 import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
-import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMStat
+import net.corda.crypto.persistence.hsm.HSMStore
+import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.v5.base.util.toHex
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
@@ -108,21 +107,17 @@ class TestHSMStore : HSMStore {
         }
 
         override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) = cache.lock.withLock {
-            try {
-                val config = cache.configs.first { it.id == configId }
-                cache.categoryMap.removeIf { it.config.id == configId }
-                links.forEach {
-                    val entry = HSMCategoryMapEntity(
-                        id = UUID.randomUUID().toString(),
-                        category = it.category,
-                        keyPolicy = PrivateKeyPolicy.valueOf(it.keyPolicy.name),
-                        timestamp = Instant.now(),
-                        config = config
-                    )
-                    cache.categoryMap.add(entry)
-                }
-            } catch (e: Throwable) {
-                throw CryptoServiceLibraryException(e.message ?: "Error", e)
+            val config = cache.configs.firstOrNull { it.id == configId } ?: throw IllegalStateException()
+            cache.categoryMap.removeIf { it.config.id == configId }
+            links.forEach {
+                val entry = HSMCategoryMapEntity(
+                    id = UUID.randomUUID().toString(),
+                    category = it.category,
+                    keyPolicy = PrivateKeyPolicy.valueOf(it.keyPolicy.name),
+                    timestamp = Instant.now(),
+                    config = config
+                )
+                cache.categoryMap.add(entry)
             }
         }
 

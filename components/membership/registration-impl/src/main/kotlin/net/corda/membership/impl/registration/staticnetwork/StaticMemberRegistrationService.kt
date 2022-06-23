@@ -35,7 +35,7 @@ import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SU
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.HostedIdentityEntry
+import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.v5.base.types.MemberX500Name
@@ -228,7 +228,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            "$memberName-$groupId",
+            registeringMember.id,
             hostedIdentity
 
         )
