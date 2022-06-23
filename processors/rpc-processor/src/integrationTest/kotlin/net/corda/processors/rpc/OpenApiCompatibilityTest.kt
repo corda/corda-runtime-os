@@ -91,6 +91,9 @@ class OpenApiCompatibilityTest {
             FakeSecurityManager(), httpRpcSettings, multipartDir
         ).apply { start() }
 
+        val url = "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/"
+        logger.info("Swagger should be accessible on: $url/swagger.json")
+
         return server.use {
             /*val client = TestHttpClientUnirestImpl(
                 "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/")

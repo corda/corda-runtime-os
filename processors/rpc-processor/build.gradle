@@ -71,4 +71,5 @@ dependencies {
     integrationTestImplementation project(':libs:http-rpc:http-rpc-tools')
 
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
+    integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
 }
