@@ -24,7 +24,7 @@ interface MemberRegistrationService : Lifecycle {
      * qualified member within a membership group.
      *
      * @param member The holding identity of the virtual node requesting registration.
-     * @param context User provided context for registration.
+     * @param context The member or MGM context required for on-boarding within a group.
      *
      * @return The status of the registration request. NOT_SUBMITTED is returned when
      * something went wrong during creating the request.

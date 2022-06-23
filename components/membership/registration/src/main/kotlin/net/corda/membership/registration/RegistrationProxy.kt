@@ -14,7 +14,7 @@ interface RegistrationProxy : Lifecycle {
      * configuration, and forwards the registration request to it.
      *
      * @param member The holding identity of the virtual node requesting registration.
-     * @param context User provided context for registration.
+     * @param context The member or MGM context required for on-boarding within a group.
      *
      * @return The status of the registration request as reported by the [MemberRegistrationService].
      * NOT_SUBMITTED is returned if something goes wrong while creating the request.

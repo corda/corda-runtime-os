@@ -5,7 +5,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
-import net.corda.layeredpropertymap.toWire
+import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.impl.MGMContextImpl
@@ -153,8 +153,8 @@ class MGMRegistrationService @Activate constructor(
                 "${member.id}-${member.id}",
                 PersistentMemberInfo(
                     member.toAvro(),
-                    mgmInfo.memberProvidedContext.toWire(),
-                    mgmInfo.mgmProvidedContext.toWire()
+                    mgmInfo.memberProvidedContext.toAvro(),
+                    mgmInfo.mgmProvidedContext.toAvro()
                 )
             )
             lifecycleHandler.publisher.publish(listOf(mgmRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)

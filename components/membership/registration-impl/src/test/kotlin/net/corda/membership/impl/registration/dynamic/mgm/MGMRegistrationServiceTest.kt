@@ -3,23 +3,20 @@ package net.corda.membership.impl.registration.dynamic.mgm
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.impl.MGMContextImpl
-import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.MemberInfoFactoryImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.membership.impl.registration.staticnetwork.TestUtils
-import net.corda.membership.impl.toMemberInfo
 import net.corda.membership.impl.toSortedMap
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
@@ -112,6 +109,7 @@ class MGMRegistrationServiceTest {
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
+    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -122,7 +120,7 @@ class MGMRegistrationServiceTest {
     )
 
     private val properties = mapOf(
-        "corda.party.session.key.id" to SESSION_KEY_ID,
+        "corda.session.key.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
         "corda.group.protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
@@ -169,13 +167,9 @@ class MGMRegistrationServiceTest {
             val expectedRecordKey = "${mgmId}-${mgmId}"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
-            val mgmPublished = toMemberInfo(
-                layeredPropertyMapFactory.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
-                ),
-                layeredPropertyMapFactory.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
-                )
+            val mgmPublished = memberInfoFactory.create(
+                persistentMemberPublished.memberContext.toSortedMap(),
+                persistentMemberPublished.mgmContext.toSortedMap()
             )
             it.assertThat(mgmPublished.name.toString()).isEqualTo(mgmName.toString())
         }
