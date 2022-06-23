@@ -5,7 +5,7 @@ import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.IDENTITY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.P2P_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import net.corda.schema.configuration.ConfigKeys.PLATFORM_CONFIG
 import net.corda.schema.configuration.ConfigKeys.POLICY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
@@ -33,7 +33,7 @@ class SchemaProviderImplTest {
             FLOW_CONFIG,
             IDENTITY_CONFIG,
             MESSAGING_CONFIG,
-            P2P_CONFIG,
+            P2P_LINK_MANAGER_CONFIG,
             PLATFORM_CONFIG,
             POLICY_CONFIG,
             RPC_CONFIG,

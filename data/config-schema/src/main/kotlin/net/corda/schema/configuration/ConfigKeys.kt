@@ -11,7 +11,7 @@ object ConfigKeys {
     const val FLOW_CONFIG = "corda.flow"
     const val IDENTITY_CONFIG = "corda.identity"
     const val MESSAGING_CONFIG = "corda.messaging"
-    const val P2P_CONFIG = "corda.p2p"
+    const val P2P_LINK_MANAGER_CONFIG = "corda.p2p.linkManager"
     const val PLATFORM_CONFIG = "corda.platform"
     const val POLICY_CONFIG = "corda.policy"
     const val RPC_CONFIG = "corda.rpc"

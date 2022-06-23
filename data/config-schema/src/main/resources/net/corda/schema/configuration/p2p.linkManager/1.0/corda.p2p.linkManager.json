@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/p2p/1.0/corda.p2p.json",
+  "title": "Corda P2P Link Manager Configuration Schema",
+  "description": "Configuration schema for the P2P link manager.",
+  "type": "object",
+  "properties": {
+    "maxMessageSize": {
+      "description": "The maximum message size in bytes.",
+      "type": "integer",
+      "default": 1000000,
+      "minimum": 1000
+    },
+    "replayAlgorithm": {
+      "description": "The algorithm used to schedule messages for replay.",
+      "type": "object",
+      "default": {
+        "constant": {
+          "messageReplayPeriod": 2000
+        }
+      },
+      "properties": {
+        "exponentialBackoff": {
+          "type": "object",
+          "description": "Replay messages with capped exponential backoff.",
+          "properties": {
+            "baseReplayPeriod": {
+              "description": "The message replay period base in milliseconds.",
+              "type": "integer",
+              "default": 2000,
+              "minimum": 500
+            },
+            "replayPeriodCutoff": {
+              "description": "The message replay period cutoff in milliseconds.",
+              "type": "integer",
+              "default": 10000,
+              "minimum": 500
+            }
+          },
+          "additionalProperties": false
+        },
+        "constant": {
+          "type": "object",
+          "description": "Replay messages at a constant rate.",
+          "properties": {
+            "messageReplayPeriod": {
+              "description": "The message replay period in milliseconds.",
+              "type": "integer",
+              "default": 2000,
+              "minimum": 500
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "dependencies": {
+        "exponentialBackOff": {
+          "not": {
+            "required": [
+              "constant"
+            ]
+          }
+        },
+        "constant": {
+          "not": {
+            "required": [
+              "exponentialBackOff"
+            ]
+          }
+        }
+      }
+    },
+    "maxReplayingMessages": {
+      "description": "The maximum number of replaying messages between two peers.",
+      "type": "integer",
+      "default": 100,
+      "minimum": 1
+    },
+    "heartbeatMessagePeriod": {
+      "description": "Heartbeat message period in milli seconds.",
+      "type": "integer",
+      "default": 2000,
+      "minimum": 500
+    },
+    "sessionTimeout": {
+      "description": "Session timeout in milliseconds.",
+      "type": "integer",
+      "default": 10000,
+      "minimum": 500
+    },
+    "sessionsPerPeer": {
+      "description": "The number of actively maintained sessions between two peers.",
+      "type": "integer",
+      "default": 4,
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
+}
