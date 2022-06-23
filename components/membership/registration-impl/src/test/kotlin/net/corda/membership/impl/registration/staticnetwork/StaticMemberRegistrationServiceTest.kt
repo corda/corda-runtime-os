@@ -41,7 +41,7 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.HostedIdentityEntry
+import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -233,7 +233,7 @@ class StaticMemberRegistrationServiceTest {
 
         val publishedHostedIdentity = hostedIdentityList.first()
 
-        assertEquals("${alice.x500Name}-${alice.groupId}", publishedHostedIdentity.key)
+        assertEquals(alice.id, publishedHostedIdentity.key)
         assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
         val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
         assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)

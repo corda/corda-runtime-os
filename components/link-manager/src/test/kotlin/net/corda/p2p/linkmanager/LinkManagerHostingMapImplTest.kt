@@ -10,7 +10,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.test.HostedIdentityEntry
+import net.corda.p2p.HostedIdentityEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -25,7 +25,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
-class StubLinkManagerHostingMapTest {
+class LinkManagerHostingMapImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val processor = argumentCaptor<CompactedProcessor<String, HostedIdentityEntry>>()
     private val subscription = mock<CompactedSubscription<String, HostedIdentityEntry>>()
@@ -63,7 +63,7 @@ class StubLinkManagerHostingMapTest {
         whenever(mock.hash(publicKeyOne)).thenReturn(byteArrayOf(5, 6, 7))
     }
 
-    private val testObject = StubLinkManagerHostingMap(
+    private val testObject = LinkManagerHostingMapImpl(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         configuration
