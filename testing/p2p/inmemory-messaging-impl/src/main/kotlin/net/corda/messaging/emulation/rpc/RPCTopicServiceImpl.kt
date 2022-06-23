@@ -73,7 +73,7 @@ class RPCTopicServiceImpl(
                         it.isCancelled -> {
                             requestCompletion.completeExceptionally(
                                 CordaRPCAPIResponderException(
-                                    "errorType",
+                                    "${CancellationException::class.java.name}",
                                     "The request was cancelled by the responder."
                                 )
                             )
