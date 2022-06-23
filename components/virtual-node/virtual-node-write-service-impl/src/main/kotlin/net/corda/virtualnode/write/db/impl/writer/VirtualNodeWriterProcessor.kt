@@ -8,7 +8,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.layeredpropertymap.toWire
+import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
@@ -265,8 +265,8 @@ internal class VirtualNodeWriterProcessor(
             "${holdingIdentity.id}-${mgmHoldingIdentity.id}",
             PersistentMemberInfo(
                 holdingIdentity.toAvro(),
-                mgmInfo.memberProvidedContext.toWire(),
-                mgmInfo.mgmProvidedContext.toWire()
+                mgmInfo.memberProvidedContext.toAvro(),
+                mgmInfo.mgmProvidedContext.toAvro()
             )
         )
         try {

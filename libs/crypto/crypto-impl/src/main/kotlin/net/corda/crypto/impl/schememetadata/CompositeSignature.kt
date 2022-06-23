@@ -70,10 +70,12 @@ class CompositeSignature : Signature(SIGNATURE_ALGORITHM) {
         )
     }
 
+    @Throws(SignatureException::class)
     override fun engineUpdate(b: Byte) {
         assertInitialised().buffer.write(b.toInt())
     }
 
+    @Throws(SignatureException::class)
     override fun engineUpdate(b: ByteArray, off: Int, len: Int) {
         assertInitialised().buffer.write(b, off, len)
     }

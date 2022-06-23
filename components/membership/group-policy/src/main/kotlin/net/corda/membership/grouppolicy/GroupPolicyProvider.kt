@@ -1,8 +1,8 @@
 package net.corda.membership.grouppolicy
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.virtualnode.HoldingIdentity
 
 /**

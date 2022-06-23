@@ -294,7 +294,7 @@ class CertificatesRpcOpsImplTest {
     }
 
     @Nested
-    inner class ImportCertificatesTests {
+    inner class ImportCertificateChainTests {
         @Test
         fun `invalid certificate will throw an exception`() {
             val certificateText = "hello"
@@ -303,7 +303,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificate("tenant", "alias", certificate)
+                certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
             }
         }
         @Test
@@ -313,9 +313,32 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificate("tenant", "alias", certificate)
+            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
 
-            verify(certificatesClient).importCertificate("tenant", "alias", certificateText)
+            verify(certificatesClient).importCertificates("tenant", "alias", certificateText)
+        }
+        @Test
+        fun `no certificates throw an exception`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("tenant", "alias", emptyList())
+            }
+        }
+
+        @Test
+        fun `valid multiple certificate will send all to the client`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate1 = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+            val certificate2 = mock<HttpFileUpload> {
+                on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
+            }
+
+            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate1, certificate2))
+
+            verify(certificatesClient).importCertificates(
+                "tenant", "alias", "$certificateText\n$certificateText\n$certificateText"
+            )
         }
     }
 }

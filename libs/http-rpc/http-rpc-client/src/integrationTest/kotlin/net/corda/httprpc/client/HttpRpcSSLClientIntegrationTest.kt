@@ -10,7 +10,8 @@ import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.CustomString
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utls.findFreePort
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll

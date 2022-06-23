@@ -40,8 +40,6 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -548,11 +546,11 @@ class CryptoOpsBusProcessorTests {
             future3.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should complete future exceptionally in case of unknown request`() {
+    fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
@@ -567,8 +565,7 @@ class CryptoOpsBusProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
-        assertThat(exception.cause?.cause).isInstanceOf(CryptoServiceBadRequestException::class.java)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

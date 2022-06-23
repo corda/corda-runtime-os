@@ -5,7 +5,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution

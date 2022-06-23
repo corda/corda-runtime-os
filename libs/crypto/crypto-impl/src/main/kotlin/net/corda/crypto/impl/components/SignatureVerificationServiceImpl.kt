@@ -11,12 +11,12 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.getParamsSafely
+import net.corda.v5.crypto.failures.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
-import java.security.SignatureException
 import javax.crypto.Cipher
 
 @Component(service = [SignatureVerificationService::class])
@@ -41,8 +41,15 @@ class SignatureVerificationServiceImpl @Activate constructor(
         logger.debug {
             "verify(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
         }
-        if (!isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)) {
-            throw SignatureException("Signature Verification failed!")
+        val result = try {
+            !isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoSignatureException("Signature Verification failed!", e)
+        }
+        if (result) {
+            throw CryptoSignatureException("Signature Verification failed!")
         }
     }
 
@@ -60,8 +67,15 @@ class SignatureVerificationServiceImpl @Activate constructor(
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
                     " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
-        if (!isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)) {
-            throw SignatureException("Signature Verification failed!")
+        val result = try {
+            !isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoSignatureException("Signature Verification failed!", e)
+        }
+        if (result) {
+            throw CryptoSignatureException("Signature Verification failed!")
         }
     }
 

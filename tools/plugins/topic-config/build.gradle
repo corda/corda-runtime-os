@@ -16,13 +16,16 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-topic-schema'
+    implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion")  {
+        exclude group: "org.slf4j"
+    }
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
-    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "net.corda.cli.host:api:$pluginHostVersion"
 }
 
 // the plugin task will put the files into a jar file with the correct manifest

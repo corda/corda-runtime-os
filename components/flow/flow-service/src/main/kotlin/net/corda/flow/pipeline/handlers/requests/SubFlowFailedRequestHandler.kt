@@ -8,7 +8,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -52,7 +52,7 @@ class SubFlowFailedRequestHandler @Activate constructor(
             ).map { updatedSessionState ->
                 checkpoint.putSessionState(updatedSessionState)
             }
-        } catch (e: FlowSessionMissingException) {
+        } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, context, e)
         }

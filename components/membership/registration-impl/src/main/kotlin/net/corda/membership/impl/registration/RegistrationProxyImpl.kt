@@ -9,8 +9,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.exceptions.BadGroupPolicyException
-import net.corda.membership.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult

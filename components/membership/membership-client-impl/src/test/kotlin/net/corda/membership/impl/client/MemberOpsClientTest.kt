@@ -10,12 +10,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusRequest
+import net.corda.data.membership.rpc.request.RegistrationRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationResponse
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -52,6 +52,7 @@ class MemberOpsClientTest {
         private const val HOLDING_IDENTITY_ID = "nodeId"
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
+
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
 
@@ -72,7 +73,7 @@ class MemberOpsClientTest {
         }
     }
 
-    private var rpcRequest: MembershipRpcRequest?  = null
+    private var rpcRequest: MembershipRpcRequest? = null
 
     private lateinit var rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
 
@@ -97,6 +98,7 @@ class MemberOpsClientTest {
     fun changeRegistrationStatus(status: LifecycleStatus) = lifecycleHandler?.processEvent(
         RegistrationStatusChangeEvent(mock(), status), coordinator
     )
+
     fun changeConfig() = lifecycleHandler?.processEvent(
         ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
         coordinator
@@ -124,9 +126,9 @@ class MemberOpsClientTest {
                             rpcRequest!!.requestContext.requestTimestamp,
                             clock.instant()
                         ),
-                        RegistrationResponse(
+                        RegistrationRpcResponse(
                             clock.instant(),
-                            RegistrationStatus.SUBMITTED,
+                            RegistrationRpcStatus.SUBMITTED,
                             1,
                             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                             KeyValuePairList(emptyList())
@@ -167,7 +169,7 @@ class MemberOpsClientTest {
         memberOpsClient.startRegistration(request)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationRequest
+        val requestSent = rpcRequest?.request as RegistrationRpcRequest
 
         assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
         assertEquals(request.action.name, requestSent.registrationAction.name)
@@ -180,7 +182,7 @@ class MemberOpsClientTest {
         memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationStatusRequest
+        val requestSent = rpcRequest?.request as RegistrationStatusRpcRequest
 
         assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
     }
@@ -256,9 +258,9 @@ class MemberOpsClientTest {
                         rpcRequest!!.requestContext.requestTimestamp,
                         clock.instant()
                     ),
-                    RegistrationResponse(
+                    RegistrationRpcResponse(
                         clock.instant(),
-                        RegistrationStatus.SUBMITTED,
+                        RegistrationRpcStatus.SUBMITTED,
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())
@@ -288,9 +290,9 @@ class MemberOpsClientTest {
                         clock.instant().plusMillis(10000000),
                         clock.instant()
                     ),
-                    RegistrationResponse(
+                    RegistrationRpcResponse(
                         clock.instant(),
-                        RegistrationStatus.SUBMITTED,
+                        RegistrationRpcStatus.SUBMITTED,
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())

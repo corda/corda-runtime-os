@@ -1,6 +1,6 @@
 package net.corda.membership.impl
 
-import net.corda.membership.GroupPolicy
+import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
 import net.corda.membership.impl.GroupPolicyExtension.Companion.REGISTRATION_PROTOCOL_KEY
 import net.corda.v5.base.exceptions.CordaRuntimeException
