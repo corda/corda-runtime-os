@@ -36,8 +36,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
-
         val now = Instant.now()
+
+        postProcessPendingPlatformError(context)
 
         val outputRecords = getSessionEvents(context, now) +
                 getFlowMapperSessionCleanupEvents(context, now) +
@@ -68,13 +69,32 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
-    private fun getFlowMapperSessionCleanupEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
+    private fun getFlowMapperSessionCleanupEvents(
+        context: FlowEventContext<Any>,
+        now: Instant
+    ): List<Record<*, FlowMapperEvent>> {
         val expiryTime = now.plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
         return context.checkpoint.sessions
             .filterNot { sessionState -> sessionState.hasScheduledCleanup }
             .filter { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
-            .onEach { sessionState ->  sessionState.hasScheduledCleanup = true }
-            .map { sessionState -> flowRecordFactory.createFlowMapperEventRecord(sessionState.sessionId, ScheduleCleanup(expiryTime)) }
+            .onEach { sessionState -> sessionState.hasScheduledCleanup = true }
+            .map { sessionState ->
+                flowRecordFactory.createFlowMapperEventRecord(
+                    sessionState.sessionId,
+                    ScheduleCleanup(expiryTime)
+                )
+            }
+    }
+
+    private fun postProcessPendingPlatformError(context: FlowEventContext<Any>) {
+        /**
+         * If a platform error was previously reported to the user the error should now be cleared. If we have reached
+         * the post-processing step we can assume the pending error has been processed.
+         */
+        val checkpoint = context.checkpoint
+        if (checkpoint.doesExist) {
+            checkpoint.clearPendingPlatformError()
+        }
     }
 
     /**

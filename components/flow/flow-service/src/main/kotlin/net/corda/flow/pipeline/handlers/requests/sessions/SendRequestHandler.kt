@@ -4,11 +4,12 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,6 +23,10 @@ class SendRequestHandler @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.Send> {
 
+    private companion object {
+        val log = contextLogger()
+    }
+
     override val type = FlowIORequest.Send::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.Send): WaitingFor {
@@ -32,12 +37,13 @@ class SendRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         try {
+            flowSessionManager.validateSessionStates(checkpoint, request.sessionToPayload.keys)
             flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
                 checkpoint.putSessionState(updatedSessionState)
             }
-        } catch (e: FlowSessionMissingException) {
-            // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, context, e)
+        } catch (e: FlowSessionStateException) {
+            log.info("Failed to send session data for for session", e)
+            throw FlowPlatformException(e.message, context, e)
         }
 
         val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())

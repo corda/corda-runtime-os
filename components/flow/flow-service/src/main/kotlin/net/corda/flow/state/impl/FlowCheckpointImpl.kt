@@ -33,7 +33,7 @@ class FlowCheckpointImpl(
     private val instantProvider: () -> Instant
 ) : FlowCheckpoint {
 
-    companion object{
+    companion object {
         const val RETRY_INITIAL_DELAY_MS = 1000 // 1 second
     }
 
@@ -127,6 +127,9 @@ class FlowCheckpointImpl(
         { "Attempt to access null retry state while. inRetryState must be tested before accessing retry fields" }
             .failedEvent
 
+    override val pendingPlatformError: ExceptionEnvelope?
+        get() = checkpoint.pendingPlatformError
+
     override fun initFromNew(flowId: String, flowStartContext: FlowStartContext) {
         if (nullableCheckpoint != null) {
             val key = flowStartContext.statusKey
@@ -190,7 +193,7 @@ class FlowCheckpointImpl(
         }
 
         val maxRetrySleepTime = config.getInt(FlowConfig.PROCESSING_MAX_RETRY_DELAY)
-        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount-1.toDouble())) * RETRY_INITIAL_DELAY_MS
+        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount - 1.toDouble())) * RETRY_INITIAL_DELAY_MS
         setFlowSleepDuration(min(maxRetrySleepTime, sleepTime.toInt()))
     }
 
@@ -199,9 +202,20 @@ class FlowCheckpointImpl(
         checkpoint.retryState = null
     }
 
+    override fun clearPendingPlatformError() {
+        checkpoint.pendingPlatformError = null
+    }
+
     override fun setFlowSleepDuration(sleepTimeMs: Int) {
         checkFlowNotDeleted()
         checkpoint.maxFlowSleepDuration = min(sleepTimeMs, checkpoint.maxFlowSleepDuration)
+    }
+
+    override fun setPendingPlatformError(type: String, message: String) {
+        checkpoint.pendingPlatformError = ExceptionEnvelope().apply {
+            errorType = type
+            errorMessage = message
+        }
     }
 
     override fun toAvro(): Checkpoint? {

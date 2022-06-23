@@ -45,6 +45,10 @@ interface OutputAssertions {
 
     fun wakeUpEvent()
 
+    fun hasPendingUserException()
+
+    fun noPendingUserException()
+
     fun noFlowEvents()
 
     fun checkpointHasRetry(expectedCount: Int)

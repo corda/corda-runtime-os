@@ -134,6 +134,18 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun hasPendingUserException() {
+        asserts.add{ testRun ->
+            assertThat(testRun.response?.updatedState?.pendingPlatformError).isNotNull()
+        }
+    }
+
+    override fun noPendingUserException() {
+        asserts.add{ testRun ->
+            assertThat(testRun.response?.updatedState?.pendingPlatformError).isNull()
+        }
+    }
+
     override fun noFlowEvents() {
         asserts.add { testRun ->
             val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
