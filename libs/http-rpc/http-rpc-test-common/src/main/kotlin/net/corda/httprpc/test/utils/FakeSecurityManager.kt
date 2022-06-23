@@ -1,10 +1,10 @@
-package net.corda.httprpc.server.impl
+package net.corda.httprpc.test.utils
 
-import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.security.AuthServiceId
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.Password
 import net.corda.httprpc.security.read.RPCSecurityManager
+import javax.security.auth.login.FailedLoginException
 
 class FakeSecurityManager : RPCSecurityManager {
 

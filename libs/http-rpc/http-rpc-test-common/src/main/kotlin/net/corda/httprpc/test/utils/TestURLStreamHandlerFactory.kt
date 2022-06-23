@@ -1,4 +1,4 @@
-package net.corda.httprpc.test.utls
+package net.corda.httprpc.test.utils
 
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
