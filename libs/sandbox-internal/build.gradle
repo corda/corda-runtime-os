@@ -17,11 +17,11 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:packaging:packaging")
     implementation 'net.corda:corda-serialization'
@@ -29,7 +29,6 @@ dependencies {
     runtimeOnly project(':libs:sandbox-hooks')
 
     testCompileOnly 'org.osgi:osgi.core'
-    testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
