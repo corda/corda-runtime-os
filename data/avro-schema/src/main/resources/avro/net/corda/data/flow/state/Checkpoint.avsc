@@ -50,6 +50,12 @@
       "name": "maxFlowSleepDuration",
       "type": "int",
       "doc": "The maximum time a flow can sleep, before a Wakeup event is generated (milliseconds)"
+    },
+    {
+      "name": "pendingPlatformError",
+      "type": ["null", "net.corda.data.ExceptionEnvelope"],
+      "default": null,
+      "doc": "Used for platform generated errors reported back to user code."
     }
   ]
 }
