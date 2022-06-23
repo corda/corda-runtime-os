@@ -17,4 +17,5 @@ export const TEMP_MESSAGES: Message[] = [
     { x500name: TEMP_PARTICIPANTS[7], message: 'Hey there!' },
     { x500name: TEMP_USER_500, message: 'Hey there!' },
     { x500name: TEMP_PARTICIPANTS[8], message: 'Hey there!' },
+    { x500name: TEMP_USER_500, message: 'Hey there! Longer message for testing my own messagesss woooooo' },
 ];

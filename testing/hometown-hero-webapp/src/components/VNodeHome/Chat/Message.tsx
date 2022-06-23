@@ -36,7 +36,7 @@ const Message: React.FC<Props> = ({ message, isMyMessage, selectReplyParticipant
                         className={`mt-0 rounded-xl border border-blue shadow-md p-4 ${
                             isMyMessage ? 'bg-blue-100' : ''
                         }`}
-                        style={{ maxWidth: '90%' }}
+                        style={{ maxWidth: isMyMessage ? '100%' : '90%' }}
                     >
                         <p className="leading-5">{message.message}</p>
                     </div>
