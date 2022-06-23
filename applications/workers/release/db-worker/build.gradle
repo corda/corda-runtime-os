@@ -38,4 +38,6 @@ dependencies {
                 'org.osgi.framework.security': 'osgi'
         )
     }
+
+    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

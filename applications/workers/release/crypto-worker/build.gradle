@@ -30,4 +30,6 @@ dependencies {
 
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
