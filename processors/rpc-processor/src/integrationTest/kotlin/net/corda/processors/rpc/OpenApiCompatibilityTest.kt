@@ -1,10 +1,13 @@
 package net.corda.processors.rpc
 
+import io.swagger.v3.core.util.Json
+import io.swagger.v3.oas.models.OpenAPI
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.processors.rpc.diff.diff
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
@@ -70,20 +73,24 @@ class OpenApiCompatibilityTest {
         assertThat(allOps).containsAll(importantRpcOps)
 
         val existingSwaggerJson = computeExistingSwagger()
-        assertThat(existingSwaggerJson).contains(""""openapi" : "3.0.1"""")
-
         val baselineSwagger = fetchBaseline()
-        assertThat(existingSwaggerJson).isEqualTo(baselineSwagger)
+
+        val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
+
+        assertThat(diffReport).withFailMessage(
+            "Produced Open API content:\n" + existingSwaggerJson.first +
+                    "\nis different to the baseline. Differences noted: $diffReport").isEmpty()
     }
 
-    private fun fetchBaseline(): String {
+    private fun fetchBaseline(): OpenAPI {
         val stream = requireNotNull(javaClass.classLoader.getResourceAsStream("/swaggerBaseline.json"))
         return stream.use {
-            String(it.readAllBytes())
+            val jsonString = String(it.readAllBytes())
+            Json.mapper().readValue(jsonString, OpenAPI::class.java)
         }
     }
 
-    private fun computeExistingSwagger(): String {
+    private fun computeExistingSwagger(): Pair<String, OpenAPI> {
         val context = HttpRpcContext(
             "1",
             "api",
@@ -117,7 +124,8 @@ class OpenApiCompatibilityTest {
                 .build()
 
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            response.body()
+            val body = response.body()
+            body to Json.mapper().readValue(body, OpenAPI::class.java)
         }
     }
 }

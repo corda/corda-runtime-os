@@ -65,6 +65,7 @@ dependencies {
 
     integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
 
     integrationTestImplementation project(':libs:http-rpc:http-rpc')
     integrationTestImplementation project(':libs:http-rpc:http-rpc-server')
