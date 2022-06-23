@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-import net.corda.data.identity.HoldingIdentity
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
@@ -56,7 +55,8 @@ internal class TrustStoresMap(
     fun getTrustStore(sourceX500Name: String, destinationGroupId: String) =
         trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
             ?.trustStore
-            ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) and group ID ($destinationGroupId)")
+            ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
+                    "and group ID ($destinationGroupId)")
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -96,7 +96,7 @@ internal class TrustStoresMap(
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
             entriesPerKey.putAll(currentData)
             val newTrustRoots = currentData.map {
-                val truststoreKey = TruststoreKey(it.value.sourceIdentityX500Name, it.value.destinationGroupId)
+                val truststoreKey = TruststoreKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
                 truststoreKey to TrustedCertificates(it.value.trustedCertificates, certificateFactory)
             }.toMap()
             trustRootsPerHoldingIdentity.putAll(newTrustRoots)
@@ -112,7 +112,7 @@ internal class TrustStoresMap(
         ) {
             if (newRecord.value != null) {
                 entriesPerKey[newRecord.key] = newRecord.value!!
-                val truststoreKey = TruststoreKey(newRecord.value!!.sourceIdentityX500Name, newRecord.value!!.destinationGroupId)
+                val truststoreKey = TruststoreKey(newRecord.value!!.sourceIdentity.x500Name, newRecord.value!!.sourceIdentity.groupId)
                 val trustedCertificates = TrustedCertificates(newRecord.value!!.trustedCertificates, certificateFactory)
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
                 logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
@@ -120,7 +120,7 @@ internal class TrustStoresMap(
             } else {
                 val previousRecord = entriesPerKey.remove(newRecord.key)
                 if (previousRecord != null) {
-                    val truststoreKey = TruststoreKey(previousRecord.sourceIdentityX500Name, previousRecord.destinationGroupId)
+                    val truststoreKey = TruststoreKey(previousRecord.sourceIdentity.x500Name, previousRecord.sourceIdentity.groupId)
                     trustRootsPerHoldingIdentity.remove(truststoreKey)
                     logger.info("Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +
                             "group ID ${truststoreKey.destinationGroupId}.")

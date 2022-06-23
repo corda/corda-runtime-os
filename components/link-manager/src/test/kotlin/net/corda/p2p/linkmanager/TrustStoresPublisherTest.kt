@@ -103,7 +103,8 @@ class TrustStoresPublisherTest {
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(Record(GATEWAY_TLS_TRUSTSTORES,
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId,certificates)))
+                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
+                ))
             )
         }
 
@@ -150,12 +151,13 @@ class TrustStoresPublisherTest {
                 listOf(
                     Record(GATEWAY_TLS_TRUSTSTORES,
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates))
+                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates))
                 ),
                 listOf(
                     Record(GATEWAY_TLS_TRUSTSTORES,
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificatesTwo))
+                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId),
+                        certificatesTwo))
                 ),
             )
         }
@@ -229,7 +231,7 @@ class TrustStoresPublisherTest {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
-                            GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates)
+                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
                 )
             )
 
@@ -244,7 +246,7 @@ class TrustStoresPublisherTest {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
-                            GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates)
+                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
                 )
             )
 
@@ -268,7 +270,7 @@ class TrustStoresPublisherTest {
             processor.firstValue.onNext(
                 Record(
                     "", "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId, certificates)
+                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
                 ),
                 null, emptyMap()
             )

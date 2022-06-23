@@ -538,7 +538,8 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
-        loggingInterceptor.assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+        loggingInterceptor
+            .assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -556,7 +557,8 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
-        loggingInterceptor.assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+        loggingInterceptor
+            .assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -897,7 +899,8 @@ class SessionManagerTest {
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider")
-        loggingInterceptor.assertSingleWarningContains("The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+        loggingInterceptor
+            .assertSingleWarningContains("The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
     }
 
     @Test

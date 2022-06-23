@@ -125,7 +125,7 @@ class GatewayIntegrationTest : TestBase() {
 
         fun publishTrustStore() {
             publish(
-                Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", GatewayTruststore("alice", GROUP_ID, listOf(truststoreCertificatePem)))
+                Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", GatewayTruststore(HoldingIdentity("alice", GROUP_ID), listOf(truststoreCertificatePem)))
             )
         }
 
@@ -795,8 +795,7 @@ class GatewayIntegrationTest : TestBase() {
 
         private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String, groupId: String): GatewayTruststore {
             return GatewayTruststore(
-                sourceX500Name,
-                groupId,
+                HoldingIdentity(sourceX500Name, groupId),
                 listOf(
                     this.caCertificate.toPem()
                 )

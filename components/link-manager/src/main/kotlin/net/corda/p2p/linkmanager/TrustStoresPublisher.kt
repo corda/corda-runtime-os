@@ -127,7 +127,7 @@ internal class TrustStoresPublisher(
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
-                    GatewayTruststore(holdingIdentity.x500Name, holdingIdentity.groupId, certificates))
+                    GatewayTruststore(HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId), certificates))
                 publisher.publish(
                     listOf(record)
                 ).forEach {

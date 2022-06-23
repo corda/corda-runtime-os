@@ -561,8 +561,9 @@ internal class SessionManagerImpl(
             return null
         }
 
-        //TODO: This needs to be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally.
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities().find { it.groupId == peer.holdingIdentity.groupId }
+        //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
+        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .find { it.groupId == peer.holdingIdentity.groupId }
         if (hostedIdentityInSameGroup == null) {
             logger.warn("There is no locally hosted identity in the same group with the initiator ${peer.holdingIdentity}. " +
                     "The initiator message was discarded.")

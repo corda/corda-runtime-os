@@ -12,6 +12,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
+@Suppress("LongParameterList")
 internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: LifecycleCoordinatorFactory,
                                              private val stubGroupPolicyProvider: StubGroupPolicyProvider,
                                              private val groupPolicyProvider: GroupPolicyProvider,
@@ -45,7 +46,8 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
         return if (thirdPartyComponentsMode == ThirdPartyComponentsMode.REAL) {
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(net.corda.virtualnode.HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId, ))
+            val vNodeHoldingIdentity = net.corda.virtualnode.HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId)
+            val groupPolicy = groupPolicyProvider.getGroupPolicy(vNodeHoldingIdentity)
             toGroupInfo(holdingIdentity, groupPolicy)
         } else {
             stubGroupPolicyProvider.getGroupInfo(holdingIdentity)

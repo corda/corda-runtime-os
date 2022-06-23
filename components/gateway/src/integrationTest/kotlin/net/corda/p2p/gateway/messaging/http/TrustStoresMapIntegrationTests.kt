@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
@@ -41,7 +42,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
                     Record(
                         Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
                         "alice-$GROUP_ID",
-                        GatewayTruststore("alice", GROUP_ID, listOf(expectedCertificatePem))
+                        GatewayTruststore(HoldingIdentity("alice", GROUP_ID), listOf(expectedCertificatePem))
                     )
                 )
             ).forEach {
