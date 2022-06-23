@@ -253,3 +253,28 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
       annotations: {}
+
+  # P2P Link Manager worker configuration
+  p2plinkmanager:
+    # p2p-link-manager worker image configuration
+    image:
+      # -- p2p-link-manager worker image registry, defaults to image.registry
+      registry: ""
+      # -- p2p-link-manager worker image repository
+      repository: "corda-os-p2p-link-manager"
+      # -- p2p-link-manager worker image tag, defaults to image.tag
+      tag: ""
+    # -- p2p-link-manager worker replica count
+    replicaCount: 1
+    # p2p-link-manager worker debug configuration
+    debug:
+      # -- run p2p-link-manager worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the p2p-link-manager worker until the debugger is attached
+      suspend: false
+    # resource limits and requests configuration for the p2p-link-manager worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the p2p-link-manager worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the p2p-link-manager worker containers
+      limits: {}
