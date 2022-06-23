@@ -40,15 +40,21 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
         }
     };
 
+    console.log('Chat participant', selectedParticipants);
+
     return (
-        <div className="pt-6" style={{ width: 380, height: 450 }}>
+        <div className="pt-6" style={{ width: 400, height: 450 }}>
             <p
-                className={`mb-4 ml-2 text-xl ${
+                className={`mb-4 ml-2 text-md ${
                     selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
                 }`}
             >
                 {`Selected: ${
-                    selectedParticipants.length === 0 ? 'Please select at least one!' : selectedParticipants.length
+                    selectedParticipants.length === 0
+                        ? 'Please select at least one!'
+                        : selectedParticipants.length === 1
+                        ? selectedParticipants[0]
+                        : selectedParticipants.length
                 }`}
             </p>
             <div className="overflow-y-scroll" style={{ height: '90%' }}>
@@ -57,9 +63,11 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
                     return (
                         <div className="flex gap-6">
                             <Checkbox
+                                checked={selected}
                                 value={nP}
                                 onChange={(e) => {
                                     handleCheckboxClicked(e.target.checked, nP);
+                                    e.stopPropagation();
                                 }}
                             />
                             <p className={`${selected ? 'text-blue' : ''}`}>{nP}</p>
