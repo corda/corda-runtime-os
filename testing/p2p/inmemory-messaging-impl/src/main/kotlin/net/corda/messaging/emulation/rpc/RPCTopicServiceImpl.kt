@@ -110,7 +110,7 @@ class RPCTopicServiceImpl(
             } catch (e: Throwable) {
                 responseCompletion.completeExceptionally(
                     CordaRPCAPIResponderException(
-                        "errorType",
+                        "${e.javaClass.name}",
                         "The responder failed to process the request.",
                         e
                     )
