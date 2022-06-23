@@ -181,9 +181,18 @@ class CpkWriteServiceImplTest {
         cpkWriteServiceImpl.cpkChunksPublisher = cpkChunksPublisher
 
         cpkWriteServiceImpl.putMissingCpk()
-        assertTrue(chunks.size == 2)
+
+        // assert that we can publish multiple CPKs
+        cpkWriteServiceImpl.putMissingCpk()
+
+        assertTrue(chunks.size == 4)
         assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
+        assertTrue(chunks[1].data.limit() == 0)
+        assertTrue(chunks[2].data.equals(ByteBuffer.wrap(cpkData)))
+        assertTrue(chunks[3].data.limit() == 0)
+
         assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
+        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[2].fileName)
     }
 
     @Test
