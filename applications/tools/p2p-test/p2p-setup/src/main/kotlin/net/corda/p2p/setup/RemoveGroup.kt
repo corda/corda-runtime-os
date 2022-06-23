@@ -4,7 +4,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import picocli.CommandLine.Parameters
 import java.util.concurrent.Callable
 
 @Command(
