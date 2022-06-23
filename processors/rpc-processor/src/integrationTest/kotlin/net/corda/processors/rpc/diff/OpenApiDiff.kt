@@ -1,6 +1,7 @@
 package net.corda.processors.rpc.diff
 
 import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.PathItem
 import io.swagger.v3.oas.models.Paths
 import io.swagger.v3.oas.models.info.Info
 
@@ -32,7 +33,16 @@ private fun Paths.diff(baseline: Paths): List<String> {
         }
     }
 
-    // todo: properly compare each path having sorted them first
+    entries.forEach { entry ->
+        val baselineValue: PathItem? = baseline[entry.key]
+        if(baselineValue == null) {
+            differences.add("Current has path: ${entry.value} which is absent in baseline")
+        } else {
+            if (entry.value != baselineValue) {
+                differences.add("Current path ${entry.value} is different to baseline: $baselineValue")
+            }
+        }
+    }
 
     return differences
 }
