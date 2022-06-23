@@ -32,6 +32,10 @@ class CreateConnect : Runnable {
     var delete: Boolean = false
 
     override fun run() {
+        // Switch ClassLoader so LoginModules can be found
+        val contextCL = Thread.currentThread().contextClassLoader
+        Thread.currentThread().contextClassLoader = this::class.java.classLoader
+
         val client = Admin.create(create!!.topic!!.getKafkaProperties())
         val topicConfigs = create!!.getTopicConfigs().map { it.copy(name = create!!.getTopicName(it)) }
 
@@ -61,6 +65,7 @@ class CreateConnect : Runnable {
             throw e.cause ?: e
         }
 
+        Thread.currentThread().contextClassLoader = contextCL
     }
 
     fun getAclBindings(topicConfigs: List<Create.TopicConfig>) =
