@@ -6,7 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
-import net.corda.membership.GroupPolicy
+import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
