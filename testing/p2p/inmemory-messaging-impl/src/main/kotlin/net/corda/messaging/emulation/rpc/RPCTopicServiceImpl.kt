@@ -82,7 +82,7 @@ class RPCTopicServiceImpl(
                         it.isCompletedExceptionally -> {
                             requestCompletion.completeExceptionally(
                                 CordaRPCAPIResponderException(
-                                    "errorType",
+                                    "${error.javaClass.name}",
                                     "The responder failed to process the request.",
                                     error
                                 )
