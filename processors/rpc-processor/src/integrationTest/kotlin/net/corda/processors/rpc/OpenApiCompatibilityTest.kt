@@ -71,6 +71,16 @@ class OpenApiCompatibilityTest {
 
         val existingSwaggerJson = computeExistingSwagger()
         assertThat(existingSwaggerJson).contains(""""openapi" : "3.0.1"""")
+
+        val baselineSwagger = fetchBaseline()
+        assertThat(existingSwaggerJson).isEqualTo(baselineSwagger)
+    }
+
+    private fun fetchBaseline(): String {
+        val stream = requireNotNull(javaClass.classLoader.getResourceAsStream("/swaggerBaseline.json"))
+        return stream.use {
+            String(it.readAllBytes())
+        }
     }
 
     private fun computeExistingSwagger(): String {
@@ -91,7 +101,7 @@ class OpenApiCompatibilityTest {
         )
 
         val server = httpServerFactory.createHttpRpcServer(
-            dynamicRpcOps.map { it as PluggableRPCOps<out RpcOps> },
+            dynamicRpcOps.map { it as PluggableRPCOps<out RpcOps> }.sortedBy { it.targetInterface.name },
             FakeSecurityManager(), httpRpcSettings, multipartDir, devMode = true
         ).apply { start() }
 
