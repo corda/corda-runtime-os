@@ -96,14 +96,6 @@ kafka:
     # -- enable/disable SASL for client connection to Kafka 
     enabled: false
 
-  clientImage:
-    # -- registry for image containing a Kafka client, used to set up Kafka
-    registry: ""
-    # -- repository for image containing a Kafka client, used to set up Kafka
-    repository: bitnami/kafka
-    # -- tag for image containing a Kafka client, used to set up Kafka
-    tag: 3.1.0-debian-10-r89
-
 # Configuration for the bootstrapper
 bootstrap:
   auto: true
