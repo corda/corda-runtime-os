@@ -64,6 +64,7 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
                     icon={'Nuke'}
                     size={'small'}
                     variant={'tertiary'}
+                    disabled={selectedParticipants.length === 0}
                     onClick={() => {
                         setSelectedParticipants([]);
                     }}
