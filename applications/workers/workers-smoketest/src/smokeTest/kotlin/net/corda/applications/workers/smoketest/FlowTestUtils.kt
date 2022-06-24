@@ -1,16 +1,9 @@
-package net.corda.applications.workers.smoketest.flow
+package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.applications.workers.smoketest.CLUSTER_URI
-import net.corda.applications.workers.smoketest.CPI_NAME
-import net.corda.applications.workers.smoketest.PASSWORD
-import net.corda.applications.workers.smoketest.USERNAME
-import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
-import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 import java.security.MessageDigest
@@ -20,14 +13,11 @@ import java.util.*
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
 const val X500_SESSION_USER2 = "CN=SU2, OU=Application, O=R3, L=London, C=GB"
-const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
-const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
-
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -39,6 +29,28 @@ fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
                     holdingId,
                     requestId,
                     SMOKE_TEST_CLASS_NAME,
+                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
+                )
+            }
+            condition { it.code == 200 }
+        }
+
+        requestId
+    }
+}
+
+fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): String {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val requestId = UUID.randomUUID().toString()
+
+        assertWithRetry {
+            command {
+                flowStart(
+                    holdingId,
+                    requestId,
+                    flowName,
                     """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
                 )
             }
@@ -71,7 +83,7 @@ fun createVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
+        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == FLOW_WORKER_DEV_CPI_NAME }
         val hash = truncateLongHash(json["fileChecksum"].textValue())
 
         val vNodeJson = assertWithRetry {
