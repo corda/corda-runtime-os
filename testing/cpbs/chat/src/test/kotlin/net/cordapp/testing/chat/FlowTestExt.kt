@@ -1,13 +1,13 @@
 package net.cordapp.testing.chat
 
-import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.*
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.types.MemberX500Name
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.junit.jupiter.api.fail
+import org.mockito.kotlin.*
 
 /**
  * Generates a mock which will return the passed object to any call to parse json along the lines of
@@ -23,6 +23,13 @@ inline fun <reified T> FlowTestDependencyInjector.rpcRequestGenerator(parameterO
     }
 
 /**
+ * Verifies a payload was sent via this FlowSession
+ */
+fun FlowSession.verifyMessageSent(payload: Any) {
+    verify(this).send(payload)
+}
+
+/**
  * Sets up the FlowMessage mock associated with this injector such that it returns a flow session which is
  * also available to the test to verify expected messages are sent.
  * @return A mock FlowSession
@@ -31,9 +38,33 @@ fun FlowTestDependencyInjector.expectFlowMessagesTo(member: MemberX500Name) = mo
     whenever(this.serviceMock<FlowMessaging>().initiateFlow(member)).thenReturn(it)
 }
 
+inline fun <reified T : Any> join(from: FlowSession, to: FlowSession) {
+    whenever(from.send(any())).then {
+        whenever(to.receive(T::class.java))
+            .thenReturn(UntrustworthyData(it.arguments[0] as T))
+    }
+}
+
+fun expectFlowMessagesFrom(member: MemberX500Name) = mock<FlowSession>().also {
+        whenever(it.counterparty).thenReturn(member) }
+
+fun validateProtocol(from: Flow, to: ResponderFlow)
+{
+    val annotationOfInitiating = from::class.java.getAnnotation(InitiatingFlow::class.java)
+        ?: fail("InitiatingFlow ${from::class.java.name} has no @InitiatingFlow annotation")
+    val annotationOfInitiatedBy = to::class.java.getAnnotation(InitiatedBy::class.java)
+        ?: fail("InitiatedBy Flow ${to::class.java.name} has no @InitiatedBy annotation")
+
+    if (annotationOfInitiating.protocol != annotationOfInitiatedBy.protocol) {
+        fail ("Flow ${from::class.java.name} initiates protocol '${annotationOfInitiating.protocol}'" +
+                " whilst ResponderFlow ${to::class.java.name} is initiated by protocol '${annotationOfInitiatedBy.protocol}'")
+    }
+}
+
 /**
- * Verifies a payload was sent via this FlowSession
+ * Helper to execute Flow call()s in parallel.
+ * Executes every block concurrently. Will return once all blocks are complete.
  */
-fun FlowSession.verifyMessageSent(payload: Any) {
-    verify(this).send(payload)
+fun ExecuteConcurrently(vararg blocks: () -> Unit) {
+    blocks.map { Thread { it() } }.onEach { it.start() }.onEach { it.join() }
 }

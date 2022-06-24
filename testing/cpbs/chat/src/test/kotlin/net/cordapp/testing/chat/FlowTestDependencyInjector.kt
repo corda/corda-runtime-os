@@ -2,12 +2,7 @@ package net.cordapp.testing.chat
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.types.MemberX500Name
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.lang.reflect.Field
 
 class InjectableMockServices {

@@ -6,6 +6,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.whenever
 
 class ChatOutgoingFlowTest {
     /**
@@ -24,7 +25,7 @@ class ChatOutgoingFlowTest {
         injector.injectServices(it)
     }
 
-    val X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
+    val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
     val MESSAGE = "chat message"
 
     @Test
@@ -32,7 +33,7 @@ class ChatOutgoingFlowTest {
         assertThrows<IllegalArgumentException> {
             flow.call(
                 injector.rpcRequestGenerator(
-                    OutgoingChatMessage(recipientX500Name = X500_NAME)
+                    OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME)
                 )
             )
         }
@@ -51,11 +52,11 @@ class ChatOutgoingFlowTest {
 
     @Test
     fun `flow sends message to correct recipient`() {
-        val flowSession = injector.expectFlowMessagesTo(MemberX500Name.parse(X500_NAME))
+        val flowSession = injector.expectFlowMessagesTo(MemberX500Name.parse(RECIPIENT_X500_NAME))
 
         flow.call(
             injector.rpcRequestGenerator(
-                OutgoingChatMessage(recipientX500Name = X500_NAME, message = MESSAGE)
+                OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
             )
         )
 
