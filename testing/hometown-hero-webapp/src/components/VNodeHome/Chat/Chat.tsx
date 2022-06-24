@@ -1,4 +1,4 @@
-import { Button, IconButton, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
+import { IconButton, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 
 import Message from './Message';

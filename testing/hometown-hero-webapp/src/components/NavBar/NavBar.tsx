@@ -1,8 +1,8 @@
+import { HOME, VNODE_HOME } from '@/constants/routes';
 import { IconButton, TopNavBar } from '@r3/r3-tooling-design-system/exports';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-import { VNODE_HOME } from '@/constants/routes';
 import logoSrc from '@r3/r3-tooling-design-system/assets/img/logo--r3.svg';
-import { useLocation } from 'react-router-dom';
 
 const LOGO = (
     <a href="/">
@@ -14,6 +14,7 @@ const APP_TITLE = 'Hometown Hero Demo';
 
 const NavBar = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     document.title = APP_TITLE;
     return (
         <TopNavBar
@@ -23,7 +24,15 @@ const NavBar = () => {
             center={
                 location.pathname.includes(VNODE_HOME) ? (
                     <div>
-                        <IconButton icon={'ExitToApp'} size={'large'} variant={'icon'} />
+                        <IconButton
+                            icon={'ExitToApp'}
+                            size={'large'}
+                            variant={'icon'}
+                            onClick={() => {
+                                // TODO: Logout action in UserContext
+                                navigate(HOME);
+                            }}
+                        />
                     </div>
                 ) : undefined
             }
