@@ -5,12 +5,15 @@ import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.ZoneId
 import java.time.temporal.TemporalAmount
 import java.util.*
 import java.time.ZonedDateTime
 
 private val log = LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.OpenApiExample.kt")
-private val dateFormatPattern = "yyyy-MM-dd'T'HH:mm:ss"
+private val instant = Instant.parse("2022-06-24T10:15:30.00Z")
+private val dateAsString = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(Date(instant.toEpochMilli()))
+private val zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"))
 
 @Suppress("ComplexMethod")
 @VisibleForTesting
@@ -39,9 +42,9 @@ fun Class<*>.toExample(): Any {
             Float::class.javaObjectType
         ).anyIsAssignableFrom(this) -> 0.0
         listOf(Boolean::class.java, Boolean::class.javaObjectType).anyIsAssignableFrom(this) -> true
-        listOf(Instant::class.java).anyIsAssignableFrom(this) -> Instant.now()
-        listOf(Date::class.java).anyIsAssignableFrom(this) -> SimpleDateFormat(dateFormatPattern).format(Date())
-        listOf(ZonedDateTime::class.java).anyIsAssignableFrom(this) -> ZonedDateTime.now()
+        listOf(Instant::class.java).anyIsAssignableFrom(this) -> instant
+        listOf(Date::class.java).anyIsAssignableFrom(this) -> dateAsString
+        listOf(ZonedDateTime::class.java).anyIsAssignableFrom(this) -> zonedDateTime
         listOf(TemporalAmount::class.java).anyIsAssignableFrom(this) -> "PT15M" // 15 minutes in ISO-8601
         else -> "No example available for this type"
     }
