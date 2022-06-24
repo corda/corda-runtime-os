@@ -2371,7 +2371,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.430395700Z"
+            "example" : "2022-06-24T10:15:30Z"
           }
         },
         "nullable" : false
@@ -2437,7 +2437,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.428395800Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "type" : {
             "type" : "string",
@@ -2556,7 +2556,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : true,
-            "example" : "2022-06-24T08:11:45.461855500Z"
+            "example" : "2022-06-24T10:15:30Z"
           }
         },
         "description" : "Details of the user to be created",
@@ -2778,7 +2778,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.385735900Z"
+            "example" : "2022-06-24T10:15:30Z"
           }
         },
         "nullable" : false
@@ -2928,7 +2928,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.551970700Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "description" : {
             "type" : "string",
@@ -2970,7 +2970,7 @@
             "example" : "string"
           }
         },
-        "nullable" : false
+        "nullable" : true
       },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
@@ -2985,7 +2985,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.555040700Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "hsmCategory" : {
             "type" : "string",
@@ -3065,7 +3065,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.448703200Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "id" : {
             "type" : "string",
@@ -3103,7 +3103,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.439580900Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "version" : {
             "type" : "integer",
@@ -3164,7 +3164,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.457854400Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "value" : {
             "type" : "string",
@@ -3185,7 +3185,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : true,
-            "example" : "2022-06-24T08:11:45.562101300Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
             "type" : "string",
@@ -3241,7 +3241,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.459855400Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "roleId" : {
             "type" : "string",
@@ -3282,7 +3282,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.448703200Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "version" : {
             "type" : "integer",
@@ -3452,7 +3452,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.464907500Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "loginName" : {
             "type" : "string",
@@ -3503,7 +3503,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : true,
-            "example" : "2022-06-24T08:11:45.456833100Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "properties" : {
             "uniqueItems" : false,
@@ -3530,7 +3530,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.459855400Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "version" : {
             "type" : "integer",
@@ -3592,7 +3592,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T08:11:45.540829800Z"
+            "example" : "2022-06-24T10:15:30Z"
           },
           "vaultDdlConnectionId" : {
             "type" : "string",
