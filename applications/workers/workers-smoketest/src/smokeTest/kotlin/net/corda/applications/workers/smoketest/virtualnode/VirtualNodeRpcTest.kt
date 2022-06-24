@@ -8,6 +8,7 @@ import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.USERNAME
 import net.corda.applications.workers.smoketest.X500_ALICE
+import net.corda.applications.workers.smoketest.getCpiChecksum
 import net.corda.applications.workers.smoketest.toJson
 import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
@@ -69,11 +70,7 @@ class VirtualNodeRpcTest {
                 .withFailMessage("Short code length of wrong size - likely this test needs fixing")
                 .isEqualTo(12)
 
-            // Compare it to the hash in the cpi list - should be identical.
-            // CORE-4475: tests fixed behaviour previously reported as a bug
-            val cpis = cpiList().toJson()
-            val cpiJson = cpis["cpis"].first()
-            val actualChecksum = truncateLongHash(cpiJson["fileChecksum"].textValue())
+            val actualChecksum = getCpiChecksum(FLOW_WORKER_DEV_CPI_NAME)
 
             assertThat(actualChecksum).isNotNull.isNotEmpty
 
@@ -157,9 +154,7 @@ class VirtualNodeRpcTest {
     fun `can create virtual node with holding id and CPI`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val cpis = cpiList().toJson()["cpis"]
-            val json = cpis.toList().first { it["id"]["cpiName"].textValue() == FLOW_WORKER_DEV_CPI_NAME }
-            val hash = truncateLongHash(json["fileChecksum"].textValue())
+            val hash = getCpiChecksum(FLOW_WORKER_DEV_CPI_NAME)
 
             val vNodeJson = assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
@@ -176,9 +171,7 @@ class VirtualNodeRpcTest {
     fun `cannot create duplicate virtual node`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val cpis = cpiList().toJson()["cpis"]
-            val json = cpis.toList().first { it["id"]["cpiName"].textValue() == FLOW_WORKER_DEV_CPI_NAME }
-            val hash = truncateLongHash(json["fileChecksum"].textValue())
+            val hash = getCpiChecksum(FLOW_WORKER_DEV_CPI_NAME)
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }

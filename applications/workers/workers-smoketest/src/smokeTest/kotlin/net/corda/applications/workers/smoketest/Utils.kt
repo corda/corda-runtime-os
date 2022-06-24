@@ -35,3 +35,8 @@ fun truncateLongHash(shortHash:String):String {
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
 
+fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+    val cpis = cpiList().toJson()["cpis"]
+    val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
+    return truncateLongHash(cpiJson["fileChecksum"].textValue())
+}

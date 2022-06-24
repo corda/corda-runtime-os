@@ -21,6 +21,7 @@ import net.corda.applications.workers.smoketest.ERROR_HOLDING_ID
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.X500_CAROL
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.getCpiChecksum
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.toJson
@@ -34,7 +35,7 @@ const val MULTIPLICATION_CALCULATOR_CPB = "/META-INF/cache-invalidation-testing/
  */
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class VirtualNodeRpcTest {
+class CpiForceUploadRpcTest {
     companion object {
         private const val ERROR_CPI_NOT_UPLOADED =
             "CPI has not been uploaded during this run - this test needs to be run on a clean cluster."
@@ -46,25 +47,6 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(30)
-    fun `create a clean virtual node`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val cpis = cpiList().toJson()["cpis"]
-            val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CALCULATOR_CPI_NAME }
-            val hash = truncateLongHash(json["fileChecksum"].textValue())
-
-            val vNodeJson = assertWithRetry {
-                command { vNodeCreate(hash, X500_CAROL) }
-                condition { it.code == 200 }
-                failMessage(ERROR_HOLDING_ID)
-            }.toJson()
-
-            assertThat(vNodeJson["holdingIdHash"].textValue()).isNotNull.isNotEmpty
-        }
-    }
-
-    @Test
-    @Order(31)
     fun `can upload the addition calculator`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -84,18 +66,30 @@ class VirtualNodeRpcTest {
                 .withFailMessage("Short code length of wrong size - likely this test needs fixing")
                 .isEqualTo(12)
 
-            val cpis = cpiList().toJson()
-            val cpiJson = cpis["cpis"].first()
-            val actualChecksum = truncateLongHash(cpiJson["fileChecksum"].textValue())
+            val cpiChecksum = getCpiChecksum(CALCULATOR_CPI_NAME)
 
-            assertThat(actualChecksum).isNotNull.isNotEmpty
-
+            assertThat(cpiChecksum).isNotNull.isNotEmpty
             assertThat(cpiHash).withFailMessage(ERROR_CPI_NOT_UPLOADED).isNotNull
-
-            assertThat(actualChecksum).isEqualTo(cpiHash)
+            assertThat(cpiChecksum).isEqualTo(cpiHash)
         }
     }
 
+    @Test
+    @Order(31)
+    fun `create a clean virtual node`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val hash = getCpiChecksum(CALCULATOR_CPI_NAME)
+
+            val vNodeJson = assertWithRetry {
+                command { vNodeCreate(hash, X500_CAROL) }
+                condition { it.code == 200 }
+                failMessage(ERROR_HOLDING_ID)
+            }.toJson()
+
+            assertThat(vNodeJson["holdingIdHash"].textValue()).isNotNull.isNotEmpty
+        }
+    }
     @Test
     @Order(32)
     fun `can run the uploaded CPI - addition calculator`() {
