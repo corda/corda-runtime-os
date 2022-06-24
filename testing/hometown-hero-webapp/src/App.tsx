@@ -12,25 +12,26 @@ import NavBar from './components/NavBar/NavBar';
 import Register from './pages/Register';
 import { UserContextProvider } from './contexts/userContext';
 import VNodeHome from './pages/VNodeHome';
+import { useMobileMediaQuery } from './hooks/useMediaQueries';
 import { usePromiseTracker } from 'react-promise-tracker';
 
 function App() {
+    const isMobile = useMobileMediaQuery();
     const { promiseInProgress } = usePromiseTracker();
     return (
         <div className="App">
             {promiseInProgress && <LoadingModal />}
             <BrowserRouter>
                 <UserContextProvider>
-                    <div className="App">
-                        <NavBar />
-                        <Routes>
-                            <Route path={HOME} element={<Home />} />
-                            <Route path={LOGIN} element={<Login />} />
-                            <Route path={REGISTER} element={<Register />} />
-                            <Route path={VNODE_HOME} element={<VNodeHome />} />
-                        </Routes>
-                        <Footer />
-                    </div>
+                    <NavBar />
+
+                    <Routes>
+                        <Route path={HOME} element={<Home />} />
+                        <Route path={LOGIN} element={<Login />} />
+                        <Route path={REGISTER} element={<Register />} />
+                        <Route path={VNODE_HOME} element={<VNodeHome />} />
+                    </Routes>
+                    {!isMobile && <Footer />}
                 </UserContextProvider>
             </BrowserRouter>
         </div>
