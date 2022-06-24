@@ -314,11 +314,11 @@ subprojects {
     // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
     // a task is up-to-date, this has no impact on publishing or production of jar.
     normalization {
-	runtimeClasspath {
-	    metaInf {
-		ignoreAttribute("Bnd-LastModified")
-	    }
-	}
+        runtimeClasspath {
+            metaInf {
+                ignoreAttribute("Bnd-LastModified")
+            }
+        }
     }
 
     tasks.named("detekt").configure {
