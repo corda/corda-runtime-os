@@ -73,6 +73,14 @@ dependencies {
     integrationTestImplementation project(':libs:http-rpc:http-rpc-server')
     integrationTestImplementation project(':libs:http-rpc:http-rpc-tools')
 
+    integrationTestImplementation project(':components:membership:membership-http-rpc')
+    integrationTestImplementation project(':libs:configuration:configuration-endpoints')
+    integrationTestImplementation project(':libs:virtual-node:cpi-upload-endpoints')
+    integrationTestImplementation project(':components:flow:flow-rpcops-service')
+    integrationTestImplementation project(':libs:permissions:permission-endpoint')
+    integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
+    integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
 }

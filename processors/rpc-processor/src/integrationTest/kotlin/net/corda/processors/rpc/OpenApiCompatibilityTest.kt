@@ -2,17 +2,29 @@ package net.corda.processors.rpc
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
+import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
+import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
+import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
+import net.corda.membership.httprpc.v1.CertificatesRpcOps
+import net.corda.membership.httprpc.v1.HsmRpcOps
+import net.corda.membership.httprpc.v1.KeysRpcOps
+import net.corda.membership.httprpc.v1.MemberLookupRpcOps
+import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
+import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.processors.rpc.diff.diff
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -29,20 +41,20 @@ class OpenApiCompatibilityTest {
         private val logger = contextLogger()
 
         private val importantRpcOps = setOf(
-            "CertificatesRpcOps",
-            "ConfigRPCOps",
-            "CpiUploadRPCOps",
-            "FlowRpcOps",
-            "HsmRpcOps",
-            "KeysRpcOps",
-            "MemberLookupRpcOps",
-            "MemberRegistrationRpcOps",
-            "NetworkRpcOps",
-            "PermissionEndpoint",
-            "RoleEndpoint",
-            "UserEndpoint",
-            "VirtualNodeMaintenanceRPCOps",
-            "VirtualNodeRPCOps"
+            CertificatesRpcOps::class.java,
+            ConfigRPCOps::class.java,
+            CpiUploadRPCOps::class.java,
+            FlowRpcOps::class.java,
+            HsmRpcOps::class.java,
+            KeysRpcOps::class.java,
+            MemberLookupRpcOps::class.java,
+            MemberRegistrationRpcOps::class.java,
+            NetworkRpcOps::class.java,
+            PermissionEndpoint::class.java,
+            RoleEndpoint::class.java,
+            UserEndpoint::class.java,
+            VirtualNodeRPCOps::class.java,
+            VirtualNodeMaintenanceRPCOps::class.java
         )
 
         // `cardinality` is not equal to `expectedRpcOps.size` as there might be some test RpcOps as well
@@ -51,27 +63,14 @@ class OpenApiCompatibilityTest {
 
         @InjectService(service = HttpRpcServerFactory::class, timeout = 10_000)
         lateinit var httpServerFactory: HttpRpcServerFactory
-
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-
-        }
-
-        @Suppress("unused")
-        @AfterAll
-        @JvmStatic
-        fun tearDown() {
-
-        }
     }
 
     @Test
     fun test() {
-        val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface.simpleName }.sorted()
-        logger.info("RPC Ops discovered: $allOps")
+        val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface }.sortedBy { it.name }
         assertThat(allOps).containsAll(importantRpcOps)
+
+        logger.info("RPC Ops discovered: ${allOps.map { it.simpleName }}")
 
         val existingSwaggerJson = computeExistingSwagger()
         val baselineSwagger = fetchBaseline()
