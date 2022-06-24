@@ -21,7 +21,7 @@ const PageHeader: React.FC<Props> = ({ withBackButton, children }) => {
                     variant="secondary"
                 />
             )}
-            <h1 className="mt-8 ml-4 text-left w-fit text-3xl sm:text-4xl md:text-3xl lg:text-5xl">{children}</h1>
+            <h1 className="mt-8 ml-4 text-left w-fit text-3xl sm:text-4xl md:text-4xl lg:text-5xl">{children}</h1>
         </div>
     );
 };
