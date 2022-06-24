@@ -15,22 +15,25 @@ const ChatWrapper = () => {
         setSelectedParticipants([participant]);
     };
 
-    const chatParticipantsComponent = (
-        <ChatParticipants
-            selectedParticipants={selectedParticipants}
-            setSelectedParticipants={setSelectedParticipants}
-        />
-    );
-
     if (isMobile) {
         if (isParticipantsOpen) {
-            return chatParticipantsComponent;
+            return (
+                <ChatParticipants
+                    selectedParticipants={selectedParticipants}
+                    setSelectedParticipants={setSelectedParticipants}
+                    handleCloseParticipants={() => {
+                        setIsParticipantsOpen(false);
+                    }}
+                />
+            );
         }
         return (
             <Chat
                 selectedParticipants={selectedParticipants}
                 handleSelectReplyParticipant={handleSelectReplyParticipant}
-                handleOpenParticipantsModal={() => {}}
+                handleOpenParticipantsModal={() => {
+                    setIsParticipantsOpen(true);
+                }}
             />
         );
     }
@@ -43,7 +46,12 @@ const ChatWrapper = () => {
                     handleSelectReplyParticipant={handleSelectReplyParticipant}
                 />
             </Section>
-            <Section title={'Participants'}>{chatParticipantsComponent}</Section>
+            <Section title={'Participants'}>
+                <ChatParticipants
+                    selectedParticipants={selectedParticipants}
+                    setSelectedParticipants={setSelectedParticipants}
+                />
+            </Section>
             <Section title={'VNode Details'}>
                 <NodeDetails />
             </Section>

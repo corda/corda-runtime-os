@@ -9,7 +9,7 @@ const VNodeHome = () => {
     const isMobile = useMobileMediaQuery();
     return (
         <PageContentWrapper footerEnabled={isMobile ? false : true}>
-            <PageHeader withBackButton>V-Node Home</PageHeader>
+            <PageHeader>V-Node Home</PageHeader>
             <ChatWrapper />
             {!isMobile && (
                 <VisualizationWrapper width={520}>
