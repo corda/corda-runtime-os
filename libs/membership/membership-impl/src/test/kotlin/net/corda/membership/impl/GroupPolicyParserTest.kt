@@ -202,7 +202,7 @@ class GroupPolicyParserTest {
     fun `group policy parser can extract group id`() {
         val groupId = UUID.randomUUID().toString()
         val groupPolicyJson = """{ "groupId" : "$groupId"}"""
-        val actualGroupId = GroupPolicyParser.groupId(groupPolicyJson)
+        val actualGroupId = GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
         Assertions.assertThat(actualGroupId).isEqualTo(groupId)
     }
 
@@ -211,14 +211,14 @@ class GroupPolicyParserTest {
         val groupId = UUID.randomUUID().toString()
         val groupPolicyJson = """{ "nothing" : "$groupId"}"""
         assertThrows<CordaRuntimeException> {
-            GroupPolicyParser.groupId(groupPolicyJson)
+            GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
         }
     }
 
     @Test
     fun `group policy parser generates group id when not defined for MGM`() {
         val groupPolicyJson = """{ "groupId" : "${GroupPolicyParser.MGM_GROUP_ID}"}"""
-        val groupId = GroupPolicyParser.groupId(groupPolicyJson)
+        val groupId = GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
         Assertions.assertThat(groupId).isNotEqualTo(GroupPolicyParser.MGM_GROUP_ID)
     }
 

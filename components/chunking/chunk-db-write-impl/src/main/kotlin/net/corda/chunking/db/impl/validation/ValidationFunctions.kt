@@ -134,7 +134,7 @@ internal class ValidationFunctions(
      */
     fun getGroupId(cpi: Cpi): String {
         if (cpi.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
-        return GroupPolicyParser.groupId(cpi.metadata.groupPolicy!!)
+        return GroupPolicyParser.getOrCreateGroupId(cpi.metadata.groupPolicy!!)
     }
 
     /**
