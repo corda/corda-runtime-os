@@ -1,8 +1,10 @@
 package net.corda.membership.impl.p2p
 
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.verification.request.VerificationRequest
 import net.corda.membership.impl.p2p.handler.MessageHandler
 import net.corda.membership.impl.p2p.handler.RegistrationRequestHandler
+import net.corda.membership.impl.p2p.handler.VerificationRequestHandler
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
@@ -25,8 +27,9 @@ class MembershipP2PProcessor(
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
     }
 
-    private val messageProcessorFactories: Map<Class<MembershipRegistrationRequest>, () -> MessageHandler> = mapOf(
-        MembershipRegistrationRequest::class.java to { RegistrationRequestHandler(avroSchemaRegistry) }
+    private val messageProcessorFactories: Map<Class<*>, () -> MessageHandler> = mapOf(
+        MembershipRegistrationRequest::class.java to { RegistrationRequestHandler(avroSchemaRegistry) },
+        VerificationRequest::class.java to { VerificationRequestHandler(avroSchemaRegistry) }
     )
 
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {

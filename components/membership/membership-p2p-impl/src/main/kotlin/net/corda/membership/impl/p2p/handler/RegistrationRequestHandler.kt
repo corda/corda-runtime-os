@@ -18,7 +18,7 @@ internal class RegistrationRequestHandler(
         private val logger = contextLogger()
     }
 
-    override fun invokeUnautheticatedMessage(
+    override fun invokeUnauthenticatedMessage(
         header: UnauthenticatedMessageHeader,
         payload: ByteBuffer
     ): Record<String, RegistrationCommand> {

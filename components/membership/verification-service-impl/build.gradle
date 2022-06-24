@@ -11,11 +11,15 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:membership:verification-service')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:utilities')
 }
