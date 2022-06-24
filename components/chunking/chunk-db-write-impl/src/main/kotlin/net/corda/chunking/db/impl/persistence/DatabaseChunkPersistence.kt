@@ -13,6 +13,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.Cpi
@@ -38,7 +39,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
  */
 @Suppress("TooManyFunctions")
 class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFactory) : ChunkPersistence {
-
     private companion object {
         val log = contextLogger()
 
@@ -231,7 +231,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
             val cpkMetadataEntities = createOrUpdateCpkMetadataEntities(cpi, emptyMap())
@@ -239,9 +240,11 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpkMetadataEntities)
             
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
-            
+
             val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
             cpkFileEntities.forEach { em.merge(it) }
+
+            cpkDbChangeLogEntities.forEach { em.merge(it) }
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -252,7 +255,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
@@ -284,6 +288,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
             cpkFileEntities.forEach { em.merge(it) }
+            cpkDbChangeLogEntities.forEach { em.merge(it) }
 
             return cpiMetadataEntity
         }
