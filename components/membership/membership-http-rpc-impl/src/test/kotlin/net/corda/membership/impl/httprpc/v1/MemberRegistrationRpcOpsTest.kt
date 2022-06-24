@@ -7,7 +7,6 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.httprpc.v1.types.request.RegistrationAction
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -25,6 +24,7 @@ import kotlin.test.assertFailsWith
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
+        private const val ACTION = "requestJoin"
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
@@ -57,7 +57,7 @@ class MemberRegistrationRpcOpsTest {
 
     private val registrationRequest = MemberRegistrationRequest(
         HOLDING_IDENTITY_ID,
-        RegistrationAction.requestJoin
+        ACTION
     )
 
     @Test
