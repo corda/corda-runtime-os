@@ -1,16 +1,30 @@
-import { Checkbox, IconButton, NotificationService, Tooltip } from '@r3/r3-tooling-design-system/exports';
-import { useCallback, useEffect, useState } from 'react';
+import {
+    Button,
+    Checkbox,
+    IconButton,
+    IconCustom,
+    NotificationService,
+    Tooltip,
+} from '@r3/r3-tooling-design-system/exports';
+import { CSSProperties, useCallback, useEffect, useState } from 'react';
 
+import SelectedParticipants from './SelectedParticipants';
 import { TEMP_PARTICIPANTS } from '@/tempData/tempParticipants';
 import apiCall from '@/api/apiCall';
 import { axiosInstance } from '@/api/axiosConfig';
+import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
 
 type Props = {
     selectedParticipants: string[];
     setSelectedParticipants: (participants: string[]) => void;
+    handleCloseParticipants?: () => void;
 };
 
-const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedParticipants }) => {
+const ChatParticipants: React.FC<Props> = ({
+    handleCloseParticipants,
+    selectedParticipants,
+    setSelectedParticipants,
+}) => {
     const [networkParticipants, setNetworkParticipants] = useState<string[]>([]);
 
     const fetchNetworkParticipants = useCallback(async () => {
@@ -43,51 +57,54 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
         }
     };
 
+    const isMobile = useMobileMediaQuery();
+    const additionalStyles: CSSProperties = isMobile ? { width: '100%', maxHeight: '80%', flex: 1, padding: 6 } : {};
+
     return (
-        <div className="pt-6" style={{ width: 400, height: 450 }}>
-            <div className="flex mb-2">
-                <p
-                    className={`ml-2 text-md ${
-                        selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
-                    }`}
-                >
-                    {`Selected: ${
-                        selectedParticipants.length === 0
-                            ? 'Please select at least one!'
-                            : selectedParticipants.length === 1
-                            ? selectedParticipants[0]
-                            : selectedParticipants.length
-                    }`}
-                </p>
-                <IconButton
-                    className="mt-auto mb-auto ml-auto mr-4"
-                    icon={'Nuke'}
-                    size={'small'}
-                    variant={'tertiary'}
-                    disabled={selectedParticipants.length === 0}
-                    onClick={() => {
-                        setSelectedParticipants([]);
-                    }}
-                />
-            </div>
-            <div className="overflow-y-scroll" style={{ height: '90%' }}>
+        <div className="pt-6 flex flex-col" style={{ width: 400, height: 450, ...additionalStyles }}>
+            <SelectedParticipants
+                selectedParticipants={selectedParticipants}
+                handleClearParticipants={() => {
+                    setSelectedParticipants([]);
+                }}
+            />
+            <div className="overflow-y-scroll mb-4" style={{ height: '90%' }}>
                 {networkParticipants.map((nP) => {
                     const selected = selectedParticipants.includes(nP);
                     return (
-                        <div className="flex gap-6">
+                        <div className="flex gap-6" key={nP}>
                             <Checkbox
                                 checked={selected}
                                 value={nP}
                                 onChange={(e) => {
-                                    handleCheckboxClicked(e.target.checked, nP);
+                                    handleCheckboxClicked(!selected, nP);
                                     e.stopPropagation();
                                 }}
                             />
-                            <p className={`${selected ? 'text-blue' : ''}`}>{nP}</p>
+                            <p
+                                className={`${selected ? 'text-blue' : ''} cursor-pointer`}
+                                onClick={(e) => {
+                                    handleCheckboxClicked(!selected, nP);
+                                    e.stopPropagation();
+                                }}
+                            >
+                                {nP}
+                            </p>
                         </div>
                     );
                 })}
             </div>
+            {handleCloseParticipants && (
+                <Button
+                    className="ml-auto mr-2"
+                    iconLeft="AccountCheck"
+                    size={'large'}
+                    variant={'primary'}
+                    onClick={handleCloseParticipants}
+                >
+                    Confirm
+                </Button>
+            )}
         </div>
     );
 };
