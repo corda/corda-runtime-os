@@ -10,7 +10,7 @@ const PageContentWrapper: React.FC<Props> = ({ children, footerEnabled = true })
     return (
         <>
             <div
-                className={`${isMobile ? 'pl-2' : 'pl-8'} pt-2`}
+                className={`${isMobile ? 'pl-0' : 'pl-8'} pt-2`}
                 style={{
                     minHeight: !isMobile ? '95vh' : undefined,
                     display: 'flex',

@@ -109,7 +109,7 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                     </div>
 
                     {/* TODO: Add bottom margin at keyboard height px value on mobile */}
-                    <div className="flex justify-center align-center gap-4 p-2 sm:p-0 md:p-0 lg:p-0 ">
+                    <div className="flex justify-center align-center gap-4 p-2 sm:p-0 md:p-0 lg:p-0 bg-light-gray-400 rounded-xl">
                         {handleOpenParticipantsModal && (
                             <IconButton
                                 className={`shadow-lg w-12 h-12 ${
