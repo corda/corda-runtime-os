@@ -11,22 +11,23 @@ const SelectedParticipants: React.FC<Props> = ({
     selectedParticipants,
     handleClearParticipants,
 }) => {
+    const emptyParticipants = selectedParticipants.length === 0;
     return (
         <div className="flex mb-2">
             <div className="flex">
                 <IconCustom
                     className={`w-6 ${clearButtonEnabled ? 'mt-3' : 'mt-1'} text-blue ${
-                        selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
+                        emptyParticipants ? 'text-red opacity-75' : 'text-blue'
                     }`}
                     icon={'Account'}
                 />
                 <p
                     className={`ml-2 mt-auto mb-auto text-md ${
-                        selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
+                        emptyParticipants ? 'text-red opacity-75' : 'text-blue'
                     }`}
                 >
                     {`Selected: ${
-                        selectedParticipants.length === 0
+                        emptyParticipants
                             ? 'Please select at least one!'
                             : selectedParticipants.length === 1
                             ? selectedParticipants[0]

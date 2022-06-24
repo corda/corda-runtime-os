@@ -1,12 +1,13 @@
 import { IconButton, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
-import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import Message from './Message';
+import Message from '../Message/Message';
 import { Message as MessageType } from '@/models/Message';
 import { TEMP_MESSAGES } from '@/tempData/tempMessages';
 import { TEMP_USER_500 } from '@/tempData/user';
 import apiCall from '@/api/apiCall';
 import { axiosInstance } from '@/api/axiosConfig';
+import style from './chat.module.scss';
 import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
 
 type Props = {
@@ -70,30 +71,19 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     const isChatDisabled = messages.length === 0 && selectedParticipants.length === 0;
 
     const isMobile = useMobileMediaQuery();
-    const additionalStyles: CSSProperties = isMobile
-        ? { flex: 1, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%' }
-        : {};
 
     return (
-        <div
-            style={{
-                width: 400,
-                height: 550,
-                ...(additionalStyles as CSSProperties),
-            }}
-        >
+        <div className={style.chat}>
             {isChatDisabled && (
                 <>
-                    <p className="mt-8 opacity-75 text-3xl">{'You have no messages...yet!'}</p>
-                    <p className="mt-8 opacity-75 text-3xl">
-                        {'Please select a participant(s) to send a message to!    -->'}
-                    </p>
+                    <p className={style.warningText}>{'You have no messages...yet!'}</p>
+                    <p className={style.warningText}>{'Please select a participant(s) to send a message to!    -->'}</p>
                 </>
             )}
 
             {!isChatDisabled && (
-                <div style={{ flex: 1, height: '100%' }} className="flex flex-col gap-6 pt-6 ">
-                    <div className="border border-light-gray border-opacity-25 overflow-y-scroll p4">
+                <div className={style.chatContent}>
+                    <div className={style.messagesList}>
                         {messages.map((message, index) => {
                             const isMyMessage = message.x500name === currentUserX500;
                             return (
@@ -109,10 +99,10 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                     </div>
 
                     {/* TODO: Add bottom margin at keyboard height px value on mobile */}
-                    <div className="flex justify-center align-center gap-4 p-2 sm:p-0 md:p-0 lg:p-0 bg-light-gray-400 rounded-xl">
+                    <div className={style.inputCenter}>
                         {handleOpenParticipantsModal && (
                             <IconButton
-                                className={`shadow-lg w-12 h-12 ${
+                                className={`${style.inputCenterButton} ${
                                     selectedParticipants.length === 0 ? 'animate-bounce' : ''
                                 }`}
                                 icon={'AccountMultiplePlus'}
@@ -133,7 +123,7 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                             onChange={handleUserTyping}
                         />
                         <IconButton
-                            className="shadow-lg w-12 h-12"
+                            className={style.inputCenterButton}
                             disabled={selectedParticipants.length === 0 || messageValue.length === 0}
                             size={'small'}
                             variant={'primary'}

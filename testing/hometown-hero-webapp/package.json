@@ -10,7 +10,6 @@
     "dependencies": {
         "@r3/r3-tooling-design-system": "file:r3-tooling-design-system-2.1.1.tgz",
         "axios": "^0.27.2",
-        "node-sass": "^7.0.1",
         "react": "^18.0.0",
         "react-dom": "^18.0.0",
         "react-promise-tracker": "^2.1.0",
@@ -22,7 +21,7 @@
         "@types/react": "^18.0.0",
         "@types/react-dom": "^18.0.0",
         "@vitejs/plugin-react": "^1.3.0",
-        "sass": "^1.52.3",
+        "sass": "^1.53.0",
         "typescript": "^4.6.3",
         "vite": "^2.9.9"
     }

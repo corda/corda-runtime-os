@@ -1,18 +1,11 @@
-import {
-    Button,
-    Checkbox,
-    IconButton,
-    IconCustom,
-    NotificationService,
-    Tooltip,
-} from '@r3/r3-tooling-design-system/exports';
-import { CSSProperties, useCallback, useEffect, useState } from 'react';
+import { Button, Checkbox, NotificationService } from '@r3/r3-tooling-design-system/exports';
+import { useCallback, useEffect, useState } from 'react';
 
-import SelectedParticipants from './SelectedParticipants';
+import SelectedParticipants from '../SelectedParticipants/SelectedParticipants';
 import { TEMP_PARTICIPANTS } from '@/tempData/tempParticipants';
 import apiCall from '@/api/apiCall';
 import { axiosInstance } from '@/api/axiosConfig';
-import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
+import style from './chatParticipants.module.scss';
 
 type Props = {
     selectedParticipants: string[];
@@ -57,22 +50,19 @@ const ChatParticipants: React.FC<Props> = ({
         }
     };
 
-    const isMobile = useMobileMediaQuery();
-    const additionalStyles: CSSProperties = isMobile ? { width: '100%', maxHeight: '80%', flex: 1, padding: 6 } : {};
-
     return (
-        <div className="pt-6 flex flex-col" style={{ width: 400, height: 450, ...additionalStyles }}>
+        <div className={style.chatParticipants}>
             <SelectedParticipants
                 selectedParticipants={selectedParticipants}
                 handleClearParticipants={() => {
                     setSelectedParticipants([]);
                 }}
             />
-            <div className="overflow-y-scroll mb-4" style={{ height: '90%' }}>
+            <div className={style.participantsWrapper}>
                 {networkParticipants.map((nP) => {
                     const selected = selectedParticipants.includes(nP);
                     return (
-                        <div className="flex gap-6" key={nP}>
+                        <div className={style.participantContainer} key={nP}>
                             <Checkbox
                                 checked={selected}
                                 value={nP}
@@ -96,7 +86,7 @@ const ChatParticipants: React.FC<Props> = ({
             </div>
             {handleCloseParticipants && (
                 <Button
-                    className="ml-auto mr-2"
+                    className={style.confirmParticipants}
                     iconLeft="AccountCheck"
                     size={'large'}
                     variant={'primary'}

@@ -1,4 +1,4 @@
-import ChatWrapper from '@/components/VNodeHome/Chat/ChatWrapper';
+import ChatWrapper from '@/components/VNodeHome/ChatWrapper/ChatWrapper';
 import MobileChatWrapper from '@/components/VNodeHome/MobileChatWrapper/MobileChatWrapper';
 import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
 import VNodeHomeViz from '@/components/Visualizations/VNodeHomeViz';
