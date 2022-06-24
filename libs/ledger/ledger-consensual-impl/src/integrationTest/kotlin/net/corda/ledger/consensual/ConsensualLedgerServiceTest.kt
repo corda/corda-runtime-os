@@ -6,13 +6,12 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.base.util.contextLogger
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -66,6 +65,7 @@ class ConsensualLedgerServiceTest {
 
     @Test
     fun `dummy flow runs`() {
+        assertEquals(42, consensualLedgerService.double(21))
         // TODO: do stuff here after we can actually inject the ledger service
         // val sandboxGroupContext = virtualNode.loadSandbox(CPB)
         // assertThat(

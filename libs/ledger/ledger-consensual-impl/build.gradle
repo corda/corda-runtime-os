@@ -67,6 +67,7 @@ dependencies {
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node')
+    integrationTestImplementation project(':libs:ledger:ledger-consensual-impl')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
