@@ -10,14 +10,15 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -38,7 +39,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -47,37 +48,34 @@ class GroupPolicyProviderImplTest {
     lateinit var groupPolicyProvider: GroupPolicyProviderImpl
 
     val groupIdKey = "groupId"
-    val testAttrKey = "testAttribute"
+    val registrationProtocolKey = "registrationProtocol"
 
     val groupId1 = "ABC123"
     val groupId2 = "DEF456"
 
-    val testAttr1 = "foo"
-    val testAttr2 = "bar"
-    val testAttr3 = "baz"
+    val regProtocol1 = "foo"
+    val regProtocol2 = "bar"
+    val regProtocol3 = "baz"
 
     val alice = MemberX500Name("Alice", "London", "GB")
     val bob = MemberX500Name("Bob", "London", "GB")
 
-    val groupPolicy1 = "{\"$testAttrKey\": \"$testAttr1\", \"$groupIdKey\": \"$groupId1\"}"
-    val groupPolicy2 = "{\"$testAttrKey\": \"$testAttr2\", \"$groupIdKey\": \"$groupId1\"}"
-    val groupPolicy3 = "{\"$testAttrKey\": \"$testAttr3\", \"$groupIdKey\": \"$groupId2\"}"
+    val groupPolicy1 = "{\"$registrationProtocolKey\": \"$regProtocol1\", \"$groupIdKey\": \"$groupId1\"}"
+    val groupPolicy2 = "{\"$registrationProtocolKey\": \"$regProtocol2\", \"$groupIdKey\": \"$groupId1\"}"
+    val groupPolicy3 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
     val groupPolicy4: String? = null
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
-        on { get(groupIdKey) }.doReturn(groupId1)
-        on { get(testAttrKey) }.doReturn(testAttr1)
-        on { size }.doReturn(2)
+        on { groupId } doReturn groupId1
+        on { registrationProtocol }.doReturn(regProtocol1)
     }
     private val parsedGroupPolicy2: GroupPolicy = mock {
-        on { get(groupIdKey) }.doReturn(groupId1)
-        on { get(testAttrKey) }.doReturn(testAttr2)
-        on { size }.doReturn(2)
+        on { groupId } doReturn groupId1
+        on { registrationProtocol }.doReturn(regProtocol2)
     }
     private val parsedGroupPolicy3: GroupPolicy = mock {
-        on { get(groupIdKey) }.doReturn(groupId2)
-        on { get(testAttrKey) }.doReturn(testAttr3)
-        on { size }.doReturn(2)
+        on { groupId } doReturn groupId2
+        on { registrationProtocol }.doReturn(regProtocol3)
     }
 
     val holdingIdentity1 = HoldingIdentity(alice.toString(), groupId1)
@@ -104,6 +102,7 @@ class GroupPolicyProviderImplTest {
     fun createVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
         holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID(), timestamp = Instant.now()
     )
+
     val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(holdingIdentity1)) } doReturn createVirtualNodeInfo(holdingIdentity1, cpiIdentifier1)
         on { get(eq(holdingIdentity2)) } doReturn createVirtualNodeInfo(holdingIdentity2, cpiIdentifier2)
@@ -146,10 +145,11 @@ class GroupPolicyProviderImplTest {
         }
     }
     private val groupPolicyParser: GroupPolicyParser = mock {
-        on { parse(groupPolicy1) }.doReturn(parsedGroupPolicy1)
-        on { parse(groupPolicy2) }.doReturn(parsedGroupPolicy2)
-        on { parse(groupPolicy3) }.doReturn(parsedGroupPolicy3)
-        on { parse(null) }.doThrow(BadGroupPolicyException(""))
+        on { parse(eq(holdingIdentity1), eq(groupPolicy1)) }.doReturn(parsedGroupPolicy1)
+        on { parse(eq(holdingIdentity1), eq(groupPolicy2)) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity2), eq(groupPolicy2)) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity3), eq(groupPolicy3)) }.doReturn(parsedGroupPolicy3)
+        on { parse(eq(holdingIdentity4), eq(null)) }.doThrow(BadGroupPolicyException(""))
     }
 
     fun registrationChange(status: LifecycleStatus = LifecycleStatus.UP) {
@@ -174,13 +174,11 @@ class GroupPolicyProviderImplTest {
     fun assertExpectedGroupPolicy(
         groupPolicy: GroupPolicy?,
         groupId: String?,
-        testAttr: String?,
-        expectedSize: Int = 2
+        registrationProtocol: String?,
     ) {
         assertNotNull(groupPolicy)
-        assertEquals(expectedSize, groupPolicy!!.size)
-        assertEquals(groupId, groupPolicy[groupIdKey])
-        assertEquals(testAttr, groupPolicy[testAttrKey])
+        assertEquals(groupId, groupPolicy?.groupId)
+        assertEquals(registrationProtocol, groupPolicy?.registrationProtocol)
     }
 
     @Test
@@ -189,19 +187,19 @@ class GroupPolicyProviderImplTest {
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity1),
             groupId1,
-            testAttr1
+            regProtocol1
         )
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity2),
             groupId1,
-            testAttr2
+            regProtocol2
         )
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity3),
             groupId2,
-            testAttr3
+            regProtocol3
         )
-        assertThrows<BadGroupPolicyException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
+        assertThat(groupPolicyProvider.getGroupPolicy(holdingIdentity4)).isNull()
     }
 
     @Test
@@ -222,7 +220,7 @@ class GroupPolicyProviderImplTest {
         val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
         assertEquals(result1, result2)
-        verify(groupPolicyParser, times(1)).parse(any())
+        verify(groupPolicyParser, times(1)).parse(any(), any())
     }
 
     @Test
@@ -233,7 +231,7 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
         groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
-        verify(groupPolicyParser, times(2)).parse(any())
+        verify(groupPolicyParser, times(2)).parse(any(), any())
     }
 
     @Test
@@ -254,7 +252,7 @@ class GroupPolicyProviderImplTest {
         assertTrue(groupPolicyProvider.isRunning)
         assertNotNull(virtualNodeListener)
         val original = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        assertExpectedGroupPolicy(original, groupId1, testAttr1)
+        assertExpectedGroupPolicy(original, groupId1, regProtocol1)
 
         virtualNodeListener?.onUpdate(
             setOf(holdingIdentity1),
@@ -273,7 +271,7 @@ class GroupPolicyProviderImplTest {
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         assertNotEquals(original, updated)
-        assertExpectedGroupPolicy(updated, groupId1, testAttr2)
+        assertExpectedGroupPolicy(updated, groupId1, regProtocol2)
     }
 
     @Test
@@ -298,7 +296,7 @@ class GroupPolicyProviderImplTest {
         )
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
-        assertExpectedGroupPolicy(updated, groupId1, testAttr2)
+        assertExpectedGroupPolicy(updated, groupId1, regProtocol2)
     }
 
     @Test
@@ -325,7 +323,7 @@ class GroupPolicyProviderImplTest {
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity1),
             groupId1,
-            testAttr1
+            regProtocol1
         )
     }
 
@@ -336,6 +334,9 @@ class GroupPolicyProviderImplTest {
 
         // test holding identity
         val holdingIdentity = HoldingIdentity(alice.toString(), "FOO-BAR")
+
+        doReturn(parsedGroupPolicy1).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(groupPolicy1))
+        doThrow(BadGroupPolicyException("")).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(null))
 
         // set up mock for new CPI and send update to virtual node callback
         fun setCpi(cpiIdentifier: CpiIdentifier) {
@@ -352,7 +353,7 @@ class GroupPolicyProviderImplTest {
 
         // Look up group policy to set initial cache value
         val initial = groupPolicyProvider.getGroupPolicy(holdingIdentity)
-        assertExpectedGroupPolicy(initial, groupId1, testAttr1)
+        assertExpectedGroupPolicy(initial, groupId1, regProtocol1)
 
         // Trigger callback where an invalid group policy is loaded
         // This should cause an exception in parsing which is caught and the cached value should be removed
@@ -360,13 +361,13 @@ class GroupPolicyProviderImplTest {
 
         // Now there is no cached value so the service will parse again instead of reading from the cache.
         // Assert for exception to prove we are now parsing and not relying on the cache.
-        assertThrows<BadGroupPolicyException> { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
+        assertThat(groupPolicyProvider.getGroupPolicy(holdingIdentity)).isNull()
 
         // reset to valid group policy
         assertDoesNotThrow { setCpi(cpiIdentifier1) }
 
         // group policy retrieval works again
-        val result = assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
-        assertExpectedGroupPolicy(result, groupId1, testAttr1)
+        val result = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+        assertExpectedGroupPolicy(result, groupId1, regProtocol1)
     }
 }
