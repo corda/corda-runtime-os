@@ -94,10 +94,11 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
             {!isChatDisabled && (
                 <div style={{ flex: 1, height: '100%' }} className="flex flex-col gap-6 pt-6 ">
                     <div className="border border-light-gray border-opacity-25 overflow-y-scroll p4">
-                        {messages.map((message) => {
+                        {messages.map((message, index) => {
                             const isMyMessage = message.x500name === currentUserX500;
                             return (
                                 <Message
+                                    key={index}
                                     message={message}
                                     isMyMessage={isMyMessage}
                                     selectReplyParticipant={handleSelectReplyParticipant}

@@ -72,7 +72,7 @@ const ChatParticipants: React.FC<Props> = ({
                 {networkParticipants.map((nP) => {
                     const selected = selectedParticipants.includes(nP);
                     return (
-                        <div className="flex gap-6">
+                        <div className="flex gap-6" key={nP}>
                             <Checkbox
                                 checked={selected}
                                 value={nP}
