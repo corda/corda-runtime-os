@@ -26,32 +26,10 @@ dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-topic-schema"
-    implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-membership"
     implementation "net.corda:corda-ledger-consensual"
 
-    api project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:messaging:messaging")
-
-    implementation project(':libs:packaging:packaging-core')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:sandbox')
-
-    implementation project(":components:virtual-node:virtual-node-common")
-    implementation project(":components:virtual-node:cpk-read-service")
-    implementation project(":components:configuration:configuration-read-service")
-
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
-
-    runtimeOnly project(':libs:sandbox-hooks')
-
-    testImplementation project(":libs:lifecycle:lifecycle-impl")
-    testImplementation project(":libs:lifecycle:registry")
-    testImplementation 'net.corda:corda-serialization'
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
@@ -67,8 +45,6 @@ dependencies {
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node')
-    integrationTestImplementation project(':libs:ledger:ledger-consensual-impl')
-    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
@@ -77,7 +53,6 @@ dependencies {
     }
 
     // Gather locations of CPIs to add into `resources`
-    integrationTestImplementation "net.corda:corda-ledger-consensual"
     cpis project(path: ':testing:cpbs:consensual-ledger', configuration: 'cordaCPB')
 }
 
