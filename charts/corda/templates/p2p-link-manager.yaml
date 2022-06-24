@@ -30,7 +30,7 @@ spec:
                     - key: "app.kubernetes.io/component"
                       operator: In
                       values:
-                        - flow-worker
+                        - p2plinkmanager
                 topologyKey: "kubernetes.io/hostname"
       containers:
       - name: {{ include "corda.workerName" . }}

@@ -32,10 +32,19 @@ Below is a list of command line arguments you can use:
   -h, --help   Display help and exit
   -i, --instance-id=<instanceId>
                The unique instance ID (default to random number)
-  -k, --kafka-servers=<kafkaServers>
-               A comma-separated list of addresses of Kafka brokers (default: localhost:9092)
-      --topic-prefix=<topicPrefix>
+  -m, --messagingParams=<String=String>
+               Messaging parameters for the link manager.
+      --topicPrefix=<topicPrefix>
                The topic prefix (default: )
+```
+By default, the link-manager will try and connect to a Kafka broker on localhost:9092.
+To override this use option `-m` (to connect to a Kafka Broker on (kafka-broker:1000):
+```bash
+java -jar ./applications/p2p-link-manager/build/bin/corda-p2p-link-manager*.jar -mbootstrap.servers=kafka-broker:1000
+```
+These -m options are passed into the Kafka client. For example to use TLS to connect to the Kafka broker the following -m options can be used:
+```bash
+java -jar ./applications/p2p-link-manager/build/bin/corda-p2p-link-manager*.jar -msecurity.protocol=SSL -mssl.truststore.location=/certs/ca.crt -mssl.truststore.type=PEM
 ```
 
 ### Running the Docker image
