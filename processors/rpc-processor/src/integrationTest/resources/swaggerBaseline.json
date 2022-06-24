@@ -12,14 +12,8 @@
     "basicAuth" : [ ]
   } ],
   "tags" : [ {
-    "name" : "FlowRPCOps",
-    "description" : "Flow management endpoints"
-  }, {
-    "name" : "Hello RPC Ops",
-    "description" : "Hello RPC Ops endpoints"
-  }, {
-    "name" : "Stub rpc ops",
-    "description" : "Stub rpc ops endpoints"
+    "name" : "CertificatesRpcOps",
+    "description" : "Certificates API"
   }, {
     "name" : "ConfigRPCOps",
     "description" : "Cluster configuration management endpoints"
@@ -27,23 +21,11 @@
     "name" : "CpiUploadRPCOps",
     "description" : "Cpi Upload management endpoints"
   }, {
-    "name" : "PermissionEndpoint",
-    "description" : "Permissions Management APIs"
+    "name" : "FlowRPCOps",
+    "description" : "Flow management endpoints"
   }, {
-    "name" : "RoleEndpoint",
-    "description" : "Role Management APIs"
-  }, {
-    "name" : "UserEndpoint",
-    "description" : "User Management APIs"
-  }, {
-    "name" : "VirtualNodeRPCOps",
-    "description" : "Virtual node management endpoints"
-  }, {
-    "name" : "VirtualNodeMaintenanceRPCOps",
-    "description" : "Virtual node maintenance endpoints"
-  }, {
-    "name" : "CertificatesRpcOps",
-    "description" : "Certificates API"
+    "name" : "Hello RPC Ops",
+    "description" : "Hello RPC Ops endpoints"
   }, {
     "name" : "HsmRpcOps",
     "description" : "HSM API"
@@ -59,6 +41,24 @@
   }, {
     "name" : "NetworkRpcOps",
     "description" : "Network API"
+  }, {
+    "name" : "PermissionEndpoint",
+    "description" : "Permissions Management APIs"
+  }, {
+    "name" : "RoleEndpoint",
+    "description" : "Role Management APIs"
+  }, {
+    "name" : "Stub rpc ops",
+    "description" : "Stub rpc ops endpoints"
+  }, {
+    "name" : "UserEndpoint",
+    "description" : "User Management APIs"
+  }, {
+    "name" : "VirtualNodeMaintenanceRPCOps",
+    "description" : "Virtual node maintenance endpoints"
+  }, {
+    "name" : "VirtualNodeRPCOps",
+    "description" : "Virtual node management endpoints"
   } ],
   "paths" : {
     "/certificates/getprotocolversion" : {
@@ -2240,164 +2240,138 @@
   },
   "components" : {
     "schemas" : {
-      "HTTPFlowStateErrorResponse" : {
-        "required" : [ "message", "type" ],
+      "AddPermissionRequest" : {
+        "required" : [ "permissionId", "roleId" ],
+        "properties" : {
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "AddPermissionRequest",
+        "nullable" : false
+      },
+      "AddRoleRequest" : {
+        "required" : [ "loginName", "roleId" ],
+        "properties" : {
+          "loginName" : {
+            "type" : "string",
+            "description" : "User login name to be changed",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "roleId" : {
+            "type" : "string",
+            "description" : "Id of the role to associate with this user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "AddRoleRequest",
+        "nullable" : false
+      },
+      "CpiIdentifier" : {
+        "required" : [ "cpiName", "cpiVersion" ],
         "type" : "object",
         "properties" : {
-          "message" : {
+          "cpiName" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           },
-          "type" : {
+          "cpiVersion" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "CpiIdentifier_1" : {
+        "required" : [ "name", "signerSummaryHash", "version" ],
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "$ref" : "#/components/schemas/SecureHash"
+          },
+          "version" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           }
         },
-        "nullable" : true
+        "nullable" : false
       },
-      "HTTPFlowStatusResponse" : {
-        "required" : [ "flowError", "flowStatus", "holdingShortId", "timestamp" ],
+      "CpiIdentifier_2" : {
+        "required" : [ "cpiName", "cpiVersion" ],
         "type" : "object",
         "properties" : {
-          "clientRequestId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "flowError" : {
-            "$ref" : "#/components/schemas/HTTPFlowStateErrorResponse"
-          },
-          "flowId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "flowResult" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "flowStatus" : {
+          "cpiName" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           },
-          "holdingShortId" : {
+          "cpiVersion" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "CpiMetadata" : {
+        "required" : [ "cpks", "fileChecksum", "id", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "cpks" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CpkMetadata"
+            }
+          },
+          "fileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "groupPolicy" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "$ref" : "#/components/schemas/CpiIdentifier"
           },
           "timestamp" : {
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T16:33:53.725654200Z"
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPStartFlowResponse" : {
-        "required" : [ "flowStatus", "isExistingFlow" ],
-        "type" : "object",
-        "properties" : {
-          "flowStatus" : {
-            "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
-          },
-          "isExistingFlow" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          }
-        },
-        "nullable" : false
-      },
-      "Version" : {
-        "required" : [ "major", "minor" ],
-        "type" : "object",
-        "properties" : {
-          "major" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "minor" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPUpdateConfigResponse" : {
-        "required" : [ "config", "schemaVersion", "section", "version" ],
-        "type" : "object",
-        "properties" : {
-          "config" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
-          },
-          "section" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPUpdateConfigRequest" : {
-        "required" : [ "config", "schemaVersion", "section", "version" ],
-        "type" : "object",
-        "properties" : {
-          "config" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
-          },
-          "section" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "description" : "Details of the updated configuration",
-        "nullable" : false
-      },
-      "Status" : {
-        "required" : [ "checksum", "status" ],
-        "type" : "object",
-        "properties" : {
-          "checksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "status" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+            "example" : "2022-06-24T08:11:45.430395700Z"
           }
         },
         "nullable" : false
@@ -2463,7 +2437,7 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-23T16:33:53.765654900Z"
+            "example" : "2022-06-24T08:11:45.428395800Z"
           },
           "type" : {
             "type" : "string",
@@ -2473,131 +2447,14 @@
         },
         "nullable" : false
       },
-      "CpiIdentifier" : {
-        "required" : [ "cpiName", "cpiVersion" ],
-        "type" : "object",
+      "CreatePermissionRequest" : {
+        "required" : [ "createPermissionType" ],
         "properties" : {
-          "cpiName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cpiVersion" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
+          "createPermissionType" : {
+            "$ref" : "#/components/schemas/CreatePermissionType"
           }
         },
-        "nullable" : false
-      },
-      "CpiMetadata" : {
-        "required" : [ "cpks", "fileChecksum", "id", "timestamp" ],
-        "type" : "object",
-        "properties" : {
-          "cpks" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/CpkMetadata"
-            }
-          },
-          "fileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "groupPolicy" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "id" : {
-            "$ref" : "#/components/schemas/CpiIdentifier"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.767655100Z"
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPGetCPIsResponse" : {
-        "required" : [ "cpis" ],
-        "type" : "object",
-        "properties" : {
-          "cpis" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/CpiMetadata"
-            }
-          }
-        },
-        "nullable" : false
-      },
-      "UploadResponse" : {
-        "required" : [ "id" ],
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "PermissionResponseType" : {
-        "required" : [ "id", "permissionString", "permissionType", "updateTimestamp", "version" ],
-        "type" : "object",
-        "properties" : {
-          "groupVisibility" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionString" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionType" : {
-            "nullable" : false,
-            "example" : "DENY",
-            "enum" : [ "ALLOW", "DENY" ]
-          },
-          "updateTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.776653700Z"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "virtualNode" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
+        "description" : "CreatePermissionRequest",
         "nullable" : false
       },
       "CreatePermissionType" : {
@@ -2628,64 +2485,14 @@
         "description" : "Details of the permission to be created",
         "nullable" : false
       },
-      "PermissionAssociationResponseType" : {
-        "required" : [ "createdTimestamp", "id" ],
-        "type" : "object",
+      "CreateRoleRequest" : {
+        "required" : [ "createRoleType" ],
         "properties" : {
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.784654Z"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+          "createRoleType" : {
+            "$ref" : "#/components/schemas/CreateRoleType"
           }
         },
-        "nullable" : false
-      },
-      "RoleResponseType" : {
-        "required" : [ "id", "permissions", "roleName", "updateTimestamp", "version" ],
-        "type" : "object",
-        "properties" : {
-          "groupVisibility" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissions" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/PermissionAssociationResponseType"
-            }
-          },
-          "roleName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "updateTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.784654Z"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
+        "description" : "CreateRoleRequest",
         "nullable" : false
       },
       "CreateRoleType" : {
@@ -2706,116 +2513,14 @@
         "description" : "Details of the role to be created",
         "nullable" : false
       },
-      "PropertyResponseType" : {
-        "required" : [ "key", "lastChangedTimestamp", "value" ],
-        "type" : "object",
+      "CreateUserRequest" : {
+        "required" : [ "createUserType" ],
         "properties" : {
-          "key" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "lastChangedTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.792654300Z"
-          },
-          "value" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+          "createUserType" : {
+            "$ref" : "#/components/schemas/CreateUserType"
           }
         },
-        "nullable" : false
-      },
-      "RoleAssociationResponseType" : {
-        "required" : [ "createTimestamp", "roleId" ],
-        "type" : "object",
-        "properties" : {
-          "createTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.794657400Z"
-          },
-          "roleId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "UserResponseType" : {
-        "required" : [ "enabled", "fullName", "id", "loginName", "properties", "roleAssociations", "ssoAuth", "updateTimestamp", "version" ],
-        "type" : "object",
-        "properties" : {
-          "enabled" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "fullName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "loginName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "parentGroup" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "passwordExpiry" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-23T16:33:53.791654300Z"
-          },
-          "properties" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/PropertyResponseType"
-            }
-          },
-          "roleAssociations" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/RoleAssociationResponseType"
-            }
-          },
-          "ssoAuth" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "updateTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.794657400Z"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
+        "description" : "CreateUserRequest",
         "nullable" : false
       },
       "CreateUserType" : {
@@ -2851,658 +2556,10 @@
             "type" : "string",
             "format" : "datetime",
             "nullable" : true,
-            "example" : "2022-06-23T16:33:53.797656600Z"
+            "example" : "2022-06-24T08:11:45.461855500Z"
           }
         },
         "description" : "Details of the user to be created",
-        "nullable" : false
-      },
-      "PermissionSummaryResponseType" : {
-        "required" : [ "id", "permissionString", "permissionType" ],
-        "type" : "object",
-        "properties" : {
-          "groupVisibility" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionString" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionType" : {
-            "nullable" : false,
-            "example" : "DENY",
-            "enum" : [ "ALLOW", "DENY" ]
-          },
-          "virtualNode" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "UserPermissionSummaryResponseType" : {
-        "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
-        "type" : "object",
-        "properties" : {
-          "enabled" : {
-            "type" : "boolean",
-            "nullable" : false,
-            "example" : true
-          },
-          "lastUpdateTimestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.799655Z"
-          },
-          "loginName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissions" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/PermissionSummaryResponseType"
-            }
-          }
-        },
-        "nullable" : false
-      },
-      "SecureHash" : {
-        "required" : [ "algorithm", "bytes", "offset", "size" ],
-        "type" : "object",
-        "properties" : {
-          "algorithm" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "bytes" : {
-            "type" : "string",
-            "format" : "byte",
-            "nullable" : false,
-            "example" : "No example available for this type"
-          },
-          "offset" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "nullable" : true
-      },
-      "CpiIdentifier_1" : {
-        "required" : [ "name", "signerSummaryHash", "version" ],
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "$ref" : "#/components/schemas/SecureHash"
-          },
-          "version" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "HoldingIdentity" : {
-        "required" : [ "groupId", "hash", "id", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "groupId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "hash" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "VirtualNodeInfo" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "timestamp", "vaultDmlConnectionId", "version" ],
-        "type" : "object",
-        "properties" : {
-          "cpiIdentifier" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_1"
-          },
-          "cryptoDdlConnectionId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : true,
-            "example" : "No example available for this type"
-          },
-          "cryptoDmlConnectionId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : false,
-            "example" : "No example available for this type"
-          },
-          "holdingIdentity" : {
-            "$ref" : "#/components/schemas/HoldingIdentity"
-          },
-          "hsmConnectionId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : true,
-            "example" : "No example available for this type"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.884653700Z"
-          },
-          "vaultDdlConnectionId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : true,
-            "example" : "No example available for this type"
-          },
-          "vaultDmlConnectionId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : false,
-            "example" : "No example available for this type"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPGetVirtualNodesResponse" : {
-        "required" : [ "virtualNodes" ],
-        "type" : "object",
-        "properties" : {
-          "virtualNodes" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/VirtualNodeInfo"
-            }
-          }
-        },
-        "nullable" : false
-      },
-      "CpiIdentifier_2" : {
-        "required" : [ "cpiName", "cpiVersion" ],
-        "type" : "object",
-        "properties" : {
-          "cpiName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cpiVersion" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPCreateVirtualNodeResponse" : {
-        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cpiId" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_2"
-          },
-          "cryptoDdlConnectionId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cryptoDmlConnectionId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "holdingIdHash" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "mgmGroupId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "vaultDdlConnectionId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDmlConnectionId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "HTTPCreateVirtualNodeRequest" : {
-        "required" : [ "cpiFileChecksum", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cryptoDdlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cryptoDmlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDdlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDmlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "Details of the virtual node to be created",
-        "nullable" : false
-      },
-      "MasterKeyPolicy" : {
-        "required" : [ "type" ],
-        "type" : "object",
-        "properties" : {
-          "type" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "HsmInfo" : {
-        "required" : [ "attemptTimeout", "createdAt", "id", "masterKeyPolicy", "maxAttempts", "serviceName", "supportedSchemes" ],
-        "type" : "object",
-        "properties" : {
-          "attemptTimeout" : {
-            "type" : "string",
-            "format" : "duration",
-            "nullable" : false,
-            "example" : "PT15M"
-          },
-          "capacity" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : true,
-            "example" : 0
-          },
-          "createdAt" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.901655400Z"
-          },
-          "description" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "masterKeyPolicy" : {
-            "$ref" : "#/components/schemas/MasterKeyPolicy"
-          },
-          "maxAttempts" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "serviceName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "supportedSchemes" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "string",
-              "nullable" : false,
-              "example" : "string"
-            }
-          },
-          "workerLabel" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
-        "nullable" : true
-      },
-      "KeyMetaData" : {
-        "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
-        "type" : "object",
-        "properties" : {
-          "alias" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "created" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-23T16:33:53.905654700Z"
-          },
-          "hsmCategory" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "keyId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "masterKeyAlias" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "scheme" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "RpcMemberInfo" : {
-        "required" : [ "memberContext", "mgmContext" ],
-        "type" : "object",
-        "properties" : {
-          "memberContext" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string",
-              "nullable" : false,
-              "example" : "string"
-            },
-            "nullable" : false,
-            "example" : "No example available for this type"
-          },
-          "mgmContext" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string",
-              "nullable" : false,
-              "example" : "string"
-            },
-            "nullable" : false,
-            "example" : "No example available for this type"
-          }
-        },
-        "nullable" : false
-      },
-      "RpcMemberInfoList" : {
-        "required" : [ "members" ],
-        "type" : "object",
-        "properties" : {
-          "members" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/RpcMemberInfo"
-            }
-          }
-        },
-        "nullable" : false
-      },
-      "MemberInfoSubmitted" : {
-        "required" : [ "data" ],
-        "type" : "object",
-        "properties" : {
-          "data" : {
-            "type" : "object",
-            "additionalProperties" : {
-              "type" : "string",
-              "nullable" : false,
-              "example" : "string"
-            },
-            "nullable" : false,
-            "example" : "No example available for this type"
-          }
-        },
-        "nullable" : false
-      },
-      "RegistrationRequestProgress" : {
-        "required" : [ "memberInfoSubmitted", "registrationStatus" ],
-        "type" : "object",
-        "properties" : {
-          "memberInfoSubmitted" : {
-            "$ref" : "#/components/schemas/MemberInfoSubmitted"
-          },
-          "registrationSent" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : true,
-            "example" : "2022-06-23T16:33:53.913726300Z"
-          },
-          "registrationStatus" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "MemberRegistrationRequest" : {
-        "required" : [ "action", "holdingIdentityId" ],
-        "type" : "object",
-        "properties" : {
-          "action" : {
-            "nullable" : false,
-            "example" : "requestJoin",
-            "enum" : [ "requestJoin" ]
-          },
-          "holdingIdentityId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "Data required to initialise the registration process.",
-        "nullable" : false
-      },
-      "UpdateclusterconfigurationRequest" : {
-        "required" : [ "request" ],
-        "properties" : {
-          "request" : {
-            "$ref" : "#/components/schemas/HTTPUpdateConfigRequest"
-          }
-        },
-        "description" : "UpdateclusterconfigurationRequest",
-        "nullable" : false
-      },
-      "CreatePermissionRequest" : {
-        "required" : [ "createPermissionType" ],
-        "properties" : {
-          "createPermissionType" : {
-            "$ref" : "#/components/schemas/CreatePermissionType"
-          }
-        },
-        "description" : "CreatePermissionRequest",
-        "nullable" : false
-      },
-      "CreateRoleRequest" : {
-        "required" : [ "createRoleType" ],
-        "properties" : {
-          "createRoleType" : {
-            "$ref" : "#/components/schemas/CreateRoleType"
-          }
-        },
-        "description" : "CreateRoleRequest",
-        "nullable" : false
-      },
-      "AddPermissionRequest" : {
-        "required" : [ "permissionId", "roleId" ],
-        "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing permission",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "AddPermissionRequest",
-        "nullable" : false
-      },
-      "RemovePermissionRequest" : {
-        "required" : [ "permissionId", "roleId" ],
-        "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "permissionId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing permission",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "RemovePermissionRequest",
-        "nullable" : false
-      },
-      "CreateUserRequest" : {
-        "required" : [ "createUserType" ],
-        "properties" : {
-          "createUserType" : {
-            "$ref" : "#/components/schemas/CreateUserType"
-          }
-        },
-        "description" : "CreateUserRequest",
-        "nullable" : false
-      },
-      "RemoveRoleRequest" : {
-        "required" : [ "loginName", "roleId" ],
-        "properties" : {
-          "loginName" : {
-            "type" : "string",
-            "description" : "User login name to be changed",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "roleId" : {
-            "type" : "string",
-            "description" : "Id of the role to un-assign from this user",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "RemoveRoleRequest",
-        "nullable" : false
-      },
-      "AddRoleRequest" : {
-        "required" : [ "loginName", "roleId" ],
-        "properties" : {
-          "loginName" : {
-            "type" : "string",
-            "description" : "User login name to be changed",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "roleId" : {
-            "type" : "string",
-            "description" : "Id of the role to associate with this user",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "AddRoleRequest",
         "nullable" : false
       },
       "CreatevirtualnodeRequest" : {
@@ -3580,15 +2637,733 @@
         "description" : "GenerateKeyPairRequest",
         "nullable" : false
       },
-      "StartRegistrationRequest" : {
-        "required" : [ "memberRegistrationRequest" ],
+      "HTTPCreateVirtualNodeRequest" : {
+        "required" : [ "cpiFileChecksum", "x500Name" ],
+        "type" : "object",
         "properties" : {
-          "memberRegistrationRequest" : {
-            "$ref" : "#/components/schemas/MemberRegistrationRequest"
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cryptoDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           }
         },
-        "description" : "StartRegistrationRequest",
+        "description" : "Details of the virtual node to be created",
         "nullable" : false
+      },
+      "HTTPCreateVirtualNodeResponse" : {
+        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cpiId" : {
+            "$ref" : "#/components/schemas/CpiIdentifier_2"
+          },
+          "cryptoDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingIdHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "mgmGroupId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "vaultDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "HTTPFlowStateErrorResponse" : {
+        "required" : [ "message", "type" ],
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : true
+      },
+      "HTTPFlowStatusResponse" : {
+        "required" : [ "flowError", "flowStatus", "holdingShortId", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowError" : {
+            "$ref" : "#/components/schemas/HTTPFlowStateErrorResponse"
+          },
+          "flowId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowResult" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingShortId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.385735900Z"
+          }
+        },
+        "nullable" : false
+      },
+      "HTTPGetCPIsResponse" : {
+        "required" : [ "cpis" ],
+        "type" : "object",
+        "properties" : {
+          "cpis" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/CpiMetadata"
+            }
+          }
+        },
+        "nullable" : false
+      },
+      "HTTPGetVirtualNodesResponse" : {
+        "required" : [ "virtualNodes" ],
+        "type" : "object",
+        "properties" : {
+          "virtualNodes" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/VirtualNodeInfo"
+            }
+          }
+        },
+        "nullable" : false
+      },
+      "HTTPStartFlowResponse" : {
+        "required" : [ "flowStatus", "isExistingFlow" ],
+        "type" : "object",
+        "properties" : {
+          "flowStatus" : {
+            "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
+          },
+          "isExistingFlow" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          }
+        },
+        "nullable" : false
+      },
+      "HTTPUpdateConfigRequest" : {
+        "required" : [ "config", "schemaVersion", "section", "version" ],
+        "type" : "object",
+        "properties" : {
+          "config" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/Version"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "description" : "Details of the updated configuration",
+        "nullable" : false
+      },
+      "HTTPUpdateConfigResponse" : {
+        "required" : [ "config", "schemaVersion", "section", "version" ],
+        "type" : "object",
+        "properties" : {
+          "config" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/Version"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
+      "HoldingIdentity" : {
+        "required" : [ "groupId", "hash", "id", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "groupId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "hash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "HsmInfo" : {
+        "required" : [ "attemptTimeout", "createdAt", "id", "masterKeyPolicy", "maxAttempts", "serviceName", "supportedSchemes" ],
+        "type" : "object",
+        "properties" : {
+          "attemptTimeout" : {
+            "type" : "string",
+            "format" : "duration",
+            "nullable" : false,
+            "example" : "PT15M"
+          },
+          "capacity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : true,
+            "example" : 0
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.551970700Z"
+          },
+          "description" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "masterKeyPolicy" : {
+            "$ref" : "#/components/schemas/MasterKeyPolicy"
+          },
+          "maxAttempts" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "serviceName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "supportedSchemes" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            }
+          },
+          "workerLabel" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "KeyMetaData" : {
+        "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
+        "type" : "object",
+        "properties" : {
+          "alias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "created" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.555040700Z"
+          },
+          "hsmCategory" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "keyId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "masterKeyAlias" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "scheme" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "MasterKeyPolicy" : {
+        "required" : [ "type" ],
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "MemberInfoSubmitted" : {
+        "required" : [ "data" ],
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        },
+        "nullable" : false
+      },
+      "MemberRegistrationRequest" : {
+        "required" : [ "action", "holdingIdentityId" ],
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "nullable" : false,
+            "example" : "requestJoin",
+            "enum" : [ "requestJoin" ]
+          },
+          "holdingIdentityId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Data required to initialise the registration process.",
+        "nullable" : false
+      },
+      "PermissionAssociationResponseType" : {
+        "required" : [ "createdTimestamp", "id" ],
+        "type" : "object",
+        "properties" : {
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.448703200Z"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "PermissionResponseType" : {
+        "required" : [ "id", "permissionString", "permissionType", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionString" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionType" : {
+            "nullable" : false,
+            "example" : "DENY",
+            "enum" : [ "ALLOW", "DENY" ]
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.439580900Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "virtualNode" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "PermissionSummaryResponseType" : {
+        "required" : [ "id", "permissionString", "permissionType" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionString" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionType" : {
+            "nullable" : false,
+            "example" : "DENY",
+            "enum" : [ "ALLOW", "DENY" ]
+          },
+          "virtualNode" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "PropertyResponseType" : {
+        "required" : [ "key", "lastChangedTimestamp", "value" ],
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "lastChangedTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.457854400Z"
+          },
+          "value" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "RegistrationRequestProgress" : {
+        "required" : [ "memberInfoSubmitted", "registrationStatus" ],
+        "type" : "object",
+        "properties" : {
+          "memberInfoSubmitted" : {
+            "$ref" : "#/components/schemas/MemberInfoSubmitted"
+          },
+          "registrationSent" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T08:11:45.562101300Z"
+          },
+          "registrationStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "RemovePermissionRequest" : {
+        "required" : [ "permissionId", "roleId" ],
+        "properties" : {
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissionId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "RemovePermissionRequest",
+        "nullable" : false
+      },
+      "RemoveRoleRequest" : {
+        "required" : [ "loginName", "roleId" ],
+        "properties" : {
+          "loginName" : {
+            "type" : "string",
+            "description" : "User login name to be changed",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "roleId" : {
+            "type" : "string",
+            "description" : "Id of the role to un-assign from this user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "RemoveRoleRequest",
+        "nullable" : false
+      },
+      "RoleAssociationResponseType" : {
+        "required" : [ "createTimestamp", "roleId" ],
+        "type" : "object",
+        "properties" : {
+          "createTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.459855400Z"
+          },
+          "roleId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "RoleResponseType" : {
+        "required" : [ "id", "permissions", "roleName", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "groupVisibility" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissions" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionAssociationResponseType"
+            }
+          },
+          "roleName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.448703200Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
+      "RpcMemberInfo" : {
+        "required" : [ "memberContext", "mgmContext" ],
+        "type" : "object",
+        "properties" : {
+          "memberContext" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          },
+          "mgmContext" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        },
+        "nullable" : false
+      },
+      "RpcMemberInfoList" : {
+        "required" : [ "members" ],
+        "type" : "object",
+        "properties" : {
+          "members" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RpcMemberInfo"
+            }
+          }
+        },
+        "nullable" : false
+      },
+      "SecureHash" : {
+        "required" : [ "algorithm", "bytes", "offset", "size" ],
+        "type" : "object",
+        "properties" : {
+          "algorithm" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "bytes" : {
+            "type" : "string",
+            "format" : "byte",
+            "nullable" : false,
+            "example" : "No example available for this type"
+          },
+          "offset" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : true
       },
       "SetupHostedIdentitiesRequest" : {
         "required" : [ "certificateChainAlias" ],
@@ -3613,6 +3388,231 @@
           }
         },
         "description" : "SetupHostedIdentitiesRequest",
+        "nullable" : false
+      },
+      "StartRegistrationRequest" : {
+        "required" : [ "memberRegistrationRequest" ],
+        "properties" : {
+          "memberRegistrationRequest" : {
+            "$ref" : "#/components/schemas/MemberRegistrationRequest"
+          }
+        },
+        "description" : "StartRegistrationRequest",
+        "nullable" : false
+      },
+      "Status" : {
+        "required" : [ "checksum", "status" ],
+        "type" : "object",
+        "properties" : {
+          "checksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "UpdateclusterconfigurationRequest" : {
+        "required" : [ "request" ],
+        "properties" : {
+          "request" : {
+            "$ref" : "#/components/schemas/HTTPUpdateConfigRequest"
+          }
+        },
+        "description" : "UpdateclusterconfigurationRequest",
+        "nullable" : false
+      },
+      "UploadResponse" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "UserPermissionSummaryResponseType" : {
+        "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "lastUpdateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.464907500Z"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "permissions" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionSummaryResponseType"
+            }
+          }
+        },
+        "nullable" : false
+      },
+      "UserResponseType" : {
+        "required" : [ "enabled", "fullName", "id", "loginName", "properties", "roleAssociations", "ssoAuth", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "fullName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "loginName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroup" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "passwordExpiry" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : true,
+            "example" : "2022-06-24T08:11:45.456833100Z"
+          },
+          "properties" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyResponseType"
+            }
+          },
+          "roleAssociations" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RoleAssociationResponseType"
+            }
+          },
+          "ssoAuth" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.459855400Z"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
+      "Version" : {
+        "required" : [ "major", "minor" ],
+        "type" : "object",
+        "properties" : {
+          "major" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "minor" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
+      "VirtualNodeInfo" : {
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "timestamp", "vaultDmlConnectionId", "version" ],
+        "type" : "object",
+        "properties" : {
+          "cpiIdentifier" : {
+            "$ref" : "#/components/schemas/CpiIdentifier_1"
+          },
+          "cryptoDdlConnectionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : true,
+            "example" : "No example available for this type"
+          },
+          "cryptoDmlConnectionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : false,
+            "example" : "No example available for this type"
+          },
+          "holdingIdentity" : {
+            "$ref" : "#/components/schemas/HoldingIdentity"
+          },
+          "hsmConnectionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : true,
+            "example" : "No example available for this type"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T08:11:45.540829800Z"
+          },
+          "vaultDdlConnectionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : true,
+            "example" : "No example available for this type"
+          },
+          "vaultDmlConnectionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : false,
+            "example" : "No example available for this type"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
         "nullable" : false
       }
     },
