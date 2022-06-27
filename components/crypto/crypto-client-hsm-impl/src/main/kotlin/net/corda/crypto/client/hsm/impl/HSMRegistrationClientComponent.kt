@@ -1,8 +1,8 @@
-package net.corda.crypto.client.impl
+package net.corda.crypto.client.hsm.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest

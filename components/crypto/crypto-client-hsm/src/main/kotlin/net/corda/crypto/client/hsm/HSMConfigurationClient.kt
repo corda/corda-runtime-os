@@ -1,4 +1,4 @@
-package net.corda.crypto.client
+package net.corda.crypto.client.hsm
 
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo

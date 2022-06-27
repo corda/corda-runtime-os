@@ -1,5 +1,6 @@
-package net.corda.crypto.client.impl
+package net.corda.crypto.client.hsm.impl
 
+import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toWire
 import net.corda.data.crypto.wire.CryptoNoContentValue

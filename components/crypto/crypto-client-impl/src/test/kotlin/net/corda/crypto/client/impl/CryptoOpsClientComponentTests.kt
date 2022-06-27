@@ -6,6 +6,7 @@ import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
 import net.corda.crypto.client.impl.infra.generateKeyPair
 import net.corda.crypto.client.impl.infra.signData
+import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER

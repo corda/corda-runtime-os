@@ -1,8 +1,9 @@
-package net.corda.crypto.client.impl
+package net.corda.crypto.client.hsm.impl
 
-import net.corda.crypto.client.impl.infra.SendActResult
-import net.corda.crypto.client.impl.infra.TestConfigurationReadService
-import net.corda.crypto.client.impl.infra.act
+import net.corda.crypto.client.hsm.impl.infra.SendActResult
+import net.corda.crypto.client.hsm.impl.infra.TestConfigurationReadService
+import net.corda.crypto.client.hsm.impl.infra.act
+import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY

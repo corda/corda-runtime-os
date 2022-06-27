@@ -1,4 +1,4 @@
-package net.corda.crypto.client
+package net.corda.crypto.client.hsm
 
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.Lifecycle

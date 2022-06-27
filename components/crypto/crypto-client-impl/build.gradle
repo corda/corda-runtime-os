@@ -12,7 +12,6 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
 
@@ -21,7 +20,6 @@ dependencies {
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

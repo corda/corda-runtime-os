@@ -1,15 +1,15 @@
-package net.corda.crypto.client.impl
+package net.corda.crypto.component.impl
 
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.failures.CryptoException
 import net.corda.v5.crypto.failures.CryptoRetryException
 import net.corda.v5.crypto.failures.CryptoSignatureException
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class ExceptionsUtilsTests {
     companion object {

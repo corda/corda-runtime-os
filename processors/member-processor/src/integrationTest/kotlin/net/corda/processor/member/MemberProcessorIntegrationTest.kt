@@ -5,7 +5,7 @@ import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.DbPrivilege
