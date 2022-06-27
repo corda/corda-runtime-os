@@ -231,6 +231,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
+        check(lifecycleCoordinator.status == LifecycleStatus.UP) {
+            "Partition listener for topic ${config.topic} not initialized"
+        }
+
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
@@ -252,8 +256,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
 
         if (partitions.isEmpty()) {
-            future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
-            log.error("No partitions. Couldn't send")
+            future.completeExceptionally(CordaRPCAPISenderException("No partitions for topic ${config.topic}. Couldn't send"))
+            log.error("No partitions for topic ${config.topic}. Couldn't send")
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(
