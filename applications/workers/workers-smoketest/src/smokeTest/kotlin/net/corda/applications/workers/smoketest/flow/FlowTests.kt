@@ -1,8 +1,8 @@
 package net.corda.applications.workers.smoketest.flow
 
 import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.X500_ALICE
 import net.corda.applications.workers.smoketest.X500_BOB
+import net.corda.applications.workers.smoketest.X500_CHARLIE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -20,7 +20,7 @@ class FlowTests {
 
     companion object {
 
-        var aliceHoldingId: String = getHoldingIdShortHash(X500_ALICE, GROUP_ID)
+        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
 
         /*
@@ -31,13 +31,13 @@ class FlowTests {
         @JvmStatic
         internal fun beforeAll() {
 
-            val aliceActualHoldingId = createVirtualNodeFor(X500_ALICE)
             val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
+            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-            assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
             assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+            assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
 
             createVirtualNodeFor(X500_SESSION_USER1)
             createVirtualNodeFor(X500_SESSION_USER2)
@@ -69,12 +69,12 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(aliceHoldingId, requestBody)
+        startRpcFlow(charlieHoldingId, requestBody)
         startRpcFlow(bobHoldingId, requestBody)
         startRpcFlow(bobHoldingId, requestBody)
 
         awaitMultipleRpcFlowFinished(bobHoldingId, 2)
-        awaitMultipleRpcFlowFinished(aliceHoldingId, 1)
+        awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
     }
 
     @Test

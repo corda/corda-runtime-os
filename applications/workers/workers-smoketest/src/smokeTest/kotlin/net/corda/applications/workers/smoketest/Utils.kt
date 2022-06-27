@@ -4,6 +4,7 @@ import java.net.URI
 
 const val X500_BOB = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
 const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
+const val X500_CHARLIE = "CN=Charlie, OU=Application, O=R3, L=Dublin, C=IE"
 const val CPI_NAME = "flow-worker-dev"
 
 const val USERNAME = "admin"
