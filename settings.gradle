@@ -97,6 +97,8 @@ include 'components:chunking:chunk-read-service-impl'
 include 'components:chunking:chunk-db-write'
 include 'components:chunking:chunk-db-write-impl'
 include 'components:crypto:crypto-client'
+include 'components:crypto:crypto-client-hsm'
+include 'components:crypto:crypto-client-hsm-impl'
 include 'components:crypto:crypto-client-impl'
 include 'components:crypto:crypto-component-core-impl'
 include 'components:crypto:crypto-db-persistence-impl'
@@ -181,6 +183,7 @@ include 'libs:configuration:configuration-endpoints'
 include 'libs:configuration:configuration-merger'
 include 'libs:configuration:configuration-schema:p2p'
 include 'libs:configuration:configuration-validation'
+include 'libs:crypto:cipher-suite-impl'
 include 'libs:crypto:crypto-core'
 include 'libs:crypto:crypto-flow'
 include 'libs:crypto:crypto-impl'
@@ -396,7 +399,8 @@ gradleEnterprise {
     }
     buildCache {
         local {
-            enabled = false
+            enabled = true
+            removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
         remote(HttpBuildCache) {
             url = "${gradleEnterpriseUrl}/cache/"
@@ -410,7 +414,7 @@ gradleEnterprise {
                 enabled = true
             } else {
                 push = false
-                enabled = true
+                enabled = false
             }
         }
     }

@@ -35,7 +35,9 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
         enforceNotPrimitive(receiveType)
+        log.info("sessionId=${sourceSessionId} is init=${initiated}")
         ensureSessionIsOpen()
+        log.info("sessionId=${sourceSessionId} is init=${initiated}")
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
