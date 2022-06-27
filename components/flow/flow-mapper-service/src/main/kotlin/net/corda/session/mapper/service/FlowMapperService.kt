@@ -1,5 +1,6 @@
 package net.corda.session.mapper.service
 
+import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -33,7 +34,6 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
@@ -77,7 +77,6 @@ class FlowMapperService @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        //Hack: Removed FLOW_CONFIG from the list for now, needs to be reviewed as part of CORE-3780
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
                 } else {

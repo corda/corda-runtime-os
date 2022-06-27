@@ -25,8 +25,7 @@ dependencies {
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:db:db-connection-manager")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:virtual-node:virtual-node-info")
@@ -61,14 +60,13 @@ dependencies {
     integrationTestImplementation project(":testing:db-testkit")
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":components:db:db-connection-manager-impl")
-    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
 }
 

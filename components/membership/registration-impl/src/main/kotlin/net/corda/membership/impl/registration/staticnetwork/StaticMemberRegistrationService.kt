@@ -2,40 +2,40 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.create
-import net.corda.layeredpropertymap.toWire
+import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.MGMContextImpl
-import net.corda.membership.impl.MemberContextImpl
-import net.corda.membership.impl.MemberInfoExtension
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
+import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.HostedIdentityEntry
+import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.v5.base.types.MemberX500Name
@@ -70,10 +70,10 @@ class StaticMemberRegistrationService @Activate constructor(
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = HSMRegistrationClient::class)
-    private val hsmRegistrationClient: HSMRegistrationClient
+    private val hsmRegistrationClient: HSMRegistrationClient,
+    @Reference(service = MemberInfoFactory::class)
+    val memberInfoFactory: MemberInfoFactory,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -117,7 +117,8 @@ class StaticMemberRegistrationService @Activate constructor(
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
             val membershipUpdates = lifecycleHandler.publisher.publish(parseMemberTemplate(member, groupPolicy))
             membershipUpdates.forEach { it.get() }
-            val hostedIdentityUpdates = lifecycleHandler.publisher.publish(listOf(createHostedIdentity(member, groupPolicy)))
+            val hostedIdentityUpdates =
+                lifecycleHandler.publisher.publish(listOf(createHostedIdentity(member, groupPolicy)))
             hostedIdentityUpdates.forEach { it.get() }
         } catch (e: Exception) {
             StringWriter().use { sw ->
@@ -139,7 +140,10 @@ class StaticMemberRegistrationService @Activate constructor(
      * kafka publisher.
      */
     @Suppress("MaxLineLength")
-    private fun parseMemberTemplate(registeringMember: HoldingIdentity, groupPolicy: GroupPolicy): List<Record<String, PersistentMemberInfo>> {
+    private fun parseMemberTemplate(
+        registeringMember: HoldingIdentity,
+        groupPolicy: GroupPolicy
+    ): List<Record<String, PersistentMemberInfo>> {
         val records = mutableListOf<Record<String, PersistentMemberInfo>>()
 
         val groupId = groupPolicy.groupId
@@ -154,7 +158,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val staticMemberInfo = staticMemberList.firstOrNull {
             MemberX500Name.parse(it.name!!) == MemberX500Name.parse(memberName)
-        } ?: throw IllegalArgumentException("Our membership " + memberName + " is not listed in the static member list.")
+        } ?: throw IllegalArgumentException("Our membership $memberName is not listed in the static member list.")
 
         validateStaticMemberDeclaration(staticMemberInfo)
         // single key used as both session and ledger key
@@ -162,7 +166,7 @@ class StaticMemberRegistrationService @Activate constructor(
         val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
 
         @Suppress("SpreadOperator")
-        val memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
+        val memberInfo = memberInfoFactory.create(
             sortedMapOf(
                 PARTY_NAME to memberName,
                 PARTY_SESSION_KEY to encodedMemberKey,
@@ -173,10 +177,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
                 PLATFORM_VERSION to staticMemberInfo.platformVersion,
                 SERIAL to staticMemberInfo.serial,
-            )
-        )
-
-        val mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
+            ),
             sortedMapOf(
                 STATUS to staticMemberInfo.status,
                 MODIFIED_TIME to staticMemberInfo.modifiedTime,
@@ -190,7 +191,11 @@ class StaticMemberRegistrationService @Activate constructor(
                 Record(
                     MEMBER_LIST_TOPIC,
                     "${owningMemberHoldingIdentity.id}-$memberId",
-                    PersistentMemberInfo(owningMemberHoldingIdentity.toAvro(), memberProvidedContext.toWire(), mgmProvidedContext.toWire())
+                    PersistentMemberInfo(
+                        owningMemberHoldingIdentity.toAvro(),
+                        memberInfo.memberProvidedContext.toAvro(),
+                        memberInfo.mgmProvidedContext.toAvro()
+                    )
                 )
             )
         }
@@ -201,7 +206,10 @@ class StaticMemberRegistrationService @Activate constructor(
     /**
      * Creates the locally hosted identity required for the P2P layer.
      */
-    private fun createHostedIdentity(registeringMember: HoldingIdentity, groupPolicy: GroupPolicy): Record<String, HostedIdentityEntry> {
+    private fun createHostedIdentity(
+        registeringMember: HoldingIdentity,
+        groupPolicy: GroupPolicy
+    ): Record<String, HostedIdentityEntry> {
         val memberName = registeringMember.x500Name
         val memberId = registeringMember.id
         val groupId = groupPolicy.groupId
@@ -220,7 +228,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            "$memberName-$groupId",
+            registeringMember.id,
             hostedIdentity
 
         )
@@ -288,13 +296,13 @@ class StaticMemberRegistrationService @Activate constructor(
         for (index in endpoints.indices) {
             result.add(
                 Pair(
-                    String.format(MemberInfoExtension.URL_KEY, index),
+                    String.format(URL_KEY, index),
                     endpoints[index].url
                 )
             )
             result.add(
                 Pair(
-                    String.format(MemberInfoExtension.PROTOCOL_VERSION, index),
+                    String.format(PROTOCOL_VERSION, index),
                     endpoints[index].protocolVersion.toString()
                 )
             )
@@ -312,7 +320,7 @@ class StaticMemberRegistrationService @Activate constructor(
         val ledgerKeys = listOf(memberKey)
         return ledgerKeys.mapIndexed { index, ledgerKey ->
             String.format(
-                MemberInfoExtension.LEDGER_KEYS_KEY,
+                LEDGER_KEYS_KEY,
                 index
             ) to ledgerKey
         }
@@ -329,7 +337,7 @@ class StaticMemberRegistrationService @Activate constructor(
         return ledgerKeys.mapIndexed { index, ledgerKey ->
             val hash = ledgerKey.calculateHash()
             String.format(
-                MemberInfoExtension.LEDGER_KEY_HASHES_KEY,
+                LEDGER_KEY_HASHES_KEY,
                 index
             ) to hash.toString()
         }

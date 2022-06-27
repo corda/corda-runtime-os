@@ -24,35 +24,10 @@
         }
       }
     },
-    "rpc": {
-      "description": "Configuration options specific to rpc worker.",
-      "type": "object",
-      "properties": {}
-    },
     "crypto": {
       "description": "Configuration options specific to crypto worker.",
       "type": "object",
       "properties": {}
-    },
-    "reconciliation": {
-      "description": "Configuration options specific to reconciliation.",
-      "type": "object",
-      "properties": {
-        "permissionSummaryIntervalMs": {
-          "description": "The JDBC database URL",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "cpkWriteIntervalMs": {
-          "description": "Cluster admin username to connect to the database with.",
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
     },
     "db": {
       "description": "Configuration options related to database.",

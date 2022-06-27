@@ -15,7 +15,7 @@ import net.corda.httprpc.test.TestEntityRpcOps
 import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utls.findFreePort
+import net.corda.httprpc.test.utils.findFreePort
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.seconds
@@ -37,7 +37,8 @@ import kotlin.test.fail
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.test.TestFileUploadAPI
 import net.corda.httprpc.test.TestFileUploadImpl
-import net.corda.httprpc.test.utls.ChecksumUtil.generateChecksum
+import net.corda.httprpc.test.utils.ChecksumUtil.generateChecksum
+import net.corda.httprpc.test.utils.multipartDir
 
 internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     companion object {

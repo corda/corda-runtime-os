@@ -3,20 +3,17 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.MGMContextImpl
-import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
@@ -24,6 +21,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.impl.MemberInfoExtension.Companion.status
+import net.corda.membership.impl.MemberInfoFactoryImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
@@ -36,7 +34,6 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
-import net.corda.membership.impl.toMemberInfo
 import net.corda.membership.impl.toSortedMap
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -44,7 +41,7 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.HostedIdentityEntry
+import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -157,6 +154,7 @@ class StaticMemberRegistrationServiceTest {
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
+    private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
@@ -167,8 +165,8 @@ class StaticMemberRegistrationServiceTest {
         cryptoOpsClient,
         configurationReadService,
         lifecycleCoordinatorFactory,
-        layeredPropertyMapFactory,
-        hsmRegistrationClient
+        hsmRegistrationClient,
+        memberInfoFactory
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -216,13 +214,9 @@ class StaticMemberRegistrationServiceTest {
 
         assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
         val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
-        val memberPublished = toMemberInfo(
-            layeredPropertyMapFactory.create<MemberContextImpl>(
-                KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
-            ),
-            layeredPropertyMapFactory.create<MGMContextImpl>(
-                KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
-            )
+        val memberPublished = memberInfoFactory.create(
+            persistentMemberPublished.memberContext.toSortedMap(),
+            persistentMemberPublished.mgmContext.toSortedMap()
         )
         assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
         assertNotNull(memberPublished.softwareVersion)
@@ -239,7 +233,7 @@ class StaticMemberRegistrationServiceTest {
 
         val publishedHostedIdentity = hostedIdentityList.first()
 
-        assertEquals("${alice.x500Name}-${alice.groupId}", publishedHostedIdentity.key)
+        assertEquals(alice.id, publishedHostedIdentity.key)
         assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
         val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
         assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)

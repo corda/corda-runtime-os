@@ -3,7 +3,7 @@ package net.corda.libs.packaging.verify.internal.cpi
 import net.corda.libs.packaging.JarReader
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
-import net.corda.libs.packaging.verify.InMemoryZipFile
+import net.corda.test.util.InMemoryZipFile
 import net.corda.libs.packaging.verify.TestUtils.ALICE
 import net.corda.libs.packaging.verify.TestUtils.BOB
 import net.corda.libs.packaging.verify.TestUtils.ROOT_CA

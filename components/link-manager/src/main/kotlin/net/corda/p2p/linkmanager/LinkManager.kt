@@ -27,7 +27,7 @@ class LinkManager(
         lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
     ),
     linkManagerHostingMap: LinkManagerHostingMap =
-        StubLinkManagerHostingMap(
+        LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             messagingConfiguration,

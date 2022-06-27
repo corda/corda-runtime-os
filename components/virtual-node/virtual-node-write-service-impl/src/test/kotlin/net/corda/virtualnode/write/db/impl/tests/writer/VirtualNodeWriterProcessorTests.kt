@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.packaging.CpiIdentifier
@@ -18,10 +17,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.MemberInfoImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
-import net.corda.membership.impl.toMemberInfo
 import net.corda.membership.impl.toSortedMap
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -242,12 +241,12 @@ class VirtualNodeWriterProcessorTests {
             val expectedRecordKey = "${holdingIdentity.id}-${mgmHoldingIdentity.id}"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
-            val mgmPublished = toMemberInfo(
+            val mgmPublished = MemberInfoImpl(
                 layeredPropertyMapFactory.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
+                    persistentMemberPublished.memberContext.toSortedMap()
                 ),
                 layeredPropertyMapFactory.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
+                    persistentMemberPublished.mgmContext.toSortedMap()
                 )
             )
             it.assertThat(mgmPublished.name.toString())

@@ -1,10 +1,12 @@
 package net.corda.crypto.client.impl
 
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
 import net.corda.crypto.client.impl.infra.generateKeyPair
 import net.corda.crypto.client.impl.infra.signData
+import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -14,7 +16,6 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -39,6 +40,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
@@ -49,7 +51,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.failures.CryptoException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
@@ -59,9 +61,11 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
@@ -77,6 +81,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CryptoOpsClientComponentTests {
+    companion object {
+        @JvmStatic
+        fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
+            exceptionFactories.keys.map { Class.forName(it) }
+    }
+
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
@@ -392,7 +402,9 @@ class CryptoOpsClientComponentTests {
         val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
             keyPair.public.publicKeyId()
         }
-        assertThrows<IllegalArgumentException> { component.lookup(knownTenantId, ids) }
+        assertThrows(IllegalArgumentException::class.java) {
+            component.lookup(knownTenantId, ids)
+        }
     }
 
     @Test
@@ -838,7 +850,7 @@ class CryptoOpsClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        assertThrows<IllegalArgumentException> {
+        assertThrows(IllegalArgumentException::class.java) {
             component.sign(
                 knownTenantId,
                 keyPair.public,
@@ -928,7 +940,7 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
-    fun `Should fail when response tenant id does not match the request`() {
+    fun `Should throw IllegalStateException when response tenant id does not match the request`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -952,15 +964,13 @@ class CryptoOpsClientComponentTests {
             )
             future
         }
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        assertThrows(IllegalStateException::class.java) {
             component.lookup(knownTenantId, emptyList())
         }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should fail when requesting component in response does not match the request`() {
+    fun `Should throw IllegalStateException when requesting component in response does not match the request`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -984,15 +994,13 @@ class CryptoOpsClientComponentTests {
             )
             future
         }
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        assertThrows(IllegalStateException::class.java) {
             component.lookup(knownTenantId, emptyList())
         }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should fail when response class is not expected`() {
+    fun `Should throw IllegalStateException when response class is not expected`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -1016,39 +1024,46 @@ class CryptoOpsClientComponentTests {
             )
             future
         }
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        assertThrows(IllegalStateException::class.java) {
             component.lookup(knownTenantId, emptyList())
         }
-        assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
-    @Test
-    fun `Should fail when sendRequest throws CryptoServiceLibraryException exception`() {
+    @ParameterizedTest
+    @MethodSource("knownCordaRPCAPIResponderExceptions")
+    @Suppress("MaxLineLength")
+    fun `Should throw exception wrapped in CordaRPCAPIResponderException when sendRequest throws it as errorType`(
+        expected: Class<out Throwable>
+    ) {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val error = CryptoServiceLibraryException("Test failure.")
+        val error = CordaRPCAPIResponderException(
+            errorType = expected.name,
+            message = "Test failure."
+        )
         whenever(sender.sendRequest(any())).thenThrow(error)
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        val exception = assertThrows(expected) {
             component.lookup(knownTenantId, emptyList())
         }
-        assertSame(error, exception)
+        assertEquals(error.message, exception.message)
     }
 
     @Test
-    fun `Should fail when sendRequest throws an exception`() {
+    fun `Should throw CryptoException when sendRequest fails`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val error = RuntimeException("Test failure.")
+        val error = CordaRPCAPIResponderException(
+            errorType = RuntimeException::class.java.name,
+            message = "Test failure."
+        )
         whenever(sender.sendRequest(any())).thenThrow(error)
-        val exception = assertThrows<CryptoServiceLibraryException> {
+        val exception = assertThrows(CryptoException::class.java) {
             component.lookup(knownTenantId, emptyList())
         }
-        assertNotNull(exception.cause)
         assertSame(error, exception.cause)
     }
 
@@ -1056,7 +1071,7 @@ class CryptoOpsClientComponentTests {
     fun `Should create active implementation only after the component is up`() {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             component.impl.ops
         }
         component.start()
@@ -1072,7 +1087,7 @@ class CryptoOpsClientComponentTests {
     fun `Should cleanup created resources when component is stopped`() {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             component.impl.ops
         }
         component.start()
@@ -1095,7 +1110,7 @@ class CryptoOpsClientComponentTests {
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             component.impl.ops
         }
         component.start()

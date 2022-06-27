@@ -7,7 +7,7 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-ledger'
+    cordaProvided 'net.corda:corda-ledger-obsolete'
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
 

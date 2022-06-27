@@ -12,4 +12,8 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation "net.corda:corda-base"
+    api "net.corda:corda-avro-schema"
+    api "net.corda:corda-membership"
+    api project(":libs:membership:membership-datamodel")
+    api project(":libs:virtual-node:virtual-node-info")
 }

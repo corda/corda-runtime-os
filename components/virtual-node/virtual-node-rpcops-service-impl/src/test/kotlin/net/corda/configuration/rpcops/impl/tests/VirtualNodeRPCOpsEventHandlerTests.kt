@@ -57,7 +57,7 @@ class VirtualNodeRPCOpsEventHandlerTests {
         eventHandler.processEvent(StartEvent(), coordinator)
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, UP), coordinator)
 
-        verify(configReadService).registerForUpdates(any())
+        verify(configReadService).registerComponentForUpdates(any(), any())
     }
 
     @Test
@@ -81,7 +81,7 @@ class VirtualNodeRPCOpsEventHandlerTests {
         eventHandler.processEvent(StartEvent(), mock())
         eventHandler.processEvent(RegistrationStatusChangeEvent(mock(), UP), mock())
 
-        verify(configReadService, times(0)).registerForUpdates(any())
+        verify(configReadService, times(0)).registerComponentForUpdates(any(), any())
     }
 
     @Test
@@ -94,7 +94,7 @@ class VirtualNodeRPCOpsEventHandlerTests {
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, DOWN), coordinator)
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, ERROR), coordinator)
 
-        verify(configReadService, times(0)).registerForUpdates(any())
+        verify(configReadService, times(0)).registerComponentForUpdates(any(), any())
     }
 
     @Test
@@ -141,7 +141,7 @@ class VirtualNodeRPCOpsEventHandlerTests {
     private fun getConfigReadServiceAndUpdateHandle(): Pair<ConfigurationReadService, AutoCloseable> {
         val updateHandle = mock<AutoCloseable>()
         val configReadService = mock<ConfigurationReadService>().apply {
-            whenever(registerForUpdates(any())).thenReturn(updateHandle)
+            whenever(registerComponentForUpdates(any(), any())).thenReturn(updateHandle)
         }
         return configReadService to updateHandle
     }

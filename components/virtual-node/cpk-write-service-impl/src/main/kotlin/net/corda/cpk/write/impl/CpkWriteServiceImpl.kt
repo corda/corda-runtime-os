@@ -1,6 +1,5 @@
 package net.corda.cpk.write.impl
 
-import net.corda.chunking.ChunkWriter
 import java.io.ByteArrayInputStream
 import java.time.Duration
 import net.corda.chunking.ChunkWriterFactory
@@ -93,7 +92,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var cpkStorage: CpkStorage? = null
 
-    private var chunkWriter: ChunkWriter? = null
+    private var maxAllowedKafkaMsgSize: Int? = null
 
     /**
      * Event loop
@@ -155,8 +154,7 @@ class CpkWriteServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val reconciliationConfig = event.config.getConfig(RECONCILIATION_CONFIG)
-        // TODO fill the following with configuration once we know where they lie?
-        chunkWriter = ChunkWriterFactory.create(messagingConfig.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE))
+        maxAllowedKafkaMsgSize = messagingConfig.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
         timeout = 20.seconds
 
         timerEventIntervalMs = reconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)
@@ -227,13 +225,15 @@ class CpkWriteServiceImpl @Activate constructor(
         logger.debug { "Publishing CPK ${cpkChecksumToData.checksum}" }
         val cpkChecksum = cpkChecksumToData.checksum
         val cpkData = cpkChecksumToData.data
-        if(null == chunkWriter)
-            throw CordaRuntimeException("CPK Chunk Writer not ready.")
-        chunkWriter!!.onChunk { chunk ->
+        val chunkWriter = maxAllowedKafkaMsgSize?.let {
+            ChunkWriterFactory.create(it)
+        } ?: throw CordaRuntimeException("maxAllowedKafkaMsgSize is not set")
+
+        chunkWriter.onChunk { chunk ->
             val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
-        chunkWriter!!.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
+        chunkWriter.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean

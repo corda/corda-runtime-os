@@ -1,16 +1,15 @@
 package net.corda.crypto.service.impl.signing
 
+import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -66,27 +65,23 @@ class SigningServiceFactoryImpl @Activate constructor(
         private var signingService: SigningService? = null
 
         override fun getInstance(): SigningService {
-            return try {
-                logger.debug { "Getting the signing service." }
-                if(signingService != null) {
-                    signingService!!
-                } else {
-                    synchronized(lock) {
-                        if (signingService != null) {
-                            signingService!!
-                        } else {
-                            logger.info("Creating the signing service.")
-                            signingService = SigningServiceImpl(
-                                store = storeProvider.getInstance(),
-                                cryptoServiceFactory = cryptoServiceFactory,
-                                schemeMetadata = schemeMetadata
-                            )
-                            signingService!!
-                        }
+            logger.debug { "Getting the signing service." }
+            return if (signingService != null) {
+                signingService!!
+            } else {
+                synchronized(lock) {
+                    if (signingService != null) {
+                        signingService!!
+                    } else {
+                        logger.info("Creating the signing service.")
+                        signingService = SigningServiceImpl(
+                            store = storeProvider.getInstance(),
+                            cryptoServiceFactory = cryptoServiceFactory,
+                            schemeMetadata = schemeMetadata
+                        )
+                        signingService!!
                     }
                 }
-            } catch (e: Throwable) {
-                throw CryptoServiceLibraryException("Failed to get signing service.", e)
             }
         }
     }

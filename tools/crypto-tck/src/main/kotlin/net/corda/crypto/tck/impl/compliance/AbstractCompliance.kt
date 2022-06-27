@@ -20,7 +20,6 @@ import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -116,7 +115,7 @@ abstract class AbstractCompliance {
         return key
     }
 
-    protected fun `Should be able to sign`(
+    protected fun `Should be able to sign byte arrays of different lengths`(
         key: GeneratedKey,
         keyScheme: KeyScheme,
         signatureSpec: SignatureSpec
@@ -136,8 +135,8 @@ abstract class AbstractCompliance {
                 keyScheme = keyScheme,
                 signatureSpec = signatureSpec
             )
-            assertThrows<CryptoServiceException>(
-                "Should throw CryptoServiceException when HSM alias is not known."
+            assertThrows<IllegalArgumentException>(
+                "Should throw IllegalArgumentException when HSM alias is not known."
             ) {
                 service.sign(
                     SigningAliasSpec(
@@ -155,8 +154,10 @@ abstract class AbstractCompliance {
             compliance.generateRandomIdentifier(1).toByteArray(),
             compliance.generateRandomIdentifier(5).toByteArray(),
             ByteArray(97).also { CryptoServiceCompliance.schemeMetadata.secureRandom.nextBytes(it) },
-            ByteArray(1673).also { CryptoServiceCompliance.schemeMetadata.secureRandom.nextBytes(it) }
+            ByteArray(1673).also { CryptoServiceCompliance.schemeMetadata.secureRandom.nextBytes(it) },
+            ByteArray(67199).also { CryptoServiceCompliance.schemeMetadata.secureRandom.nextBytes(it) }
         ).map { clearData ->
+            logger.info("About to sign array with size={}", clearData.size)
             Experiment(
                 key = key,
                 keyScheme = keyScheme,

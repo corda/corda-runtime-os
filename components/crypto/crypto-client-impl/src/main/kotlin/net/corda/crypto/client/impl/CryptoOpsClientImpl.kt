@@ -1,5 +1,6 @@
 package net.corda.crypto.client.impl
 
+import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
@@ -23,6 +24,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
@@ -32,7 +34,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
@@ -355,38 +356,35 @@ class CryptoOpsClientImpl(
         timeout: Duration,
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
-    ): RESPONSE? {
-        try {
-            val response = sender.sendRequest(this).getOrThrow(timeout)
-            require(
-                response.context.requestingComponent == context.requestingComponent &&
-                        response.context.tenantId == context.tenantId
-            ) {
-                "Expected ${context.tenantId} tenant and ${context.requestingComponent} component, but " +
-                        "received ${response.response::class.java.name} with ${response.context.tenantId} tenant" +
-                        " ${response.context.requestingComponent} component"
+    ): RESPONSE? = try {
+        val response = sender.sendRequest(this).getOrThrow(timeout)
+        check(
+            response.context.requestingComponent == context.requestingComponent &&
+                    response.context.tenantId == context.tenantId
+        ) {
+            "Expected ${context.tenantId} tenant and ${context.requestingComponent} component, but " +
+                    "received ${response.response::class.java.name} with ${response.context.tenantId} tenant" +
+                    " ${response.context.requestingComponent} component"
+        }
+        if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
+            logger.debug {
+                "Received empty response for ${request::class.java.name} for tenant ${context.tenantId}"
             }
-            if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
-                logger.debug {
-                    "Received empty response for ${request::class.java.name} for tenant ${context.tenantId}"
-                }
-                return null
-            }
-            require(response.response != null && (response.response::class.java == respClazz)) {
+            null
+        } else {
+            check(response.response != null && (response.response::class.java == respClazz)) {
                 "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
                         "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
             }
             logger.debug {
                 "Received response ${respClazz.name} for tenant ${context.tenantId}"
             }
-            return response.response as RESPONSE
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
-            throw e
-        } catch (e: Throwable) {
-            val message = "Failed executing ${request::class.java.name} for tenant ${context.tenantId}"
-            logger.error(message, e)
-            throw CryptoServiceLibraryException(message, e)
+            response.response as RESPONSE
         }
+    } catch (e: CordaRPCAPIResponderException) {
+        throw e.toClientException()
+    } catch (e: Throwable) {
+        logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
+        throw e
     }
 }
