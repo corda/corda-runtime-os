@@ -20,6 +20,10 @@ class DeleteConnect : Runnable {
     var wait: Long = 30
 
     override fun run() {
+        // Switch ClassLoader so LoginModules can be found
+        val contextCL = Thread.currentThread().contextClassLoader
+        Thread.currentThread().contextClassLoader = this::class.java.classLoader
+
         val client = Admin.create(delete!!.topic!!.getKafkaProperties())
 
         try {
@@ -36,6 +40,7 @@ class DeleteConnect : Runnable {
             throw e.cause ?: e
         }
 
+        Thread.currentThread().contextClassLoader = contextCL
     }
 
 }

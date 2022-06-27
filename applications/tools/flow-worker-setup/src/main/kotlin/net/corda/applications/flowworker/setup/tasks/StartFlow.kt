@@ -16,6 +16,14 @@ import java.util.UUID
 class StartFlow(private val context: TaskContext) : Task {
 
     override fun execute() {
+
+        val startSmokeTest1Record = getSmokeTestStartRecord(
+            "{\"command\":\"start_sessions\",\"data\":{\"sessions\":\"CN=user1, O=user1 Corp, L=LDN, C=GB;CN=user2," +
+                    " O=user2 Corp, L=LDN, C=GB\",\"messages\":\"m1;m2\"}}"
+        )
+
+        context.publish(startSmokeTest1Record)
+/*
         context.publish(
             getStartRPCEventRecord(
                 clientId = UUID.randomUUID().toString(),
@@ -24,6 +32,16 @@ class StartFlow(private val context: TaskContext) : Task {
                 groupId = "flow-worker-dev",
                 jsonArgs = "{ \"who\":\"${context.startArgs.x500NName}\"}"
             )
+        )*/
+    }
+
+    fun getSmokeTestStartRecord(args: String): Record<*, *> {
+        return getStartRPCEventRecord(
+            clientId = UUID.randomUUID().toString(),
+            flowName = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
+            x500Name = context.startArgs.x500NName,
+            groupId = "flow-worker-dev",
+            jsonArgs = args
         )
     }
 
