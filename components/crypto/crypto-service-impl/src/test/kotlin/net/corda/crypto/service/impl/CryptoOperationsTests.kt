@@ -34,7 +34,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.failures.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -52,7 +52,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.KeyPair
 import java.security.PublicKey
-import java.security.SignatureException
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -290,7 +289,7 @@ class CryptoOperationsTests {
                 assertFalse(
                     verifier.isValid(publicKey, digest, signature.bytes, badData)
                 )
-                assertThrows<SignatureException> {
+                assertThrows<CryptoSignatureException> {
                     verifier.verify(publicKey, digest, signature.bytes, badData)
                 }
                 assertThrows<IllegalArgumentException> {
@@ -330,7 +329,7 @@ class CryptoOperationsTests {
             assertFalse(
                 verifier.isValid(publicKey, signatureSpec, signature, badData)
             )
-            assertThrows<SignatureException> {
+            assertThrows<CryptoSignatureException> {
                 verifier.verify(publicKey, signatureSpec, signature, badData)
             }
             assertThrows<IllegalArgumentException> {
@@ -862,13 +861,13 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    fun `Should fail signing with unknown public key for all supported schemes`(
+    fun `Should throw IllegalArgumentException signing with unknown public key for all supported schemes`(
         scheme: KeyScheme,
         spec: SignatureSpec
     ) {
         val unknownPublicKey = unknownKeyPairs.getValue(scheme).public
         val info = signingFreshKeys.getValue(scheme)
-        assertThrows<CryptoServiceException> {
+        assertThrows<IllegalArgumentException> {
             info.signingService.sign(
                 tenantId = tenantId,
                 publicKey = unknownPublicKey,
@@ -880,14 +879,14 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    fun `Should throw CryptoServiceException to sign for unknown tenant for all supported schemes`(
+    fun `Should throw IllegalArgumentException to sign for unknown tenant for all supported schemes`(
         scheme: KeyScheme,
         spec: SignatureSpec
     ) {
         val info = signingAliasedKeys.getValue(scheme)
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
         validatePublicKeyAlgorithm(scheme, info.publicKey)
-        assertThrows<CryptoServiceException> {
+        assertThrows<IllegalArgumentException> {
             info.signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = info.publicKey,

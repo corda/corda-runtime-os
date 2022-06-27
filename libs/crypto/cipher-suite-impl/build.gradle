@@ -1,0 +1,25 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Cipher suite default implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-cipher-suite"
+    api 'net.corda:corda-serialization'
+
+    api project(":libs:crypto:crypto-core")
+    api project(":libs:crypto:crypto-impl")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
+

@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.datamodel.tests
 
+import javax.persistence.EntityManagerFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -12,8 +13,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeVaultEntitiesIntegrationTest {
@@ -21,7 +20,7 @@ class VirtualNodeVaultEntitiesIntegrationTest {
     private val entityManagerFactory: EntityManagerFactory
 
     private companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-vault/db.changelog-master.xml"
+        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-vault/migration/vnode-vault-creation-v1.0.xml"
     }
 
     /**

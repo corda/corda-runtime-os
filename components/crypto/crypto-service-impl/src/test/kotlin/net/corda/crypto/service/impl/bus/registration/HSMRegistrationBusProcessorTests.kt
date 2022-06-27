@@ -20,8 +20,6 @@ import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.v5.base.util.toHex
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -204,7 +202,7 @@ class HSMRegistrationBusProcessorTests {
     }
 
     @Test
-    fun `Should complete future exceptionally in case of unknown request`() {
+    fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         val hsmService = mock<HSMService>()
         val processor = HSMRegistrationBusProcessor(hsmService)
         val context = createRequestContext()
@@ -220,8 +218,7 @@ class HSMRegistrationBusProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
-        assertThat(exception.cause?.cause).isInstanceOf(CryptoServiceBadRequestException::class.java)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -251,8 +248,7 @@ class HSMRegistrationBusProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
-        assertSame(originalException, exception.cause?.cause)
+        assertSame(originalException, exception.cause)
         Mockito.verify(hsmService, times(1)).assignHSM(
             eq(tenantId),
             eq(CryptoConsts.Categories.LEDGER),

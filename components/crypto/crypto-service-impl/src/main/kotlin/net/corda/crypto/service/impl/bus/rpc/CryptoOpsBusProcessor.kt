@@ -27,7 +27,6 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -62,9 +61,8 @@ class CryptoOpsBusProcessor(
             }
             respFuture.complete(result)
         } catch (e: Throwable) {
-            val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"
-            logger.error(message, e)
-            respFuture.completeExceptionally(CryptoServiceLibraryException(message, e))
+            logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
+            respFuture.completeExceptionally(e)
         }
     }
 

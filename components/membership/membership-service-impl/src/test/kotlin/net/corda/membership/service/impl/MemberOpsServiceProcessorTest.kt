@@ -3,12 +3,12 @@ package net.corda.membership.service.impl
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationAction
-import net.corda.data.membership.rpc.request.RegistrationRequest
+import net.corda.data.membership.rpc.request.RegistrationRpcAction
+import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationResponse
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -80,17 +80,18 @@ class MemberOpsServiceProcessorTest {
         )
         val request = MembershipRpcRequest(
             requestContext,
-            RegistrationRequest(
+            RegistrationRpcRequest(
                 HOLDING_IDENTITY_STRING,
-                RegistrationAction.REQUEST_JOIN
+                RegistrationRpcAction.REQUEST_JOIN,
+                KeyValuePairList(emptyList())
             )
         )
         val future = CompletableFuture<MembershipRpcResponse>()
         processor.onNext(request, future)
         val result = future.get()
-        val expectedResponse = RegistrationResponse(
+        val expectedResponse = RegistrationRpcResponse(
             requestTimestamp,
-            RegistrationStatus.SUBMITTED,
+            RegistrationRpcStatus.SUBMITTED,
             1,
             KeyValuePairList(emptyList()),
             KeyValuePairList(emptyList())

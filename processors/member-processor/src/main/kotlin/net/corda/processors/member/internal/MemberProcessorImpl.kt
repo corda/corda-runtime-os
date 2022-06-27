@@ -3,12 +3,17 @@ package net.corda.processors.member.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.p2p.MembershipP2PReadService
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.RegistrationManagementService
 import net.corda.membership.service.MemberOpsService
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.processors.member.MemberProcessor
@@ -39,7 +44,17 @@ class MemberProcessorImpl @Activate constructor(
     @Reference(service = MemberOpsService::class)
     private val memberOpsService: MemberOpsService,
     @Reference(service = HSMRegistrationClient::class)
-    private val hsmRegistrationClient: HSMRegistrationClient
+    private val hsmRegistrationClient: HSMRegistrationClient,
+    @Reference(service = MembershipP2PReadService::class)
+    private val membershipP2PReadService: MembershipP2PReadService,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = RegistrationManagementService::class)
+    private val registrationManagementService: RegistrationManagementService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MemberProcessor {
 
     companion object {
@@ -54,7 +69,12 @@ class MemberProcessorImpl @Activate constructor(
         ::hsmRegistrationClient,
         ::registrationProxy,
         ::cryptoOpsClient,
-        ::memberOpsService
+        ::memberOpsService,
+        ::membershipP2PReadService,
+        ::membershipPersistenceClient,
+        ::membershipQueryClient,
+        ::registrationManagementService,
+        ::membershipGroupReaderProvider,
     )
 
     private val coordinator =

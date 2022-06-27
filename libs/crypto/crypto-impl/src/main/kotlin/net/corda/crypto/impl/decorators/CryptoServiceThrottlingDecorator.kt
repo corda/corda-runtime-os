@@ -8,8 +8,8 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CSLThrottlingException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.failures.CryptoThrottlingException
 import java.util.UUID
 
 class CryptoServiceThrottlingDecorator(
@@ -23,34 +23,33 @@ class CryptoServiceThrottlingDecorator(
     private fun <R> executeWithBackingOff(block: () -> R): R {
         var backOffTime = 0L
         var attempt = 1
-        var opId = ""
+        var op = ""
         while(true) {
             try {
                 if(attempt > 1) {
-                    logger.info("Retrying operation after backing off (opId={},attempt={})", opId, attempt)
+                    logger.info("Retrying operation after backing off (op={},attempt={})", op, attempt)
                 }
                 val result = block()
                 if(attempt > 1) {
-                    logger.info("Retrying after backing off succeeded (opId={},attempt={})", opId, attempt)
+                    logger.info("Retrying after backing off succeeded (op={},attempt={})", op, attempt)
                 }
                 return result
-            } catch (e: CSLThrottlingException) {
+            } catch (e: CryptoThrottlingException) {
                 if(attempt == 1) {
-                    opId = UUID.randomUUID().toString()
+                    op = UUID.randomUUID().toString()
                 }
                 backOffTime = e.getBackoff(attempt, backOffTime)
                 if (backOffTime < 0 || attempt >= MAX_RETRY_GUARD) {
-                    throw CryptoServiceException(
-                        "Failed all backoff attempts (opId=$opId, attempt=$attempt, backOffTime=$backOffTime).",
-                        e,
-                        isRecoverable = false
+                    throw CryptoException(
+                        "Failed all backoff attempts (op=$op, attempt=$attempt, backOffTime=$backOffTime).",
+                        e
                     )
                 } else {
                     logger.warn(
-                        "Throttling, backing of on attempt={}, for backOffTime={} (opId={})",
+                        "Throttling, backing of on attempt={}, for backOffTime={} (op={})",
                         attempt,
                         backOffTime,
-                        opId
+                        op
                     )
                     Thread.sleep(backOffTime)
                 }
@@ -80,7 +79,7 @@ class CryptoServiceThrottlingDecorator(
             cryptoService.sign(spec, data, context)
         }
 
-    override fun delete(alias: String, context: Map<String, String>) =
+    override fun delete(alias: String, context: Map<String, String>): Boolean =
         executeWithBackingOff {
             cryptoService.delete(alias, context)
         }

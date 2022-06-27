@@ -22,7 +22,7 @@ import net.corda.messaging.api.records.Record
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
     val inputEvent: FlowEvent,
-    val inputEventPayload: T,
+    var inputEventPayload: T,
     val config: SmartConfig,
     val outputRecords: List<Record<*, *>>,
     val sendToDlq: Boolean = false
