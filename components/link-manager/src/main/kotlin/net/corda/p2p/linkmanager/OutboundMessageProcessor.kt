@@ -131,10 +131,7 @@ internal class OutboundMessageProcessor(
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
-                listOf(
-                    recordForLMSentMarker(messageAndKey.message.header.messageId),
-                    expiryMarker
-                )
+                listOf(expiryMarker)
             } else {
                 listOf(
                     recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
@@ -150,9 +147,7 @@ internal class OutboundMessageProcessor(
                  * from the delivery tracker, before the message is replayed (as the OutboundMessageProcessor adds both a LinkManagerSent
                  * and a LinkManagerReceived marker).
                  */
-                listOf(
-                    recordForLMSentMarker(messageAndKey.message.header.messageId)
-                )
+                emptyList()
             } else {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),

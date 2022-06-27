@@ -134,13 +134,7 @@ class OutboundMessageProcessorTest {
         )
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
-        assertThat(records).hasSize(1)
-        assertThat(records).allSatisfy { record ->
-            assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
-            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
-            val marker = record.value as AppMessageMarker
-            assertThat(marker.marker).isInstanceOf(LinkManagerSentMarker::class.java)
-        }
+        assertThat(records).isEmpty()
     }
 
     @Test
@@ -270,7 +264,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces no records and queues no messages if SessionAlreadyPending`() {
+    fun `processReplayedAuthenticatedMessage produces LinkManagerSentMarker, queues no messages if SessionAlreadyPending`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -593,7 +587,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker, LinkManagerSentMarker if TTL expiry true, replay true`() {
+    fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker if TTL expiry true and replay true`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -616,9 +610,7 @@ class OutboundMessageProcessorTest {
             it.assertThat(markers.map { it.key }).allMatch {
                 it.equals("MessageId")
             }
-            it.assertThat(markers).hasSize(2)
-            it.assertThat(markers.map { it.value as AppMessageMarker }
-                .filter { it.marker is LinkManagerSentMarker }).hasSize(1)
+            it.assertThat(markers).hasSize(1)
             it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker })
                 .hasSize(1)
             it.assertThat(markers.map { it.value as AppMessageMarker }
