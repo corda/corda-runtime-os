@@ -1,6 +1,8 @@
 package net.corda.virtualnode.write.db.impl
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -10,6 +12,9 @@ import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 
@@ -32,7 +37,26 @@ internal class VirtualNodeWriteEventHandler(
             // TODO - Monitor the status of the `DbConnectionManager` and respond accordingly.
             is StartEvent -> followConfigReadServiceStatus(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
+            is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event)
             is StopEvent -> stop()
+        }
+    }
+
+    private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
+        val msgConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+
+        if (msgConfig.hasPath(MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS)) {
+            try {
+                virtualNodeWriter = virtualNodeWriterFactory
+                    .create(msgConfig)
+                    .apply { start() }
+                coordinator.updateStatus(UP)
+            } catch (e: Exception) {
+                coordinator.updateStatus(ERROR)
+                throw VirtualNodeWriteServiceException(
+                    "Could not start the virtual node writer for handling virtual node creation requests.", e
+                )
+            }
         }
     }
 
@@ -52,9 +76,9 @@ internal class VirtualNodeWriteEventHandler(
         if (event.registration == configReadServiceRegistrationHandle) {
             when (event.status) {
                 UP -> {
-                    val configHandler = VirtualNodeWriteConfigHandler(this, coordinator, virtualNodeWriterFactory)
                     configUpdateHandle?.close()
-                    configUpdateHandle = configReadService.registerForUpdates(configHandler)
+                    configUpdateHandle =
+                        configReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
                 }
                 ERROR -> coordinator.postEvent(StopEvent(errored = true))
                 else -> Unit
@@ -62,10 +86,10 @@ internal class VirtualNodeWriteEventHandler(
         }
     }
 
-        /** Shuts down the service. */
-        private fun stop() {
-            virtualNodeWriter?.stop()
-            configReadServiceRegistrationHandle?.close()
-            configUpdateHandle?.close()
-        }
+    /** Shuts down the service. */
+    private fun stop() {
+        virtualNodeWriter?.stop()
+        configReadServiceRegistrationHandle?.close()
+        configUpdateHandle?.close()
     }
+}
