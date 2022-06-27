@@ -46,7 +46,7 @@ internal class LifecycleCoordinatorImplTest {
 
         private const val BATCH_SIZE = 128
 
-        private const val TIMEOUT = 1000L
+        private const val TIMEOUT = 2000L
 
         private const val TIMER_DELAY = 200L
 
