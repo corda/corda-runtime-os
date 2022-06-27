@@ -8,6 +8,8 @@ kafka:
     truststore:
       secretRef:
         name: prereqs-kafka-0-tls
+  sasl:
+    enabled: true
 
 db:
   cluster:
