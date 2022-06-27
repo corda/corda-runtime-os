@@ -120,7 +120,8 @@ gradleEnterprise {
     }
     buildCache {
         local {
-            enabled = false
+            enabled = true
+            removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
         remote(HttpBuildCache) {
             url = "${gradleEnterpriseUrl}/cache/"
@@ -134,7 +135,7 @@ gradleEnterprise {
                 enabled = true
             } else {
                 push = false
-                enabled = true
+                enabled = false
             }
         }
     }
