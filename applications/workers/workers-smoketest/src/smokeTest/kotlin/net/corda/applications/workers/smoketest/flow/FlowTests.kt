@@ -3,6 +3,7 @@ package net.corda.applications.workers.smoketest.flow
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
+import net.corda.applications.workers.smoketest.X500_DAVID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -20,8 +21,9 @@ class FlowTests {
 
     companion object {
 
-        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
+        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
+        var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
@@ -33,11 +35,13 @@ class FlowTests {
 
             val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
             val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
+            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
             assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+            assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
             createVirtualNodeFor(X500_SESSION_USER1)
             createVirtualNodeFor(X500_SESSION_USER2)
@@ -70,11 +74,11 @@ class FlowTests {
         }
 
         startRpcFlow(charlieHoldingId, requestBody)
-        startRpcFlow(bobHoldingId, requestBody)
-        startRpcFlow(bobHoldingId, requestBody)
+        startRpcFlow(davidHoldingId, requestBody)
+        startRpcFlow(davidHoldingId, requestBody)
 
-        awaitMultipleRpcFlowFinished(bobHoldingId, 2)
         awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
+        awaitMultipleRpcFlowFinished(davidHoldingId, 2)
     }
 
     @Test
