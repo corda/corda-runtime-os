@@ -4,6 +4,7 @@ import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.X500_BOB
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -106,8 +107,8 @@ class FlowTests {
    /**
     * This test is failing unexpectedly, a bug has been raised to investigate
     * https://r3-cev.atlassian.net/browse/CORE-5372
-    *
-    @Test
+    */
+    @Test @Disabled
     fun `Platform Error - user code receives platform errors`(){
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
@@ -122,7 +123,7 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
         assertThat(flowResult.result).isEqualTo("type")
-    }*/
+    }
 
     @Test
     fun `Persistence - insert a record`(){
