@@ -1,4 +1,4 @@
-package net.corda.virtualnode.impl
+package net.corda.virtualnode.read.impl
 
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record

@@ -1,10 +1,9 @@
-package net.corda.virtualnode.impl
+package net.corda.virtualnode.read.impl
 
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.impl.VirtualNodeInfoMap
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

@@ -1,4 +1,4 @@
-package net.corda.virtualnode.impl
+package net.corda.virtualnode.read.impl
 
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
