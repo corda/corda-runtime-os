@@ -48,12 +48,12 @@ class StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         readyFuture
     )
-    override val dominoTile = ComplexDominoTile(
+    override val namedLifecycle = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
         managedChildren = listOf(subscriptionTile.toNamedLifecycle(), blockingDominoTile.toNamedLifecycle()),
-    )
+    ).toNamedLifecycle()
 
     override fun sign(
         tenantId: String,

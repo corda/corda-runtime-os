@@ -4,6 +4,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -205,10 +206,10 @@ class SessionManagerTest {
     }
     private val cryptoService = mock<StubCryptoProcessor> {
         on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
-        val cryptoProcessorDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        val namedLifecycle = mock<NamedLifecycle> {
+            whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
         }
-        on { dominoTile } doReturn cryptoProcessorDominoTile
+        whenever(it.namedLifecycle) doReturn namedLifecycle
     }
     private val pendingSessionMessageQueues = mock<PendingSessionMessageQueues> {
         val pendingSessionMessageQueuesDominoTile = mock<ComplexDominoTile> {
