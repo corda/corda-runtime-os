@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
 import net.corda.applications.workers.smoketest.GROUP_ID
+import net.corda.applications.workers.smoketest.X500_ALICE
 import net.corda.applications.workers.smoketest.X500_BOB
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -19,6 +20,7 @@ class FlowTests {
 
     companion object {
 
+        var aliceHoldingId: String = getHoldingIdShortHash(X500_ALICE, GROUP_ID)
         var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
 
         /*
@@ -56,6 +58,21 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("echo")
         assertThat(flowResult.result).isEqualTo("hello")
+    }
+
+    @Test
+    fun `start multiple RPC flow and validate they complete`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "echo"
+            data = mapOf("echo_value" to "hello")
+        }
+
+        startRpcFlow(aliceHoldingId, requestBody)
+        startRpcFlow(bobHoldingId, requestBody)
+        startRpcFlow(bobHoldingId, requestBody)
+
+        awaitMultipleRpcFlowFinished(bobHoldingId, 2)
+        awaitMultipleRpcFlowFinished(aliceHoldingId, 1)
     }
 
     @Test

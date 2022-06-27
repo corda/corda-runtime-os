@@ -1,6 +1,7 @@
 package net.corda.flow.rpcops.v1
 
 import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponses
 import net.corda.flow.rpcops.v1.response.HTTPStartFlowResponse
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
@@ -54,4 +55,15 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
     ) : HTTPFlowStatusResponse
+
+    @HttpRpcGET(
+        path = "{holderShortId}",
+        title = "Get Multiple Flow Status",
+        description = "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
+        responseDescription = "The status of the flow."
+    )
+    fun getMultipleFlowStatus(
+        @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
+        holderShortId: String
+    ): HTTPFlowStatusResponses
 }
