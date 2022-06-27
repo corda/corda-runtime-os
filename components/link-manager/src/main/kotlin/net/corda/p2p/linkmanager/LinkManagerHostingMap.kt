@@ -19,5 +19,5 @@ interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
     fun registerListener(listener: HostingMapListener)
 
-    fun allLocallyHostedIdentities(): List<HoldingIdentity>
+    fun allLocallyHostedIdentities(): Collection<HoldingIdentity>
 }

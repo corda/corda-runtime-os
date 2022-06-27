@@ -122,11 +122,11 @@ internal class TrustStoresPublisher(
     }
 
     private fun publishGroupIfNeeded(holdingIdentity: HoldingIdentity, certificates: List<PemCertificates>) {
-        publishedGroups.compute("${holdingIdentity.x500Name}-${holdingIdentity.groupId}") { _, publishedCertificates ->
+        publishedGroups.compute(holdingIdentity.toKafkaKey()) { _, publishedCertificates ->
             logger.info("Publishing trust roots for $holdingIdentity to the gateway.")
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
-                val record = Record(GATEWAY_TLS_TRUSTSTORES, "${holdingIdentity.x500Name}-${holdingIdentity.groupId}",
+                val record = Record(GATEWAY_TLS_TRUSTSTORES, holdingIdentity.toKafkaKey(),
                     GatewayTruststore(HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId), certificates))
                 publisher.publish(
                     listOf(record)
@@ -137,4 +137,6 @@ internal class TrustStoresPublisher(
             certificatesSet
         }
     }
+
+    private fun HoldingIdentity.toKafkaKey() = "${x500Name}-${groupId}"
 }

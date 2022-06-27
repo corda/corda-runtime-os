@@ -52,7 +52,7 @@ internal object SessionManagerWarnings {
 
     internal fun Logger.couldNotFindGroupInfo(messageName: String, sessionId: String, holdingIdentity: HoldingIdentity) {
         this.warn(
-            "Could not find the group information in the GroupPolicyProvider for $holdingIdentity." +
+            "Could not find the group information in the GroupPolicyProvider for identity $holdingIdentity." +
                 " The $messageName for sessionId $sessionId was discarded."
         )
     }

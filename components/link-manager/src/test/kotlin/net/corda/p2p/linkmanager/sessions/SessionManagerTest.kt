@@ -562,6 +562,23 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when initiator hello is received but no locally hosted identity in the same group as the initiator, message is dropped`() {
+        val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        val sessionId = "some-session-id"
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(emptySet())
+
+        val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorKeyHash), GROUP_ID))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("here is no locally hosted identity in the same group with the initiator")
+        loggingInterceptor
+            .assertSingleWarningContains("The initiator message was discarded.")
+    }
+
+    @Test
     fun `when responder hello is received without an existing session, the message is dropped`() {
         val sessionId = "some-session-id"
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
@@ -676,7 +693,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for " +
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for identity " +
             "$OUR_PARTY. The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionId} was discarded.")
     }
 

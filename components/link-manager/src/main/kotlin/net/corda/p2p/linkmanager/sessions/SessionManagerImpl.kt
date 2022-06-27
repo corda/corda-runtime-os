@@ -572,7 +572,7 @@ internal class SessionManagerImpl(
 
         val groupInfo = groups.getGroupInfo(hostedIdentityInSameGroup)
         if (groupInfo == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity)
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
 

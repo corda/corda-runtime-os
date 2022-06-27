@@ -40,8 +40,6 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     private interface InnerGroupPolicyProvider : AutoCloseable {
         fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
-
-        fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit)
     }
 
     companion object {
@@ -56,7 +54,9 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var impl: InnerGroupPolicyProvider = InactiveImpl()
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
-    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) = impl.registerListener(callback)
+    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+        listeners.add(callback)
+    }
 
     override fun start() = coordinator.start()
 
@@ -118,10 +118,6 @@ class GroupPolicyProviderImpl @Activate constructor(
             throw IllegalStateException("Service is in incorrect state for accessing group policies.")
 
         override fun close() = Unit
-
-        override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
-            listeners.add(callback)
-        }
     }
 
     private inner class ActiveImpl : InnerGroupPolicyProvider {
@@ -132,10 +128,6 @@ class GroupPolicyProviderImpl @Activate constructor(
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
         ) = groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
-
-        override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
-            listeners.add(callback)
-        }
 
         override fun close() {
             virtualNodeInfoCallbackHandle.close()

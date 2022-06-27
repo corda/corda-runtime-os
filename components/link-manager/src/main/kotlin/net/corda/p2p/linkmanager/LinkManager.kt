@@ -47,12 +47,9 @@ class LinkManager(
         }
     }
 
-    private val stubGroupPolicyProvider = StubGroupPolicyProvider(
-        lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
-    )
     private val forwardingGroupPolicyProvider =
-        ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, stubGroupPolicyProvider, groupPolicyProvider, thirdPartyComponentsMode,
-            virtualNodeInfoReadService, cpiInfoReadService)
+        ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration, groupPolicyProvider,
+            virtualNodeInfoReadService, cpiInfoReadService, thirdPartyComponentsMode)
 
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,

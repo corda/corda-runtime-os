@@ -2,23 +2,31 @@ package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 
 @Suppress("LongParameterList")
 internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: LifecycleCoordinatorFactory,
-                                             private val stubGroupPolicyProvider: StubGroupPolicyProvider,
+                                             private val subscriptionFactory: SubscriptionFactory,
+                                             private val messagingConfiguration: SmartConfig,
                                              private val groupPolicyProvider: GroupPolicyProvider,
-                                             private val thirdPartyComponentsMode: ThirdPartyComponentsMode,
                                              private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-                                             private val cpiInfoReadService: CpiInfoReadService): LinkManagerGroupPolicyProvider {
+                                             private val cpiInfoReadService: CpiInfoReadService,
+                                             private val thirdPartyComponentsMode: ThirdPartyComponentsMode):
+    LinkManagerGroupPolicyProvider {
+
+    private val stubGroupPolicyProvider = StubGroupPolicyProvider(coordinatorFactory, subscriptionFactory, messagingConfiguration)
 
     private val dependentChildren = when(thirdPartyComponentsMode) {
         ThirdPartyComponentsMode.STUB -> setOf(stubGroupPolicyProvider.dominoTile.coordinatorName)
@@ -46,8 +54,7 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
         return if (thirdPartyComponentsMode == ThirdPartyComponentsMode.REAL) {
-            val vNodeHoldingIdentity = net.corda.virtualnode.HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId)
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(vNodeHoldingIdentity)
+            val groupPolicy = groupPolicyProvider.getGroupPolicy(holdingIdentity.toCorda())
             toGroupInfo(holdingIdentity, groupPolicy)
         } else {
             stubGroupPolicyProvider.getGroupInfo(holdingIdentity)
@@ -58,7 +65,7 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
         when(thirdPartyComponentsMode) {
             ThirdPartyComponentsMode.REAL -> {
                 groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
-                    val groupInfo = toGroupInfo(HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId), groupPolicy)
+                    val groupInfo = toGroupInfo(holdingIdentity.toAvro(), groupPolicy)
                     groupPolicyListener.groupAdded(groupInfo)
                 }
             }

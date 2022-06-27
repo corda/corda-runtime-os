@@ -38,11 +38,7 @@ internal class TrustStoresMap(
         messagingConfiguration
     )
 
-    /**
-     * We maintain the entries from the compacted topic per key in-memory, so that we can easily delete entries.
-     * We also maintain a secondary collection of certificates indexed by holding identity for fast lookups.
-     */
-    private val entriesPerKey = ConcurrentHashMap<String, GatewayTruststore>()
+    private val entriesPerKey = ConcurrentHashMap<String, TruststoreKey>()
     private val trustRootsPerHoldingIdentity = ConcurrentHashMap<TruststoreKey, TrustedCertificates>()
 
     private val subscriptionTile = SubscriptionDominoTile(
@@ -94,7 +90,11 @@ internal class TrustStoresMap(
         override val valueClass = GatewayTruststore::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
-            entriesPerKey.putAll(currentData)
+            val newEntriesPerKey = currentData.mapValues {
+                TruststoreKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
+            }
+            entriesPerKey.putAll(newEntriesPerKey)
+
             val newTrustRoots = currentData.map {
                 val truststoreKey = TruststoreKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
                 truststoreKey to TrustedCertificates(it.value.trustedCertificates, certificateFactory)
@@ -110,17 +110,18 @@ internal class TrustStoresMap(
             oldValue: GatewayTruststore?,
             currentData: Map<String, GatewayTruststore>,
         ) {
-            if (newRecord.value != null) {
-                entriesPerKey[newRecord.key] = newRecord.value!!
-                val truststoreKey = TruststoreKey(newRecord.value!!.sourceIdentity.x500Name, newRecord.value!!.sourceIdentity.groupId)
-                val trustedCertificates = TrustedCertificates(newRecord.value!!.trustedCertificates, certificateFactory)
+            val value = newRecord.value
+
+            if (value != null) {
+                entriesPerKey[newRecord.key] = TruststoreKey(value.sourceIdentity.x500Name, value.sourceIdentity.groupId)
+                val truststoreKey = TruststoreKey(value.sourceIdentity.x500Name, value.sourceIdentity.groupId)
+                val trustedCertificates = TrustedCertificates(value.trustedCertificates, certificateFactory)
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
                 logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
                         "group ID ${truststoreKey.destinationGroupId}.")
             } else {
-                val previousRecord = entriesPerKey.remove(newRecord.key)
-                if (previousRecord != null) {
-                    val truststoreKey = TruststoreKey(previousRecord.sourceIdentity.x500Name, previousRecord.sourceIdentity.groupId)
+                val truststoreKey = entriesPerKey.remove(newRecord.key)
+                if (truststoreKey != null) {
                     trustRootsPerHoldingIdentity.remove(truststoreKey)
                     logger.info("Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +
                             "group ID ${truststoreKey.destinationGroupId}.")

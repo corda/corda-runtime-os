@@ -793,9 +793,9 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
 
-        private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String, groupId: String): GatewayTruststore {
+        private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String): GatewayTruststore {
             return GatewayTruststore(
-                HoldingIdentity(sourceX500Name, groupId),
+                HoldingIdentity(sourceX500Name, GROUP_ID),
                 listOf(
                     this.caCertificate.toPem()
                 )
@@ -845,7 +845,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Publish the trust store
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", firstCertificatesAuthority.toGatewayTrustStore("alice", GROUP_ID)),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", firstCertificatesAuthority.toGatewayTrustStore("alice")),
                 )
 
                 // Client should fail without any keys
@@ -925,7 +925,7 @@ class GatewayIntegrationTest : TestBase() {
                 val secondCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", secondCertificatesAuthority.toGatewayTrustStore("alice", GROUP_ID)),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", secondCertificatesAuthority.toGatewayTrustStore("alice")),
                 )
 
                 // replace the first pair
@@ -947,7 +947,7 @@ class GatewayIntegrationTest : TestBase() {
                 val thirdCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", thirdCertificatesAuthority.toGatewayTrustStore("alice", GROUP_ID)),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "alice-$GROUP_ID", thirdCertificatesAuthority.toGatewayTrustStore("alice")),
                 )
 
                 // publish new pair with new alias
