@@ -9,9 +9,9 @@ class InjectableMockServices {
     val serviceTypeMap: MutableMap<Class<*>, Any> = mutableMapOf()
 }
 
-inline fun <reified T : Any>InjectableMockServices.mockService() {
-    serviceTypeMap.put(T::class.java, mock<T>())
-}
+inline fun <reified T : Any>InjectableMockServices.mockService(): T = mock<T>().also {
+        serviceTypeMap.put(T::class.java, it)
+    }
 
 inline fun <reified T : Any>FlowTestDependencyInjector.serviceMock(): T {
     return this.getMockService(T::class.java) as T

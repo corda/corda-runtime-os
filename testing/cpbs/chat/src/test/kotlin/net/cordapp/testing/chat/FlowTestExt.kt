@@ -9,6 +9,21 @@ import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.*
 
+fun FlowEngine.withVirtualNodeName(name:String): FlowEngine {
+    whenever(this.virtualNodeName).thenReturn(MemberX500Name.parse(name))
+    return this
+}
+
+fun FlowSession.withCounterpartyName(name:String): FlowSession {
+    whenever(this.counterparty).thenReturn(MemberX500Name.parse(name))
+    return this
+}
+
+inline fun <reified T : Any> FlowSession.willReceive(payload: T): FlowSession {
+    whenever(this.receive(T::class.java)).thenReturn(UntrustworthyData(payload))
+    return this
+}
+
 /**
  * Generates a mock which will return the passed object to any call to parse json along the lines of
  * requestBody.getRequestBodyAs<T>(jsonMarshallingService) inside the Flow.
@@ -36,13 +51,6 @@ fun FlowSession.verifyMessageSent(payload: Any) {
  */
 fun FlowTestDependencyInjector.expectFlowMessagesTo(member: MemberX500Name) = mock<FlowSession>().also {
     whenever(this.serviceMock<FlowMessaging>().initiateFlow(member)).thenReturn(it)
-}
-
-inline fun <reified T : Any> join(from: FlowSession, to: FlowSession) {
-    whenever(from.send(any())).then {
-        whenever(to.receive(T::class.java))
-            .thenReturn(UntrustworthyData(it.arguments[0] as T))
-    }
 }
 
 fun expectFlowMessagesFrom(member: MemberX500Name) = mock<FlowSession>().also {
