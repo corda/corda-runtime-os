@@ -39,7 +39,7 @@ dependencies {
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(":libs:layered-property-map")
-    runtimeOnly project(":libs:crypto:crypto-impl")
+    runtimeOnly project(':libs:crypto:cipher-suite-impl')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
 
