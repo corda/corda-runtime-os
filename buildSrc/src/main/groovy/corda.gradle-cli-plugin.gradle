@@ -1,0 +1,38 @@
+
+CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension)
+
+def cliPluginPackage = tasks.register("CliPluginPackage", Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    archiveBaseName = "plugin-${cliPlugin.cliPluginId}"
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "module-info.class"
+        exclude "META-INF/versions/*/module-info.class"
+        exclude "org/slf4j/**"
+    }
+    manifest {
+        attributes['Plugin-Class'] = cliPlugin.cliPluginClass
+        attributes['Plugin-Id'] = cliPlugin.cliPluginId
+        attributes['Plugin-Version'] = version
+        attributes['Plugin-Provider'] = cliPlugin.cliPluginProvider
+        attributes['Plugin-Description'] = cliPlugin.cliPluginDescription
+    }
+}
+
+artifacts {
+    archives cliPluginPackage
+}
+
+interface CliPluginPackagerExtension {
+    Property<String> getCliPluginId()
+    Property<String> getCliPluginClass()
+    Property<String> getCliPluginProvider()
+    Property<String> getCliPluginDescription()
+}

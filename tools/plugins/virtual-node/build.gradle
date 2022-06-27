@@ -2,6 +2,7 @@ plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
+    id 'corda.gradle-cli-plugin'
 }
 
 group 'net.corda.cli.deployment'
@@ -24,36 +25,13 @@ dependencies {
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 
-// the plugin task will put the files into a jar file with the correct manifest
-def plugin = tasks.register('plugin', Jar) {
+apply plugin: CordaGradleCliPluginPlugin
 
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    archiveBaseName = "plugin-${pluginId}"
-
-    manifest {
-        attributes['Plugin-Class'] = pluginClass
-        attributes['Plugin-Id'] = pluginId
-        attributes['Plugin-Version'] = version
-        attributes['Plugin-Provider'] = pluginProvider
-        attributes['Plugin-Description'] = pluginDescription
-    }
-
-    from sourceSets.main.output
-
-    dependsOn configurations.runtimeClasspath
-    from {
-        configurations.runtimeClasspath.collect { zipTree(it) }
-    } {
-        exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
-        exclude "module-info.class"
-        exclude "META-INF/versions/*/module-info.class"
-        exclude "org/slf4j/**"
-
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    }
+cliPlugin{
+    cliPluginClass = cliPluginClass
+    cliPluginId = cliPluginId
+    cliPluginProvider = cliPluginProvider
+    cliPluginDescription = cliPluginDescription
 }
 
 tasks.named("installDist") {
@@ -61,8 +39,4 @@ tasks.named("installDist") {
     def homePath = System.properties['user.home']
     from plugin
     into "$homePath/.corda/cli/plugins"
-}
-
-artifacts {
-    archives plugin
 }
