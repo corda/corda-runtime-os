@@ -133,7 +133,7 @@ class OutboundMessageProcessorTest {
         )
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
-        assertThat(records).isEmpty()
+        assertThat(records).hasSize(1)
     }
 
     @Test
@@ -280,7 +280,7 @@ class OutboundMessageProcessorTest {
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        assertThat(records).isEmpty()
+        assertThat(records).hasSize(1)
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
@@ -365,7 +365,7 @@ class OutboundMessageProcessorTest {
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         assertSoftly { softly ->
-            softly.assertThat(records).hasSize(4)
+            softly.assertThat(records).hasSize(5)
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(2)
                 .extracting<LinkOutMessage> { it.value as LinkOutMessage }
                 .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
@@ -470,7 +470,7 @@ class OutboundMessageProcessorTest {
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         assertThat(records)
-            .hasSize(1)
+            .hasSize(2)
             .filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }
             .extracting<LinkOutMessage> { it.value as LinkOutMessage }
             .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
@@ -528,7 +528,7 @@ class OutboundMessageProcessorTest {
             )
         )
 
-        assertThat(records).isEmpty()
+        assertThat(records).hasSize(1)
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
