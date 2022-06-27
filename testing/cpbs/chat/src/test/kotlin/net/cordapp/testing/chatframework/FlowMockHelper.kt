@@ -1,4 +1,4 @@
-package net.cordapp.testing.chat
+package net.cordapp.testing.chatframework
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
@@ -13,11 +13,19 @@ inline fun <reified T : Any>InjectableMockServices.mockService(): T = mock<T>().
         serviceTypeMap.put(T::class.java, it)
     }
 
-inline fun <reified T : Any>FlowTestDependencyInjector.serviceMock(): T {
+inline fun <reified T : Any>FlowMockHelper.serviceMock(): T {
     return this.getMockService(T::class.java) as T
 }
 
-class FlowTestDependencyInjector(init: InjectableMockServices.() -> Unit) {
+/**
+ * Instantiates a Flow of the provided type and injects all services of this FlowMockHelper into it.
+ * Only one Flow can be bound to one FlowMockHelper.
+ */
+inline fun <reified T : Flow> FlowMockHelper.createFlow() = T::class.java.getDeclaredConstructor().newInstance().also {
+        this.injectServices(it)
+    }
+
+class FlowMockHelper(init: InjectableMockServices.() -> Unit) {
     init {
         InjectableMockServices().apply(init).also {
             this.serviceTypeMap = it.serviceTypeMap
@@ -25,10 +33,16 @@ class FlowTestDependencyInjector(init: InjectableMockServices.() -> Unit) {
     }
 
     private var serviceTypeMap: Map<Class<*>, Any>
+    var flow:Flow? = null
 
     fun getMockService(clazz :Class<*>) = serviceTypeMap[clazz]
 
     fun injectServices(flow: Flow) {
+        this.flow?.let {
+            throw IllegalStateException("This FlowMockHelper is already bound to a flow.")
+        }
+        this.flow = flow
+
         val requiredFields = flow::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {

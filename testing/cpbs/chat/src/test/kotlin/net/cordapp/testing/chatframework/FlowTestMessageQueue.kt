@@ -1,4 +1,4 @@
-package net.cordapp.testing.chat
+package net.cordapp.testing.chatframework
 
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData

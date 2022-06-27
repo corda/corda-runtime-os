@@ -4,15 +4,17 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
+import net.cordapp.testing.chatframework.FlowMockHelper
+import net.cordapp.testing.chatframework.createFlow
+import net.cordapp.testing.chatframework.mockService
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.whenever
 
 class ChatOutgoingFlowTest {
     /**
      * Create an injector which can inject a Flow with mock versions of necessary services
      */
-    val injector = FlowTestDependencyInjector {
+    val flowMockHelper = FlowMockHelper {
         mockService<FlowMessaging>()
         mockService<FlowEngine>()
         mockService<JsonMarshallingService>()
@@ -21,9 +23,7 @@ class ChatOutgoingFlowTest {
     /**
      * Create the flow under test and inject mock services into it
      */
-    val flow = ChatOutgoingFlow().also {
-        injector.injectServices(it)
-    }
+    val flow = flowMockHelper.createFlow<ChatOutgoingFlow>()
 
     val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
     val MESSAGE = "chat message"
@@ -32,7 +32,7 @@ class ChatOutgoingFlowTest {
     fun `unspecified message in parameters throws`() {
         assertThrows<IllegalArgumentException> {
             flow.call(
-                injector.rpcRequestGenerator(
+                flowMockHelper.rpcRequestGenerator(
                     OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME)
                 )
             )
@@ -43,7 +43,7 @@ class ChatOutgoingFlowTest {
     fun `unspecified X500 name in parameters throws`() {
         assertThrows<IllegalArgumentException> {
             flow.call(
-                injector.rpcRequestGenerator(
+                flowMockHelper.rpcRequestGenerator(
                     OutgoingChatMessage(message = MESSAGE)
                 )
             )
@@ -52,10 +52,10 @@ class ChatOutgoingFlowTest {
 
     @Test
     fun `flow sends message to correct recipient`() {
-        val flowSession = injector.expectFlowMessagesTo(MemberX500Name.parse(RECIPIENT_X500_NAME))
+        val flowSession = flowMockHelper.expectFlowMessagesTo(MemberX500Name.parse(RECIPIENT_X500_NAME))
 
         flow.call(
-            injector.rpcRequestGenerator(
+            flowMockHelper.rpcRequestGenerator(
                 OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
             )
         )

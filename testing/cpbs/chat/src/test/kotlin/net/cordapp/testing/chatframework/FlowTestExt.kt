@@ -6,6 +6,8 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.types.MemberX500Name
+import net.cordapp.testing.chatframework.FlowMockHelper
+import net.cordapp.testing.chatframework.serviceMock
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.*
 
@@ -30,7 +32,7 @@ inline fun <reified T : Any> FlowSession.willReceive(payload: T): FlowSession {
  * This method allows the injection of RPC parameters to a Flow without having to test/mock json masrshalling
  * whilst ensuring the Flow implementation under test is using the correct JsonMarshallingService itself.
  */
-inline fun <reified T> FlowTestDependencyInjector.rpcRequestGenerator(parameterObject: T) = mock<RPCRequestData>()
+inline fun <reified T> FlowMockHelper.rpcRequestGenerator(parameterObject: T) = mock<RPCRequestData>()
     .also {
         whenever(
             it.getRequestBodyAs(this.serviceMock<JsonMarshallingService>(), T::class.java)
@@ -49,7 +51,7 @@ fun FlowSession.verifyMessageSent(payload: Any) {
  * also available to the test to verify expected messages are sent.
  * @return A mock FlowSession
  */
-fun FlowTestDependencyInjector.expectFlowMessagesTo(member: MemberX500Name) = mock<FlowSession>().also {
+fun FlowMockHelper.expectFlowMessagesTo(member: MemberX500Name) = mock<FlowSession>().also {
     whenever(this.serviceMock<FlowMessaging>().initiateFlow(member)).thenReturn(it)
 }
 

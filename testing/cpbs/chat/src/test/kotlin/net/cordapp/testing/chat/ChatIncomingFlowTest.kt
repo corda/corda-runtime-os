@@ -1,18 +1,13 @@
 package net.cordapp.testing.chat
 
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
-import net.corda.v5.application.messaging.receive
-import net.corda.v5.base.types.MemberX500Name
+import net.cordapp.testing.chatframework.FlowMockHelper
+import net.cordapp.testing.chatframework.createFlow
+import net.cordapp.testing.chatframework.mockService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class ChatIncomingFlowTest {
     val X500_NAME = "CN=Alice, O=R3, L=London, C=GB"
@@ -22,16 +17,14 @@ class ChatIncomingFlowTest {
     /**
      * Create an injector which can inject a Flow with mock versions of necessary services
      */
-    val injector = FlowTestDependencyInjector {
+    val flowMockHelper = FlowMockHelper {
         mockService<FlowEngine>().withVirtualNodeName(X500_NAME)
     }
 
     /**
      * Create the flow under test and inject mock services into it
      */
-    val flow = ChatIncomingFlow().also {
-        injector.injectServices(it)
-    }
+    val flow = flowMockHelper.createFlow<ChatIncomingFlow>()
 
     @Test
     fun `flow receives message and stores it`() {
