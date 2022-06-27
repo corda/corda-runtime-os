@@ -63,27 +63,61 @@ class ClassloaderChangeLog(
             return unmodifiableSet(allChangeFiles)
         }
 
-    override fun fetch(path: String): InputStream {
-        // if classloader is specified
-        if (path.startsWith(CLASS_LOADER_PREFIX)) {
-            val splitPath = path.removePrefix(CLASS_LOADER_PREFIX).split('/', limit = 2)
-            if (splitPath.size != 2 || splitPath[1].isEmpty())
-                throw IllegalArgumentException("$path is not a valid classloader resource path.")
-            val cl = changelogFiles.firstOrNull { URLEncoder.encode(it.name, "utf-8") == splitPath[0] }
-                ?: throw IllegalArgumentException("Cannot find classloader ${splitPath[0]} from $path")
-            allChangeFiles.add(path)
-            return cl.classLoader.getResourceAsStream(splitPath[1])
-                ?: throw FileNotFoundException("Master file '$path' not found.")
-        }
 
-        // else look in all classLoaders if classloader not specified.
+    private fun fetchClassLoader(path: String): InputStream? {
+        val splitPath = path.removePrefix(CLASS_LOADER_PREFIX).split('/', limit = 2)
+        if (splitPath.size != 2 || splitPath[1].isEmpty())
+            throw IllegalArgumentException("$path is not a valid classloader resource path.")
+        val cl = changelogFiles.firstOrNull { URLEncoder.encode(it.name, "utf-8") == splitPath[0] }
+            ?: throw IllegalArgumentException("Cannot find classloader ${splitPath[0]} from $path")
+        allChangeFiles.add(path)
+        return cl.classLoader.getResourceAsStream(splitPath[1])
+    }
+
+    private fun fetchAllClassLoaders(path: String, relativeTo: String?): InputStream? {
         distinctLoaders.forEach {
             val resource = it.getResourceAsStream(path)
             if (null != resource) {
                 allChangeFiles.add(path)
                 return resource
             }
+            if (relativeTo != null) {
+                val segments = relativeTo.split('/')
+                val base = segments.subList(0, segments.size - 1).joinToString("/")
+                val r2 = it.getResourceAsStream(base + "/" + path)
+                if (null != r2) {
+                    allChangeFiles.add(path)
+                    return r2
+                }
+            }
         }
-        throw FileNotFoundException("$path not found.")
+        return null
+    }
+
+    private fun fetchAllClassLoadersFlat(name: String): InputStream? {
+        val migrationPath = "migration/"+name
+        distinctLoaders.forEach {
+            val resource = it.getResourceAsStream(migrationPath)
+            if (null != resource) {
+                allChangeFiles.add(migrationPath)
+                return resource
+            }
+        }
+        return null
+    }
+
+    override fun fetch(path: String, relativeTo:String?): InputStream {
+        // if classloader is specified
+        if (path.startsWith(CLASS_LOADER_PREFIX)) {
+            val r = fetchClassLoader(path)
+            if (null != r) return r
+        }
+        val r2 =  fetchAllClassLoaders(path, relativeTo)
+        if (r2 != null) return r2
+
+        val r3 = fetchAllClassLoadersFlat(path.split('/').last())
+        if (r3 != null) return r3
+
+        throw FileNotFoundException("$path not found with relative path $relativeTo")
     }
 }

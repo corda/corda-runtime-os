@@ -61,19 +61,25 @@ object TestObject {
         createCpk(cpkFileChecksum, cpkName, cpkVersion, cpkSSH)
     )
 
-    fun createCpiWithCpk(): Pair<CpiMetadataEntity, CpiCpkEntity> {
+    fun createCpiWithCpks(numberOfCpks: Int = 1): Pair<CpiMetadataEntity, List<CpiCpkEntity>> {
         val id = UUID.randomUUID().toString()
         val cpiName = "test-cpi-$id"
-        val cpkFileChecksum = randomChecksumString()
-        val cpkId = "test-cpk-$id.cpk"
         val cpiVersion = "1.0"
         val cpiSSH = "test-cpi-hash"
-        val cpiCpkEntity = createCpiCpkEntity(
-            cpiName, cpiVersion, cpiSSH,
-            cpkId, "1.0",  "test-cpk-hash",
-            "test-cpi-$id.cpk", cpkFileChecksum
-        )
-        val cpi = createCpi(id, cpiName, cpiVersion, cpiSSH, setOf(cpiCpkEntity))
-        return Pair(cpi, cpiCpkEntity)
+        val cpkList: List<CpiCpkEntity> = (1..numberOfCpks).map {
+            val cpkFileChecksum = randomChecksumString()
+            val cpkName = UUID.randomUUID().toString()
+            val cpkId = "test-cpk-$cpkName.cpk"
+            createCpiCpkEntity(
+                cpiName, cpiVersion, cpiSSH,
+                cpkId, "1.0", "test-cpk-hash",
+                "test-cpi-$id.cpk", cpkFileChecksum
+            )
+        }
+        val cpi = createCpi(id, cpiName, cpiVersion, cpiSSH, cpkList.toSet())
+
+        return Pair(cpi, cpkList)
     }
+
+
 }

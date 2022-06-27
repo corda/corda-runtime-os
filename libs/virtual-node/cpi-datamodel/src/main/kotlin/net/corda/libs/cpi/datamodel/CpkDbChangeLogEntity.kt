@@ -1,7 +1,9 @@
 package net.corda.libs.cpi.datamodel
 
 import net.corda.db.schema.DbSchema
+import net.corda.libs.packaging.core.CpiIdentifier
 import java.io.Serializable
+import java.nio.charset.Charset
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Embeddable
@@ -24,6 +26,10 @@ class CpkDbChangeLogEntity(
     @Column(name = "content", nullable = false)
     val content: String,
 ) {
+    // This structure does not distinguish the root changelogs from changelog include files
+    // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename
+    // convention. See the comment in the companion object of VirtualNodeDbChangeLog.
+    // for the convention used when populating these records.
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
@@ -51,18 +57,28 @@ data class CpkDbChangeLogKey(
     val filePath: String,
 ) : Serializable
 
-fun EntityManager.findCpkDbChangeLog(
-    cpkName: String,
-    cpkVersion: String,
-    cpkSignerSummaryHash: String
-): List<CpkDbChangeLogEntity> {
-    return createQuery(
-        "FROM ${CpkDbChangeLogEntity::class.simpleName} d " +
-                "WHERE d.id.cpkName = :name AND d.id.cpkVersion = :version AND d.id.cpkSignerSummaryHash = :summaryHash",
-        CpkDbChangeLogEntity::class.java
-    )
-        .setParameter("name", cpkName)
-        .setParameter("version", cpkVersion)
-        .setParameter("summaryHash", cpkSignerSummaryHash)
-        .resultList
-}
+
+/*
+ * Find all the db changelogs for a CPI
+ */
+fun findDbChangeLogForCpi(
+    entityManager: EntityManager,
+    cpi: CpiIdentifier
+): List<CpkDbChangeLogEntity> = entityManager.createQuery(
+    "SELECT changelog " +
+            "FROM ${CpkDbChangeLogEntity::class.simpleName} AS changelog INNER JOIN " +
+            "${CpiCpkEntity::class.simpleName} AS cpi " +
+            "ON changelog.id.cpkName = cpi.metadata.id.cpkName AND " +
+            "   changelog.id.cpkVersion = cpi.id.cpkVersion AND " +
+            "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash "+
+            "WHERE cpi.id.cpiName = :name AND "+
+            "      cpi.id.cpiVersion = :version AND "+
+            "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash AND "+
+            "      changelog.isDeleted = FALSE",
+    // TODO - what order should we return?
+    CpkDbChangeLogEntity::class.java
+)
+    .setParameter("name", cpi.name)
+    .setParameter("version", cpi.version)
+    .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString()?:"")
+    .resultList

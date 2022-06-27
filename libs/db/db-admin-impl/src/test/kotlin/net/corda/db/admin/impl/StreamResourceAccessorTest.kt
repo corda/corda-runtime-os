@@ -17,7 +17,7 @@ class StreamResourceAccessorTest {
     private val dbChange = mock<DbChange> {
         on { masterChangeLogFiles } doReturn(listOf("fred.xml", "jon.xml"))
         on { changeLogFileList } doReturn(setOf("fred.xml", "jon.xml", "another.xml"))
-        on { fetch(any()) } doReturn(mock())
+        on { fetch(any(), any()) } doReturn(mock())
     }
     private val classLoaderResourceAccessor = mock<ResourceAccessor>
     {
@@ -49,7 +49,7 @@ class StreamResourceAccessorTest {
     fun `when openStreams with known changelog fetch it`() {
         sra.openStreams(null, "fred.xml")
 
-        verify(dbChange).fetch("fred.xml")
+        verify(dbChange).fetch("fred.xml", null)
     }
 
     @Test
