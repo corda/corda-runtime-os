@@ -118,7 +118,7 @@ class MGMRegistrationService @Activate constructor(
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
     // Component lifecycle coordinator
-    private val coordinator = coordinatorFactory.createCoordinator<MemberRegistrationService>(::handleEvent)
+    private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
     private val clock = UTCClock()
 
@@ -222,19 +222,41 @@ class MGMRegistrationService @Activate constructor(
             for (key in errorMessageMap.keys) {
                 context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
             }
-            require(
-                context.keys.any { URL_KEY.format("[0-9]+").toRegex().matches(it) }
-            ) { "No endpoint URL was provided." }
-            require(
-                context.keys.any { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }
-            ) { "No endpoint protocol was provided." }
-            require(
-                context.keys.any { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }
-            ) { "No session truststore was provided." }
-            require(
-                context.keys.any { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }
-            ) { "No TLS truststore was provided." }
+            context.keys.filter { URL_KEY.format("[0-9]+").toRegex().matches(it) }.apply {
+                require(isNotEmpty()) { "No endpoint URL was provided." }
+                require(isOrdered(this, 2)) { "Provided endpoint URLs are incorrectly numbered." }
+            }
+            context.keys.filter { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }.apply {
+                require(isNotEmpty()) { "No endpoint protocol was provided." }
+                require(isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
+            }
+            context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
+                require(isNotEmpty()) { "No session trust store was provided." }
+                require(isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
+            }
+            context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
+                require(isNotEmpty()) { "No TLS trust store was provided." }
+                require(isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
+            }
         }
+
+        /**
+         * Checks if [keys] are numbered correctly (0, 1, ..., n).
+         *
+         * @param keys List of property keys to validate.
+         * @param position Position of numbering in each of the provided [keys]. For example, [position] is 2 in
+         * "corda.endpoints.0.connectionURL".
+         */
+        private fun isOrdered(keys: List<String>, position: Int): Boolean =
+            keys.map { it.split(".")[position].toInt() }
+                .sorted()
+                .run {
+                    indices.forEach { index ->
+                        if (this[index] != index) return false
+                    }
+                    true
+                }
+
 
         private fun getPemKeyFromId(keyId: String, tenantId: String): String {
             return with(cryptoOpsClient) {

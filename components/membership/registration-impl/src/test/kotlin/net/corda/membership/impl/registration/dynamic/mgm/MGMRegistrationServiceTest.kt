@@ -22,7 +22,6 @@ import net.corda.membership.impl.MemberInfoFactoryImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
-import net.corda.membership.impl.registration.staticnetwork.TestUtils
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -54,7 +53,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
-import kotlin.test.assertEquals
 
 class MGMRegistrationServiceTest {
     companion object {
@@ -232,12 +230,11 @@ class MGMRegistrationServiceTest {
     @Test
     fun `registration fails when coordinator is not running`() {
         val registrationResult = registrationService.register(mgm, mock())
-        assertEquals(
+        assertThat(registrationResult).isEqualTo(
             MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
                 "Registration failed. Reason: MGMRegistrationService is not running."
-            ),
-            registrationResult
+            )
         )
     }
 
@@ -254,6 +251,23 @@ class MGMRegistrationServiceTest {
                 }
                 elementAt(index).let { testProperties.put(it.key, it.value) }
             }
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when one or more properties are numbered incorrectly`() {
+        postConfigChangedEvent()
+        val testProperties =
+            properties + mapOf(
+                "corda.group.truststore.tls.100" to
+                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+            )
+        registrationService.start()
+        val result = registrationService.register(mgm, testProperties)
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).isEqualTo("Registration failed. Reason: Provided TLS trust stores are incorrectly numbered.")
         }
         registrationService.stop()
     }
