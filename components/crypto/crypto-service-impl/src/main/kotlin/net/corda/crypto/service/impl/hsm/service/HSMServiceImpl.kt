@@ -8,10 +8,11 @@ import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLIC
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.CryptoRetryingExecutor
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
+import net.corda.crypto.impl.retrying.LinearRetryStrategy
 import net.corda.crypto.persistence.hsm.HSMStore
 import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -28,7 +29,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.time.Instant
 
 @Suppress("TooManyFunctions")
@@ -54,7 +54,10 @@ class HSMServiceImpl(
 
     private val hsmConfig = config.hsmPersistence()
 
-    private val executor = CryptoRetryingExecutor(logger, hsmConfig.downstreamMaxAttempts)
+    private val executor = CryptoRetryingExecutor(
+        logger,
+        LinearRetryStrategy(hsmConfig.downstreamMaxAttempts)
+    )
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
@@ -67,7 +70,7 @@ class HSMServiceImpl(
                 it.merge(info, encryptedServiceConfig)
                 info.id
             } else {
-                throw CryptoServiceLibraryException(
+                throw IllegalArgumentException(
                     "Cannot update the HSM Config with id '${info.id}' as it doesn't exist."
                 )
             }
@@ -266,5 +269,5 @@ class HSMServiceImpl(
     private fun tryChooseAny(stats: List<HSMStat>): HSMStat =
         stats.minByOrNull { s ->
             s.usages
-        } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
+        } ?: throw IllegalStateException("There is no available HSMs.")
 }

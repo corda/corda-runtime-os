@@ -9,6 +9,10 @@ import org.mockito.kotlin.whenever
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
+import net.corda.libs.cpi.datamodel.CpkFileEntity
+import net.corda.libs.cpi.datamodel.CpkKey
+import net.corda.v5.crypto.SecureHash
+import org.mockito.kotlin.eq
 
 class DBCpkStorageTest {
     private lateinit var dbCpkStorage: DBCpkStorage
@@ -51,5 +55,29 @@ class DBCpkStorageTest {
 
         val cpkIds = dbCpkStorage.getCpkIdsNotIn(listOf())
         assertThat(cpkIds).isEmpty()
+    }
+
+    @Test
+    fun `get cpk data by checksum uses named query`() {
+        val bytes = "sometext".toByteArray()
+        val cpkFileAsList = CpkFileEntity(
+            CpkKey("name", "1", "ssh"),
+            "SHA-256:1234567890",
+            bytes
+        )
+
+        val mockTypedQuery = mock<TypedQuery<CpkFileEntity>>()
+        whenever(mockTypedQuery.setParameter(eq("checksum"), eq("SHA-256:1234567890"))).thenReturn(mockTypedQuery)
+        whenever(mockTypedQuery.singleResult).thenReturn(cpkFileAsList)
+        val em = mock<EntityManager>()
+        whenever(em.createQuery(any(), any<Class<CpkFileEntity>>())).thenReturn(mockTypedQuery)
+        whenever(em.transaction).thenReturn(mock())
+        whenever(emFactory.createEntityManager()).thenReturn(em)
+
+        val checksum = SecureHash.create("SHA-256:1234567890")
+        val cpkChecksumToData = dbCpkStorage.getCpkDataByCpkId(checksum)
+
+        assertThat(cpkChecksumToData.checksum).isEqualTo(checksum)
+        assertThat(cpkChecksumToData.data).isEqualTo(bytes)
     }
 }

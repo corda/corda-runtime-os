@@ -15,8 +15,6 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
@@ -47,10 +45,6 @@ internal class ConfigProcessor(
             }
 
             val config = mergeConfigs(currentData)
-            coordinator.postEvent(NewConfigReceived(config))
-        } else {
-            logger.debug { "No initial data to read from configuration topic" }
-            val config = mapOf(MESSAGING_CONFIG to configMerger.getMessagingConfig(bootConfig, null))
             coordinator.postEvent(NewConfigReceived(config))
         }
     }
@@ -86,13 +80,15 @@ internal class ConfigProcessor(
                     )
                 }
             }.toMutableMap()
-            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+
+            if (currentData.containsKey(MESSAGING_CONFIG)) {
+                config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+            }
             config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
-            //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
-            // exist to preserve defaulting logic present
-            config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
-            config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
-            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
+            if (currentData.containsKey(CRYPTO_CONFIG)) {
+                config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            }
             config
         } else {
             mutableMapOf()
@@ -108,7 +104,7 @@ internal class ConfigProcessor(
     private fun addToCache(configSection: String, configuration: Configuration?) {
         if (configuration != null) {
             val versionedRecord = object : VersionedRecord<String, Configuration> {
-                override val version = configuration.version.toInt()
+                override val version = configuration.version
                 override val isDeleted = false
                 override val key = configSection
                 override val value: Configuration = configuration

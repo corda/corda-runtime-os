@@ -1,6 +1,7 @@
 package net.corda.virtualnode.read
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.reconciliation.ReconcilerReader
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 
@@ -14,7 +15,7 @@ import net.corda.virtualnode.VirtualNodeInfo
  * You will probably use the callback if you are automatically interacting with the service,
  * e.g. a status page listening all nodes in the system.
  */
-interface VirtualNodeInfoReadService : Lifecycle {
+interface VirtualNodeInfoReadService : ReconcilerReader<HoldingIdentity, VirtualNodeInfo>, Lifecycle {
 
     /**
      * Returns virtual node info for all onboarded virtual nodes

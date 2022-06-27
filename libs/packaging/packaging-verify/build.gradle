@@ -1,0 +1,33 @@
+import aQute.bnd.version.MavenVersion
+
+import java.security.cert.CertificateFactory
+
+plugins {
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+}
+
+description 'Corda Packaging Verify'
+
+dependencies {
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-base"
+    api "net.corda:corda-crypto"
+    api "net.corda:corda-cipher-suite"
+
+    implementation project(":libs:packaging:packaging")
+    implementation project(":libs:packaging:packaging-core")
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+
+    testImplementation project(':testing:test-utilities')
+
+    testImplementation "org.osgi:osgi.core"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

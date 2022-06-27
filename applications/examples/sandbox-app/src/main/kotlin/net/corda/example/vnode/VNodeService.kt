@@ -36,7 +36,7 @@ class VNodeServiceImpl @Activate constructor(
     private val logger = loggerFor<VNodeService>()
 
     init {
-        sandboxGroupContextComponent.initCache(1)
+        setupSandboxCache()
     }
 
     override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
@@ -49,9 +49,14 @@ class VNodeServiceImpl @Activate constructor(
         virtualNodeLoader.unloadVirtualNode(virtualNodeInfo)
         virtualNodeLoader.forgetCPI(cpiMetadata.cpiId)
         cpiLoader.removeCpiMetadata(cpiMetadata.cpiId)
+        setupSandboxCache()
     }
 
     override fun getOrCreateSandbox(holdingIdentity: HoldingIdentity): SandboxGroupContext {
         return flowSandboxService.get(holdingIdentity)
+    }
+
+    private fun setupSandboxCache() {
+        sandboxGroupContextComponent.initCache(1)
     }
 }

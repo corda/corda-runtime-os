@@ -19,7 +19,7 @@ class ComponentConfigHandler(private val coordinator: LifecycleCoordinator, priv
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
             val keys = if (snapshotPosted) {
-                changedKeys.filter { it in requiredKeys }.toSet()
+                changedKeys.filterTo(LinkedHashSet()) { it in requiredKeys }
             } else {
                 snapshotPosted = true
                 requiredKeys

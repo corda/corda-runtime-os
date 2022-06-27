@@ -11,7 +11,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.crypto.exceptions.CryptoConfigurationException
+import net.corda.v5.crypto.failures.CryptoException
 
 /*
 {
@@ -74,7 +74,7 @@ fun createDefaultCryptoConfig(
     smartFactoryKey: KeyCredentials,
     cryptoRootKey: KeyCredentials,
     softKey: KeyCredentials
-): SmartConfig = try {
+): SmartConfig =
     SmartConfigFactory.create(
         ConfigFactory.parseString(
             """
@@ -83,11 +83,6 @@ fun createDefaultCryptoConfig(
         """.trimIndent()
         )
     ).createDefaultCryptoConfig(cryptoRootKey, softKey)
-} catch (e: CryptoConfigurationException) {
-    throw e
-} catch (e: Throwable) {
-    throw CryptoConfigurationException("Failed to create default crypto config", e)
-}
 
 fun SmartConfig.addDefaultBootCryptoConfig(
     fallbackCryptoRootKey: KeyCredentials,
@@ -183,11 +178,11 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
             )
     )
 } catch (e: Throwable) {
-    throw CryptoConfigurationException("Failed to create default crypto config", e)
+    throw CryptoException("Failed to create default crypto config", e)
 }
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
-    this[CRYPTO_CONFIG] ?: throw CryptoConfigurationException(
+    this[CRYPTO_CONFIG] ?: throw IllegalStateException(
         "Could not generate a crypto configuration due to missing key: $CRYPTO_CONFIG"
     )
 
@@ -199,26 +194,26 @@ fun SmartConfig.rootEncryptor(): Encryptor =
         )
         AesEncryptor(key)
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create Encryptor.", e)
+        throw IllegalStateException("Failed to get Encryptor.", e)
     }
 
 fun SmartConfig.softPersistence(): CryptoSoftPersistenceConfig =
     try {
         CryptoSoftPersistenceConfig(getConfig(SOFT_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoSoftPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get CryptoSoftPersistenceConfig.", e)
     }
 
 fun SmartConfig.signingPersistence(): CryptoSigningPersistenceConfig =
     try {
         CryptoSigningPersistenceConfig(getConfig(SIGNING_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoSigningPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get CryptoSigningPersistenceConfig.", e)
     }
 
 fun SmartConfig.hsmPersistence(): CryptoHSMPersistenceConfig =
     try {
         CryptoHSMPersistenceConfig(getConfig(HSM_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoHSMPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get CryptoHSMPersistenceConfig.", e)
     }

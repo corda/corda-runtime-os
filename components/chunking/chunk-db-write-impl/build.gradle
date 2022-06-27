@@ -3,6 +3,13 @@ plugins {
     id 'corda.common-publishing'
 }
 
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 description 'Chunk database writer impl'
 
 dependencies {
@@ -24,6 +31,8 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:db:db-admin')
+
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:cpi-datamodel")
@@ -42,12 +51,26 @@ dependencies {
     testImplementation project(':libs:db:db-admin-impl')
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':testing:db-testkit')
+    testImplementation project(':testing:test-utilities')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
+}
+
+def testResources = tasks.named('processTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+        into 'META-INF'
+    }
+}
+
+tasks.named('test', Test) {
+    dependsOn testResources
 }
 
 tasks.named('jar', Jar) {

@@ -15,7 +15,6 @@ import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.v5.base.util.toHex
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
@@ -208,7 +207,7 @@ class HSMStoreActionsImpl(
 
     private fun getExistingHSMConfigEntity(configId: String): HSMConfigEntity =
         (entityManager.find(HSMConfigEntity::class.java, configId)
-            ?: throw CryptoServiceLibraryException("The HSM with id=$configId does not exists."))
+            ?: throw IllegalStateException("The HSM with id=$configId does not exists."))
 
     private fun generateRandomShortAlias() =
         UUID.randomUUID().toString().toByteArray().toHex().take(12)

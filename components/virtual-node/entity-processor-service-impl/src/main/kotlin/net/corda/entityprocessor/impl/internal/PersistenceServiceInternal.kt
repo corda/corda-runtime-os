@@ -53,8 +53,6 @@ class PersistenceServiceInternal(
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
 ) {
     companion object {
-        // Max bytes we will return (for findAll) in a single Kafka packet / message
-        private const val MAX_BYTES = 6 * 1024 * 1024
         private val logger = contextLogger()
     }
 

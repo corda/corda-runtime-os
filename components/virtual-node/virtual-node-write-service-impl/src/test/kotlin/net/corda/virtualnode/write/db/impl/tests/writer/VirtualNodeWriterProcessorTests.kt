@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.packaging.CpiIdentifier
@@ -18,23 +17,24 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
+import net.corda.membership.impl.MemberInfoImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
-import net.corda.membership.impl.toMemberInfo
 import net.corda.membership.impl.toSortedMap
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
+import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
@@ -55,6 +55,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.sql.Connection
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
@@ -81,16 +82,22 @@ class VirtualNodeWriterProcessorTests {
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
-        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, "{\"groupId\": \"${UUID.randomUUID()}\"}")
+        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, "{\"groupId\": \"${UUID.randomUUID()}\"}")
     private val cpiMetaDataWithMGM =
-        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, getSampleGroupPolicy())
+        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, getSampleGroupPolicy())
     private val connectionId = UUID.randomUUID().toString()
+
+    /** Use the test clock so we can control the Instant that is written into timestamps such that
+     * the actual timestamp == expected timestamp in the tests.
+     */
+    private val clock = TestClock(Instant.now())
+
     private val vnodeInfo =
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
             cpiIdentifier,
             connectionId, connectionId, connectionId, connectionId,
-            null)
+            null, -1, clock.instant())
 
     private val vnodeCreationReq =
         VirtualNodeCreationRequest(vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
@@ -191,6 +198,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
 
         processRequest(processor, vnodeCreationReq)
@@ -210,6 +218,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
         processRequest(processor, vnodeCreationReq)
 
@@ -232,12 +241,12 @@ class VirtualNodeWriterProcessorTests {
             val expectedRecordKey = "${holdingIdentity.id}-${mgmHoldingIdentity.id}"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
-            val mgmPublished = toMemberInfo(
+            val mgmPublished = MemberInfoImpl(
                 layeredPropertyMapFactory.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
+                    persistentMemberPublished.memberContext.toSortedMap()
                 ),
                 layeredPropertyMapFactory.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
+                    persistentMemberPublished.mgmContext.toSortedMap()
                 )
             )
             it.assertThat(mgmPublished.name.toString())
@@ -257,6 +266,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
         processRequest(processor, vnodeCreationReq)
 
@@ -297,6 +307,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
         val resp = processRequest(processor, vnodeCreationReq)
 
@@ -331,6 +342,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
         val resp = processRequest(processor, vnodeCreationReq)
 
@@ -364,6 +376,7 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
         val resp = processRequest(processor, vnodeCreationReq)
 
@@ -411,6 +424,7 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
+            clock
         )
         val resp = processRequest(processor, vnodeCreationReq)
 

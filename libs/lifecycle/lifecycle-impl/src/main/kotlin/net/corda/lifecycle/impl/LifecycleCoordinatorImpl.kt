@@ -131,7 +131,7 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun postEvent(event: LifecycleEvent) {
-        if (_isClosed.get()) {
+        if (isClosed) {
             logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
         }
@@ -191,7 +191,7 @@ class LifecycleCoordinatorImpl(
      */
     override fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle {
         val coordinators = try {
-            coordinatorNames.map { registry.getCoordinator(it) }.toSet()
+            coordinatorNames.mapTo(LinkedHashSet(), registry::getCoordinator)
         } catch (e: LifecycleRegistryException) {
             logger.error("Failed to register on coordinator as an invalid name was provided. ${e.message}", e)
             throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)

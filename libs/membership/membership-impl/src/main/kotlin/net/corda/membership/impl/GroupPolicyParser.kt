@@ -4,9 +4,14 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
-import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.impl.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -82,7 +87,13 @@ class GroupPolicyParser @Activate constructor(
     @Suppress("UNCHECKED_CAST", "SpreadOperator")
     fun getMgmInfo(groupPolicyJson: String): MemberInfo? {
         val groupPolicy = parse(groupPolicyJson)
-        val mgmInfo = groupPolicy[MGM_INFO] as? Map<String, String> ?: return null
+        val mgmInfo = (groupPolicy[MGM_INFO] as? Map<String, Any?> ?: return null)
+            .filter {
+                it.value != null
+            }
+            .mapValues {
+                it.value?.toString()
+            }
         try {
             val now = clock.instant().toString()
             return MemberInfoImpl(
@@ -91,10 +102,10 @@ class GroupPolicyParser @Activate constructor(
                 ),
                 mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                     sortedMapOf(
-                        MemberInfoExtension.CREATED_TIME to now,
-                        MemberInfoExtension.MODIFIED_TIME to now,
-                        MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                        MemberInfoExtension.IS_MGM to "true"
+                        CREATED_TIME to now,
+                        MODIFIED_TIME to now,
+                        STATUS to MEMBER_STATUS_ACTIVE,
+                        IS_MGM to "true"
                     )
                 )
             )

@@ -6,9 +6,10 @@ import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import java.util.concurrent.atomic.AtomicReference
 
 class PermissionValidatorImpl(
-    private val permissionValidationCache: PermissionValidationCache
+    private val permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>
 ) : PermissionValidator {
 
     companion object {
@@ -30,6 +31,11 @@ class PermissionValidatorImpl(
 
     override fun authorizeUser(loginName: String, permission: String): Boolean {
         logger.debug { "Checking permissions for $permission for user $loginName" }
+
+        val permissionValidationCache = checkNotNull(permissionValidationCacheRef.get()) {
+            "Permission validation cache is null."
+        }
+
         val permissionSummary = permissionValidationCache.getPermissionSummary(loginName)
 
         if (permissionSummary == null) {

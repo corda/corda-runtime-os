@@ -5,6 +5,10 @@ global:
   storageClass: corda-sc
 
 kafka:
+  auth:
+    enabled: true
+    clientProtocol: sasl_tls
+  replicaCount: 3
   resources:
     requests:
       memory: 390Mi
@@ -12,6 +16,8 @@ kafka:
     limits:
       memory: 800Mi
       cpu: 1000m
+  zookeeper:
+    replicaCount: 3
 
 postgresql:
   primary:

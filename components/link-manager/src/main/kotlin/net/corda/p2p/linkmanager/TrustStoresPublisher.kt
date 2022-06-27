@@ -5,10 +5,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -54,6 +54,11 @@ internal class TrustStoresPublisher(
         emptyList(),
         emptyList(),
     )
+    private val blockingDominoTile = BlockingDominoTile(
+        this.javaClass.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
 
     override fun groupAdded(groupInfo: GroupPolicyListener.GroupInfo) {
         toPublish.offer(groupInfo)
@@ -63,14 +68,16 @@ internal class TrustStoresPublisher(
     override val dominoTile = ComplexDominoTile(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
+        onStart = ::onStart,
         managedChildren = listOf(
-            publisher.dominoTile,
-            subscriptionTile
+            publisher.dominoTile.toNamedLifecycle(),
+            subscriptionTile.toNamedLifecycle(),
+            blockingDominoTile.toNamedLifecycle()
         ),
         dependentChildren = listOf(
-            publisher.dominoTile,
-            subscriptionTile
+            publisher.dominoTile.coordinatorName,
+            subscriptionTile.coordinatorName,
+            blockingDominoTile.coordinatorName
         )
     )
 
@@ -101,11 +108,8 @@ internal class TrustStoresPublisher(
         }
     }
 
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder
-    ): CompletableFuture<Unit> {
+    private fun onStart() {
         publishQueueIfPossible()
-        return ready
     }
 
     private fun publishQueueIfPossible() {
@@ -119,6 +123,7 @@ internal class TrustStoresPublisher(
 
     private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
         publishedGroups.compute(groupId) { _, publishedCertificates ->
+            logger.info("Publishing trust roots for group $groupId to the gateway.")
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))

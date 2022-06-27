@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.utilities.time.UTCClock
 
 /** A factory for [VirtualNodeWriter]s. */
 @Suppress("LongParameterList")
@@ -66,7 +67,8 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeCreationRequest::class.java,
             VirtualNodeCreationResponse::class.java,
         )
-        val virtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
+        val virtualNodeEntityRepository =
+            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
         val processor = VirtualNodeWriterProcessor(
             vnodePublisher,
@@ -74,6 +76,7 @@ internal class VirtualNodeWriterFactory(
             virtualNodeEntityRepository,
             vnodeDbFactory,
             groupPolicyParser,
+            UTCClock()
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

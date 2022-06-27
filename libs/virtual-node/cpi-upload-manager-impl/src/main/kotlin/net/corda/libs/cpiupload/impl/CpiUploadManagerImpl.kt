@@ -21,16 +21,18 @@ import java.io.InputStream
  * @param publisher the publisher used to write messages
  * @param subscription we take ownership of the subscription so that we can close it
  * @param statusProcessor used by the subscription to consume messages from the [uploadTopic]
+ * @param maxAllowedMessageSize max message size allowed to be published
  */
 class CpiUploadManagerImpl(
     private val uploadTopic: String,
     private val publisher: Publisher,
     private val subscription: Subscription<UploadStatusKey, UploadStatus>,
-    private val statusProcessor: UploadStatusProcessor
+    private val statusProcessor: UploadStatusProcessor,
+    private val maxAllowedMessageSize: Int,
 ) : CpiUploadManager {
 
     override fun uploadCpi(cpiFileName: String, cpiContent: InputStream, properties: Map<String, String?>?): Request {
-        val chunkWriter = ChunkWriterFactory.create(ChunkWriterFactory.SUGGESTED_CHUNK_SIZE, properties).apply {
+        val chunkWriter = ChunkWriterFactory.create(maxAllowedMessageSize, properties).apply {
             onChunk {
                 val futures = publisher.publish(listOf(Record(uploadTopic, it.requestId, it)))
                 futures.forEach { f -> f.get() }

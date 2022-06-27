@@ -1,13 +1,9 @@
 package net.corda.flow.service
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.scheduler.FlowWakeUpScheduler
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,7 +19,6 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -46,9 +41,7 @@ class FlowService @Activate constructor(
 
     companion object {
         private val logger = contextLogger()
-
-        //Hack: Removed FLOW_CONFIG from the list for now, needs to be reviewed as part of CORE-3780
-        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
     }
 
     private var registration: RegistrationHandle? = null
@@ -87,7 +80,7 @@ class FlowService @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val config = getConfig(event.config)
+                val config = event.config
 
                 /*
                  * The order is important here we need to ensure the scheduler
@@ -117,21 +110,5 @@ class FlowService @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    /**
-     * HACK: This hack is here until the FLOW_CONFIG section gets added.
-     * see https://r3-cev.atlassian.net/browse/CORE-3780
-     */
-    private fun getConfig(config: Map<String, SmartConfig>): Map<String, SmartConfig> {
-        val flowConfig = ConfigFactory.empty()
-            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-            .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-            .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
-            .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5L))
-            .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(16000L))
-
-        val flowSmartConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
-        return config + mapOf(FLOW_CONFIG to flowSmartConfig)
     }
 }

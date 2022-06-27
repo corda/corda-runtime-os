@@ -137,13 +137,27 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun importCertificate(tenantId: String, alias: String, certificate: HttpFileUpload) {
+    override fun importCertificateChain(tenantId: String, alias: String, certificates: List<HttpFileUpload>) {
         // validate certificate
-        val rawCertificate = certificate.content.reader().readText()
+        if (certificates.isEmpty()) {
+            throw InvalidInputDataException(
+                details = mapOf("certificate" to "No certificates")
+            )
+        }
+        val rawCertificates = certificates.map {
+            it.content.reader().readText()
+        }
         try {
-            CertificateFactory
-                .getInstance("X.509")
-                .generateCertificate(rawCertificate.byteInputStream())
+            rawCertificates.forEach { rawCertificate ->
+                if (CertificateFactory
+                    .getInstance("X.509")
+                    .generateCertificates(rawCertificate.byteInputStream()).isEmpty()
+                ) {
+                    throw InvalidInputDataException(
+                        "No certificates in PEM"
+                    )
+                }
+            }
         } catch (e: Exception) {
             logger.warn("Invalid certificate", e)
             throw InvalidInputDataException(
@@ -152,7 +166,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
 
         try {
-            certificatesClient.importCertificate(tenantId, alias, rawCertificate)
+            certificatesClient.importCertificates(tenantId, alias, rawCertificates.joinToString(separator = "\n"))
         } catch (e: Exception) {
             logger.warn("Could not import certificate", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

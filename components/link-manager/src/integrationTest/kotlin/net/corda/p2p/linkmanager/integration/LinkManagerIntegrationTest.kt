@@ -16,8 +16,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -63,14 +61,20 @@ class LinkManagerIntegrationTest {
     private val replayPeriod = 2000
     private fun createLinkManagerConfiguration(replayPeriod: Int): Config {
         val innerConfig = ConfigFactory.empty()
-            .withValue(LinkManagerConfiguration.REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
+            .withValue(LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
         return ConfigFactory.empty()
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
             .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
-            .withValue(LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), innerConfig.root())
+            .withValue(
+                LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
+                ConfigFactory.empty().withValue(
+                    LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(),
+                    innerConfig.root()
+                ).root()
+            )
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())
@@ -84,7 +88,7 @@ class LinkManagerIntegrationTest {
         this.publish(listOf(Record(
             Schemas.Config.CONFIG_TOPIC,
             "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
-            Configuration(config.root().render(ConfigRenderOptions.concise()), "0", ConfigurationSchemaVersion(1, 0))
+            Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
         ))).forEach { it.get() }
     }
 
@@ -129,7 +133,7 @@ class LinkManagerIntegrationTest {
             val invalidConfig = createLinkManagerConfiguration(-1)
             configPublisher.publishLinkManagerConfig(invalidConfig)
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                assertThat(linkManager.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
             }
 
             logger.info("Publishing valid configuration again")
@@ -137,21 +141,6 @@ class LinkManagerIntegrationTest {
             eventually {
                 assertThat(linkManager.isRunning).isTrue
             }
-        }
-    }
-
-    @Test
-    fun `domino logic dependencies are setup successfully for link manager`() {
-        val linkManager = LinkManager(
-            subscriptionFactory,
-            publisherFactory,
-            lifecycleCoordinatorFactory,
-            configReadService,
-            bootstrapConfig,
-        )
-
-        assertDoesNotThrow {
-            DependenciesVerifier.verify(linkManager.dominoTile)
         }
     }
 }

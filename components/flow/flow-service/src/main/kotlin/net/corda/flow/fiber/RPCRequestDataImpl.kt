@@ -1,7 +1,7 @@
 package net.corda.flow.fiber
 
 import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.marshalling.MarshallingService
 
 /**
  * Read the start args from the start context. This prevents the full start args from being serialized on every
@@ -18,8 +18,12 @@ class RPCRequestDataImpl(private val fiberService: FlowFiberService) : RPCReques
             ?: throw IllegalStateException("Failed to find the start args for RPC started flow")
     }
 
-    override fun <T> getRequestBodyAs(jsonMarshallingService: JsonMarshallingService, clazz: Class<T>): T {
-        return jsonMarshallingService.parseJson(getRequestBody(), clazz)
+    override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
+        return marshallingService.parse(getRequestBody(), clazz)
+    }
+
+    override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
+        return marshallingService.parseList(getRequestBody(), clazz)
     }
 
     override fun toString(): String {

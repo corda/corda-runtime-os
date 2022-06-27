@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.MessagingConfig
 import org.osgi.service.component.annotations.Component
 
 @Suppress("UNUSED")
@@ -47,18 +48,23 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
     }
 
     override fun create(
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
         publisherFactory: PublisherFactory,
         subscriptionFactory: SubscriptionFactory
     ): CpiUploadManager {
         val statusTopic = Schemas.VirtualNode.CPI_UPLOAD_STATUS_TOPIC
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
-        val publisher = createChunkPublisher(config, publisherFactory)
-        val subscription = createSubscriber(config, subscriptionFactory, statusTopic)
+        val publisher = createChunkPublisher(messagingConfig, publisherFactory)
+        val subscription = createSubscriber(messagingConfig, subscriptionFactory, statusTopic)
 
         subscription.start()
         publisher.start()
 
-        return CpiUploadManagerImpl(uploadTopic, publisher, subscription, ackProcessor)
+        return CpiUploadManagerImpl(
+            uploadTopic,
+            publisher,
+            subscription,
+            ackProcessor,
+            messagingConfig.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE))
     }
 }

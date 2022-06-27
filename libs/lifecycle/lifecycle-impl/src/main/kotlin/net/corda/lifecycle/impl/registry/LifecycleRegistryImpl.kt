@@ -35,14 +35,17 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      */
     override fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String) {
         if (statuses[name] == null) {
-            throw LifecycleRegistryException(
-                "Attempt was made to update the status of coordinator $name to $status " +
-                        "($reason) that has not been registered with the registry."
-            )
+            logger.warn("Attempt was made to update the status of coordinator $name to $status " +
+                    "($reason) that has not been registered with the registry.")
+//            throw LifecycleRegistryException(
+//                "Attempt was made to update the status of coordinator $name to $status " +
+//                        "($reason) that has not been registered with the registry."
+//            )
+        } else {
+            val coordinatorStatus = CoordinatorStatus(name, status, reason)
+            statuses[name] = coordinatorStatus
+            logger.trace { "Coordinator status update: $name is now $status ($reason)" }
         }
-        val coordinatorStatus = CoordinatorStatus(name, status, reason)
-        statuses[name] = coordinatorStatus
-        logger.trace { "Coordinator status update: $name is now $status ($reason)" }
     }
 
     /**

@@ -6,17 +6,19 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
-import java.time.Instant
 
-class CpiValidatorImpl(
+@Suppress("LongParameterList")
+class CpiValidatorImpl constructor(
     private val publisher: StatusPublisher,
     private val persistence: ChunkPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
     cpiCacheDir: Path,
-    cpiPartsDir: Path
+    cpiPartsDir: Path,
+    private val clock: Clock
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
@@ -28,6 +30,7 @@ class CpiValidatorImpl(
         //  Each function may throw a [ValidationException]
         log.debug("Validating $requestId")
 
+        // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
         val fileInfo = validationFunctions.getFileInfo(persistence, requestId)
 
@@ -45,19 +48,26 @@ class CpiValidatorImpl(
             validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
         }
 
+        publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
+        val cpkDbChangeLogEntities = validationFunctions.extractLiquibaseScriptsFromCpi(cpi)
+
         publisher.update(requestId, "Persisting CPI")
-        validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
+        val cpiMetadataEntity = validationFunctions.persistToDatabase(
+            persistence,
+            cpi,
+            fileInfo,
+            requestId,
+            cpkDbChangeLogEntities
+        )
 
         publisher.update(requestId, "Notifying flow workers")
-        val timestamp = Instant.now()
         val cpiMetadata = CpiMetadata(
             cpi.metadata.cpiId,
             fileInfo.checksum,
             cpi.cpks.map { it.metadata },
             cpi.metadata.groupPolicy,
-            // TODO the below version should be populated from the DB as per https://r3-cev.atlassian.net/browse/CORE-4890
-            version = 0,
-            timestamp
+            version = cpiMetadataEntity.entityVersion,
+            timestamp = clock.instant()
         )
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 

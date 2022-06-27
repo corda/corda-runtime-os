@@ -21,8 +21,6 @@ import net.corda.data.crypto.wire.hsm.configuration.commands.PutHSMCommand
 import net.corda.data.crypto.wire.hsm.configuration.queries.HSMLinkedCategoriesQuery
 import net.corda.data.crypto.wire.hsm.configuration.queries.HSMQuery
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -107,7 +105,7 @@ class HSMConfigurationBusProcessorTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `LinkHSMCategoriesCommand should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+    fun `LinkHSMCategoriesCommand should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
         val processor = HSMConfigurationBusProcessor(hsmService)
         val context = createRequestContext(UUID.randomUUID().toString())
@@ -125,7 +123,7 @@ class HSMConfigurationBusProcessorTests {
         val e = assertThrows<ExecutionException> {
             future.get()
         }
-        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(e.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -156,7 +154,7 @@ class HSMConfigurationBusProcessorTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `PutHSMCommand should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+    fun `PutHSMCommand should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
         val processor = HSMConfigurationBusProcessor(hsmService)
         val info = HSMInfo()
@@ -173,7 +171,7 @@ class HSMConfigurationBusProcessorTests {
         val e = assertThrows<ExecutionException> {
             future.get()
         }
-        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(e.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -206,7 +204,7 @@ class HSMConfigurationBusProcessorTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `HSMLinkedCategoriesQuery should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+    fun `HSMLinkedCategoriesQuery should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
         val processor = HSMConfigurationBusProcessor(hsmService)
         val context = createRequestContext(UUID.randomUUID().toString())
@@ -221,7 +219,7 @@ class HSMConfigurationBusProcessorTests {
         val e = assertThrows<ExecutionException> {
             future.get()
         }
-        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(e.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -263,7 +261,7 @@ class HSMConfigurationBusProcessorTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `HSMQuery should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+    fun `HSMQuery should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
         val processor = HSMConfigurationBusProcessor(hsmService)
         val context = createRequestContext(UUID.randomUUID().toString())
@@ -284,11 +282,11 @@ class HSMConfigurationBusProcessorTests {
         val e = assertThrows<ExecutionException> {
             future.get()
         }
-        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(e.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should complete future exceptionally in case of unknown request`() {
+    fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         val hsmService = mock<HSMService>()
         val processor = HSMConfigurationBusProcessor(hsmService)
         val context = createRequestContext()
@@ -304,8 +302,7 @@ class HSMConfigurationBusProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
-        assertThat(exception.cause?.cause).isInstanceOf(CryptoServiceBadRequestException::class.java)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -330,8 +327,7 @@ class HSMConfigurationBusProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
-        assertSame(originalException, exception.cause?.cause)
+        assertSame(originalException, exception.cause)
         Mockito.verify(hsmService, times(1)).putHSMConfig(info, serviceConfig)
     }
 }

@@ -51,7 +51,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // But building a cpb for use in a test is ok.
-    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -60,6 +60,7 @@ dependencies {
 
     smokeTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    smokeTestImplementation "org.apache.commons:commons-text:$commonsTextVersion"
     smokeTestImplementation "org.assertj:assertj-core:$assertjVersion"
     smokeTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"

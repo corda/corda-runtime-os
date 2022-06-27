@@ -7,6 +7,10 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import org.apache.avro.generic.IndexedRecord
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
@@ -17,6 +21,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.thread
+import kotlin.random.Random
 
 @Command(
     header = ["Topic dumper"],
@@ -30,7 +35,6 @@ internal class TopicDumper(
 ) : Runnable, Closeable {
     companion object {
         private val logger = LoggerFactory.getLogger("Console")
-        private const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
     }
     @Option(
         names = ["-k", "--kafka-servers"],
@@ -135,7 +139,10 @@ internal class TopicDumper(
         logger.info("Connecting to $kafkaServers")
         val subscriptionConfig = SubscriptionConfig("topic-dumper-${UUID.randomUUID()}", topic)
         val kafkaConfig = SmartConfigImpl.empty()
-            .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
+            .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(kafkaServers))
+            .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt()))
         subscription = subscriptionFactory.createDurableSubscription(subscriptionConfig, createProcessor(), kafkaConfig, null).also {
             it.start()
         }

@@ -79,11 +79,12 @@ class AllAliasedKeysHSM(
         logger.debug {
             "sign(hsmAlias=${spec.hsmAlias}, keyScheme=${spec.keyScheme.codeName})"
         }
-        val privateKey = keyPairs.getValue(spec.hsmAlias).private
+        val privateKey = keyPairs[spec.hsmAlias]?.private
+            ?: throw IllegalArgumentException("The key ${spec.hsmAlias} is not found.")
         return sign(spec, privateKey, data)
     }
 
-    override fun delete(alias: String, context: Map<String, String>) {
+    override fun delete(alias: String, context: Map<String, String>): Boolean {
         throw Error("Just to test that the tests will not break.")
     }
 }

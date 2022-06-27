@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -141,13 +140,15 @@ internal class SessionManagerImpl(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        ::createResources,
+        ::onTileStart,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile,
-            inboundAssignmentListener.dominoTile,
+            heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName, cryptoProcessor.dominoTile.coordinatorName,
+            pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
+            linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
         ),
-        managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
+        managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
+            publisher.dominoTile.toNamedLifecycle()),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -269,7 +270,7 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+    private fun onTileStart() {
         inboundAssignmentListener.registerCallbackForTopic { partitions ->
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
@@ -277,7 +278,6 @@ internal class SessionManagerImpl(
             }
             if (records.isNotEmpty()) publisher.publish(records)
         }
-        return CompletableFuture.completedFuture(Unit)
     }
 
     private fun refreshOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
@@ -676,7 +676,7 @@ internal class SessionManagerImpl(
         private val members: LinkManagerMembershipGroupReader,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
-        private val executorServiceFactory: () -> ScheduledExecutorService
+        executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -710,16 +710,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-            val future = CompletableFuture<Unit>()
-            executorService = executorServiceFactory()
-            resources.keep(AutoClosableExecutorService(executorService))
-            future.complete(Unit)
-            return future
-        }
-
-        @Volatile
-        private lateinit var executorService: ScheduledExecutorService
+        private val executorService = executorServiceFactory()
 
         private fun fromConfig(config: Config): HeartbeatManagerConfig {
             return HeartbeatManagerConfig(
@@ -740,9 +731,13 @@ internal class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            ::createResources,
-            dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
-            managedChildren = setOf(publisher.dominoTile),
+            onClose = { executorService.shutdownNow() },
+            dependentChildren = setOf(
+                groups.dominoTile.coordinatorName,
+                members.dominoTile.coordinatorName,
+                publisher.dominoTile.coordinatorName
+            ),
+            managedChildren = setOf(publisher.dominoTile.toNamedLifecycle()),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
 

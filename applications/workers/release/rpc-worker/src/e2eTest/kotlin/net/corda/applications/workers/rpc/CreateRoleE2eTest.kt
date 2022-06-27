@@ -10,6 +10,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.*
@@ -125,6 +126,9 @@ class CreateRoleE2eTest {
                     val permissionAssociationResponseType = role.permissions[0]
                     assertEquals(permId, permissionAssociationResponseType.id)
                     assertTrue(permissionAssociationResponseType.createdTimestamp.isAfter(permTs))
+
+                    // Validate the role is listed among all the roles
+                    assertThat(proxy.getRoles()).contains(role)
                 }
             }
 
@@ -132,6 +136,7 @@ class CreateRoleE2eTest {
             assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(RequestErrorException::class.java)
                 .hasMessageContaining("Permission '$permId' is already associated with Role '$roleId'.")
 
+            // Remove permission and test the outcome
             val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)
             assertTrue(roleWithPermissionRemoved.permissions.isEmpty())
             eventually {

@@ -4,7 +4,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.layeredpropertymap.toWire
+import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -120,7 +120,7 @@ class MemberInfoTest {
 
         private fun convertEndpoints(): List<Pair<String, String>> {
             val result = mutableListOf<Pair<String, String>>()
-            for(i in endpoints.indices) {
+            for (i in endpoints.indices) {
                 result.add(Pair(String.format(URL_KEY, i), endpoints[i].url))
                 result.add(Pair(String.format(PROTOCOL_VERSION, i), endpoints[i].protocolVersion.toString()))
             }
@@ -128,18 +128,24 @@ class MemberInfoTest {
         }
 
         private fun convertPublicKeys(): List<Pair<String, String>> =
-            ledgerKeys.mapIndexed { i, ledgerKey -> String.format(LEDGER_KEYS_KEY, i) to keyEncodingService.encodeAsString(ledgerKey) }
+            ledgerKeys.mapIndexed { i, ledgerKey ->
+                String.format(
+                    LEDGER_KEYS_KEY,
+                    i
+                ) to keyEncodingService.encodeAsString(ledgerKey)
+            }
 
         private fun convertTestObjects(): List<Pair<String, String>> {
             val result = mutableListOf<Pair<String, String>>()
-            for(i in testObjects.indices) {
+            for (i in testObjects.indices) {
                 result.add((Pair(String.format(TEST_OBJECT_NUMBER, i), testObjects[i].number.toString())))
                 result.add((Pair(String.format(TEST_OBJECT_TEXT, i), testObjects[i].text)))
             }
             return result
         }
 
-        private fun createInvalidListFormat(): List<Pair<String, String>> = listOf(Pair("$INVALID_LIST_KEY.value", "invalidValue"))
+        private fun createInvalidListFormat(): List<Pair<String, String>> =
+            listOf(Pair("$INVALID_LIST_KEY.value", "invalidValue"))
 
         val MemberInfo.testObjects: List<DummyObjectWithNumberAndText>
             get() = this.memberProvidedContext.parseList("custom.testObjects")
@@ -182,8 +188,8 @@ class MemberInfoTest {
         )
         val dataFileWriter: DataFileWriter<SignedMemberInfo> = DataFileWriter(userDatumWriter)
         val signedMemberInfo = SignedMemberInfo(
-            memberInfo?.memberProvidedContext?.toWire(),
-            memberInfo?.mgmProvidedContext?.toWire(),
+            memberInfo?.memberProvidedContext?.toAvro()?.toByteBuffer(),
+            memberInfo?.mgmProvidedContext?.toAvro()?.toByteBuffer(),
             signature,
             signature
         )
@@ -201,7 +207,7 @@ class MemberInfoTest {
         var recreatedMemberInfo: MemberInfo? = null
         while (dataFileReader.hasNext()) {
             user = dataFileReader.next(user)
-            recreatedMemberInfo = toMemberInfo(
+            recreatedMemberInfo = MemberInfoImpl(
                 LayeredPropertyMapMocks.create<MemberContextImpl>(
                     KeyValuePairList.fromByteBuffer(user.memberContext).toSortedMap(), converters
                 ),
@@ -252,7 +258,9 @@ class MemberInfoTest {
     fun `parsing value fails when casting is impossible`() {
         val keys = memberInfo?.ledgerKeys
         assertEquals(ledgerKeys, keys)
-        assertFailsWith<ValueNotFoundException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(LEDGER_KEYS) }
+        assertFailsWith<ValueNotFoundException> {
+            memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(LEDGER_KEYS)
+        }
     }
 
     @Test

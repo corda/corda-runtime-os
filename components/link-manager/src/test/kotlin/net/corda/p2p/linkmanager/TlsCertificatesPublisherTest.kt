@@ -3,9 +3,10 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,7 +29,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class TlsCertificatesPublisherTest {
     private val processor = argumentCaptor<CompactedProcessor<String, GatewayTlsCertificates>>()
@@ -43,14 +43,21 @@ class TlsCertificatesPublisherTest {
         } doReturn subscription
     }
     private val publishedRecords = argumentCaptor<List<Record<String, GatewayTlsCertificates>>>()
-    private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
-    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
+        ready = context.arguments()[2] as CompletableFuture<Unit>
+    }
+    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
+        whenever(mock.isRunning).doReturn(true)
     }
     private val mockPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
         whenever(mock.isRunning).doReturn(true)
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
     private val publisherFactory = mock<PublisherFactory>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
@@ -79,6 +86,7 @@ class TlsCertificatesPublisherTest {
         mockPublisher.close()
         mockDominoTile.close()
         subscriptionDominoTile.close()
+        blockingDominoTile.close()
     }
 
     @Nested
@@ -87,7 +95,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `identityAdded will publish unpublished identity`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
 
             publisher.identityAdded(identityInfo)
@@ -108,7 +115,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `identityAdded will not republish certificates`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             publisher.identityAdded(identityInfo)
 
@@ -120,7 +126,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `identityAdded will not republish certificates in different order`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             publisher.identityAdded(identityInfo)
 
@@ -136,7 +141,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `identityAdded will republish new certificates`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             publisher.identityAdded(identityInfo)
             val certificatesTwo = listOf("two", "three")
@@ -156,7 +160,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `publishIfNeeded will wait for certificates to be published`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             val future = mock<CompletableFuture<Unit>>()
             whenever(mockPublisher.constructed().first().publish(any())).doReturn(listOf(future))
@@ -176,7 +179,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `identityAdded will not publish before it has the snapshots`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             publisher.identityAdded(identityInfo)
 
@@ -187,7 +189,6 @@ class TlsCertificatesPublisherTest {
         fun `identityAdded will not publish before the publisher is ready`() {
             publisher.start()
             whenever(mockPublisher.constructed().first().isRunning).doReturn(false)
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
 
             publisher.identityAdded(identityInfo)
@@ -199,7 +200,6 @@ class TlsCertificatesPublisherTest {
         fun `identityAdded will publish after it has the snapshot`() {
             publisher.identityAdded(identityInfo)
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onSnapshot(emptyMap())
             processor.firstValue.onSnapshot(emptyMap())
@@ -213,17 +213,15 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `onSnapshot mark the publisher as ready`() {
             publisher.start()
-            val future = creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onSnapshot(emptyMap())
 
-            assertThat(future.isDone).isTrue
+            assertThat(ready!!.isDone).isTrue
         }
 
         @Test
         fun `onSnapshot save the data correctly`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onSnapshot(
                 mapOf(
@@ -241,7 +239,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `onNext remove item from published stores`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(
                 mapOf(
                     "Group1-Alice" to GatewayTlsCertificates(
@@ -267,7 +264,6 @@ class TlsCertificatesPublisherTest {
         @Test
         fun `onNext add item to published stores`() {
             publisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onNext(
                 Record(
@@ -289,9 +285,7 @@ class TlsCertificatesPublisherTest {
     inner class CreateResourcesTests {
         @Test
         fun `createResources will not complete before the snapshot is ready`() {
-            val future = creteResources.get().invoke(ResourcesHolder())
-
-            assertThat(future.isDone).isFalse
+            assertThat(ready!!.isDone).isFalse
         }
     }
 }

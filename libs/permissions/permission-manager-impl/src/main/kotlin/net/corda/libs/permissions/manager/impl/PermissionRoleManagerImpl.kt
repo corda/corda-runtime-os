@@ -15,15 +15,23 @@ import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.messaging.api.publisher.RPCSender
+import java.util.concurrent.atomic.AtomicReference
 
 
 class PermissionRoleManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-    private val permissionManagementCache: PermissionManagementCache,
+    private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
 ) : PermissionRoleManager {
 
     private val writerTimeout = config.getEndpointTimeout()
+
+    override fun getRoles(): Set<RoleResponseDto> {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+        return permissionManagementCache.roles.values.map { it.convertToResponseDto() }.toSet()
+    }
 
     override fun createRole(createRoleRequestDto: CreateRoleRequestDto): RoleResponseDto {
         val result = sendPermissionWriteRequest<Role>(
@@ -43,6 +51,9 @@ class PermissionRoleManagerImpl(
     }
 
     override fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto? {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
         val cachedRole: Role = permissionManagementCache.getRole(roleRequestDto.roleId) ?: return null
         return cachedRole.convertToResponseDto()
     }

@@ -27,7 +27,7 @@ class LinkManager(
         lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
     ),
     linkManagerHostingMap: LinkManagerHostingMap =
-        StubLinkManagerHostingMap(
+        LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             messagingConfiguration,
@@ -82,14 +82,14 @@ class LinkManager(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(
-            commonComponents.dominoTile,
-            outboundLinkManager.dominoTile,
-            inboundLinkManager.dominoTile,
+            commonComponents.dominoTile.coordinatorName,
+            outboundLinkManager.dominoTile.coordinatorName,
+            inboundLinkManager.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
-            commonComponents.dominoTile,
-            outboundLinkManager.dominoTile,
-            inboundLinkManager.dominoTile,
+            commonComponents.dominoTile.toNamedLifecycle(),
+            outboundLinkManager.dominoTile.toNamedLifecycle(),
+            inboundLinkManager.dominoTile.toNamedLifecycle(),
         )
     )
 }

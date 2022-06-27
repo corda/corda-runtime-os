@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.crypto.client.CryptoOpsClient
 import java.io.ByteArrayInputStream
 import java.security.InvalidKeyException
 import java.security.PublicKey
@@ -12,9 +13,11 @@ import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -23,16 +26,22 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 
+@Suppress("LongParameterList")
 internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    private val signingMode: SigningMode,
+    private val cryptoOpsClient: CryptoOpsClient,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
+
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_certificates_truststores_reader"
+        private val logger = contextLogger()
     }
     override val aliasToCertificates = ConcurrentHashMap<Alias, CertificateChain>()
 
@@ -55,21 +64,45 @@ internal class DynamicKeyStore(
         emptyList(),
     )
 
-    private val signer = StubCryptoProcessor(
+    private val ready = CompletableFuture<Unit>()
+
+    private val stubSigner = StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         messagingConfiguration,
     )
 
+    private val blockingDominoTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
+
+    private val signerCoordinatorName = if (signingMode == SigningMode.REAL) {
+        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+    } else {
+        stubSigner.dominoTile.coordinatorName
+    }
+    private val signerNamedLifecycle = if (signingMode == SigningMode.REAL) {
+        NamedLifecycle(cryptoOpsClient, signerCoordinatorName)
+    } else {
+        stubSigner.dominoTile.toNamedLifecycle()
+    }
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
-        managedChildren = listOf(subscriptionTile, signer.dominoTile),
-        dependentChildren = listOf(subscriptionTile, signer.dominoTile),
+        dependentChildren = listOf(
+            subscriptionTile.coordinatorName,
+            signerCoordinatorName,
+            blockingDominoTile.coordinatorName
+        ),
+        managedChildren = listOf(
+            subscriptionTile.toNamedLifecycle(),
+            signerNamedLifecycle,
+            blockingDominoTile.toNamedLifecycle()
+        ),
     )
-
-    private val ready = CompletableFuture<Unit>()
 
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {
         override val keyClass = String::class.java
@@ -89,7 +122,7 @@ internal class DynamicKeyStore(
                     }
                 }
             )
-
+            logger.info("Received initial set of TLS certificates for the following identities: ${currentData.keys}.")
             ready.complete(Unit)
         }
 
@@ -105,6 +138,7 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId.remove(publicKey)
                     }
                 }
+                logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
                 aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
@@ -115,19 +149,33 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId[publicKey] = chain.tenantId
                     }
                 }
+                logger.info("TLS certificate updated for the following identities: ${currentData.keys}")
             }
         }
     }
 
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER")
-        resources: ResourcesHolder
-    ): CompletableFuture<Unit> {
-        return ready
-    }
-
     override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
         val tenantId = publicKeyToTenantId[publicKey] ?: throw InvalidKeyException("Unknown public key")
-        return signer.sign(tenantId, publicKey, spec, data)
+        return if (signingMode == SigningMode.REAL) {
+            cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+        } else {
+            stubSigner.sign(tenantId, publicKey, spec, data)
+        }
     }
+}
+
+/**
+ * This switch will exist temporarily until we complete migration with the membership components (and dynamic networks).
+ * After that point, it can be removed as only the real crypto processor will be used.
+ */
+enum class SigningMode {
+    /**
+     * In this mode, signing is delegated to a real crypto processor.
+     */
+    REAL,
+
+    /**
+     * In this mode, signing is delegated to a stub crypto processor (that reads cryptographic material directly from Kafka)
+     */
+    STUB
 }

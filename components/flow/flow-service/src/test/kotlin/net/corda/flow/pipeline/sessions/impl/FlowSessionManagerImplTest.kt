@@ -11,19 +11,23 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -32,6 +36,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.stream.Stream
 
 class FlowSessionManagerImplTest {
 
@@ -50,6 +55,18 @@ class FlowSessionManagerImplTest {
         )
         val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
         val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "group id")
+
+        @JvmStatic
+        fun sessionStateTypes(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(SessionStateType.CONFIRMED, true),
+                Arguments.of(SessionStateType.CREATED, false),
+                Arguments.of(SessionStateType.CLOSING, false),
+                Arguments.of(SessionStateType.WAIT_FOR_FINAL_ACK, false),
+                Arguments.of(SessionStateType.CLOSED, false),
+                Arguments.of(SessionStateType.ERROR, false)
+            )
+        }
     }
 
     private val sessionState = buildSessionState(
@@ -208,7 +225,7 @@ class FlowSessionManagerImplTest {
 
         val instant = Instant.now()
 
-        assertThrows<FlowSessionMissingException> {
+        assertThrows<FlowSessionStateException> {
             flowSessionManager.sendDataMessages(
                 checkpoint,
                 mapOf(SESSION_ID to byteArrayOf(), ANOTHER_SESSION_ID to byteArrayOf()),
@@ -282,7 +299,7 @@ class FlowSessionManagerImplTest {
 
         val instant = Instant.now()
 
-        assertThrows<FlowSessionMissingException> {
+        assertThrows<FlowSessionStateException> {
             flowSessionManager.sendCloseMessages(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
@@ -334,7 +351,7 @@ class FlowSessionManagerImplTest {
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
 
-        assertThrows<FlowSessionMissingException> {
+        assertThrows<FlowSessionStateException> {
             flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
         }
     }
@@ -425,7 +442,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
 
-        assertThrows<FlowSessionMissingException> {
+        assertThrows<FlowSessionStateException> {
             flowSessionManager.getSessionsWithStatus(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
@@ -494,7 +511,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
 
-        assertThrows<FlowSessionMissingException> {
+        assertThrows<FlowSessionStateException> {
             flowSessionManager.doAllSessionsHaveStatus(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
@@ -512,5 +529,53 @@ class FlowSessionManagerImplTest {
                 SessionStateType.CLOSED
             )
         )
+    }
+
+    @ParameterizedTest(name = "validate session states - always throws if one of the sessions is anything other than CONFIRMED status={0}")
+    @MethodSource("sessionStateTypes")
+    fun `validate session states - always throws if one of the sessions is anything other than CONFIRMED`(
+        status: SessionStateType,
+        expectedResult: Boolean
+    ) {
+        sessionState.status = status
+        anotherSessionState.status = SessionStateType.CONFIRMED
+
+        if (expectedResult) {
+            flowSessionManager.validateSessionStates(checkpoint, setOf(SESSION_ID, ANOTHER_SESSION_ID))
+        } else {
+            assertThrows<FlowSessionStateException> {
+                flowSessionManager.validateSessionStates(
+                    checkpoint,
+                    setOf(SESSION_ID)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `validate session states - always throws if one of the sessions is missing`() {
+        sessionState.status = SessionStateType.ERROR
+        anotherSessionState.status = SessionStateType.CLOSING
+        val error = assertThrows<FlowSessionStateException> {
+            flowSessionManager.validateSessionStates(
+                checkpoint,
+                setOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        }
+
+        assertThat(error.message).isEqualTo("2 of 2 sessions are invalid ['${SESSION_ID}'=ERROR, '${ANOTHER_SESSION_ID}'=CLOSING]")
+    }
+
+    @Test
+    fun `validate session states - exception message lists all failures`() {
+        sessionState.status = SessionStateType.CONFIRMED
+        val error = assertThrows<FlowSessionStateException> {
+            flowSessionManager.validateSessionStates(
+                checkpoint,
+                setOf(SESSION_ID, "unknown session id")
+            )
+        }
+
+        assertThat(error.message).isEqualTo("1 of 2 sessions are invalid ['unknown session id'=MISSING]")
     }
 }

@@ -6,6 +6,7 @@ import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
@@ -21,12 +22,13 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadata(cpiFileChecksum: String): CPIMetadata? {
+    internal fun getCPIMetadata(cpiFileChecksum: String): CpiMetadataLite? {
         val cpiMetadataEntity = entityManagerFactory.transaction {
             val foundCpi = it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
                         "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum",
-                CpiMetadataEntity::class.java)
+                CpiMetadataEntity::class.java
+            )
                 .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
                 .resultList
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
@@ -37,7 +39,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
         val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
-        return CPIMetadata(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
     /**
@@ -59,23 +61,29 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @param entityManager [EntityManager]
      * @param holdingIdentity Holding identity
      */
-    internal fun putHoldingIdentity(entityManager: EntityManager, holdingIdentity: HoldingIdentity, connections: VirtualNodeDbConnections) {
-            val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
-                update(connections.vaultDdlConnectionId,
-                    connections.vaultDmlConnectionId,
-                    connections.cryptoDdlConnectionId,
-                    connections.cryptoDmlConnectionId)
-            } ?: HoldingIdentityEntity(
-                holdingIdentity.id,
-                holdingIdentity.hash,
-                holdingIdentity.x500Name,
-                holdingIdentity.groupId,
+    internal fun putHoldingIdentity(
+        entityManager: EntityManager,
+        holdingIdentity: HoldingIdentity,
+        connections: VirtualNodeDbConnections
+    ) {
+        val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
+            update(
                 connections.vaultDdlConnectionId,
                 connections.vaultDmlConnectionId,
                 connections.cryptoDdlConnectionId,
-                connections.cryptoDmlConnectionId,
-                null
+                connections.cryptoDmlConnectionId
             )
+        } ?: HoldingIdentityEntity(
+            holdingIdentity.id,
+            holdingIdentity.hash,
+            holdingIdentity.x500Name,
+            holdingIdentity.groupId,
+            connections.vaultDdlConnectionId,
+            connections.vaultDmlConnectionId,
+            connections.cryptoDdlConnectionId,
+            connections.cryptoDmlConnectionId,
+            null
+        )
         entityManager.persist(entity)
     }
 
@@ -88,8 +96,9 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     internal fun virtualNodeExists(holdingId: HoldingIdentity, cpiId: CpiIdentifier): Boolean {
         return entityManagerFactory
             .transaction {
-                val signerSummaryHash = if (cpiId.signerSummaryHash != null)  cpiId.signerSummaryHash.toString() else ""
-                val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash)
+                val signerSummaryHash = if (cpiId.signerSummaryHash != null) cpiId.signerSummaryHash.toString() else ""
+                val hie = it.find(HoldingIdentityEntity::class.java, holdingId.id) ?: return false // TODO throw?
+                val key = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
                 it.find(VirtualNodeEntity::class.java, key) != null
             }
     }
@@ -101,12 +110,28 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      */
     internal fun putVirtualNode(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
         val signerSummaryHash = cpiId.signerSummaryHash?.toString() ?: ""
-        val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash)
-        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, key)
+        val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.id)
+            ?: throw CordaRuntimeException("Could not find holding identity") // TODO throw?
+
+        val virtualNodeEntityKey = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
+        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey)
         if (foundVNode == null) {
-            entityManager.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash))
+            entityManager.persist(VirtualNodeEntity(hie, cpiId.name, cpiId.version, signerSummaryHash))
         } else {
-            log.debug { "vNode for key already exists: $key" }
+            log.debug { "vNode for key already exists: $virtualNodeEntityKey" }
         }
     }
+
+
+    fun HoldingIdentity.toEntity(connections: VirtualNodeDbConnections?) = HoldingIdentityEntity(
+        this.id,
+        this.hash,
+        this.x500Name,
+        this.groupId,
+        connections?.vaultDdlConnectionId,
+        connections?.vaultDmlConnectionId,
+        connections?.cryptoDdlConnectionId,
+        connections?.cryptoDmlConnectionId,
+        null
+    )
 }

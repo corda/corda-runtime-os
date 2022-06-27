@@ -209,7 +209,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                         val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
                         future.completeExceptionally(
                             CordaRPCAPIResponderException(
-                                "Cause:${response.errorType}. Message: ${response.errorMessage}"
+                                errorType = response.errorType,
+                                message = response.errorMessage
                             )
                         )
                         log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")

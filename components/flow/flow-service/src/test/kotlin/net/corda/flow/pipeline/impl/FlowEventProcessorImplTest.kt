@@ -9,6 +9,7 @@ import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -122,6 +123,18 @@ class FlowEventProcessorImplTest {
     @Test
     fun `Flow event exception is handled`() {
         val error = FlowEventException("", updatedContext)
+
+        whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
+        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+
+        val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+
+        assertThat(response).isEqualTo(outputResponse)
+    }
+
+    @Test
+    fun `Flow platform exception is handled`() {
+        val error = FlowPlatformException("", updatedContext)
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)

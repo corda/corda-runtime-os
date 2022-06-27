@@ -28,6 +28,7 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.Collections.unmodifiableList
@@ -68,7 +69,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
-                "org.apache.aries.spifly.dynamic.bundle",
+                "org.apache.aries.spifly.dynamic.framework.extension",
                 "org.apache.felix.framework",
                 "org.apache.felix.scr",
                 "org.hibernate.orm.core",
@@ -127,6 +128,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override fun stop() = coordinator.stop()
 
+    @Deactivate
     override fun close() {
         stop()
         coordinator.close()
