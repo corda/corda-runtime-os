@@ -15,6 +15,8 @@ class JpaEntitiesRegistryImpl : JpaEntitiesRegistry {
     override fun get(persistenceUnitName: String): JpaEntitiesSet? = fullSet[persistenceUnitName]
 
     override fun register(persistenceUnitName: String, jpeEntities: Set<Class<*>>) {
-        fullSet.putIfAbsent(persistenceUnitName, JpaEntitiesSet.create(persistenceUnitName, jpeEntities.toSet()))
+        fullSet[persistenceUnitName] = JpaEntitiesSet.create(
+            persistenceUnitName,
+            jpeEntities.toSet() + (fullSet[persistenceUnitName]?.classes ?: emptySet()))
     }
 }
