@@ -27,7 +27,8 @@ class ReconcilerImpl<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private var reconciliationIntervalMs: Long
+    @VisibleForTesting
+    internal var reconciliationIntervalMs: Long
 ) : Reconciler {
     @VisibleForTesting
     internal val name = "${ReconcilerImpl::class.java.name}<${keyClass.name}, ${valueClass.name}>"
@@ -46,7 +47,7 @@ class ReconcilerImpl<K : Any, V : Any>(
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ReconcileEvent -> reconcileAndScheduleNext(coordinator)
-            is UpdateIntervalEvent -> onUpdateIntervalEvent(event)
+            is UpdateIntervalEvent -> onUpdateIntervalEvent(event, coordinator)
             is StopEvent -> onStopEvent(coordinator)
         }
     }
@@ -101,9 +102,11 @@ class ReconcilerImpl<K : Any, V : Any>(
         coordinator.setTimer(name, reconciliationIntervalMs) { ReconcileEvent(it) }
     }
 
-    private fun onUpdateIntervalEvent(event: UpdateIntervalEvent) {
+    private fun onUpdateIntervalEvent(event: UpdateIntervalEvent, coordinator: LifecycleCoordinator) {
         logger.info("Updating interval to ${event.intervalMs} ms")
-        reconciliationIntervalMs = event.intervalMs
+        val newIntervalMs = event.intervalMs
+        reconciliationIntervalMs = newIntervalMs
+        coordinator.setTimer(name, newIntervalMs) { ReconcileEvent(it) }
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
@@ -177,7 +180,8 @@ class ReconcilerImpl<K : Any, V : Any>(
 
     private data class ReconcileEvent(override val key: String) : TimerEvent
 
-    private data class UpdateIntervalEvent(val intervalMs: Long): LifecycleEvent
+    @VisibleForTesting
+    internal data class UpdateIntervalEvent(val intervalMs: Long): LifecycleEvent
 
     private class ReconciliationException(message: String) : CordaRuntimeException(message)
 }

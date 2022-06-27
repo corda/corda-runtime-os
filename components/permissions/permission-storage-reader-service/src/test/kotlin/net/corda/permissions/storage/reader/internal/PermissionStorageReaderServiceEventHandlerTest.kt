@@ -192,7 +192,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
 
     @Test
-    fun `processing an onConfigurationUpdated event creates publisher and permission storage reader`() {
+    fun `processing a ConfigChangedEvent event creates publisher and creates permission storage reader`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
         whenever(permissionStorageReaderFactory.create(eq(AtomicReference(pvCache)), eq(pmCacheRef), eq(publisher), any()))
             .thenReturn(permissionStorageReader)

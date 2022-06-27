@@ -62,6 +62,8 @@ class PermissionStorageReaderServiceEventHandler(
     @VisibleForTesting
     internal var reconciliationTaskIntervalMs: Long? = null
 
+    private val timerKey = PermissionStorageReaderServiceEventHandler::class.simpleName!!
+
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
@@ -137,7 +139,7 @@ class PermissionStorageReaderServiceEventHandler(
         permissionStorageReader = null
         registrationHandle?.close()
         registrationHandle = null
-        coordinator.cancelTimer(PermissionStorageReaderServiceEventHandler::class.simpleName!!)
+        coordinator.cancelTimer(timerKey)
     }
 
     @VisibleForTesting
@@ -170,7 +172,7 @@ class PermissionStorageReaderServiceEventHandler(
 
     private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
         coordinator.setTimer(
-            PermissionStorageReaderServiceEventHandler::class.simpleName!!,
+            timerKey,
             reconciliationTaskIntervalMs!!
         ) { key ->
             ReconcilePermissionSummaryEvent(key)
