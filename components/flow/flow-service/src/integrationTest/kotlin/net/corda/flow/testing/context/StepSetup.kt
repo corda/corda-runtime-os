@@ -5,6 +5,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.Error
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 
 interface StepSetup {
 
@@ -12,9 +13,9 @@ interface StepSetup {
 
     fun virtualNode(cpiId: String, holdingId: HoldingIdentity)
 
-    fun cpkMetadata(cpiId: String, cpkId: String)
+    fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash)
 
-    fun sandboxCpk(cpkId: String)
+    fun sandboxCpk(cpkFileChecksum: SecureHash)
 
     fun membershipGroupFor(owningMember: HoldingIdentity)
 
