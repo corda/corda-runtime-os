@@ -1,9 +1,10 @@
 package net.corda.permissions.storage.reader.internal
 
-import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,7 +17,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,6 +29,7 @@ import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMIS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
@@ -79,7 +80,8 @@ class PermissionStorageReaderServiceEventHandler(
             setOf(
                 LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
                 LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
             )
         )
         permissionValidationCacheService.start()
