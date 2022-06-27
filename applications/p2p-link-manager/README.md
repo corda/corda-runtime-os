@@ -38,7 +38,7 @@ Below is a list of command line arguments you can use:
                The topic prefix (default: )
 ```
 By default, the link-manager will try and connect to a Kafka broker on localhost:9092.
-To override this use option `-m` (to connect to a Kafka Broker on (kafka-broker:1000):
+To override this use option `-m`. For example, to connect to a Kafka Broker on `kafka-broker:1000`:
 ```bash
 java -jar ./applications/p2p-link-manager/build/bin/corda-p2p-link-manager*.jar -mbootstrap.servers=kafka-broker:1000
 ```
