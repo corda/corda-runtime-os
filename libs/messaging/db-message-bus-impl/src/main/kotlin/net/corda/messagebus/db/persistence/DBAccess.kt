@@ -36,7 +36,6 @@ class DBAccess(
     }
 
     fun close() {
-        entityManagerFactory.close()
     }
 
     fun getMaxCommittedPositions(
