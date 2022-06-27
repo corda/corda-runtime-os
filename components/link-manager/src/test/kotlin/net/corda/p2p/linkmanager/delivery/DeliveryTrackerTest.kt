@@ -19,7 +19,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -179,11 +179,11 @@ class DeliveryTrackerTest {
     }
 
     @Test
-    fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerSentMarker`() {
+    fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerProcessedMarker`() {
         val (tracker, processor) = createTracker()
         tracker.start()
         val messageId = UUID.randomUUID().toString()
-        val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(messageAndKey), timeStamp))
+        val event = Record("topic", messageId, AppMessageMarker(LinkManagerProcessedMarker(messageAndKey), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
 

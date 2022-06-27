@@ -22,8 +22,8 @@ import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
@@ -143,7 +143,7 @@ internal class DeliveryTracker(
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
                 return when (markerType) {
-                    is LinkManagerSentMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
+                    is LinkManagerProcessedMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
                     is LinkManagerReceivedMarker -> Response(null, emptyList())
                     is TtlExpiredMarker -> Response(null, emptyList())
                     else -> respond(state)
