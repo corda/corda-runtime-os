@@ -59,6 +59,17 @@ class FlowTests {
     }
 
     @Test
+    fun `start RPC flow twice, second returns an error code of 409`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "echo"
+            data = mapOf("echo_value" to "hello")
+        }
+
+        startRpcFlow(bobHoldingId, requestBody, 200)
+        startRpcFlow(bobHoldingId, requestBody, 409)
+    }
+
+    @Test
     fun `start RPC flow - flow failure test`() {
         // 1) Start the flow but signal it to throw an exception when it starts
         val requestBody = RpcSmokeTestInput().apply {

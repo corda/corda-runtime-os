@@ -46,6 +46,11 @@ enum class ResponseCode constructor(val statusCode: Int) {
     RESOURCE_NOT_FOUND(404),
 
     /**
+     * Signals the requested resource is not in the expected state
+     */
+    CONFLICT(409),
+
+    /**
      * An error occurred internally.
      */
     INTERNAL_SERVER_ERROR(500),

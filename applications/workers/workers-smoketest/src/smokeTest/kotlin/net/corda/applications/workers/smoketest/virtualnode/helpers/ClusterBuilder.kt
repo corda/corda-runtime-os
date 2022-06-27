@@ -68,8 +68,12 @@ class ClusterBuilder {
         holdingIdHash: String,
         clientRequestId: String,
         flowClassName: String,
-        body: String
-    ) = client!!.put("/api/v1/flow/$holdingIdHash/$clientRequestId/$flowClassName", body)
+        flowParams: String
+    ) = client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, flowParams))
+
+    private fun flowStartBody(clientRequestId: String, flowClassName: String, flowParams: String) =
+        """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "flowParams" : "$flowParams"} """
+
 }
 
 fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

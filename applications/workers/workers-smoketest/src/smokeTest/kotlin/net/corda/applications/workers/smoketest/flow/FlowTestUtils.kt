@@ -2,6 +2,9 @@ package net.corda.applications.workers.smoketest.flow
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.security.MessageDigest
+import java.time.Duration
+import java.util.UUID
 import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.PASSWORD
@@ -13,9 +16,6 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
-import java.security.MessageDigest
-import java.time.Duration
-import java.util.*
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
@@ -26,7 +26,7 @@ const val RPC_FLOW_STATUS_FAILED = "FAILED"
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
-fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
+fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput, expectedCode: Int = 200): String {
 
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -39,10 +39,10 @@ fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
                     holdingId,
                     requestId,
                     SMOKE_TEST_CLASS_NAME,
-                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
+                    escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 200 }
+            condition { it.code == expectedCode }
         }
 
         requestId
