@@ -63,7 +63,7 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':testing:security-manager-utilities')
-    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

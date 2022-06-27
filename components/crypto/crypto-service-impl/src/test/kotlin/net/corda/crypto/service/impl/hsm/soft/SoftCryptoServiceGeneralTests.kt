@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.hsm.soft
 
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY

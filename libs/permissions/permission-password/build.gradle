@@ -17,6 +17,5 @@ dependencies {
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "net.corda:corda-cipher-suite"
-    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
 }
