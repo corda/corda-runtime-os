@@ -49,7 +49,7 @@ dependencies {
     runtimeOnly project(":components:membership:group-policy-impl")
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')
-    runtimeOnly project(':libs:crypto:crypto-impl')
+    runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:http-rpc:http-rpc-server-impl')
     runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
