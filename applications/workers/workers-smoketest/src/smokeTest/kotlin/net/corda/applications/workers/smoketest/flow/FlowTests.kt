@@ -31,11 +31,13 @@ class FlowTests {
         @JvmStatic
         internal fun beforeAll() {
 
-            val actualHoldingId = createVirtualNodeFor(X500_BOB)
+            val aliceActualHoldingId = createVirtualNodeFor(X500_ALICE)
+            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-            assertThat(actualHoldingId).isEqualTo(bobHoldingId)
+            assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
+            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
 
             createVirtualNodeFor(X500_SESSION_USER1)
             createVirtualNodeFor(X500_SESSION_USER2)

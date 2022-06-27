@@ -9,7 +9,6 @@ import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.USERNAME
-import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
@@ -97,7 +96,7 @@ fun createVirtualNodeFor(x500: String): String {
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
             condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$X500_BOB'")
+            failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
         val holdingId = vNodeJson["holdingIdHash"].textValue()
