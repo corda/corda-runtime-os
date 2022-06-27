@@ -9,15 +9,19 @@ import org.assertj.core.api.Assertions
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.*
+import net.corda.applications.workers.smoketest.virtualnode.toJson
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
 const val X500_SESSION_USER2 = "CN=SU2, OU=Application, O=R3, L=London, C=GB"
+const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
+const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
+
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -83,7 +87,7 @@ fun createVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == FLOW_WORKER_DEV_CPI_NAME }
+        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
         val hash = truncateLongHash(json["fileChecksum"].textValue())
 
         val vNodeJson = assertWithRetry {

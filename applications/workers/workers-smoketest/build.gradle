@@ -7,15 +7,11 @@ plugins {
 description 'Worker Smoketests'
 
 configurations {
-    calculatorCpi {
-        canBeConsumed = false
-        transitive = false
-    }
-    calculatorMultiplicationCpi {
-        canBeConsumed = false
-        transitive = false
-    }
     cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+    cpiForFlowCacheTest {
         canBeConsumed = false
         transitive = false
     }
@@ -59,9 +55,8 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // But building a cpb for use in a test is ok.
-    calculatorCpi project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
-    calculatorMultiplicationCpi project(path: ':testing:cpbs:calculator-for-cache-invalidation-testing', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
+    cpiForFlowCacheTest project(path: ':testing:cpbs:flow-worker-dev-for-cache-testing', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -77,25 +72,17 @@ dependencies {
 }
 
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
-    // Copy the cpb(s) into resources, and strip out the version-package part so it's easier to reference in the
-    // smoke tests.
-
-    def calculatorCpi = configurations.calculatorCpi
-    def calculatorMultiplicationCpi = configurations.calculatorMultiplicationCpi
-
-    from(calculatorCpi) {
-        into 'META-INF'
-        rename "(.+)-\\d+.+-package.cpb", "calculator.cpb"
-    }
-    def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
-    from(calculatorMultiplicationCpi) {
-        into cacheTestingDir
-        rename "(.+)-\\d+.+-package.cpb", "calculator.cpb"
-    }
-
     from(configurations.cpis) {
         into 'META-INF'
         rename "(.+)-\\d+.+-package.cpb", "\$1.cpb"
+    }
+
+    // Put the flow-worker-dev-for-cache-testing cpb into a different folder
+    def cpiForFlowCacheTest = configurations.cpiForFlowCacheTest
+    def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
+    from(cpiForFlowCacheTest) {
+        into cacheTestingDir
+        rename "(.+)-\\d+.+-package.cpb", "flow-worker-dev.cpb"
     }
 }
 

@@ -3,14 +3,14 @@ plugins {
 }
 
 jar {
-    baseName 'calculator'
+    baseName 'flow-worker-dev'
 }
 
 cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "Example calculator"
+        name "Flow Worker Development"
         versionId 1
         vendor "R3"
     }
