@@ -20,3 +20,5 @@ internal abstract class BearerTokenAuthenticationProvider : AuthenticationProvid
 
     protected abstract fun doAuthenticate(credential: BearerTokenAuthenticationCredentials): AuthorizingSubject
 }
+
+

@@ -12,6 +12,7 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings.Companion.MAX_CONTENT_LENGTH_DEFAULT_VALUE
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.server.security.local.HttpRpcLocalJwtSigner
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.libs.configuration.SmartConfig
@@ -49,6 +50,7 @@ internal class HttpRpcGatewayEventHandler(
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
     private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>,
+    private val httpRpcLocalJwtSigner: HttpRpcLocalJwtSigner,
     private val tempPathProvider: PathProvider = TempPathProvider()
 ) : LifecycleEventHandler {
 
@@ -168,7 +170,8 @@ internal class HttpRpcGatewayEventHandler(
             rpcOpsImpls = dynamicRpcOps.toList(),
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
             httpRpcSettings = httpRpcSettings,
-            multiPartDir = multiPartDir
+            multiPartDir = multiPartDir,
+            httpRpcLocalJwtSigner = httpRpcLocalJwtSigner
         ).also { it.start() }
 
         val numberOfRpcOps = dynamicRpcOps.filterIsInstance<Lifecycle>()

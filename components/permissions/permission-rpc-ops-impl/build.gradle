@@ -21,6 +21,7 @@ dependencies {
     implementation project(':libs:permissions:permission-common')
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:http-rpc-server")
 
     implementation project(':components:permissions:permission-management-service')
 
