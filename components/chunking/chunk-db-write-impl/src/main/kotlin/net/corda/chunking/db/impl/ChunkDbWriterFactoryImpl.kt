@@ -1,6 +1,5 @@
 package net.corda.chunking.db.impl
 
-import javax.persistence.EntityManagerFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
@@ -24,6 +23,7 @@ import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import javax.persistence.EntityManagerFactory
 
 @Suppress("UNUSED")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -59,7 +59,9 @@ class ChunkDbWriterFactoryImpl(
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
         val statusTopic = Schemas.VirtualNode.CPI_UPLOAD_STATUS_TOPIC
 
-        val subscription = createSubscription(
+        // Must hang on to a reference to the publisher that is created here such that it can be closed in the event
+        // that the subscription is closed.
+        val (publisher, subscription) = createSubscription(
             uploadTopic,
             messagingConfig,
             bootConfig,
@@ -68,7 +70,7 @@ class ChunkDbWriterFactoryImpl(
             cpiInfoWriteService
         )
 
-        return ChunkDbWriterImpl(subscription)
+        return ChunkDbWriterImpl(subscription, publisher)
     }
 
     private fun createPublisher(config: SmartConfig): Publisher {
@@ -90,7 +92,7 @@ class ChunkDbWriterFactoryImpl(
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
-    ): Subscription<RequestId, Chunk> {
+    ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val persistence = DatabaseChunkPersistence(entityManagerFactory)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
@@ -107,9 +109,12 @@ class ChunkDbWriterFactoryImpl(
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
-            subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null)
+            Pair(publisher, subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null))
         } catch (e: Exception) {
-             throw ChunkWriteException("Could not create subscription to process configuration update requests.", e)
+            // If a failure happens such that the subscription could not be created, the publisher we've just created
+            // needs to be deleted.
+            publisher.close()
+            throw ChunkWriteException("Could not create subscription to process configuration update requests.", e)
         }
     }
 }
