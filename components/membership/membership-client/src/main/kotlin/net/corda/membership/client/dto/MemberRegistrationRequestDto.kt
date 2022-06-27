@@ -10,5 +10,5 @@ package net.corda.membership.client.dto
 data class MemberRegistrationRequestDto(
     val holdingIdentityId: String,
     val action: RegistrationActionDto,
-    val context: Map<String, String>
+    val context: Map<String, String>,
 )

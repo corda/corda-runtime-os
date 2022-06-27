@@ -28,6 +28,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
+import net.corda.membership.lib.toMap
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -45,6 +46,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import net.corda.test.util.time.TestClock
+import org.assertj.core.api.Assertions.assertThat
 import java.time.Instant
 
 class MemberOpsClientTest {
@@ -112,7 +114,11 @@ class MemberOpsClientTest {
         changeConfig()
     }
 
-    private val request = MemberRegistrationRequestDto(HOLDING_IDENTITY_ID, RegistrationActionDto.REQUEST_JOIN, mock())
+    private val request = MemberRegistrationRequestDto(
+        HOLDING_IDENTITY_ID,
+        RegistrationActionDto.REQUEST_JOIN,
+        mapOf("property" to "test"),
+    )
 
     @BeforeEach
     fun setUp() {
@@ -171,8 +177,9 @@ class MemberOpsClientTest {
 
         val requestSent = rpcRequest?.request as RegistrationRpcRequest
 
-        assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
-        assertEquals(request.action.name, requestSent.registrationAction.name)
+        assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityId)
+        assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
+        assertThat(requestSent.context.toMap()).isEqualTo(request.context)
     }
 
     @Test

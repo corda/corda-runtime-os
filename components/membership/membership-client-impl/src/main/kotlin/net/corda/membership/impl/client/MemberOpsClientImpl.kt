@@ -26,6 +26,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -239,15 +240,15 @@ class MemberOpsClientImpl @Activate constructor(
             }
         }
 
-        /**
-         * Transforms map into [KeyValuePairList].
-         */
-        private fun Map<String, String>.toWire(): KeyValuePairList {
-            return KeyValuePairList(
-                map {
-                    KeyValuePair(it.key, it.value)
-                }
-            )
-        }
+//        /**
+//         * Transforms map into [KeyValuePairList].
+//         */
+//        private fun Map<String, String>.toWire(): KeyValuePairList {
+//            return KeyValuePairList(
+//                map {
+//                    KeyValuePair(it.key, it.value)
+//                }
+//            )
+//        }
     }
 }

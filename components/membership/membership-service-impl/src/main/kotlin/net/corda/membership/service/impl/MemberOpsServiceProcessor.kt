@@ -10,6 +10,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.toMap
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -46,16 +47,10 @@ class MemberOpsServiceProcessor(
         private const val REGISTRATION_PROTOCOL_VERSION = 1
         private val clock = UTCClock()
 
-        /**
-         * Transforms [KeyValuePairList] into map.
-         */
-        fun KeyValuePairList.toMap(): Map<String, String> {
-            val map = mutableMapOf<String, String>()
-            items.forEach {
-                map[it.key] = it.value
-            }
-            return map
-        }
+//        /**
+//         * Transforms [KeyValuePairList] into map.
+//         */
+//        fun KeyValuePairList.toMap() = items.associate { it.key to it.value }
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
