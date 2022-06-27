@@ -54,7 +54,6 @@ dependencies {
     runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
-    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly project(':libs:permissions:permission-manager-impl')
     runtimeOnly project(':libs:permissions:permission-management-cache-impl')

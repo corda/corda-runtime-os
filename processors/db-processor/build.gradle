@@ -67,7 +67,6 @@ dependencies {
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:membership:membership-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
-    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(':libs:permissions:permission-storage-reader-impl')
     runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
     runtimeOnly project(':libs:permissions:permission-validation-cache-impl')
