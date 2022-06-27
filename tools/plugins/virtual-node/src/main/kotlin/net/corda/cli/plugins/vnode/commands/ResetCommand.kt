@@ -59,7 +59,7 @@ class ResetCommand : Runnable {
         required = true,
         description = ["The path to the CPI file to reset the virtual node with."]
     )
-    lateinit var cpiFileName: String
+    lateinit var cpiFilePath: String
 
     @Option(
         names = ["-w", "--wait"],
@@ -75,7 +75,7 @@ class ResetCommand : Runnable {
         virtualNodeMaintenance.use {
             val connection = virtualNodeMaintenance.start()
             with(connection.proxy) {
-                val cpi = File(cpiFileName)
+                val cpi = File(cpiFilePath)
                 if (cpi.extension != "cpi") {
                     println("File type must be .cpi")
                     return
@@ -120,6 +120,9 @@ class ResetCommand : Runnable {
     }
 
     private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
+        if(targetUrl.endsWith("/")){
+            targetUrl = targetUrl.dropLast(1)
+        }
         return HttpRpcClient(
             baseAddress = "$targetUrl/api/v1/",
             rpcOps.java,
