@@ -1,5 +1,9 @@
 package net.corda.chunking.impl
 
+import java.io.InputStream
+import java.nio.ByteBuffer
+import java.security.DigestInputStream
+import java.util.UUID
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
@@ -9,18 +13,16 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import java.io.InputStream
-import java.nio.ByteBuffer
-import java.security.DigestInputStream
-import java.util.UUID
 
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
-internal class ChunkWriterImpl(val chunkSize: Int, private val properties: Map<String, String?>? = null) : ChunkWriter {
+internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val properties: Map<String, String?>? = null) : ChunkWriter {
     companion object {
         const val KB = 1024
         const val MB = 1024 * KB
+
+        const val CORDA_MESSAGE_OVERHEAD = 1024 * 10
 
         private fun Map<String, String?>.toAvro(): KeyValuePairList {
             return KeyValuePairList.newBuilder().setItems(
@@ -31,7 +33,10 @@ internal class ChunkWriterImpl(val chunkSize: Int, private val properties: Map<S
 
     var chunkWriteCallback: ChunkWriteCallback? = null
 
-    override fun write(fileName: String, inputStream: InputStream) : ChunkWriter.Request {
+    // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
+    val chunkSize = maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD
+
+    override fun write(fileName: String, inputStream: InputStream): ChunkWriter.Request {
         if (chunkWriteCallback == null) {
             throw CordaRuntimeException("Chunk write callback not set")
         }

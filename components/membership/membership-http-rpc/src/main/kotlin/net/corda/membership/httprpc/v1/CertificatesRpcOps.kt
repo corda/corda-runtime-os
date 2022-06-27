@@ -19,17 +19,17 @@ interface CertificatesRpcOps : RpcOps {
     }
 
     /**
-     * PUT endpoint which import a certificate.
+     * PUT endpoint which import certificate chain.
      *
      * @param tenantId The tenant ID.
      * @param alias The certificate alias.
-     * @param certificate - The certificate (in PEM format)
+     * @param certificates - The certificate chain (in PEM format)
      */
     @HttpRpcPUT(
         path = "{tenantId}",
         description = "Import certificate."
     )
-    fun importCertificate(
+    fun importCertificateChain(
         @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
         tenantId: String,
         @HttpRpcRequestBodyParameter(
@@ -38,10 +38,11 @@ interface CertificatesRpcOps : RpcOps {
         )
         alias: String,
         @HttpRpcRequestBodyParameter(
-            description = "The certificate",
+            description = "The certificate chain (in PEM format)",
             required = true,
+            name = "certificate"
         )
-        certificate: HttpFileUpload,
+        certificates: List<HttpFileUpload>,
     )
 
     /**

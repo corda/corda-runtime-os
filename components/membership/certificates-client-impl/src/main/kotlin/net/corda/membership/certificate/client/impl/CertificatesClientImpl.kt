@@ -2,9 +2,12 @@ package net.corda.membership.certificate.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
+import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,17 +20,23 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("LongParameterList")
 @Component(service = [CertificatesClient::class])
 class CertificatesClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -36,11 +45,20 @@ class CertificatesClientImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CryptoOpsClient::class)
+    cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = KeyEncodingService::class)
+    keyEncodingService: KeyEncodingService,
+    @Reference(service = GroupPolicyProvider::class)
+    groupPolicyProvider: GroupPolicyProvider,
 ) : CertificatesClient {
     private companion object {
         val logger = contextLogger()
         const val GROUP_NAME = "membership.db.certificates.client.group"
         const val CLIENT_NAME = "membership.db.certificates.client"
+        const val PUBLISHER_NAME = "membership.certificates.publisher"
     }
 
     private var sender: RPCSender<CertificateRpcRequest, CertificateRpcResponse>? = null
@@ -48,9 +66,44 @@ class CertificatesClientImpl @Activate constructor(
     private var registrationHandle: AutoCloseable? = null
     private var senderRegistrationHandle: AutoCloseable? = null
     private var configHandle: AutoCloseable? = null
+    private var publisher: Publisher? = null
 
-    override fun importCertificate(tenantId: String, alias: String, certificate: String) {
-        send<CertificateImportedRpcResponse>(tenantId, ImportCertificateRpcRequest(alias, certificate))
+    private val hostedIdentityEntryFactory = HostedIdentityEntryFactory(
+        virtualNodeInfoReadService = virtualNodeInfoReadService,
+        cryptoOpsClient = cryptoOpsClient,
+        keyEncodingService = keyEncodingService,
+        groupPolicyProvider = groupPolicyProvider,
+        retrieveCertificates = ::retrieveCertificates,
+    )
+
+    override fun importCertificates(tenantId: String, alias: String, certificates: String) {
+        send<CertificateImportedRpcResponse>(tenantId, ImportCertificateRpcRequest(alias, certificates))
+    }
+
+    private fun retrieveCertificates(tenantId: String, alias: String): String? {
+        return send<CertificateRetrievalRpcResponse>(tenantId, RetrieveCertificateRpcRequest(alias))?.certificates
+    }
+
+    override fun setupLocallyHostedIdentity(
+        holdingIdentityId: String,
+        certificateChainAlias: String,
+        tlsTenantId: String?,
+        sessionKeyId: String?,
+    ) {
+
+        val record = hostedIdentityEntryFactory.createIdentityRecord(
+            holdingIdentityId, certificateChainAlias, tlsTenantId, sessionKeyId
+        )
+
+        val futures = publisher?.publish(
+            listOf(
+                record,
+            )
+        ) ?: throw IllegalStateException("publisher is not ready")
+
+        futures.forEach {
+            it.getOrThrow()
+        }
     }
 
     override val isRunning: Boolean
@@ -78,7 +131,10 @@ class CertificatesClientImpl @Activate constructor(
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             )
         )
     }
@@ -96,6 +152,8 @@ class CertificatesClientImpl @Activate constructor(
         configHandle = null
         sender?.close()
         sender = null
+        publisher?.close()
+        publisher = null
     }
 
     private fun handleRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -148,6 +206,16 @@ class CertificatesClientImpl @Activate constructor(
                     it.subscriptionName
                 )
             )
+            it.start()
+        }
+        publisher?.close()
+        publisher = publisherFactory.createPublisher(
+            publisherConfig = PublisherConfig(
+                clientId = PUBLISHER_NAME,
+                transactional = false,
+            ),
+            messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
+        ).also {
             it.start()
         }
     }

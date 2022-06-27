@@ -39,7 +39,7 @@ class KeysRpcOpsImpl @Activate constructor(
         fun CryptoSigningKey.toMetaData() = KeyMetaData(
             keyId = this.id,
             alias = this.alias,
-            hsmCategory = this.category,
+            hsmCategory = this.category.uppercase(),
             scheme = this.schemeCodeName,
             masterKeyAlias = this.masterKeyAlias,
             created = this.created
@@ -51,7 +51,7 @@ class KeysRpcOpsImpl @Activate constructor(
         hsmCategory: String,
     ): Collection<String> = cryptoOpsClient.getSupportedSchemes(
         tenantId = tenantId,
-        category = hsmCategory
+        category = hsmCategory.uppercase()
     )
 
     @Suppress("ComplexMethod")
@@ -81,7 +81,7 @@ class KeysRpcOpsImpl @Activate constructor(
         }
         val filterMap = emptyMap<String, String>().let {
             if (category != null) {
-                it + mapOf(CATEGORY_FILTER to category)
+                it + mapOf(CATEGORY_FILTER to category.uppercase())
             } else {
                 it
             }
@@ -143,7 +143,7 @@ class KeysRpcOpsImpl @Activate constructor(
     ): String {
         return cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
-            category = hsmCategory,
+            category = hsmCategory.uppercase(),
             alias = alias,
             scheme = scheme
         ).publicKeyId()

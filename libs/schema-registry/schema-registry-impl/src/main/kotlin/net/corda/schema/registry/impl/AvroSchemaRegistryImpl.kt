@@ -198,10 +198,16 @@ class AvroSchemaRegistryImpl(
         log.trace("Serializing obj (${obj::class.java.name}): $obj")
         val fingerprint = getFingerprint(obj::class.java)
         val encoder: (T) -> ByteArray = uncheckedCast(getEncoder(obj::class.java))
-        val payload = if (options.compressed) {
-            zipPayload(encoder.invoke(obj))
-        } else {
-            encoder.invoke(obj)
+        val payload = try {
+            if (options.compressed) {
+                zipPayload(encoder.invoke(obj))
+            } else {
+                encoder.invoke(obj)
+            }
+        } catch (ex: Throwable) {
+            log.error("Error invoking encoder serializing instance of class ${obj::class.java.name} with schema " +
+                    "${fingerprint.schema}")
+            throw ex
         }
         val envelope = AvroEnvelope(MAGIC, fingerprint, options.toFlags(), ByteBuffer.wrap(payload))
         return ByteBuffer.wrap(envelope.encode())

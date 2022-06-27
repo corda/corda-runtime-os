@@ -5,6 +5,7 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import java.util.concurrent.CancellationException
@@ -60,4 +61,6 @@ interface FlowEventExceptionProcessor {
      * @throws [CancellationException] if the event should be moved to the DLQ
      */
     fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint>
+
+    fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint>
 }

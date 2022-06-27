@@ -1,49 +1,57 @@
 package net.corda.lifecycle.domino.logic
 
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 
 /**
  * This interface can be implemented by classes the encapsulate more elaborate domino logic that can be reused easily.
  */
-interface DominoTile: Lifecycle {
+abstract class DominoTile: Lifecycle {
     /**
-     * the coordinator name that will be used by this domino tile for lifecycle events.
+     * The coordinator name that will be used by this domino tile for lifecycle events.
      */
-    val coordinatorName: LifecycleCoordinatorName
+    abstract val coordinatorName: LifecycleCoordinatorName
 
     /**
-     * The current state of the domino tile.
+     * This tiles coordinator.
      */
-    val state: DominoTileState
+    internal abstract val coordinator: LifecycleCoordinator
 
     /**
-     * Domino tiles this tile is dependent upon.
-     * This tile will wait for these children to start before starting itself.
+     * Coordinators this tile is dependent upon.
+     * This tile will wait for these children to have [LifecycleStatus.UP] before starting itself.
      * If any of them goes down or has an error, it will also go down.
      */
-    val dependentChildren: Collection<DominoTile>
+    abstract val dependentChildren: Collection<LifecycleCoordinatorName>
 
     /**
-     * Domino tiles that are managed by this tile.
-     * This tile is responsible for invoking [start] on these tiles when it is started.
+     * Lifecycle components that are managed by this tile.
+     * This tile is responsible for invoking [start] on these children when it is started.
      * It is also responsible for invoking [stop] when it is stopped.
      */
-    val managedChildren: Collection<DominoTile>
-}
+    abstract val managedChildren: Collection<NamedLifecycle>
 
-enum class DominoTileState {
-    Created,
-    Started,
-    StoppedDueToError,
-    StoppedDueToBadConfig,
-    StoppedDueToChildStopped,
-    StoppedByParent
-}
+    override val isRunning: Boolean
+        get() = coordinator.status == LifecycleStatus.UP
 
-/**
- * Every time the state of a domino tile changes, it is responsible of sending a [CustomEvent] with the new state to any tiles that are
- * registered to follow any changes.
- */
-data class StatusChangeEvent(val newState: DominoTileState)
+    override fun start() {
+        coordinator.start()
+    }
+
+    override fun close() {
+        coordinator.close()
+    }
+
+    override fun stop() {
+        coordinator.stop()
+    }
+
+    fun toNamedLifecycle(): NamedLifecycle {
+        return NamedLifecycle(this, coordinatorName)
+    }
+
+    val status: LifecycleStatus
+        get() = coordinator.status
+}

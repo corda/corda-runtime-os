@@ -49,12 +49,14 @@ import net.corda.db.testkit.DbUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -62,7 +64,6 @@ import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -85,6 +86,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.UUID
+import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
@@ -442,10 +444,20 @@ class PersistenceTests {
                         signerSummaryHash = null
                     ),
                     vaultDmlConnectionId = UUID.randomUUID(),
-                    cryptoDmlConnectionId = UUID.randomUUID()
+                    cryptoDmlConnectionId = UUID.randomUUID(),
+                    timestamp = Instant.now()
                 )
+
             override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
                 throw NotImplementedError()
+
+            override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+                TODO("Not yet implemented")
+            }
+
+            override val lifecycleCoordinatorName: LifecycleCoordinatorName
+                get() = TODO("Not yet implemented")
+
             override val isRunning: Boolean = true
             override fun start() {}
             override fun stop() {}
@@ -994,10 +1006,10 @@ class PersistenceTests {
     }
 
     @Test
-    fun `linkCategories should throw CryptoServiceLibraryException if config does not exist`() {
+    fun `linkCategories should throw IllegalStateException if config does not exist`() {
         val cache = createHSMCacheImpl()
         cache.act {
-            assertThrows(CryptoServiceLibraryException::class.java) {
+            assertThrows(IllegalStateException::class.java) {
                 it.linkCategories(
                     UUID.randomUUID().toString(), listOf(
                         HSMCategoryInfo(

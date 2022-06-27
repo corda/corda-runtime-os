@@ -56,6 +56,7 @@ dependencies {
     testCompileOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    testRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     integrationTestImplementation project(':testing:sandboxes')

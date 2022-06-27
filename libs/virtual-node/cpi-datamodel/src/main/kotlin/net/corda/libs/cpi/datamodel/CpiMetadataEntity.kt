@@ -92,7 +92,7 @@ data class CpiMetadataEntity(
             groupPolicy: String,
             groupId: String,
             fileUploadRequestId: String,
-            cpks: List<Pair<String, CpkMetadataEntity>>
+            cpks: List<Pair<String, CpiCpkEntity>>
         ): CpiMetadataEntity {
             return CpiMetadataEntity(
                 name,
@@ -103,16 +103,19 @@ data class CpiMetadataEntity(
                 groupPolicy,
                 groupId,
                 fileUploadRequestId,
-                cpks = cpks.map {
+                cpks = cpks.map { (originalFileName, cpiCpkEntity) ->
                     CpiCpkEntity(
                         id = CpiCpkKey(
                             name,
                             version,
                             signerSummaryHash,
-                            it.second.cpkFileChecksum,
+                            cpiCpkEntity.metadata.id.cpkName,
+                            cpiCpkEntity.metadata.id.cpkVersion,
+                            cpiCpkEntity.metadata.id.cpkSignerSummaryHash,
                         ),
-                        cpkFileName = it.first,
-                        metadata = it.second,
+                        cpkFileName = originalFileName,
+                        metadata = cpiCpkEntity.metadata,
+                        cpkFileChecksum = cpiCpkEntity.metadata.cpkFileChecksum
                     )
                 }.toSet()
             )
@@ -129,22 +132,25 @@ data class CpiMetadataEntity(
         fileUploadRequestId: String,
         fileName: String,
         fileChecksum: String,
-        cpks: List<Pair<String, CpkMetadataEntity>>
+        cpks: List<Pair<String, CpiCpkEntity>>
     ) =
         this.copy(
             fileUploadRequestId = fileUploadRequestId,
             fileName = fileName,
             fileChecksum = fileChecksum,
-            cpks = cpks.map {
+            cpks = cpks.map { (originalFileName, cpiCpkEntity) ->
                 CpiCpkEntity(
                     id = CpiCpkKey(
                         name,
                         version,
                         signerSummaryHash,
-                        it.second.cpkFileChecksum,
+                        cpiCpkEntity.metadata.id.cpkName,
+                        cpiCpkEntity.metadata.id.cpkVersion,
+                        cpiCpkEntity.metadata.id.cpkSignerSummaryHash,
                     ),
-                    cpkFileName = it.first,
-                    metadata = it.second,
+                    cpkFileName = originalFileName,
+                    metadata = cpiCpkEntity.metadata,
+                    cpkFileChecksum = cpiCpkEntity.metadata.cpkFileChecksum,
                 )
             }.toSet(),
         )

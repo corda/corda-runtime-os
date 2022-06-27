@@ -94,7 +94,7 @@ class RPCSubscriptionImplTest {
 
         doAnswer {
             listOf(CordaTopicPartition(config.topic, 0))
-        }.whenever(kafkaConsumer).getPartitions(any(), any())
+        }.whenever(kafkaConsumer).getPartitions(any())
 
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }

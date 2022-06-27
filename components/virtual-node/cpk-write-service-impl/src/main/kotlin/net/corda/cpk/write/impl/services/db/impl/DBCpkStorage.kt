@@ -38,10 +38,13 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
 
     override fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumToData {
         return entityManagerFactory.createEntityManager().transaction {
-            val cpkDataEntity = it.find(
-                CpkFileEntity::class.java,
-                checksum.toString()
+            val cpkDataEntity = it.createQuery(
+                "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
+                CpkFileEntity::class.java
             )
+                .setParameter("checksum", checksum.toString())
+                .singleResult
+
             CpkChecksumToData(SecureHash.create(cpkDataEntity.fileChecksum), cpkDataEntity.data)
         }
     }

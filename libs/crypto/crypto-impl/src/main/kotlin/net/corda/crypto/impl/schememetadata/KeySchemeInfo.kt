@@ -32,23 +32,19 @@ import java.security.Provider
  * Scroll down to "Signature Algorithms" / "Schemes" (or search for "SHA256withECDDSA")
  */
 abstract class KeySchemeInfo private constructor(
-    val scheme: KeyScheme,
-    val signatureSpecMap: Map<DigestAlgorithmName, SignatureSpec>
+    val scheme: KeyScheme, val digestToSignatureSpecMap: Map<DigestAlgorithmName, SignatureSpec>
 ) {
     constructor(
-        provider: Provider,
-        template: KeySchemeTemplate,
-        signatureNameMap: Map<DigestAlgorithmName, SignatureSpec>
-    ) :
-            this(template.makeScheme(provider.name), signatureNameMap)
+        provider: Provider, template: KeySchemeTemplate, signatureNameMap: Map<DigestAlgorithmName, SignatureSpec>
+    ) : this(template.makeScheme(provider.name), signatureNameMap)
 
-    fun getSignatureSpec(digest: DigestAlgorithmName): SignatureSpec? =
-        signatureSpecMap[digest]
+    fun getSignatureSpec(digest: DigestAlgorithmName): SignatureSpec? = digestToSignatureSpecMap[digest]
 }
 
 class RSAKeySchemeInfo(
     provider: Provider
-) : KeySchemeInfo(provider, RSA_TEMPLATE, mapOf(
+) : KeySchemeInfo(
+    provider, RSA_TEMPLATE, mapOf(
         DigestAlgorithmName.SHA2_256 to RSA_SHA256_SIGNATURE_SPEC,
         DigestAlgorithmName.SHA2_384 to RSA_SHA384_SIGNATURE_SPEC,
         DigestAlgorithmName.SHA2_512 to RSA_SHA512_SIGNATURE_SPEC
@@ -56,9 +52,9 @@ class RSAKeySchemeInfo(
 )
 
 abstract class ECDSAKeySchemeInfo(
-    provider: Provider,
-    template: KeySchemeTemplate
-) : KeySchemeInfo(provider, template, mapOf(
+    provider: Provider, template: KeySchemeTemplate
+) : KeySchemeInfo(
+    provider, template, mapOf(
         DigestAlgorithmName.SHA2_256 to ECDSA_SHA256_SIGNATURE_SPEC,
         DigestAlgorithmName.SHA2_384 to ECDSA_SHA384_SIGNATURE_SPEC,
         DigestAlgorithmName.SHA2_512 to ECDSA_SHA512_SIGNATURE_SPEC

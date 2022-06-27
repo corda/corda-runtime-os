@@ -2,8 +2,11 @@ package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
+import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
@@ -88,8 +91,9 @@ internal class ValidationFunctions(
         chunkPersistence: ChunkPersistence,
         cpi: Cpi,
         fileInfo: FileInfo,
-        requestId: RequestId
-    ) {
+        requestId: RequestId,
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+    ): CpiMetadataEntity {
         // Cannot compare the CPI.metadata.hash to our checksum above
         // because two different digest algorithms might have been used to create them.
         // We'll publish to the database using the de-chunking checksum.
@@ -100,14 +104,15 @@ internal class ValidationFunctions(
             val cpiExists = chunkPersistence.cpiExists(
                 cpi.metadata.cpiId.name,
                 cpi.metadata.cpiId.version,
-                cpi.metadata.cpiId.signerSummaryHashForDbQuery)
+                cpi.metadata.cpiId.signerSummaryHashForDbQuery
+            )
 
-            if (cpiExists && fileInfo.forceUpload) {
+            return if (cpiExists && fileInfo.forceUpload) {
                 log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-                chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
+                chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
             } else if (!cpiExists) {
                 log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-                chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
+                chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
             } else {
                 throw ValidationException(
                     "CPI has already been inserted with cpks for " +
@@ -161,8 +166,17 @@ internal class ValidationFunctions(
             cpi.metadata.cpiId.version,
             cpi.metadata.cpiId.signerSummaryHashForDbQuery
         )
+
         if (groupIdInDatabase != null) {
             throw ValidationException("CPI already uploaded with groupId = $groupIdInDatabase")
         }
     }
+
+    /**
+     * Extract liquibase scripts from the CPI and persist them to the database.
+     *
+     * @return list of entities containing liquibase scripts ready for insertion into database
+     */
+    fun extractLiquibaseScriptsFromCpi(cpi: Cpi): List<CpkDbChangeLogEntity> =
+        LiquibaseExtractor().extractLiquibaseEntitiesFromCpi(cpi)
 }

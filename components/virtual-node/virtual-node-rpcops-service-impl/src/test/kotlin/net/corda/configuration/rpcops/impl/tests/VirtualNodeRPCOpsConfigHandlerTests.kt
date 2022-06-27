@@ -23,18 +23,6 @@ import org.mockito.kotlin.whenever
 
 /** Tests of [VirtualNodeRPCOpsConfigHandler]. */
 class VirtualNodeRPCOpsConfigHandlerTests {
-    @Test
-    fun `throws if RPC config is listed as a changed key but no corresponding config is provided`() {
-        val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), mock())
-        val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), emptyMap())
-        }
-
-        assertEquals(
-            "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found.",
-            e.message
-        )
-    }
 
     @Test
     fun `sets RPC sender timeout if corresponding config is provided under RPC config`() {
@@ -47,7 +35,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG),
+            mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).setTimeout(timeout)
     }
@@ -61,8 +50,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to
-                    config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
         }
     }
 
@@ -74,7 +63,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
             whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG),
+            mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).createAndStartRpcSender(any())
     }
@@ -92,8 +82,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val configHandler = VirtualNodeRPCOpsConfigHandler(coordinator, configRPCOps)
 
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config,BOOT_CONFIG to
-                    config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config,BOOT_CONFIG to config))
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -112,8 +102,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to
-                    config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
         }
     }
 

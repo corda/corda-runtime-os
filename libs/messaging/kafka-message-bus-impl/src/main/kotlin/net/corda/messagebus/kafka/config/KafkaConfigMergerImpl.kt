@@ -26,7 +26,6 @@ class KafkaConfigMergerImpl : BusConfigMerger {
             .withValue(BootConfig.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(bootConfig.getString(BootConfig.TOPIC_PREFIX)))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
 
-
         val kafkaBootConfig = bootConfig.getConfig(BOOT_KAFKA_COMMON).entrySet()
         logger.debug("Looping through kafka boot config")
         kafkaBootConfig.forEach { entry ->

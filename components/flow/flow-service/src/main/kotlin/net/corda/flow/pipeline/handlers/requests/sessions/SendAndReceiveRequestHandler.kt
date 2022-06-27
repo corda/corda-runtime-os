@@ -9,7 +9,7 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -37,7 +37,7 @@ class SendAndReceiveRequestHandler @Activate constructor(
                 checkpoint.putSessionState(updatedSessionState)
             }
             flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())
-        } catch (e: FlowSessionMissingException) {
+        } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, context, e)
         }

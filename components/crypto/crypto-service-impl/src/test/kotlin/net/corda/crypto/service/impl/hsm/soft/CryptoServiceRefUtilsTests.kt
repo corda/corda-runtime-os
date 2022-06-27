@@ -21,7 +21,6 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeAll
@@ -384,7 +383,7 @@ class CryptoServiceRefUtilsTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceException when converting unknown key generation result`() {
+    fun `Should throw IllegalStateException when converting unknown key generation result`() {
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
@@ -397,7 +396,7 @@ class CryptoServiceRefUtilsTests {
         val generatedKey = mock<GeneratedKey>()
         val alias = UUID.randomUUID().toString()
         val externalId = UUID.randomUUID().toString()
-        assertThrows<CryptoServiceException> {
+        assertThrows<IllegalStateException> {
             ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
         }
     }

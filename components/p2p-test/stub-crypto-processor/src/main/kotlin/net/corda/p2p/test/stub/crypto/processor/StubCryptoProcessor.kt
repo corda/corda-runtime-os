@@ -7,8 +7,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -43,20 +43,17 @@ class StubCryptoProcessor(
         emptyList(),
         emptyList(),
     )
+    private val blockingDominoTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        readyFuture
+    )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
-        managedChildren = listOf(subscriptionTile),
-        dependentChildren = listOf(subscriptionTile),
+        dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
+        managedChildren = listOf(subscriptionTile.toNamedLifecycle(), blockingDominoTile.toNamedLifecycle()),
     )
-
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER")
-        resources: ResourcesHolder
-    ): CompletableFuture<Unit> {
-        return readyFuture
-    }
 
     override fun sign(
         tenantId: String,

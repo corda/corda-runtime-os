@@ -24,6 +24,10 @@ dependencies {
 
     implementation project(":libs:packaging:packaging")
     implementation project(":libs:packaging:packaging-core")
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+
+    testImplementation project(':testing:test-utilities')
 
     testImplementation "org.osgi:osgi.core"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

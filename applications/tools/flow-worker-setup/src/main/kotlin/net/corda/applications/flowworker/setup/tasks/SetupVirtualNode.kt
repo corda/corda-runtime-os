@@ -5,7 +5,6 @@ package net.corda.applications.flowworker.setup.tasks
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.Cpi
@@ -22,6 +21,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Instant
 import java.util.UUID
 import kotlin.streams.toList
 
@@ -36,20 +36,25 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
     }
 
     override fun execute() {
-
         val repositoryFolder =
             context.startArgs.cpiDir ?: throw IllegalStateException("CPI Directory (--cpiDir) has not been set")
 
         val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
 
-        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        val x500Identities = listOf(
+            "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+            "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+            "CN=user1, O=user1 Corp, L=LDN, C=GB",
+            "CN=user2, O=user2 Corp, L=LDN, C=GB"
+        )
 
         val virtualNodes = cpiList.flatMap { cpi ->
             x500Identities.map { x500 -> cpi to VirtualNodeInfo(
                 HoldingIdentity(x500, cpi.metadata.cpiId.name),
                 cpi.metadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID()
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                timestamp = Instant.now()
             ) }
         }
 
@@ -60,7 +65,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         cpiList.flatMap { it.cpks }.map { cpk ->
             val cpkChecksum = cpk.metadata.fileChecksum
-            val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+            val chunkWriter = ChunkWriterFactory.create(972800)
             chunkWriter.onChunk { chunk ->
                 val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
                 context.publish(Record(Schemas.VirtualNode.CPK_FILE_TOPIC, cpkChunkId, chunk))

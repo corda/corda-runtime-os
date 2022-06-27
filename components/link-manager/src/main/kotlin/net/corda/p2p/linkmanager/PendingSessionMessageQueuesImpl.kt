@@ -61,7 +61,7 @@ internal class PendingSessionMessageQueuesImpl(
         groups: LinkManagerGroupPolicyProvider,
         members: LinkManagerMembershipGroupReader,
     ) {
-        publisher.dominoTile.withLifecycleLock {
+        publisher.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
             }
