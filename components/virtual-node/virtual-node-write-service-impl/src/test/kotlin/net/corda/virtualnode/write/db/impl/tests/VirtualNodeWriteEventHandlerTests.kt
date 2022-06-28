@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -24,7 +25,10 @@ import org.mockito.kotlin.whenever
 
 /** Tests of [VirtualNodeWriteEventHandler]. */
 class VirtualNodeWriteEventHandlerTests {
-    private val componentsToFollow = setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+    private val componentsToFollow = setOf(
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+    )
 
     @Test
     fun `follows the configuration read service upon starting`() {
