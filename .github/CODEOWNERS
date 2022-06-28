@@ -8,10 +8,10 @@ gradle/*           @corda/blt
 .github/*          @corda/blt
 
 # Modules to be audited by HTTP RPC team
-applications/workers/release/rpc-worker/     @corda/http-rpc
-components/http-rpc-gateway-comp/            @corda/http-rpc
-components/permissions/                      @corda/http-rpc
-components/rbac-security-manager-service/    @corda/http-rpc
-libs/http-rpc/                               @corda/http-rpc
-libs/permissions/                            @corda/http-rpc
-processors/rpc-processor/                    @corda/http-rpc
+/applications/workers/release/rpc-worker/     @corda/http-rpc
+/components/http-rpc-gateway-comp/            @corda/http-rpc
+/components/permissions/                      @corda/http-rpc
+/components/rbac-security-manager-service/    @corda/http-rpc
+/libs/http-rpc/                               @corda/http-rpc
+/libs/permissions/                            @corda/http-rpc
+/processors/rpc-processor/                    @corda/http-rpc
