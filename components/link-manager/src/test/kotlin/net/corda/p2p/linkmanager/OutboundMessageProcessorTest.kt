@@ -264,7 +264,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces LinkManagerSentMarker, queues no messages if SessionAlreadyPending`() {
+    fun `processReplayedAuthenticatedMessage produces no records and queues no messages if SessionAlreadyPending`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -440,14 +440,12 @@ class OutboundMessageProcessorTest {
                 .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
 
             val markers = records.filter { it.value is AppMessageMarker }
-            assertSoftly {
-                it.assertThat(markers).hasSize(6)
-                it.assertThat(markers.map { it.value as AppMessageMarker }
+                softly.assertThat(markers).hasSize(6)
+                softly.assertThat(markers.map { it.value as AppMessageMarker }
                     .filter { it.marker is LinkManagerProcessedMarker }).hasSize(3)
-                it.assertThat(markers.map { it.value as AppMessageMarker }
+                softly.assertThat(markers.map { it.value as AppMessageMarker }
                     .filter { it.marker is LinkManagerSentMarker }).hasSize(3)
-                it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
-            }
+                softly.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
 
         verify(sessionManager, times(messages.size)).dataMessageSent(state.session)
@@ -455,7 +453,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and doesn't queue messages if SessionEstablished`() {
+    fun `processReplayedAuthenticatedMessage - LinkOutMessage, LinkManagerSentMarker, no messages queued if SessionEst`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMsg = AuthenticatedMessage(
