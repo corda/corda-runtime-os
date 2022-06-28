@@ -111,7 +111,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, config.maximumSize)
         assertEquals("soft-salt", config.salt)
         assertEquals("soft-passphrase", config.passphrase)
-        assertEquals(0, config.maxAttempts)
+        assertEquals(1, config.maxAttempts)
         assertEquals(20000, config.attemptTimeoutMills)
     }
 
