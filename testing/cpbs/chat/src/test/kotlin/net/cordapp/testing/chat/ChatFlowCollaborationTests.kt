@@ -16,9 +16,13 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 
 class ChatFlowCollaborationTests {
-    val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
-    val FROM_X500_NAME = "CN=Alice, O=R3, L=London, C=GB"
-    val MESSAGE = "chat message"
+    companion object {
+        val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
+        val FROM_X500_NAME = "CN=Alice, O=R3, L=London, C=GB"
+        val MESSAGE = "chat message"
+
+        val DUMMY_FLOW_RETURN = "dummy_flow_return"
+    }
 
     val outgoingFlowMockHelper = FlowMockHelper {
         mockService<FlowMessaging>()
@@ -47,7 +51,7 @@ class ChatFlowCollaborationTests {
             addExpectedMessageType<MessageContainer>()
         }
 
-        ExecuteConcurrently({
+        executeConcurrently({
                 outgoingChatFlow.call(
                     outgoingFlowMockHelper.rpcRequestGenerator(
                         OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
@@ -58,7 +62,6 @@ class ChatFlowCollaborationTests {
 
         messageLink.failIfPendingMessages()
 
-        val DUMMY_FLOW_RETURN="dummy_flow_return"
         val expectedMessages = ReceivedChatMessages(messages = listOf(IncomingChatMessage(
             senderX500Name = FROM_X500_NAME,
             message = MESSAGE)))

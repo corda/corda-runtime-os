@@ -3,7 +3,6 @@ package net.cordapp.testing.chatframework
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.types.MemberX500Name
 import net.cordapp.testing.chat.validateProtocol
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock

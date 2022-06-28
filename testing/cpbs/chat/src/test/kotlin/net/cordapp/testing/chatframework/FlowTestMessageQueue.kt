@@ -19,7 +19,9 @@ import kotlin.concurrent.withLock
  * types, without calling this method with expected types this class will exhibit unexpected behaviour.
  */
 class FlowTestMessageQueue(val from: FlowSession, val to: FlowSession) {
-    val RECEIVE_TIMEOUT_SECONDS = 5L
+    companion object {
+        private val RECEIVE_TIMEOUT_SECONDS = 5L
+    }
 
     private val queue = LinkedList<Any>()
     private val lock = ReentrantLock()

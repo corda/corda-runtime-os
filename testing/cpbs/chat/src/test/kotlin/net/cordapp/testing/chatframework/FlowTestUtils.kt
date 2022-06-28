@@ -26,6 +26,6 @@ fun validateProtocol(from: Flow, to: ResponderFlow)
  * Helper to execute Flow call()s in parallel.
  * Executes every block concurrently. Will return once all blocks are complete.
  */
-fun ExecuteConcurrently(vararg blocks: () -> Unit) {
+fun executeConcurrently(vararg blocks: () -> Unit) {
     blocks.map { Thread { it() } }.onEach { it.start() }.onEach { it.join() }
 }

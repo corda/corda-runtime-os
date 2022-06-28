@@ -22,8 +22,10 @@ class ChatOutgoingFlowTest {
 
     val flow = flowMockHelper.createFlow<ChatOutgoingFlow>()
 
-    val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
-    val MESSAGE = "chat message"
+    companion object {
+        val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
+        val MESSAGE = "chat message"
+    }
 
     @Test
     fun `unspecified message in parameters throws`() {
