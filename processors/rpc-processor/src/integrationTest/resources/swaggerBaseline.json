@@ -3018,18 +3018,13 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "holdingIdentityId", "context" ],
+        "required" : [ "action", "context", "holdingIdentityId" ],
         "type" : "object",
         "properties" : {
           "action" : {
             "nullable" : false,
             "example" : "requestJoin",
             "enum" : [ "requestJoin" ]
-          },
-          "holdingIdentityId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
           },
           "context" : {
             "type" : "object",
@@ -3040,6 +3035,11 @@
             },
             "nullable" : false,
             "example" : "No example available for this type"
+          },
+          "holdingIdentityId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           }
         },
         "description" : "Data required to initialise the registration process.",
