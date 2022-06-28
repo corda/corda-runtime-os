@@ -5,11 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
-import net.corda.applications.workers.smoketest.CLUSTER_URI
-import net.corda.applications.workers.smoketest.CPI_NAME
-import net.corda.applications.workers.smoketest.PASSWORD
-import net.corda.applications.workers.smoketest.USERNAME
-import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import org.apache.commons.text.StringEscapeUtils.escapeJson
