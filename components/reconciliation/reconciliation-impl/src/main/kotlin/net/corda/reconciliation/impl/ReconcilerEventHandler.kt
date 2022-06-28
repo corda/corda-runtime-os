@@ -16,6 +16,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
     private val dbReader: ReconcilerReader<K, V>,
     private val kafkaReader: ReconcilerReader<K, V>,
