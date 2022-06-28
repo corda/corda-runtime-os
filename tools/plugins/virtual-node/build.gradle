@@ -26,9 +26,9 @@ dependencies {
 }
 
 cliPlugin {
-    cliPluginClass = 'something'
-    cliPluginProvider = 'R3'
-    cliPluginDescription = 'Eeny, meeny...'
+    cliPluginClass = 'net.corda.cli.plugins.vnode.VirtualNodeCliPlugin'
+    cliPluginProvider = 'R3 Ltd'
+    cliPluginDescription = 'A CLI plug-in for operations on Virtual Node'
 }
 
 tasks.named("installDist") {
