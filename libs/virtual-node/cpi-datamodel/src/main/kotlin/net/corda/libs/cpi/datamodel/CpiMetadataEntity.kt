@@ -92,7 +92,7 @@ data class CpiMetadataEntity(
             groupPolicy: String,
             groupId: String,
             fileUploadRequestId: String,
-            cpks: List<Pair<String, CpiCpkEntity>>
+            cpks: Set<CpiCpkEntity>
         ): CpiMetadataEntity {
             return CpiMetadataEntity(
                 name,
@@ -103,21 +103,7 @@ data class CpiMetadataEntity(
                 groupPolicy,
                 groupId,
                 fileUploadRequestId,
-                cpks = cpks.map { (originalFileName, cpiCpkEntity) ->
-                    CpiCpkEntity(
-                        id = CpiCpkKey(
-                            name,
-                            version,
-                            signerSummaryHash,
-                            cpiCpkEntity.metadata.id.cpkName,
-                            cpiCpkEntity.metadata.id.cpkVersion,
-                            cpiCpkEntity.metadata.id.cpkSignerSummaryHash,
-                        ),
-                        cpkFileName = originalFileName,
-                        metadata = cpiCpkEntity.metadata,
-                        cpkFileChecksum = cpiCpkEntity.metadata.cpkFileChecksum
-                    )
-                }.toSet()
+                cpks
             )
         }
     }
@@ -132,27 +118,13 @@ data class CpiMetadataEntity(
         fileUploadRequestId: String,
         fileName: String,
         fileChecksum: String,
-        cpks: List<Pair<String, CpiCpkEntity>>
+        cpks: Set<CpiCpkEntity>
     ) =
         this.copy(
             fileUploadRequestId = fileUploadRequestId,
             fileName = fileName,
             fileChecksum = fileChecksum,
-            cpks = cpks.map { (originalFileName, cpiCpkEntity) ->
-                CpiCpkEntity(
-                    id = CpiCpkKey(
-                        name,
-                        version,
-                        signerSummaryHash,
-                        cpiCpkEntity.metadata.id.cpkName,
-                        cpiCpkEntity.metadata.id.cpkVersion,
-                        cpiCpkEntity.metadata.id.cpkSignerSummaryHash,
-                    ),
-                    cpkFileName = originalFileName,
-                    metadata = cpiCpkEntity.metadata,
-                    cpkFileChecksum = cpiCpkEntity.metadata.cpkFileChecksum,
-                )
-            }.toSet(),
+            cpks = cpks,
         )
 }
 

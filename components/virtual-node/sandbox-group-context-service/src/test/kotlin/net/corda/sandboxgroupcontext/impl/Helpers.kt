@@ -18,16 +18,23 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.Random
+import net.corda.v5.crypto.DigestAlgorithmName
 
 object Helpers {
-    private fun mockCpkMetadata(mainBundle: String, name: String, version: String): CpkMetadata
-    = mockCpkMetadata(mainBundle, emptyList(), name, version)
+    private fun mockCpkMetadata(
+        mainBundle: String,
+        name: String,
+        version: String,
+        fileChecksum: SecureHash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray())
+    ): CpkMetadata =
+        mockCpkMetadata(mainBundle, emptyList(), name, version, fileChecksum)
 
-    private fun mockCpkMetadata(mainBundle: String, dependencies: List<CpkIdentifier>, name:String, version:String): CpkMetadata {
+    private fun mockCpkMetadata(mainBundle: String, dependencies: List<CpkIdentifier>, name:String, version:String,
+                                fileChecksum: SecureHash): CpkMetadata {
         val contractInfo = ManifestCorDappInfo("", "", 1, "")
         val workflowInfo = ManifestCorDappInfo("", "", 1, "")
         val cordappManifest = CordappManifest(name, version, 1, 1, contractInfo, workflowInfo, mock())
-        val hash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray())
         return CpkMetadata(
             CpkIdentifier(mainBundle, version, SecureHash.create("SHA-256:0000000000000000")),
             CpkManifest(CpkFormatVersion(1, 0)),
@@ -36,13 +43,19 @@ object Helpers {
             dependencies,
             cordappManifest,
             CpkType.CORDA_API,
-            hash,
+            fileChecksum,
             emptySet(),
             Instant.now()
         )
     }
 
-    fun mockTrivialCpk(mainBundle: String, name: String, version: String) = mockCpk(mockCpkMetadata(mainBundle, name, version))
+    private val random = Random(0)
+    private fun newRandomSecureHash(): SecureHash {
+        return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+    }
+
+    fun mockTrivialCpk(mainBundle: String, name: String, version: String, fileChecksum: SecureHash = newRandomSecureHash()) =
+        mockCpk(mockCpkMetadata(mainBundle, name, version, fileChecksum))
 
     private fun mockCpk(metadata: CpkMetadata) = mock<Cpk>().also { doReturn(metadata).whenever(it).metadata }
 
