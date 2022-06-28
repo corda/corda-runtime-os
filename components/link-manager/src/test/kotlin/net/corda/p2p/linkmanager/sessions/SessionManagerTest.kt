@@ -573,7 +573,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("here is no locally hosted identity in the same group with the initiator")
+        loggingInterceptor.assertSingleWarningContains("There is no locally hosted identity in the same group with the initiator")
         loggingInterceptor
             .assertSingleWarningContains("The initiator message was discarded.")
     }

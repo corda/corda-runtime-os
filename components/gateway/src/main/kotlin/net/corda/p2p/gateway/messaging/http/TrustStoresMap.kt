@@ -90,6 +90,7 @@ internal class TrustStoresMap(
         override val valueClass = GatewayTruststore::class.java
 
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
+            // Using source group ID here, since source and identity are expected to be in the same group.
             val newEntriesPerKey = currentData.mapValues {
                 TruststoreKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
             }
