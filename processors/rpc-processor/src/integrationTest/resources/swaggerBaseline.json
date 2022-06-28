@@ -2249,26 +2249,6 @@
         "nullable" : false
       },
       "CpiIdentifier" : {
-        "required" : [ "name", "signerSummaryHash", "version" ],
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "$ref" : "#/components/schemas/SecureHash"
-          },
-          "version" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "nullable" : false
-      },
-      "CpiIdentifier_1" : {
         "required" : [ "cpiName", "cpiVersion" ],
         "type" : "object",
         "properties" : {
@@ -2285,6 +2265,26 @@
           "signerSummaryHash" : {
             "type" : "string",
             "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "nullable" : false
+      },
+      "CpiIdentifier_1" : {
+        "required" : [ "name", "signerSummaryHash", "version" ],
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "signerSummaryHash" : {
+            "$ref" : "#/components/schemas/SecureHash"
+          },
+          "version" : {
+            "type" : "string",
+            "nullable" : false,
             "example" : "string"
           }
         },
@@ -2335,7 +2335,7 @@
             "example" : "string"
           },
           "id" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_2"
+            "$ref" : "#/components/schemas/CpiIdentifier"
           },
           "timestamp" : {
             "type" : "string",
@@ -2655,7 +2655,7 @@
             "example" : "string"
           },
           "cpiId" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_1"
+            "$ref" : "#/components/schemas/CpiIdentifier_2"
           },
           "cryptoDdlConnectionId" : {
             "type" : "string",
@@ -2948,7 +2948,7 @@
             "example" : "string"
           }
         },
-        "nullable" : false
+        "nullable" : true
       },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
@@ -3018,13 +3018,18 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "context", "holdingIdentityId" ],
+        "required" : [ "action", "holdingIdentityId", "context" ],
         "type" : "object",
         "properties" : {
           "action" : {
             "nullable" : false,
             "example" : "requestJoin",
             "enum" : [ "requestJoin" ]
+          },
+          "holdingIdentityId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           },
           "context" : {
             "type" : "object",
@@ -3035,11 +3040,6 @@
             },
             "nullable" : false,
             "example" : "No example available for this type"
-          },
-          "holdingIdentityId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
           }
         },
         "description" : "Data required to initialise the registration process.",
@@ -3563,7 +3563,7 @@
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
-            "$ref" : "#/components/schemas/CpiIdentifier"
+            "$ref" : "#/components/schemas/CpiIdentifier_1"
           },
           "cryptoDdlConnectionId" : {
             "type" : "string",
