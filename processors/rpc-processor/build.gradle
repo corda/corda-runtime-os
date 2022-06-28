@@ -82,6 +82,7 @@ dependencies {
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
 
+    integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
 }
