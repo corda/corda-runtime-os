@@ -1,7 +1,7 @@
 
 CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension)
 
-def cliPluginPackage = tasks.register("CliPluginPackage", Jar) {
+def cliPluginPackage = tasks.register("cliPluginTask", Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     archiveBaseName = "plugin-${cliPlugin.cliPluginId}"

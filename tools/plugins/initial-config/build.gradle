@@ -28,7 +28,7 @@ dependencies {
 }
 
 // the plugin task will put the files into a jar file with the correct manifest
-def plugin = tasks.register('plugin', Jar) {
+def plugin = tasks.register('cliPluginTask', Jar) {
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
