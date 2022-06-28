@@ -3,7 +3,7 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
-    <property name="schema.name" value="RPC_RBAC"/>
+    <property name="schema.name" value="RPC_RBAC" global="false"/>
 
     <changeSet author="vkolomeyko" id="rpc-perm-creation-v1.0">
 

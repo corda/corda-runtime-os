@@ -13,9 +13,9 @@ object BootConfig {
     const val BOOT_DB = "db"
 
     const val BOOT_DB_PARAMS = "$BOOT_DB.params"
-    const val BOOT_JDBC_URL = "$BOOT_DB.jdbcUrl"
-    const val BOOT_JDBC_USER = "$BOOT_DB.user"
-    const val BOOT_JDBC_PASS = "$BOOT_DB.pass"
+    const val BOOT_JDBC_URL = "$BOOT_DB_PARAMS.database.jdbc.url"
+    const val BOOT_JDBC_USER = "$BOOT_DB_PARAMS.database.user"
+    const val BOOT_JDBC_PASS = "$BOOT_DB_PARAMS.database.pass"
 
     const val BOOT_DIR = "dir"
     const val BOOT_WORKSPACE_DIR = "$BOOT_DIR.workspace"

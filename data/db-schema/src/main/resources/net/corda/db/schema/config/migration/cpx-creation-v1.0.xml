@@ -3,7 +3,7 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <property name="schema.name" value="CONFIG"/>
+    <property name="schema.name" value="CONFIG" global="false"/>
 
     <changeSet author="R3.Corda" id="cpx-creation-v1.0">
 
