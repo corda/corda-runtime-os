@@ -1,0 +1,9 @@
+workers:
+  rpc:
+    replicaCount: 1
+    debug:
+      enabled: true
+  membership:
+    replicaCount: 1
+    debug:
+      enabled: true

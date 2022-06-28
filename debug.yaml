@@ -28,8 +28,8 @@ workers:
 #      suspend: true
   membership:
     replicaCount: 1
-#    debug:
-#      enabled: true
+    debug:
+      enabled: true
 #      suspend: true
   rpc:
     replicaCount: 1
