@@ -69,7 +69,9 @@ class ClusterBuilder {
         clientRequestId: String,
         flowClassName: String,
         flowParams: String
-    ) = client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, flowParams))
+    ): SimpleResponse {
+        return client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, flowParams))
+    }
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, flowParams: String) =
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "flowParams" : "$flowParams"} """

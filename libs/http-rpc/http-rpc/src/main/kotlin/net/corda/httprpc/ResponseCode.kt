@@ -46,7 +46,7 @@ enum class ResponseCode constructor(val statusCode: Int) {
     RESOURCE_NOT_FOUND(404),
 
     /**
-     * Signals the requested resource is not in the expected state
+     * Signals the resource is not in the expected state
      */
     CONFLICT(409),
 

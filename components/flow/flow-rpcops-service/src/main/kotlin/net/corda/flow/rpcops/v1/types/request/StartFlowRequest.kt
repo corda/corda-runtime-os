@@ -1,4 +1,4 @@
-package net.corda.flow.rpcops.v1.request
+package net.corda.flow.rpcops.v1.types.request
 
 /**
  * Request sent to start a flow
@@ -8,7 +8,8 @@ package net.corda.flow.rpcops.v1.request
  * @param flowParams Optional start arguments string passed to the flow. Defaults to empty string.
  */
 data class StartFlowRequest(
+    val holderShortId: String,
     val clientRequestId: String,
     val flowClassName: String,
-    val flowParams: String = ""
+    val flowParams: String
 )

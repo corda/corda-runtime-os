@@ -7,8 +7,8 @@ import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.request.StartFlowRequest
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.request.StartFlowRequest
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -59,14 +59,13 @@ class FlowRPCOpsImpl @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startFlow(
-        holderShortId: String,
         startFlowRequest: StartFlowRequest
     ): HTTPFlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(holderShortId)
+        val vNode = getVirtualNode(startFlowRequest.holderShortId)
         val clientRequestId = startFlowRequest.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
