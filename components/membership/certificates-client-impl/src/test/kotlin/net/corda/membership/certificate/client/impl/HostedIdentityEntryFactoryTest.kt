@@ -55,6 +55,7 @@ class HostedIdentityEntryFactoryTest {
     }
     private val certificatePem =
         HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
+            .replace("\r", "")
             .replace("\n", System.lineSeparator())
     private val rootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/root.pem")!!.readText()
     private val certificatePublicKey = certificatePem.let {
