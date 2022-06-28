@@ -17,7 +17,7 @@ import java.security.MessageDigest
 fun mockMembersAndGroups(
     vararg members: HoldingIdentity
 ): Pair<LinkManagerMembershipGroupReader, LinkManagerGroupPolicyProvider> {
-    return mockMembers(members.toList()) to mockGroups(members.map { it.groupId })
+    return mockMembers(members.toList()) to mockGroups(members.toList())
 }
 fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGroupReader {
     val endpoint = "http://10.0.0.1/"
@@ -52,13 +52,12 @@ fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGrou
     }
 }
 
-fun mockGroups(groups: Collection<String>): LinkManagerGroupPolicyProvider {
-    val groupSet = groups.toSet()
+fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): LinkManagerGroupPolicyProvider {
     return object : LinkManagerGroupPolicyProvider {
-        override fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
-            return if (groupSet.contains(groupId)) {
+        override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
+            return if (holdingIdentities.contains(holdingIdentity)) {
                 GroupPolicyListener.GroupInfo(
-                    groupId,
+                    holdingIdentity,
                     NetworkType.CORDA_5,
                     setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
                     emptyList()

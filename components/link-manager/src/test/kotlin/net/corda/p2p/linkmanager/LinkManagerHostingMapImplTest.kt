@@ -92,6 +92,19 @@ class LinkManagerHostingMapImplTest {
     }
 
     @Test
+    fun `all locally hosted identities are returned correctly`() {
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key" to entryOne
+            )
+        )
+
+        assertThat(testObject.allLocallyHostedIdentities()).containsExactlyInAnyOrder(
+            entryOne.holdingIdentity
+        )
+    }
+
+    @Test
     fun `onSnapshot adds only data sent`() {
         processor.firstValue.onSnapshot(
             mapOf(
