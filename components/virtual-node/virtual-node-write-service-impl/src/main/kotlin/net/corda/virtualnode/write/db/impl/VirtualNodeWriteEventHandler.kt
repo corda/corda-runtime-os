@@ -2,6 +2,7 @@ package net.corda.virtualnode.write.db.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -24,7 +25,7 @@ internal class VirtualNodeWriteEventHandler(
     private val virtualNodeWriterFactory: VirtualNodeWriterFactory
 ) : LifecycleEventHandler {
 
-    private var configReadServiceRegistrationHandle: AutoCloseable? = null
+    private var registrationHandle: AutoCloseable? = null
     private var configUpdateHandle: AutoCloseable? = null
     internal var virtualNodeWriter: VirtualNodeWriter? = null
 
@@ -34,8 +35,7 @@ internal class VirtualNodeWriteEventHandler(
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            // TODO - Monitor the status of the `DbConnectionManager` and respond accordingly.
-            is StartEvent -> followConfigReadServiceStatus(coordinator)
+            is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
             is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event)
             is StopEvent -> stop()
@@ -62,10 +62,13 @@ internal class VirtualNodeWriteEventHandler(
     }
 
     /** Starts tracking the status of the [ConfigurationReadService]. */
-    private fun followConfigReadServiceStatus(coordinator: LifecycleCoordinator) {
-        configReadServiceRegistrationHandle?.close()
-        configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
-            setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        registrationHandle?.close()
+        registrationHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+            )
         )
     }
 
@@ -74,7 +77,7 @@ internal class VirtualNodeWriteEventHandler(
         coordinator: LifecycleCoordinator,
         event: RegistrationStatusChangeEvent
     ) {
-        if (event.registration == configReadServiceRegistrationHandle) {
+        if (event.registration == registrationHandle) {
             when (event.status) {
                 UP -> {
                     configUpdateHandle?.close()
@@ -90,7 +93,7 @@ internal class VirtualNodeWriteEventHandler(
     /** Shuts down the service. */
     private fun stop() {
         virtualNodeWriter?.stop()
-        configReadServiceRegistrationHandle?.close()
+        registrationHandle?.close()
         configUpdateHandle?.close()
     }
 }
