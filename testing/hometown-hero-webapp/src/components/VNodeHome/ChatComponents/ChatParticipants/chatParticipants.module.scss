@@ -13,20 +13,20 @@
         flex: 1;
         padding: var(--p-6);
     }
+}
 
-    .participantsWrapper {
-        overflow-y: scroll;
-        margin-bottom: var(--m-4);
-        height: 90%;
-    }
+.participantsWrapper {
+    overflow-y: scroll;
+    margin-bottom: var(--m-4);
+    height: 90%;
+}
 
-    .participantContainer {
-        display: flex;
-        gap: 12px;
-    }
+.participantContainer {
+    display: flex;
+    gap: 12px;
+}
 
-    .confirmParticipants {
-        margin-left: auto;
-        margin-right: var(--m-2);
-    }
+.confirmParticipants {
+    margin-left: auto;
+    margin-right: var(--m-2);
 }

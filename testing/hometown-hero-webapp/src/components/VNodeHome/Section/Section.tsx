@@ -1,14 +1,12 @@
 import React from 'react';
+import style from './section.module.scss';
 
 const Section: React.FC<{ title?: string; children?: React.ReactNode }> = ({ children, title }) => {
     return (
-        <div
-            className="section bg-light-gray-400 rounded-lg shadow-md p-6 divide-y divide-black divide-opacity-20 "
-            style={{ height: 'fit-content' }}
-        >
+        <div className={`${style.section} shadow-md divide-y divide-black`}>
             {title && (
                 <>
-                    <h2 className="opacity-75 text-2xl sm:text-4xl md:text-4xl lg:text-4xl">{title}</h2>
+                    <h2 className={style.title}>{title}</h2>
                 </>
             )}
             {children}

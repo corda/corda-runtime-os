@@ -1,0 +1,26 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.backButton {
+    height: var(--h-8);
+    margin: auto 0px var(--m-2) var(--m-2);
+    opacity: 0.5;
+}
+
+.text {
+    margin: var(--m-8) auto auto var(--m-4);
+    text-align: left;
+    width: fit-content;
+    font-size: var(--text-4xl);
+
+    @include phone-only {
+        font-size: var(--text-4xl);
+    }
+
+    @include small-phone-only {
+        font-size: var(--text-3xl);
+    }
+
+    @include desktop-up {
+        font-size: var(--text-5xl);
+    }
+}

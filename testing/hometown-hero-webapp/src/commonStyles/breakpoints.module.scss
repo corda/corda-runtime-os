@@ -4,8 +4,20 @@
     }
 }
 
+@mixin small-phone-only {
+    @media (max-width: 360px) {
+        @content;
+    }
+}
+
 @mixin phone-up {
     @media (min-width: 768px) {
+        @content;
+    }
+}
+
+@mixin desktop-up {
+    @media (min-width: 1366px) {
         @content;
     }
 }
