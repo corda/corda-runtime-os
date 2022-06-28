@@ -7,6 +7,7 @@ import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.tests.ALICE_HOLDING_IDENTITY
 import net.corda.flow.testing.tests.CPI1
 import net.corda.flow.testing.tests.CPK1
+import net.corda.flow.testing.tests.CPK1_CHECKSUM
 import net.corda.flow.testing.tests.FLOW_ID1
 import net.corda.flow.testing.tests.REQUEST_ID1
 import org.junit.jupiter.api.BeforeEach
@@ -31,8 +32,8 @@ class FindEntityAcceptanceTest : FlowServiceTestBase() {
     fun beforeEach() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
         }
     }

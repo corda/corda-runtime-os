@@ -1,15 +1,27 @@
 package net.corda.applications.workers.smoketest.flow
 
 import net.corda.applications.workers.smoketest.GROUP_ID
+import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
+import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
+import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
+import net.corda.applications.workers.smoketest.X500_SESSION_USER1
+import net.corda.applications.workers.smoketest.X500_SESSION_USER2
+import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.createVirtualNodeFor
+import net.corda.applications.workers.smoketest.getHoldingIdShortHash
+import net.corda.applications.workers.smoketest.getRpcFlowResult
+import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.*
 
 @Suppress("Unused")
 @Order(20)
@@ -111,5 +123,113 @@ class FlowTests {
         assertThat(flowResult.command).isEqualTo("start_sessions")
         assertThat(flowResult.result)
             .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+    }
+
+   /**
+    * This test is failing unexpectedly, a bug has been raised to investigate
+    * https://r3-cev.atlassian.net/browse/CORE-5372
+    */
+    @Test @Disabled
+    fun `Platform Error - user code receives platform errors`(){
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "throw_platform_error"
+            data = mapOf("x500" to X500_SESSION_USER1)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.command).isEqualTo("throw_platform_error")
+        assertThat(flowResult.result).isEqualTo("type")
+    }
+
+    @Test
+    fun `Persistence - insert a record`(){
+        val id = UUID.randomUUID()
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persist_insert"
+            data = mapOf("id" to id.toString())
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.command).isEqualTo("persist_insert")
+        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+    }
+
+    @Test
+    fun `Flow persistence`(){
+        val id = UUID.randomUUID()
+
+        // Insert a dog
+        var requestBody = RpcSmokeTestInput().apply {
+            command = "persist_insert"
+            data = mapOf("id" to id.toString())
+        }
+
+        var requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        var result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        var flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+
+        // Update a dog
+        val newDogName = "dog2"
+        requestBody = RpcSmokeTestInput().apply {
+            command = "persist_update"
+            data = mapOf(
+                "id" to id.toString(),
+                "name" to newDogName,
+            )
+        }
+
+        requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' updated")
+
+        // find a dog
+        requestBody = RpcSmokeTestInput().apply {
+            command = "persist_find"
+            data = mapOf(
+                "id" to id.toString()
+            )
+        }
+
+        requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found dog id='${id}' name='${newDogName}")
+
+        // delete a dog
+        requestBody = RpcSmokeTestInput().apply {
+            command = "persist_delete"
+            data = mapOf(
+                "id" to id.toString()
+            )
+        }
+
+        requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
     }
 }

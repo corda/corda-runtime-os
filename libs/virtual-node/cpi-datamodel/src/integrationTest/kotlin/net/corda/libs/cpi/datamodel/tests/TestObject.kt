@@ -14,7 +14,18 @@ object TestObject {
         }.joinToString("")
     }
 
-    fun createCpi(cpiId: UUID, cpks: List<Pair<String, CpiCpkEntity>>) =
+    fun createCpi(id: String, cpiName: String, cpiVersion: String, cpiSSH: String, cpks: Set<CpiCpkEntity>) =
+        CpiMetadataEntity.create(
+            cpiName, cpiVersion, cpiSSH,
+            "test-cpi-$id.cpi",
+            "test-cpi.cpi-$id-hash",
+            "{group-policy-json}",
+            "group-id",
+            "file-upload-request-id-$id",
+            cpks
+        )
+
+    fun createCpi(cpiId: UUID, cpks: Set<CpiCpkEntity>) =
         CpiMetadataEntity.create(
             "test-cpi-$cpiId",
             "1.0",
@@ -51,21 +62,18 @@ object TestObject {
     )
 
     fun createCpiWithCpk(): Pair<CpiMetadataEntity, CpiCpkEntity> {
-        val cpiId = UUID.randomUUID()
+        val id = UUID.randomUUID().toString()
+        val cpiName = "test-cpi-$id"
         val cpkFileChecksum = randomChecksumString()
-        val cpkId = "test-cpk-$cpiId.cpk"
-        val ssh = "test-cpk=hash"
+        val cpkId = "test-cpk-$id.cpk"
+        val cpiVersion = "1.0"
+        val cpiSSH = "test-cpi-hash"
         val cpiCpkEntity = createCpiCpkEntity(
-            "test-cpi-$cpiId", "1.0", ssh,
-            cpkId, "1.0",  ssh,
-            "test-cpi-$cpiId.cpi", cpkFileChecksum
+            cpiName, cpiVersion, cpiSSH,
+            cpkId, "1.0",  "test-cpk-hash",
+            "test-cpi-$id.cpk", cpkFileChecksum
         )
-        val cpi = createCpi(
-            cpiId,
-            listOf(
-                Pair("test-cpk-$cpiId.cpk", cpiCpkEntity)
-            )
-        )
+        val cpi = createCpi(id, cpiName, cpiVersion, cpiSSH, setOf(cpiCpkEntity))
         return Pair(cpi, cpiCpkEntity)
     }
 }

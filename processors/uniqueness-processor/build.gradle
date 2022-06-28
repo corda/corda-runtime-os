@@ -17,7 +17,6 @@ dependencies {
     runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
-    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 }
