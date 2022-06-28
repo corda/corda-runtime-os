@@ -1,3 +1,4 @@
+import groovy.transform.CompileStatic
 
 CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension)
 
@@ -18,11 +19,19 @@ def cliPluginPackage = tasks.register("cliPluginTask", Jar) {
         exclude "org/slf4j/**"
     }
     manifest {
-        attributes['Plugin-Class'] = cliPlugin.cliPluginClass
-        attributes['Plugin-Id'] = cliPlugin.cliPluginId
+//        attributes['Plugin-Class'] = cliPlugin.cliPluginClass
+//        attributes['Plugin-Id'] = cliPlugin.cliPluginId
+//        attributes['Plugin-Version'] = version
+//        attributes['Plugin-Provider'] = cliPlugin.cliPluginProvider
+//        attributes['Plugin-Description'] = cliPlugin.cliPluginDescription
+
+        // just using stings below for testing
+
+        attributes['Plugin-Class'] = "cliPlugin.cliPluginClass"
+        attributes['Plugin-Id'] = "cliPlugin.cliPluginId"
         attributes['Plugin-Version'] = version
-        attributes['Plugin-Provider'] = cliPlugin.cliPluginProvider
-        attributes['Plugin-Description'] = cliPlugin.cliPluginDescription
+        attributes['Plugin-Provider'] = "cliPlugin.cliPluginProvider"
+        attributes['Plugin-Description'] = "cliPlugin.cliPluginDescription"
     }
 }
 
@@ -30,6 +39,7 @@ artifacts {
     archives cliPluginPackage
 }
 
+@CompileStatic
 interface CliPluginPackagerExtension {
     Property<String> getCliPluginId()
     Property<String> getCliPluginClass()

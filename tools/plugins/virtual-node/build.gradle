@@ -25,7 +25,9 @@ dependencies {
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 
-cliPlugin {
+apply plugin: "corda.gradle-cli-plugin"
+
+cliPlugin{
     cliPluginClass = cliPluginClass
     cliPluginId = cliPluginId
     cliPluginProvider = cliPluginProvider
