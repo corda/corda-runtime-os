@@ -196,10 +196,10 @@ class VirtualNodeRpcTest {
     fun `list virtual nodes`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val json = vNodeList().toJson()["virtualNodes"].first()
-            val actualX500Name = json["holdingIdentity"]["x500Name"].textValue()
-
-            assertThat(actualX500Name).isEqualTo(X500_ALICE)
+            val aliceVNode = vNodeList().toJson()["virtualNodes"].find { json ->
+                json["holdingIdentity"]["x500Name"].textValue() == X500_ALICE
+            }
+            assertThat(aliceVNode).isNotNull
         }
     }
 
