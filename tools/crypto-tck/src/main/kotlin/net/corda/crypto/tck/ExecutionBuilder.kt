@@ -2,9 +2,7 @@ package net.corda.crypto.tck
 
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.file.Path
 import java.time.Duration
@@ -138,11 +136,11 @@ class ExecutionBuilder(
     }
 
     private fun defaultSessionComplianceSpec() = if (ifSupported(ECDSA_SECP256R1_CODE_NAME)) {
-        Pair(ECDSA_SECP256R1_CODE_NAME, ECDSA_SHA256_SIGNATURE_SPEC)
+        Pair(ECDSA_SECP256R1_CODE_NAME, SignatureSpec.ECDSA_SHA256)
     } else if (ifSupported(ECDSA_SECP256K1_CODE_NAME)) {
-        Pair(ECDSA_SECP256K1_CODE_NAME, ECDSA_SHA256_SIGNATURE_SPEC)
+        Pair(ECDSA_SECP256K1_CODE_NAME, SignatureSpec.ECDSA_SHA256)
     } else if (ifSupported(RSA_CODE_NAME)) {
-        Pair(RSA_CODE_NAME, RSA_SHA256_SIGNATURE_SPEC)
+        Pair(RSA_CODE_NAME, SignatureSpec.RSA_SHA256)
     } else {
         throw IllegalArgumentException(
             "Please specify the session spec explicitly as none of the default schemes are supported."

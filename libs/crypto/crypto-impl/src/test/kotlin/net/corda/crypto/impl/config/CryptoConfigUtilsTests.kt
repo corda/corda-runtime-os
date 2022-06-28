@@ -131,6 +131,38 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
+    fun `Should be able to get BusProcessorConfig and its properties for ops operations`() {
+        val config = smartConfig.opsBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for flow ops operations`() {
+        val config = smartConfig.flowBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for hsm config operations`() {
+        val config = smartConfig.hsmConfigBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for hsm registration operations`() {
+        val config = smartConfig.hsmRegistrationBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
     fun `Should throw IllegalStateException when soft persistence is missing`() {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
@@ -151,6 +183,38 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.hsmPersistence()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when ops operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.opsBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when flow ops operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.flowBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when hsm config operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.hsmConfigBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when hsm registration operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.opsBusProcessor()
         }
     }
 
@@ -251,6 +315,26 @@ class CryptoConfigUtilsTests {
         )
         assertThrows<IllegalStateException> {
             config.maximumSize
+        }
+    }
+
+    @Test
+    fun `BusProcessorConfig should throw IllegalStateException when maxAttempts is empty`() {
+        val config = BusProcessorConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<IllegalStateException> {
+            config.maxAttempts
+        }
+    }
+
+    @Test
+    fun `BusProcessorConfig should throw IllegalStateException when waitBetweenMills is empty`() {
+        val config = BusProcessorConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<IllegalStateException> {
+            config.waitBetweenMills
         }
     }
 

@@ -9,12 +9,8 @@ import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -34,14 +30,14 @@ abstract class AbstractHSM(
 
     protected val supportedSchemesMap = produceSupportedSchemes(schemeMetadata, mapOf(
         RSA_CODE_NAME to listOf(
-            RSA_SHA256_SIGNATURE_SPEC,
-            RSASSA_PSS_SHA256_SIGNATURE_SPEC
+            SignatureSpec.RSA_SHA256,
+            SignatureSpec.RSASSA_PSS_SHA256
         ),
         ECDSA_SECP256R1_CODE_NAME to listOf(
-            ECDSA_SHA256_SIGNATURE_SPEC
+            SignatureSpec.ECDSA_SHA256
         ),
         EDDSA_ED25519_CODE_NAME to listOf(
-            EDDSA_ED25519_SIGNATURE_SPEC
+            SignatureSpec.EDDSA_ED25519
         )
     ))
 

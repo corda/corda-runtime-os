@@ -2,8 +2,6 @@ package net.corda.p2p.linkmanager
 
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.PEMParser
@@ -22,8 +20,8 @@ internal class PublicKeyReader {
 
         internal fun KeyAlgorithm.getSignatureSpec(): SignatureSpec {
             return when (this) {
-                KeyAlgorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
-                KeyAlgorithm.ECDSA -> ECDSA_SHA256_SIGNATURE_SPEC
+                KeyAlgorithm.RSA -> SignatureSpec.RSA_SHA256
+                KeyAlgorithm.ECDSA -> SignatureSpec.ECDSA_SHA256
             }
         }
     }
