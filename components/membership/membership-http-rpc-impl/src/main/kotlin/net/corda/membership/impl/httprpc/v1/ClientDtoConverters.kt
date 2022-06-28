@@ -14,7 +14,8 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
  */
 fun MemberRegistrationRequest.toDto() = MemberRegistrationRequestDto(
     holdingIdentityId,
-    action.toDto()
+    action.toDto(),
+    context
 )
 
 /**
