@@ -1,10 +1,13 @@
+import groovy.transform.CompileStatic
+import javax.inject.Inject
 
-CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension)
+CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension, project.name)
 
 def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     archiveBaseName = cliPlugin.cliPluginId
+    archiveClassifier = 'plugin'
     from sourceSets.main.output
     dependsOn configurations.runtimeClasspath
     from {
@@ -30,9 +33,18 @@ artifacts {
     archives cliPluginPackager
 }
 
-interface CliPluginPackagerExtension {
-    Property<String> getCliPluginId()
-    Property<String> getCliPluginClass()
-    Property<String> getCliPluginProvider()
-    Property<String> getCliPluginDescription()
+@CompileStatic
+class CliPluginPackagerExtension {
+    @Inject
+    CliPluginPackagerExtension(ObjectFactory objects, String defaultPluginId) {
+        cliPluginId = objects.property(String).convention(defaultPluginId)
+        cliPluginClass = objects.property(String)
+        cliPluginProvider = objects.property(String)
+        cliPluginDescription = objects.property(String)
+    }
+
+    final Property<String> cliPluginId
+    final Property<String> cliPluginClass
+    final Property<String> cliPluginProvider
+    final Property<String> cliPluginDescription
 }

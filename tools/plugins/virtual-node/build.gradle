@@ -25,13 +25,10 @@ dependencies {
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 
-apply plugin: "corda.cli-plugin-packager"
-
-cliPlugin{
-    cliPluginClass = cliPluginClass
-    cliPluginId = cliPluginId
-    cliPluginProvider = cliPluginProvider
-    cliPluginDescription = cliPluginDescription
+cliPlugin {
+    cliPluginClass = 'something'
+    cliPluginProvider = 'R3'
+    cliPluginDescription = 'Eeny, meeny...'
 }
 
 tasks.named("installDist") {
