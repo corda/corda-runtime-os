@@ -5,6 +5,9 @@ global:
   storageClass: corda-sc
 
 kafka:
+  auth:
+    enabled: true
+    clientProtocol: sasl_tls
   replicaCount: 3
   resources:
     requests:

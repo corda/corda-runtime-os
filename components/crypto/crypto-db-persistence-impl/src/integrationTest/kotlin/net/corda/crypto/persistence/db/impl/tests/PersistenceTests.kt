@@ -64,7 +64,6 @@ import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -1007,10 +1006,10 @@ class PersistenceTests {
     }
 
     @Test
-    fun `linkCategories should throw CryptoServiceLibraryException if config does not exist`() {
+    fun `linkCategories should throw IllegalStateException if config does not exist`() {
         val cache = createHSMCacheImpl()
         cache.act {
-            assertThrows(CryptoServiceLibraryException::class.java) {
+            assertThrows(IllegalStateException::class.java) {
                 it.linkCategories(
                     UUID.randomUUID().toString(), listOf(
                         HSMCategoryInfo(

@@ -94,7 +94,7 @@ class AllWrappedKeysHSM(
         return sign(spec, privateKey, data)
     }
 
-    override fun delete(alias: String, context: Map<String, String>) {
+    override fun delete(alias: String, context: Map<String, String>): Boolean {
         throw UnsupportedOperationException()
     }
 }

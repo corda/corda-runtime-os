@@ -1,10 +1,10 @@
 package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
-import net.corda.crypto.impl.components.DigestServiceImpl
-import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
@@ -279,7 +279,7 @@ class TestServicesFactory {
             return impl.sign(spec, data, context)
         }
 
-        override fun delete(alias: String, context: Map<String, String>) =
+        override fun delete(alias: String, context: Map<String, String>): Boolean =
             impl.delete(alias, context)
     }
 }

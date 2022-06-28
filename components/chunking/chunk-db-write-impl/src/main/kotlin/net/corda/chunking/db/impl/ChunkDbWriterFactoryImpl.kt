@@ -20,6 +20,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
+import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -95,8 +96,14 @@ class ChunkDbWriterFactoryImpl(
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
-        val validator =
-            CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
+        val validator = CpiValidatorImpl(
+            statusPublisher,
+            persistence,
+            cpiInfoWriteService,
+            cpiCacheDir,
+            cpiPartsDir,
+            UTCClock()
+        )
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {

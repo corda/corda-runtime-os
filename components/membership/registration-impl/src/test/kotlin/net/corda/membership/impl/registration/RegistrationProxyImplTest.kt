@@ -9,8 +9,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.GroupPolicyExtension
 import net.corda.membership.impl.GroupPolicyImpl

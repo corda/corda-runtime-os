@@ -1,9 +1,9 @@
 package net.corda.cpk.read
 
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.lifecycle.Lifecycle
 import net.corda.libs.packaging.Cpk
+import net.corda.v5.crypto.SecureHash
 
 interface CpkReadService : Lifecycle {
-    fun get(cpkId: CpkIdentifier): Cpk?
+    fun get(cpkFileChecksum: SecureHash): Cpk?
 }

@@ -114,13 +114,6 @@ DB client image
 {{- end }}
 
 {{/*
-Kafka client image
-*/}}
-{{- define "corda.kafkaClientImage" -}}
-"{{- if .Values.kafka.clientImage.registry }}{{.Values.kafka.clientImage.registry}}/{{- end }}{{ .Values.kafka.clientImage.repository }}:{{ .Values.kafka.clientImage.tag }}"
-{{- end }}
-
-{{/*
 Resources for the bootstrapper
 */}}
 {{- define "corda.bootstrapResources" }}
@@ -146,15 +139,26 @@ resources:
 Worker JAVA_TOOL_OPTIONS
 */}}
 {{- define "corda.workerJavaToolOptions" -}}
-{{- if ( get .Values.workers .worker ).debug.enabled -}}
 - name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}{{- if .Values.kafka.sasl.enabled -}} -Djava.security.auth.login.config=/etc/config/jaas.conf {{ end }}
-{{- else -}}
-{{- if .Values.kafka.sasl.enabled -}}
-- name: JAVA_TOOL_OPTIONS
-  value: -Djava.security.auth.login.config=/etc/config/jaas.conf 
-{{- end }}
-{{- end }}
+  value: {{- if ( get .Values.workers .worker ).debug.enabled }}
+      -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+    {{- end -}}
+    {{- if .Values.kafka.sasl.enabled }}
+      -Djava.security.auth.login.config=/etc/config/jaas.conf
+    {{- end -}}
+    {{- if .Values.openTelemetry.enabled }}
+      -javaagent:/opt/override/opentelemetry-javaagent-1.15.0.jar
+      -Dotel.resource.attributes=service.name={{ .worker }}-worker
+      -Dotel.instrumentation.common.default-enabled=false
+      -Dotel.instrumentation.runtime-metrics.enabled=true
+      {{- if .Values.openTelemetry.endpoint }}
+      -Dotel.exporter.otlp.endpoint={{ .Values.openTelemetry.endpoint }}
+      -Dotel.exporter.otlp.protocol={{ .Values.openTelemetry.protocol }}
+      {{- else }}
+      -Dotel.metrics.exporter=logging
+      -Dotel.traces.exporter=logging
+      {{- end -}}
+    {{- end -}}
 {{- end }}
 
 {{/*

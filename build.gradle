@@ -310,18 +310,13 @@ subprojects {
         }
     }
     
-    // NOTE: Needed to ensure we do not normalize projects which apply CPK plugin
-    afterEvaluate {
-        if (!pluginManager.hasPlugin("net.corda.plugins.cordapp-cpk")) {
-            // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
-            // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
-            // a task is up-to-date, this has no impact on publishing or production of jar.
-            normalization {
-                runtimeClasspath {
-                    metaInf {
-                        ignoreAttribute("Bnd-LastModified")
-                    }
-                }
+    // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
+    // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
+    // a task is up-to-date, this has no impact on publishing or production of jar.
+    normalization {
+        runtimeClasspath {
+            metaInf {
+                ignoreAttribute("Bnd-LastModified")
             }
         }
     }
@@ -350,6 +345,8 @@ subprojects {
     task allDependencies(type: DependencyReportTask) {}
 
     configurations {
+        // configuration used by DeployableContainerBuilder to add dependencies to Docker images
+        image { transitive = false }
         all {
             resolutionStrategy {
                 // FORCE Gradle to use latest dynamic versions.

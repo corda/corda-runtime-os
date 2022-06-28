@@ -60,16 +60,16 @@ class ClusterBuilder {
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
     /** Get status of a flow */
-    fun flowStatus(holdingIdHash: String, clientRequestId: Int) =
-        client!!.get("/api/v1/flow/$holdingIdHash/r$clientRequestId")
+    fun flowStatus(holdingIdHash: String, clientRequestId: String) =
+        client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId")
 
     /** Start a flow */
     fun flowStart(
         holdingIdHash: String,
-        clientRequestId: Int,
+        clientRequestId: String,
         flowClassName: String,
         body: String
-    ) = client!!.put("/api/v1/flow/$holdingIdHash/r$clientRequestId/$flowClassName", body)
+    ) = client!!.put("/api/v1/flow/$holdingIdHash/$clientRequestId/$flowClassName", body)
 }
 
-fun cluster(initialize: ClusterBuilder.() -> Unit) = ClusterBuilder().apply(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

@@ -1,6 +1,6 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import net.corda.membership.GroupPolicy
+import net.corda.membership.lib.GroupPolicy
 
 class StaticMemberTemplateExtension {
     companion object {

@@ -13,6 +13,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.Cpi
@@ -28,17 +29,16 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.toCpkKey
 import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpkKey
-import net.corda.libs.packaging.core.CpkIdentifier
 
 /**
  * This class provides some simple APIs to interact with the database.
  */
 @Suppress("TooManyFunctions")
 class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFactory) : ChunkPersistence {
-
     private companion object {
         val log = contextLogger()
 
@@ -231,17 +231,36 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
-            val cpkMetadataEntities = createOrUpdateCpkMetadataEntities(cpi, emptyMap())
 
-            val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpkMetadataEntities)
-            
+            val cpiCpkEntities = cpi.cpks.mapTo(HashSet()) { cpk ->
+                CpiCpkEntity(
+                    CpiCpkKey(
+                        cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
+                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
+                    ),
+                    cpk.originalFileName!!,
+                    cpk.metadata.fileChecksum.toString(),
+                    CpkMetadataEntity(
+                        cpk.metadata.cpkId.toCpkKey(),
+                        cpk.metadata.fileChecksum.toString(),
+                        cpk.metadata.manifest.cpkFormatVersion.toString(),
+                        cpk.metadata.toJsonAvro()
+                    )
+                )
+            }
+
+            val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpiCpkEntities)
+
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
-            
+
             val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
             cpkFileEntities.forEach { em.merge(it) }
+
+            cpkDbChangeLogEntities.forEach { em.merge(it) }
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -252,7 +271,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
@@ -271,7 +291,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
 
-            val cpiCpkEntities = createOrUpdateCpkMetadataEntities(cpi, existingMetadataEntity.cpks.associateBy { it.metadata.id })
+            val cpiCpkEntities = createOrUpdateCpiCpkEntities(cpi, existingMetadataEntity.cpks.associateBy { it.metadata.id })
 
             val updatedMetadata = existingMetadataEntity.update(
                 fileUploadRequestId = requestId,
@@ -284,6 +304,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
             cpkFileEntities.forEach { em.merge(it) }
+            cpkDbChangeLogEntities.forEach { em.merge(it) }
 
             return cpiMetadataEntity
         }
@@ -307,7 +328,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             // In case of force update, we want the entity to change regardless of whether the CPI being uploaded
             //  is identical to an existing.
             //  OPTIMISTIC_FORCE_INCREMENT means the version number will always be bumped.
-            LockModeType.OPTIMISTIC_FORCE_INCREMENT)
+            LockModeType.OPTIMISTIC_FORCE_INCREMENT
+        )
     }
 
     private fun getCpiMetadataEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
@@ -335,7 +357,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpiCpkEntities: List<Pair<String, CpiCpkEntity>>
+        cpiCpkEntities: Set<CpiCpkEntity>
     ): CpiMetadataEntity {
         val cpiMetadata = cpi.metadata
 
@@ -352,56 +374,37 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         )
     }
 
-    private fun createOrUpdateCpkMetadataEntities(cpi: Cpi, existingCpks: Map<CpkKey, CpiCpkEntity>): List<Pair<String, CpiCpkEntity>> {
-        return cpi.cpks.map { cpk ->
+    private fun createOrUpdateCpiCpkEntities(cpi: Cpi, existingCpks: Map<CpkKey, CpiCpkEntity>): Set<CpiCpkEntity> {
+        return cpi.cpks.mapTo(HashSet()) { cpk ->
             val cpkKey = cpk.metadata.cpkId.toCpkKey()
-            val existingCpiCpkEntity = existingCpks[cpkKey]
+            val entityToUpdate = existingCpks[cpkKey]
 
-            val cpiCpkEntity: CpiCpkEntity = if(existingCpiCpkEntity != null) {
-                updateExistingCpiCpkEntity(existingCpiCpkEntity, cpk)
+            if (entityToUpdate != null) {
+                cpk.originalFileName?.let { entityToUpdate.cpkFileName = it }
+                entityToUpdate.cpkFileChecksum = cpk.metadata.fileChecksum.toString()
+                entityToUpdate.isDeleted = false
+                entityToUpdate.metadata.cpkFileChecksum = cpk.metadata.fileChecksum.toString()
+                entityToUpdate.metadata.serializedMetadata = cpk.metadata.toJsonAvro()
+                entityToUpdate.metadata.formatVersion = cpk.metadata.manifest.cpkFormatVersion.toString()
+                entityToUpdate
             } else {
-                createNewCpiCpkEntity(cpi, cpk, cpkKey)
+                CpiCpkEntity(
+                    CpiCpkKey(
+                        cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash.toString(),
+                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
+                    ),
+                    cpk.originalFileName!!,
+                    cpk.metadata.fileChecksum.toString(),
+                    CpkMetadataEntity(
+                        cpkKey,
+                        cpk.metadata.fileChecksum.toString(),
+                        cpk.metadata.manifest.cpkFormatVersion.toString(),
+                        cpk.metadata.toJsonAvro()
+                    )
+                )
             }
-            cpk.originalFileName!! to cpiCpkEntity
         }
     }
-
-    private fun createNewCpiCpkEntity(
-        cpi: Cpi,
-        cpk: Cpk,
-        cpkKey: CpkKey
-    ) = CpiCpkEntity(
-        CpiCpkKey(
-            cpi.metadata.cpiId.name,
-            cpi.metadata.cpiId.version,
-            cpi.metadata.cpiId.signerSummaryHash.toString(),
-            cpk.metadata.cpkId.name,
-            cpk.metadata.cpkId.version,
-            cpk.metadata.cpkId.signerSummaryHash.toString(),
-        ),
-        cpk.originalFileName!!,
-        cpk.metadata.fileChecksum.toString(),
-        CpkMetadataEntity(
-            cpkKey,
-            cpk.metadata.fileChecksum.toString(),
-            "1",
-            cpk.metadata.toJsonAvro()
-        )
-    )
-
-    private fun updateExistingCpiCpkEntity(
-        existingCpiCpkEntity: CpiCpkEntity,
-        cpk: Cpk
-    ) = existingCpiCpkEntity.update(
-        cpk.originalFileName ?: existingCpiCpkEntity.cpkFileName,
-        cpk.metadata.fileChecksum.toString(),
-        existingCpiCpkEntity.metadata.update(
-            cpk.metadata.fileChecksum.toString(),
-            "1",
-            cpk.metadata.toJsonAvro(),
-            false
-        )
-    )
 
     private fun createOrUpdateExistingCpkFileEntities(em: EntityManager, cpks: Collection<Cpk>): List<CpkFileEntity> {
         val query = """
@@ -418,17 +421,19 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             val cpkKey = cpk.metadata.cpkId.toCpkKey()
             val existingCpkFileEntity = existingCpkFileEntities[cpkKey]
 
-            existingCpkFileEntity?.update(
-                cpk.metadata.fileChecksum.toString(),
-                Files.readAllBytes(cpk.path!!)
-            )
-                ?: CpkFileEntity(
+            if (existingCpkFileEntity != null) {
+                if(existingCpkFileEntity.fileChecksum != cpk.metadata.fileChecksum.toString()) {
+                    existingCpkFileEntity.fileChecksum = cpk.metadata.fileChecksum.toString()
+                    existingCpkFileEntity.data = Files.readAllBytes(cpk.path!!)
+                }
+                existingCpkFileEntity
+            } else {
+                CpkFileEntity(
                     cpkKey,
                     cpk.metadata.fileChecksum.toString(),
                     Files.readAllBytes(cpk.path!!)
                 )
+            }
         }
     }
-
-    private fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHash.toString())
 }

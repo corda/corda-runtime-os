@@ -6,8 +6,6 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.PublicKey
@@ -88,9 +86,9 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
      * the provided alias or return normally without overriding the key.
      * @param context the optional key/value operation context.
      *
-     * @throws [CryptoServiceBadRequestException] if a key already exists under this alias
+     * @throws IllegalArgumentException if a key already exists under this alias
      * and [failIfExists] is set to true.
-     * @throws [CryptoServiceException] for general cryptographic exceptions.
+     * @throws net.corda.v5.crypto.failures.CryptoException for general cryptographic exceptions.
      */
     fun createWrappingKey(
         configId: String,

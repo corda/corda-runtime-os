@@ -13,10 +13,14 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.cpi.datamodel.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
+import net.corda.libs.cpi.datamodel.CpkKey
+import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -53,10 +57,6 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.NoResultException
 import javax.persistence.NonUniqueResultException
 import javax.persistence.PersistenceException
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
-import net.corda.libs.cpi.datamodel.CpkKey
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseChunkPersistenceTest {
@@ -111,7 +111,7 @@ internal class DatabaseChunkPersistenceTest {
     }
 
     /** Return the parts we've received - i.e. chunks with non-zero bytes */
-    fun partsReceived(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
+    private fun partsReceived(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
         return entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
                 "SELECT count(c) FROM ${ChunkEntity::class.simpleName} c " +
@@ -123,7 +123,7 @@ internal class DatabaseChunkPersistenceTest {
     }
 
     /** Return the expected number of parts - i.e. the part number on the zero bytes chunk */
-    fun partsExpected(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
+    private fun partsExpected(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
         return entityManagerFactory.createEntityManager().transaction {
             try {
                 (it.createQuery(
@@ -413,7 +413,14 @@ internal class DatabaseChunkPersistenceTest {
         val cpks = listOf(mockCpk("${UUID.randomUUID()}.cpk", checksum))
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "abcdef")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            checksum,
+            UUID.randomUUID().toString(),
+            "abcdef",
+            emptyList()
+        )
 
         val query = "FROM ${CpkFileEntity::class.simpleName} where fileChecksum = :cpkFileChecksum"
         val cpkDataEntity = entityManagerFactory.createEntityManager().transaction {
@@ -432,7 +439,14 @@ internal class DatabaseChunkPersistenceTest {
 
         val cpks = listOf(mockCpk("${UUID.randomUUID()}.cpk", checksum))
         val cpi = mockCpi(cpks)
-        persistence.persistMetadataAndCpks(cpi, "someFileName.cpi", checksum, UUID.randomUUID().toString(), "abcdef")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "someFileName.cpi",
+            checksum,
+            UUID.randomUUID().toString(),
+            "abcdef",
+            emptyList()
+        )
         assertThat(persistence.cpkExists(checksum)).isTrue
     }
 
@@ -452,10 +466,24 @@ internal class DatabaseChunkPersistenceTest {
 
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            checksum,
+            UUID.randomUUID().toString(),
+            "123456",
+            emptyList()
+        )
 
         assertThrows<PersistenceException> {
-            persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
+            persistence.persistMetadataAndCpks(
+                cpi,
+                "test.cpi",
+                checksum,
+                UUID.randomUUID().toString(),
+                "123456",
+                emptyList()
+            )
         }
     }
 
@@ -474,7 +502,8 @@ internal class DatabaseChunkPersistenceTest {
             "test.cpi",
             newRandomSecureHash(),
             UUID.randomUUID().toString(),
-            "123456"
+            "123456",
+            emptyList()
         )
 
         val cpk2 = mockCpk("${UUID.randomUUID()}.cpk", cpk2Checksum)
@@ -486,7 +515,8 @@ internal class DatabaseChunkPersistenceTest {
                 "test.cpi",
                 newRandomSecureHash(),
                 UUID.randomUUID().toString(),
-                "123456"
+                "123456",
+                emptyList()
             )
         }
 
@@ -504,7 +534,14 @@ internal class DatabaseChunkPersistenceTest {
         val cpiFileName = "test${UUID.randomUUID()}.cpi"
 
         val cpiMetadataEntity =
-            persistence.persistMetadataAndCpks(cpi, cpiFileName, newRandomSecureHash(), UUID.randomUUID().toString(), "abcdef")
+            persistence.persistMetadataAndCpks(
+                cpi,
+                cpiFileName,
+                newRandomSecureHash(),
+                UUID.randomUUID().toString(),
+                "abcdef",
+                emptyList()
+            )
 
         assertThat(cpiMetadataEntity.entityVersion).isEqualTo(1)
         assertThat(cpiMetadataEntity.cpks.size).isEqualTo(1)
@@ -532,12 +569,19 @@ internal class DatabaseChunkPersistenceTest {
         val updatedCpi = mockCpiWithId(updatedCpks, cpi.metadata.cpiId)
 
         val returnedCpiMetadataEntity =
-            persistence.updateMetadataAndCpks(updatedCpi, cpiFileName, newRandomSecureHash(), UUID.randomUUID().toString(), "abcdef")
+            persistence.updateMetadataAndCpks(
+                updatedCpi,
+                cpiFileName,
+                newRandomSecureHash(),
+                UUID.randomUUID().toString(),
+                "abcdef",
+                emptyList()
+            )
 
         assertThat(returnedCpiMetadataEntity.entityVersion).isEqualTo(3)
         val firstReturnedCpk = returnedCpiMetadataEntity.cpks.first { it.cpkFileChecksum == cpkChecksum.toString() }
         val secondReturnedCpk = returnedCpiMetadataEntity.cpks.first { it.cpkFileChecksum == updatedCpkChecksum.toString() }
-        assertThat(firstReturnedCpk.entityVersion).isEqualTo(1)
+        assertThat(firstReturnedCpk.entityVersion).isEqualTo(0)
         assertThat(secondReturnedCpk.entityVersion).isEqualTo(0)
 
         // make same assertions but after loading the entity again
@@ -555,7 +599,7 @@ internal class DatabaseChunkPersistenceTest {
         assertThat(updatedLoadedCpi.entityVersion).isEqualTo(3)
         val firstCpk = updatedLoadedCpi.cpks.first { it.cpkFileChecksum == cpkChecksum.toString() }
         val secondCpk = updatedLoadedCpi.cpks.first { it.cpkFileChecksum == updatedCpkChecksum.toString() }
-        assertThat(firstCpk.entityVersion).isEqualTo(1)
+        assertThat(firstCpk.entityVersion).isEqualTo(0)
         assertThat(secondCpk.entityVersion).isEqualTo(0)
     }
 
@@ -567,7 +611,14 @@ internal class DatabaseChunkPersistenceTest {
         val cpks = listOf(cpk1)
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            cpiChecksum,
+            UUID.randomUUID().toString(),
+            "abcdef",
+            emptyList()
+        )
 
         val loadedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(
@@ -585,7 +636,14 @@ internal class DatabaseChunkPersistenceTest {
         assertThat(loadedCpi.cpks.first().entityVersion).isEqualTo(0)
 
         // force update same CPI
-        persistence.updateMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        persistence.updateMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            cpiChecksum,
+            UUID.randomUUID().toString(),
+            "abcdef",
+            emptyList()
+        )
 
         val updatedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(
@@ -601,7 +659,7 @@ internal class DatabaseChunkPersistenceTest {
         // merging updated cpi accounts for 1 modification + modifying cpk
         assertThat(updatedCpi.entityVersion).isEqualTo(3)
         assertThat(updatedCpi.cpks.size).isEqualTo(1)
-        assertThat(updatedCpi.cpks.first().entityVersion).isEqualTo(1)
+        assertThat(updatedCpi.cpks.first().entityVersion).isEqualTo(0)
     }
 
     @Test
@@ -609,14 +667,42 @@ internal class DatabaseChunkPersistenceTest {
         val sharedCpk = mockCpk("${UUID.randomUUID()}.cpk", newRandomSecureHash())
         val cpi = mockCpi(listOf(sharedCpk))
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-a")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-a",
+            emptyList()
+        )
 
         val cpi2 = mockCpi(listOf(sharedCpk))
 
-        persistence.persistMetadataAndCpks(cpi2, "test2.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-b")
+        persistence.persistMetadataAndCpks(
+            cpi2,
+            "test2.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-b",
+            emptyList()
+        )
 
-        findAndAssertCpk(cpi.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpk.metadata.fileChecksum.toString(), 0, 1, 0)
-        findAndAssertCpk(cpi2.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpk.metadata.fileChecksum.toString(), 0, 1, 0)
+        findAndAssertCpk(
+            cpi.metadata.cpiId,
+            sharedCpk.metadata.cpkId,
+            sharedCpk.metadata.fileChecksum.toString(),
+            0,
+            1,
+            0
+        )
+        findAndAssertCpk(
+            cpi2.metadata.cpiId,
+            sharedCpk.metadata.cpkId,
+            sharedCpk.metadata.fileChecksum.toString(),
+            0,
+            1,
+            0
+        )
     }
 
     @Test
@@ -625,16 +711,30 @@ internal class DatabaseChunkPersistenceTest {
         val newCpk = mockCpk("${UUID.randomUUID()}.cpk", newRandomSecureHash())
         val cpi = mockCpi(listOf(cpk))
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-a")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-a",
+            emptyList()
+        )
 
         // a new cpi object, but with same
         val updatedCpi = mockCpiWithId(listOf(cpk, newCpk), cpi.metadata.cpiId)
 
-        persistence.updateMetadataAndCpks(updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-b")
+        persistence.updateMetadataAndCpks(
+            updatedCpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-b",
+            emptyList()
+        )
 
         assertThat(cpi.metadata.cpiId).isEqualTo(updatedCpi.metadata.cpiId)
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, cpk.metadata.fileChecksum.toString(), 0, 1, 1)
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, cpk.metadata.fileChecksum.toString(), 0, 1, 0)
         findAndAssertCpk(cpi.metadata.cpiId, newCpk.metadata.cpkId, newCpk.metadata.fileChecksum.toString(), 0, 0, 0)
     }
 
@@ -645,22 +745,86 @@ internal class DatabaseChunkPersistenceTest {
         val updatedCpk = updatedCpk(cpk.metadata.cpkId, newChecksum)
         val cpi = mockCpi(listOf(cpk))
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-a")
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-a",
+            emptyList()
+        )
 
         // a new cpi object, but with same
         val updatedCpi = mockCpiWithId(listOf(updatedCpk), cpi.metadata.cpiId)
 
-        persistence.updateMetadataAndCpks(updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-b")
+        persistence.updateMetadataAndCpks(
+            updatedCpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-b",
+            emptyList()
+        )
 
         assertThat(cpi.metadata.cpiId).isEqualTo(updatedCpi.metadata.cpiId)
 
         findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, newChecksum.toString(), 1, 2, 1)
     }
 
+    @Test
+    fun `CPK version is incremented when CpiCpkEntity has non-zero entityversion`() {
+        val firstCpkChecksum = newRandomSecureHash()
+        val cpk = mockCpk("${UUID.randomUUID()}.cpk", firstCpkChecksum)
+        val cpi = mockCpi(listOf(cpk))
+
+        persistence.persistMetadataAndCpks(
+            cpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-a",
+            emptyList()
+        )
+
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, firstCpkChecksum.toString(), 0, 0, 0)
+
+        // a new cpi object, but with same cpk
+        val secondCpkChecksum = newRandomSecureHash()
+        val updatedCpk = updatedCpk(cpk.metadata.cpkId, secondCpkChecksum)
+        val updatedCpi = mockCpiWithId(listOf(updatedCpk), cpi.metadata.cpiId)
+
+        persistence.updateMetadataAndCpks(
+            updatedCpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-b",
+            emptyList()
+        )
+
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, secondCpkChecksum.toString(), 1, 2, 1)
+
+        // a new cpi object, but with same cpk
+        val thirdChecksum = newRandomSecureHash()
+        val anotherUpdatedCpk = updatedCpk(cpk.metadata.cpkId, thirdChecksum)
+        val anotherUpdatedCpi = mockCpiWithId(listOf(anotherUpdatedCpk), cpi.metadata.cpiId)
+
+        persistence.updateMetadataAndCpks(
+            anotherUpdatedCpi,
+            "test.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-b",
+            emptyList()
+        )
+
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, thirdChecksum.toString(), 2, 4, 2)
+    }
+
     private fun findAndAssertCpk(
         cpiId: CpiIdentifier,
         cpkId: CpkIdentifier,
-        expectedFileChecksum: String,
+        expectedCpkFileChecksum: String,
         expectedMetadataEntityVersion: Int,
         expectedFileEntityVersion: Int,
         expectedCpiCpkEntityVersion: Int
@@ -685,8 +849,8 @@ internal class DatabaseChunkPersistenceTest {
             Triple(cpkMetadata, cpkFile, cpiCpk)
         }
 
-        assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedFileChecksum)
-        assertThat(cpkFile.fileChecksum).isEqualTo(expectedFileChecksum)
+        assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum)
+        assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum)
 
         assertThat(cpkMetadata.entityVersion)
             .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")
