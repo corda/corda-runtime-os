@@ -47,6 +47,7 @@ internal class VirtualNodeWriteEventHandler(
 
         if (msgConfig.hasPath(MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS)) {
             try {
+                virtualNodeWriter?.close()
                 virtualNodeWriter = virtualNodeWriterFactory
                     .create(msgConfig)
                     .apply { start() }
