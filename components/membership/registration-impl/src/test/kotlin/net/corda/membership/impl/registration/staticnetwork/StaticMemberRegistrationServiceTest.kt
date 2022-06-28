@@ -191,7 +191,7 @@ class StaticMemberRegistrationServiceTest {
         setUpPublisher()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        val registrationResult = registrationService.register(alice)
+        val registrationResult = registrationService.register(alice, mock())
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
@@ -246,7 +246,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when name field is empty in the GroupPolicy file`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(bob)
+        val registrationResult = registrationService.register(bob, mock())
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -261,7 +261,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when static network is empty`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(charlie)
+        val registrationResult = registrationService.register(charlie, mock())
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -275,7 +275,7 @@ class StaticMemberRegistrationServiceTest {
     @Test
     fun `registration fails when coordinator is not running`() {
         setUpPublisher()
-        val registrationResult = registrationService.register(alice)
+        val registrationResult = registrationService.register(alice, mock())
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -289,7 +289,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when registering member is not in the static member list`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(daisy)
+        val registrationResult = registrationService.register(daisy, mock())
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
