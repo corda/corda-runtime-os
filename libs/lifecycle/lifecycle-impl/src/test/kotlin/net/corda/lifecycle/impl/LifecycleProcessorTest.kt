@@ -295,7 +295,7 @@ class LifecycleProcessorTest {
             processedEvents++
         }
         val registration = mock<Registration>()
-        val coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val coordinator = mock<LifecycleCoordinatorInternal>()
         state.status = LifecycleStatus.DOWN
         state.postEvent(NewRegistration(registration))
         process(processor, coordinator = coordinator)
@@ -314,7 +314,7 @@ class LifecycleProcessorTest {
             processedEvents++
         }
         val registration = mock<Registration>()
-        val coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val coordinator = mock<LifecycleCoordinatorInternal>()
         state.status = LifecycleStatus.DOWN
         state.registrations.add(registration)
         state.postEvent(CancelRegistration(registration))
@@ -529,7 +529,7 @@ class LifecycleProcessorTest {
     private fun process(
         processor: LifecycleProcessor,
         shouldSucceed: Boolean = true,
-        coordinator: LifecycleCoordinatorRegistrationAccess = mock()
+        coordinator: LifecycleCoordinatorInternal = mock()
     ) {
         val succeeded = processor.processEvents(coordinator, ::timerGenerator)
         assertEquals(shouldSucceed, succeeded)
@@ -569,8 +569,8 @@ class LifecycleProcessorTest {
         }
     }
 
-    private fun setupCoordinatorMock(): LifecycleCoordinatorRegistrationAccess {
-        val coordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+    private fun setupCoordinatorMock(): LifecycleCoordinatorInternal {
+        val coordinator = mock<LifecycleCoordinatorInternal>()
         doReturn(NAME).`when`(coordinator).name
         return coordinator
     }

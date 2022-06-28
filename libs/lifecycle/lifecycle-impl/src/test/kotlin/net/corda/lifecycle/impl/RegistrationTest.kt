@@ -99,8 +99,8 @@ class RegistrationTest {
 
     @Test
     fun `custom event is posted to the registering coordinator`() {
-        val registeringCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
-        val registeredCoordinator = mock<LifecycleCoordinatorRegistrationAccess>()
+        val registeringCoordinator = mock<LifecycleCoordinatorInternal>()
+        val registeredCoordinator = mock<LifecycleCoordinatorInternal>()
         val registration = Registration(setOf(registeredCoordinator), registeringCoordinator)
 
         val customEvent = CustomEvent(registration, "hello world")
@@ -110,8 +110,8 @@ class RegistrationTest {
     }
 
     private inner class RegistrationTestHarness {
-        private val childMocks = listOf<LifecycleCoordinatorRegistrationAccess>(mock(), mock(), mock())
-        private val listeningMock = mock<LifecycleCoordinatorRegistrationAccess>()
+        private val childMocks = listOf<LifecycleCoordinatorInternal>(mock(), mock(), mock())
+        private val listeningMock = mock<LifecycleCoordinatorInternal>()
         private val registration = Registration(childMocks.toSet(), listeningMock)
 
         fun setDependentStatuses(statuses: List<LifecycleStatus>) {

@@ -3,7 +3,7 @@ package net.corda.lifecycle.impl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 
-interface LifecycleCoordinatorRegistrationAccess: LifecycleCoordinator {
+interface LifecycleCoordinatorInternal: LifecycleCoordinator {
     /**
      * Submit an event internally to be processed.  This version is similar to [postEvent]
      * except that messages are *guaranteed* to be processed, even if the coordinator is stopped or closed.

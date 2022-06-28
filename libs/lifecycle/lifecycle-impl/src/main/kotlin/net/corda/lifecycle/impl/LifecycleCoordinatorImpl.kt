@@ -45,7 +45,7 @@ class LifecycleCoordinatorImpl(
     private val registry: LifecycleRegistryCoordinatorAccess,
     private val scheduler: LifecycleCoordinatorScheduler,
     lifecycleEventHandler: LifecycleEventHandler,
-) : LifecycleCoordinatorRegistrationAccess {
+) : LifecycleCoordinatorInternal {
 
     companion object {
         private val logger: Logger = contextLogger()
@@ -140,7 +140,7 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * See [LifecycleCoordinatorRegistrationAccess].
+     * See [LifecycleCoordinatorInternal].
      */
     override fun postInternalEvent(event: LifecycleEvent) {
         lifecycleState.postEvent(event)
@@ -188,7 +188,7 @@ class LifecycleCoordinatorImpl(
             logger.error("An attempt was made to register coordinator $name on itself")
             throw LifecycleException("Attempt was made to register coordinator $name on itself")
         }
-        val coordinatorRegistrationAccess = coordinators.map { it as LifecycleCoordinatorRegistrationAccess }.toSet()
+        val coordinatorRegistrationAccess = coordinators.map { it as LifecycleCoordinatorInternal }.toSet()
         val registration = Registration(coordinatorRegistrationAccess, this)
         postEvent(TrackRegistration(registration))
         coordinators.forEach { it.postEvent(NewRegistration(registration)) }

@@ -1174,9 +1174,74 @@ internal class LifecycleCoordinatorImplTest {
         val coordinator2 = createTestCoordinator { _, _ -> }
         val coordinator3 = createTestCoordinator { _, _ -> }
 
-        coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+        @Suppress("UNUSED_VARIABLE")
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
 
         coordinator2.close()
+        coordinator1.close()
+    }
+
+    @Test
+    fun `closing registered coordinators when the main coordinator is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        @Suppress("UNUSED_VARIABLE")
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator1.close()
+        coordinator2.close()
+        coordinator3.close()
+    }
+
+    @Test
+    fun `closing registeration when the main coordinator is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        @Suppress("UNUSED_VARIABLE")
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator1.close()
+        registration.close()
+    }
+
+    @Test
+    fun `closing a registration which is registered against a closed coordinator doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator2.close()
+        registration.close()
+    }
+
+    @Test
+    fun `closing a registered coordinator after registration is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        registration.close()
+        coordinator2.close()
+        coordinator3.close()
+    }
+
+    @Test
+    fun `closing a coordinator after registration is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        registration.close()
         coordinator1.close()
     }
 
@@ -1184,7 +1249,7 @@ internal class LifecycleCoordinatorImplTest {
         registry: LifecycleRegistryCoordinatorAccess = mock(),
         scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(executor, timerExecutor),
         processor: LifecycleEventHandler
-    ): LifecycleCoordinatorRegistrationAccess {
+    ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,
@@ -1198,7 +1263,7 @@ internal class LifecycleCoordinatorImplTest {
         registry: LifecycleRegistryCoordinatorAccess = mock(),
         scheduler: LifecycleCoordinatorScheduler = TestLifecycleCoordinatorScheduler(),
         processor: LifecycleEventHandler
-    ): LifecycleCoordinatorRegistrationAccess {
+    ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,
