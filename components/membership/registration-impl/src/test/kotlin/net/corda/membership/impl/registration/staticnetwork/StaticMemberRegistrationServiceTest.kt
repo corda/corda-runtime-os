@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.data.membership.PersistentMemberInfo

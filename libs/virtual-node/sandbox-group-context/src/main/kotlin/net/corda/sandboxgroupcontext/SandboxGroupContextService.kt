@@ -1,7 +1,7 @@
 package net.corda.sandboxgroupcontext
 
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.v5.crypto.SecureHash
 
 interface SandboxGroupContextService: AutoCloseable {
     /**
@@ -116,9 +116,9 @@ interface SandboxGroupContextService: AutoCloseable {
     /**
      * Does the service 'contain' the cpks in its cache?
      *
-     *     if (service.hasCpks(virtualNodeContext.cpkIdentifiers)) {
+     *     if (service.hasCpks(virtualNodeContext.cpkIdentifiers.map { it.fileChecksum })) {
      *        service.getOrCreate(virtualNodeContext) { .... }
      *     }
      */
-    fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>) : Boolean
+    fun hasCpks(cpkChecksums: Set<SecureHash>) : Boolean
 }

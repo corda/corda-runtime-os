@@ -345,6 +345,8 @@ subprojects {
     task allDependencies(type: DependencyReportTask) {}
 
     configurations {
+        // configuration used by DeployableContainerBuilder to add dependencies to Docker images
+        image { transitive = false }
         all {
             resolutionStrategy {
                 // FORCE Gradle to use latest dynamic versions.

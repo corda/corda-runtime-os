@@ -33,19 +33,39 @@ class ResetCommand : Runnable {
     )
     lateinit var targetUrl: String
 
-    @Option(names = ["-u", "--user"], description = ["User name"], required = true)
+    @Option(
+        names = ["-u", "--user"],
+        description = ["User name"],
+        required = true
+    )
     lateinit var username: String
 
-    @Option(names = ["-p", "--password"], description = ["Password"], required = true)
+    @Option(
+        names = ["-p", "--password"],
+        description = ["Password"],
+        required = true
+    )
     lateinit var password: String
 
-    @Option(names = ["-pv", "--protocol-version"], required = false, description = ["Minimum protocol version."])
+    @Option(
+        names = ["-pv", "--protocol-version"],
+        required = false,
+        description = ["Minimum protocol version."]
+    )
     var minimumServerProtocolVersion: Int = 1
 
-    @Option(names = ["-c", "--cpi"], required = true, description = ["The path to the CPI file to reset the virtual node with."])
-    lateinit var cpiFileName: String
+    @Option(
+        names = ["-c", "--cpi"],
+        required = true,
+        description = ["The path to the CPI file to reset the virtual node with."]
+    )
+    lateinit var cpiFilePath: String
 
-    @Option(names = ["-w", "--wait"], required = false, description = ["polls for result"])
+    @Option(
+        names = ["-w", "--wait"],
+        required = false,
+        description = ["polls for result"]
+    )
     var wait: Boolean = false
 
     override fun run() {
@@ -55,7 +75,7 @@ class ResetCommand : Runnable {
         virtualNodeMaintenance.use {
             val connection = virtualNodeMaintenance.start()
             with(connection.proxy) {
-                val cpi = File(cpiFileName)
+                val cpi = File(cpiFilePath)
                 if (cpi.extension != "cpi") {
                     println("File type must be .cpi")
                     return
@@ -99,9 +119,10 @@ class ResetCommand : Runnable {
         }
     }
 
-
-
     private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
+        if(targetUrl.endsWith("/")){
+            targetUrl = targetUrl.dropLast(1)
+        }
         return HttpRpcClient(
             baseAddress = "$targetUrl/api/v1/",
             rpcOps.java,

@@ -35,6 +35,8 @@ dependencies {
         exclude group: 'org.osgi'
     }
 
+    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+
     osgiRun {
         frameworkProperties.putAll(
                 'org.osgi.framework.security': 'osgi'

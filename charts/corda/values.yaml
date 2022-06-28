@@ -28,6 +28,15 @@ resources:
   # -- the default CPU/memory resource request for the Corda containers
   requests: {}
 
+# Open Telemetry configuration
+openTelemetry:
+  # -- enables the Open Telemetry Java agent for the Corda workers
+  enabled: false
+  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
+  endpoint:
+  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
+  protocol: "grpc"
+
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
