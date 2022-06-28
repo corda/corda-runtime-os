@@ -4,8 +4,9 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.db.ChunkWriteException
-import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
@@ -93,20 +94,22 @@ class ChunkDbWriterFactoryImpl(
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
-        val persistence = DatabaseChunkPersistence(entityManagerFactory)
+        val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
+        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val validator = CpiValidatorImpl(
             statusPublisher,
-            persistence,
+            chunkPersistence,
+            cpiPersistence,
             cpiInfoWriteService,
             cpiCacheDir,
             cpiPartsDir,
             UTCClock()
         )
-        val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
+        val processor = ChunkWriteToDbProcessor(statusPublisher, chunkPersistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
             Pair(publisher, subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null))
