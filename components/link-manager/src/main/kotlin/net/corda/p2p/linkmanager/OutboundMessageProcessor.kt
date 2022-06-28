@@ -156,9 +156,7 @@ internal class OutboundMessageProcessor(
             }
         } else {
             val markers = if (isReplay) {
-                listOf(
-                    recordForLMSentMarker(messageAndKey.message.header.messageId)
-                )
+                emptyList()
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
@@ -204,7 +202,9 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        return sessionManager.recordsForSessionEstablished(groups, members, state.session, messageAndKey)
+        val list = sessionManager.recordsForSessionEstablished(groups, members, state.session, messageAndKey).toMutableList()
+        list.add(recordForLMSentMarker(messageAndKey.message.header.messageId))
+        return list
     }
 
     private fun recordForLMProcessedMarker(

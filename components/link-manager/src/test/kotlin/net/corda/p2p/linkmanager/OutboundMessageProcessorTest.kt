@@ -281,15 +281,7 @@ class OutboundMessageProcessorTest {
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        assertThat(records).hasSize(1)
-
-        assertThat(records).allSatisfy { record ->
-            assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
-            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
-            val marker = record.value as AppMessageMarker
-            assertThat(marker.marker).isInstanceOf(LinkManagerSentMarker::class.java)
-        }
-
+        assertThat(records).isEmpty()
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
@@ -374,18 +366,13 @@ class OutboundMessageProcessorTest {
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         assertSoftly { softly ->
-            softly.assertThat(records).hasSize(5)
+            softly.assertThat(records).hasSize(4)
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(2)
                 .extracting<LinkOutMessage> { it.value as LinkOutMessage }
                 .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.SESSION_OUT_PARTITIONS }.hasSize(2)
                 .extracting<SessionPartitions> { it.value as SessionPartitions }
                 .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(1)
-                .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-                .allSatisfy {
-                    assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java)
-                }
         }
     }
 
@@ -446,19 +433,21 @@ class OutboundMessageProcessorTest {
         val records = processor.onNext(messages)
 
         assertSoftly { softly ->
-            softly.assertThat(records).hasSize(2 * messages.size)
+            softly.assertThat(records).hasSize(9)
 
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(messages.size)
                 .extracting<LinkOutMessage> { it.value as LinkOutMessage }
                 .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
 
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(messages.size)
-                .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-                .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerProcessedMarker::class.java) }
-
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }
-                .extracting<String> { it.key as String }
-                .containsExactlyElementsOf(messageIds)
+            val markers = records.filter { it.value is AppMessageMarker }
+            assertSoftly {
+                it.assertThat(markers).hasSize(6)
+                it.assertThat(markers.map { it.value as AppMessageMarker }
+                    .filter { it.marker is LinkManagerProcessedMarker }).hasSize(3)
+                it.assertThat(markers.map { it.value as AppMessageMarker }
+                    .filter { it.marker is LinkManagerSentMarker }).hasSize(3)
+                it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+            }
         }
 
         verify(sessionManager, times(messages.size)).dataMessageSent(state.session)
@@ -549,13 +538,7 @@ class OutboundMessageProcessorTest {
             )
         )
 
-        assertThat(records).hasSize(1)
-        assertThat(records).allSatisfy { record ->
-            assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
-            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
-            val marker = record.value as AppMessageMarker
-            assertThat(marker.marker).isInstanceOf(LinkManagerSentMarker::class.java)
-        }
+        assertThat(records).isEmpty()
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
@@ -577,12 +560,20 @@ class OutboundMessageProcessorTest {
 
         val records = processor.onNext(messages)
 
-        assertThat(records).hasSize(messages.size)
+        assertThat(records).hasSize(2)
 
-        assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(messages.size)
-            .allSatisfy { assertThat(it.key).isEqualTo("message-id") }
-            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerProcessedMarker::class.java) }
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("message-id")
+            }
+            it.assertThat(markers).hasSize(2)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerProcessedMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerSentMarker }).hasSize(1)
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+        }
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
