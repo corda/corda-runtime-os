@@ -7,11 +7,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
 class ReconcilerImplTest {
-    lateinit var reconciler: Reconciler
 
     @Test
     fun `reconciler name contains generic arguments`() {
-        reconciler =
+        val reconciler =
             ReconcilerImpl(
                 mock(),
                 mock(),

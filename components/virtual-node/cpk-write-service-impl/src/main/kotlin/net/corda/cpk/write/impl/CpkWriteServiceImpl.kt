@@ -94,6 +94,8 @@ class CpkWriteServiceImpl @Activate constructor(
 
     private var maxAllowedKafkaMsgSize: Int? = null
 
+    private val timerKey = CpkWriteServiceImpl::class.simpleName!!
+
     /**
      * Event loop
      */
@@ -103,7 +105,7 @@ class CpkWriteServiceImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is ReconcileCpkEvent -> onReconcileCpkEvent(coordinator)
-            is StopEvent -> onStopEvent()
+            is StopEvent -> onStopEvent(coordinator)
         }
     }
 
@@ -158,6 +160,7 @@ class CpkWriteServiceImpl @Activate constructor(
         timeout = 20.seconds
 
         timerEventIntervalMs = reconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)
+
         logger.info("CPK write reconciliation interval set to $timerEventIntervalMs ms.")
 
         try {
@@ -170,8 +173,8 @@ class CpkWriteServiceImpl @Activate constructor(
         createCpkChecksumsCache(messagingConfig)
         createCpkStorage()
 
+        scheduleNextReconciliationTask(coordinator)
         coordinator.updateStatus(LifecycleStatus.UP)
-        setReconciliationTimerEvent(coordinator)
     }
 
     private fun onReconcileCpkEvent(coordinator: LifecycleCoordinator) {
@@ -180,13 +183,13 @@ class CpkWriteServiceImpl @Activate constructor(
         } catch (e: Exception) {
             logger.warn("CPK Reconciliation exception: $e")
         }
-        setReconciliationTimerEvent(coordinator)
+        scheduleNextReconciliationTask(coordinator)
     }
 
-    private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
+    private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
         logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
         coordinator.setTimer(
-            "${CpkWriteServiceImpl::class.simpleName}",
+            timerKey,
             timerEventIntervalMs!!
         ) { ReconcileCpkEvent(it) }
     }
@@ -194,7 +197,8 @@ class CpkWriteServiceImpl @Activate constructor(
     /**
      * Close the registration.
      */
-    private fun onStopEvent() {
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+        coordinator.cancelTimer(timerKey)
         closeResources()
     }
 
