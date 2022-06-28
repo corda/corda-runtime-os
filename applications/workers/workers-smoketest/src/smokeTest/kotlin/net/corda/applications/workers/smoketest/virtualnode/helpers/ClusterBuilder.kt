@@ -74,7 +74,8 @@ class ClusterBuilder {
     }
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, flowParams: String) =
-        """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "flowParams" : "$flowParams"} """
+        """{ "httpStartFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "flowParams" : 
+            |"$flowParams"} }""".trimMargin()
 
 }
 
