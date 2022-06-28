@@ -18,9 +18,10 @@ class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
         httpRpcSettings: HttpRpcSettings,
-        multiPartDir: Path
+        multiPartDir: Path,
+        devMode: Boolean
     ): HttpRpcServer {
 
-        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, multiPartDir, devMode = false)
+        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, multiPartDir, devMode = devMode)
     }
 }
