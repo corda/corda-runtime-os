@@ -4,6 +4,11 @@ import javax.inject.Inject
 CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension, project.name)
 
 def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
+    inputs.property('cliPluginId', cliPlugin.cliPluginId)
+    inputs.property('cliPluginClass', cliPlugin.cliPluginClass)
+    inputs.property('cliPluginProvider', cliPlugin.cliPluginProvider)
+    inputs.property('cliPluginDescription', cliPlugin.cliPluginDescription)
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     archiveBaseName = cliPlugin.cliPluginId
