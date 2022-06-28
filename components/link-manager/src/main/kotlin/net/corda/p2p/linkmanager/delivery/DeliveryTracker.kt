@@ -105,7 +105,7 @@ internal class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-                PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
+                PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, true),
             messagingConfiguration
         )
 
