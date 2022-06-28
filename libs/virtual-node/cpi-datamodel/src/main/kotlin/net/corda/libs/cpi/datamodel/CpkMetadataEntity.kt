@@ -16,33 +16,19 @@ import javax.persistence.Version
 @Table(name = "cpk_metadata", schema = DbSchema.CONFIG)
 data class CpkMetadataEntity(
     @EmbeddedId
-    var id: CpkKey,
+    val id: CpkKey,
     @Column(name = "file_checksum", nullable = false, unique = true)
-    val cpkFileChecksum: String,
+    var cpkFileChecksum: String,
     @Column(name = "format_version", nullable = false)
-    val formatVersion: String,
+    var formatVersion: String,
     @Column(name = "metadata", nullable = false)
-    val serializedMetadata: String,
+    var serializedMetadata: String,
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 ) : Serializable {
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
-
-    fun update(
-        fileChecksum: String,
-        formatVersion: String,
-        serializedMetadata: String,
-        isDeleted: Boolean
-    ): CpkMetadataEntity {
-        return this.copy(
-            cpkFileChecksum = fileChecksum,
-            formatVersion = formatVersion,
-            serializedMetadata = serializedMetadata,
-            isDeleted = isDeleted
-        )
-    }
 }
 
 /**
@@ -56,4 +42,4 @@ data class CpkKey(
     var cpkVersion: String,
     @Column(name = "cpk_signer_summary_hash")
     var cpkSignerSummaryHash: String,
-): Serializable
+) : Serializable
