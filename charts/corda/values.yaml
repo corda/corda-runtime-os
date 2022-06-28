@@ -255,7 +255,7 @@ workers:
       annotations: {}
 
   # P2P Link Manager worker configuration
-  p2plinkmanager:
+  p2pLinkManager:
     # p2p-link-manager worker image configuration
     image:
       # -- p2p-link-manager worker image registry, defaults to image.registry

@@ -1,4 +1,4 @@
-{{- $_ := set . "worker" "p2plinkmanager" }}
+{{- $_ := set . "worker" "p2pLinkManager" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.workers.p2plinkmanager.replicaCount }}
+  replicas: {{ .Values.workers.p2pLinkManager.replicaCount }}
   selector:
     matchLabels:
       {{- include "corda.workerSelectorLabels" . | nindent 6 }}
@@ -30,7 +30,7 @@ spec:
                     - key: "app.kubernetes.io/component"
                       operator: In
                       values:
-                        - p2plinkmanager
+                        - p2pLinkManager
                 topologyKey: "kubernetes.io/hostname"
       containers:
       - name: {{ include "corda.workerName" . }}
@@ -46,7 +46,7 @@ spec:
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         # Add health port when porting Link Manager to common worker framework CORE-4424
-        {{- if .Values.workers.p2plinkmanager.debug.enabled }}
+        {{- if .Values.workers.p2pLinkManager.debug.enabled }}
         ports:
           - name: debug
             containerPort: 5005
