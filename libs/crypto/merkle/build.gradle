@@ -6,7 +6,12 @@ plugins {
 description 'Merkle tree related crypto library'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    api 'net.corda:corda-serialization'
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
