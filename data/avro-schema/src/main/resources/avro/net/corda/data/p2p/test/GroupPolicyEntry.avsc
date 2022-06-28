@@ -4,9 +4,9 @@
   "namespace": "net.corda.p2p.test",
   "fields": [
     {
-      "doc": "The group ID",
-      "name": "groupId",
-      "type": "string"
+      "doc": "The holding identity for which the view on the group is provided",
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
       "doc": "The group network type",

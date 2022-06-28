@@ -9,6 +9,11 @@
       "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
+      "doc": "The source identity (x500 name + group ID)",
+      "name": "sourceIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
       "name": "destinationNetworkType",
       "type": "net.corda.p2p.NetworkType"
     },
