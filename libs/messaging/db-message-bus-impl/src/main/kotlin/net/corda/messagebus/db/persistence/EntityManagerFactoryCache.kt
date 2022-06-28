@@ -1,7 +1,5 @@
 package net.corda.messagebus.db.persistence
 
-import net.corda.messagebus.db.configuration.ResolvedConsumerConfig
-import net.corda.messagebus.db.configuration.ResolvedProducerConfig
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -14,8 +12,13 @@ import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
 
-@Component(service = [EmfCache::class])
-class EmfCache @Activate constructor(
+/**
+ * We don't want to use up all available database connections.  So we can
+ * cache the individual [EntityManagerFactory] instances per jdbc connection for
+ * re-use across all of the DB message bus.
+ */
+@Component(service = [EntityManagerFactoryCache::class])
+class EntityManagerFactoryCache @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) {
@@ -30,11 +33,17 @@ class EmfCache @Activate constructor(
         emfs.values.forEach { it.close() }
     }
 
-    fun getEmf(resolvedConfig: ResolvedProducerConfig): EntityManagerFactory {
-        val key = resolvedConfig.jdbcUrl ?: INMEM_EMF
+    fun getEmf(
+        jdbcUrl: String?,
+        jdbcUsername: String,
+        jdbcPassword: String,
+    ): EntityManagerFactory {
+        val key = jdbcUrl ?: INMEM_EMF
         return emfs.computeIfAbsent(key) {
             entityManagerFactoryFactory.create(
-                resolvedConfig,
+                jdbcUrl,
+                jdbcUsername,
+                jdbcPassword,
                 "DB Message Bus for $it",
                 listOf(
                     TopicRecordEntry::class.java,
@@ -45,21 +54,4 @@ class EmfCache @Activate constructor(
             )
         }
     }
-
-    fun getEmf(resolvedConfig: ResolvedConsumerConfig): EntityManagerFactory {
-        val key = resolvedConfig.jdbcUrl ?: INMEM_EMF
-        return emfs.computeIfAbsent(key) {
-            entityManagerFactoryFactory.create(
-                resolvedConfig,
-                "DB Message Bus for $it",
-                listOf(
-                    TopicRecordEntry::class.java,
-                    CommittedPositionEntry::class.java,
-                    TopicEntry::class.java,
-                    TransactionRecordEntry::class.java,
-                ),
-            )
-        }
-    }
-
 }

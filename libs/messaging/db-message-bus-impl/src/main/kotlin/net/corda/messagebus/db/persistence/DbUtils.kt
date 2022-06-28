@@ -30,7 +30,7 @@ fun EntityManagerFactoryFactory.create(
 }
 
 
-private fun EntityManagerFactoryFactory.create(jdbcUrl: String?,
+internal fun EntityManagerFactoryFactory.create(jdbcUrl: String?,
                    jdbcUser: String,
                    jdbcPass: String,
                    persistenceName: String,
