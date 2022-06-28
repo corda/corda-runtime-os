@@ -52,8 +52,8 @@ class MessageConverter {
             networkType: NetworkType
         ): LinkOutHeader {
             return LinkOutHeader(
-                source,
                 peer.holdingIdentity,
+                source,
                 networkType,
                 peer.endPoint,
             )

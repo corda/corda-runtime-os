@@ -284,8 +284,8 @@ class OutboundMessageHandlerTest {
             .isEqualTo(
                 DestinationInfo(
                     URI.create("https://r3.com/"),
-                    "b597e8858a2fa87424f5e8c39dc4f93c.p2p.corda.net",
-                    X500Name("O=PartyA, L=London, C=GB"),
+                    "e7aa0d5c6b562cc528e490d58b7040fe.p2p.corda.net",
+                    X500Name("O=PartyB, L=London, C=GB"),
                     truststore
                 )
             )
@@ -341,7 +341,7 @@ class OutboundMessageHandlerTest {
 
         handler.onNext(Record("", "", message))
 
-        verify(trustStores.constructed().first()).getTrustStore("bbb", GROUP_ID)
+        verify(trustStores.constructed().first()).getTrustStore("aaa", GROUP_ID)
     }
 
     @Test
