@@ -1,4 +1,6 @@
 .loadingModal {
+    position: fixed;
+    width: 100%;
     height: var(--h-screen);
     display: flex;
     backdrop-filter: blur(10px);

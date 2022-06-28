@@ -3,6 +3,7 @@
 .chat {
     width: 400px;
     height: 550px;
+    overflow-y: hidden;
 
     @include phone-only {
         flex: 1;
@@ -35,7 +36,8 @@
 }
 
 .inputCenter {
-    margin-top: var(--m-3);
+    margin-top: auto;
+    // margin-top: var(--m-3);
     display: flex;
     justify-content: center;
     align-content: center;

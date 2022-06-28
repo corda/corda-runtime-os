@@ -75,14 +75,16 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     return (
         <div className={style.chat}>
             {isChatDisabled && (
-                <>
+                <div className="p-6">
                     <p className={style.warningText}>{'You have no messages...yet!'}</p>
-                    <p className={style.warningText}>{'Please select a participant(s) to send a message to!    -->'}</p>
-                </>
+                    <p className={style.warningText}>{`Please select a participant(s) to send a message to!    ${
+                        !isMobile ? ' -->' : ''
+                    }`}</p>
+                </div>
             )}
 
-            {!isChatDisabled && (
-                <div className={style.chatContent}>
+            <div className={style.chatContent}>
+                {!isChatDisabled && (
                     <div className={style.messagesList}>
                         {messages.map((message, index) => {
                             const isMyMessage = message.x500name === currentUserX500;
@@ -97,42 +99,42 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                         })}
                         <div ref={messagesEndRef} />
                     </div>
+                )}
 
-                    {/* TODO: Add bottom margin at keyboard height px value on mobile */}
-                    <div className={`${style.inputCenter} ${isMobile ? 'shadow-xl' : ''}`}>
-                        {handleOpenParticipantsModal && (
-                            <IconButton
-                                className={`${style.inputCenterButton} ${
-                                    selectedParticipants.length === 0 ? 'animate-bounce' : ''
-                                }`}
-                                icon={'AccountMultiplePlus'}
-                                size={'small'}
-                                variant={'primary'}
-                                onClick={handleOpenParticipantsModal}
-                            />
-                        )}
-                        <TextInput
-                            disabled={selectedParticipants.length === 0}
-                            className={`${handleOpenParticipantsModal ? 'w-4/6' : 'w-5/6'}`}
-                            label={
-                                selectedParticipants.length === 0
-                                    ? `${isMobile ? '<-' : ''} Select participant(s)`
-                                    : 'Your message'
-                            }
-                            value={messageValue}
-                            onChange={handleUserTyping}
-                        />
+                {/* TODO: Add bottom margin at keyboard height px value on mobile */}
+                <div className={`${style.inputCenter} ${isMobile ? 'shadow-xl' : ''}`}>
+                    {handleOpenParticipantsModal && (
                         <IconButton
-                            className={style.inputCenterButton}
-                            disabled={selectedParticipants.length === 0 || messageValue.length === 0}
+                            className={`${style.inputCenterButton} ${
+                                selectedParticipants.length === 0 ? 'animate-bounce' : ''
+                            }`}
+                            icon={'AccountMultiplePlus'}
                             size={'small'}
                             variant={'primary'}
-                            onClick={handleMessageSubmit}
-                            icon={'Send'}
+                            onClick={handleOpenParticipantsModal}
                         />
-                    </div>
+                    )}
+                    <TextInput
+                        disabled={selectedParticipants.length === 0}
+                        className={`${handleOpenParticipantsModal ? 'w-4/6' : 'w-5/6'}`}
+                        label={
+                            selectedParticipants.length === 0
+                                ? `${isMobile ? '<-' : ''} Select participant(s)`
+                                : 'Your message'
+                        }
+                        value={messageValue}
+                        onChange={handleUserTyping}
+                    />
+                    <IconButton
+                        className={style.inputCenterButton}
+                        disabled={selectedParticipants.length === 0 || messageValue.length === 0}
+                        size={'small'}
+                        variant={'primary'}
+                        onClick={handleMessageSubmit}
+                        icon={'Send'}
+                    />
                 </div>
-            )}
+            </div>
         </div>
     );
 };
