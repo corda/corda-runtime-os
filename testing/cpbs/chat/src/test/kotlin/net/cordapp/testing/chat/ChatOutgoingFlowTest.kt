@@ -6,23 +6,20 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 import net.cordapp.testing.chatframework.FlowMockHelper
 import net.cordapp.testing.chatframework.createFlow
+import net.cordapp.testing.chatframework.expectFlowMessagesTo
 import net.cordapp.testing.chatframework.mockService
+import net.cordapp.testing.chatframework.rpcRequestGenerator
+import net.cordapp.testing.chatframework.verifyMessageSent
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class ChatOutgoingFlowTest {
-    /**
-     * Create an injector which can inject a Flow with mock versions of necessary services
-     */
     val flowMockHelper = FlowMockHelper {
         mockService<FlowMessaging>()
         mockService<FlowEngine>()
         mockService<JsonMarshallingService>()
     }
 
-    /**
-     * Create the flow under test and inject mock services into it
-     */
     val flow = flowMockHelper.createFlow<ChatOutgoingFlow>()
 
     val RECIPIENT_X500_NAME = "CN=Bob, O=R3, L=London, C=GB"
