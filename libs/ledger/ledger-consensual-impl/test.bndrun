@@ -2,29 +2,10 @@
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
 -runee: JavaSE-11
--runtrace: true
-
--runvm: \
-    -Djdk.io.permissionsUseCanonicalPath=true, \
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
-
--runsystempackages: \
-    sun.security.x509
 
 -runrequires: \
-    bnd.identity;id='net.corda.virtual-node-testing',\
-    bnd.identity;id='org.apache.felix.framework.security',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.corda.application',\
     bnd.identity;id='net.corda.ledger-consensual-impl',\
-    bnd.identity;id='ledger-consensual-impl-tests',\
-    bnd.identity;id='slf4j.simple'
-
--runstartlevel: \
-    order=sortbynameversion,\
-    begin=-1
-
--runproperties: \
-    org.osgi.framework.bsnversion=multiple,\
-    org.osgi.framework.security=osgi
+    bnd.identity;id='ledger-consensual-impl-tests'

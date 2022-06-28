@@ -77,9 +77,7 @@ class VirtualNodeService @Activate constructor(
 
     fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext): T {
         val workflowClass = groupContext.sandboxGroup.loadClassFromMainBundles(className, Flow::class.java)
-        println("DBG, workflowClass: ${workflowClass.getCanonicalName()}")
         val context = FrameworkUtil.getBundle(workflowClass).bundleContext
-        println("DBG. bundle location: ${context.getBundle().getLocation()}")
         val reference = context.getServiceReferences(SubFlow::class.java, "(component.name=$className)")
             .firstOrNull() ?: fail("No service found for $className.")
         return context.getService(reference)?.let { service ->
