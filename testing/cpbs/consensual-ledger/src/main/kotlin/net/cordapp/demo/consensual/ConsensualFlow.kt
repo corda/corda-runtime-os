@@ -8,6 +8,8 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
 
 /**
  * Example consensual flow. Currently does almost nothing other than verify that
@@ -15,7 +17,8 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
  * agreement.
  */
 
-class ConsensualFlow : RPCStartableFlow {
+@Component
+class ConsensualFlow @Activate constructor() : RPCStartableFlow {
     data class InputMessage(val number: Int)
     data class ResultMessage(val number: Int)
 
