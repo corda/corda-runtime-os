@@ -51,7 +51,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
-    private var impl: InnerGroupPolicyProvider = InactiveImpl()
+    private var impl: InnerGroupPolicyProvider = InactiveImpl
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
     override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
