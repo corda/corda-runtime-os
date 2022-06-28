@@ -7,8 +7,8 @@ import kotlin.experimental.xor
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import net.corda.crypto.core.toByteArray
-import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
-import net.corda.crypto.impl.components.DigestServiceImpl
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService

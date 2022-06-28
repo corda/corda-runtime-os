@@ -16,7 +16,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
 }
 
 
