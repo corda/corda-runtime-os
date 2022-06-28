@@ -25,9 +25,7 @@ dependencies {
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 
-apply plugin: CordaGradleCliPluginPlugin
-
-cliPlugin{
+cliPlugin {
     cliPluginClass = cliPluginClass
     cliPluginId = cliPluginId
     cliPluginProvider = cliPluginProvider
@@ -35,8 +33,8 @@ cliPlugin{
 }
 
 tasks.named("installDist") {
-    dependsOn plugin
+    dependsOn cliPlugin
     def homePath = System.properties['user.home']
-    from plugin
+    from cliPlugin
     into "$homePath/.corda/cli/plugins"
 }
