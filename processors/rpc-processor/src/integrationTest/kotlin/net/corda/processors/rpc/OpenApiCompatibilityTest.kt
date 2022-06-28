@@ -118,7 +118,11 @@ class OpenApiCompatibilityTest {
 
         return server.use {
 
+            // It may be handy to leave the HTTP Server running for a little while such that when developers
+            // experimenting with new endpoints locally could access URL: http://localhost:port/api/v1/swagger to see
+            // how their newly introduced OpenAPI is looking in SwaggerUI.
             //Thread.sleep(1_000_000)
+
             val client = HttpClient.newHttpClient()
             val request = HttpRequest.newBuilder(URI.create(url))
                 .header("accept", "application/json")
