@@ -1,5 +1,5 @@
 @Library('corda-shared-build-pipeline-steps@ronanb/CORE-5057/snyk-c5-nighlty') _
 
-cordaSnykScanPipeine(
+cordaSnykScanPipeline (
     snykTokenId: 'r3-snyk-corda5'
 )
