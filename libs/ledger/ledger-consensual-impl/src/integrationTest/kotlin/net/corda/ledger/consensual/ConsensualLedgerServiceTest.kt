@@ -5,8 +5,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
-import net.corda.v5.base.util.contextLogger
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,10 +29,6 @@ class ConsensualLedgerServiceTest {
         private const val TIMEOUT_MILLIS = 2000L
         private const val CPB = "META-INF/consensual-ledger.cpb"
         private const val CPK_BASIC_FLOW = "net.cordapp.demo.consensual.ConsensualFlow"
-        val logger = contextLogger()
-        init {
-            println("ConsensualLedgerServiceTest init static")
-        }
     }
 
     @RegisterExtension
@@ -56,6 +51,7 @@ class ConsensualLedgerServiceTest {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             virtualNode = setup.fetchService(timeout = 1000)
+            println("virtualNode: ${virtualNode}")
         }
     }
 
@@ -65,11 +61,13 @@ class ConsensualLedgerServiceTest {
 
     @Test
     fun `dummy flow runs`() {
-        assertEquals(42, consensualLedgerService.double(21))
+        assertThat(consensualLedgerService.double(21)).isEqualTo(42)
+        println("hello")
         // TODO: do stuff here after we can actually inject the ledger service
-        // val sandboxGroupContext = virtualNode.loadSandbox(CPB)
-        // assertThat(
-        //     virtualNode.runFlow<Map<String, String>>(CPK_BASIC_FLOW, sandboxGroupContext)
-        // ).isNotNull
+        val sandboxGroupContext = virtualNode.loadSandbox(CPB)
+        println("DBG. sandboxGroupContext = ${sandboxGroupContext.virtualNodeContext.holdingIdentity}")
+        assertThat(
+            virtualNode.runFlow<Map<String, String>>(CPK_BASIC_FLOW, sandboxGroupContext)
+        ).isNotNull
     }
 }
