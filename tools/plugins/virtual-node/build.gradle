@@ -2,7 +2,7 @@ plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
-    id 'corda.gradle-cli-plugin'
+    id 'corda.cli-plugin-packager'
 }
 
 group 'net.corda.cli.deployment'
@@ -25,7 +25,7 @@ dependencies {
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 
-apply plugin: "corda.gradle-cli-plugin"
+apply plugin: "corda.cli-plugin-packager"
 
 cliPlugin{
     cliPluginClass = cliPluginClass
