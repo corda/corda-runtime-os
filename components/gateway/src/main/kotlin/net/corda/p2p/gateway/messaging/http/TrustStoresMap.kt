@@ -113,8 +113,8 @@ internal class TrustStoresMap(
             val value = newRecord.value
 
             if (value != null) {
-                entriesPerKey[newRecord.key] = TruststoreKey(value.sourceIdentity.x500Name, value.sourceIdentity.groupId)
                 val truststoreKey = TruststoreKey(value.sourceIdentity.x500Name, value.sourceIdentity.groupId)
+                entriesPerKey[newRecord.key] = truststoreKey
                 val trustedCertificates = TrustedCertificates(value.trustedCertificates, certificateFactory)
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
                 logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +

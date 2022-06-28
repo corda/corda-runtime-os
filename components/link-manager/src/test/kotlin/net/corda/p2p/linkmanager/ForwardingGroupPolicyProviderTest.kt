@@ -125,6 +125,15 @@ class ForwardingGroupPolicyProviderTest {
     }
 
     @Test
+    fun `get group info returns null if real group policy provider fails with an exception`() {
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        whenever(groupPolicy.p2pProtocolMode).thenReturn("AUTHENTICATION_ONLY")
+
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenThrow(RuntimeException())
+        assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isNull()
+    }
+
+    @Test
     fun `register listener delegates to the stub policy provider properly`() {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.STUB)
 

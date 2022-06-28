@@ -12,6 +12,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -25,6 +26,10 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
                                              private val cpiInfoReadService: CpiInfoReadService,
                                              private val thirdPartyComponentsMode: ThirdPartyComponentsMode):
     LinkManagerGroupPolicyProvider {
+
+    private companion object {
+        private val logger = contextLogger()
+    }
 
     private val stubGroupPolicyProvider = StubGroupPolicyProvider(coordinatorFactory, subscriptionFactory, messagingConfiguration)
 
@@ -54,8 +59,13 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
         return if (thirdPartyComponentsMode == ThirdPartyComponentsMode.REAL) {
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(holdingIdentity.toCorda())
-            toGroupInfo(holdingIdentity, groupPolicy)
+            try {
+                val groupPolicy = groupPolicyProvider.getGroupPolicy(holdingIdentity.toCorda())
+                toGroupInfo(holdingIdentity, groupPolicy)
+            } catch (e: Exception) {
+                logger.error("Received exception while trying to retrieve group policy for identity $holdingIdentity.")
+                null
+            }
         } else {
             stubGroupPolicyProvider.getGroupInfo(holdingIdentity)
         }
