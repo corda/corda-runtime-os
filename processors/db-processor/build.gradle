@@ -62,12 +62,11 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
 
-    runtimeOnly project(':libs:crypto:crypto-impl')
+    runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:membership:membership-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
-    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(':libs:permissions:permission-storage-reader-impl')
     runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
     runtimeOnly project(':libs:permissions:permission-validation-cache-impl')

@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
