@@ -1,6 +1,6 @@
 package net.corda.flow.rpcops.v1
 
-import net.corda.flow.rpcops.v1.types.request.StartFlowRequest
+import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
 import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
@@ -32,7 +32,7 @@ interface FlowRpcOps : RpcOps {
     )
     fun startFlow(
         @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
-        startFlowRequest: StartFlowRequest
+        httpStartFlow: HTTPStartFlowRequest
     ): HTTPFlowStatusResponse
 
     @HttpRpcGET(

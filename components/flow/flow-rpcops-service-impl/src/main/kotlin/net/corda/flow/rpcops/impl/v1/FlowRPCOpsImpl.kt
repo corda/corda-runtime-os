@@ -7,7 +7,7 @@ import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.types.request.StartFlowRequest
+import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
 import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
@@ -59,22 +59,22 @@ class FlowRPCOpsImpl @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startFlow(
-        startFlowRequest: StartFlowRequest
+        httpStartFlow: HTTPStartFlowRequest
     ): HTTPFlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(startFlowRequest.holderShortId)
-        val clientRequestId = startFlowRequest.clientRequestId
+        val vNode = getVirtualNode(httpStartFlow.holderShortId)
+        val clientRequestId = httpStartFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
         if (flowStatus != null) {
             throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
         }
 
-        val flowClassName = startFlowRequest.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, startFlowRequest.flowParams)
+        val flowClassName = httpStartFlow.flowClassName
+        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, httpStartFlow.flowParams)
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(
