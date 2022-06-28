@@ -25,7 +25,7 @@ class FlowMockMessageLink(val from: FlowMockHelper, val to: FlowMockHelper) {
     /**
      * The mock FlowSession of the 'to' Flow. This can be passed to ResponderFlow.call(...) invocations.
      */
-    lateinit var toFlowSession:FlowSession
+    lateinit var toFlowSession: FlowSession
 
     lateinit var messageQueue: FlowTestMessageQueue
     private val fromFlow = from.flow ?: fail("The 'from' FlowMockHelper has not been used to create a Flow")

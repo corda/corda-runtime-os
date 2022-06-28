@@ -27,9 +27,8 @@ class ChatIncomingFlowTest {
 
     @Test
     fun `flow receives message and stores it`() {
-        val flowSession = mock<FlowSession>()
-                .withCounterpartyName(COUNTERPARTY_X500_NAME)
-                .willReceive(MessageContainer(MESSAGE))
+        val flowSession =
+            mock<FlowSession>().withCounterpartyName(COUNTERPARTY_X500_NAME).willReceive(MessageContainer(MESSAGE))
 
         flow.call(flowSession)
 

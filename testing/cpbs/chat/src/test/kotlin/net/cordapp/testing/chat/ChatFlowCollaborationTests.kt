@@ -52,24 +52,31 @@ class ChatFlowCollaborationTests {
         }
 
         executeConcurrently({
-                outgoingChatFlow.call(
-                    outgoingFlowMockHelper.rpcRequestGenerator(
-                        OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
-                    ))
-            }, {
-                incomingChatFlow.call(messageLink.toFlowSession)
-            })
+            outgoingChatFlow.call(
+                outgoingFlowMockHelper.rpcRequestGenerator(
+                    OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
+                )
+            )
+        }, {
+            incomingChatFlow.call(messageLink.toFlowSession)
+        })
 
         messageLink.failIfPendingMessages()
 
-        val expectedMessages = ReceivedChatMessages(messages = listOf(IncomingChatMessage(
-            senderX500Name = FROM_X500_NAME,
-            message = MESSAGE)))
+        val expectedMessages = ReceivedChatMessages(
+            messages = listOf(
+                IncomingChatMessage(
+                    senderX500Name = FROM_X500_NAME, message = MESSAGE
+                )
+            )
+        )
 
-        whenever(readerFlowMockHelper.serviceMock<JsonMarshallingService>().format(expectedMessages))
-            .thenReturn(DUMMY_FLOW_RETURN)
+        whenever(readerFlowMockHelper.serviceMock<JsonMarshallingService>().format(expectedMessages)).thenReturn(
+                DUMMY_FLOW_RETURN
+            )
 
-        val messagesJson = readerChatFlow.call(readerFlowMockHelper.rpcRequestGenerator(Any())) // Parameter not used by Flow
+        val messagesJson =
+            readerChatFlow.call(readerFlowMockHelper.rpcRequestGenerator(Any())) // Parameter not used by Flow
         assertThat(messagesJson).isEqualTo(DUMMY_FLOW_RETURN)
     }
 }
