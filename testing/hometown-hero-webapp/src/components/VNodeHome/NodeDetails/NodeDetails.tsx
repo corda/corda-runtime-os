@@ -1,5 +1,7 @@
+import style from './nodeDetails.module.scss';
+
 const NodeDetails = () => {
-    return <div style={{ width: 350, height: 160 }}></div>;
+    return <div className={style.nodeDetails}></div>;
 };
 
 export default NodeDetails;

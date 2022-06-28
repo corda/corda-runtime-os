@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 
-import Chat from '../Chat/Chat';
-import ChatParticipants from '../Chat/ChatParticipants';
+import Chat from '../ChatComponents/Chat/Chat';
+import ChatParticipants from '../ChatComponents/ChatParticipants/ChatParticipants';
 import PageHeader from '@/components/PageHeader/PageHeader';
-import SelectedParticipants from '../Chat/SelectedParticipants';
+import SelectedParticipants from '../ChatComponents/SelectedParticipants/SelectedParticipants';
 
 const MobileChatWrapper = () => {
     const [isParticipantsOpen, setIsParticipantsOpen] = useState<boolean>(false);
@@ -30,7 +30,7 @@ const MobileChatWrapper = () => {
                 />
             ) : (
                 <>
-                    <div className="ml-2">
+                    <div className="ml-4">
                         <SelectedParticipants
                             selectedParticipants={selectedParticipants}
                             handleClearParticipants={() => {

@@ -21,7 +21,7 @@ const VisualizationWrapper: React.FC<Props> = ({ children, isBlurred, width = 50
                 right: isMobile ? 0 : '2%',
                 zIndex: -2,
                 opacity: 0.6,
-                transition: 'ease-in-out 0.5s',
+                transition: 'ease-in-out 1s',
                 filter: `${isBlurred ? 'blur(8px)' : ''}`,
             }}
         >

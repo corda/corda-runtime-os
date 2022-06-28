@@ -3,6 +3,7 @@ import { IconButton, TopNavBar } from '@r3/r3-tooling-design-system/exports';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import logoSrc from '@r3/r3-tooling-design-system/assets/img/logo--r3.svg';
+import style from './navBar.module.scss';
 
 const LOGO = (
     <a href="/">
@@ -18,11 +19,11 @@ const NavBar = () => {
     document.title = APP_TITLE;
     return (
         <TopNavBar
-            className="flex-shrink-1 sm:flex-shrink-0 md:flex-shrink-0 lg:flex-shrink-0"
+            className={style.navBar}
             logo={LOGO}
             title={APP_TITLE}
             center={
-                location.pathname.includes(VNODE_HOME) ? (
+                location.pathname.toLocaleLowerCase().includes(VNODE_HOME.toLocaleLowerCase()) ? (
                     <div>
                         <IconButton
                             icon={'ExitToApp'}

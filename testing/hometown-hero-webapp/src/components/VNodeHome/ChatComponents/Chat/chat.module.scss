@@ -1,0 +1,58 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.chat {
+    width: 400px;
+    height: 550px;
+
+    @include phone-only {
+        flex: 1;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+}
+
+.warningText {
+    margin-top: var(--m-8);
+    opacity: 0.75;
+    font-size: var(--text-3xl);
+}
+
+.chatContent {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-6);
+    padding-top: var(--p-6);
+}
+
+.messagesList {
+    overflow-y: scroll;
+    padding: var(--p-4);
+}
+
+.inputCenter {
+    margin-top: var(--m-3);
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    gap: 12px;
+    background-color: var(--color-light-gray-400);
+    border-radius: var(--rounded-xl);
+
+    @include phone-only {
+        padding: var(--p-2);
+        margin-left: 8px;
+        margin-right: 8px;
+        margin-bottom: 6px;
+    }
+
+    .inputCenterButton {
+        box-shadow: var(--shadow-lg);
+        width: var(--w-12);
+        height: var(--h-12);
+    }
+}

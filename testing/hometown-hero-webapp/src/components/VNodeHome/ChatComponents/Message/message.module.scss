@@ -1,0 +1,28 @@
+.messageWrapper {
+    margin: var(--m-2);
+    margin-right: auto;
+}
+
+.myMessage {
+    margin-left: auto;
+    margin-right: var(--m-0);
+}
+
+.messageContainer {
+    width: fit-content;
+    max-width: 70%;
+
+    .messageTextContainer {
+        margin-top: 0px;
+        border-radius: var(--rounded-xl);
+        border: 1px solid var(--color-blue);
+
+        padding: var(--p-4);
+    }
+
+    .replyButton {
+        margin-bottom: auto;
+        margin-top: auto;
+        margin-left: auto;
+    }
+}

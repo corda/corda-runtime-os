@@ -1,5 +1,7 @@
 import { IconButton, IconCustom } from '@r3/r3-tooling-design-system/exports';
 
+import style from './selectedParticipants.module.scss';
+
 type Props = {
     selectedParticipants: string[];
     handleClearParticipants: () => void;
@@ -11,22 +13,19 @@ const SelectedParticipants: React.FC<Props> = ({
     selectedParticipants,
     handleClearParticipants,
 }) => {
+    const emptyParticipants = selectedParticipants.length === 0;
     return (
-        <div className="flex mb-2">
+        <div className={style.selectedParticipantsWrapper}>
             <div className="flex">
                 <IconCustom
-                    className={`w-6 ${clearButtonEnabled ? 'mt-3' : 'mt-1'} text-blue ${
-                        selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
+                    className={`w-6 ${clearButtonEnabled ? 'mt-3' : 'mt-1'} ${
+                        emptyParticipants ? style.error : style.blue
                     }`}
                     icon={'Account'}
                 />
-                <p
-                    className={`ml-2 mt-auto mb-auto text-md ${
-                        selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
-                    }`}
-                >
+                <p className={`${style.text} ${emptyParticipants ? style.error : style.blue}`}>
                     {`Selected: ${
-                        selectedParticipants.length === 0
+                        emptyParticipants
                             ? 'Please select at least one!'
                             : selectedParticipants.length === 1
                             ? selectedParticipants[0]
@@ -36,7 +35,7 @@ const SelectedParticipants: React.FC<Props> = ({
             </div>
             {clearButtonEnabled && (
                 <IconButton
-                    className="mt-auto mb-auto ml-auto mr-4"
+                    className={style.clearButton}
                     icon={'Nuke'}
                     size={'large'}
                     variant={'icon'}

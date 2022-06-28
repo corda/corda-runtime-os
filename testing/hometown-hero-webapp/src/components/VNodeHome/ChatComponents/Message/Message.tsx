@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { IconButton } from '@r3/r3-tooling-design-system/exports';
 import { Message as MessageType } from '@/models/Message';
+import style from './message.module.scss';
 
 type Props = {
     message: MessageType;
@@ -24,18 +25,17 @@ const Message: React.FC<Props> = ({ message, isMyMessage, selectReplyParticipant
             onMouseLeave={() => {
                 setIsHoveringOnParticipant(false);
             }}
-            className={`m-2 ${isMyMessage ? 'ml-auto mr-0' : 'mr-auto'}`}
-            style={{ maxWidth: '70%' }}
+            className={`${style.messageWrapper} ${isMyMessage ? style.myMessage : ''}`}
         >
-            <div className={` ${isMyMessage ? 'ml-auto mr-4' : 'mr-auto ml-0'}`} style={{ width: 'fit-content' }}>
+            <div className={`${style.messageContainer} ${isMyMessage ? 'ml-auto mr-4' : 'mr-auto ml-0'}`}>
                 <p className={`text-xs ml-2 ${isMyMessage ? 'font-bold' : 'font-bold opacity-75'}`}>
                     {isMyMessage ? 'Me' : participantDisplayName}
                 </p>
                 <div className="flex">
                     <div
-                        className={`mt-0 rounded-xl border border-blue ${
-                            isHoveringOnParticipant ? 'shadow-xl' : 'shadow-md'
-                        } p-4 ${isMyMessage ? 'bg-blue-100' : ''}`}
+                        className={`${style.messageTextContainer} ${
+                            isHoveringOnParticipant && !isMyMessage ? 'shadow-xl' : 'shadow-md'
+                        }  ${isMyMessage ? 'bg-blue-100' : ''}`}
                         style={{ maxWidth: isMyMessage ? '100%' : '90%' }}
                     >
                         <p className="leading-5">{message.message}</p>
@@ -45,7 +45,7 @@ const Message: React.FC<Props> = ({ message, isMyMessage, selectReplyParticipant
                             onClick={() => {
                                 selectReplyParticipant(message.x500name);
                             }}
-                            className=" mb-auto mt-auto ml-2"
+                            className={style.replyButton}
                             icon={'Reply'}
                             size={'medium'}
                             variant={'tertiary'}

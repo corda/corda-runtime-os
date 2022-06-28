@@ -1,0 +1,10 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.navBar {
+    display: flex;
+    flex-shrink: 0;
+
+    @include phone-only {
+        flex-shrink: 1;
+    }
+}
