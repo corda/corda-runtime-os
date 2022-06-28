@@ -59,13 +59,14 @@ class FlowRPCOpsImpl @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startFlow(
+        holderShortId: String,
         httpStartFlow: HTTPStartFlowRequest
     ): HTTPFlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(httpStartFlow.holderShortId)
+        val vNode = getVirtualNode(holderShortId)
         val clientRequestId = httpStartFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 

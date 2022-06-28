@@ -25,12 +25,15 @@ interface FlowRpcOps : RpcOps {
     fun initialise(config: SmartConfig)
 
     @HttpRpcPOST(
+        path = "{holderShortId}",
         title = "Start Flow",
         description = "Instructs Corda to start a new instance of the specified flow",
         responseDescription = "The initial status of the flow, if the flow already exists the status of the existing" +
                 " flow will be returned."
     )
     fun startFlow(
+        @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
+        holderShortId: String,
         @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
         httpStartFlow: HTTPStartFlowRequest
     ): HTTPFlowStatusResponse
