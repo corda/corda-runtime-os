@@ -16,8 +16,7 @@ dependencies {
     api "net.corda:corda-cipher-suite"
 
     api project(":components:crypto:crypto-service")
-    api project(':libs:crypto:crypto-core')
-    api project(':libs:crypto:crypto-impl')
+    api project(':libs:crypto:cipher-suite-impl')
     api project(':libs:crypto:crypto-serialization-impl')
 
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"

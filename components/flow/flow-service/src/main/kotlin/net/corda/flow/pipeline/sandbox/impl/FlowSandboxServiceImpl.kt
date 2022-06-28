@@ -14,7 +14,6 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -91,13 +90,13 @@ class FlowSandboxServiceImpl @Activate constructor(
 
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::cpkId),
+            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null
         )
 
-        if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkIdentifiers)) {
+        if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkFileChecksums)) {
             throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.cpiId}'")
         }
 

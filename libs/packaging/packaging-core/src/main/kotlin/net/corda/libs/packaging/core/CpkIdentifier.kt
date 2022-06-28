@@ -17,7 +17,7 @@ import net.corda.data.packaging.CpkIdentifier as CpkIdentifierAvro
 data class CpkIdentifier(
     override val name: String,
     override val version: String,
-    override val signerSummaryHash: SecureHash?,
+    override val signerSummaryHash: SecureHash?
 ) : Identifier, Comparable<CpkIdentifier> {
     companion object {
         fun fromAvro(other: CpkIdentifierAvro): CpkIdentifier {
@@ -41,7 +41,7 @@ data class CpkIdentifier(
                     ByteBuffer.wrap(hash.bytes)
                 )
             },
-            0
+            0//todo conal - remove this
         )
     }
 }

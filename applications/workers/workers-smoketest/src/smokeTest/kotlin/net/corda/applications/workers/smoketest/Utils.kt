@@ -1,5 +1,7 @@
 package net.corda.applications.workers.smoketest
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.net.URI
 
 const val X500_BOB = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
@@ -22,6 +24,4 @@ fun truncateLongHash(shortHash:String):String {
     return shortHash.substring(0,12)
 }
 
-
-
-
+fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
