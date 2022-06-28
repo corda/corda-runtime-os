@@ -60,12 +60,12 @@ internal class MerkleProofImpl(
                             continue
                         }
                     }
-                    if (hashIndex >= hashes.size) {                 // We'll need and more hash to continue. So if
+                    if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
                         return false                                // we do not have more, the proof is incorrect.
                     }
                                                                     // We pair the current element with a
                                                                     // hash from the proof
-                    newItems += if (item.first and 1 == 0) {        // Even index means, that the item is on the left
+                    newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
                         Pair(
                             item.first / 2,
                             digestProvider.nodeHash(treeDepth, item.second, hashes[hashIndex++])
