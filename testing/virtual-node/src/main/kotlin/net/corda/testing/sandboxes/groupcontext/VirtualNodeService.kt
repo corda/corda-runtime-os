@@ -7,14 +7,11 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.junit.jupiter.api.fail
-import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -78,49 +75,20 @@ class VirtualNodeService @Activate constructor(
         vnodes.remove(sandboxGroupContext)?.let(virtualNodeLoader::unloadVirtualNode)
     }
 
-    fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext, rpcData: RPCRequestData? = null): T {
+    fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext): T {
         val workflowClass = groupContext.sandboxGroup.loadClassFromMainBundles(className, Flow::class.java)
+        println("DBG, workflowClass: ${workflowClass.getCanonicalName()}")
         val context = FrameworkUtil.getBundle(workflowClass).bundleContext
-            ?: throw RuntimeException("Couldn't load bundleContext.")
-
-        return runSubFlow(context, className)
-            ?: runRPCFlow(context, className, rpcData)
-            ?: fail("$className service not available - OSGi error?")
-    }
-
-    private fun <T> runSubFlow(context: BundleContext, className: String): T? {
-        val reference = context.getServiceReferences(SubFlow::class.java, "(component.name=$className)").firstOrNull()
-        if (reference == null) {
-            println("No SubFlow service found for $className.")
-            return null
-        } else {
-            return context.getService(reference)?.let { service ->
-                try {
-                    @Suppress("unchecked_cast")
-                    return service.call() as? T ?: fail("Workflow did not return the correct type.")
-                } finally {
-                    context.ungetService(reference)
-                }
+        println("DBG. bundle location: ${context.getBundle().getLocation()}")
+        val reference = context.getServiceReferences(SubFlow::class.java, "(component.name=$className)")
+            .firstOrNull() ?: fail("No service found for $className.")
+        return context.getService(reference)?.let { service ->
+            try {
+                @Suppress("unchecked_cast")
+                service.call() as? T ?: fail("Workflow did not return the correct type.")
+            } finally {
+                context.ungetService(reference)
             }
-        }
-    }
-
-    private fun <T> runRPCFlow(context: BundleContext, className: String, rpcData: RPCRequestData?): T? {
-        val reference = context.getServiceReferences(RPCStartableFlow::class.java, null).firstOrNull()
-        if (reference == null) {
-            println("No RPCStartableFlow service found for $className.")
-            return null
-        } else {
-            val requestData = rpcData ?: fail("Tried to start an RPCStartableFlow with rpcData = null.")
-
-            return context.getService(reference)?.let { service ->
-                try {
-                    @Suppress("unchecked_cast")
-                    return service.call(requestData) as? T ?: fail("Workflow did not return the correct type.")
-                } finally {
-                    context.ungetService(reference)
-                }
-            }
-        }
+        } ?: fail("$className service not available - OSGi error?")
     }
 }

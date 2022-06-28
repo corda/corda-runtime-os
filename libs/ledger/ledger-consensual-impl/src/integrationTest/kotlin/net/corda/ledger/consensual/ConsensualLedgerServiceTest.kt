@@ -4,8 +4,6 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.marshalling.MarshallingService
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -64,29 +62,12 @@ class ConsensualLedgerServiceTest {
     @Test
     fun `dummy flow runs`() {
         assertThat(consensualLedgerService.double(21)).isEqualTo(42)
-
-        val inputData = makeRpcRequestData("""{"number": 123}""")
-
+        println("hello")
         // TODO: do stuff here after we can actually inject the ledger service
         val sandboxGroupContext = virtualNode.loadSandbox(CPB)
         println("DBG. sandboxGroupContext = ${sandboxGroupContext.virtualNodeContext.holdingIdentity}")
         assertThat(
-            virtualNode.runFlow<Map<String, String>>(CPK_BASIC_FLOW, sandboxGroupContext, inputData)
+            virtualNode.runFlow<Map<String, String>>(CPK_BASIC_FLOW, sandboxGroupContext)
         ).isNotNull
-    }
-
-    // TODO: Maybe expose this as a helper in testing/virtual-node
-    fun makeRpcRequestData(body: String) = object : RPCRequestData {
-        override fun getRequestBody(): String {
-            return body
-        }
-
-        override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
-            TODO("Not implemented")
-        }
-
-        override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
-            TODO("Not implemented")
-        }
     }
 }
