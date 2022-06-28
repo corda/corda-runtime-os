@@ -1,8 +1,8 @@
 {
   "openapi" : "3.0.1",
   "info" : {
-    "title" : "HTTP RPC",
-    "description" : "Exposing RPCOps interfaces as OpenAPI WebServices",
+    "title" : "HttpRpcContext OpenApiCompatibilityTest",
+    "description" : "HttpRpcContext OpenApiCompatibilityTest",
     "version" : "1"
   },
   "servers" : [ {
