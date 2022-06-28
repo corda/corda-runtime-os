@@ -45,12 +45,8 @@ class MemberOpsServiceProcessor(
          * Temporarily hardcoded to 1.
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
-        private val clock = UTCClock()
 
-//        /**
-//         * Transforms [KeyValuePairList] into map.
-//         */
-//        fun KeyValuePairList.toMap() = items.associate { it.key to it.value }
+        private val clock = UTCClock()
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {

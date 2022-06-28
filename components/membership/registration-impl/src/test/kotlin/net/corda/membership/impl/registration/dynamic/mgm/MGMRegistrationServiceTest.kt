@@ -200,6 +200,7 @@ class MGMRegistrationServiceTest {
 
     @Test
     fun `stopping the service succeeds`() {
+        registrationService.start()
         registrationService.stop()
         assertThat(registrationService.isRunning).isFalse
         verify(coordinator).stop()

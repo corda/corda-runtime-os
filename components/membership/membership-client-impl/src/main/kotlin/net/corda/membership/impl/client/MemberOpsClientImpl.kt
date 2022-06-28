@@ -237,16 +237,5 @@ class MemberOpsClientImpl @Activate constructor(
                 )
             }
         }
-
-//        /**
-//         * Transforms map into [KeyValuePairList].
-//         */
-//        private fun Map<String, String>.toWire(): KeyValuePairList {
-//            return KeyValuePairList(
-//                map {
-//                    KeyValuePair(it.key, it.value)
-//                }
-//            )
-//        }
     }
 }
