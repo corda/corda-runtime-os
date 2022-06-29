@@ -21,6 +21,9 @@ class DigestAlgorithmName(val name: String) {
         val SHA2_256: DigestAlgorithmName = DigestAlgorithmName("SHA-256")
 
         @JvmField
+        val SHA2_256D: DigestAlgorithmName = DigestAlgorithmName("SHA-256D")
+
+        @JvmField
         val SHA2_384: DigestAlgorithmName = DigestAlgorithmName("SHA-384")
 
         @JvmField

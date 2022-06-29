@@ -190,8 +190,8 @@ open class OpaqueBytes(bytes: ByteArray) : ByteSequence(bytes, 0, bytes.size) {
 
     /**
      * The bytes are always cloned so that this object becomes immutable. This has been done
-     * to prevent tampering with entities such as [net.corda.v5.crypto.SecureHash] and [net.corda.api.contracts.PrivacySalt], as well as
-     * preserve the integrity of our hash constants [net.corda.v5.crypto.SecureHash.zeroHash] and [net.corda.v5.crypto.SecureHash.allOnesHash].
+     * to prevent tampering with entities such as [net.corda.v5.crypto.SecureHash] and [net.corda.v5.ledger.common.transactions.PrivacySaltImpl], as well as
+     * preserve the integrity of our hash constants [net.corda.v5.crypto.DigestServiceUtils.getZeroHash] and [net.corda.v5.crypto.DigestServiceUtils.getAllOnesHash].
      *
      * Cloning like this may become a performance issue, depending on whether or not the JIT
      * compiler is ever able to optimise away the clone. In which case we may need to revisit
