@@ -17,10 +17,9 @@ import java.time.Instant
 
 class ClusterBootstrapTest {
     private val healthChecks = mapOf(
-        // TODO: fix up other workers so they accurately report their readiness.
-        // "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
+        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
         "db-worker" to System.getProperty("dbWorkerHealthHttp"),
-        // "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
+        "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
         "rpc-worker" to System.getProperty("rpcWorkerHealthHttp"),
     )
     private val client = HttpClient.newBuilder().build()
