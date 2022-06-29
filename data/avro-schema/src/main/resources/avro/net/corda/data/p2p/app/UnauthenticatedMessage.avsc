@@ -2,7 +2,7 @@
   "type": "record",
   "name": "UnauthenticatedMessage",
   "namespace": "net.corda.p2p.app",
-  "doc": "A message to be sent to the specified destination outside a link session. This means, for instance, that any authentication need to performed by the application layer",
+  "doc": "A message that will be delivered by the p2p layer directly (without using an end-to-end session). If there is a need for authentication, this has to be performed at the application layer.",
   "fields": [
     {
       "name": "header",

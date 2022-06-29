@@ -4,16 +4,18 @@
   "namespace": "net.corda.p2p.app",
   "fields": [
     {
+      "doc": "The destination identity for this message.",
       "name": "destination",
       "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
+      "doc": "The source identity of this message.",
       "name": "source",
       "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
+      "doc": "This value identifies the upstream user of the p2p layer that this message is sent from and should be received by. It can be used to filter incoming messages from the p2p layer and process only the ones destined for a specific system.",
       "name": "subsystem",
-      "doc": "The subsystem that this message is sent from and should be received by.",
       "type": "string"
     }
   ]

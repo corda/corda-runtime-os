@@ -2,7 +2,7 @@
   "type": "record",
   "name": "AuthenticatedMessage",
   "namespace": "net.corda.p2p.app",
-  "doc": "A message to be sent to the specified destination via an (authenticated) link session.",
+  "doc": "A message that will be delivered by the p2p layer over an end-to-end (authenticated and optionally encrypted) session.",
   "fields": [
     {
       "name": "header",

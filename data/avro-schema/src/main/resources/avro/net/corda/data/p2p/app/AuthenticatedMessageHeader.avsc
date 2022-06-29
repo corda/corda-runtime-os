@@ -4,28 +4,34 @@
   "namespace": "net.corda.p2p.app",
   "fields": [
     {
+      "doc": "The destination identity for this message.",
       "name": "destination",
       "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
+      "doc": "The source identity of this message.",
       "name": "source",
       "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
+      "doc": "A (time-to-live) unix timestamp (in milliseconds) after which this message will be dropped from the p2p layer. If no ttl is specified, the p2p layer will continue replaying this message infinitely until it is delivered.",
       "name": "ttl",
+      "logicalType": "timestamp-millis",
       "type": ["null", "long"]
     },
     {
+      "doc": "A unique identifier for this message. This will be used by the p2p layer to track the delivery of this specific message.",
       "name": "messageId",
       "type": "string"
     },
     {
+      "doc": "A trace identifier. The semantics of this field can vary based on the use-case of the upstream user, but it can be used to trace together multiple instances of the same message (e.g. in cases where the upstream user also performs replays, it can assign the same trace ID to all the instances of the same replayed message).",
       "name": "traceId",
       "type": "string"
     },
     {
+      "doc": "This value identifies the upstream user of the p2p layer that this message is sent from and should be received by. It can be used to filter incoming messages from the p2p layer and process only the ones destined for a specific system.",
       "name": "subsystem",
-      "doc": "The subsystem that this message is sent from and should be received by.",
       "type": "string"
     }
   ]
