@@ -14,10 +14,6 @@
     {
       "name": "signerSummaryHash",
       "type": ["null", "net.corda.data.crypto.SecureHash"]
-    },
-    {
-      "name": "entityVersion",
-      "type": "int"
     }
   ]
 }
