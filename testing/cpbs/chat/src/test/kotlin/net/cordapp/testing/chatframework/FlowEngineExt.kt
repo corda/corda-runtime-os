@@ -14,7 +14,7 @@ import org.mockito.kotlin.whenever
  *     }
  * </pre>
  */
-fun FlowEngine.withVirtualNodeName(name:String): FlowEngine {
+fun FlowEngine.withVirtualNodeName(name: String): FlowEngine {
     whenever(this.virtualNodeName).thenReturn(MemberX500Name.parse(name))
     return this
 }

@@ -6,8 +6,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.types.MemberX500Name
 import net.cordapp.testing.chatframework.FlowMockHelper
 import net.cordapp.testing.chatframework.createFlow
-import net.cordapp.testing.chatframework.expectFlowMessagesTo
-import net.cordapp.testing.chatframework.mockService
+import net.cordapp.testing.chatframework.createMockService
 import net.cordapp.testing.chatframework.rpcRequestGenerator
 import net.cordapp.testing.chatframework.verifyMessageSent
 import org.junit.jupiter.api.Test
@@ -15,9 +14,9 @@ import org.junit.jupiter.api.assertThrows
 
 class ChatOutgoingFlowTest {
     val flowMockHelper = FlowMockHelper {
-        mockService<FlowMessaging>()
-        mockService<FlowEngine>()
-        mockService<JsonMarshallingService>()
+        createMockService<FlowMessaging>()
+        createMockService<FlowEngine>()
+        createMockService<JsonMarshallingService>()
     }
 
     val flow = flowMockHelper.createFlow<ChatOutgoingFlow>()

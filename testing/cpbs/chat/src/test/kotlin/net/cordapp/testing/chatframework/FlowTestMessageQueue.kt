@@ -36,7 +36,7 @@ class FlowTestMessageQueue(val from: FlowSession, val to: FlowSession) {
         }
     }
 
-    fun getOrWaitForNextMessage():Any {
+    fun getOrWaitForNextMessage(): Any {
         lock.withLock {
             while (queue.isEmpty()) {
                 condition.await(RECEIVE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -48,8 +48,10 @@ class FlowTestMessageQueue(val from: FlowSession, val to: FlowSession) {
     fun failIfNotEmpty() {
         lock.withLock {
             if (!queue.isEmpty()) {
-                fail("Messages were left in the FlowTestMessageQueue. More messages were sent by the 'from' " +
-                        "Flow than received by the 'to' Flows.")
+                fail(
+                    "Messages were left in the FlowTestMessageQueue. More messages were sent by the 'from' " +
+                            "Flow than received by the 'to' Flows."
+                )
             }
         }
     }

@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.cordapp.testing.chatframework.FlowMockHelper
 import net.cordapp.testing.chatframework.createFlow
-import net.cordapp.testing.chatframework.mockService
+import net.cordapp.testing.chatframework.createMockService
 import net.cordapp.testing.chatframework.willReceive
 import net.cordapp.testing.chatframework.withCounterpartyName
 import net.cordapp.testing.chatframework.withVirtualNodeName
@@ -20,7 +20,7 @@ class ChatIncomingFlowTest {
     }
 
     val flowMockHelper = FlowMockHelper {
-        mockService<FlowEngine>().withVirtualNodeName(X500_NAME)
+        createMockService<FlowEngine>().withVirtualNodeName(X500_NAME)
     }
 
     val flow = flowMockHelper.createFlow<ChatIncomingFlow>()

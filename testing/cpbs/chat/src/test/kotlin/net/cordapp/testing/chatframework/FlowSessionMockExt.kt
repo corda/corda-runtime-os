@@ -9,7 +9,7 @@ import org.mockito.kotlin.whenever
 /**
  * Sets up a mock FlowSession to return a counterparty name.
  */
-fun FlowSession.withCounterpartyName(name:String): FlowSession {
+fun FlowSession.withCounterpartyName(name: String): FlowSession {
     whenever(this.counterparty).thenReturn(MemberX500Name.parse(name))
     return this
 }

@@ -45,8 +45,8 @@ class FlowMockMessageLink(val from: FlowMockHelper, val to: FlowMockHelper) {
     }
 
     private fun generateMockFlowSessions() {
-        val fromName = from.serviceMock<FlowEngine>().virtualNodeName
-        val toName = to.serviceMock<FlowEngine>().virtualNodeName
+        val fromName = from.getMockService<FlowEngine>().virtualNodeName
+        val toName = to.getMockService<FlowEngine>().virtualNodeName
 
         this.toFlowSession = mock<FlowSession>().also {
             whenever(it.counterparty).thenReturn(fromName)
