@@ -48,7 +48,7 @@ class LinkManagerApp @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient
+    private val cryptoOpsClient: CryptoOpsClient,
 ) : Application {
 
     companion object {
