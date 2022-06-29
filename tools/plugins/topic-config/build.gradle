@@ -40,7 +40,3 @@ tasks.named("installDist") {
     from cliPlugin
     into "$homePath/.corda/cli/plugins"
 }
-
-artifacts {
-    archives plugin
-}
