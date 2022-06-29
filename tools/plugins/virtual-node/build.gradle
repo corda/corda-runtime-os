@@ -27,7 +27,6 @@ dependencies {
 
 cliPlugin {
     cliPluginClass = 'net.corda.cli.plugins.vnode.VirtualNodeCliPlugin'
-    cliPluginProvider = 'R3 Ltd'
     cliPluginDescription = 'A CLI plug-in for operations on Virtual Node'
 }
 

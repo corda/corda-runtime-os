@@ -39,7 +39,7 @@ class CliPluginPackagerExtension {
     CliPluginPackagerExtension(ObjectFactory objects, String defaultPluginId) {
         cliPluginId = objects.property(String).convention(defaultPluginId)
         cliPluginClass = objects.property(String)
-        cliPluginProvider = objects.property(String)
+        cliPluginProvider = objects.property(String).convention("R3 Ltd")
         cliPluginDescription = objects.property(String)
     }
 
