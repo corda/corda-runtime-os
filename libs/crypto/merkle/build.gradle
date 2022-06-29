@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Merkle tree related crypto library'
@@ -13,15 +14,21 @@ dependencies {
 
     api 'net.corda:corda-serialization'
 
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-crypto"
 
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":testing:test-utilities")
+
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
 }
-
-
