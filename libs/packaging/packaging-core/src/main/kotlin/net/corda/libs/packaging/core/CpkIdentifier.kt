@@ -40,8 +40,7 @@ data class CpkIdentifier(
                     hash.algorithm,
                     ByteBuffer.wrap(hash.bytes)
                 )
-            },
-            0//todo conal - remove this
+            }
         )
     }
 }
