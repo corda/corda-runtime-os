@@ -114,6 +114,7 @@ internal class HttpRpcServerInternal(
     }.apply {
         addRoutes()
         addOpenApiRoute()
+        addWsRoutes()
         // In order for multipart content to be stored onto disk, we need to override some properties
         // which are set by default by Javalin such that entire content is read into memory
         MultipartUtil.preUploadFunction = { req ->
@@ -478,6 +479,38 @@ internal class HttpRpcServerInternal(
             }.also { log.trace { "Create insecure (HTTP) server completed." } }
         } catch (e: Exception) {
             "Error during Create insecure (HTTP) server".let {
+                log.error("$it: ${e.message}")
+                throw Exception(it, e)
+            }
+        }
+    }
+
+    private fun Javalin.addWsRoutes() {
+        try {
+            log.trace { "Add WebSockets routes for some of the GET methods" }
+
+            resourceProvider.httpDuplexRoutes.map { routeInfo ->
+                registerWsHandlerForRoute(routeInfo)
+            }
+
+            log.trace { "Add WebSockets routes for some of the GET methods." }
+        } catch (e: Exception) {
+            "Error during Add WebSockets routes for some of the GET methods".let {
+                log.error("$it: ${e.message}")
+                throw Exception(it, e)
+            }
+        }
+    }
+
+    private fun Javalin.registerWsHandlerForRoute(routeInfo: RouteInfo) {
+        try {
+            log.info("Add WS handler for \"${routeInfo.fullPath}\".")
+
+            ws(routeInfo.fullPath, routeInfo.setupWsCall())
+
+            log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
+        } catch (e: Exception) {
+            "Error during adding WS routes".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }

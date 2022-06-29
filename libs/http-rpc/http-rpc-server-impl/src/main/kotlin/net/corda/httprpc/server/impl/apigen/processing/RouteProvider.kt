@@ -1,15 +1,23 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
-import net.corda.v5.base.util.contextLogger
+import io.javalin.websocket.WsConfig
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
+import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexCloseContextImpl
+import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexConnectContextImpl
+import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexErrorContextImpl
+import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexTextMessageContextImpl
+import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
-import net.corda.v5.base.util.trace
+import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationTargetException
 
 /**
@@ -22,6 +30,7 @@ internal interface RouteProvider {
     val httpPostRoutes: List<RouteInfo>
     val httpPutRoutes: List<RouteInfo>
     val httpDeleteRoutes: List<RouteInfo>
+    val httpDuplexRoutes: List<RouteInfo>
 }
 
 internal class JavalinRouteProviderImpl(
@@ -49,6 +58,9 @@ internal class JavalinRouteProviderImpl(
     override val httpPutRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.PUT)
 
     override val httpDeleteRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.DELETE)
+
+    override val httpDuplexRoutes: List<RouteInfo>
+        get() = TODO("Not yet implemented")
 
     private fun mapResourcesToRoutesByHttpMethod(httpMethod: EndpointMethod): List<RouteInfo> {
         log.trace { "Map resources to routes by http method." }
@@ -138,6 +150,24 @@ internal class RouteInfo(
             }
         }.also {
             log.trace { "Map endpoint parameters of endpoint \"$fullPath\" to route provider parameters completed." }
+        }
+    }
+
+    internal fun setupWsCall(): (WsConfig) -> Unit {
+        return { wsConfig ->
+            log.info("Setting-up WS call for '$fullPath'")
+            try {
+                val result = invokeDelegatedMethod() as DuplexChannel
+                wsConfig.onMessage { result.onMessage(DuplexTextMessageContextImpl.from(it)) }
+                wsConfig.onClose { result.onClose(DuplexCloseContextImpl.from(it)) }
+                wsConfig.onConnect { result.onConnect(DuplexConnectContextImpl.from(it)) }
+                wsConfig.onError { result.onError(DuplexErrorContextImpl.from(it)) }
+
+                log.debug { "Setting-up WS call for '$fullPath' completed." }
+            } catch (e: Exception) {
+                log.warn("Error Setting-up WS call for '$fullPath'", e)
+                throw HttpExceptionMapper.mapToResponse(e)
+            }
         }
     }
 }
