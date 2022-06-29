@@ -17,16 +17,16 @@ class MerkleServiceImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService
 ) : MerkleService, SingletonSerializeAsToken {
-    override fun createMerkleTree(leaves: List<ByteArray>, digestProvider: MerkleTreeHashDigestProvider) =
+    override fun createTree(leaves: List<ByteArray>, digestProvider: MerkleTreeHashDigestProvider) =
         MerkleTreeImpl(leaves, digestProvider)
 
-    override fun createMerkleProof(
+    override fun createProof(
         treeSize: Int,
         leaves: List<IndexedMerkleLeaf>,
         hashes: List<SecureHash>
     ) = MerkleProofImpl(treeSize, leaves, hashes)
 
-    override fun createMerkleTreeHashDigestProvider(
+    override fun createHashDigestProvider(
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
         options: HashMap<String, Any>?,
