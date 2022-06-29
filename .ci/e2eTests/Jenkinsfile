@@ -156,8 +156,8 @@ pipeline {
     }
 }
 
-// K8s labels can not be greater than 63 charecters 
-// Helper method to sanitize edge cases of very long brnach names
+// K8s labels can not be greater than 63 characters 
+// Helper method to sanitize edge cases of very long branch names
 def sanitizedBranchName(){
     return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
 }
