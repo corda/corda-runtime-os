@@ -154,7 +154,7 @@ private fun isSigned(cpiInputStream: InputStream): Boolean {
     return true
 }
 
-fun Cpi.checkGroupIdDoesNotExistForThisCpi(cpiPersistence: CpiPersistence) {
+fun Cpi.checkGroupIdDoesNotExist(cpiPersistence: CpiPersistence) {
     val groupIdInDatabase = cpiPersistence.getGroupId(
         this.metadata.cpiId.name,
         this.metadata.cpiId.version,
@@ -171,5 +171,5 @@ fun Cpi.checkGroupIdDoesNotExistForThisCpi(cpiPersistence: CpiPersistence) {
  *
  * @return list of entities containing liquibase scripts ready for insertion into database
  */
-fun Cpi.extractLiquibaseScriptsFromCpi(): List<CpkDbChangeLogEntity> =
+fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLogEntity> =
     LiquibaseExtractor().extractLiquibaseEntitiesFromCpi(this)
