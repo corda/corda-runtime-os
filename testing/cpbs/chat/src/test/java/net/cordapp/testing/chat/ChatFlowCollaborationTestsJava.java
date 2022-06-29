@@ -86,8 +86,7 @@ public class ChatFlowCollaborationTestsJava {
         ReceivedChatMessages expectedMessages = new ReceivedChatMessages(messageList);
 
         when(((JsonMarshallingService) readerFlowMockHelper.getMockService(JsonMarshallingService.class))
-                .format(expectedMessages)).thenReturn(DUMMY_FLOW_RETURN
-        );
+                .format(expectedMessages)).thenReturn(DUMMY_FLOW_RETURN);
 
         String messagesJson = readerChatFlow.call(mock(RPCRequestData.class)); // Parameter not used by Flow
         assertThat(messagesJson).isEqualTo(DUMMY_FLOW_RETURN);
