@@ -1,6 +1,6 @@
 import './App.scss';
 
-import { HOME, LOGIN, REGISTER, VNODE_HOME } from './constants/routes';
+import { HOME, LOGIN, REGISTER, VNODE_HOME, VNODE_NETWORK } from './constants/routes';
 import { Route, Routes } from 'react-router';
 
 import { BrowserRouter } from 'react-router-dom';
@@ -12,6 +12,7 @@ import NavBar from './components/NavBar/NavBar';
 import Register from './pages/Register';
 import { UserContextProvider } from './contexts/userContext';
 import VNodeHome from './pages/VNodeHome';
+import VNodeNetwork from './pages/VNodeNetwork';
 import { useMobileMediaQuery } from './hooks/useMediaQueries';
 import { usePromiseTracker } from 'react-promise-tracker';
 
@@ -24,12 +25,12 @@ function App() {
             <BrowserRouter>
                 <UserContextProvider>
                     <NavBar />
-
                     <Routes>
                         <Route path={HOME} element={<Home />} />
                         <Route path={LOGIN} element={<Login />} />
                         <Route path={REGISTER} element={<Register />} />
                         <Route path={VNODE_HOME} element={<VNodeHome />} />
+                        <Route path={VNODE_NETWORK} element={<VNodeNetwork />} />
                     </Routes>
                     {!isMobile && <Footer />}
                 </UserContextProvider>
