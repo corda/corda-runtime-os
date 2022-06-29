@@ -60,8 +60,8 @@
         "maxAttempts": {
           "description": "Maximum number of attempts to call the SOFT HSM, that value is copied to the corresponding HSM configuration.",
           "type": "integer",
-          "minimum": 0,
-          "default": 0
+          "minimum": 1,
+          "default": 1
         },
         "attemptTimeoutMills": {
           "description": "Timeout in milliseconds for each attempt when calling the SOFT HSM, it should be kept fairly big as RSA key generation may take a few seconds in a shared computing environment, that value is copied to the corresponding HSM configuration.",
@@ -169,6 +169,121 @@
         }
       },
       "additionalProperties": false
+    },
+    "bus": {
+      "description": "Settings used by components handling messaging.",
+      "type": "object",
+      "properties": {
+        "processors": {
+          "description": "Settings used by service side components handling messaging.",
+          "type": "object",
+          "properties": {
+            "ops": {
+              "description": "Settings used by crypto ops message processor.",
+              "type": "object",
+              "properties": {
+                "maxAttempts": {
+                  "description": "Maximum number of attempts to call.",
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 3
+                },
+                "waitBetweenMills": {
+                  "description": "Wait in between for each attempt, if the array size less than number of attempts then the last value is repeated for consequent waits.",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 1,
+                  "default": [200]
+                }
+              },
+              "additionalProperties": false
+            },
+            "flow": {
+              "description": "Settings used by flow ops message processor.",
+              "type": "object",
+              "properties": {
+                "maxAttempts": {
+                  "description": "Maximum number of attempts to call.",
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 3
+                },
+                "waitBetweenMills": {
+                  "description": "Wait in between for each attempt, if the array size less than number of attempts then the last value is repeated for consequent waits.",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 1,
+                  "default": [200]
+                }
+              },
+              "additionalProperties": false
+            },
+            "config": {
+              "description": "Settings used by HSM config message processor.",
+              "type": "object",
+              "properties": {
+                "maxAttempts": {
+                  "description": "Maximum number of attempts to call.",
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 3
+                },
+                "waitBetweenMills": {
+                  "description": "Wait in between for each attempt, if the array size less than number of attempts then the last value is repeated for consequent waits.",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 1,
+                  "default": [200]
+                }
+              },
+              "additionalProperties": false
+            },
+            "registration": {
+              "description": "Settings used by HSM registration message processor.",
+              "type": "object",
+              "properties": {
+                "maxAttempts": {
+                  "description": "Maximum number of attempts to call.",
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 3
+                },
+                "waitBetweenMills": {
+                  "description": "Wait in between for each attempt, if the array size less than number of attempts then the last value is repeated for consequent waits.",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 1,
+                  "default": [200]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "ops",
+            "flow",
+            "config",
+            "registration"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "processors"
+      ]
     }
   },
   "additionalProperties": false,
@@ -176,6 +291,7 @@
     "rootKey",
     "softPersistence",
     "signingPersistence",
-    "hsmPersistence"
+    "hsmPersistence",
+    "bus"
   ]
 }
