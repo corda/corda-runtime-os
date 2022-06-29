@@ -204,6 +204,8 @@ class VirtualNodeRpcTest {
                 failMessage(ERROR_HOLDING_ID)
             }.toJson()
 
+            println(vNodeJson)
+
             assertThat(vNodeJson["holdingIdHash"].textValue()).isNotNull.isNotEmpty
         }
     }

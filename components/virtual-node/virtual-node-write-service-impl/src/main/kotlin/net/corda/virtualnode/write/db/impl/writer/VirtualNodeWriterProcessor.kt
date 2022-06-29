@@ -3,11 +3,11 @@ package net.corda.virtualnode.write.db.impl.writer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.Error
-import net.corda.data.virtualnode.VirtualNodeCreate
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeManagementResponseSuccess
-import net.corda.data.virtualnode.VirtualNodeResponseFailure
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
@@ -60,7 +60,7 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
-    private fun createVirtualNode(create: VirtualNodeCreate, respFuture: CompletableFuture<VirtualNodeManagementResponse>) {
+    private fun createVirtualNode(create: VirtualNodeCreateRequest, respFuture: CompletableFuture<VirtualNodeManagementResponse>) {
         create.validationError()?.let { errMsg ->
 //            handleException(respFuture, errMsg, request)
             handleException(respFuture, VirtualNodeWriteServiceException(errMsg))
@@ -119,12 +119,13 @@ internal class VirtualNodeWriterProcessor(
         request: VirtualNodeManagementRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-        when (request.request) {
-            is VirtualNodeCreate -> createVirtualNode(request.request as VirtualNodeCreate, respFuture)
+        when (val typedRequest = request.request) {
+            is VirtualNodeCreateRequest -> createVirtualNode(typedRequest, respFuture)
+            else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
 
-    private fun VirtualNodeCreate.validationError(): String? {
+    private fun VirtualNodeCreateRequest.validationError(): String? {
         if (!vaultDdlConnection.isNullOrBlank() && vaultDmlConnection.isNullOrBlank()) {
             return "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
         }
@@ -141,7 +142,7 @@ internal class VirtualNodeWriterProcessor(
         return null
     }
 
-    private fun VirtualNodeCreate.getX500CanonicalName(): String {
+    private fun VirtualNodeCreateRequest.getX500CanonicalName(): String {
         // TODO replace toString with method that returns canonical name
         return MemberX500Name.parse(x500Name).toString()
     }
@@ -307,14 +308,14 @@ internal class VirtualNodeWriterProcessor(
         val response = VirtualNodeManagementResponse(
             instant,
             VirtualNodeManagementResponseSuccess(
-                VirtualNodeInfo(
-                    holdingIdentity,
-                    cpiMetadata.id,
-                    vaultDdlConnectionId = dbConnections.vaultDdlConnectionId,
-                    vaultDmlConnectionId = dbConnections.vaultDmlConnectionId,
-                    cryptoDdlConnectionId = dbConnections.cryptoDdlConnectionId,
-                    cryptoDmlConnectionId = dbConnections.cryptoDmlConnectionId,
-                    hsmConnectionId = null,
+                net.corda.data.virtualnode.VirtualNodeInfo(
+                    holdingIdentity.toAvro(),
+                    cpiMetadata.id.toAvro(),
+                    dbConnections.vaultDdlConnectionId.toString(),
+                    dbConnections.vaultDmlConnectionId.toString(),
+                    dbConnections.cryptoDdlConnectionId.toString(),
+                    dbConnections.cryptoDmlConnectionId.toString(),
+                    null,
                     0,
                     instant
                 )
@@ -335,7 +336,7 @@ internal class VirtualNodeWriterProcessor(
         }
         val response = VirtualNodeManagementResponse(
             clock.instant(),
-            VirtualNodeResponseFailure(
+            VirtualNodeManagementResponseFailure(
                 Error.VIRTUAL_NODE,
                 exception
             )
