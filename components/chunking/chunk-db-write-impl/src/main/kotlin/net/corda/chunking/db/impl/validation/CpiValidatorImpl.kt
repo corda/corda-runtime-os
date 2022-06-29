@@ -37,7 +37,7 @@ class CpiValidatorImpl constructor(
 
         // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
-        val fileInfo = cpiCacheDir.getFileInfo(chunkPersistence, requestId)
+        val fileInfo = getCpiFileInfo(cpiCacheDir, chunkPersistence, requestId)
 
         publisher.update(requestId, "Checking signatures")
         fileInfo.checkSignature()
@@ -65,14 +65,14 @@ class CpiValidatorImpl constructor(
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
-            cpi.checkGroupIdDoesNotExist(cpiPersistence)
+            cpiPersistence.checkGroupIdDoesNotExistForCpi(cpi)
         }
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity = cpi.persistToDatabase(cpiPersistence, fileInfo, requestId, cpkDbChangeLogEntities, log)
+        val cpiMetadataEntity = cpiPersistence.persistCpiToDatabase(cpi, fileInfo, requestId, cpkDbChangeLogEntities, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(
