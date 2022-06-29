@@ -18,9 +18,8 @@ import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeAll
@@ -52,8 +51,8 @@ class CryptoServiceRefUtilsTests {
     @Test
     fun `Should return supported schemes`() {
         val expectedResult = mapOf(
-            ECDSA_SECP256R1_TEMPLATE.makeScheme("BC") to listOf(ECDSA_SHA256_SIGNATURE_SPEC),
-            RSA_TEMPLATE.makeScheme("BC") to listOf(RSA_SHA256_SIGNATURE_SPEC),
+            ECDSA_SECP256R1_TEMPLATE.makeScheme("BC") to listOf(SignatureSpec.ECDSA_SHA256),
+            RSA_TEMPLATE.makeScheme("BC") to listOf(SignatureSpec.RSA_SHA256),
         )
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
