@@ -20,7 +20,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -36,7 +36,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -57,7 +57,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -68,7 +68,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -79,7 +79,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -91,7 +91,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -102,7 +102,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
@@ -113,7 +113,7 @@ topics:
     producers:
     config:
       cleanup.policy: compact
-      segment.ms: 300000
+      segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 300000
