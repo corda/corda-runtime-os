@@ -231,10 +231,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
-        check(lifecycleCoordinator.status == LifecycleStatus.UP) {
-            "Partition listener for topic ${config.topic} not initialized"
-        }
-
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
