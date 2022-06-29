@@ -42,6 +42,7 @@ import java.time.Duration
 import java.lang.IllegalStateException
 import java.util.UUID
 import net.corda.test.util.time.TestClock
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import java.time.Instant
 
 class MemberProcessorTestUtils {
@@ -70,6 +71,8 @@ class MemberProcessorTestUtils {
         instanceId=1
         bus.busType = INMEMORY
     """
+
+        private const val KEY_SCHEME = "corda.key.scheme"
 
         fun makeMessagingConfig(boostrapConfig: SmartConfig): SmartConfig =
             boostrapConfig.factory.create(
@@ -180,14 +183,16 @@ class MemberProcessorTestUtils {
         fun getRegistrationResult(
             registrationProxy: RegistrationProxy,
             holdingIdentity: HoldingIdentity
-        ): MembershipRequestRegistrationResult =
-            eventually(
+        ): MembershipRequestRegistrationResult {
+            val context = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
+            return eventually(
                 waitBetween = Duration.ofMillis(1000)
             ) {
                 assertDoesNotThrow {
-                    registrationProxy.register(holdingIdentity)
+                    registrationProxy.register(holdingIdentity, context)
                 }
             }
+        }
 
         fun assertLookupSize(groupReader: MembershipGroupReader, expectedSize: Int) = eventually {
             groupReader.lookup().also {

@@ -4,7 +4,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import picocli.CommandLine.Parameters
 import java.util.concurrent.Callable
 
 @Command(
@@ -26,14 +25,25 @@ class RemoveGroup : Callable<Collection<Record<String, *>>> {
     )
     private var groupInfoTopic: String = GROUP_POLICIES_TOPIC
 
-    @Parameters(
+    @Option(
+        names = ["-x", "--x500", "--x500-name"],
         description = [
-            "The group ID."
-        ]
+            "The x500 name"
+        ],
+        required = true,
     )
-    internal lateinit var groupId: String
+    private lateinit var x500Name: String
+
+    @Option(
+        names = ["-g", "--group", "--group-id"],
+        description = [
+            "The group ID"
+        ],
+        required = true,
+    )
+    private lateinit var groupId: String
 
     override fun call(): Collection<Record<String, *>> {
-        return listOf(Record(groupInfoTopic, groupId, null))
+        return listOf(Record(groupInfoTopic, "$x500Name-$groupId", null))
     }
 }

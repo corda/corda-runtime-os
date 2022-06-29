@@ -45,6 +45,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+    runtimeOnly project(":libs:messaging:messaging-impl")
 
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")

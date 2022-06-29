@@ -41,7 +41,6 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
@@ -79,6 +78,7 @@ class StaticMemberRegistrationService @Activate constructor(
         private val logger: Logger = contextLogger()
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
+        private const val KEY_SCHEME = "corda.key.scheme"
     }
 
     private val DUMMY_CERTIFICATE = this::class.java.getResource("/static_network_dummy_certificate.pem")!!.readText()
@@ -106,7 +106,10 @@ class StaticMemberRegistrationService @Activate constructor(
         coordinator.stop()
     }
 
-    override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
+    override fun register(
+        member: HoldingIdentity,
+        context: Map<String, String>
+    ): MembershipRequestRegistrationResult {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             return MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -114,8 +117,9 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         try {
+            val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
-            val membershipUpdates = lifecycleHandler.publisher.publish(parseMemberTemplate(member, groupPolicy))
+            val membershipUpdates = lifecycleHandler.publisher.publish(parseMemberTemplate(member, groupPolicy, keyScheme))
             membershipUpdates.forEach { it.get() }
             val hostedIdentityUpdates =
                 lifecycleHandler.publisher.publish(listOf(createHostedIdentity(member, groupPolicy)))
@@ -142,7 +146,8 @@ class StaticMemberRegistrationService @Activate constructor(
     @Suppress("MaxLineLength")
     private fun parseMemberTemplate(
         registeringMember: HoldingIdentity,
-        groupPolicy: GroupPolicy
+        groupPolicy: GroupPolicy,
+        keyScheme: String,
     ): List<Record<String, PersistentMemberInfo>> {
         val records = mutableListOf<Record<String, PersistentMemberInfo>>()
 
@@ -162,7 +167,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         validateStaticMemberDeclaration(staticMemberInfo)
         // single key used as both session and ledger key
-        val memberKey = getOrGenerateKeyPair(memberId)
+        val memberKey = getOrGenerateKeyPair(memberId, keyScheme)
         val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
 
         @Suppress("SpreadOperator")
@@ -261,7 +266,7 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    private fun getOrGenerateKeyPair(tenantId: String): PublicKey {
+    private fun getOrGenerateKeyPair(tenantId: String, scheme: String): PublicKey {
         return with(cryptoOpsClient) {
             lookup(
                 tenantId = tenantId,
@@ -277,7 +282,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 tenantId = tenantId,
                 category = CryptoConsts.Categories.LEDGER,
                 alias = tenantId,
-                scheme = ECDSA_SECP256R1_CODE_NAME // @Charlie - you will have to have a way of specifying that now
+                scheme = scheme
             )
         }
     }

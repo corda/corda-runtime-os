@@ -57,7 +57,8 @@ class MemberRegistrationRpcOpsTest {
 
     private val registrationRequest = MemberRegistrationRequest(
         HOLDING_IDENTITY_ID,
-        RegistrationAction.REQUEST_JOIN
+        RegistrationAction.REQUEST_JOIN,
+        context = mock()
     )
 
     @Test

@@ -4,7 +4,7 @@ import com.google.common.jimfs.Jimfs
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.datamodel.ChunkingEntities
-import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl

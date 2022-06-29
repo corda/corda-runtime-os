@@ -1,5 +1,6 @@
 package net.corda.crypto.client.hsm.impl
 
+import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toWire
@@ -92,9 +93,12 @@ class HSMRegistrationClientImpl(
     private fun <RESPONSE> HSMRegistrationRequest.execute(
         timeout: Duration,
         respClazz: Class<RESPONSE>,
-        allowNoContentValue: Boolean = false
+        allowNoContentValue: Boolean = false,
+        retries: Int = 3
     ): RESPONSE? = try {
-        val response = sender.sendRequest(this).getOrThrow(timeout)
+        val response = retry(retries, logger) {
+            sender.sendRequest(this).getOrThrow(timeout)
+        }
         check(
             response.context.requestingComponent == context.requestingComponent &&
                     response.context.tenantId == context.tenantId

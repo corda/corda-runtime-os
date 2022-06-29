@@ -14,7 +14,9 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,14 +32,19 @@ class HSMConfigurationBusServiceImpl @Activate constructor(
     @Reference(service = HSMService::class)
     private val hsmService: HSMService
 ) : AbstractConfigurableComponent<HSMConfigurationBusServiceImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMConfigurationBusService>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<HSMConfigurationBusService>(),
+    configurationReadService = configurationReadService,
+    impl = InactiveImpl(),
+    dependencies = setOf(
         LifecycleCoordinatorName.forComponent<HSMService>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ),
+    configKeys = setOf(
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
+    )
 ), HSMConfigurationBusService {
     private companion object {
         const val GROUP_NAME = "crypto.hsm.rpc.registration"
@@ -52,8 +59,8 @@ class HSMConfigurationBusServiceImpl @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_HSM_CONFIGURATION_MESSAGE_TOPIC)
-        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val processor = HSMConfigurationBusProcessor(hsmService, event)
         return ActiveImpl(
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(

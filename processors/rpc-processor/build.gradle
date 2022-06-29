@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'RPC Processor'
@@ -64,4 +65,24 @@ dependencies {
 
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rpcops-service')
+
+    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
+    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+
+    integrationTestImplementation project(':libs:http-rpc:http-rpc')
+    integrationTestImplementation project(':libs:http-rpc:http-rpc-server')
+    integrationTestImplementation project(':libs:http-rpc:http-rpc-tools')
+
+    integrationTestImplementation project(':components:membership:membership-http-rpc')
+    integrationTestImplementation project(':libs:configuration:configuration-endpoints')
+    integrationTestImplementation project(':libs:virtual-node:cpi-upload-endpoints')
+    integrationTestImplementation project(':components:flow:flow-rpcops-service')
+    integrationTestImplementation project(':libs:permissions:permission-endpoint')
+    integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
+    integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+
+    integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
+    integrationTestRuntimeOnly 'org.osgi:osgi.core'
+    integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
 }

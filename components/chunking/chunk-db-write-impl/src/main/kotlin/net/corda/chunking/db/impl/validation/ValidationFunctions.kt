@@ -1,9 +1,14 @@
 package net.corda.chunking.db.impl.validation
 
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import javax.persistence.PersistenceException
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
@@ -13,14 +18,12 @@ import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
-import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import javax.persistence.PersistenceException
 
 internal class ValidationFunctions(
     private val cpiCacheDir: Path,
-    private val cpiPartsDir: Path
+    private val cpiPartsDir: Path,
+    private val chunkPersistence: ChunkPersistence,
+    private val cpiPersistence: CpiPersistence
 ) {
 
     companion object {
@@ -35,7 +38,7 @@ internal class ValidationFunctions(
      *
      * @throws ValidationException
      */
-    fun getFileInfo(persistence: ChunkPersistence, requestId: RequestId): FileInfo {
+    fun getFileInfo(requestId: RequestId): FileInfo {
         var fileName: String? = null
         lateinit var tempPath: Path
         lateinit var checksum: SecureHash
@@ -52,7 +55,7 @@ internal class ValidationFunctions(
         }
 
         // Now read chunks, and create CPI on local disk
-        persistence.forEachChunk(requestId, reader::read)
+        chunkPersistence.forEachChunk(requestId, reader::read)
 
         return with(fileName) {
             if (this == null) {
@@ -88,7 +91,6 @@ internal class ValidationFunctions(
      */
     @Suppress("ThrowsCount", "ComplexMethod")
     fun persistToDatabase(
-        chunkPersistence: ChunkPersistence,
         cpi: Cpi,
         fileInfo: FileInfo,
         requestId: RequestId,
@@ -101,7 +103,7 @@ internal class ValidationFunctions(
         try {
             val groupId = getGroupId(cpi)
 
-            val cpiExists = chunkPersistence.cpiExists(
+            val cpiExists = cpiPersistence.cpiExists(
                 cpi.metadata.cpiId.name,
                 cpi.metadata.cpiId.version,
                 cpi.metadata.cpiId.signerSummaryHashForDbQuery
@@ -109,10 +111,10 @@ internal class ValidationFunctions(
 
             return if (cpiExists && fileInfo.forceUpload) {
                 log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-                chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
+                cpiPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
             } else if (!cpiExists) {
                 log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-                chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
+                cpiPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
             } else {
                 throw ValidationException(
                     "CPI has already been inserted with cpks for " +
@@ -160,8 +162,8 @@ internal class ValidationFunctions(
         return true
     }
 
-    fun checkGroupIdDoesNotExistForThisCpi(persistence: ChunkPersistence, cpi: Cpi) {
-        val groupIdInDatabase = persistence.getGroupId(
+    fun checkGroupIdDoesNotExistForThisCpi(cpi: Cpi) {
+        val groupIdInDatabase = cpiPersistence.getGroupId(
             cpi.metadata.cpiId.name,
             cpi.metadata.cpiId.version,
             cpi.metadata.cpiId.signerSummaryHashForDbQuery

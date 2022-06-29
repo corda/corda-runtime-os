@@ -53,7 +53,10 @@ class HostedIdentityEntryFactoryTest {
     private val sessionKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
     }
-    private val certificatePem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
+    private val certificatePem =
+        HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
+            .replace("\r", "")
+            .replace("\n", System.lineSeparator())
     private val rootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/root.pem")!!.readText()
     private val certificatePublicKey = certificatePem.let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey

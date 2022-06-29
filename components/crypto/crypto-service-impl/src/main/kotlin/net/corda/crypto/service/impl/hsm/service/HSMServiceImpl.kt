@@ -12,7 +12,6 @@ import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
-import net.corda.crypto.impl.retrying.LinearRetryStrategy
 import net.corda.crypto.persistence.hsm.HSMStore
 import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -25,6 +24,7 @@ import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
@@ -56,7 +56,7 @@ class HSMServiceImpl(
 
     private val executor = CryptoRetryingExecutor(
         logger,
-        LinearRetryStrategy(hsmConfig.downstreamMaxAttempts)
+        BackoffStrategy.createBackoff(hsmConfig.downstreamMaxAttempts, listOf(100L))
     )
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {

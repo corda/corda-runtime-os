@@ -1,6 +1,7 @@
 package net.corda.reconciliation.impl
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
@@ -20,6 +21,6 @@ class ReconcilerFactoryImpl @Activate constructor(
         keyClass: Class<K>,
         valueClass: Class<V>,
         reconciliationIntervalMs: Long
-    ) =
+    ): Reconciler =
         ReconcilerImpl(dbReader, kafkaReader, writer, keyClass, valueClass, coordinatorFactory, reconciliationIntervalMs)
 }
