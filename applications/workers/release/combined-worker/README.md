@@ -153,3 +153,9 @@ The status endpoint is also exposed: http://localhost:7000/status
 Run the [smoketests](/applications/workers/workers-smoketest/) to validate the combined worker.
 
 Note that some tests require an empty environment (e.g. CPI upload).
+
+## Logs
+
+Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
+Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running, 
+but it may be useful to change this on a case-by-case basis when debugging.
