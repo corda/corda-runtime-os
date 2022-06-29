@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import com.typesafe.config.ConfigFactory
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
+import net.corda.data.virtualnode.VirtualNodeCreate
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
@@ -41,7 +41,7 @@ class VirtualNodeDbFactory(
      *
      * @return map of [VirtualNodeDbType]s to [VirtualNodeDb]s
      */
-    fun createVNodeDbs(holdingIdentityId: String, request: VirtualNodeCreationRequest): Map<VirtualNodeDbType, VirtualNodeDb> {
+    fun createVNodeDbs(holdingIdentityId: String, request: VirtualNodeCreate): Map<VirtualNodeDbType, VirtualNodeDb> {
         with (request) {
             return mapOf(
                 Pair(VAULT, createVNodeDb(VAULT, holdingIdentityId, vaultDdlConnection, vaultDmlConnection)),

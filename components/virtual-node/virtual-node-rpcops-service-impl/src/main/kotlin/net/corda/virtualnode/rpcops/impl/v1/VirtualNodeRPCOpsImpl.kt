@@ -1,8 +1,11 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
-import java.time.Duration
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
-import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeResponseFailure
+import net.corda.data.virtualnode.VirtualNodeResponseSuccess
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -17,6 +20,8 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -27,6 +32,7 @@ import net.corda.virtualnode.rpcops.impl.GROUP_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
@@ -35,7 +41,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : VirtualNodeRPCOpsInternal, PluggableRPCOps<VirtualNodeRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
@@ -43,16 +49,17 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
-            VirtualNodeCreationRequest::class.java,
-            VirtualNodeCreationResponse::class.java
+            VirtualNodeManagementRequest::class.java,
+            VirtualNodeManagementResponse::class.java
         )
         val logger = contextLogger()
     }
 
     override val targetInterface = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
-    private var rpcSender: RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>? = null
+    private var rpcSender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
     private var requestTimeout: Duration? = null
+    private var clock: Clock = UTCClock()
     override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
     override fun start() = Unit
@@ -72,29 +79,48 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     }
 
     override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
+        val instant = clock.instant()
         validateX500Name(request.x500Name)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
-        val rpcRequest = with (request) {
-            VirtualNodeCreationRequest(
-                x500Name, cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor)
+        val rpcRequest = with(request) {
+            VirtualNodeManagementRequest(
+                instant,
+                VirtualNodeCreateRequest(
+                    x500Name, cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor
+                )
+            )
         }
         val resp = sendRequest(rpcRequest)
 
-        return if (resp.success) {
-            val cpiId = CpiIdentifier.fromAvro(resp.cpiIdentifier)
-            HTTPCreateVirtualNodeResponse(
-                resp.x500Name, cpiId, resp.cpiFileChecksum, resp.mgmGroupId, resp.holdingIdentifierHash,
-                resp.vaultDdlConnectionId, resp.vaultDmlConnectionId, resp.cryptoDdlConnectionId, resp.cryptoDmlConnectionId
-            )
-        } else {
-            val exception = resp.exception
-            if (exception == null) {
-                logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
-                throw InternalServerException("Request was unsuccessful but no exception was provided.")
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeResponseSuccess -> {
+                when (val responseData = resolvedResponse.result) {
+                    is VirtualNodeInfo -> {
+                        val cpiId = CpiIdentifier.fromAvro(responseData.cpiIdentifier)
+
+                        // Fields that couldn't be placed
+                        //  responseData.cpiFileChecksum
+                        //  responseData.holdingIdentifierHash
+                        HTTPCreateVirtualNodeResponse(
+                            responseData.holdingIdentity.x500Name, cpiId, "", responseData.holdingIdentity.groupId, "",
+                            responseData.vaultDdlConnectionId, responseData.vaultDmlConnectionId, responseData.cryptoDdlConnectionId, responseData.cryptoDmlConnectionId
+                        )
+                    }
+                    else -> throw UnknownResponseDataTypeException(resolvedResponse.result::class.java.name)
+                }
             }
-            logger.warn("Remote request to create virtual node responded with exception: ${exception.errorType}: ${exception.errorMessage}")
-            throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
+            is VirtualNodeResponseFailure -> {
+                val responseData = resp.responseType as VirtualNodeResponseFailure
+                val exception = responseData.exception
+                if (exception == null) {
+                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
+                }
+                logger.warn("Remote request to create virtual node responded with exception: ${exception.errorType}: ${exception.errorMessage}")
+                throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
+            }
+            else -> throw throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
     }
 
@@ -117,7 +143,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
      * @throws VirtualNodeRPCOpsServiceException If the updated configuration could not be published.
      */
     @Suppress("ThrowsCount")
-    private fun sendRequest(request: VirtualNodeCreationRequest): VirtualNodeCreationResponse {
+    private fun sendRequest(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
