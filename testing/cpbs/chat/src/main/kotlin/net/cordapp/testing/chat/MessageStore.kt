@@ -1,24 +1,22 @@
 package net.cordapp.testing.chat
 
+import net.corda.v5.application.persistence.PersistenceService
+import java.time.Duration
+
 /**
- * Static message store, which holds unread messages in memory. Should be replaced with use of the persistence api when
- * available.
+ * MessageStore. Persists messages using the PersistenceService.
  */
 object MessageStore {
-    fun add(message: IncomingChatMessage) {
-        synchronized(lock) {
-            messages.add(message)
-        }
+    fun add(persistenceService: PersistenceService, message: IncomingChatMessage) {
+        persistenceService.persist(message)
     }
 
-    fun readAndClear(): ReceivedChatMessages {
-        synchronized(lock) {
-            val unreadMessages = messages
-            messages = mutableListOf()
-            return ReceivedChatMessages(unreadMessages)
-        }
-    }
+    fun readAndClear(persistenceService: PersistenceService): ReceivedChatMessages {
 
-    private val lock = Any()
-    private var messages = mutableListOf<IncomingChatMessage>()
+        val cursor = persistenceService.query<IncomingChatMessage>("IncomingChatMessage.all", emptyMap())
+        val pollResult = cursor.poll(999, Duration.ofSeconds(5))
+        // TODO
+        //persistenceService.remove(pollResult.values)
+        return ReceivedChatMessages(pollResult.values)
+    }
 }

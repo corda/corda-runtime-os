@@ -2,15 +2,20 @@ package net.cordapp.testing.chat
 
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PersistenceService
 import net.cordapp.testing.chatframework.FlowMockHelper
 import net.cordapp.testing.chatframework.createFlow
 import net.cordapp.testing.chatframework.createMockService
+import net.cordapp.testing.chatframework.serviceMock
 import net.cordapp.testing.chatframework.willReceive
 import net.cordapp.testing.chatframework.withCounterpartyName
 import net.cordapp.testing.chatframework.withVirtualNodeName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class ChatIncomingFlowTest {
     companion object {
@@ -21,6 +26,7 @@ class ChatIncomingFlowTest {
 
     val flowMockHelper = FlowMockHelper {
         createMockService<FlowEngine>().withVirtualNodeName(X500_NAME)
+        mockService<PersistenceService>()
     }
 
     val flow = flowMockHelper.createFlow<ChatIncomingFlow>()
@@ -32,8 +38,11 @@ class ChatIncomingFlowTest {
 
         flow.call(flowSession)
 
-        val receivedMessages = MessageStore.readAndClear()
-        assertThat(receivedMessages.messages.size).isEqualTo(1)
-        assertThat(receivedMessages.messages[0]).isEqualTo(IncomingChatMessage(COUNTERPARTY_X500_NAME, MESSAGE))
+        verify(flowMockHelper.serviceMock<PersistenceService>()).persist(
+            IncomingChatMessage(
+                name = COUNTERPARTY_X500_NAME,
+                message = MESSAGE
+            )
+        )
     }
 }

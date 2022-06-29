@@ -3,6 +3,8 @@ package net.cordapp.testing.chat
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.stream.Cursor
 import net.cordapp.testing.chatframework.FlowMockHelper
 import net.cordapp.testing.chatframework.FlowMockMessageLink
 import net.cordapp.testing.chatframework.addExpectedMessageType
@@ -13,6 +15,9 @@ import net.cordapp.testing.chatframework.getMockService
 import net.cordapp.testing.chatframework.withVirtualNodeName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class ChatFlowCollaborationTests {
@@ -34,6 +39,7 @@ class ChatFlowCollaborationTests {
 
     val incomingFlowMockHelper = FlowMockHelper {
         createMockService<FlowEngine>().withVirtualNodeName(RECIPIENT_X500_NAME)
+        mockService<PersistenceService>()
     }
 
     val incomingChatFlow = incomingFlowMockHelper.createFlow<ChatIncomingFlow>()
@@ -41,6 +47,7 @@ class ChatFlowCollaborationTests {
     val readerFlowMockHelper = FlowMockHelper {
         createMockService<FlowEngine>().withVirtualNodeName(RECIPIENT_X500_NAME)
         createMockService<JsonMarshallingService>()
+        mockService<PersistenceService>()
     }
 
     val readerChatFlow = readerFlowMockHelper.createFlow<ChatReaderFlow>()
@@ -49,6 +56,24 @@ class ChatFlowCollaborationTests {
     fun `flow sends message to correct recipient`() {
         val messageLink = FlowMockMessageLink(from = outgoingFlowMockHelper, to = incomingFlowMockHelper).apply {
             addExpectedMessageType<MessageContainer>()
+        }
+
+//        incomingFlowMockHelper.onPersist { payload ->
+//            readerFlowMockHelper.onQuery<IncomingChatMessage>("IncomingChatMessage.all", emptyMap()) {
+//                payload
+//            }
+//        }
+
+        whenever(incomingFlowMockHelper.serviceMock<PersistenceService>().persist(any<Any>())).then {
+            val cursor = mock<Cursor<IncomingChatMessage>>()
+            val pollResult = mock<Cursor.PollResult<IncomingChatMessage>>()
+            whenever(pollResult.values).thenReturn(listOf(it.arguments[0] as IncomingChatMessage))
+            whenever(cursor.poll(any(), any())).thenReturn(pollResult)
+
+            whenever(
+                readerFlowMockHelper.serviceMock<PersistenceService>()
+                    .query<IncomingChatMessage>("IncomingChatMessage.all", emptyMap())
+            ).thenReturn(cursor)
         }
 
         executeConcurrently({
@@ -66,7 +91,7 @@ class ChatFlowCollaborationTests {
         val expectedMessages = ReceivedChatMessages(
             messages = listOf(
                 IncomingChatMessage(
-                    senderX500Name = FROM_X500_NAME, message = MESSAGE
+                    name = FROM_X500_NAME, message = MESSAGE
                 )
             )
         )

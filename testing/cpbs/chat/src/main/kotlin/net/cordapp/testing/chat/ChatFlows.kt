@@ -13,6 +13,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -71,6 +72,9 @@ class ChatIncomingFlow : ResponderFlow {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
+
     @Suspendable
     override fun call(session: FlowSession) {
         val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
@@ -79,7 +83,7 @@ class ChatIncomingFlow : ResponderFlow {
         val sender = session.counterparty.toString()
         val message = session.receive<MessageContainer>().unwrap { it.message }
 
-        MessageStore.add(IncomingChatMessage(sender, message))
+        MessageStore.add(persistenceService, IncomingChatMessage(sender, message))
 
         log.info("Added incoming message from ${sender} to message store")
     }
@@ -115,10 +119,13 @@ class ChatReaderFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
-        with (MessageStore.readAndClear()) {
+        with(MessageStore.readAndClear(persistenceService)) {
             log.info("Returning ${this.messages.size} unread messages")
             return jsonMarshallingService.format(this)
         }
