@@ -10,11 +10,13 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
+import net.corda.chunking.db.impl.persistence.CpiPersistence
 
 @Suppress("LongParameterList")
 class CpiValidatorImpl constructor(
     private val publisher: StatusPublisher,
-    private val persistence: ChunkPersistence,
+    chunkPersistence: ChunkPersistence,
+    cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
     cpiCacheDir: Path,
     cpiPartsDir: Path,
@@ -24,7 +26,7 @@ class CpiValidatorImpl constructor(
         private val log = contextLogger()
     }
 
-    private val validationFunctions = ValidationFunctions(cpiCacheDir, cpiPartsDir)
+    private val validationFunctions = ValidationFunctions(cpiCacheDir, cpiPartsDir, chunkPersistence, cpiPersistence)
 
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
@@ -32,7 +34,7 @@ class CpiValidatorImpl constructor(
 
         // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
-        val fileInfo = validationFunctions.getFileInfo(persistence, requestId)
+        val fileInfo = validationFunctions.getFileInfo(requestId)
 
         publisher.update(requestId, "Checking signatures")
         validationFunctions.checkSignature(fileInfo)
@@ -45,7 +47,7 @@ class CpiValidatorImpl constructor(
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
-            validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+            validationFunctions.checkGroupIdDoesNotExistForThisCpi(cpi)
         }
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
@@ -53,7 +55,6 @@ class CpiValidatorImpl constructor(
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity = validationFunctions.persistToDatabase(
-            persistence,
             cpi,
             fileInfo,
             requestId,
