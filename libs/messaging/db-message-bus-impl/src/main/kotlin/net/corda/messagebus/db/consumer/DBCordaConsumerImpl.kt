@@ -163,7 +163,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         )
     }
 
-    override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
+    override fun getPartitions(topic: String): List<CordaTopicPartition> {
         return dbAccess.getTopicPartitionMapFor(topic).toList()
     }
 

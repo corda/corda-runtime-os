@@ -6,30 +6,35 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
-import java.time.Instant
+import net.corda.chunking.db.impl.persistence.CpiPersistence
 
-class CpiValidatorImpl(
+@Suppress("LongParameterList")
+class CpiValidatorImpl constructor(
     private val publisher: StatusPublisher,
-    private val persistence: ChunkPersistence,
+    chunkPersistence: ChunkPersistence,
+    cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
     cpiCacheDir: Path,
-    cpiPartsDir: Path
+    cpiPartsDir: Path,
+    private val clock: Clock
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
     }
 
-    private val validationFunctions = ValidationFunctions(cpiCacheDir, cpiPartsDir)
+    private val validationFunctions = ValidationFunctions(cpiCacheDir, cpiPartsDir, chunkPersistence, cpiPersistence)
 
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
         log.debug("Validating $requestId")
 
+        // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
-        val fileInfo = validationFunctions.getFileInfo(persistence, requestId)
+        val fileInfo = validationFunctions.getFileInfo(requestId)
 
         publisher.update(requestId, "Checking signatures")
         validationFunctions.checkSignature(fileInfo)
@@ -42,21 +47,28 @@ class CpiValidatorImpl(
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
-            validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+            validationFunctions.checkGroupIdDoesNotExistForThisCpi(cpi)
         }
 
+        publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
+        val cpkDbChangeLogEntities = validationFunctions.extractLiquibaseScriptsFromCpi(cpi)
+
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity = validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
+        val cpiMetadataEntity = validationFunctions.persistToDatabase(
+            cpi,
+            fileInfo,
+            requestId,
+            cpkDbChangeLogEntities
+        )
 
         publisher.update(requestId, "Notifying flow workers")
-        val timestamp = Instant.now()
         val cpiMetadata = CpiMetadata(
             cpi.metadata.cpiId,
             fileInfo.checksum,
             cpi.cpks.map { it.metadata },
             cpi.metadata.groupPolicy,
             version = cpiMetadataEntity.entityVersion,
-            timestamp
+            timestamp = clock.instant()
         )
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 

@@ -21,7 +21,6 @@ class CryptoServiceThrottlingDecorator(
     }
 
     private fun <R> executeWithBackingOff(block: () -> R): R {
-        var backOffTime = 0L
         var attempt = 1
         var op = ""
         while(true) {
@@ -38,20 +37,20 @@ class CryptoServiceThrottlingDecorator(
                 if(attempt == 1) {
                     op = UUID.randomUUID().toString()
                 }
-                backOffTime = e.getBackoff(attempt, backOffTime)
-                if (backOffTime < 0 || attempt >= MAX_RETRY_GUARD) {
+                val backoff = e.getBackoff(attempt)
+                if (backoff < 0 || attempt >= MAX_RETRY_GUARD) {
                     throw CryptoException(
-                        "Failed all backoff attempts (op=$op, attempt=$attempt, backOffTime=$backOffTime).",
+                        "Failed all backoff attempts (op=$op, attempt=$attempt, backoff=$backoff).",
                         e
                     )
                 } else {
                     logger.warn(
-                        "Throttling, backing of on attempt={}, for backOffTime={} (op={})",
+                        "Throttling, backing of on attempt={}, for backoff={} (op={})",
                         attempt,
-                        backOffTime,
+                        backoff,
                         op
                     )
-                    Thread.sleep(backOffTime)
+                    Thread.sleep(backoff)
                 }
                 attempt++
             }

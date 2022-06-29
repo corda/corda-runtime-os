@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -53,11 +53,11 @@ import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
@@ -81,6 +81,8 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
     companion object {
+        private val logger = contextLogger()
+
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
 
         @InjectService(timeout = 5000L)
@@ -185,6 +187,7 @@ class CryptoProcessorTests {
                 keyEncodingService = schemeMetadata
             )
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+            logger.info("Publishing prerequisite config")
             publisher.publish(
                 listOf(
                     Record(
@@ -461,6 +464,12 @@ class CryptoProcessorTests {
             category = CryptoConsts.Categories.CI,
             scheme = RSA_CODE_NAME
         )
+        logger.info(
+            "Publishing: createFreshKey({}, {}, {})",
+            tenantId,
+            CryptoConsts.Categories.CI,
+            RSA_CODE_NAME
+        )
         publisher.publish(
             listOf(
                 Record(
@@ -470,6 +479,7 @@ class CryptoProcessorTests {
                 )
             )
         ).forEach { it.get() }
+        logger.info("Waiting for response for createFreshKey")
         val response = flowOpsResponses.waitForResponse(key)
         val original = transformer.transform(response) as PublicKey
 
@@ -497,6 +507,13 @@ class CryptoProcessorTests {
             scheme = RSA_CODE_NAME,
             externalId = externalId
         )
+        logger.info(
+            "Publishing: createFreshKey({}, {}, {}, {})",
+            tenantId,
+            CryptoConsts.Categories.CI,
+            RSA_CODE_NAME,
+            externalId
+        )
         publisher.publish(
             listOf(
                 Record(
@@ -506,6 +523,7 @@ class CryptoProcessorTests {
                 )
             )
         ).forEach { it.get() }
+        logger.info("Waiting for response for createFreshKey")
         val response = flowOpsResponses.waitForResponse(key)
         val original = transformer.transform(response) as PublicKey
 
@@ -631,7 +649,7 @@ class CryptoProcessorTests {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> RSASSA_PSS_SHA256_SIGNATURE_SPEC
+            "RSA" -> SignatureSpec.RSASSA_PSS_SHA256
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = opsClient.sign(
@@ -663,6 +681,12 @@ class CryptoProcessorTests {
                 signatureSpec = spec,
                 data = data
             )
+            logger.info(
+                "Publishing: createSign({}, {}, {})",
+                tenantId,
+                publicKey.publicKeyId(),
+                spec
+            )
             publisher.publish(
                 listOf(
                     Record(
@@ -672,6 +696,7 @@ class CryptoProcessorTests {
                     )
                 )
             ).forEach { it.get() }
+            logger.info("Waiting for response for createSign")
             val response = flowOpsResponses.waitForResponse(key)
             val signature = transformer.transform(response) as DigitalSignature.WithKey
             assertEquals(publicKey, signature.by)
@@ -692,11 +717,18 @@ class CryptoProcessorTests {
         schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
+            val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
             val event = transformer.createSign(
                 tenantId = tenantId,
                 publicKey = publicKey,
-                signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!,
+                signatureSpec = spec,
                 data = data
+            )
+            logger.info(
+                "Publishing: createSign({}, {}, {})",
+                tenantId,
+                publicKey.publicKeyId(),
+                spec
             )
             publisher.publish(
                 listOf(
@@ -707,6 +739,7 @@ class CryptoProcessorTests {
                     )
                 )
             ).forEach { it.get() }
+            logger.info("Waiting for response for createSign")
             val response = flowOpsResponses.waitForResponse(key)
             val signature = transformer.transform(response) as DigitalSignature.WithKey
             assertEquals(publicKey, signature.by)

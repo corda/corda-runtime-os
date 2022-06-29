@@ -53,8 +53,8 @@ class MemberInfoExtension {
         /** Key name for group identifier property. */
         const val GROUP_ID = "corda.groupId"
 
-        /** Key name for session key property. */
-        const val SESSION_KEY = "corda.session.key"
+        /** Key name for ECDH key property. */
+        const val ECDH_KEY = "corda.ecdh.key"
 
         /** Key name for certificate property. */
         const val CERTIFICATE = "corda.session.certificate"

@@ -120,7 +120,7 @@ class FlowServiceTestContext @Activate constructor(
         )
     }
 
-    override fun cpkMetadata(cpiId: String, cpkId: String) {
+    override fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash) {
         val manifestCordAppInfo = ManifestCorDappInfo(null, null, null, null)
 
         val cordAppManifest = CordappManifest(
@@ -142,7 +142,7 @@ class FlowServiceTestContext @Activate constructor(
             listOf(),
             cordAppManifest,
             CpkType.UNKNOWN,
-            getSecureHash(),
+            cpkChecksum,
             setOf(),
             timestamp
         )
@@ -159,8 +159,8 @@ class FlowServiceTestContext @Activate constructor(
         cpiInfoReadService.addOrUpdate(cpiMeta)
     }
 
-    override fun sandboxCpk(cpkId: String) {
-        sandboxGroupContextComponent.putCpk(getCpkIdentifier(cpkId))
+    override fun sandboxCpk(cpkFileChecksum: SecureHash) {
+        sandboxGroupContextComponent.putCpk(cpkFileChecksum)
     }
 
     override fun membershipGroupFor(owningMember: HoldingIdentity) {

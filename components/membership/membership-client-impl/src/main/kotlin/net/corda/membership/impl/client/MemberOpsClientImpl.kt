@@ -3,7 +3,6 @@ package net.corda.membership.impl.client
 import net.corda.utilities.time.UTCClock
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcAction
@@ -25,6 +24,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -177,7 +177,7 @@ class MemberOpsClientImpl @Activate constructor(
                 RegistrationRpcRequest(
                     memberRegistrationRequest.holdingIdentityId,
                     RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
-                    KeyValuePairList(emptyList())
+                    memberRegistrationRequest.context.toWire()
                 )
             )
 

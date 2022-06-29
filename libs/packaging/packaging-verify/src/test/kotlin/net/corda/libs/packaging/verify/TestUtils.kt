@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.verify
 
 import net.corda.libs.packaging.hash
+import net.corda.test.util.InMemoryZipFile
 import net.corda.v5.crypto.SecureHash
 import java.io.FileNotFoundException
 import java.io.InputStream

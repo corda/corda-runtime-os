@@ -12,6 +12,9 @@ import net.corda.messaging.api.subscription.RPCSubscription
  * cluster database and publishes it to Kafka.
  *
  * Upon [stop], stops listening.
+ *
+ * Upon [close], this stops listening and closes the underlying subscription and publisher. Note that at this point the
+ * writer can no longer be used and must be recreated.
  */
 internal class VirtualNodeWriter internal constructor(
     private val subscription: RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse>,
@@ -27,6 +30,10 @@ internal class VirtualNodeWriter internal constructor(
 
     override fun stop() {
         subscription.stop()
+    }
+
+    override fun close() {
+        subscription.close()
         publisher.close()
     }
 }

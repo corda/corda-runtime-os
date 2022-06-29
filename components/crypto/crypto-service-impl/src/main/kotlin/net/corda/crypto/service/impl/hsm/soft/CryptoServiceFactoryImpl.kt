@@ -14,7 +14,9 @@ import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CryptoService
@@ -51,9 +53,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 it.lifecycleName
             },
     configKeys = setOf(
-        ConfigKeys.MESSAGING_CONFIG,
-        ConfigKeys.BOOT_CONFIG,
-        ConfigKeys.CRYPTO_CONFIG
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
     )
 ), CryptoServiceFactory {
     companion object {

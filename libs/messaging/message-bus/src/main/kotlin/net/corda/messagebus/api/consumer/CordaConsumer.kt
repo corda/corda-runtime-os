@@ -149,11 +149,10 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * Get metadata about the partitions for a given topic.
      *
      * @param topic The topic to get partition metadata for
-     * @param timeout The maximum of time to await topic metadata
      *
      * @return The list of [CordaTopicPartition]s
      */
-    fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition>
+    fun getPartitions(topic: String): List<CordaTopicPartition>
 
     /**
      * Sets the default [CordaConsumerRebalanceListener] for this [CordaConsumer], if one is desired.

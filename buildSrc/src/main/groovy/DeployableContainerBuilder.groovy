@@ -12,6 +12,7 @@ import org.gradle.api.tasks.*
 
 import javax.inject.Inject
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
@@ -173,6 +174,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("No daemon available")
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
+        }
+        List<Path> imageFiles = project.configurations.getByName("image").collect { it.toPath() }
+        if (!imageFiles.empty) {
+            builder.addLayer(imageFiles, CONTAINER_LOCATION)
         }
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())

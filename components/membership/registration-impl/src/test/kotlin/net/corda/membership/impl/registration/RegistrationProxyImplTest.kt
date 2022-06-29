@@ -108,11 +108,11 @@ class RegistrationProxyImplTest {
         startComponentAndDependencies()
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity1)
-        assertEquals(registrationResult1, registrationProxy.register(identity1))
+        assertEquals(registrationResult1, registrationProxy.register(identity1, mock()))
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol2::class.java.name), identity2)
-        assertEquals(registrationResult2, registrationProxy.register(identity2))
+        assertEquals(registrationResult2, registrationProxy.register(identity2, mock()))
     }
 
     @Test
@@ -121,7 +121,7 @@ class RegistrationProxyImplTest {
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
         assertThrows<RegistrationProtocolSelectionException> {
-            registrationProxy.register(identity)
+            registrationProxy.register(identity, mock())
         }
     }
 
@@ -142,7 +142,7 @@ class RegistrationProxyImplTest {
         doReturn(false).whenever(coordinator).isRunning
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(identity) }
+        assertThrows<IllegalStateException> { registrationProxy.register(identity, mock()) }
     }
 
     @Test
@@ -151,7 +151,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.DOWN).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(identity) }
+        assertThrows<IllegalStateException> { registrationProxy.register(identity, mock()) }
     }
 
     @Test
@@ -160,7 +160,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.ERROR).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(identity) }
+        assertThrows<IllegalStateException> { registrationProxy.register(identity, mock()) }
     }
 
     @Test
@@ -231,16 +231,22 @@ class RegistrationProxyImplTest {
     }
 
     class RegistrationProtocol1 : AbstractRegistrationProtocol() {
-        override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult = registrationResult1
+        override fun register(
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult = registrationResult1
     }
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
-        override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult = registrationResult2
+        override fun register(
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult = registrationResult2
     }
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
         var started = 0
-        override fun register(member: HoldingIdentity) =
+        override fun register(member: HoldingIdentity, context: Map<String, String>) =
             MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED, "mock")
 
         override val isRunning = true

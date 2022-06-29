@@ -29,7 +29,6 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
@@ -712,7 +711,7 @@ class CryptoOperationsTests {
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val scheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        val rsaPss = RSASSA_PSS_SHA256_SIGNATURE_SPEC
+        val rsaPss = SignatureSpec.RSASSA_PSS_SHA256
         val info = signingAliasedKeys.getValue(scheme)
         assertEquals(info.publicKey.algorithm, "RSA")
         val customSignature1 = info.signingService.sign(
@@ -729,7 +728,7 @@ class CryptoOperationsTests {
     fun `Should generate fresh RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val scheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        val rsaPss = RSASSA_PSS_SHA256_SIGNATURE_SPEC
+        val rsaPss = SignatureSpec.RSASSA_PSS_SHA256
         val info = signingFreshKeys.getValue(scheme)
         assertNotNull(info.publicKey)
         assertEquals(info.publicKey.algorithm, "RSA")

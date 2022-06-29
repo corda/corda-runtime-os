@@ -97,6 +97,8 @@ include 'components:chunking:chunk-read-service-impl'
 include 'components:chunking:chunk-db-write'
 include 'components:chunking:chunk-db-write-impl'
 include 'components:crypto:crypto-client'
+include 'components:crypto:crypto-client-hsm'
+include 'components:crypto:crypto-client-hsm-impl'
 include 'components:crypto:crypto-client-impl'
 include 'components:crypto:crypto-component-core-impl'
 include 'components:crypto:crypto-db-persistence-impl'
@@ -165,13 +167,13 @@ include 'components:virtual-node:cpk-service-common'
 include 'components:virtual-node:entity-processor-service'
 include 'components:virtual-node:entity-processor-service-impl'
 include 'components:virtual-node:sandbox-group-context-service'
-include 'components:virtual-node:virtual-node-common'
 include 'components:virtual-node:virtual-node-info-read-service'
 include 'components:virtual-node:virtual-node-rpcops-service'
 include 'components:virtual-node:virtual-node-rpcops-service-impl'
 include 'components:virtual-node:virtual-node-rpcops-maintenance-impl'
 include 'components:virtual-node:virtual-node-write-service'
 include 'components:virtual-node:virtual-node-write-service-impl'
+include 'libs:application:application-db-setup'
 include 'libs:application:application-impl'
 include 'libs:chunking:chunking-core'
 include 'libs:chunking:chunking-datamodel'
@@ -181,6 +183,7 @@ include 'libs:configuration:configuration-endpoints'
 include 'libs:configuration:configuration-merger'
 include 'libs:configuration:configuration-schema:p2p'
 include 'libs:configuration:configuration-validation'
+include 'libs:crypto:cipher-suite-impl'
 include 'libs:crypto:crypto-core'
 include 'libs:crypto:crypto-flow'
 include 'libs:crypto:crypto-impl'
@@ -324,6 +327,7 @@ include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:connect4'
 include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:flow-worker-dev'
+include 'testing:cpbs:flow-worker-dev-for-cache-testing'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:sandbox-security-manager-one'
@@ -396,7 +400,8 @@ gradleEnterprise {
     }
     buildCache {
         local {
-            enabled = false
+            enabled = true
+            removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
         remote(HttpBuildCache) {
             url = "${gradleEnterpriseUrl}/cache/"
@@ -410,7 +415,7 @@ gradleEnterprise {
                 enabled = true
             } else {
                 push = false
-                enabled = true
+                enabled = false
             }
         }
     }

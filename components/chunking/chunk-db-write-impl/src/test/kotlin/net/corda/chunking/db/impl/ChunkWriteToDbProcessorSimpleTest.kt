@@ -67,12 +67,5 @@ class ChunkWriteToDbProcessorSimpleTest {
 
         processor.onNext(listOf(Record(topic, requestId, chunk)))
         verify(persistence).persistChunk(chunk)
-
-        // TODO
-//        assertThat(records.isNotEmpty()).isTrue
-//
-//        assertThat(requestId).isEqualTo(key.requestId)
-//        assertThat(exceptionMessage).isEqualTo(chunkAck.exception.errorMessage)
-//        assertThat(CordaRuntimeException::class.java.name).isEqualTo(chunkAck.exception.errorType)
     }
 }

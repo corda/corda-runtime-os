@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.data.membership.PersistentMemberInfo
@@ -46,6 +46,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
@@ -69,6 +70,7 @@ class StaticMemberRegistrationServiceTest {
         private const val ALICE_KEY = "1234"
         private const val BOB_KEY = "2345"
         private const val CHARLIE_KEY = "6789"
+        private const val KEY_SCHEME = "corda.key.scheme"
     }
 
     private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
@@ -158,6 +160,10 @@ class StaticMemberRegistrationServiceTest {
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
+    private val mockContext: Map<String, String> = mock {
+        on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
+    }
+
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -191,7 +197,7 @@ class StaticMemberRegistrationServiceTest {
         setUpPublisher()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        val registrationResult = registrationService.register(alice)
+        val registrationResult = registrationService.register(alice, mockContext)
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
@@ -246,7 +252,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when name field is empty in the GroupPolicy file`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(bob)
+        val registrationResult = registrationService.register(bob, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -261,7 +267,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when static network is empty`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(charlie)
+        val registrationResult = registrationService.register(charlie, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -275,7 +281,7 @@ class StaticMemberRegistrationServiceTest {
     @Test
     fun `registration fails when coordinator is not running`() {
         setUpPublisher()
-        val registrationResult = registrationService.register(alice)
+        val registrationResult = registrationService.register(alice, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -289,11 +295,26 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when registering member is not in the static member list`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(daisy)
+        val registrationResult = registrationService.register(daisy, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
                 "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is not listed in the static member list."
+            ),
+            registrationResult
+        )
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when key scheme is not provided in context`() {
+        setUpPublisher()
+        registrationService.start()
+        val registrationResult = registrationService.register(alice, mock())
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: Key scheme must be specified."
             ),
             registrationResult
         )
