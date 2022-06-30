@@ -27,15 +27,15 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
  *                  ComplianceTestType.CRYPTO_SERVICE,
  *                  ComplianceTestType.SESSION_INACTIVITY,
  *              ),
- *              sessionComplianceSpec = Pair(EDDSA_ED25519_CODE_NAME, EDDSA_ED25519_SIGNATURE_SPEC),
+ *              sessionComplianceSpec = Pair(EDDSA_ED25519_CODE_NAME, SignatureSpec.EDDSA_ED25519),
  *              sessionComplianceTimeout = Duration.ofMinutes(30),
  *              signatureSpecs = mapOf(
  *                  RSA_CODE_NAME to listOf(
- *                      RSA_SHA512_SIGNATURE_SPEC,
- *                      RSASSA_PSS_SHA384_SIGNATURE_SPEC
+ *                      SignatureSpec.RSA_SHA512,
+ *                      SignatureSpec.RSASSA_PSS_SHA384
  *                  ),
  *                  ECDSA_SECP256R1_CODE_NAME to listOf(
- *                      ECDSA_SHA384_SIGNATURE_SPEC
+ *                      SignatureSpec.ECDSA_SHA384
  *                  ),
 
  *              )

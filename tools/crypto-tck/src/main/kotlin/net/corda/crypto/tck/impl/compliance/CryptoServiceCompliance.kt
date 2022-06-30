@@ -23,7 +23,6 @@ import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
@@ -348,7 +347,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
     private fun signByCA(keyPair: KeyPair, data: ByteArray): ByteArray {
         val scheme = schemeMetadata.findKeyScheme(keyPair.public)
         val signature = Signature.getInstance(
-            EDDSA_ED25519_SIGNATURE_SPEC.signatureName,
+            SignatureSpec.EDDSA_ED25519.signatureName,
             schemeMetadata.providers[scheme.providerName]
         )
         signature.initSign(keyPair.private, schemeMetadata.secureRandom)

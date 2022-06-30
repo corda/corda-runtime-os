@@ -62,8 +62,8 @@ class PendingSessionMessageQueuesImplTest {
         )
     }
     private val groups = mock<LinkManagerGroupPolicyProvider> {
-        on { getGroupInfo(sessionCounterparties.ourId.groupId) } doReturn GroupPolicyListener.GroupInfo(
-            sessionCounterparties.ourId.groupId,
+        on { getGroupInfo(sessionCounterparties.ourId) } doReturn GroupPolicyListener.GroupInfo(
+            sessionCounterparties.ourId,
             NetworkType.CORDA_5,
             emptySet(),
             emptyList(),

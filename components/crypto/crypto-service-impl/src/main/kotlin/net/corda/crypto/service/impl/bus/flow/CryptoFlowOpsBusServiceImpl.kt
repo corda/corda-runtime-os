@@ -14,6 +14,8 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,13 +32,18 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<CryptoFlowOpsBusServiceImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoFlowOpsBusService>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<CryptoFlowOpsBusService>(),
+    configurationReadService = configurationReadService,
+    impl = InactiveImpl(),
+    dependencies = setOf(
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    ),
+    configKeys = setOf(
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
     )
 ), CryptoFlowOpsBusService {
     private companion object {
@@ -52,9 +59,7 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating durable subscription for '{}' topic", FLOW_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val processor = CryptoFlowOpsBusProcessor(
-            cryptoOpsClient = cryptoOpsClient
-        )
+        val processor = CryptoFlowOpsBusProcessor(cryptoOpsClient, event)
         return ActiveImpl(
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(

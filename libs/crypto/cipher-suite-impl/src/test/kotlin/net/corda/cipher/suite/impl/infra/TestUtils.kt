@@ -5,17 +5,11 @@ import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SM2_SM3_SIGNATURE_SPEC
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -60,12 +54,12 @@ fun CipherSchemeMetadata.inferSignatureSpecOrCreateDefault(publicKey: PublicKey,
         return inferred
     }
     return when(val codeName = findKeyScheme(publicKey).codeName) {
-        RSA_CODE_NAME -> RSA_SHA256_SIGNATURE_SPEC
-        ECDSA_SECP256R1_CODE_NAME, ECDSA_SECP256K1_CODE_NAME -> ECDSA_SHA256_SIGNATURE_SPEC
-        EDDSA_ED25519_CODE_NAME -> EDDSA_ED25519_SIGNATURE_SPEC
-        SM2_CODE_NAME -> SM2_SM3_SIGNATURE_SPEC
-        GOST3410_GOST3411_CODE_NAME -> GOST3410_GOST3411_SIGNATURE_SPEC
-        SPHINCS256_CODE_NAME -> SPHINCS256_SHA512_SIGNATURE_SPEC
+        RSA_CODE_NAME -> SignatureSpec.RSA_SHA256
+        ECDSA_SECP256R1_CODE_NAME, ECDSA_SECP256K1_CODE_NAME -> SignatureSpec.ECDSA_SHA256
+        EDDSA_ED25519_CODE_NAME -> SignatureSpec.EDDSA_ED25519
+        SM2_CODE_NAME -> SignatureSpec.SM2_SM3
+        GOST3410_GOST3411_CODE_NAME -> SignatureSpec.GOST3410_GOST3411
+        SPHINCS256_CODE_NAME -> SignatureSpec.SPHINCS256_SHA512
         else -> throw IllegalArgumentException("Cannot get default signature spec for $codeName")
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -94,56 +95,65 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(emptyMap())
 
+        val sourceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
         processor.firstValue.onNext(
-            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "group id 1", GatewayTruststore(listOf("one"))),
+            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))),
             null,
             emptyMap(),
         )
 
-        assertThat(testObject.getTrustStore("group id 1")).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore(sourceX500Name, groupId)).isEqualTo(keyStore)
     }
 
     @Test
     fun `onNext without value will remove store`() {
+        val sourceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
+
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "group id 1" to GatewayTruststore(listOf("one"))
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))
             )
         )
 
         processor.firstValue.onNext(
-            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "group id 1", null),
+            Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", null),
             null,
             emptyMap(),
         )
 
         assertThrows<IllegalArgumentException> {
-            testObject.getTrustStore("group id 1")
+            testObject.getTrustStore(sourceX500Name, groupId)
         }
     }
 
     @Test
     fun `onSnapshot save the data`() {
+        val sourceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
         processor.firstValue.onSnapshot(
             mapOf(
-                "group id 1" to GatewayTruststore(listOf("one"))
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))
             )
         )
 
-        assertThat(testObject.getTrustStore("group id 1")).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore(sourceX500Name, groupId)).isEqualTo(keyStore)
     }
 
     @Test
     fun `trust store add certificates to keystore`() {
+        val sourceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "a" to GatewayTruststore(listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
             )
         )
 
-        testObject.getTrustStore("a")
+        testObject.getTrustStore(sourceX500Name, groupId)
 
         verify(keyStore).setCertificateEntry("gateway-0", certificate)
         verify(keyStore).setCertificateEntry("gateway-1", certificate)
@@ -151,30 +161,34 @@ class TrustStoresMapTest {
 
     @Test
     fun `trust store will load the keystore`() {
+        val sourceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "a" to GatewayTruststore(listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
             )
         )
 
-        testObject.getTrustStore("a")
+        testObject.getTrustStore(sourceX500Name, groupId)
 
         verify(keyStore).load(null, null)
     }
 
     @Test
     fun `trust store load the correct certificate`() {
+        val sourceX500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
         val data = argumentCaptor<InputStream>()
         whenever(certificateFactory.generateCertificate(data.capture())).doReturn(certificate)
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "a" to GatewayTruststore(listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
             )
         )
 
-        testObject.getTrustStore("a")
+        testObject.getTrustStore(sourceX500Name, groupId)
 
         assertThat(data.firstValue.reader().readText()).isEqualTo("one")
         assertThat(data.secondValue.reader().readText()).isEqualTo("two")

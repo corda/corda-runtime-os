@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -22,7 +23,7 @@ internal class StubGroupPolicyProvider(
     companion object {
         fun GroupPolicyEntry.toGroupInfo(): GroupPolicyListener.GroupInfo {
             return GroupPolicyListener.GroupInfo(
-                this.groupId,
+                this.holdingIdentity,
                 this.networkType,
                 this.protocolModes.toSet(),
                 this.trustedCertificates
@@ -56,7 +57,7 @@ internal class StubGroupPolicyProvider(
         ) {
             val newValue = newRecord.value
             if (newValue == null) {
-                groups.remove(oldValue?.groupId)
+                groups.remove(oldValue?.holdingIdentity)
             } else {
                 addGroup(newValue)
             }
@@ -64,7 +65,7 @@ internal class StubGroupPolicyProvider(
 
         private fun addGroup(group: GroupPolicyEntry) {
             val info = group.toGroupInfo()
-            groups[group.groupId] = info
+            groups[group.holdingIdentity] = info
             listeners.forEach {
                 it.groupAdded(info)
             }
@@ -93,10 +94,10 @@ internal class StubGroupPolicyProvider(
         managedChildren = setOf(groupSubscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
-    private val groups = ConcurrentHashMap<String, GroupPolicyListener.GroupInfo>()
+    private val groups = ConcurrentHashMap<HoldingIdentity, GroupPolicyListener.GroupInfo>()
 
-    override fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
-        return groups[groupId]
+    override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
+        return groups[holdingIdentity]
     }
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {

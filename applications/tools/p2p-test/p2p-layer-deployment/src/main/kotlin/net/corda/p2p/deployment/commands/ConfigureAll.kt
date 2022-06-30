@@ -213,6 +213,7 @@ class ConfigureAll : Runnable {
         }
         val entriesToAdd = mapOf(
             "groupId" to annotations["group-id"],
+            "x500name" to x500name,
             "data" to mapOf(
                 "networkType" to "CORDA_5",
                 "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
