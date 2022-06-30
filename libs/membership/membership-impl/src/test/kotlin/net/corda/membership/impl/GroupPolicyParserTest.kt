@@ -12,7 +12,6 @@ import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.KeyEncodingService
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
