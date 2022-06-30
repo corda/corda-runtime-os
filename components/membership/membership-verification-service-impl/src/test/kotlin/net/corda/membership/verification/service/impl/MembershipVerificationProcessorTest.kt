@@ -50,7 +50,6 @@ class MembershipVerificationProcessorTest {
 
     private val membershipVerificationProcessor = MembershipVerificationProcessor(cordaAvroSerializationFactory)
 
-    // TODO write integration test, rebase
     @Test
     fun `processor returns response message`() {
         val result = membershipVerificationProcessor.onNext(events = listOf(Record("topic", "key", verificationRequest)))
