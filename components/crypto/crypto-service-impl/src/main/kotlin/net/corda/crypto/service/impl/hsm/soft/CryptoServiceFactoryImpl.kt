@@ -48,7 +48,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
     configurationReadService = configurationReadService,
     impl = InactiveImpl(),
-    dependencies = setOf(LifecycleCoordinatorName.forComponent<HSMService>()) +
+    upstream = setOf(LifecycleCoordinatorName.forComponent<HSMService>()) +
             cryptoServiceProviders.filterIsInstance(LifecycleNameProvider::class.java).map {
                 it.lifecycleName
             },

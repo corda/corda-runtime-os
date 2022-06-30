@@ -36,7 +36,7 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<CryptoFlowOpsBusService>(),
     configurationReadService = configurationReadService,
     impl = InactiveImpl(),
-    dependencies = setOf(
+    upstream = setOf(
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ),

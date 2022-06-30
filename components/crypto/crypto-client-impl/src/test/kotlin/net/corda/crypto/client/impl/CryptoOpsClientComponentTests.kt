@@ -3,8 +3,10 @@ package net.corda.crypto.client.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
+import net.corda.crypto.client.impl.infra.TestRPCSender
 import net.corda.crypto.client.impl.infra.act
 import net.corda.crypto.client.impl.infra.generateKeyPair
+import net.corda.crypto.client.impl.infra.reportDownComponents
 import net.corda.crypto.client.impl.infra.signData
 import net.corda.crypto.component.impl.exceptionFactories
 import net.corda.crypto.core.CryptoConsts
@@ -37,13 +39,12 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CustomSignatureSpec
@@ -57,7 +58,6 @@ import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
@@ -66,22 +66,20 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
+import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
 class CryptoOpsClientComponentTests {
     companion object {
+        private val logger = contextLogger()
+
         @JvmStatic
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
             exceptionFactories.keys.map { Class.forName(it) }
@@ -92,8 +90,8 @@ class CryptoOpsClientComponentTests {
     private lateinit var knownOperationContext: Map<String, String>
     private lateinit var knownRawOperationContext: KeyValuePairList
     private lateinit var schemeMetadata: CipherSchemeMetadata
-    private lateinit var sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
-    private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var sender: TestRPCSender<RpcOpsRequest, RpcOpsResponse>
+    private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var component: CryptoOpsClientComponent
@@ -111,8 +109,8 @@ class CryptoOpsClientComponentTests {
             }
         )
         schemeMetadata = CipherSchemeMetadataImpl()
-        sender = mock()
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+        sender = TestRPCSender(coordinatorFactory)
         publisherFactory = mock {
             on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
         }
@@ -133,32 +131,26 @@ class CryptoOpsClientComponentTests {
     }
 
     private fun setupCompletedResponse(respFactory: (RpcOpsRequest) -> Any) {
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, RpcOpsRequest::class.java)
-            val future = CompletableFuture<RpcOpsResponse>()
-            future.complete(
-                RpcOpsResponse(
-                    CryptoResponseContext(
-                        req.context.requestingComponent,
-                        req.context.requestTimestamp,
-                        UUID.randomUUID().toString(),
-                        Instant.now(),
-                        req.context.tenantId,
-                        req.context.other
-                    ), respFactory(req)
-                )
+        sender.setupCompletedResponse { req ->
+            RpcOpsResponse(
+                CryptoResponseContext(
+                    req.context.requestingComponent,
+                    req.context.requestTimestamp,
+                    UUID.randomUUID().toString(),
+                    Instant.now(),
+                    req.context.tenantId,
+                    req.context.other
+                ), respFactory(req)
             )
-            future
         }
     }
 
-    private fun assertRequestContext(result: SendActResult<RpcOpsRequest, *>, tenantId: String = knownTenantId) {
-        val context = result.firstRequest.context
+    private fun assertRequestContext(result: SendActResult<*>, tenantId: String = knownTenantId) {
+        assertNotNull(sender.lastRequest)
+        val context = sender.lastRequest!!.context
         kotlin.test.assertEquals(tenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
-        kotlin.test.assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
+        assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items).isEmpty()
     }
 
@@ -170,10 +162,11 @@ class CryptoOpsClientComponentTests {
         }
     }
 
-    private inline fun <reified OP> assertOperationType(result: SendActResult<RpcOpsRequest, *>): OP {
-        assertNotNull(result.firstRequest.request)
-        assertThat(result.firstRequest.request).isInstanceOf(OP::class.java)
-        return result.firstRequest.request as OP
+    private inline fun <reified OP> assertOperationType(): OP {
+        assertNotNull(sender.lastRequest)
+        assertNotNull(sender.lastRequest!!.request)
+        assertThat(sender.lastRequest!!.request).isInstanceOf(OP::class.java)
+        return sender.lastRequest!!.request as OP
     }
 
     @Test
@@ -195,7 +188,7 @@ class CryptoOpsClientComponentTests {
         schemeMetadata.schemes.forEach {
             assertTrue(result.value.contains(it.codeName))
         }
-        val query = assertOperationType<SupportedSchemesRpcQuery>(result)
+        val query = assertOperationType<SupportedSchemesRpcQuery>()
         assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
@@ -255,7 +248,7 @@ class CryptoOpsClientComponentTests {
         assertEquals("master-key", result.value[0].masterKeyAlias)
         assertEquals(1, result.value[0].encodingVersion)
         assertEquals(now.epochSecond, result.value[0].created.epochSecond)
-        val query = assertOperationType<KeysRpcQuery>(result)
+        val query = assertOperationType<KeysRpcQuery>()
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
         assertEquals(CryptoKeyOrderBy.ALIAS_DESC, query.orderBy)
@@ -301,7 +294,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertEquals(0, result.value!!.size)
-        val query = assertOperationType<KeysRpcQuery>(result)
+        val query = assertOperationType<KeysRpcQuery>()
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
         assertEquals(CryptoKeyOrderBy.ALIAS_DESC, query.orderBy)
@@ -366,7 +359,7 @@ class CryptoOpsClientComponentTests {
         assertEquals("master-key", result.value[0].masterKeyAlias)
         assertEquals(1, result.value[0].encodingVersion)
         assertEquals(now.epochSecond, result.value[0].created.epochSecond)
-        val query = assertOperationType<ByIdsRpcQuery>(result)
+        val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(1, query.keys.size)
         assertEquals(keyPair.public.publicKeyId(), query.keys[0])
         assertRequestContext(result)
@@ -421,7 +414,7 @@ class CryptoOpsClientComponentTests {
             component.lookup(knownTenantId, listOf(id))
         }
         assertEquals(0, result.value!!.size)
-        val query = assertOperationType<ByIdsRpcQuery>(result)
+        val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(1, query.keys.size)
         assertEquals(id, query.keys[0])
         assertRequestContext(result)
@@ -464,7 +457,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(2, result.value!!.count())
         assertTrue(result.value.any { it == myPublicKeys[0] })
         assertTrue(result.value.any { it == myPublicKeys[1] })
-        val query = assertOperationType<ByIdsRpcQuery>(result)
+        val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(3, query.keys.size)
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
@@ -504,7 +497,8 @@ class CryptoOpsClientComponentTests {
                         null,
                         null,
                         Instant.now()
-                    )                }
+                    )
+                }
             )
         }
         val result = sender.act {
@@ -514,7 +508,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(2, result.value!!.keys.size)
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[0].array()) })
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[1].array()) })
-        val query = assertOperationType<ByIdsRpcQuery>(result)
+        val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(3, query.keys.size)
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
@@ -541,7 +535,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(0, result.value!!.count())
-        val query = assertOperationType<ByIdsRpcQuery>(result)
+        val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(3, query.keys.size)
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[1])) })
@@ -574,7 +568,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(0, result.value!!.keys.size)
-        val query = assertOperationType<ByIdsRpcQuery>(result)
+        val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(3, query.keys.size)
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[1].array()) })
@@ -605,7 +599,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
-        val command = assertOperationType<GenerateKeyPairCommand>(result)
+        val command = assertOperationType<GenerateKeyPairCommand>()
         assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertNull(command.externalId)
         assertEquals(knownAlias, command.alias)
@@ -639,7 +633,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
-        val command = assertOperationType<GenerateKeyPairCommand>(result)
+        val command = assertOperationType<GenerateKeyPairCommand>()
         assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertEquals(externalId, command.externalId)
         assertEquals(knownAlias, command.alias)
@@ -670,7 +664,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
-        val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
+        val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
@@ -700,7 +694,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
-        val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
+        val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
@@ -732,7 +726,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
-        val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
+        val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNotNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(externalId, command.externalId)
@@ -765,7 +759,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
-        val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
+        val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNotNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(externalId, command.externalId)
@@ -794,7 +788,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertNotNull(result.value)
-        val command = assertOperationType<GenerateWrappingKeyRpcCommand>(result)
+        val command = assertOperationType<GenerateWrappingKeyRpcCommand>()
         assertEquals(configId, command.configId)
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
@@ -834,7 +828,7 @@ class CryptoOpsClientComponentTests {
         assertArrayEquals(publicKey.array(), result.value!!.publicKey.array())
         assertArrayEquals(signature, result.value.bytes.array())
         assertSame(opCtx, result.value.context)
-        val command = assertOperationType<SignRpcCommand>(result)
+        val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
         assertSame(spec, command.signatureSpec)
         assertArrayEquals(publicKey.array(), command.publicKey.array())
@@ -886,7 +880,7 @@ class CryptoOpsClientComponentTests {
         knownOperationContext.forEach {
             assertThat(result.value.context).containsEntry(it.key, it.value)
         }
-        val command = assertOperationType<SignRpcCommand>(result)
+        val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
         assertEquals(SignatureSpec.ECDSA_SHA256.signatureName, command.signatureSpec.signatureName)
         assertNull(command.signatureSpec.customDigestName)
@@ -927,7 +921,7 @@ class CryptoOpsClientComponentTests {
         knownOperationContext.forEach {
             assertThat(result.value.context).containsEntry(it.key, it.value)
         }
-        val command = assertOperationType<SignRpcCommand>(result)
+        val command = assertOperationType<SignRpcCommand>()
         assertNotNull(command)
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)
         assertNotNull(command.signatureSpec.customDigestName)
@@ -945,24 +939,17 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, RpcOpsRequest::class.java)
-            val future = CompletableFuture<RpcOpsResponse>()
-            future.complete(
-                RpcOpsResponse(
-                    CryptoResponseContext(
-                        req.context.requestingComponent,
-                        req.context.requestTimestamp,
-                        UUID.randomUUID().toString(),
-                        Instant.now(),
-                        UUID.randomUUID().toString(), //req.context.tenantId
-                        req.context.other
-                    ), CryptoNoContentValue()
-                )
+        setupCompletedResponse { req ->
+            RpcOpsResponse(
+                CryptoResponseContext(
+                    req.context.requestingComponent,
+                    req.context.requestTimestamp,
+                    UUID.randomUUID().toString(),
+                    Instant.now(),
+                    UUID.randomUUID().toString(), //req.context.tenantId
+                    req.context.other
+                ), CryptoNoContentValue()
             )
-            future
         }
         assertThrows(IllegalStateException::class.java) {
             component.lookup(knownTenantId, emptyList())
@@ -975,24 +962,17 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, RpcOpsRequest::class.java)
-            val future = CompletableFuture<RpcOpsResponse>()
-            future.complete(
-                RpcOpsResponse(
-                    CryptoResponseContext(
-                        UUID.randomUUID().toString(), //req.context.requestingComponent,
-                        req.context.requestTimestamp,
-                        UUID.randomUUID().toString(),
-                        Instant.now(),
-                        req.context.tenantId,
-                        req.context.other
-                    ), CryptoNoContentValue()
-                )
+        setupCompletedResponse { req ->
+            RpcOpsResponse(
+                CryptoResponseContext(
+                    UUID.randomUUID().toString(), //req.context.requestingComponent,
+                    req.context.requestTimestamp,
+                    UUID.randomUUID().toString(),
+                    Instant.now(),
+                    req.context.tenantId,
+                    req.context.other
+                ), CryptoNoContentValue()
             )
-            future
         }
         assertThrows(IllegalStateException::class.java) {
             component.lookup(knownTenantId, emptyList())
@@ -1005,24 +985,17 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, RpcOpsRequest::class.java)
-            val future = CompletableFuture<RpcOpsResponse>()
-            future.complete(
-                RpcOpsResponse(
-                    CryptoResponseContext(
-                        req.context.requestingComponent,
-                        req.context.requestTimestamp,
-                        UUID.randomUUID().toString(),
-                        Instant.now(),
-                        req.context.tenantId,
-                        req.context.other
-                    ), CryptoResponseContext()
-                )
+        setupCompletedResponse { req ->
+            RpcOpsResponse(
+                CryptoResponseContext(
+                    req.context.requestingComponent,
+                    req.context.requestTimestamp,
+                    UUID.randomUUID().toString(),
+                    Instant.now(),
+                    req.context.tenantId,
+                    req.context.other
+                ), CryptoResponseContext()
             )
-            future
         }
         assertThrows(IllegalStateException::class.java) {
             component.lookup(knownTenantId, emptyList())
@@ -1043,7 +1016,7 @@ class CryptoOpsClientComponentTests {
             errorType = expected.name,
             message = "Test failure."
         )
-        whenever(sender.sendRequest(any())).thenThrow(error)
+        setupCompletedResponse { throw error }
         val exception = assertThrows(expected) {
             component.lookup(knownTenantId, emptyList())
         }
@@ -1060,7 +1033,7 @@ class CryptoOpsClientComponentTests {
             errorType = RuntimeException::class.java.name,
             message = "Test failure."
         )
-        whenever(sender.sendRequest(any())).thenThrow(error)
+        setupCompletedResponse { throw error }
         val exception = assertThrows(CryptoException::class.java) {
             component.lookup(knownTenantId, emptyList())
         }
@@ -1068,48 +1041,46 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
-    fun `Should create active implementation only after the component is up`() {
+    fun `Should create active implementation only after the component is UP`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
         assertThrows(IllegalStateException::class.java) {
             component.impl.ops
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
-            kotlin.test.assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(
+                LifecycleStatus.UP,
+                component.lifecycleCoordinator.status,
+                coordinatorFactory.reportDownComponents(logger)
+            )
         }
-        assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
-        kotlin.test.assertNotNull(component.impl.ops)
+        assertNotNull(component.impl.ops)
     }
 
     @Test
     fun `Should cleanup created resources when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
         assertThrows(IllegalStateException::class.java) {
             component.impl.ops
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
-            kotlin.test.assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
         kotlin.test.assertNotNull(component.impl.ops)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
-            kotlin.test.assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
-        Mockito.verify(sender, times(1)).close()
+        assertEquals(1, sender.stopped.get())
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
         assertThrows(IllegalStateException::class.java) {
             component.impl.ops
         }
@@ -1118,19 +1089,45 @@ class CryptoOpsClientComponentTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.ops)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.ops)
-        Mockito.verify(sender, atLeast(1)).close()
+        assertEquals(0, sender.stopped.get())
+    }
+
+    @Test
+    fun `Should recreate active implementation on config change`() {
+        assertFalse(component.isRunning)
+        assertThrows(IllegalStateException::class.java) {
+            component.impl.ops
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val originalImpl = component.impl
+        assertNotNull(component.impl.ops)
+        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        logger.info("REISSUING ConfigChangedEvent")
+        configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
+        eventually {
+            assertNotSame(originalImpl, component.impl)
+        }
+        assertEquals(1, sender.stopped.get())
     }
 }

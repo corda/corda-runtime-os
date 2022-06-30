@@ -36,7 +36,7 @@ class HSMRegistrationBusServiceImpl @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<HSMRegistrationBusService>(),
     configurationReadService = configurationReadService,
     impl = InactiveImpl(),
-    dependencies = setOf(
+    upstream = setOf(
         LifecycleCoordinatorName.forComponent<HSMService>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ),

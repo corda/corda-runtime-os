@@ -37,7 +37,7 @@ class HSMServiceComponent @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<HSMService>(),
     configurationReadService = configurationReadService,
     impl = InactiveImpl(),
-    dependencies = setOf(
+    upstream = setOf(
         LifecycleCoordinatorName.forComponent<HSMStoreProvider>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>()

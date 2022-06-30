@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -48,9 +49,10 @@ class CryptoOpsClientComponent @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
     configurationReadService = configurationReadService,
-    impl = InactiveImpl(),
-    dependencies = setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     )
 ), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
@@ -58,14 +60,8 @@ class CryptoOpsClientComponent @Activate constructor(
         const val GROUP_NAME = "crypto.ops.rpc.client"
     }
 
-    interface Impl : AutoCloseable {
-        val ops: CryptoOpsClientImpl
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(publisherFactory, schemeMetadata, event)
+        Impl(publisherFactory, schemeMetadata, event)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
@@ -187,18 +183,11 @@ class CryptoOpsClientComponent @Activate constructor(
         context: Map<String, String>
     ) = impl.ops.createWrappingKey(configId, failIfExists, masterKeyAlias, context)
 
-    internal class InactiveImpl: Impl {
-        override val ops: CryptoOpsClientImpl
-            get() = throw IllegalStateException("Component is in illegal state.")
-
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
+    class Impl(
         publisherFactory: PublisherFactory,
         schemeMetadata: CipherSchemeMetadata,
         event: ConfigChangedEvent
-    ) : Impl {
+    ) : AbstractImpl {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
             RPCConfig(
                 groupName = GROUP_NAME,
@@ -210,10 +199,12 @@ class CryptoOpsClientComponent @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         ).also { it.start() }
 
-        override val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
+        val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
             schemeMetadata = schemeMetadata,
             sender = sender
         )
+
+        override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))
 
         override fun close() {
             sender.close()

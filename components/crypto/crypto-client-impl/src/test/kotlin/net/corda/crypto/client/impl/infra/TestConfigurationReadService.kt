@@ -28,6 +28,17 @@ class TestConfigurationReadService(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
+    fun reissueConfigChangedEvent(coordinator: LifecycleCoordinator) {
+        if(configUpdates.isNotEmpty()) {
+            coordinator.postEvent(
+                ConfigChangedEvent(
+                    configUpdates.map { it.first }.toSet(),
+                    configUpdates.toMap()
+                )
+            )
+        }
+    }
+
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable =
         mock()
 
