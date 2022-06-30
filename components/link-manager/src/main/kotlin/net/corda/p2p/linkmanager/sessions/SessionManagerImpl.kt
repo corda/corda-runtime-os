@@ -143,7 +143,7 @@ internal class SessionManagerImpl(
         ::onTileStart,
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
-            members.dominoTile.coordinatorName, cryptoProcessor.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
         ),
