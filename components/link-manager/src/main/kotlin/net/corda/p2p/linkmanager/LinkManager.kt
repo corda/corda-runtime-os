@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -26,6 +27,7 @@ class LinkManager(
     groupPolicyProvider: GroupPolicyProvider,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cpiInfoReadService: CpiInfoReadService,
+    cryptoOpsClient: CryptoOpsClient,
     thirdPartyComponentsMode: ThirdPartyComponentsMode,
     members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
         lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
@@ -36,8 +38,6 @@ class LinkManager(
             subscriptionFactory,
             messagingConfiguration,
         ),
-    linkManagerCryptoProcessor: CryptoProcessor =
-        StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration),
     clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
@@ -51,6 +51,11 @@ class LinkManager(
         ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration, groupPolicyProvider,
             virtualNodeInfoReadService, cpiInfoReadService, thirdPartyComponentsMode)
 
+    private val linkManagerCryptoProcessor: CryptoProcessor = when(thirdPartyComponentsMode) {
+        ThirdPartyComponentsMode.REAL -> DelegatingCryptoService(cryptoOpsClient)
+        ThirdPartyComponentsMode.STUB -> StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
+    }
+
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         linkManagerHostingMap = linkManagerHostingMap,
@@ -61,7 +66,7 @@ class LinkManager(
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         messagingConfiguration = messagingConfiguration,
-        clock = clock,
+        clock = clock
     )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
