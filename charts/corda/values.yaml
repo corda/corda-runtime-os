@@ -62,9 +62,9 @@ db:
     # -- registry for image containing a db client, used to set up the db
     registry: ""
     # -- repository for image containing a db client, used to set up the db
-    repository: bitnami/postgresql
+    repository: postgres
     # -- tag for image containing a db client, used to set up the db
-    tag: 14.2.0-debian-10-r88
+    tag: 14.4
 
 # Kafka configuration
 kafka:

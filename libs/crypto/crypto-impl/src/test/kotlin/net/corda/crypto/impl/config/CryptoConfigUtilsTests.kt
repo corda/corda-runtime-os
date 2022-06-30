@@ -111,7 +111,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, config.maximumSize)
         assertEquals("soft-salt", config.salt)
         assertEquals("soft-passphrase", config.passphrase)
-        assertEquals(0, config.maxAttempts)
+        assertEquals(1, config.maxAttempts)
         assertEquals(20000, config.attemptTimeoutMills)
     }
 
@@ -128,6 +128,38 @@ class CryptoConfigUtilsTests {
         assertEquals(240, config.expireAfterAccessMins)
         assertEquals(1000, config.maximumSize)
         assertEquals(3, config.downstreamMaxAttempts)
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for ops operations`() {
+        val config = smartConfig.opsBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for flow ops operations`() {
+        val config = smartConfig.flowBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for hsm config operations`() {
+        val config = smartConfig.hsmConfigBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for hsm registration operations`() {
+        val config = smartConfig.hsmRegistrationBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
     }
 
     @Test
@@ -151,6 +183,38 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.hsmPersistence()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when ops operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.opsBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when flow ops operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.flowBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when hsm config operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.hsmConfigBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when hsm registration operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.opsBusProcessor()
         }
     }
 
@@ -255,6 +319,26 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
+    fun `BusProcessorConfig should throw IllegalStateException when maxAttempts is empty`() {
+        val config = BusProcessorConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<IllegalStateException> {
+            config.maxAttempts
+        }
+    }
+
+    @Test
+    fun `BusProcessorConfig should throw IllegalStateException when waitBetweenMills is empty`() {
+        val config = BusProcessorConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<IllegalStateException> {
+            config.waitBetweenMills
+        }
+    }
+
+    @Test
     fun `Should add default crypto config with fallback credentials`() {
         val config = configFactory.create(
             ConfigFactory.parseMap(
@@ -281,7 +365,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("soft-salt", sofPersistence.salt)
         assertEquals("soft-passphrase", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -329,7 +413,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -375,7 +459,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("soft-passphrase", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -421,7 +505,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("soft-salt", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -479,7 +563,7 @@ class CryptoConfigUtilsTests {
         assertEquals(77, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(42, signingPersistence.keysExpireAfterAccessMins)

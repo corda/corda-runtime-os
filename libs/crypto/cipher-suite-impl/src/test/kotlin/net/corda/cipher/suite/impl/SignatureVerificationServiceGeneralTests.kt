@@ -3,7 +3,7 @@ package net.corda.cipher.suite.impl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -52,7 +52,7 @@ class SignatureVerificationServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.verify(
                 publicKey = publicKey,
-                signatureSpec = ECDSA_SHA256_SIGNATURE_SPEC,
+                signatureSpec = SignatureSpec.ECDSA_SHA256,
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 clearData = UUID.randomUUID().toString().toByteArray()
             )
@@ -72,7 +72,7 @@ class SignatureVerificationServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.verify(
                 publicKey = publicKey,
-                signatureSpec = ECDSA_SHA256_SIGNATURE_SPEC,
+                signatureSpec = SignatureSpec.ECDSA_SHA256,
                 signatureData = ByteArray(0),
                 clearData = UUID.randomUUID().toString().toByteArray()
             )
@@ -92,7 +92,7 @@ class SignatureVerificationServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.verify(
                 publicKey = publicKey,
-                signatureSpec = ECDSA_SHA256_SIGNATURE_SPEC,
+                signatureSpec = SignatureSpec.ECDSA_SHA256,
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 clearData = ByteArray(0)
             )
@@ -131,7 +131,7 @@ class SignatureVerificationServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.isValid(
                 publicKey = publicKey,
-                signatureSpec = ECDSA_SHA256_SIGNATURE_SPEC,
+                signatureSpec = SignatureSpec.ECDSA_SHA256,
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 clearData = UUID.randomUUID().toString().toByteArray()
             )
@@ -151,7 +151,7 @@ class SignatureVerificationServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.isValid(
                 publicKey = publicKey,
-                signatureSpec = ECDSA_SHA256_SIGNATURE_SPEC,
+                signatureSpec = SignatureSpec.ECDSA_SHA256,
                 signatureData = ByteArray(0),
                 clearData = UUID.randomUUID().toString().toByteArray()
             )
@@ -171,7 +171,7 @@ class SignatureVerificationServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.isValid(
                 publicKey = publicKey,
-                signatureSpec = ECDSA_SHA256_SIGNATURE_SPEC,
+                signatureSpec = SignatureSpec.ECDSA_SHA256,
                 signatureData = UUID.randomUUID().toString().toByteArray(),
                 clearData = ByteArray(0)
             )

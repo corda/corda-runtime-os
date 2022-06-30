@@ -8,7 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutorWithTimeout
-import net.corda.crypto.impl.retrying.LinearRetryStrategy
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
@@ -55,7 +55,7 @@ class CryptoServiceDecorator(
 
     private val withTimeout = CryptoRetryingExecutorWithTimeout(
         logger,
-        LinearRetryStrategy(maxAttempts),
+        BackoffStrategy.createBackoff(maxAttempts, listOf(100L)),
         attemptTimeout
     )
 

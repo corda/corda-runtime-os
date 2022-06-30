@@ -87,22 +87,22 @@ internal class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val memberInfo = members.getMemberInfo(messageReplay.dest)
-        if (memberInfo == null) {
+        val destinationMemberInfo = members.getMemberInfo(messageReplay.dest)
+        if (destinationMemberInfo == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
                 " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")
             return
         }
 
-        val networkType = groups.getGroupInfo(memberInfo.holdingIdentity.groupId)?.networkType
+        val networkType = groups.getGroupInfo(messageReplay.source)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the GroupPolicyProvider for group ${memberInfo.holdingIdentity.groupId}." +
+                " could not find the network type in the GroupPolicyProvider for ${messageReplay.source}." +
                 " The message was not replayed.")
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
+        val message = MessageConverter.createLinkOutMessage(messageReplay.message, messageReplay.source, destinationMemberInfo, networkType)
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(

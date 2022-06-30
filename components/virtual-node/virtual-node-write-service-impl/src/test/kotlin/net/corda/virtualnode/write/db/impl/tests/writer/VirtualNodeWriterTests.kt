@@ -37,7 +37,7 @@ class VirtualNodeWriterTests {
     }
 
     @Test
-    fun `stopping the config writer stops the subscription and publisher`() {
+    fun `stopping the virtual node writer stops the subscription and publisher`() {
         val subscription = mock<RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>()
         val publisher = mock<Publisher>()
         val configWriter = VirtualNodeWriter(subscription, publisher)
@@ -45,6 +45,17 @@ class VirtualNodeWriterTests {
         configWriter.stop()
 
         verify(subscription).stop()
+    }
+
+    @Test
+    fun `closing the virtual node writer closes the subscription and the publisher`() {
+        val subscription = mock<RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>()
+        val publisher = mock<Publisher>()
+        val configWriter = VirtualNodeWriter(subscription, publisher)
+        configWriter.start()
+        configWriter.close()
+
+        verify(subscription).close()
         verify(publisher).close()
     }
 

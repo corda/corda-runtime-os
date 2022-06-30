@@ -3092,7 +3092,7 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "holdingIdentityId" ],
+        "required" : [ "action", "holdingIdentityId", "context" ],
         "type" : "object",
         "properties" : {
           "action" : {
@@ -3104,6 +3104,16 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "context" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
           }
         },
         "description" : "Data required to initialise the registration process.",

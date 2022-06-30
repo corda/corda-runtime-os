@@ -101,6 +101,9 @@ class GatewayIntegrationTest : TestBase() {
     companion object {
         private val logger = contextLogger()
         const val GROUP_ID = "Group - 1"
+
+        val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
     }
 
     private val sessionId = "session-1"
@@ -121,12 +124,6 @@ class GatewayIntegrationTest : TestBase() {
 
         fun stop() {
             publisher.close()
-        }
-
-        fun publishTrustStore() {
-            publish(
-                Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, GatewayTruststore(listOf(truststoreCertificatePem)))
-            )
         }
 
         fun publish(vararg records: Record<Any, Any>): List<CompletableFuture<Unit>> {
@@ -282,13 +279,16 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway reconfiguration`() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            alice.publishTrustStore()
+            alice.publish(
+                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem)))
+            )
             val recipientServerUrl = URI.create("http://www.alice.net:${getOpenPort()}")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader(
-                    HoldingIdentity("", GROUP_ID),
+                    HoldingIdentity(bobX500Name, GROUP_ID),
+                    HoldingIdentity(aliceX500name, GROUP_ID),
                     NetworkType.CORDA_5,
                     recipientServerUrl.toString(),
                 )
@@ -456,7 +456,9 @@ class GatewayIntegrationTest : TestBase() {
         fun `gateway to multiple servers`() {
             val messageCount = 100
             val serversCount = 4
-            alice.publishTrustStore()
+            alice.publish(
+                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem)))
+            )
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
@@ -517,7 +519,8 @@ class GatewayIntegrationTest : TestBase() {
                     repeat(messageCount) {
                         val msg = LinkOutMessage.newBuilder().apply {
                             header = LinkOutHeader(
-                                HoldingIdentity("", GROUP_ID),
+                                HoldingIdentity(bobX500Name, GROUP_ID),
+                                HoldingIdentity(aliceX500name, GROUP_ID),
                                 NetworkType.CORDA_5,
                                 url,
                             )
@@ -547,8 +550,8 @@ class GatewayIntegrationTest : TestBase() {
             val messageCount = 100
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
-            alice.publishTrustStore()
-            bob.publishTrustStore()
+            alice.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
+            bob.publish(Record(GATEWAY_TLS_TRUSTSTORES, "$bobX500Name-$GROUP_ID", GatewayTruststore(HoldingIdentity(bobX500Name, GROUP_ID), listOf(truststoreCertificatePem))))
             publishKeyStoreCertificatesAndKeys(alice.publisher, chipKeyStore)
             publishKeyStoreCertificatesAndKeys(bob.publisher, daleKeyStore)
 
@@ -639,25 +642,31 @@ class GatewayIntegrationTest : TestBase() {
                 it.startAndWaitForStarted()
             }
 
-            // Produce messages for each Gateway
-            (1..messageCount).flatMap {
-                listOf(
-                    bobGatewayAddress.toString() to alice,
-                    aliceGatewayAddress.toString() to bob
-                )
-            }.flatMap { (address, node) ->
+            val messagesFromAlice = (1..messageCount).map {
                 val msg = LinkOutMessage.newBuilder().apply {
                     header = LinkOutHeader(
-                        HoldingIdentity("", GROUP_ID),
+                        HoldingIdentity(bobX500Name, GROUP_ID),
+                        HoldingIdentity(aliceX500name, GROUP_ID),
                         NetworkType.CORDA_5,
-                        address
+                        bobGatewayAddress.toString()
                     )
-                    payload = authenticatedP2PMessage("Target-$address")
+                    payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
                 }.build()
-                node.publish(Record(LINK_OUT_TOPIC, "key", msg))
-            }.forEach {
-                it.join()
+                alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
             }
+            val messagesFromBob = (1..messageCount).map {
+                val msg = LinkOutMessage.newBuilder().apply {
+                    header = LinkOutHeader(
+                        HoldingIdentity(aliceX500name, GROUP_ID),
+                        HoldingIdentity(bobX500Name, GROUP_ID),
+                        NetworkType.CORDA_5,
+                        aliceGatewayAddress.toString()
+                    )
+                    payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
+                }.build()
+                bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
+            }
+            (messagesFromAlice + messagesFromBob).flatten().forEach { it.join() }
 
             val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
             if (!allMessagesDelivered) {
@@ -790,8 +799,9 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
 
-        private fun CertificateAuthority.toGatewayTrustStore(): GatewayTruststore {
+        private fun CertificateAuthority.toGatewayTrustStore(sourceX500Name: String): GatewayTruststore {
             return GatewayTruststore(
+                HoldingIdentity(sourceX500Name, GROUP_ID),
                 listOf(
                     this.caCertificate.toPem()
                 )
@@ -841,7 +851,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Publish the trust store
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, firstCertificatesAuthority.toGatewayTrustStore()),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", firstCertificatesAuthority.toGatewayTrustStore(aliceX500name)),
                 )
 
                 // Client should fail without any keys
@@ -921,7 +931,7 @@ class GatewayIntegrationTest : TestBase() {
                 val secondCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", secondCertificatesAuthority.toGatewayTrustStore("$aliceX500name")),
                 )
 
                 // replace the first pair
@@ -943,7 +953,7 @@ class GatewayIntegrationTest : TestBase() {
                 val thirdCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
+                    Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID", thirdCertificatesAuthority.toGatewayTrustStore("$aliceX500name")),
                 )
 
                 // publish new pair with new alias
