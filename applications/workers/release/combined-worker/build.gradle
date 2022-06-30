@@ -1,10 +1,15 @@
 plugins {
     id 'corda.common-publishing'
-    id 'corda.common-app'
     id 'corda.quasar-app'
 }
 
 description 'Combined Worker'
+
+osgiRun {
+    frameworkProperties.putAll(
+        'org.osgi.framework.security': 'osgi'
+    )
+}
 
 dependencies {
     // for BundleManager
@@ -41,17 +46,8 @@ dependencies {
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
 
-    testImplementation 'org.osgi:osgi.core'
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
-    }
-
-    osgiRun {
-        frameworkProperties.putAll(
-                'org.osgi.framework.security': 'osgi'
-        )
     }
 }
