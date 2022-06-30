@@ -2,13 +2,13 @@ package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.security.MessageDigest
+import java.time.Duration
+import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
-import java.security.MessageDigest
-import java.time.Duration
-import java.util.*
 import net.corda.applications.workers.smoketest.virtualnode.toJson
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
@@ -83,6 +83,26 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
+fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        assertWithRetry {
+            command { multipleFlowStatus(holdingId) }
+            timeout(Duration.ofSeconds(20))
+            condition {
+                val json = it.toJson()
+                val flowStatuses = json["httpFlowStatusResponses"]
+                val allStatusComplete = flowStatuses.map { flowStatus ->
+                    flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
+                            flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
+                }.all { true }
+                it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
+            }
+        }
+    }
+}
+
 fun createVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -93,7 +113,7 @@ fun createVirtualNodeFor(x500: String): String {
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
             condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$X500_BOB'")
+            failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
         val holdingId = vNodeJson["holdingIdHash"].textValue()

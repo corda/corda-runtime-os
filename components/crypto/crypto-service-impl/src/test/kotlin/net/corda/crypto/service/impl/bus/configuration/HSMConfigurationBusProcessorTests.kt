@@ -1,7 +1,10 @@
 package net.corda.crypto.service.impl.bus.configuration
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -21,6 +24,7 @@ import net.corda.data.crypto.wire.hsm.configuration.commands.PutHSMCommand
 import net.corda.data.crypto.wire.hsm.configuration.queries.HSMLinkedCategoriesQuery
 import net.corda.data.crypto.wire.hsm.configuration.queries.HSMQuery
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -43,6 +47,11 @@ import kotlin.test.assertTrue
 
 class HSMConfigurationBusProcessorTests {
     companion object {
+        private val configEvent = ConfigChangedEvent(
+            setOf(CRYPTO_CONFIG),
+            mapOf(CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+        )
+
         private fun createRequestContext(
             tenantId: String = CryptoTenants.CRYPTO
         ): CryptoRequestContext = CryptoRequestContext(
@@ -79,7 +88,7 @@ class HSMConfigurationBusProcessorTests {
     fun `Should handle LinkHSMCategoriesCommand`() {
         val configId = UUID.randomUUID().toString()
         val hsmService = mock<HSMService>()
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val links = listOf(
             HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.WRAPPED),
             HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.ALIASED)
@@ -107,7 +116,7 @@ class HSMConfigurationBusProcessorTests {
     @Suppress("MaxLineLength")
     fun `LinkHSMCategoriesCommand should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val context = createRequestContext(UUID.randomUUID().toString())
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
@@ -132,7 +141,7 @@ class HSMConfigurationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { putHSMConfig(any(), any()) } doReturn expectedConfigId
         }
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val info = HSMInfo()
         val serviceConfig = "{}".toByteArray()
         val context = createRequestContext()
@@ -156,7 +165,7 @@ class HSMConfigurationBusProcessorTests {
     @Suppress("MaxLineLength")
     fun `PutHSMCommand should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val info = HSMInfo()
         val serviceConfig = "{}".toByteArray()
         val context = createRequestContext(UUID.randomUUID().toString())
@@ -184,7 +193,7 @@ class HSMConfigurationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { getLinkedCategories(any()) } doReturn links
         }
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val context = createRequestContext()
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
@@ -206,7 +215,7 @@ class HSMConfigurationBusProcessorTests {
     @Suppress("MaxLineLength")
     fun `HSMLinkedCategoriesQuery should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val context = createRequestContext(UUID.randomUUID().toString())
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
@@ -231,7 +240,7 @@ class HSMConfigurationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { lookup(any()) } doReturn infos
         }
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val context = createRequestContext()
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
@@ -263,7 +272,7 @@ class HSMConfigurationBusProcessorTests {
     @Suppress("MaxLineLength")
     fun `HSMQuery should throw IllegalArgumentException when tenant is not cluster`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val context = createRequestContext(UUID.randomUUID().toString())
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
@@ -288,7 +297,7 @@ class HSMConfigurationBusProcessorTests {
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         val hsmService = mock<HSMService>()
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val context = createRequestContext()
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
@@ -311,7 +320,7 @@ class HSMConfigurationBusProcessorTests {
         val hsmService = mock<HSMService> {
             on { putHSMConfig(any(), any()) } doThrow originalException
         }
-        val processor = HSMConfigurationBusProcessor(hsmService)
+        val processor = HSMConfigurationBusProcessor(hsmService, configEvent)
         val info = HSMInfo()
         val serviceConfig = "{}".toByteArray()
         val context = createRequestContext()

@@ -12,9 +12,9 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.failures.CryptoException
-import net.corda.v5.crypto.failures.CryptoExponentialThrottlingException
 import net.corda.v5.crypto.failures.CryptoRetryException
 import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.failures.CryptoThrottlingException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -606,10 +606,9 @@ class CryptoServiceDecoratorTests {
             cryptoService.sign(spec, data, context)
         )
             .thenThrow(
-                CryptoExponentialThrottlingException(
+                CryptoThrottlingException.createExponential(
                     message = "error",
                     initialBackoff = 100,
-                    backoffMultiplier = 2,
                     maxAttempts = 3,
                     cause = IllegalStateException()
                 )
@@ -625,10 +624,9 @@ class CryptoServiceDecoratorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val spec = mock<SigningSpec>()
-        val e = CryptoExponentialThrottlingException(
+        val e = CryptoThrottlingException.createExponential(
             message = "error",
             initialBackoff = 100,
-            backoffMultiplier = 2,
             maxAttempts = 3,
             cause = IllegalStateException()
         )

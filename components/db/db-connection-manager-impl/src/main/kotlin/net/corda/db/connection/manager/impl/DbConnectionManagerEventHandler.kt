@@ -30,19 +30,7 @@ class DbConnectionManagerEventHandler(
             }
             is BootstrapConfigProvided -> {
                 logger.debug { "Bootstrap config received: ${event.config}" }
-                // process bootstrap config
-                if(this::bootstrapConfig.isInitialized) {
-                    val errorString = "An attempt was made to set the bootstrap configuration twice with " +
-                            "different config. Current: $bootstrapConfig, New: ${event.config}"
-                    logger.error(errorString)
-                    throw DBConfigurationException(errorString)
-                } else {
-                    bootstrapConfig = event.config
-                    // initialise the DB connections Repo
-                    dbConnectionManager.initialise(bootstrapConfig)
-                    // component is ready
-                    coordinator.updateStatus(LifecycleStatus.UP)
-                }
+                processBootstrapConfig(event.config, coordinator)
             }
             is StopEvent -> {
                 logger.debug { "DbConnectionManager stopping." }
@@ -53,6 +41,25 @@ class DbConnectionManagerEventHandler(
                     event.cause
                 )
             }
+        }
+    }
+
+    @Synchronized
+    private fun processBootstrapConfig(config: SmartConfig, coordinator: LifecycleCoordinator) {
+        if (this::bootstrapConfig.isInitialized) {
+            logger.info("New bootstrap configuration received: $config, Old configuration: $bootstrapConfig")
+            if (bootstrapConfig != config) {
+                val errorString = "An attempt was made to set the bootstrap configuration twice with " +
+                        "different config. Current: $bootstrapConfig, New: $config"
+                logger.error(errorString)
+                throw DBConfigurationException(errorString)
+            }
+        } else {
+            bootstrapConfig = config
+            // initialise the DB connections Repo
+            dbConnectionManager.initialise(bootstrapConfig)
+            // component is ready
+            coordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 }

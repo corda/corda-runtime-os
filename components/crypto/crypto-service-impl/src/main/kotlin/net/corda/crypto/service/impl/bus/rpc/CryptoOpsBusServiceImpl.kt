@@ -14,6 +14,8 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,14 +32,19 @@ class CryptoOpsBusServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<CryptoOpsBusServiceImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoOpsBusService>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<CryptoOpsBusService>(),
+    configurationReadService = configurationReadService,
+    impl = InactiveImpl(),
+    dependencies = setOf(
         LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ),
+    configKeys = setOf(
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
+    )
 ), CryptoOpsBusService {
     private companion object {
         const val GROUP_NAME = "crypto.ops.rpc"
@@ -53,7 +60,7 @@ class CryptoOpsBusServiceImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val processor = CryptoOpsBusProcessor(signingFactory)
+        val processor = CryptoOpsBusProcessor(signingFactory, event)
         return ActiveImpl(
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(

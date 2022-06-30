@@ -1,12 +1,15 @@
 package net.corda.crypto.service.impl.bus.flow
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
@@ -24,10 +27,11 @@ import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -48,6 +52,13 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class CryptoFlowOpsBusProcessorTests {
+    companion object {
+        private val configEvent = ConfigChangedEvent(
+            setOf(ConfigKeys.CRYPTO_CONFIG),
+            mapOf(ConfigKeys.CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+        )
+    }
+
     private lateinit var tenantId: String
     private lateinit var componentName: String
     private lateinit var eventTopic: String
@@ -132,7 +143,7 @@ class CryptoFlowOpsBusProcessorTests {
             }
         }
         cryptoOpsClient = mock()
-        processor = CryptoFlowOpsBusProcessor(cryptoOpsClient)
+        processor = CryptoFlowOpsBusProcessor(cryptoOpsClient, configEvent)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -349,7 +360,7 @@ class CryptoFlowOpsBusProcessorTests {
                         value = transformer.createSign(
                             tenantId,
                             publicKey,
-                            EDDSA_ED25519_SIGNATURE_SPEC,
+                            SignatureSpec.EDDSA_ED25519,
                             data,
                             operationContext
                         )
@@ -364,7 +375,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(tenantId, passedTenantId)
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
         assertArrayEquals(data, passedData.array())
-        assertEquals(EDDSA_ED25519_SIGNATURE_SPEC.signatureName, passedSignatureSpec.signatureName)
+        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
         assertNotNull(passedContext.items)
         assertEquals(1, passedContext.items.size)
         assertTrue {

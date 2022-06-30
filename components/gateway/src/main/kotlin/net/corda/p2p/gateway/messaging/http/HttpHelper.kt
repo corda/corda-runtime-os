@@ -73,9 +73,6 @@ class HttpHelper {
         fun HttpRequest.validate(): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
-                if (uri.scheme != SCHEME) {
-                    return HttpResponseStatus.BAD_REQUEST
-                }
 
                 if (uri.path != ENDPOINT) {
                     return HttpResponseStatus.NOT_FOUND

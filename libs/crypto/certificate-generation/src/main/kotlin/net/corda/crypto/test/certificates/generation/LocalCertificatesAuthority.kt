@@ -1,8 +1,7 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
@@ -72,8 +71,8 @@ internal open class LocalCertificatesAuthority(
             basicConstraints
         )
         val signatureAlgorithm = when (keysFactoryDefinitions.algorithm) {
-            Algorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
-            Algorithm.EC -> ECDSA_SHA256_SIGNATURE_SPEC
+            Algorithm.RSA -> SignatureSpec.RSA_SHA256
+            Algorithm.EC -> SignatureSpec.ECDSA_SHA256
         }.signatureName
         val signer = JcaContentSignerBuilder(signatureAlgorithm).build(caKeyPair.private)
 
@@ -118,8 +117,8 @@ internal open class LocalCertificatesAuthority(
     override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
         val signatureAlgorithm =
             when (privateKeyAndCertificate.privateKey.algorithm) {
-                "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
-                "EC" -> ECDSA_SHA256_SIGNATURE_SPEC.signatureName
+                "RSA" -> SignatureSpec.RSA_SHA256.signatureName
+                "EC" -> SignatureSpec.ECDSA_SHA256.signatureName
                 else -> throw InvalidParameterException("Unsupported Algorithm")
             }
         val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)
@@ -157,8 +156,8 @@ internal open class LocalCertificatesAuthority(
 
         val signatureAlgorithm =
             when (privateKeyAndCertificate.privateKey.algorithm) {
-                "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
-                "EC" -> ECDSA_SHA256_SIGNATURE_SPEC.signatureName
+                "RSA" -> SignatureSpec.RSA_SHA256.signatureName
+                "EC" -> SignatureSpec.ECDSA_SHA256.signatureName
                 else -> throw InvalidParameterException("Unsupported Algorithm")
             }
         val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)

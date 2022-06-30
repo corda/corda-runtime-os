@@ -17,10 +17,10 @@ import java.time.Instant
 
 class ClusterBootstrapTest {
     private val healthChecks = mapOf(
-        // TODO: fix up other workers so they accurately report their readiness.
-        // "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
+        "combined-worker" to System.getProperty("combinedWorkerHealthHttp"),
+//        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
         "db-worker" to System.getProperty("dbWorkerHealthHttp"),
-        // "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
+        "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
         "rpc-worker" to System.getProperty("rpcWorkerHealthHttp"),
     )
     private val client = HttpClient.newBuilder().build()
@@ -30,7 +30,9 @@ class ClusterBootstrapTest {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
             // check all workers are up and "ready"
-            healthChecks.map {
+            healthChecks
+                .filter { !it.value.isNullOrBlank() }
+                .map {
                 async {
                     val response = tryUntil(Duration.ofSeconds(120)) { checkReady(it.key, it.value) }
                     if (response)

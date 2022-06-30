@@ -58,7 +58,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
@@ -650,7 +649,7 @@ class CryptoProcessorTests {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> RSASSA_PSS_SHA256_SIGNATURE_SPEC
+            "RSA" -> SignatureSpec.RSASSA_PSS_SHA256
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = opsClient.sign(
