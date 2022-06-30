@@ -1,17 +1,23 @@
 package net.corda.flow.rpcops.impl.v1
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
 import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
 import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
+import net.corda.flow.rpcops.v1.types.response.HTTPRunnableFlowsResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -26,8 +32,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
 class FlowRPCOpsImpl @Activate constructor(
@@ -38,7 +42,9 @@ class FlowRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MessageFactory::class)
-    private val messageFactory: MessageFactory
+    private val messageFactory: MessageFactory,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
 ) : FlowRpcOps, PluggableRPCOps<FlowRpcOps>, Lifecycle {
 
     companion object {
@@ -111,6 +117,28 @@ class FlowRPCOpsImpl @Activate constructor(
         val vNode = getVirtualNode(holderShortId)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return HTTPFlowStatusResponses(httpFlowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun getRunnableFlows(holderShortId: String): HTTPRunnableFlowsResponse {
+        val vNode = getVirtualNode(holderShortId)
+        val cpiMeta = getCPIMeta(vNode, holderShortId)
+        return getFlowClassesFromCPI(cpiMeta)
+    }
+
+    private fun getCPIMeta(
+        vNode: VirtualNodeInfo,
+        holderShortId: String
+    ): CpiMetadata {
+        val vNodeCPIIdentifier = vNode.cpiIdentifier
+        return cpiInfoReadService.get(CpiIdentifier.fromAvro(vNodeCPIIdentifier))
+            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holderShortId}'")
+    }
+
+    private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): HTTPRunnableFlowsResponse {
+        val flowClasses = cpiMeta.cpksMetadata.flatMap {
+            it.cordappManifest.rpcStartableFlows
+        }
+        return HTTPRunnableFlowsResponse(flowClasses)
     }
 
     override fun start() = Unit
