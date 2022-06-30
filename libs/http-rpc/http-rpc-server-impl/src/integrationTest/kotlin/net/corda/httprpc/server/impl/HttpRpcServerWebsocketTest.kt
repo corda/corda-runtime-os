@@ -11,25 +11,38 @@ import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.base.util.contextLogger
 import org.apache.http.HttpStatus
+import org.assertj.core.api.Assertions.assertThat
+import org.eclipse.jetty.websocket.api.Session
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
+import org.eclipse.jetty.websocket.client.NoOpEndpoint
+import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.net.URI
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
-    companion object {
+    private companion object {
+
+        val log = contextLogger()
+
+        private val httpRpcSettings = HttpRpcSettings(
+            NetworkHostAndPort("localhost", findFreePort()),
+            context,
+            null,
+            null,
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+        )
+
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(
-                NetworkHostAndPort("localhost", findFreePort()),
-                context,
-                null,
-                null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
-            )
             server = HttpRpcServerImpl(
                 listOf(
                     TestHealthCheckAPIImpl()
@@ -64,5 +77,67 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
         assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
         assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
         assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL])
+    }
+
+    @Test
+    fun `check WebSocket interaction`() {
+        val wsClient = WebSocketClient()
+        wsClient.start()
+
+        val closeLatch = CountDownLatch(1)
+
+        val desiredCount = 100
+        val list = mutableListOf<String>()
+
+        val wsHandler = object : NoOpEndpoint() {
+
+            override fun onWebSocketConnect(session: Session) {
+                log.info("onWebSocketConnect : $session")
+            }
+
+            override fun onWebSocketClose(statusCode: Int, reason: String?) {
+                log.info("onClose: $statusCode - $reason")
+                closeLatch.countDown()
+                super.onWebSocketClose(statusCode, reason)
+            }
+
+            override fun onWebSocketText(message: String) {
+                list.add(message)
+                if (list.size >= desiredCount) {
+                    closeLatch.countDown()
+                }
+            }
+        }
+
+        /*
+        val upgradeListener = object: UpgradeListener {
+            override fun onHandshakeRequest(request: UpgradeRequest) {
+                // Todo set basic auth headers
+            }
+
+            override fun onHandshakeResponse(response: UpgradeResponse) {
+
+            }
+        }
+         */
+
+        val uri = URI(
+            "ws://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed"
+        )
+
+        log.info("Connecting to: $uri")
+
+        val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest()/*, upgradeListener*/)
+            .get(10, TimeUnit.SECONDS)
+
+        log.info("Session established: $session")
+
+        closeLatch.await()
+
+        wsClient.stop()
+
+        val expectedContent = (0..99).map { "$it" }
+        assertThat(list).isEqualTo(expectedContent)
     }
 }

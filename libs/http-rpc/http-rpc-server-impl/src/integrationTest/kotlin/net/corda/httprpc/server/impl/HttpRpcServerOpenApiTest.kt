@@ -32,7 +32,7 @@ import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
-        val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+        private val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
