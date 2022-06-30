@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import kotlin.concurrent.thread
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
@@ -45,7 +46,9 @@ class LinkManagerApp @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
 ) : Application {
 
     companion object {
@@ -82,7 +85,8 @@ class LinkManagerApp @Activate constructor(
                 groupPolicyProvider,
                 virtualNodeInfoReadService,
                 cpiInfoReadService,
-                thirdPartyComponentsMode
+                cryptoOpsClient,
+                thirdPartyComponentsMode,
             ).also { linkmanager ->
                 linkmanager.start()
 

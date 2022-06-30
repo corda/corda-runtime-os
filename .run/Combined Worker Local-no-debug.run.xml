@@ -1,7 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Combined Worker Local (debug agent 5005)" type="JarApplication">
+  <configuration default="false" name="Combined Worker Local (no debug)" type="JarApplication">
     <option name="JAR_PATH" value="$PROJECT_DIR$/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar" />
-    <option name="VM_PARAMETERS" value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005" />
     <option name="PROGRAM_PARAMETERS" value="--instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt -ddatabase.user=user -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="ALTERNATIVE_JRE_PATH" />

@@ -19,14 +19,25 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
 
     private companion object {
         val log = contextLogger()
+        private const val SHORT_HASH_LENGTH: Int = 12
     }
 
     /** Reads CPI metadata from the database. */
     internal fun getCPIMetadata(cpiFileChecksum: String): CpiMetadataLite? {
+        if (cpiFileChecksum.isBlank()) {
+            log.warn("CPI file checksum cannot be empty")
+            return null
+        }
+
+        if (cpiFileChecksum.length < SHORT_HASH_LENGTH) {
+            log.warn("CPI file checksum must be at least $SHORT_HASH_LENGTH characters")
+            return null
+        }
+
         val cpiMetadataEntity = entityManagerFactory.transaction {
             val foundCpi = it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
-                        "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum",
+                        "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
                 CpiMetadataEntity::class.java
             )
                 .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")

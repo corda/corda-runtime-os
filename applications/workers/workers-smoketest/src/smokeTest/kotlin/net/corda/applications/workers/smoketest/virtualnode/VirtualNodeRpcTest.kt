@@ -68,8 +68,18 @@ class VirtualNodeRpcTest {
 
             // BUG:  returning "OK" feels 'weakly' typed
             val json = assertWithRetry {
+                // CPI upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(60))
+                interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+                condition {
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+                immediateFailCondition {
+                    it.code == 500
+                            && null != it.toJson()["title"].textValue()
+                            && ObjectMapper().readTree(it.toJson()["title"].textValue())["errorMessage"].textValue()
+                        .startsWith("CPI already uploaded")
+                }
             }.toJson()
 
             val cpiHash = json["checksum"].textValue()
@@ -103,13 +113,24 @@ class VirtualNodeRpcTest {
             val requestId = cpbUpload(TEST_CPB).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
-            val json = assertWithRetry {
+            assertWithRetry {
                 command { cpiStatus(requestId) }
-                condition { it.code == 500 }
-            }.toJson()
-
-            val titleJson = ObjectMapper().readTree(json["title"].textValue())
-            assertThat(titleJson["errorMessage"].textValue()).isEqualTo(EXPECTED_ERROR_NO_GROUP_POLICY)
+                condition {
+                    try {
+                        if(it.code == 500) {
+                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                            json.has("errorMessage")
+                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
+                        } else {
+                            false
+                        }
+                    }
+                    catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
+                }
+            }
         }
     }
 
@@ -121,13 +142,23 @@ class VirtualNodeRpcTest {
             val requestId = cpiUpload(TEST_CPB, GROUP_ID).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
-            val json = assertWithRetry {
+            assertWithRetry {
                 command { cpiStatus(requestId) }
-                condition { it.code == 500 }
-            }.toJson()
-
-            val titleJson = ObjectMapper().readTree(json["title"].textValue())
-            assertThat(titleJson["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)).isTrue()
+                condition {
+                    try {
+                        if(it.code == 500) {
+                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                            json["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)
+                        } else {
+                            false
+                        }
+                    }
+                    catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
+                }
+            }
         }
     }
 
@@ -196,10 +227,11 @@ class VirtualNodeRpcTest {
     fun `list virtual nodes`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val aliceVNode = vNodeList().toJson()["virtualNodes"].find { json ->
-                json["holdingIdentity"]["x500Name"].textValue() == X500_ALICE
+            val nodes = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["x500Name"].textValue()
             }
-            assertThat(aliceVNode).isNotNull
+
+            assertThat(nodes).contains(X500_ALICE)
         }
     }
 

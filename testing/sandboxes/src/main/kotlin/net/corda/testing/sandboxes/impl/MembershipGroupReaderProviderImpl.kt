@@ -53,5 +53,9 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         override fun lookup(name: MemberX500Name): MemberInfo? {
             return null
         }
+
+        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+            return null
+        }
     }
 }

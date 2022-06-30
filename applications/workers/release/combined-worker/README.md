@@ -4,18 +4,25 @@
 
 ### Postgres DB
 
-Run:
+Run postgres container in background:
 ```shell
 docker run -d -p 5432:5432 --name postgresql -e POSTGRESQL_DATABASE=cordacluster -e POSTGRESQL_USERNAME=user -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_POSTGRES_PASSWORD=password bitnami/postgresql:latest
 ```
 
+Run it with logs visible in console and ensure the container is deleted (and data wiped) when the container is stopped:
+
+```shell
+docker run --rm -p 5432:5432 --name postgresql -e POSTGRESQL_DATABASE=cordacluster -e POSTGRESQL_USERNAME=user -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_POSTGRES_PASSWORD=password bitnami/postgresql:latest
+```
+
 DB schema will be created automatically when worker is started.
+TODO: DB bootstraping might change as CLI could be used instead
 
-TODO DB bootstraping might change as CLI could be used instead 
+### Message Bus
 
-### Kafka
+#### Kafka
 
-TODO Database message bus should be used instead, this is just temporal work-around (which is the reason why all containers are not created together).
+TODO: Database message bus should be used instead, this is just temporary work-around (which is the reason why all containers are not created together).
 Note that topics were taken from k8s cluster and might be out of sync.
 
 Create file `docker-compose.yml`:
@@ -135,3 +142,20 @@ Run:
 ```shell
 docker exec -i kafka /bin/bash < create-topics.txt
 ```
+
+## Interact with the worker
+
+The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger 
+The status endpoint is also exposed: http://localhost:7000/status
+
+## Smoketests
+
+Run the [smoketests](/applications/workers/workers-smoketest/) to validate the combined worker.
+
+Note that some tests require an empty environment (e.g. CPI upload).
+
+## Logs
+
+Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
+Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running, 
+but it may be useful to change this on a case-by-case basis when debugging.
