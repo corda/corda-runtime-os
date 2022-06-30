@@ -25,6 +25,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import net.corda.test.util.time.TestClock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -46,7 +48,7 @@ class MemberOpsServiceProcessorTest {
         @BeforeAll
         fun setup() {
             registrationProxy = mock {
-                on { register(holdingIdentity) } doReturn (MembershipRequestRegistrationResult(
+                on { register(eq(holdingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.SUBMITTED
                 ))
             }

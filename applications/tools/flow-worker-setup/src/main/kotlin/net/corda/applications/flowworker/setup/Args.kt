@@ -29,4 +29,7 @@ class Args {
 
     @CommandLine.Option(names = ["--topicPrefix"], description = ["Optional kafka topic prefix"])
     var topicPrefix: String = ""
+
+    @CommandLine.Option(names = ["--flowName"], description = ["Named flow to start"])
+    var flowName: String = "default"
 }

@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -115,18 +116,18 @@ internal class TrustStoresPublisher(
     private fun publishQueueIfPossible() {
         while ((publisher.isRunning) && (ready.isDone)) {
             val groupInfo = toPublish.poll() ?: return
-            val groupId = groupInfo.groupId
             val certificates = groupInfo.trustedCertificates
-            publishGroupIfNeeded(groupId, certificates)
+            publishGroupIfNeeded(groupInfo.holdingIdentity, certificates)
         }
     }
 
-    private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
-        publishedGroups.compute(groupId) { _, publishedCertificates ->
-            logger.info("Publishing trust roots for group $groupId to the gateway.")
+    private fun publishGroupIfNeeded(holdingIdentity: HoldingIdentity, certificates: List<PemCertificates>) {
+        publishedGroups.compute(holdingIdentity.toKafkaKey()) { _, publishedCertificates ->
+            logger.info("Publishing trust roots for $holdingIdentity to the gateway.")
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
-                val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
+                val record = Record(GATEWAY_TLS_TRUSTSTORES, holdingIdentity.toKafkaKey(),
+                    GatewayTruststore(HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId), certificates))
                 publisher.publish(
                     listOf(record)
                 ).forEach {
@@ -136,4 +137,6 @@ internal class TrustStoresPublisher(
             certificatesSet
         }
     }
+
+    private fun HoldingIdentity.toKafkaKey() = "${x500Name}-${groupId}"
 }

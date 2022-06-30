@@ -20,8 +20,8 @@ class StartFlowTest : FlowServiceTestBase() {
 
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
         }
 
@@ -59,8 +59,8 @@ class StartFlowTest : FlowServiceTestBase() {
     @Test
     fun `RPC Start Flow - Retry scenario 1 - Fail then succeeds`() {
         given {
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 3)
         }
@@ -113,8 +113,8 @@ class StartFlowTest : FlowServiceTestBase() {
     @Test
     fun `RPC Start Flow - Retry scenario 2 - Hit the retry limit and fail the flow`() {
         given {
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 1)
         }

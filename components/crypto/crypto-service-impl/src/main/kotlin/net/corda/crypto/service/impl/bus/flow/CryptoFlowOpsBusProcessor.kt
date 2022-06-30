@@ -1,7 +1,11 @@
 package net.corda.crypto.service.impl.bus.flow
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.crypto.impl.config.flowBusProcessor
+import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -15,12 +19,14 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
-    private val cryptoOpsClient: CryptoOpsProxyClient
+    private val cryptoOpsClient: CryptoOpsProxyClient,
+    event: ConfigChangedEvent
 ) : WireProcessor(handlers), DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = contextLogger()
@@ -34,6 +40,13 @@ class CryptoFlowOpsBusProcessor(
     override val keyClass: Class<String> = String::class.java
 
     override val valueClass: Class<FlowOpsRequest> = FlowOpsRequest::class.java
+
+    private val config = event.config.toCryptoConfig().flowBusProcessor()
+
+    private val executor = CryptoRetryingExecutor(
+        logger,
+        BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
+    )
 
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
@@ -69,8 +82,10 @@ class CryptoFlowOpsBusProcessor(
         }
         return try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
-            val response = getHandler(request.request::class.java, cryptoOpsClient)
-                .handle(request.context, request.request)
+            val handler = getHandler(request.request::class.java, cryptoOpsClient)
+            val response = executor.executeWithRetry {
+                handler.handle(request.context, request.request)
+            }
             if (Instant.now() >= expireAt) {
                 logger.error(
                     "Event {} for tenant {} is no longer valid, expired at {}",

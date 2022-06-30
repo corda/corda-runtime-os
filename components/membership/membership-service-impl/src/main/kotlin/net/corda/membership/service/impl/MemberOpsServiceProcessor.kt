@@ -10,6 +10,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.toMap
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -44,6 +45,7 @@ class MemberOpsServiceProcessor(
          * Temporarily hardcoded to 1.
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
+
         private val clock = UTCClock()
     }
 
@@ -105,7 +107,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
             val result = try {
-                registrationProxy.register(holdingIdentity)
+                registrationProxy.register(holdingIdentity, request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.")
                 null

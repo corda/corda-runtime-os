@@ -5,7 +5,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -19,7 +19,7 @@ class AuthenticatedSessionTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
+    private val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -67,7 +67,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             partyASessionKey.public,
-            ECDSA_SHA256_SIGNATURE_SPEC,
+            SignatureSpec.ECDSA_SHA256,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -81,7 +81,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             partyBSessionKey.public,
-            ECDSA_SHA256_SIGNATURE_SPEC,
+            SignatureSpec.ECDSA_SHA256,
         )
 
         // Both sides generate session secrets
@@ -139,7 +139,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             partyASessionKey.public,
-            ECDSA_SHA256_SIGNATURE_SPEC,
+            SignatureSpec.ECDSA_SHA256,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -153,7 +153,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             partyBSessionKey.public,
-            ECDSA_SHA256_SIGNATURE_SPEC,
+            SignatureSpec.ECDSA_SHA256,
         )
 
         // Both sides generate session secrets
@@ -202,7 +202,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             partyASessionKey.public,
-            ECDSA_SHA256_SIGNATURE_SPEC,
+            SignatureSpec.ECDSA_SHA256,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -216,7 +216,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             partyBSessionKey.public,
-            ECDSA_SHA256_SIGNATURE_SPEC,
+            SignatureSpec.ECDSA_SHA256,
         )
 
         // Both sides generate session secrets

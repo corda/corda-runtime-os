@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext
 
-import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -12,7 +12,7 @@ import net.corda.virtualnode.HoldingIdentity
  */
 data class VirtualNodeContext(
     val holdingIdentity: HoldingIdentity,
-    val cpkIdentifiers: Set<CpkIdentifier>,
+    val cpkFileChecksums: Set<SecureHash>,
     val sandboxGroupType: SandboxGroupType,
     val serviceMarkerType: Class<*>,
     val serviceFilter: String?

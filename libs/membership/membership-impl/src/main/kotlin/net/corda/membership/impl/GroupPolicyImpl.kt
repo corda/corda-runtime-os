@@ -27,4 +27,17 @@ class GroupPolicyImpl(private val map: Map<String, Any?>) : GroupPolicy, Map<Str
             }
             return protocolName
         }
+
+    override val p2pProtocolMode: String
+        get() = "AUTHENTICATED_ENCRYPTION"
+
+    override val tlsTrustStore: Array<String>
+        get() = arrayOf(
+            "-----BEGIN CERTIFICATE-----\nMIIDxTCCE6N36B9K\n-----END CERTIFICATE-----\n",
+            "-----BEGIN CERTIFICATE-----\nMIIDdTCCKSZp4A==\n-----END CERTIFICATE-----",
+            "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
+        )
+
+    override val tlsPki: String
+        get() = "C5"
 }

@@ -1,6 +1,5 @@
 package net.corda.sandboxgroupcontext.impl
 
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
@@ -118,14 +117,14 @@ class SandboxGroupContextCacheTest {
 
         val vnodeContext1 = VirtualNodeContext(
             HoldingIdentity("Alice", "group"),
-            setOf(CpkIdentifier("cpk1", "1.0", SecureHash.create("DUMMY:1234567890abcdef"))),
+            setOf(SecureHash.create("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             "filter")
 
         val equalVnodeContext1 = VirtualNodeContext(
             HoldingIdentity("Alice", "group"),
-            setOf(CpkIdentifier("cpk1", "1.0", SecureHash.create("DUMMY:1234567890abcdef"))),
+            setOf(SecureHash.create("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             "filter")
