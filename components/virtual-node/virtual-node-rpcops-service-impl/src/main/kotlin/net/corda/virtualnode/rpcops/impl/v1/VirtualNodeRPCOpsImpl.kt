@@ -2,6 +2,7 @@ package net.corda.virtualnode.rpcops.impl.v1
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -99,10 +100,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeManagementResponseSuccess -> {
                 when (val responseData = resolvedResponse.result) {
-                    is VirtualNodeInfo -> {
+                    is VirtualNodeCreateResponse -> {
                         val cpiId = CpiIdentifier.fromAvro(responseData.cpiIdentifier)
 
-                        HTTPCreateVirtualNodeResponse(
+                        VirtualNodeCreateResponse(
                             responseData.holdingIdentity.x500Name, cpiId, request.cpiFileChecksum, responseData.holdingIdentity.groupId, HoldingIdentity(responseData.holdingIdentity.x500Name, responseData.holdingIdentity.groupId).toCorda().hash,
                             responseData.vaultDdlConnectionId, responseData.vaultDmlConnectionId, responseData.cryptoDdlConnectionId, responseData.cryptoDmlConnectionId
                         )

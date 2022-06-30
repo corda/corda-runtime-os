@@ -4,6 +4,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.Error
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -308,16 +309,14 @@ internal class VirtualNodeWriterProcessor(
         val response = VirtualNodeManagementResponse(
             instant,
             VirtualNodeManagementResponseSuccess(
-                net.corda.data.virtualnode.VirtualNodeInfo(
-                    holdingIdentity.toAvro(),
-                    cpiMetadata.id.toAvro(),
-                    dbConnections.vaultDdlConnectionId.toString(),
+                VirtualNodeCreateResponse(
+                    holdingIdentity.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
+                    holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.id,
+                    dbConnections.vaultDdlConnectionId?.toString(),
                     dbConnections.vaultDmlConnectionId.toString(),
-                    dbConnections.cryptoDdlConnectionId.toString(),
+                    dbConnections.cryptoDdlConnectionId?.toString(),
                     dbConnections.cryptoDmlConnectionId.toString(),
-                    null,
-                    0,
-                    instant
+                    null
                 )
             )
         )
