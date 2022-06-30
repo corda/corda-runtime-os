@@ -72,14 +72,14 @@ class ClusterBuilder {
         holdingIdHash: String,
         clientRequestId: String,
         flowClassName: String,
-        flowParams: String
+        requestData: String
     ): SimpleResponse {
-        return client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, flowParams))
+        return client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, requestData))
     }
 
-    private fun flowStartBody(clientRequestId: String, flowClassName: String, flowParams: String) =
-        """{ "httpStartFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "flowParams" : 
-            |"$flowParams"} }""".trimMargin()
+    private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
+        """{ "httpStartFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
+            |"$requestData"} }""".trimMargin()
 
 }
 
