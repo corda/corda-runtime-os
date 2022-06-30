@@ -1,12 +1,16 @@
 package net.corda.applications.workers.smoketest.flow
 
+import java.util.UUID
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
+import net.corda.applications.workers.smoketest.X500_CHARLIE
+import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.X500_SESSION_USER1
 import net.corda.applications.workers.smoketest.X500_SESSION_USER2
+import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createVirtualNodeFor
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
@@ -21,7 +25,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.*
 
 @Suppress("Unused")
 @Order(20)
@@ -32,6 +35,8 @@ class FlowTests {
     companion object {
 
         var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
+        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
+        var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
@@ -41,11 +46,15 @@ class FlowTests {
         @JvmStatic
         internal fun beforeAll() {
 
-            val actualHoldingId = createVirtualNodeFor(X500_BOB)
+            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
+            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
+            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-            assertThat(actualHoldingId).isEqualTo(bobHoldingId)
+            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+            assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+            assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
             createVirtualNodeFor(X500_SESSION_USER1)
             createVirtualNodeFor(X500_SESSION_USER2)
@@ -68,6 +77,21 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("echo")
         assertThat(flowResult.result).isEqualTo("hello")
+    }
+
+    @Test
+    fun `start multiple RPC flow and validate they complete`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "echo"
+            data = mapOf("echo_value" to "hello")
+        }
+
+        startRpcFlow(charlieHoldingId, requestBody)
+        startRpcFlow(davidHoldingId, requestBody)
+        startRpcFlow(davidHoldingId, requestBody)
+
+        awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
+        awaitMultipleRpcFlowFinished(davidHoldingId, 2)
     }
 
     @Test
