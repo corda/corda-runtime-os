@@ -136,9 +136,29 @@ resources:
 {{- end }}
 
 {{/*
-Worker JAVA_TOOL_OPTIONS
+Worker environment variables
 */}}
-{{- define "corda.workerJavaToolOptions" -}}
+{{- define "corda.workerEnv" -}}
+- name: K8S_NODE_NAME
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: spec.nodeName
+- name: K8S_POD_NAME
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.name
+- name: K8S_POD_UID
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.uid
+- name: K8S_NAMESPACE
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.namespace
 - name: JAVA_TOOL_OPTIONS
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
@@ -148,7 +168,7 @@ Worker JAVA_TOOL_OPTIONS
     {{- end -}}
     {{- if .Values.openTelemetry.enabled }}
       -javaagent:/opt/override/opentelemetry-javaagent-1.15.0.jar
-      -Dotel.resource.attributes=service.name={{ .worker }}-worker
+      -Dotel.resource.attributes=service.name={{ .worker }}-worker,k8s.namespace.name=$(K8S_NAMESPACE),k8s.node.name=$(K8S_NODE_NAME),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID)
       -Dotel.instrumentation.common.default-enabled=false
       -Dotel.instrumentation.runtime-metrics.enabled=true
       {{- if .Values.openTelemetry.endpoint }}
