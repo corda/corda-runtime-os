@@ -34,9 +34,7 @@ class MembershipGroupReaderImpl(
         memberList.singleOrNull { it.isActive && ledgerKeyHash in it.ledgerKeyHashes }
 
     override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
-        memberList.singleOrNull {
-            it.isActive && sessionKeyHash == it.sessionKeyHash
-        }
+        memberList.singleOrNull { it.isActive && sessionKeyHash == it.sessionKeyHash }
 
     override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.isActive && it.name == name }
 }
