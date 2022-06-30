@@ -6,20 +6,20 @@ import net.corda.crypto.core.toByteArray
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.merkle.MerkleService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 
-class MerkleServiceImplTest {
+class MerkleTreeFactoryImplTest {
     companion object {
         private val digestAlgorithm = DigestAlgorithmName.SHA2_256D
 
         private lateinit var digestService: DigestService
         private lateinit var nonceHashDigestProvider: NonceHashDigestProvider
-        private lateinit var merkleService: MerkleService
+        private lateinit var merkleTreeFactory: MerkleTreeFactory
 
         @BeforeAll
         @JvmStatic
@@ -30,7 +30,7 @@ class MerkleServiceImplTest {
 
             nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
 
-            merkleService = MerkleServiceImpl(digestService)
+            merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
         }
     }
 
@@ -38,9 +38,9 @@ class MerkleServiceImplTest {
     fun createTree() {
         val leafData = (0 until 8).map { it.toByteArray() }
         val merkleTreeDirect = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
-        val merkleTreeFromService = merkleService.createTree(leafData, nonceHashDigestProvider)
+        val merkleTreeFromFactory = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
 
-        assertEquals(merkleTreeDirect.root, merkleTreeFromService.root)
+        assertEquals(merkleTreeDirect.root, merkleTreeFromFactory.root)
     }
 
     @Test
@@ -51,95 +51,91 @@ class MerkleServiceImplTest {
         val merkleTreeDirect = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
         val proofDirect = merkleTreeDirect.createAuditProof(indices)
 
-        val merkleTreeFromService = merkleService.createTree(leafData, nonceHashDigestProvider)
-        val proofFromService = merkleTreeFromService.createAuditProof(indices)
+        val merkleTreeFromFactory = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
+        val proofFromService = merkleTreeFromFactory.createAuditProof(indices)
 
         assertEquals(proofDirect, proofFromService)
-        assertTrue(proofDirect.verify(merkleTreeFromService.root, nonceHashDigestProvider))
+        assertTrue(proofDirect.verify(merkleTreeFromFactory.root, nonceHashDigestProvider))
         assertTrue(proofFromService.verify(merkleTreeDirect.root, nonceHashDigestProvider))
     }
 
     @Test
     fun createHashDigestProvider() {
         assertTrue(
-            merkleService.createHashDigestProvider(
-                "DefaultHashDigestProvider",
-                digestAlgorithm) is DefaultHashDigestProvider)
-        assertTrue(
-            merkleService.createHashDigestProvider(
+            merkleTreeFactory.createHashDigestProvider(
                 "DefaultHashDigestProvider",
                 digestAlgorithm) is DefaultHashDigestProvider
         )
         assertTrue(
-            merkleService.createHashDigestProvider(
+            merkleTreeFactory.createHashDigestProvider(
                 "NonceHashDigestProvider.Verify",
                 digestAlgorithm) is NonceHashDigestProvider.Verify
         )
         assertTrue(
-            merkleService.createHashDigestProvider(
+            merkleTreeFactory.createHashDigestProvider(
                 "NonceHashDigestProvider.SizeOnlyVerify",
                 digestAlgorithm) is NonceHashDigestProvider.SizeOnlyVerify
         )
         assertTrue(
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm, hashMapOf("leafPrefix" to 0.toByteArray(), "nodePrefix" to 1.toByteArray())
             ) is TweakableHashDigestProvider
         )
         assertTrue(
-            merkleService.createHashDigestProvider("NonceHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("NonceHashDigestProvider",
                 digestAlgorithm, hashMapOf("entropy" to 123.toByteArray())
             ) is NonceHashDigestProvider
         )
 
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm, hashMapOf()
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm, hashMapOf("leafPrefix" to 0.toByteArray())
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm, hashMapOf("nodePrefix" to 1.toByteArray())
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm, hashMapOf("leafPrefix" to 0, "nodePrefix" to 1.toByteArray())
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("TweakableHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("TweakableHashDigestProvider",
                 digestAlgorithm, hashMapOf("leafPrefix" to 0.toByteArray(), "nodePrefix" to "1")
             )
         }
 
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("NonceHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("NonceHashDigestProvider",
                 digestAlgorithm
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("NonceHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("NonceHashDigestProvider",
                 digestAlgorithm, hashMapOf()
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("NonceHashDigestProvider",
+            merkleTreeFactory.createHashDigestProvider("NonceHashDigestProvider",
                 digestAlgorithm, hashMapOf("entropy" to 1)
             )
         }
 
         assertThrows(IllegalArgumentException::class.java) {
-            merkleService.createHashDigestProvider("NotexistingProvider",
+            merkleTreeFactory.createHashDigestProvider("NotexistingProvider",
                 digestAlgorithm
             )
         }

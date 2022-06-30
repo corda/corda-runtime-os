@@ -4,7 +4,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
-import net.corda.v5.crypto.merkle.MerkleService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -12,11 +12,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [MerkleService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
-class MerkleServiceImpl @Activate constructor(
+@Component(service = [MerkleTreeFactory::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+class MerkleTreeFactoryImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService
-) : MerkleService, SingletonSerializeAsToken {
+) : MerkleTreeFactory, SingletonSerializeAsToken {
     override fun createTree(leaves: List<ByteArray>, digestProvider: MerkleTreeHashDigestProvider) =
         MerkleTreeImpl(leaves, digestProvider)
 
