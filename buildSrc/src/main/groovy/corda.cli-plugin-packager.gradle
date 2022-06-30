@@ -11,7 +11,7 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    archiveBaseName = "${cliPlugin.cliPluginId}-cli-plugin"
+    archiveBaseName = "${cliPlugin.cliPluginId.get()}-cli-plugin"
     from sourceSets.main.output
     dependsOn configurations.runtimeClasspath
     from {
