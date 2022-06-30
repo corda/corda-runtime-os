@@ -1,4 +1,4 @@
-package net.corda.flow.rpcops.v1.response
+package net.corda.flow.rpcops.v1.types.response
 
 /**
  * The status of all flows for a single holding identity

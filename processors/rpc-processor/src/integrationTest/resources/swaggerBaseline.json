@@ -478,9 +478,7 @@
             "description" : "Forbidden."
           }
         }
-      }
-    },
-    "/flow/{holdershortid}" : {
+      },
       "post" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Instructs Corda to start a new instance of the specified flow",
@@ -530,8 +528,52 @@
     },
     "/flow/{holdershortid}/{clientrequestid}" : {
       "get" : {
+        "tags" : [ "FlowRPCOps" ],
         "description" : "Gets the current status for a given flow.",
         "operationId" : "get_flow__holdershortid___clientrequestid_",
+        "parameters" : [ {
+          "name" : "holdershortid",
+          "in" : "path",
+          "description" : "Short form of the Holder Identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short form of the Holder Identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "clientrequestid",
+          "in" : "path",
+          "description" : "Client provided flow identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Client provided flow identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/getprotocolversion" : {
       "get" : {
         "tags" : [ "HsmRpcOps" ],
