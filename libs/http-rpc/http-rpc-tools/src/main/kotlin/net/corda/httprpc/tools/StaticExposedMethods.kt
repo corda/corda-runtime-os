@@ -1,5 +1,6 @@
 package net.corda.httprpc.tools
 
+import net.corda.httprpc.ws.DuplexChannel
 import java.lang.reflect.Method
 
 /**
@@ -12,4 +13,8 @@ private val staticExposedGetMethods: Set<String> = listOf("getProtocolVersion").
 
 fun Method.isStaticallyExposedGet(): Boolean {
     return staticExposedGetMethods.contains(name.lowercase())
+}
+
+fun Method.isDuplexRoute(): Boolean {
+    return returnType == DuplexChannel::class.java
 }

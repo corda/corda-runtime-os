@@ -11,6 +11,7 @@ import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexErrorContextImpl
 import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexTextMessageContextImpl
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
+import net.corda.httprpc.tools.isDuplexRoute
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
@@ -52,6 +53,7 @@ internal class JavalinRouteProviderImpl(
         .filterNot { routeInfo ->
             routeInfo.method.method.isStaticallyExposedGet()
         }
+        .filterNot { it.method.method.isDuplexRoute() }
 
     override val httpPostRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.POST)
 
@@ -59,8 +61,8 @@ internal class JavalinRouteProviderImpl(
 
     override val httpDeleteRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.DELETE)
 
-    override val httpDuplexRoutes: List<RouteInfo>
-        get() = TODO("Not yet implemented")
+    override val httpDuplexRoutes =
+        mapResourcesToRoutesByHttpMethod(EndpointMethod.GET).filter { it.method.method.isDuplexRoute() }
 
     private fun mapResourcesToRoutesByHttpMethod(httpMethod: EndpointMethod): List<RouteInfo> {
         log.trace { "Map resources to routes by http method." }
