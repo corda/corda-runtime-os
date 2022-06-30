@@ -75,7 +75,7 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val flowClassName = httpStartFlow.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, httpStartFlow.flowParams)
+        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, httpStartFlow.requestData)
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(

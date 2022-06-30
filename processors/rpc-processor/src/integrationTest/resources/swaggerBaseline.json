@@ -2784,7 +2784,7 @@
         "nullable" : false
       },
       "HTTPStartFlowRequest" : {
-        "required" : [ "clientRequestId", "flowClassName", "flowParams" ],
+        "required" : [ "clientRequestId", "flowClassName", "requestData" ],
         "type" : "object",
         "properties" : {
           "clientRequestId" : {
@@ -2797,7 +2797,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "flowParams" : {
+          "requestData" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
