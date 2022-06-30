@@ -43,6 +43,7 @@ import java.lang.IllegalStateException
 import java.util.UUID
 import net.corda.test.util.time.TestClock
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.calculateHash
 import java.time.Instant
 
 class MemberProcessorTestUtils {
@@ -211,8 +212,10 @@ class MemberProcessorTestUtils {
             assertNull(lookupResult)
         }
 
-        fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
-            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.sessionInitiationKey))
+        fun lookUpBySessionKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
+            val result = member?.let {
+                groupReader.lookupBySessionKey(it.sessionInitiationKey.calculateHash())
+            }
             assertNotNull(result)
             result!!
         }

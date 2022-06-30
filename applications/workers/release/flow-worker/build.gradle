@@ -5,6 +5,12 @@ plugins {
 
 description 'Flow Worker'
 
+osgiRun {
+    frameworkProperties.putAll(
+        'org.osgi.framework.security': 'osgi'
+    )
+}
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -36,10 +42,4 @@ dependencies {
     }
 
     image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
-
-    osgiRun {
-        frameworkProperties.putAll(
-                'org.osgi.framework.security': 'osgi'
-        )
-    }
 }

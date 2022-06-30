@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
@@ -61,6 +62,9 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var lifecycleCoordinatorFactory : LifecycleCoordinatorFactory
+
+        @InjectService(timeout = 4000)
+        lateinit var cryptoOpsClient: CryptoOpsClient
     }
 
     private val replayPeriod = 2000
@@ -125,6 +129,7 @@ class LinkManagerIntegrationTest {
             Mockito.mock(GroupPolicyProvider::class.java),
             Mockito.mock(VirtualNodeInfoReadService::class.java),
             Mockito.mock(CpiInfoReadService::class.java),
+            cryptoOpsClient,
             ThirdPartyComponentsMode.STUB
         )
 

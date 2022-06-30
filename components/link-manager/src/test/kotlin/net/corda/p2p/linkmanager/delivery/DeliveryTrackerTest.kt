@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -155,10 +156,10 @@ class DeliveryTrackerTest {
                 whenever(it.dominoTile).thenReturn(mockDominoTile)
             },
             mock {
-                val mockDominoTile = mock<ComplexDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                val mockNamedLifecycle = mock<NamedLifecycle> {
+                    whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
                 }
-                whenever(it.dominoTile).thenReturn(mockDominoTile)
+                whenever(it.namedLifecycle).thenReturn(mockNamedLifecycle)
             },
             mock {
                 val mockDominoTile = mock<ComplexDominoTile> {

@@ -1,0 +1,54 @@
+import groovy.transform.CompileStatic
+import javax.inject.Inject
+
+CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension, project.name)
+
+def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
+    inputs.property('cliPluginId', cliPlugin.cliPluginId)
+    inputs.property('cliPluginClass', cliPlugin.cliPluginClass)
+    inputs.property('cliPluginProvider', cliPlugin.cliPluginProvider)
+    inputs.property('cliPluginDescription', cliPlugin.cliPluginDescription)
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    archiveBaseName = "${cliPlugin.cliPluginId.get()}-cli-plugin"
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "module-info.class"
+        exclude "META-INF/versions/*/module-info.class"
+        exclude "org/slf4j/**"
+    }
+    manifest {
+        attributes['Plugin-Class'] = cliPlugin.cliPluginClass
+        attributes['Plugin-Id'] = cliPlugin.cliPluginId
+        attributes['Plugin-Version'] = archiveVersion
+        attributes['Plugin-Provider'] = cliPlugin.cliPluginProvider
+        attributes['Plugin-Description'] = cliPlugin.cliPluginDescription
+    }
+}
+
+artifacts {
+    archives cliPluginPackager
+}
+
+@CompileStatic
+class CliPluginPackagerExtension {
+    @Inject
+    CliPluginPackagerExtension(ObjectFactory objects, String defaultPluginId) {
+        cliPluginId = objects.property(String).convention(defaultPluginId)
+        cliPluginClass = objects.property(String)
+        cliPluginProvider = objects.property(String).convention("R3 Ltd")
+        cliPluginDescription = objects.property(String)
+    }
+
+    final Property<String> cliPluginId
+    final Property<String> cliPluginClass
+    final Property<String> cliPluginProvider
+    final Property<String> cliPluginDescription
+}
