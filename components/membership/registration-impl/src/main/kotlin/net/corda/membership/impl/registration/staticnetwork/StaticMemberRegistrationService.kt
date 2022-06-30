@@ -21,6 +21,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
@@ -179,6 +180,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 *generateLedgerKeys(encodedMemberKey).toTypedArray(),
                 *generateLedgerKeyHashes(memberKey).toTypedArray(),
                 *convertEndpoints(staticMemberInfo).toTypedArray(),
+                SESSION_KEY_HASH to memberKey.calculateHash().toString(),
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
                 PLATFORM_VERSION to staticMemberInfo.platformVersion,
                 SERIAL to staticMemberInfo.serial,
