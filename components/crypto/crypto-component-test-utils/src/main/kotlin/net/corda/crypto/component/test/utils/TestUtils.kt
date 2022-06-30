@@ -1,4 +1,4 @@
-package net.corda.crypto.client.impl.infra
+package net.corda.crypto.component.test.utils
 
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -14,7 +14,7 @@ import java.security.Signature
 import java.time.Instant
 
 inline fun <reified RESULT: Any> RPCSender<*, *>.act(
-    block: () -> RESULT?
+    block: () -> RESULT
 ): SendActResult<RESULT> {
     val result = actWithTimer(block)
     return SendActResult(
@@ -40,7 +40,7 @@ fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
 data class SendActResult<RESPONSE>(
     val before: Instant,
     val after: Instant,
-    val value: RESPONSE?
+    val value: RESPONSE
 ) {
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }

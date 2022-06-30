@@ -1,4 +1,4 @@
-package net.corda.crypto.client.impl.infra
+package net.corda.crypto.component.test.utils
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

@@ -1,14 +1,14 @@
 package net.corda.crypto.client.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.crypto.client.impl.infra.SendActResult
-import net.corda.crypto.client.impl.infra.TestConfigurationReadService
-import net.corda.crypto.client.impl.infra.TestRPCSender
-import net.corda.crypto.client.impl.infra.act
-import net.corda.crypto.client.impl.infra.generateKeyPair
-import net.corda.crypto.client.impl.infra.reportDownComponents
-import net.corda.crypto.client.impl.infra.signData
 import net.corda.crypto.component.impl.exceptionFactories
+import net.corda.crypto.component.test.utils.SendActResult
+import net.corda.crypto.component.test.utils.TestConfigurationReadService
+import net.corda.crypto.component.test.utils.TestRPCSender
+import net.corda.crypto.component.test.utils.act
+import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.component.test.utils.reportDownComponents
+import net.corda.crypto.component.test.utils.signData
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -184,7 +184,7 @@ class CryptoOpsClientComponentTests {
             component.getSupportedSchemes(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(result.value)
-        assertEquals(schemeMetadata.schemes.size, result.value!!.size)
+        assertEquals(schemeMetadata.schemes.size, result.value.size)
         schemeMetadata.schemes.forEach {
             assertTrue(result.value.contains(it.codeName))
         }
@@ -237,7 +237,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertNotNull(result.value)
-        assertEquals(1, result.value!!.size)
+        assertEquals(1, result.value.size)
         assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
@@ -293,7 +293,7 @@ class CryptoOpsClientComponentTests {
                 )
             )
         }
-        assertEquals(0, result.value!!.size)
+        assertEquals(0, result.value.size)
         val query = assertOperationType<KeysRpcQuery>()
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
@@ -348,7 +348,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertNotNull(result.value)
-        assertEquals(1, result.value!!.size)
+        assertEquals(1, result.value.size)
         assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
@@ -413,7 +413,7 @@ class CryptoOpsClientComponentTests {
         val result = sender.act {
             component.lookup(knownTenantId, listOf(id))
         }
-        assertEquals(0, result.value!!.size)
+        assertEquals(0, result.value.size)
         val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(1, query.keys.size)
         assertEquals(id, query.keys[0])
@@ -454,7 +454,7 @@ class CryptoOpsClientComponentTests {
             component.filterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
         }
         assertNotNull(result.value)
-        assertEquals(2, result.value!!.count())
+        assertEquals(2, result.value.count())
         assertTrue(result.value.any { it == myPublicKeys[0] })
         assertTrue(result.value.any { it == myPublicKeys[1] })
         val query = assertOperationType<ByIdsRpcQuery>()
@@ -505,7 +505,7 @@ class CryptoOpsClientComponentTests {
             component.filterMyKeysProxy(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
         }
         assertNotNull(result.value)
-        assertEquals(2, result.value!!.keys.size)
+        assertEquals(2, result.value.keys.size)
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[0].array()) })
         assertTrue(result.value.keys.any { it.publicKey.array().contentEquals(myPublicKeys[1].array()) })
         val query = assertOperationType<ByIdsRpcQuery>()
@@ -534,7 +534,7 @@ class CryptoOpsClientComponentTests {
             component.filterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
         }
         assertNotNull(result.value)
-        assertEquals(0, result.value!!.count())
+        assertEquals(0, result.value.count())
         val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(3, query.keys.size)
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(myPublicKeys[0])) })
@@ -567,7 +567,7 @@ class CryptoOpsClientComponentTests {
             component.filterMyKeysProxy(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
         }
         assertNotNull(result.value)
-        assertEquals(0, result.value!!.keys.size)
+        assertEquals(0, result.value.keys.size)
         val query = assertOperationType<ByIdsRpcQuery>()
         assertEquals(3, query.keys.size)
         assertTrue(query.keys.any { it == publicKeyIdFromBytes(myPublicKeys[0].array()) })
@@ -693,7 +693,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertNotNull(result.value)
-        assertArrayEquals(result.value!!.key.array(), publicKey.array())
+        assertArrayEquals(result.value.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)
@@ -758,7 +758,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         assertNotNull(result.value)
-        assertArrayEquals(result.value!!.key.array(), publicKey.array())
+        assertArrayEquals(result.value.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNotNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)
@@ -825,7 +825,7 @@ class CryptoOpsClientComponentTests {
             component.signProxy(knownTenantId, publicKey, spec, data, knownRawOperationContext)
         }
         assertNotNull(result.value)
-        assertArrayEquals(publicKey.array(), result.value!!.publicKey.array())
+        assertArrayEquals(publicKey.array(), result.value.publicKey.array())
         assertArrayEquals(signature, result.value.bytes.array())
         assertSame(opCtx, result.value.context)
         val command = assertOperationType<SignRpcCommand>()
@@ -874,7 +874,7 @@ class CryptoOpsClientComponentTests {
             component.sign(knownTenantId, keyPair.public, DigestAlgorithmName.SHA2_256, data, knownOperationContext)
         }
         assertNotNull(result.value)
-        assertEquals(keyPair.public, result.value!!.by)
+        assertEquals(keyPair.public, result.value.by)
         assertArrayEquals(signature, result.value.bytes)
         assertThat(result.value.context).hasSize(knownOperationContext.size)
         knownOperationContext.forEach {
@@ -915,7 +915,7 @@ class CryptoOpsClientComponentTests {
             component.sign(knownTenantId, keyPair.public, spec, data, knownOperationContext)
         }
         assertNotNull(result.value)
-        assertEquals(keyPair.public, result.value!!.by)
+        assertEquals(keyPair.public, result.value.by)
         assertArrayEquals(signature, result.value.bytes)
         assertThat(result.value.context).hasSize(knownOperationContext.size)
         knownOperationContext.forEach {

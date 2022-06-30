@@ -1,9 +1,11 @@
 package net.corda.crypto.client.hsm.impl
 
-import net.corda.crypto.client.hsm.impl.infra.SendActResult
-import net.corda.crypto.client.hsm.impl.infra.TestConfigurationReadService
-import net.corda.crypto.client.hsm.impl.infra.act
 import net.corda.crypto.component.impl.exceptionFactories
+import net.corda.crypto.component.test.utils.SendActResult
+import net.corda.crypto.component.test.utils.TestConfigurationReadService
+import net.corda.crypto.component.test.utils.TestRPCSender
+import net.corda.crypto.component.test.utils.act
+import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
@@ -17,50 +19,45 @@ import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.failures.CryptoException
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertInstanceOf
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.*
-import java.util.concurrent.CompletableFuture
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class HSMRegistrationClientComponentTests {
     companion object {
+        private val  logger = contextLogger()
+
         @JvmStatic
         fun knownCordaRPCAPIResponderExceptions(): List<Class<*>> =
             exceptionFactories.keys.map { Class.forName(it) }
     }
 
     private lateinit var knownTenantId: String
-    private lateinit var sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
-    private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var sender: TestRPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
+    private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
     private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var component: HSMRegistrationClientComponent
@@ -69,7 +66,7 @@ class HSMRegistrationClientComponentTests {
     fun setup() {
         knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        sender = mock()
+        sender = TestRPCSender(coordinatorFactory)
         publisherFactory = mock {
             on { createRPCSender<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any()) } doReturn sender
         }
@@ -89,12 +86,7 @@ class HSMRegistrationClientComponentTests {
     }
 
     private fun setupCompletedResponse(respFactory: (HSMRegistrationRequest) -> Any) {
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
-            val future = CompletableFuture<HSMRegistrationResponse>()
-            future.complete(
+        sender.setupCompletedResponse { req ->
                 HSMRegistrationResponse(
                     CryptoResponseContext(
                         req.context.requestingComponent,
@@ -105,23 +97,23 @@ class HSMRegistrationClientComponentTests {
                         req.context.other
                     ), respFactory(req)
                 )
-            )
-            future
         }
     }
 
-    private fun assertRequestContext(result: SendActResult<HSMRegistrationRequest, *>) {
-        val context = result.firstRequest.context
+    private fun assertRequestContext(result: SendActResult<*>) {
+        assertNotNull(sender.lastRequest)
+        val context = sender.lastRequest!!.context
         assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(HSMRegistrationClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items).isEmpty()
     }
 
-    private inline fun <reified OP> assertOperationType(result: SendActResult<HSMRegistrationRequest, *>): OP {
-        assertNotNull(result.firstRequest.request)
-        assertThat(result.firstRequest.request).isInstanceOf(OP::class.java)
-        return result.firstRequest.request as OP
+    private inline fun <reified OP> assertOperationType(): OP {
+        assertNotNull(sender.lastRequest)
+        assertNotNull(sender.lastRequest!!.request)
+        assertThat(sender.lastRequest!!.request).isInstanceOf(OP::class.java)
+        return sender.lastRequest!!.request as OP
     }
 
     @Test
@@ -144,7 +136,7 @@ class HSMRegistrationClientComponentTests {
             )
         }
         assertSame(response, result.value)
-        val command = assertOperationType<AssignHSMCommand>(result)
+        val command = assertOperationType<AssignHSMCommand>()
         assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertThat(command.context.items).hasSize(1)
         assertThat(command.context.items).contains(KeyValuePair(
@@ -174,7 +166,7 @@ class HSMRegistrationClientComponentTests {
             )
         }
         assertSame(response, result.value)
-        val command = assertOperationType<AssignSoftHSMCommand>(result)
+        val command = assertOperationType<AssignSoftHSMCommand>()
         assertEquals (CryptoConsts.Categories.LEDGER, command.category)
         assertThat(command.context.items).contains(KeyValuePair(
             NOT_FAIL_IF_ASSOCIATION_EXISTS,
@@ -197,11 +189,11 @@ class HSMRegistrationClientComponentTests {
             component.findHSM(
                 tenantId = knownTenantId,
                 category = CryptoConsts.Categories.LEDGER
-            )
+            )!!
         }
         assertNotNull(result.value)
         assertEquals(expectedValue, result.value)
-        val query = assertOperationType<AssignedHSMQuery>(result)
+        val query = assertOperationType<AssignedHSMQuery>()
         assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
@@ -219,10 +211,10 @@ class HSMRegistrationClientComponentTests {
             component.findHSM(
                 tenantId = knownTenantId,
                 category = CryptoConsts.Categories.LEDGER
-            )
+            ) == null
         }
-        assertNull(result.value)
-        val query = assertOperationType<AssignedHSMQuery>(result)
+        assertTrue(result.value)
+        val query = assertOperationType<AssignedHSMQuery>()
         assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
@@ -233,12 +225,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
-            val future = CompletableFuture<HSMRegistrationResponse>()
-            future.complete(
+        setupCompletedResponse { req ->
                 HSMRegistrationResponse(
                     CryptoResponseContext(
                         req.context.requestingComponent,
@@ -249,8 +236,6 @@ class HSMRegistrationClientComponentTests {
                         req.context.other
                     ), HSMInfo()
                 )
-            )
-            future
         }
         assertThrows(IllegalStateException::class.java) {
             component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
@@ -263,12 +248,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
-            val future = CompletableFuture<HSMRegistrationResponse>()
-            future.complete(
+        setupCompletedResponse { req ->
                 HSMRegistrationResponse(
                     CryptoResponseContext(
                         UUID.randomUUID().toString(), //req.context.requestingComponent,
@@ -279,8 +259,6 @@ class HSMRegistrationClientComponentTests {
                         req.context.other
                     ), HSMInfo()
                 )
-            )
-            future
         }
         assertThrows(IllegalStateException::class.java) {
             component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
@@ -293,12 +271,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        whenever(
-            sender.sendRequest(any())
-        ).then {
-            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
-            val future = CompletableFuture<HSMRegistrationResponse>()
-            future.complete(
+        setupCompletedResponse { req ->
                 HSMRegistrationResponse(
                     CryptoResponseContext(
                         req.context.requestingComponent,
@@ -309,8 +282,6 @@ class HSMRegistrationClientComponentTests {
                         req.context.other
                     ), CryptoResponseContext()
                 )
-            )
-            future
         }
         assertThrows(IllegalStateException::class.java) {
             component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
@@ -331,7 +302,7 @@ class HSMRegistrationClientComponentTests {
             errorType = expected.name,
             message = "Test failure."
         )
-        whenever(sender.sendRequest(any())).thenThrow(error)
+        setupCompletedResponse { throw error }
         val exception = assertThrows(expected) {
             component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
@@ -348,7 +319,7 @@ class HSMRegistrationClientComponentTests {
             errorType = RuntimeException::class.java.name,
             message = "Test failure."
         )
-        whenever(sender.sendRequest(any())).thenThrow(error)
+        setupCompletedResponse { throw error }
         val exception = assertThrows(CryptoException::class.java) {
             component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
@@ -356,25 +327,26 @@ class HSMRegistrationClientComponentTests {
     }
 
     @Test
-    fun `Should create active implementation only after the component is up`() {
+    fun `Should create active implementation only after the component is UP`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(HSMRegistrationClientComponent.InactiveImpl::class.java, component.impl)
         assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(
+                LifecycleStatus.UP,
+                component.lifecycleCoordinator.status,
+                coordinatorFactory.reportDownComponents(logger)
+            )
         }
-        assertInstanceOf(HSMRegistrationClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.registrar)
     }
 
     @Test
     fun `Should cleanup created resources when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(HSMRegistrationClientComponent.InactiveImpl::class.java, component.impl)
         assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
         }
@@ -383,21 +355,18 @@ class HSMRegistrationClientComponentTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(HSMRegistrationClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.registrar)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(HSMRegistrationClientComponent.InactiveImpl::class.java, component.impl)
-        Mockito.verify(sender, times(1)).close()
+        assertEquals(1, sender.stopped.get())
     }
 
     @Test
-    fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
+    fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(HSMRegistrationClientComponent.InactiveImpl::class.java, component.impl)
         assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
         }
@@ -406,20 +375,70 @@ class HSMRegistrationClientComponentTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(HSMRegistrationClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.registrar)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(HSMRegistrationClientComponent.InactiveImpl::class.java, component.impl)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(HSMRegistrationClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.registrar)
-        Mockito.verify(sender, atLeast(1)).close()
+        assertEquals(0, sender.stopped.get())
+    }
+
+    @Test
+    fun `Should go UP and DOWN as its downstream dependencies go UP and DOWN`() {
+        assertFalse(component.isRunning)
+        assertThrows(IllegalStateException::class.java) {
+            component.impl.registrar
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertNotNull(component.impl.registrar)
+        sender.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        sender.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertNotNull(component.impl.registrar)
+        assertEquals(0, sender.stopped.get())
+    }
+
+    @Test
+    fun `Should recreate active implementation on config change`() {
+        assertFalse(component.isRunning)
+        assertThrows(IllegalStateException::class.java) {
+            component.impl.registrar
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val originalImpl = component.impl
+        assertNotNull(component.impl.registrar)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        logger.info("REISSUING ConfigChangedEvent")
+        configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
+        eventually {
+            assertNotSame(originalImpl, component.impl)
+        }
+        assertEquals(1, sender.stopped.get())
     }
 }
 

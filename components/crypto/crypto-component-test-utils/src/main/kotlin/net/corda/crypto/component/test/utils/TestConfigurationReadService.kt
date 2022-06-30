@@ -1,4 +1,4 @@
-package net.corda.crypto.client.impl.infra
+package net.corda.crypto.component.test.utils
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent

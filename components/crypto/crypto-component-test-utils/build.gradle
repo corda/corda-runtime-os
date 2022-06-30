@@ -1,9 +1,8 @@
 plugins {
-    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
-description 'Crypto client components'
+description 'Crypto components common test utils, for use only by crypto library'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -13,19 +12,18 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-topic-schema"
+    implementation "net.corda:corda-cipher-suite"
 
     implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:crypto:crypto-client-hsm")
-    implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:messaging:messaging")
 
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    api project(":libs:lifecycle:lifecycle-impl")
+    api project(":libs:lifecycle:lifecycle-test-impl")
+    api project(":libs:lifecycle:registry")
+    api project(":testing:test-utilities")
 
-    testImplementation project(":components:crypto:crypto-component-test-utils")
-
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    api "org.assertj:assertj-core:$assertjVersion"
+    api "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
