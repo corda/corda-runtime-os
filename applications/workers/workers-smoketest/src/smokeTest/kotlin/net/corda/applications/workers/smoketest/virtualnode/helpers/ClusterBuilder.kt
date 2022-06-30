@@ -61,11 +61,15 @@ class ClusterBuilder {
 
     /** Get status of a flow */
     fun flowStatus(holdingIdHash: String, clientRequestId: String) =
-        client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId")
+        client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId/status")
 
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdHash: String) =
-        client!!.get("/api/v1/flow/$holdingIdHash")
+        client!!.get("/api/v1/flow/$holdingIdHash/status")
+
+    /** Get status of multiple flows */
+    fun runnableFlowClasses(holdingIdHash: String) =
+        client!!.get("/api/v1/flow/$holdingIdHash/runnable")
 
     /** Start a flow */
     fun flowStart(

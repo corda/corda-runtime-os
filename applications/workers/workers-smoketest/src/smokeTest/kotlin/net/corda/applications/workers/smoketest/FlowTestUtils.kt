@@ -10,7 +10,6 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
-import net.corda.applications.workers.smoketest.virtualnode.toJson
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
@@ -101,6 +100,20 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
                 it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
             }
         }
+    }
+}
+
+fun getFlowClasses(holdingId: String) : List<String> {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val vNodeJson = assertWithRetry {
+            command { runnableFlowClasses(holdingId) }
+            condition { it.code == 200 }
+            failMessage("Failed to get flows for holdingId '$holdingId'")
+        }.toJson()
+
+        vNodeJson["flowClassNames"].map { it.textValue() }
     }
 }
 

@@ -13,10 +13,12 @@ import net.corda.applications.workers.smoketest.X500_SESSION_USER2
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createVirtualNodeFor
+import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
@@ -38,6 +40,13 @@ class FlowTests {
         var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
+        val expectedFlows = listOf(
+            "net.cordapp.flowworker.development.flows.MessagingFlow",
+            "net.cordapp.flowworker.development.flows.PersistenceFlow",
+            "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
+            "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
+            "net.cordapp.flowworker.development.flows.TestFlow"
+        )
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
@@ -255,5 +264,13 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
         assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+    }
+
+    @Test
+    fun `Get runnable flows for a holdingId`() {
+        val flows = getFlowClasses(bobHoldingId)
+
+        assertThat(flows.size).isEqualTo(5)
+        assertTrue(flows.containsAll(expectedFlows))
     }
 }
