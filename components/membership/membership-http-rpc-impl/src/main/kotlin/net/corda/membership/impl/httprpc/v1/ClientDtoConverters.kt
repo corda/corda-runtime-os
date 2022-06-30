@@ -13,7 +13,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
  */
 fun MemberRegistrationRequest.toDto() = MemberRegistrationRequestDto(
     holdingIdentityId,
-    RegistrationActionDto.getFromValue(action.lowercase())
+    RegistrationActionDto.REQUEST_JOIN.getFromValue(action)
 )
 
 /**

@@ -12,15 +12,8 @@ enum class RegistrationActionDto(private val action: String) {
         return action
     }
 
-    companion object {
-        private val lookup = HashMap<String, RegistrationActionDto>()
-
-        init {
-            RegistrationActionDto.values().map { lookup.put(it.action, it) }
-        }
-
-        fun getFromValue(value: String):RegistrationActionDto {
-            return lookup[value]!!
-        }
+    fun getFromValue(value: String) = when(value.lowercase()) {
+        REQUEST_JOIN.toString().lowercase() -> RegistrationActionDto.REQUEST_JOIN
+        else -> throw IllegalArgumentException("Unsupported registration action.")
     }
 }
