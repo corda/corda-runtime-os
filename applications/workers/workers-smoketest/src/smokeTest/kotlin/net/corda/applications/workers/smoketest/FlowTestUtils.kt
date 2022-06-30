@@ -10,6 +10,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
+import net.corda.applications.workers.smoketest.virtualnode.toJson
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
@@ -83,6 +84,26 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
+fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        assertWithRetry {
+            command { multipleFlowStatus(holdingId) }
+            timeout(Duration.ofSeconds(20))
+            condition {
+                val json = it.toJson()
+                val flowStatuses = json["httpFlowStatusResponses"]
+                val allStatusComplete = flowStatuses.map { flowStatus ->
+                    flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
+                            flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
+                }.all { true }
+                it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
+            }
+        }
+    }
+}
+
 fun createVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -93,7 +114,7 @@ fun createVirtualNodeFor(x500: String): String {
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
             condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$X500_BOB'")
+            failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
         val holdingId = vNodeJson["holdingIdHash"].textValue()

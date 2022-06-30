@@ -175,6 +175,31 @@ class FlowStatusCacheServiceImplTest {
     }
 
     @Test
+    fun `Test get multiple status per holding id`() {
+        val user1 = HoldingIdentity("b1", "c1")
+        val user2 = HoldingIdentity("b2", "c2")
+        val user1Flow1FlowKey = FlowKey("1", user1)
+        val user1Flow2FlowKey = FlowKey("2", user1)
+        val user2Flow1FlowKey = FlowKey("3", user2)
+        val user1Flow1Status = FlowStatus().apply { flowId = "1"}
+        val user1Flow2Status = FlowStatus().apply { flowId = "2" }
+        val user2Flow1Status = FlowStatus().apply { flowId = "3" }
+
+        flowStatusCacheService.onSnapshot(mapOf())
+        flowStatusCacheService.onNext(Record("", user1Flow1FlowKey, user1Flow1Status), null, mapOf())
+        flowStatusCacheService.onNext(Record("", user1Flow2FlowKey, user1Flow2Status), null, mapOf())
+        flowStatusCacheService.onNext(Record("", user2Flow1FlowKey, user2Flow1Status), null, mapOf())
+        val user1Flows = flowStatusCacheService.getStatusesPerIdentity(user1)
+        assertThat(user1Flows.size).isEqualTo(2)
+        assertThat(user1Flows[0]).isSameAs(user1Flow1Status)
+        assertThat(user1Flows[1]).isSameAs(user1Flow2Status)
+
+        val user2Flows = flowStatusCacheService.getStatusesPerIdentity(user2)
+        assertThat(user2Flows.size).isEqualTo(1)
+        assertThat(user2Flows[0]).isSameAs(user2Flow1Status)
+    }
+
+    @Test
     fun `Test on next deletes removed item`() {
         val key1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
         val key2 = FlowKey("a2", HoldingIdentity("b2", "c2"))
