@@ -1,7 +1,7 @@
 package net.corda.membership.impl.p2p
 
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.verification.request.VerificationRequest
+import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.membership.impl.p2p.handler.MessageHandler
 import net.corda.membership.impl.p2p.handler.RegistrationRequestHandler
 import net.corda.membership.impl.p2p.handler.VerificationRequestHandler
@@ -67,7 +67,7 @@ class MembershipP2PProcessor(
     private fun getHandler(requestClass: Class<*>): MessageHandler {
         val factory = messageProcessorFactories[requestClass]
             ?: throw MembershipP2PException(
-                "No handler has been registered to handle the p2p request received." +
+                "No handler has been registered to handle the p2p request received. " +
                         "Request received: [$requestClass]"
             )
         return factory.invoke()
