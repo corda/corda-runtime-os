@@ -35,7 +35,7 @@ class PublishConfig(private val context: TaskContext) : Task {
         for (componentKey in configFileConfig.getConfig("corda").root().keys) {
             val componentPath = "corda.${componentKey}"
             val configAsJson = configFileConfig.getConfig(componentPath).root().render(ConfigRenderOptions.concise())
-            val content = Configuration(configAsJson, "5.0", ConfigurationSchemaVersion(1,0))
+            val content = Configuration(configAsJson, 0, ConfigurationSchemaVersion(1,0))
             val record = Record(CONFIG_TOPIC, componentPath, content)
 
             context.publish(record)

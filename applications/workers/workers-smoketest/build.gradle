@@ -1,5 +1,3 @@
-import aQute.bnd.gradle.Bundle
-
 plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
@@ -8,6 +6,10 @@ description 'Worker Smoketests'
 
 configurations {
     cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+    cpiForFlowCacheTest {
         canBeConsumed = false
         transitive = false
     }
@@ -51,7 +53,8 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // But building a cpb for use in a test is ok.
-    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
+    cpiForFlowCacheTest project(path: ':testing:cpbs:flow-worker-dev-for-cache-testing', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -60,17 +63,24 @@ dependencies {
 
     smokeTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    smokeTestImplementation "org.apache.commons:commons-text:$commonsTextVersion"
     smokeTestImplementation "org.assertj:assertj-core:$assertjVersion"
     smokeTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
-    // Copy the cpb(s) into resources, and strip out the version-package part so it's easier to reference in the
-    // smoke tests.
     from(configurations.cpis) {
         into 'META-INF'
         rename "(.+)-\\d+.+-package.cpb", "\$1.cpb"
+    }
+
+    // Put the flow-worker-dev-for-cache-testing cpb into a different folder
+    def cpiForFlowCacheTest = configurations.cpiForFlowCacheTest
+    def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
+    from(cpiForFlowCacheTest) {
+        into cacheTestingDir
+        rename "(.+)-\\d+.+-package.cpb", "flow-worker-dev.cpb"
     }
 }
 

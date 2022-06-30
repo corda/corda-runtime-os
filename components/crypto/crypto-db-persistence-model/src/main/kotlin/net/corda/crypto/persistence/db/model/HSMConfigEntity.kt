@@ -71,14 +71,14 @@ class HSMConfigEntity(
     /**
      * Number of retries (if the value is set to 0 then only call to the HSM will be attempted) after which give up.
      */
-    @Column(name = "retries", nullable = false)
-    var retries: Int,
+    @Column(name = "max_attempts", nullable = false)
+    var maxAttempts: Int,
 
     /**
      * Number of milliseconds before receiving a reply and considering a call failed.
      */
-    @Column(name = "timeout_mills", nullable = false)
-    var timeoutMills: Long,
+    @Column(name = "attempt_timeout_mills", nullable = false)
+    var attemptTimeoutMills: Long,
 
     /**
      * The name of the provider (see CryptoServiceProvider) which supplies integration with the given HSM.

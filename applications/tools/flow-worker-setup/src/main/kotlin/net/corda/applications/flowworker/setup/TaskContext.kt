@@ -67,7 +67,7 @@ class TaskContext(
             .toList()
     }
 
-    fun <K : Any, V : Any> publish(record: Record<K, V>) {
+    fun publish(record: Record<*, *>) {
         publish(listOf(record))
     }
 

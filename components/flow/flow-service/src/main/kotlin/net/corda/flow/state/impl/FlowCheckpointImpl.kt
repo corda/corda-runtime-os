@@ -1,5 +1,9 @@
 package net.corda.flow.state.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import kotlin.math.min
+import kotlin.math.pow
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
@@ -8,29 +12,28 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
-import net.corda.flow.state.FlowStack
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
-import java.lang.Exception
-import java.nio.ByteBuffer
-import java.time.Instant
 import kotlin.math.min
 import kotlin.math.pow
 
+@Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
     private var nullableCheckpoint: Checkpoint?,
     private val config: SmartConfig,
     private val instantProvider: () -> Instant
 ) : FlowCheckpoint {
 
-    companion object{
+    companion object {
         const val RETRY_INITIAL_DELAY_MS = 1000 // 1 second
     }
 
@@ -55,6 +58,7 @@ class FlowCheckpointImpl(
     private var nullableWaitingFor: WaitingFor? = null
     private var nullableSessionsMap: MutableMap<String, SessionState>? = null
     private var nullableFlowStack: FlowStackImpl? = null
+    private var nullablePersistenceState: PersistenceState? = null
 
     private val checkpoint: Checkpoint
         get() = checkNotNull(nullableCheckpoint)
@@ -63,6 +67,8 @@ class FlowCheckpointImpl(
     private val sessionMap: MutableMap<String, SessionState>
         get() = checkNotNull(nullableSessionsMap)
         { "Attempt to access checkpoint before initialisation" }
+
+    private var deleted = false
 
     override val flowId: String
         get() = checkpoint.flowId
@@ -101,8 +107,14 @@ class FlowCheckpointImpl(
     override val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
+    override var persistenceState: PersistenceState?
+        get() = nullablePersistenceState
+        set(value) {
+            nullablePersistenceState = value
+        }
+
     override val doesExist: Boolean
-        get() = nullableCheckpoint != null
+        get() = nullableCheckpoint != null && !deleted
 
     override val currentRetryCount: Int
         get() = checkpoint.retryState?.retryCount ?: -1
@@ -114,6 +126,9 @@ class FlowCheckpointImpl(
         get() = checkNotNull(checkpoint.retryState)
         { "Attempt to access null retry state while. inRetryState must be tested before accessing retry fields" }
             .failedEvent
+
+    override val pendingPlatformError: ExceptionEnvelope?
+        get() = checkpoint.pendingPlatformError
 
     override fun initFromNew(flowId: String, flowStartContext: FlowStartContext) {
         if (nullableCheckpoint != null) {
@@ -149,11 +164,12 @@ class FlowCheckpointImpl(
     }
 
     override fun putSessionState(sessionState: SessionState) {
+        checkFlowNotDeleted()
         sessionMap[sessionState.sessionId] = sessionState
     }
 
     override fun markDeleted() {
-        nullableCheckpoint = null
+        deleted = true
     }
 
     override fun rollback() {
@@ -161,6 +177,7 @@ class FlowCheckpointImpl(
     }
 
     override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
+        checkFlowNotDeleted()
         if (checkpoint.retryState == null) {
             checkpoint.retryState = RetryState().apply {
                 retryCount = 1
@@ -176,23 +193,37 @@ class FlowCheckpointImpl(
         }
 
         val maxRetrySleepTime = config.getInt(FlowConfig.PROCESSING_MAX_RETRY_DELAY)
-        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount-1.toDouble())) * RETRY_INITIAL_DELAY_MS
+        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount - 1.toDouble())) * RETRY_INITIAL_DELAY_MS
         setFlowSleepDuration(min(maxRetrySleepTime, sleepTime.toInt()))
     }
 
     override fun markRetrySuccess() {
+        checkFlowNotDeleted()
         checkpoint.retryState = null
     }
 
+    override fun clearPendingPlatformError() {
+        checkpoint.pendingPlatformError = null
+    }
+
     override fun setFlowSleepDuration(sleepTimeMs: Int) {
+        checkFlowNotDeleted()
         checkpoint.maxFlowSleepDuration = min(sleepTimeMs, checkpoint.maxFlowSleepDuration)
     }
 
+    override fun setPendingPlatformError(type: String, message: String) {
+        checkpoint.pendingPlatformError = ExceptionEnvelope().apply {
+            errorType = type
+            errorMessage = message
+        }
+    }
+
     override fun toAvro(): Checkpoint? {
-        if (nullableCheckpoint == null) {
+        if (nullableCheckpoint == null || deleted) {
             return null
         }
 
+        checkpoint.persistenceState = nullablePersistenceState
         checkpoint.flowState.suspendedOn = nullableSuspendOn
         checkpoint.flowState.waitingFor = nullableWaitingFor
         checkpoint.sessions = sessionMap.values.toList()
@@ -204,8 +235,12 @@ class FlowCheckpointImpl(
         validateAndAddStateFields()
         validateAndAddSessions()
         validateAndAddFlowStack()
+        validateAndAddPersistenceState()
     }
 
+    private fun validateAndAddPersistenceState() {
+        nullablePersistenceState = checkpoint.persistenceState
+    }
     private fun validateAndAddStateFields() {
         nullableSuspendOn = checkpoint.flowState.suspendedOn
         nullableWaitingFor = checkpoint.flowState.waitingFor
@@ -239,12 +274,17 @@ class FlowCheckpointImpl(
         }
     }
 
+    private fun checkFlowNotDeleted() {
+        // Does not prevent changes to the Avro objects, but will give us some protection from bugs moving forward.
+        check(!deleted) { "Flow has been marked for deletion but is currently being modified" }
+    }
+
     private class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack {
 
         override val size: Int get() = flowStackItems.size
 
-        override fun push(flow: Flow<*>): FlowStackItem {
-            val stackItem = FlowStackItem(flow.javaClass.name, flow.getIsInitiatingFlow(), mutableListOf())
+        override fun push(flow: Flow): FlowStackItem {
+            val stackItem = FlowStackItem(flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf())
             flowStackItems.add(stackItem)
             return stackItem
         }
@@ -271,8 +311,8 @@ class FlowCheckpointImpl(
             return stackEntry
         }
 
-        private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
+        private fun Class<*>.getIsInitiatingFlow(): Boolean {
+            return this.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

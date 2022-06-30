@@ -1,6 +1,5 @@
 package net.corda.layeredpropertymap
 
-import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import org.junit.jupiter.api.Test
@@ -28,16 +27,14 @@ class LayeredPropertyMapUtilsTests {
     )
 
     @Test
-    fun `Should convert to wire format`() {
+    fun `Should convert to avro format`() {
         val original = createLayeredPropertyMapImpl()
-        val wire = original.toWire()
-        assertNotNull(wire)
-        assertTrue(wire.hasArray())
-        assertTrue(wire.array().isNotEmpty())
-        val restored = KeyValuePairList.fromByteBuffer(wire)
-        assertEquals(original.entries.size, restored.items.size)
+        val avro = original.toAvro()
+        assertNotNull(avro)
+        assertTrue(avro.items.isNotEmpty())
+        assertEquals(original.entries.size, avro.items.size)
         original.entries.forEach { entry ->
-            val item = restored.items.firstOrNull { it.key == entry.key }
+            val item = avro.items.firstOrNull { it.key == entry.key }
             assertNotNull(item)
             assertEquals(entry.value, item.value)
         }

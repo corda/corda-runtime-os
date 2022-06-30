@@ -1,13 +1,9 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.CustomEvent
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.v5.base.util.debug
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
@@ -28,12 +24,10 @@ import kotlin.concurrent.withLock
  * @param registeringCoordinator The coordinator to deliver status updates to.
  */
 internal class Registration(
-    private val coordinators: Set<LifecycleCoordinator>,
-    private val registeringCoordinator: LifecycleCoordinator
+    private val coordinators: Set<LifecycleCoordinatorInternal>,
+    private val registeringCoordinator: LifecycleCoordinatorInternal
 ) : RegistrationHandle {
 
-
-    private val logger = LoggerFactory.getLogger(toString())
 
     private val coordinatorStatusMap = ConcurrentHashMap(coordinators.associateWith { LifecycleStatus.DOWN })
 
@@ -65,7 +59,7 @@ internal class Registration(
      * @param coordinator The coordinator status that has changed.
      * @param status The new status of the coordinator.
      */
-    fun updateCoordinatorStatus(coordinator: LifecycleCoordinator, status: LifecycleStatus) {
+    fun updateCoordinatorStatus(coordinator: LifecycleCoordinatorInternal, status: LifecycleStatus) {
         lock.withLock {
             val oldState = currentStatus
             coordinatorStatusMap[coordinator] = status
@@ -110,14 +104,10 @@ internal class Registration(
      */
     override fun close() {
         if (!isClosed.getAndSet(true)) {
-            try {
-                registeringCoordinator.postEvent(StopTrackingRegistration(this))
-                coordinators.forEach { it.postEvent(CancelRegistration(this)) }
-            } catch (ex: LifecycleException) {
-                // An error here means we're probably already in the process of closing, so we can safely ignore it
-                logger.debug { "Caught but ignoring exception during Registration close: $ex" }
+            registeringCoordinator.postInternalEvent(StopTrackingRegistration(this))
+            coordinators.forEach { coordinator ->
+                coordinator.postInternalEvent(CancelRegistration(this))
             }
-
         }
     }
 

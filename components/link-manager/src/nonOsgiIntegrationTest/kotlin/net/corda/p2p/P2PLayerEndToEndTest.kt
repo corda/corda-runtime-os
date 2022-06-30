@@ -4,17 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import java.io.StringWriter
-import java.nio.ByteBuffer
-import java.security.Key
-import java.security.KeyFactory
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.spec.PKCS8EncodedKeySpec
-import java.time.Duration
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -26,7 +15,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -50,25 +40,26 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
-import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
-import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -81,6 +72,18 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import java.io.StringWriter
+import java.nio.ByteBuffer
+import java.security.Key
+import java.security.KeyFactory
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.spec.PKCS8EncodedKeySpec
+import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import org.mockito.kotlin.mock
+import java.util.UUID
 
 class P2PLayerEndToEndTest {
 
@@ -239,7 +242,6 @@ class P2PLayerEndToEndTest {
         }
     }
 
-
     @Test
     @Timeout(60)
     fun `messages with expired ttl have sent marker and ttl expired marker and no received marker`() {
@@ -385,11 +387,16 @@ class P2PLayerEndToEndTest {
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(10)))
                 .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
-                .withValue(LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), replayConfig.root())
+                .withValue(
+                    REPLAY_ALGORITHM_KEY,
+                    ConfigFactory.empty().withValue(
+                        LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(),
+                        replayConfig.root()
+                    ).root())
         }
         private val replayConfig by lazy {
             ConfigFactory.empty()
-                .withValue(REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
+                .withValue(MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
         }
 
         private fun readKeyStore(fileName: String): ByteArray {
@@ -410,6 +417,11 @@ class P2PLayerEndToEndTest {
                 lifecycleCoordinatorFactory,
                 configReadService,
                 bootstrapConfig,
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                ThirdPartyComponentsMode.STUB
             )
 
         private val gateway =
@@ -419,6 +431,8 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
+                SigningMode.STUB,
+                mock()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
@@ -427,7 +441,7 @@ class P2PLayerEndToEndTest {
                     Record(
                         CONFIG_TOPIC,
                         key,
-                        Configuration(config.root().render(ConfigRenderOptions.concise()), "0", ConfigurationSchemaVersion(1, 0))
+                        Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             ).forEach { it.get() }
@@ -463,15 +477,19 @@ class P2PLayerEndToEndTest {
                     }
                 }
         }
-        private val groupPolicyEntry = GroupPolicyEntry(
-            GROUP_ID,
-            NetworkType.CORDA_5,
-            listOf(
-                ProtocolMode.AUTHENTICATION_ONLY,
-                ProtocolMode.AUTHENTICATED_ENCRYPTION,
-            ),
-            listOf(String(readKeyStore("$trustStoreFileName.pem"))),
-        )
+        private val groupPolicyEntry = ourIdentities.map {
+            GroupPolicyEntry(
+                HoldingIdentity(it.x500Name, GROUP_ID),
+                NetworkType.CORDA_5,
+                listOf(
+                    ProtocolMode.AUTHENTICATION_ONLY,
+                    ProtocolMode.AUTHENTICATED_ENCRYPTION,
+                ),
+                listOf(String(readKeyStore("$trustStoreFileName.pem"))),
+            )
+        }
+
+
 
         private val memberInfoEntry = ourIdentities.mapIndexed { i, identity ->
             MemberInfoEntry(
@@ -492,7 +510,8 @@ class P2PLayerEndToEndTest {
 
             val hostingMapRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(
-                    HOSTED_MAP_TOPIC, "hosting-1", HostedIdentityEntry(
+                    P2P_HOSTED_IDENTITIES_TOPIC, "hosting-1",
+                    HostedIdentityEntry(
                         HoldingIdentity(identity.x500Name, GROUP_ID),
                         GROUP_ID,
                         identity.x500Name,
@@ -502,11 +521,13 @@ class P2PLayerEndToEndTest {
                 )
             }.toList()
 
-            val groupPolicyRecord = Record(
-                GROUP_POLICIES_TOPIC,
-                GROUP_ID,
-                groupPolicyEntry,
-            )
+            val groupPolicyRecord = groupPolicyEntry.map {
+                Record(
+                    GROUP_POLICIES_TOPIC,
+                    "${it.holdingIdentity.x500Name}-${it.holdingIdentity.groupId}",
+                    it,
+                )
+            }
 
             val cryptoKeyRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(CRYPTO_KEYS_TOPIC, "key-1", TenantKeys(identity.x500Name, KeyPairEntry(keyPairs[i].private.toPem())))
@@ -515,8 +536,8 @@ class P2PLayerEndToEndTest {
             publisherForHost.use { publisher ->
                 publisher.start()
                 publisher.publish(
-                    memberInfoRecords + otherHostMemberInfoRecords
-                            + hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
+                    memberInfoRecords + otherHostMemberInfoRecords +
+                        hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
                 ).forEach { it.get() }
             }
         }
@@ -551,7 +572,6 @@ class P2PLayerEndToEndTest {
                 publisher.publish(records).forEach { it.get() }
             }
         }
-
 
         fun startWith(otherHost: Host? = null) {
             configReadService.start()

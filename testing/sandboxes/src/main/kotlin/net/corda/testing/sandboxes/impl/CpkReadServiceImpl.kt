@@ -3,7 +3,6 @@ package net.corda.testing.sandboxes.impl
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -21,6 +20,7 @@ import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
 @Component(
@@ -68,9 +68,7 @@ class CpkReadServiceImpl @Activate constructor(
             CpiReader.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.cpiId
-            cpis.putIfAbsent(cpiId, newCpi)?.also {
-                newCpi.close()
-            } ?: newCpi
+            cpis.putIfAbsent(cpiId, newCpi) ?: newCpi
         }
     }
 
@@ -80,7 +78,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun removeCpiMetadata(id: CpiIdentifier) {
         logger.info("Removing CPI {}", id)
-        cpis.remove(id)?.close()
+        cpis.remove(id)
     }
 
     override fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>> {
@@ -94,11 +92,8 @@ class CpkReadServiceImpl @Activate constructor(
         return CompletableFuture.completedFuture(cpi)
     }
 
-    override fun get(cpkId: CpkIdentifier): Cpk? {
-        val cpk = cpks.firstOrNull {
-            it.metadata.cpkId.name == cpkId.name &&
-                    it.metadata.cpkId.version == cpkId.version &&
-                    it.metadata.cpkId.signerSummaryHash == cpkId.signerSummaryHash }
+    override fun get(cpkFileChecksum: SecureHash): Cpk? {
+        val cpk = cpks.firstOrNull { it.metadata.fileChecksum == cpkFileChecksum }
 
         return cpk
     }

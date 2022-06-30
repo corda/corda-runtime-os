@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.domino.logic.DominoTileState.Created
@@ -16,7 +17,7 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
-import net.corda.lifecycle.domino.logic.StatusChangeEvent
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -44,9 +45,9 @@ abstract class SubscriptionDominoTileBase(
     // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
     private val subscription: Lifecycle,
     private val subscriptionName: LifecycleCoordinatorName,
-    final override val dependentChildren: Collection<DominoTile>,
-    final override val managedChildren: Collection<DominoTile>
-): DominoTile {
+    final override val dependentChildren: Collection<LifecycleCoordinatorName>,
+    final override val managedChildren: Collection<NamedLifecycle>
+): DominoTile() {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
@@ -74,32 +75,35 @@ abstract class SubscriptionDominoTileBase(
         )
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    final override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
     private val currentState = AtomicReference(Created)
 
     private val isOpen = AtomicBoolean(true)
 
-    override val state: DominoTileState
+    private val internalState: DominoTileState
         get() = currentState.get()
     override val isRunning: Boolean
-        get() = state == Started
+        get() = internalState == Started
 
-    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it.coordinatorName }.toSet())
+    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it }.toSet())
     private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
 
     private val logger = LoggerFactory.getLogger(coordinatorName.toString())
 
     override fun start() {
         coordinator.start()
-        managedChildren.forEach { it.start() }
+    }
+
+    private fun startTile() {
+        managedChildren.forEach { it.lifecycle.start() }
         if (dependentChildren.isEmpty()) {
             subscription.start()
         }
     }
 
     override fun stop() {
-        managedChildren.forEach { it.stop() }
+        managedChildren.forEach { it.lifecycle.stop() }
     }
 
     override fun close() {
@@ -117,7 +121,6 @@ abstract class SubscriptionDominoTileBase(
                 Created -> null
             }
             status?.let { coordinator.updateStatus(it) }
-            coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
             logger.info("State updated from $oldState to $newState")
         }
     }
@@ -133,6 +136,9 @@ abstract class SubscriptionDominoTileBase(
 
         private fun handleEvent(event: LifecycleEvent) {
             when(event) {
+                is StartEvent -> {
+                    startTile()
+                }
                 is RegistrationStatusChangeEvent -> {
                     when(event.registration) {
                         subscriptionRegistration -> {

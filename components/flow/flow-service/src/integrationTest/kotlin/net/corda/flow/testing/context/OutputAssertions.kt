@@ -35,13 +35,19 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun scheduleFlowMapperCleanupEvents(vararg key: String)
+
     fun flowDidNotResume()
 
-    fun flowResumedWith(value: Any)
+    fun flowResumedWith(value: Any?)
 
     fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
     fun wakeUpEvent()
+
+    fun hasPendingUserException()
+
+    fun noPendingUserException()
 
     fun noFlowEvents()
 
@@ -54,6 +60,10 @@ interface OutputAssertions {
     fun nullStateRecord()
 
     fun markedForDlq()
+
+    fun entityRequestSent(expectedRequestPayload: Any)
+
+    fun noEntityRequestSent()
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

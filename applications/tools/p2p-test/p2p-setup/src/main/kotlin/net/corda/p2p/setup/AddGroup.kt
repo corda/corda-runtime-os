@@ -3,11 +3,12 @@ package net.corda.p2p.setup
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
+import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -24,8 +25,9 @@ import java.util.concurrent.Callable
 )
 class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
     companion object {
-        internal fun Config.toGroupRecord(topic: String = TestSchema.GROUP_POLICIES_TOPIC): Record<String, GroupPolicyEntry> {
+        internal fun Config.toGroupRecord(topic: String = GROUP_POLICIES_TOPIC): Record<String, GroupPolicyEntry> {
             val groupId = this.getString("groupId")
+            val x500Name = this.getString("x500name")
             val dataConfig = this.getConfig("data")
             val networkType = dataConfig.getEnum(NetworkType::class.java, "networkType")
             val trustRootCertificates = try {
@@ -41,12 +43,12 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
 
             val protocolMode = dataConfig.getEnumList(ProtocolMode::class.java, "protocolModes")
             val entry = GroupPolicyEntry(
-                groupId,
+                HoldingIdentity(x500Name, groupId),
                 networkType,
                 protocolMode,
                 trustRootCertificates,
             )
-            return Record(topic, entry.groupId, entry)
+            return Record(topic, "$x500Name-$groupId", entry)
         }
     }
 
@@ -56,7 +58,7 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
             "Topic to write the group information records to."
         ]
     )
-    private var groupInfoTopic: String = TestSchema.GROUP_POLICIES_TOPIC
+    private var groupInfoTopic: String = GROUP_POLICIES_TOPIC
 
     @Parameters(
         description = [

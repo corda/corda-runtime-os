@@ -1,5 +1,6 @@
 package net.corda.crypto.core
 
+import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
@@ -9,19 +10,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.ECDSA_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.ECDSA_SHA512_SIGNATURE_SPEC
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
-import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA512_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
-import net.corda.v5.crypto.SM2_SM3_SIGNATURE_SPEC
-import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -66,23 +55,23 @@ class DefaultSignatureOIDMapTests {
             ecdsak1 = generateKeyPair(ECDSA_SECP256K1_TEMPLATE, defaultProvider)
             ecdsar1 = generateKeyPair(ECDSA_SECP256R1_TEMPLATE, defaultProvider)
             generatedTestData = listOf(
-                Arguments.of(eddsa, EDDSA_ED25519_NONE_SIGNATURE_SPEC, DefaultSignatureOIDMap.EDDSA_ED25519),
-                Arguments.of(sphincs, SPHINCS256_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SPHINCS256_SHA512),
-                Arguments.of(sm2, SM2_SM3_SIGNATURE_SPEC, DefaultSignatureOIDMap.SM3_SM2),
-                Arguments.of(sm2, SignatureSpec("SHA256withSM2"), DefaultSignatureOIDMap.SM3_SHA256),
-                Arguments.of(gost, GOST3410_GOST3411_SIGNATURE_SPEC, DefaultSignatureOIDMap.GOST3410_GOST3411),
-                Arguments.of(rsa, RSA_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_RSA),
-                Arguments.of(rsa, RSA_SHA384_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA384_RSA),
-                Arguments.of(rsa, RSA_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA512_RSA),
-                Arguments.of(rsa, SignatureSpec("SHA256WITHRSAANDMGF1"), DefaultSignatureOIDMap.SHA256_RSASSA_PSS),
-                Arguments.of(rsa, SignatureSpec("SHA384WITHRSAANDMGF1"), DefaultSignatureOIDMap.SHA384_RSASSA_PSS),
-                Arguments.of(rsa, SignatureSpec("SHA512WITHRSAANDMGF1"), DefaultSignatureOIDMap.SHA512_RSASSA_PSS),
-                Arguments.of(rsa, RSASSA_PSS_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_RSASSA_PSS),
-                Arguments.of(rsa, RSASSA_PSS_SHA384_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA384_RSASSA_PSS),
-                Arguments.of(rsa, RSASSA_PSS_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA512_RSASSA_PSS),
+                Arguments.of(eddsa, SignatureSpec.EDDSA_ED25519, DefaultSignatureOIDMap.EDDSA_ED25519),
+                Arguments.of(sphincs, SignatureSpec.SPHINCS256_SHA512, DefaultSignatureOIDMap.SPHINCS256_SHA512),
+                Arguments.of(sm2, SignatureSpec.SM2_SM3, DefaultSignatureOIDMap.SM3_SM2),
+                Arguments.of(sm2, SignatureSpec.SM2_SHA256, DefaultSignatureOIDMap.SM3_SHA256),
+                Arguments.of(gost, SignatureSpec.GOST3410_GOST3411, DefaultSignatureOIDMap.GOST3410_GOST3411),
+                Arguments.of(rsa, SignatureSpec.RSA_SHA256, DefaultSignatureOIDMap.SHA256_RSA),
+                Arguments.of(rsa, SignatureSpec.RSA_SHA384, DefaultSignatureOIDMap.SHA384_RSA),
+                Arguments.of(rsa, SignatureSpec.RSA_SHA512, DefaultSignatureOIDMap.SHA512_RSA),
+                Arguments.of(rsa, SignatureSpec.RSA_SHA256_WITH_MGF1, DefaultSignatureOIDMap.SHA256_RSASSA_PSS),
+                Arguments.of(rsa, SignatureSpec.RSA_SHA384_WITH_MGF1, DefaultSignatureOIDMap.SHA384_RSASSA_PSS),
+                Arguments.of(rsa, SignatureSpec.RSA_SHA512_WITH_MGF1, DefaultSignatureOIDMap.SHA512_RSASSA_PSS),
+                Arguments.of(rsa, SignatureSpec.RSASSA_PSS_SHA256, DefaultSignatureOIDMap.SHA256_RSASSA_PSS),
+                Arguments.of(rsa, SignatureSpec.RSASSA_PSS_SHA384, DefaultSignatureOIDMap.SHA384_RSASSA_PSS),
+                Arguments.of(rsa, SignatureSpec.RSASSA_PSS_SHA512, DefaultSignatureOIDMap.SHA512_RSASSA_PSS),
                 Arguments.of(
                     rsa,
-                    SignatureSpec(
+                    ParameterizedSignatureSpec(
                         "RSASSA-PSS",
                         PSSParameterSpec(
                             "SHA-256",
@@ -96,7 +85,7 @@ class DefaultSignatureOIDMapTests {
                 ),
                 Arguments.of(
                     rsa,
-                    SignatureSpec(
+                    ParameterizedSignatureSpec(
                         "RSASSA-PSS",
                         PSSParameterSpec(
                             "SHA-384",
@@ -110,7 +99,7 @@ class DefaultSignatureOIDMapTests {
                 ),
                 Arguments.of(
                     rsa,
-                    SignatureSpec(
+                    ParameterizedSignatureSpec(
                         "RSASSA-PSS",
                         PSSParameterSpec(
                             "SHA-512",
@@ -122,12 +111,12 @@ class DefaultSignatureOIDMapTests {
                     ),
                     null
                 ),
-                Arguments.of(ecdsak1, ECDSA_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_ECDSA_K1),
-                Arguments.of(ecdsak1, ECDSA_SHA384_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA384_ECDSA_K1),
-                Arguments.of(ecdsak1, ECDSA_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA512_ECDSA_K1),
-                Arguments.of(ecdsar1, ECDSA_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_ECDSA_R1),
-                Arguments.of(ecdsar1, ECDSA_SHA384_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA384_ECDSA_R1),
-                Arguments.of(ecdsar1, ECDSA_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA512_ECDSA_R1),
+                Arguments.of(ecdsak1, SignatureSpec.ECDSA_SHA256, DefaultSignatureOIDMap.SHA256_ECDSA_K1),
+                Arguments.of(ecdsak1, SignatureSpec.ECDSA_SHA384, DefaultSignatureOIDMap.SHA384_ECDSA_K1),
+                Arguments.of(ecdsak1, SignatureSpec.ECDSA_SHA512, DefaultSignatureOIDMap.SHA512_ECDSA_K1),
+                Arguments.of(ecdsar1, SignatureSpec.ECDSA_SHA256, DefaultSignatureOIDMap.SHA256_ECDSA_R1),
+                Arguments.of(ecdsar1, SignatureSpec.ECDSA_SHA384, DefaultSignatureOIDMap.SHA384_ECDSA_R1),
+                Arguments.of(ecdsar1, SignatureSpec.ECDSA_SHA512, DefaultSignatureOIDMap.SHA512_ECDSA_R1)
             )
         }
 
@@ -168,7 +157,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 rsa.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "NONEwithRSA",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )
@@ -177,7 +166,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 eddsa.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "EdDSA",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )
@@ -186,7 +175,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 sphincs.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "SHA512withSPHINCS256",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )
@@ -195,7 +184,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 sm2.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "SM3withSM2",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )
@@ -204,7 +193,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 gost.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "GOST3411withGOST3410",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )
@@ -213,7 +202,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 ecdsak1.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "SHA256withECDSA",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )
@@ -222,7 +211,7 @@ class DefaultSignatureOIDMapTests {
         assertNull(
             DefaultSignatureOIDMap.inferSignatureOID(
                 ecdsar1.public,
-                SignatureSpec(
+                CustomSignatureSpec(
                     signatureName = "SHA256withECDSA",
                     customDigestName = DigestAlgorithmName.SHA2_256
                 )

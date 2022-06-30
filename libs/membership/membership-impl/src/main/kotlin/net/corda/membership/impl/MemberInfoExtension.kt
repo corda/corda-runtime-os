@@ -25,8 +25,11 @@ class MemberInfoExtension {
         const val PLATFORM_VERSION = "corda.platformVersion"
 
         /** Key name for party property. */
-        const val PARTY_NAME = "corda.party.name"
-        const val PARTY_SESSION_KEY = "corda.party.session.key"
+        const val PARTY_NAME = "corda.name"
+        const val PARTY_SESSION_KEY = "corda.session.key"
+
+        /** Key name for the session key hash **/
+        const val SESSION_KEY_HASH = "corda.sessionKeyHash"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
@@ -37,6 +40,9 @@ class MemberInfoExtension {
 
         /** Key name for status property. */
         const val STATUS = "corda.status"
+
+        /** Key name for creation time **/
+        const val CREATION_TIME = "corda.creationTime"
 
         /** Key name for endpoints property. */
         const val ENDPOINTS = "corda.endpoints"
@@ -50,8 +56,8 @@ class MemberInfoExtension {
         /** Key name for group identifier property. */
         const val GROUP_ID = "corda.groupId"
 
-        /** Key name for session key property. */
-        const val SESSION_KEY = "corda.session.key"
+        /** Key name for ECDH key property. */
+        const val ECDH_KEY = "corda.ecdh.key"
 
         /** Key name for certificate property. */
         const val CERTIFICATE = "corda.session.certificate"
@@ -64,6 +70,9 @@ class MemberInfoExtension {
 
         /** Key name for MGM property. */
         const val IS_MGM = "corda.mgm"
+
+        /** Key name for the ID of the registration in which the current member info was approved. */
+        const val REGISTRATION_ID = "corda.registration.id"
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
@@ -131,6 +140,11 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
+
+        /** Collection of ledger key hashes for member's node. */
+        @JvmStatic
+        val MemberInfo.sessionKeyHash: PublicKeyHash
+            get() = memberProvidedContext.parse(SESSION_KEY_HASH)
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic

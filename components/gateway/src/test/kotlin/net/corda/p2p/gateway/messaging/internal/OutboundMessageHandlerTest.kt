@@ -8,11 +8,10 @@ import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.Record
@@ -36,13 +35,14 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.anyString
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.isA
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -52,6 +52,7 @@ import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.ScheduledExecutorService
 
 class OutboundMessageHandlerTest {
     companion object {
@@ -83,10 +84,19 @@ class OutboundMessageHandlerTest {
         } doReturn subscription
     }
     private var connectionConfig = ConnectionConfiguration()
-    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
+    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
     private val truststore = mock<KeyStore>()
     private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
-        whenever(mock.getTrustStore(GROUP_ID)).doReturn(truststore)
+        whenever(mock.getTrustStore(anyString(), eq(GROUP_ID))).doReturn(truststore)
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
     private val sentMessages = mutableListOf<GatewayMessage>()
@@ -103,21 +113,23 @@ class OutboundMessageHandlerTest {
     }
 
     private var handlerStarted = true
-    private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var future: CompletableFuture<Unit>
+    private var onClose: (() -> Unit)? = null
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doAnswer { handlerStarted }
-        if (context.arguments()[2] != null) {
-            @Suppress("UNCHECKED_CAST")
-            val createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-            future = createResources(resourcesHolder)
-        }
+        @Suppress("UNCHECKED_CAST")
+        onClose = context.arguments()[3] as? (() -> Unit)
     }
-    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
     private val connectionConfigReader = mockConstruction(ConnectionConfigReader::class.java) { mock, _ ->
         whenever(mock.connectionConfig) doAnswer { connectionConfig }
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
     private val handler = OutboundMessageHandler(
@@ -137,13 +149,16 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
-        verify(resourcesHolder).keep(isA<AutoClosableExecutorService>())
-    }
-
-    @Test
-    fun `on createResource the ReplayScheduler completes the future`() {
-        assertThat(future).isCompletedWithValue(Unit)
+    fun `onClose closes the scheduled executor service`() {
+        val mockExecutorService = mock<ScheduledExecutorService>()
+        OutboundMessageHandler(
+            lifecycleCoordinatorFactory,
+            configurationReaderService,
+            subscriptionFactory,
+            SmartConfigImpl.empty(),
+        ) { mockExecutorService }
+        onClose!!.invoke()
+        verify(mockExecutorService).shutdown()
     }
 
     @Test
@@ -157,6 +172,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -190,6 +206,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -213,6 +230,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -248,6 +266,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("O=PartyB, L=London, C=GB", GROUP_ID),
             HoldingIdentity("O=PartyA, L=London, C=GB", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
@@ -265,8 +284,8 @@ class OutboundMessageHandlerTest {
             .isEqualTo(
                 DestinationInfo(
                     URI.create("https://r3.com/"),
-                    "b597e8858a2fa87424f5e8c39dc4f93c.p2p.corda.net",
-                    X500Name("O=PartyA, L=London, C=GB"),
+                    "e7aa0d5c6b562cc528e490d58b7040fe.p2p.corda.net",
+                    X500Name("O=PartyB, L=London, C=GB"),
                     truststore
                 )
             )
@@ -283,6 +302,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("bbb", GROUP_ID),
             HoldingIdentity("aaa", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
@@ -308,6 +328,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("bbb", GROUP_ID),
             HoldingIdentity("aaa", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
@@ -320,7 +341,7 @@ class OutboundMessageHandlerTest {
 
         handler.onNext(Record("", "", message))
 
-        verify(trustStores.constructed().first()).getTrustStore(GROUP_ID)
+        verify(trustStores.constructed().first()).getTrustStore("aaa", GROUP_ID)
     }
 
     @Test
@@ -343,6 +364,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -382,6 +404,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -426,6 +449,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -468,6 +492,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",

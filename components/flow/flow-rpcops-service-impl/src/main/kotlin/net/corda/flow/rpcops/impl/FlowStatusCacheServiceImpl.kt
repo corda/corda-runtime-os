@@ -1,5 +1,6 @@
 package net.corda.flow.rpcops.impl
 
+import java.util.Collections
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
@@ -23,7 +24,6 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
 
 @Component(immediate = true, service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
@@ -49,8 +49,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     override fun stop() = lifecycleCoordinator.stop()
 
     override fun initialise(config: SmartConfig) {
-        flowStatusSubscription?.close()
         subReg?.close()
+        flowStatusSubscription?.close()
 
         flowStatusSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(
@@ -67,6 +67,12 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
         return cache[FlowKey(clientRequestId, holdingIdentity)]
+    }
+
+    override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
+         return cache.entries.filter { it.key.identity == holdingIdentity }.map {
+             it.value
+         }
     }
 
     override fun onSnapshot(currentData: Map<FlowKey, FlowStatus>) {

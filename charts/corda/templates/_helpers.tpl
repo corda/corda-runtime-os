@@ -66,7 +66,7 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker }}-worker"
+"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
 {{- end }}
 
 {{/*
@@ -107,13 +107,78 @@ CLI image
 {{- end }}
 
 {{/*
-Worker JAVA_TOOL_OPTIONS
+DB client image
 */}}
-{{- define "corda.workerJavaToolOptions" -}}
-{{- if ( get .Values.workers .worker ).debug.enabled -}}
-- name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+{{- define "corda.dbClientImage" -}}
+"{{- if .Values.db.clientImage.registry }}{{.Values.db.clientImage.registry}}/{{- end }}{{ .Values.db.clientImage.repository }}:{{ .Values.db.clientImage.tag }}"
 {{- end }}
+
+{{/*
+Resources for the bootstrapper
+*/}}
+{{- define "corda.bootstrapResources" }}
+
+resources:
+  requests:
+  {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
+    cpu: {{ default .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
+  {{- end }}
+  {{- if or .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
+    memory: {{ default .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
+  {{- end}}
+  limits:
+  {{- if or .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
+    cpu: {{ default .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
+  {{- end }}
+  {{- if or .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
+    memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Worker environment variables
+*/}}
+{{- define "corda.workerEnv" -}}
+- name: K8S_NODE_NAME
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: spec.nodeName
+- name: K8S_POD_NAME
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.name
+- name: K8S_POD_UID
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.uid
+- name: K8S_NAMESPACE
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.namespace
+- name: JAVA_TOOL_OPTIONS
+  value: {{- if ( get .Values.workers .worker ).debug.enabled }}
+      -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+    {{- end -}}
+    {{- if .Values.kafka.sasl.enabled }}
+      -Djava.security.auth.login.config=/etc/config/jaas.conf
+    {{- end -}}
+    {{- if .Values.openTelemetry.enabled }}
+      -javaagent:/opt/override/opentelemetry-javaagent-1.15.0.jar
+      -Dotel.resource.attributes=service.name={{ .worker }}-worker,k8s.namespace.name=$(K8S_NAMESPACE),k8s.node.name=$(K8S_NODE_NAME),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID)
+      -Dotel.instrumentation.common.default-enabled=false
+      -Dotel.instrumentation.runtime-metrics.enabled=true
+      {{- if .Values.openTelemetry.endpoint }}
+      -Dotel.exporter.otlp.endpoint={{ .Values.openTelemetry.endpoint }}
+      -Dotel.exporter.otlp.protocol={{ .Values.openTelemetry.protocol }}
+      {{- else }}
+      -Dotel.metrics.exporter=logging
+      -Dotel.traces.exporter=logging
+      {{- end -}}
+    {{- end -}}
 {{- end }}
 
 {{/*
@@ -127,16 +192,26 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
-- --topicPrefix={{ .Values.kafka.topicPrefix }}
+- "-mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}"
+- "--topicPrefix={{ .Values.kafka.topicPrefix }}"
 {{- if .Values.kafka.tls.enabled }}
-- -msecurity.protocol=SSL
-{{- if .Values.kafka.tls.truststore.secretRef.name }}
-- -mssl.truststore.location=/certs/ca.crt
-- -mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}
-{{- if .Values.kafka.tls.truststore.password }}
-- -mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}
+{{- if .Values.kafka.sasl.enabled }}
+- "-msecurity.protocol=SASL_SSL"
+- "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
+{{- else }}
+- "-msecurity.protocol=SSL"
 {{- end }}
+{{- if .Values.kafka.tls.truststore.secretRef.name }}
+- "-mssl.truststore.location=/certs/ca.crt"
+- "-mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}"
+{{- if .Values.kafka.tls.truststore.password }}
+- "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
+{{- end }}
+{{- end }}
+{{- else }}
+{{- if .Values.kafka.sasl.enabled }}
+- "-msecurity.protocol=SASL_PLAINTEXT"
+- "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
 {{- end }}
 {{- end }}
 {{- end }}
@@ -150,7 +225,6 @@ resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
     cpu: {{ default .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
-
   {{- end }}
   {{- if or .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
     memory: {{ default .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
@@ -158,7 +232,6 @@ resources:
   limits:
   {{- if or .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
-
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
@@ -169,24 +242,34 @@ resources:
 Volume mounts for corda workers
 */}}
 {{- define "corda.workerVolumeMounts" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - mountPath: "/certs"
   name: "certs"
+  readOnly: true
+{{- end }}
+{{- if .Values.kafka.sasl.enabled  }}
+- mountPath: "/etc/config"
+  name: "jaas-conf"
   readOnly: true
 {{- end }}
 {{- end }}
 
 {{/*
-Volume mounts for corda workers
+Volumes for corda workers
 */}}
 {{- define "corda.workerVolumes" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - name: certs
   secret:
     secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
     items:
       - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
         path: "ca.crt"
+{{- end -}}
+{{- if .Values.kafka.sasl.enabled  }}
+- name: jaas-conf
+  secret:
+    secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
 {{- end }}
 

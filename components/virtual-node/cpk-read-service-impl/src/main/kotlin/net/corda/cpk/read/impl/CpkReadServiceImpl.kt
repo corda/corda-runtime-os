@@ -8,7 +8,6 @@ import net.corda.cpk.read.impl.services.CpkChunksKafkaReader
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -33,6 +32,7 @@ import net.corda.utilities.WorkspacePathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -80,7 +80,7 @@ class CpkReadServiceImpl (
     @VisibleForTesting
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
-    private val cpksById = ConcurrentHashMap<CpkIdentifier, Cpk>()
+    private val cpksByChecksum = ConcurrentHashMap<SecureHash, Cpk>()
 
     /**
      * Event loop
@@ -136,8 +136,8 @@ class CpkReadServiceImpl (
         closeResources()
     }
 
-    override fun get(cpkId: CpkIdentifier): Cpk? =
-        cpksById[cpkId]
+    override fun get(cpkFileChecksum: SecureHash): Cpk? =
+        cpksByChecksum[cpkFileChecksum]
 
     private fun createCpkChunksKafkaReader(messagingConfig: SmartConfig, bootConfig: SmartConfig) {
         val (cpkCacheDir, cpkPartsDir) = try {
@@ -159,9 +159,9 @@ class CpkReadServiceImpl (
             ).also { it.start() }
     }
 
-    private fun onCpkAssembled(cpkId: CpkIdentifier, cpk: Cpk) {
-        logger.info("${this::class.java.simpleName} storing:  $cpkId")
-        cpksById[cpkId] = cpk
+    private fun onCpkAssembled(cpkFileChecksum: SecureHash, cpk: Cpk) {
+        logger.info("${this::class.java.simpleName} storing:  $cpkFileChecksum")
+        cpksByChecksum[cpkFileChecksum] = cpk
     }
 
     override val isRunning: Boolean

@@ -2,8 +2,10 @@ package net.corda.membership.certificate.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,14 +17,22 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -40,17 +50,39 @@ class CertificatesClientImplTest {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
     private val sender = mock<RPCSender<CertificateRpcRequest, CertificateRpcResponse>>()
+    private val publisher = mock<Publisher> {
+        on { publish(any()) } doReturn listOf(CompletableFuture.completedFuture(Unit))
+    }
     private val publisherFactory = mock<PublisherFactory> {
         on { createRPCSender(any<RPCConfig<CertificateRpcRequest, CertificateRpcResponse>>(), any()) } doReturn sender
+        on { createPublisher(any(), any()) } doReturn publisher
     }
     private val configurationReadService = mock<ConfigurationReadService>()
+    private var retrieveCertificates: ((String, String) -> String?)? = null
+    private val mockHostedIdentityEntryFactory = mockConstruction(HostedIdentityEntryFactory::class.java) { _, settings ->
+        @Suppress("UNCHECKED_CAST")
+        retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
+    }
 
-    private val client = CertificatesClientImpl(coordinatorFactory, publisherFactory, configurationReadService)
+    private val client = CertificatesClientImpl(
+        coordinatorFactory,
+        publisherFactory,
+        configurationReadService,
+        mock(),
+        mock(),
+        mock(),
+        mock(),
+    )
+
+    @AfterEach
+    fun cleanUp() {
+        mockHostedIdentityEntryFactory.close()
+    }
 
     @Nested
-    inner class ImportCertificateTests {
+    inner class ImportCertificatesTests {
         @Test
-        fun `importCertificate sends an ImportCertificateRpcRequest`() {
+        fun `importCertificates sends an ImportCertificateRpcRequest`() {
             whenever(sender.sendRequest(any())).doReturn(mock())
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -58,7 +90,7 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.importCertificate("tenantId", "alias", "certificate")
+            client.importCertificates("tenantId", "alias", "certificate")
 
             verify(sender)
                 .sendRequest(
@@ -73,7 +105,7 @@ class CertificatesClientImplTest {
         }
 
         @Test
-        fun `importCertificate throws exception if service had issues`() {
+        fun `importCertificates throws exception if service had issues`() {
             whenever(sender.sendRequest(any())).doReturn(CompletableFuture.failedFuture(Exception("Failure")))
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -82,20 +114,111 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             val exception = assertThrows<Exception> {
-                client.importCertificate("tenantId", "alias", "certificate")
+                client.importCertificates("tenantId", "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Failure")
         }
 
         @Test
-        fun `importCertificate throws exception if client is not ready`() {
+        fun `importCertificates throws exception if client is not ready`() {
             val exception = assertThrows<Exception> {
-                client.importCertificate("tenantId", "alias", "certificate")
+                client.importCertificates("tenantId", "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Certificates client is not ready")
                 .isInstanceOf(IllegalStateException::class.java)
+        }
+    }
+
+    @Nested
+    inner class SetupLocallyHostedIdentityTest {
+        @Test
+        fun `publishToLocallyHostedIdentities calls createIdentityRecord`() {
+            val event = ConfigChangedEvent(
+                emptySet(),
+                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
+            )
+            handler.firstValue.processEvent(event, coordinator)
+
+            client.setupLocallyHostedIdentity("holdingIdentityId", "Alias", "tlsTenantId", "sessionAlias")
+
+            verify(mockHostedIdentityEntryFactory.constructed().first()).createIdentityRecord(
+                "holdingIdentityId", "Alias", "tlsTenantId", "sessionAlias"
+            )
+        }
+
+        @Test
+        fun `hostedIdentityEntryFactory creation send the correct sender`() {
+            whenever(sender.sendRequest(any())).doReturn(mock())
+            val event = ConfigChangedEvent(
+                emptySet(),
+                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
+            )
+            handler.firstValue.processEvent(event, coordinator)
+
+            retrieveCertificates?.invoke("tenantId", "alias")
+
+            verify(sender)
+                .sendRequest(
+                    CertificateRpcRequest(
+                        "tenantId",
+                        RetrieveCertificateRpcRequest(
+                            "alias",
+                        )
+                    )
+                )
+        }
+
+        @Test
+        fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
+            assertThrows<IllegalStateException> {
+                client.setupLocallyHostedIdentity(
+                    "holdingIdentityId",
+                    "Alias",
+                    "tlsTenantId",
+                    "sessionAlias"
+                )
+            }
+        }
+
+        @Test
+        fun `publishToLocallyHostedIdentities throws exception if publisher future fails`() {
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.failedFuture(CordaRuntimeException(""))))
+            val event = ConfigChangedEvent(
+                emptySet(),
+                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
+            )
+            handler.firstValue.processEvent(event, coordinator)
+
+            assertThrows<CordaRuntimeException> {
+                client.setupLocallyHostedIdentity(
+                    "holdingIdentityId",
+                    "Alias",
+                    "tlsTenantId",
+                    "sessionAlias"
+                )
+            }
+        }
+
+        @Test
+        fun `publishToLocallyHostedIdentities publish the correct record`() {
+            val record = mock<Record<String, HostedIdentityEntry>>()
+            whenever(mockHostedIdentityEntryFactory.constructed().first().createIdentityRecord(any(), any(), any(), any())).doReturn(record)
+            val event = ConfigChangedEvent(
+                emptySet(),
+                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
+            )
+            handler.firstValue.processEvent(event, coordinator)
+
+            client.setupLocallyHostedIdentity(
+                "holdingIdentityId",
+                "Alias",
+                "tlsTenantId",
+                "sessionAlias"
+            )
+
+            verify(publisher).publish(listOf(record))
         }
     }
 
@@ -152,7 +275,10 @@ class CertificatesClientImplTest {
 
                 verify(coordinator).followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                        LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                     )
                 )
             }
@@ -328,6 +454,27 @@ class CertificatesClientImplTest {
                 )
                 verify(sender).start()
                 verify(coordinator).followStatusChangesByName(setOf(name))
+            }
+
+            @Test
+            fun `ConfigChangedEvent will create a publisher start it`() {
+                val config = mock<SmartConfig>()
+                val name = mock<LifecycleCoordinatorName>()
+                whenever(sender.subscriptionName).doReturn(name)
+
+                handler.firstValue.processEvent(
+                    ConfigChangedEvent(
+                        emptySet(),
+                        mapOf(ConfigKeys.MESSAGING_CONFIG to config)
+                    ),
+                    coordinator
+                )
+
+                verify(publisherFactory).createPublisher(
+                    any(),
+                    eq(config)
+                )
+                verify(publisher).start()
             }
 
             @Test

@@ -21,12 +21,24 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
-# resource limits and requests configuration for the Corda worker containers
+# default resource limits and requests configuration for the Corda containers
 resources:
-  # -- the CPU/memory resource limits for the Corda worker containers
+  # -- the default CPU/memory resource limits for the Corda containers
   limits: {}
-  # -- the CPU/memory resource request for the Corda worker containers
+  # -- the default CPU/memory resource request for the Corda containers
   requests: {}
+
+# Open Telemetry configuration
+openTelemetry:
+  # -- enables the Open Telemetry Java agent for the Corda workers
+  enabled: false
+  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
+  endpoint:
+  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
+  protocol: "grpc"
+
+# -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
+nodeSelector: {}
 
 # Database configuration
 db:
@@ -46,6 +58,13 @@ db:
     password: ""
     # -- the name of an existing secret containing the cluster database password with a key of 'password'
     existingSecret: ""
+  clientImage:
+    # -- registry for image containing a db client, used to set up the db
+    registry: ""
+    # -- repository for image containing a db client, used to set up the db
+    repository: postgres
+    # -- tag for image containing a db client, used to set up the db
+    tag: 14.4
 
 # Kafka configuration
 kafka:
@@ -57,6 +76,8 @@ kafka:
   replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
+  # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
+  cleanup: false
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
@@ -73,6 +94,16 @@ kafka:
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: ""
+  # SASL configuration for client connection to Kafka
+  sasl:
+    # -- SASL username for client connection to Kafka 
+    username: "user"
+    # -- SASL password for client connection to Kafka 
+    password: ""
+    # -- SASL mechanism for client connection to Kafka 
+    mechanism: "SCRAM-SHA-256"
+    # -- enable/disable SASL for client connection to Kafka 
+    enabled: false
 
 # Configuration for the bootstrapper
 bootstrap:
@@ -84,6 +115,12 @@ bootstrap:
     repository: "corda-os-plugins"
     # -- cli default tag
     tag: ""
+  # resource limits and requests configuration for the bootstrapper
+  resources:
+    # -- the CPU/memory resource requests for the bootstrapper
+    requests: { }
+    # -- the CPU/memory resource limits for the bootstrapper
+    limits: { }
 
 # worker configuration
 workers:
@@ -225,3 +262,28 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
       annotations: {}
+
+  # P2P Link Manager worker configuration
+  p2pLinkManager:
+    # p2p-link-manager worker image configuration
+    image:
+      # -- p2p-link-manager worker image registry, defaults to image.registry
+      registry: ""
+      # -- p2p-link-manager worker image repository
+      repository: "corda-os-p2p-link-manager"
+      # -- p2p-link-manager worker image tag, defaults to image.tag
+      tag: ""
+    # -- p2p-link-manager worker replica count
+    replicaCount: 1
+    # p2p-link-manager worker debug configuration
+    debug:
+      # -- run p2p-link-manager worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the p2p-link-manager worker until the debugger is attached
+      suspend: false
+    # resource limits and requests configuration for the p2p-link-manager worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the p2p-link-manager worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the p2p-link-manager worker containers
+      limits: {}

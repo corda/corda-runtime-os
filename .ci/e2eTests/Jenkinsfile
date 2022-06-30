@@ -60,7 +60,7 @@ pipeline {
                 sh """
                     kubectl create ns $NAMESPACE
                     kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
-                    kubectl label ns $NAMESPACE branch=${env.BRANCH_NAME.replace('/','-')} --overwrite=true
+                    kubectl label ns $NAMESPACE branch=${sanitizedBranchName()} --overwrite=true
                 """
             }
         }
@@ -90,7 +90,10 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh 'helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
+                sh '''
+                    export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
+                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s
+                '''
             }
             post {
                 unsuccessful {
@@ -151,4 +154,10 @@ pipeline {
             sh 'kubectl delete ns "${NAMESPACE}"'
         }
     }
+}
+
+// K8s labels can not be greater than 63 characters 
+// Helper method to sanitize edge cases of very long branch names
+def sanitizedBranchName(){
+    return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
 }

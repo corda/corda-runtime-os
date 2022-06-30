@@ -10,7 +10,8 @@ import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.CustomString
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utls.findFreePort
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll
@@ -78,7 +79,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with (connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
-                assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
             }
@@ -124,7 +125,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with (connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
-                assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
                 assertThatThrownBy { this.laterAddedCall() }.isInstanceOf(UnsupportedOperationException::class.java)

@@ -18,7 +18,7 @@ interface FlowStack : NonSerializable {
      * @param flow the flow to be pushed onto the stack
      * @return the [FlowStackItem] created
      */
-    fun push(flow: Flow<*>): FlowStackItem
+    fun push(flow: Flow): FlowStackItem
 
     /**
      * Finds the nearest matching [FlowStackItem] to the top of the stack that matches the predicate

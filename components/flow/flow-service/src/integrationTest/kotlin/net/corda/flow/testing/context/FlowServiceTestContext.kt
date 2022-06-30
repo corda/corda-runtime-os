@@ -1,6 +1,9 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
@@ -17,6 +20,10 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.persistence.EntityResponse
+import net.corda.data.persistence.EntityResponseFailure
+import net.corda.data.persistence.EntityResponseSuccess
+import net.corda.data.persistence.Error
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
@@ -33,9 +40,8 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
-import net.corda.messaging.api.records.Record
-import net.corda.libs.packaging.Cpk
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -49,9 +55,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -75,6 +78,8 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private val testConfig = mutableMapOf<String, Any>(
+        FlowConfig.PERSISTENCE_MAX_RETRIES to 2,
+        FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
@@ -109,12 +114,13 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                emptyUUID
+                emptyUUID,
+                timestamp = Instant.now()
             )
         )
     }
 
-    override fun cpkMetadata(cpiId: String, cpkId: String) {
+    override fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash) {
         val manifestCordAppInfo = ManifestCorDappInfo(null, null, null, null)
 
         val cordAppManifest = CordappManifest(
@@ -136,7 +142,7 @@ class FlowServiceTestContext @Activate constructor(
             listOf(),
             cordAppManifest,
             CpkType.UNKNOWN,
-            getSecureHash(),
+            cpkChecksum,
             setOf(),
             timestamp
         )
@@ -153,8 +159,8 @@ class FlowServiceTestContext @Activate constructor(
         cpiInfoReadService.addOrUpdate(cpiMeta)
     }
 
-    override fun sandboxCpk(cpkId: String) {
-        sandboxGroupContextComponent.putCpk(getCpkIdentifier(cpkId))
+    override fun sandboxCpk(cpkFileChecksum: SecureHash) {
+        sandboxGroupContextComponent.putCpk(cpkFileChecksum)
     }
 
     override fun membershipGroupFor(owningMember: HoldingIdentity) {
@@ -301,6 +307,37 @@ class FlowServiceTestContext @Activate constructor(
 
     override fun wakeupEventReceived(flowId: String): FlowIoRequestSetup {
         return addTestRun(getEventRecord(flowId, Wakeup()))
+    }
+
+    override fun entityResponseSuccessReceived(
+        flowId: String,
+        requestId: String,
+        byteBuffer: ByteBuffer?
+    ): FlowIoRequestSetup {
+        return addEntityResponseToTestRun(requestId, EntityResponseSuccess(byteBuffer), flowId)
+    }
+
+    override fun entityResponseErrorReceived(
+        flowId: String,
+        requestId: String,
+        errorType: Error,
+        exception: ExceptionEnvelope
+    ): FlowIoRequestSetup {
+        return addEntityResponseToTestRun(requestId, EntityResponseFailure(errorType, exception), flowId)
+    }
+
+    private fun addEntityResponseToTestRun(
+        requestId: String,
+        entityResponsePayload: Any,
+        flowId: String
+    ): FlowIoRequestSetup {
+        val entityResponse = EntityResponse.newBuilder()
+            .setRequestId(requestId)
+            .setTimestamp(Instant.now())
+            .setResponseType(entityResponsePayload)
+            .build()
+
+        return addTestRun(getEventRecord(flowId, entityResponse))
     }
 
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {

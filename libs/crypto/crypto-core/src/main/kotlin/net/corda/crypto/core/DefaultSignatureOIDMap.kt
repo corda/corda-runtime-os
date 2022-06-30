@@ -1,5 +1,7 @@
 package net.corda.crypto.core
 
+import net.corda.v5.cipher.suite.CustomSignatureSpec
+import net.corda.v5.cipher.suite.equal
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
@@ -9,9 +11,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SHA512_256
 import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
-import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
-import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
+
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERNull
@@ -27,7 +27,6 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers
 import java.security.PublicKey
-import java.security.spec.PSSParameterSpec
 
 object DefaultSignatureOIDMap {
     val EDDSA_ED25519 = AlgorithmIdentifier(ID_CURVE_25519PH, null)
@@ -101,21 +100,9 @@ object DefaultSignatureOIDMap {
         )
     )
 
-    private val SHA256_WITH_ECDSA = "SHA256withECDSA"
-    private val SHA384_WITH_ECDSA = "SHA384withECDSA"
-    private val SHA512_WITH_ECDSA = "SHA512withECDSA"
-
-    private val SHA256_WITH_RSA = "SHA256withRSA"
-    private val SHA384_WITH_RSA = "SHA384withRSA"
-    private val SHA512_WITH_RSA = "SHA512withRSA"
-    private val RSASSA_PSS = "RSASSA-PSS"
-    private val SHA256_WITH_RSA_AND_MGF1 = "SHA256WITHRSAANDMGF1"
-    private val SHA384_WITH_RSA_AND_MGF1 = "SHA384WITHRSAANDMGF1"
-    private val SHA512_WITH_RSA_AND_MGF1 = "SHA512WITHRSAANDMGF1"
-
     @Suppress("ComplexMethod", "NestedBlockDepth")
     fun inferSignatureOID(publicKey: PublicKey, signatureSpec: SignatureSpec): AlgorithmIdentifier? {
-        if(signatureSpec.precalculateHash) {
+        if (signatureSpec is CustomSignatureSpec) {
             return null
         }
         val keyInfo = try {
@@ -125,74 +112,62 @@ object DefaultSignatureOIDMap {
         } ?: return null
         val algorithm = normaliseAlgorithmIdentifier(keyInfo.algorithm)
         return if (EDDSA_ED25519_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName)) {
+            if (signatureSpec.equal(SignatureSpec.EDDSA_ED25519)) {
                 EDDSA_ED25519
             } else {
                 null
             }
         } else if (SPHINCS256_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(SPHINCS256_SHA512_SIGNATURE_SPEC.signatureName)) {
+            if (signatureSpec.equal(SignatureSpec.SPHINCS256_SHA512)) {
                 SPHINCS256_SHA512
             } else {
                 null
             }
         } else if (SM2_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            when(signatureSpec.signatureName.uppercase()) {
-                "SM3WITHSM2" -> SM3_SM2
-                "SHA256WITHSM2" -> SM3_SHA256
+            when {
+                signatureSpec.equal(SignatureSpec.SM2_SM3) -> SM3_SM2
+                signatureSpec.equal(SignatureSpec.SM2_SHA256) -> SM3_SHA256
                 else -> null
             }
         } else if (GOST3410_GOST3411_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(GOST3410_GOST3411_SIGNATURE_SPEC.signatureName)) {
+            if (signatureSpec.equal(SignatureSpec.GOST3410_GOST3411)) {
                 GOST3410_GOST3411
             } else {
                 null
             }
         } else if (ECDSA_SECP256R1_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(SHA256_WITH_ECDSA)) {
-                SHA256_ECDSA_R1
-            } else if (signatureSpec.has(SHA384_WITH_ECDSA)) {
-                SHA384_ECDSA_R1
-            } else if (signatureSpec.has(SHA512_WITH_ECDSA)) {
-                SHA512_ECDSA_R1
-            } else {
-                null
+            when {
+                signatureSpec.equal(SignatureSpec.ECDSA_SHA256) -> SHA256_ECDSA_R1
+                signatureSpec.equal(SignatureSpec.ECDSA_SHA384) -> SHA384_ECDSA_R1
+                signatureSpec.equal(SignatureSpec.ECDSA_SHA512) -> SHA512_ECDSA_R1
+                else -> null
             }
         } else if (ECDSA_SECP256K1_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(SHA256_WITH_ECDSA)) {
-                SHA256_ECDSA_K1
-            } else if (signatureSpec.has(SHA384_WITH_ECDSA)) {
-                SHA384_ECDSA_K1
-            } else if (signatureSpec.has(SHA512_WITH_ECDSA)) {
-                SHA512_ECDSA_K1
-            } else {
-                null
+            when {
+                signatureSpec.equal(SignatureSpec.ECDSA_SHA256) -> SHA256_ECDSA_K1
+                signatureSpec.equal(SignatureSpec.ECDSA_SHA384) -> SHA384_ECDSA_K1
+                signatureSpec.equal(SignatureSpec.ECDSA_SHA512) -> SHA512_ECDSA_K1
+                else -> null
             }
         } else if (RSA_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(SHA256_WITH_RSA)) {
+            if (signatureSpec.equal(SignatureSpec.RSA_SHA256)) {
                 SHA256_RSA
-            } else if (signatureSpec.has(SHA384_WITH_RSA)) {
+            } else if (signatureSpec.equal(SignatureSpec.RSA_SHA384)) {
                 SHA384_RSA
-            } else if (signatureSpec.has(SHA512_WITH_RSA)) {
+            } else if (signatureSpec.equal(SignatureSpec.RSA_SHA512)) {
                 SHA512_RSA
-            } else if (signatureSpec.has(SHA256_WITH_RSA_AND_MGF1)) {
+            } else if (signatureSpec.equal(SignatureSpec.RSASSA_PSS_SHA256) ||
+                signatureSpec.equal(SignatureSpec.RSA_SHA256_WITH_MGF1)
+            ) {
                 SHA256_RSASSA_PSS
-            } else if (signatureSpec.has(SHA384_WITH_RSA_AND_MGF1)) {
+            } else if (signatureSpec.equal(SignatureSpec.RSASSA_PSS_SHA384) ||
+                signatureSpec.equal(SignatureSpec.RSA_SHA384_WITH_MGF1)
+            ) {
                 SHA384_RSASSA_PSS
-            } else if (signatureSpec.has(SHA512_WITH_RSA_AND_MGF1)) {
+            } else if (signatureSpec.equal(SignatureSpec.RSASSA_PSS_SHA512) ||
+                signatureSpec.equal(SignatureSpec.RSA_SHA512_WITH_MGF1)
+            ) {
                 SHA512_RSASSA_PSS
-            } else if (signatureSpec.has(RSASSA_PSS)) {
-                (signatureSpec.params as? PSSParameterSpec)?.let {
-                    if (it.isSHA256()) {
-                        SHA256_RSASSA_PSS
-                    } else if (it.isSHA384()) {
-                        SHA384_RSASSA_PSS
-                    } else if (it.isSHA512()) {
-                        SHA512_RSASSA_PSS
-                    } else {
-                        null
-                    }
-                }
             } else {
                 null
             }
@@ -201,29 +176,12 @@ object DefaultSignatureOIDMap {
         }
     }
 
-    private fun PSSParameterSpec.isSHA256() = digestAlgorithm.equals(
-        "SHA-256",
-        true
-    ) && saltLength == 32 && mgfAlgorithm == "MGF1"
-
-    private fun PSSParameterSpec.isSHA384() = digestAlgorithm.equals(
-        "SHA-384",
-        true
-    ) && saltLength == 48 && mgfAlgorithm == "MGF1"
-
-    private fun PSSParameterSpec.isSHA512() = digestAlgorithm.equals(
-        "SHA-512",
-        true
-    ) && saltLength == 64 && mgfAlgorithm == "MGF1"
-
     private fun normaliseAlgorithmIdentifier(id: AlgorithmIdentifier): AlgorithmIdentifier =
         if (id.parameters is DERNull) {
             AlgorithmIdentifier(id.algorithm, null)
         } else {
             id
         }
-
-    private fun SignatureSpec.has(pattern: String) = signatureName.equals(pattern, true)
 
     private fun createPSSParams(hashAlgId: AlgorithmIdentifier, saltSize: Int): RSASSAPSSparams = RSASSAPSSparams(
         hashAlgId,

@@ -46,11 +46,11 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
-        id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
+        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
     }
 }
 
@@ -97,6 +97,8 @@ include 'components:chunking:chunk-read-service-impl'
 include 'components:chunking:chunk-db-write'
 include 'components:chunking:chunk-db-write-impl'
 include 'components:crypto:crypto-client'
+include 'components:crypto:crypto-client-hsm'
+include 'components:crypto:crypto-client-hsm-impl'
 include 'components:crypto:crypto-client-impl'
 include 'components:crypto:crypto-component-core-impl'
 include 'components:crypto:crypto-db-persistence-impl'
@@ -117,22 +119,28 @@ include 'components:http-rpc-gateway-comp'
 include 'components:kafka-topic-admin'
 include 'components:link-manager'
 include 'components:p2p-test:stub-crypto-processor'
-include 'components:membership:group-policy'
-include 'components:membership:group-policy-impl'
-include 'components:membership:membership-client'
-include 'components:membership:membership-client-impl'
-include 'components:membership:membership-group-read'
-include 'components:membership:membership-group-read-impl'
-include 'components:membership:membership-http-rpc'
-include 'components:membership:membership-http-rpc-impl'
-include 'components:membership:registration'
-include 'components:membership:registration-impl'
-include 'components:membership:membership-service'
-include 'components:membership:membership-service-impl'
 include 'components:membership:certificates-client'
 include 'components:membership:certificates-client-impl'
 include 'components:membership:certificates-service'
 include 'components:membership:certificates-service-impl'
+include 'components:membership:group-policy'
+include 'components:membership:group-policy-impl'
+include 'components:membership:membership-client'
+include 'components:membership:membership-client-impl'
+include 'components:membership:membership-persistence-client'
+include 'components:membership:membership-persistence-client-impl'
+include 'components:membership:membership-persistence-service'
+include 'components:membership:membership-persistence-service-impl'
+include 'components:membership:membership-group-read'
+include 'components:membership:membership-group-read-impl'
+include 'components:membership:membership-http-rpc'
+include 'components:membership:membership-http-rpc-impl'
+include 'components:membership:membership-p2p'
+include 'components:membership:membership-p2p-impl'
+include 'components:membership:membership-service'
+include 'components:membership:membership-service-impl'
+include 'components:membership:registration'
+include 'components:membership:registration-impl'
 include 'components:permissions:permission-management-service'
 include 'components:permissions:permission-management-cache-service'
 include 'components:permissions:permission-storage-reader-service'
@@ -159,13 +167,13 @@ include 'components:virtual-node:cpk-service-common'
 include 'components:virtual-node:entity-processor-service'
 include 'components:virtual-node:entity-processor-service-impl'
 include 'components:virtual-node:sandbox-group-context-service'
-include 'components:virtual-node:virtual-node-common'
 include 'components:virtual-node:virtual-node-info-read-service'
 include 'components:virtual-node:virtual-node-rpcops-service'
 include 'components:virtual-node:virtual-node-rpcops-service-impl'
 include 'components:virtual-node:virtual-node-rpcops-maintenance-impl'
 include 'components:virtual-node:virtual-node-write-service'
 include 'components:virtual-node:virtual-node-write-service-impl'
+include 'libs:application:application-db-setup'
 include 'libs:application:application-impl'
 include 'libs:chunking:chunking-core'
 include 'libs:chunking:chunking-datamodel'
@@ -175,6 +183,7 @@ include 'libs:configuration:configuration-endpoints'
 include 'libs:configuration:configuration-merger'
 include 'libs:configuration:configuration-schema:p2p'
 include 'libs:configuration:configuration-validation'
+include 'libs:crypto:cipher-suite-impl'
 include 'libs:crypto:crypto-core'
 include 'libs:crypto:crypto-flow'
 include 'libs:crypto:crypto-impl'
@@ -190,6 +199,7 @@ include 'libs:db:db-orm-impl'
 include 'libs:db:osgi-integration-tests'
 include 'libs:flows:flow-mapper'
 include 'libs:flows:flow-mapper-impl'
+include 'libs:flows:persistence-manager'
 include 'libs:flows:session-manager'
 include 'libs:flows:session-manager-impl'
 include 'libs:http-rpc:http-rpc'
@@ -212,14 +222,17 @@ include 'libs:kotlin-reflection:kotlin-reflection-test-example'
 include 'libs:layered-property-map'
 include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
+include 'libs:ledger:ledger-common-impl'
+include 'libs:ledger:ledger-consensual-impl'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
 include 'libs:lifecycle:registry'
+include 'libs:membership:certificates-datamodel'
 include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
+include 'libs:membership:membership-datamodel'
 include 'libs:membership:membership-impl'
-include 'libs:membership:certificates-datamodel'
 include 'libs:messaging:db-message-bus-datamodel'
 include 'libs:messaging:db-message-bus-impl'
 include 'libs:messaging:db-topic-admin-impl'
@@ -248,6 +261,7 @@ include 'libs:packaging:packaging'
 include 'libs:packaging:packaging-core'
 include 'libs:packaging:packaging:test:contract-cpk'
 include 'libs:packaging:packaging:test:workflow-cpk'
+include 'libs:packaging:packaging-verify'
 include 'libs:permissions:permission-datamodel'
 include 'libs:permissions:permission-validation'
 include 'libs:permissions:permission-validation-impl'
@@ -305,6 +319,7 @@ include 'testing:db-message-bus-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
 include 'testing:cpbs:calculator'
+include 'testing:cpbs:chat'
 include 'testing:cpbs:crypto-custom-digest-one-cpk'
 include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
@@ -312,6 +327,7 @@ include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:connect4'
 include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:flow-worker-dev'
+include 'testing:cpbs:flow-worker-dev-for-cache-testing'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:sandbox-security-manager-one'
@@ -338,6 +354,7 @@ include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
+include 'tools:plugins:virtual-node'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
@@ -354,7 +371,9 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
-            substitute module('net.corda:corda-ledger') using project(':ledger')
+            substitute module('net.corda:corda-ledger-obsolete') using project(':ledger-obsolete')
+            substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
+            substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
@@ -381,7 +400,8 @@ gradleEnterprise {
     }
     buildCache {
         local {
-            enabled = false
+            enabled = true
+            removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
         remote(HttpBuildCache) {
             url = "${gradleEnterpriseUrl}/cache/"
@@ -395,7 +415,7 @@ gradleEnterprise {
                 enabled = true
             } else {
                 push = false
-                enabled = true
+                enabled = false
             }
         }
     }

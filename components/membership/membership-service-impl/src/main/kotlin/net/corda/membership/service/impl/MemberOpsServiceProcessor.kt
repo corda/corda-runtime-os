@@ -3,13 +3,14 @@ package net.corda.membership.service.impl
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusRequest
+import net.corda.data.membership.rpc.request.RegistrationRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationResponse
-import net.corda.data.membership.rpc.response.RegistrationStatus
-import net.corda.membership.exceptions.RegistrationProtocolSelectionException
+import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.toMap
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -34,8 +35,8 @@ class MemberOpsServiceProcessor(
         private val logger: Logger = contextLogger()
 
         private val handlers = mapOf<Class<*>, Class<out RpcHandler<out Any>>>(
-            RegistrationRequest::class.java to RegistrationRequestHandler::class.java,
-            RegistrationStatusRequest::class.java to RegistrationStatusRequestHandler::class.java
+            RegistrationRpcRequest::class.java to RegistrationRequestHandler::class.java,
+            RegistrationStatusRpcRequest::class.java to RegistrationStatusRequestHandler::class.java
         )
 
         private val constructors = ConcurrentHashMap<Class<*>, Constructor<*>>()
@@ -44,6 +45,7 @@ class MemberOpsServiceProcessor(
          * Temporarily hardcoded to 1.
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
+
         private val clock = UTCClock()
     }
 
@@ -100,20 +102,20 @@ class MemberOpsServiceProcessor(
     private class RegistrationRequestHandler(
         private val registrationProxy: RegistrationProxy,
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService
-    ) : RpcHandler<RegistrationRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationRequest): Any {
+    ) : RpcHandler<RegistrationRpcRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
             val result = try {
-                registrationProxy.register(holdingIdentity)
+                registrationProxy.register(holdingIdentity, request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.")
                 null
             }
             val registrationStatus = result?.outcome?.let {
-                RegistrationStatus.valueOf(it.toString())
-            } ?: RegistrationStatus.NOT_SUBMITTED
-            return RegistrationResponse(
+                RegistrationRpcStatus.valueOf(it.toString())
+            } ?: RegistrationRpcStatus.NOT_SUBMITTED
+            return RegistrationRpcResponse(
                 context.requestTimestamp,
                 registrationStatus,
                 REGISTRATION_PROTOCOL_VERSION,
@@ -123,8 +125,8 @@ class MemberOpsServiceProcessor(
         }
     }
 
-    private class RegistrationStatusRequestHandler : RpcHandler<RegistrationStatusRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationStatusRequest): Any {
+    private class RegistrationStatusRequestHandler : RpcHandler<RegistrationStatusRpcRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: RegistrationStatusRpcRequest): Any {
             TODO("Not yet implemented")
         }
     }

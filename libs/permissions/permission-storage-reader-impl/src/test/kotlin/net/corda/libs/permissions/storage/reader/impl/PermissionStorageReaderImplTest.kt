@@ -35,6 +35,7 @@ import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermi
 import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
 import net.corda.schema.Schemas.Permissions.Companion.PERMISSIONS_USER_SUMMARY_TOPIC
 import org.mockito.kotlin.any
+import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionType as AvroPermissionType
@@ -315,8 +316,10 @@ class PermissionStorageReaderImplTest {
     private val publisher = mock<Publisher>()
     private val reconciler = mock<PermissionSummaryReconciler>()
 
-    private val processor =
-        PermissionStorageReaderImpl(permissionValidationCache, permissionManagementCache, permissionRepository, publisher, reconciler)
+    private val processor = PermissionStorageReaderImpl(
+            AtomicReference(permissionValidationCache),
+            AtomicReference(permissionManagementCache), permissionRepository, publisher, reconciler
+        )
 
     @Test
     fun `starting the reader publishes stored users, groups, roles and permissions`() {

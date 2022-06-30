@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.consumer.builder
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
 internal class StateAndEventBuilderImpl @Activate constructor(
@@ -83,11 +83,10 @@ internal class StateAndEventBuilderImpl @Activate constructor(
         stateConsumer: CordaConsumer<K, S>,
         eventConsumer: CordaConsumer<K, E>
     ) {
-        val consumerTimeout = config.pollTimeout
         val statePartitions =
-            stateConsumer.getPartitions(getStateAndEventStateTopic(config.topic), consumerTimeout)
+            stateConsumer.getPartitions(getStateAndEventStateTopic(config.topic))
         val eventPartitions =
-            eventConsumer.getPartitions(config.topic, consumerTimeout)
+            eventConsumer.getPartitions(config.topic)
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {

@@ -10,7 +10,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.GroupPolicy
+import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.util.contextLogger
@@ -20,6 +20,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [GroupPolicyProvider::class])
@@ -53,12 +54,17 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var impl: InnerGroupPolicyProvider = InactiveImpl
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
+    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+        listeners.add(callback)
+    }
 
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
 
     override val isRunning get() = coordinator.isRunning
+
+    private val listeners: MutableList<(HoldingIdentity, GroupPolicy) -> Unit> = Collections.synchronizedList(mutableListOf())
 
     /**
      * Handle lifecycle events.
@@ -183,6 +189,9 @@ class GroupPolicyProviderImpl @Activate constructor(
                             )
                             null
                         }
+                    }
+                    synchronized(listeners) {
+                        listeners.forEach { callback -> callback(it, groupPolicies[it]!!) }
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
@@ -9,7 +10,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.VirtualNodeWriteConfigHandler
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteEventHandler
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
@@ -37,37 +37,17 @@ class VirtualNodeWriteConfigHandlerTests {
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
             whenever(create(config)).thenReturn(vnodeWriter)
         }
-        val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+        val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
+        val event = ConfigChangedEvent(
+            setOf(RPC_CONFIG, MESSAGING_CONFIG),
+            mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+        )
+        eventHandler.processEvent(event, coordinator)
 
         verify(vnodeWriterFactory).create(config)
         verify(vnodeWriter).start()
         verify(coordinator).updateStatus(UP)
-    }
-
-    @Test
-    fun `sets coordinator to down and throws if virtual node writer is already set`() {
-        val eventHandler = mock<VirtualNodeWriteEventHandler>().apply {
-            whenever(virtualNodeWriter).thenReturn(mock())
-        }
-        val configHandler = VirtualNodeWriteConfigHandler(eventHandler, mock(), mock())
-        val config = mock<SmartConfig>().apply {
-            whenever(hasPath(KAFKA_BOOTSTRAP_SERVERS)).thenReturn(true)
-            whenever(withFallback(any())).thenReturn(this)
-        }
-
-        val e = assertThrows<VirtualNodeWriteServiceException> {
-            configHandler.onNewConfiguration(
-                setOf(RPC_CONFIG),
-                mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
-            )
-        }
-
-        assertEquals(
-            "An attempt was made to initialise the virtual node writer twice.",
-            e.message
-        )
     }
 
     @Test
@@ -76,17 +56,19 @@ class VirtualNodeWriteConfigHandlerTests {
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
             whenever(create(any())).thenAnswer { throw IllegalStateException() }
         }
-        val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
+
+        val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(KAFKA_BOOTSTRAP_SERVERS)).thenReturn(true)
             whenever(withFallback(any())).thenReturn(this)
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
-            configHandler.onNewConfiguration(
-                setOf(RPC_CONFIG),
+            val event = ConfigChangedEvent(
+                setOf(RPC_CONFIG, MESSAGING_CONFIG),
                 mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
             )
+            eventHandler.processEvent(event, coordinator)
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -101,10 +83,14 @@ class VirtualNodeWriteConfigHandlerTests {
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
             whenever(create(any())).thenAnswer { throw IllegalStateException() }
         }
-        val configHandler = VirtualNodeWriteConfigHandler(mock(), mock(), vnodeWriterFactory)
+        val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock(), MESSAGING_CONFIG to mock()))
+            val event = ConfigChangedEvent(
+                setOf(RPC_CONFIG, MESSAGING_CONFIG),
+                mapOf(RPC_CONFIG to mock(), MESSAGING_CONFIG to mock())
+            )
+            eventHandler.processEvent(event, mock())
         }
     }
 
@@ -114,13 +100,19 @@ class VirtualNodeWriteConfigHandlerTests {
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
             whenever(create(any())).thenReturn(mock())
         }
-        val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
+        val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
+
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(KAFKA_BOOTSTRAP_SERVERS)).thenReturn(true)
             whenever(withFallback(any())).thenReturn(this)
         }
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+        val event = ConfigChangedEvent(
+            setOf(RPC_CONFIG, MESSAGING_CONFIG),
+            mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+        )
+
+        eventHandler.processEvent(event, coordinator)
 
         verify(coordinator).updateStatus(UP)
     }

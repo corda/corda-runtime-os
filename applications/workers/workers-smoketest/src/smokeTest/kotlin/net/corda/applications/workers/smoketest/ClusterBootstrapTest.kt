@@ -17,10 +17,10 @@ import java.time.Instant
 
 class ClusterBootstrapTest {
     private val healthChecks = mapOf(
-        // TODO: fix up other workers so they accurately report their readiness.
-        // "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
+        "combined-worker" to System.getProperty("combinedWorkerHealthHttp"),
+//        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
         "db-worker" to System.getProperty("dbWorkerHealthHttp"),
-        // "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
+        "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
         "rpc-worker" to System.getProperty("rpcWorkerHealthHttp"),
     )
     private val client = HttpClient.newBuilder().build()
@@ -30,37 +30,38 @@ class ClusterBootstrapTest {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
             // check all workers are up and "ready"
-            healthChecks.map {
+            healthChecks
+                .filter { !it.value.isNullOrBlank() }
+                .map {
                 async {
-                    val response = tryUntil(Duration.ofSeconds(60)) { checkReady(it.key, it.value) }
-                    if (response in 200..299)
+                    val response = tryUntil(Duration.ofSeconds(120)) { checkReady(it.key, it.value) }
+                    if (response)
                         println("${it.key} is ready")
                     else
                         softly.fail("Problem with ${it.key} (${it.value}), \"status\" returns: $response")
                 }
             }.awaitAll()
 
-            // TODO: http request to insert config and validate it has been persisted.
-
             softly.assertAll()
         }
     }
 
-    private fun tryUntil(timeOut: Duration, function: () -> HttpResponse<String>): Int {
-        var statusCode = -1
+    private fun tryUntil(timeOut: Duration, function: () -> HttpResponse<String>): Boolean {
         val startTime = Instant.now()
-        while (statusCode < 200 && Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
+        while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
             try {
                 val response = function()
-                statusCode = response.statusCode()
+                val statusCode = response.statusCode()
                 if (statusCode in 200..299)
-                    return statusCode
+                    return true
+                else
+                    println("Returned status $statusCode.")
             } catch (connectionException: IOException) {
                 println("Cannot connect.")
             }
             Thread.sleep(1000)
         }
-        return statusCode
+        return false
     }
 
     private fun checkReady(name: String, endpoint: String): HttpResponse<String> {

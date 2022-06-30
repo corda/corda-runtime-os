@@ -16,8 +16,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorScheduler
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,6 +30,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -58,6 +61,15 @@ internal class LifecycleCoordinatorImplTest {
     interface PostEvent : LifecycleEvent
 
     interface ThrowException : LifecycleEvent
+
+    private val timerExecutor = Executors.newSingleThreadScheduledExecutor()
+    private val executor = Executors.newSingleThreadExecutor()
+
+    @AfterEach
+    fun done() {
+        timerExecutor.shutdown()
+        executor.shutdown()
+    }
 
     @Test
     fun burstEvents() {
@@ -1156,11 +1168,102 @@ internal class LifecycleCoordinatorImplTest {
         assertThat(coordinator.status).isEqualTo(LifecycleStatus.DOWN)
     }
 
+    @Test
+    fun `closing a coordinator which is registered against a closed coordinator doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        @Suppress("UNUSED_VARIABLE")
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator2.close()
+        coordinator1.close()
+    }
+
+    @Test
+    fun `closing registered coordinators when the main coordinator is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        @Suppress("UNUSED_VARIABLE")
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator1.close()
+        coordinator2.close()
+        coordinator3.close()
+    }
+
+    @Test
+    fun `closing registeration when the main coordinator is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        @Suppress("UNUSED_VARIABLE")
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator1.close()
+        registration.close()
+    }
+
+    @Test
+    fun `closing a registration which is registered against a closed coordinator doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        coordinator2.close()
+        registration.close()
+    }
+
+    @Test
+    fun `closing a registered coordinator after registration is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        registration.close()
+        coordinator2.close()
+        coordinator3.close()
+    }
+
+    @Test
+    fun `closing a coordinator after registration is closed doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+        val coordinator2 = createTestCoordinator { _, _ -> }
+        val coordinator3 = createTestCoordinator { _, _ -> }
+
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
+
+        registration.close()
+        coordinator1.close()
+    }
+
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
-        scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(),
+        scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(executor, timerExecutor),
         processor: LifecycleEventHandler
-    ): LifecycleCoordinator {
+    ): LifecycleCoordinatorInternal {
+        return LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
+            BATCH_SIZE,
+            registry,
+            scheduler,
+            processor
+        )
+    }
+
+    private fun createTestCoordinator(
+        registry: LifecycleRegistryCoordinatorAccess = mock(),
+        scheduler: LifecycleCoordinatorScheduler = TestLifecycleCoordinatorScheduler(),
+        processor: LifecycleEventHandler
+    ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,

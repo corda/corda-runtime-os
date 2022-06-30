@@ -98,7 +98,7 @@ class ChunkWritingTest {
     fun `ensure chunks are trimmed to minimum size`() {
         val chunkSize = 32 * KB
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val writer = ChunkWriterImpl(chunkSize + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD).apply {
             onChunk { chunks.add(it) }
         }
 

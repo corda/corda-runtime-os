@@ -36,7 +36,7 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<InternalServerException>("Internal server error.") {
             withPermissionManager(permissionManager, logger){
-                throw CordaRPCAPIResponderException("Responder exception")
+                throw CordaRPCAPIResponderException("errorType", "Responder exception")
             }
         }
         assertEquals("Internal server error.", e.message)
@@ -50,7 +50,11 @@ internal class PermissionManagementHandlerTest {
 
         val e = assertThrows<InternalServerException> {
             withPermissionManager(permissionManager, logger){
-                throw CordaRPCAPIResponderException("Responder exception", IllegalArgumentException("illegal arg"))
+                throw CordaRPCAPIResponderException(
+                    "errorType",
+                    "Responder exception",
+                    IllegalArgumentException("illegal arg")
+                )
             }
         }
         assertEquals("Internal server error.", e.message)

@@ -2,9 +2,7 @@ package net.corda.crypto.tck
 
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.file.Path
 import java.time.Duration
@@ -27,8 +25,6 @@ class ExecutionBuilder(
         }
     }
 
-    private val signatureSpecs = mutableMapOf<String, List<SignatureSpec>>()
-
     private var testResultsDirectory: Path = Path.of("", serviceName).toAbsolutePath()
 
     private var concurrency: Int = 20
@@ -42,16 +38,6 @@ class ExecutionBuilder(
     private var timeout: Duration = Duration.ofSeconds(10)
 
     private var tests = listOf<ComplianceTestType>()
-
-    /**
-     * Adds mapping of the supported key scheme to the [SignatureSpec]s. It has to be defined for all
-     * key schemes supported by the service.
-     */
-    fun addScheme(codeName: String, vararg signatureSpec: SignatureSpec): ExecutionBuilder {
-        tck.schemeMetadata.findKeyScheme(codeName)
-        signatureSpecs[codeName] = signatureSpec.toList()
-        return this
-    }
 
     /**
      * Sets the path where to output the test results. The default value is `Path.of("", serviceName).toAbsolutePath()`
@@ -133,11 +119,6 @@ class ExecutionBuilder(
             options = ExecutionOptions(
                 serviceName = serviceName,
                 serviceConfig = serviceConfig,
-                signatureSpecs = signatureSpecs.ifEmpty {
-                    throw IllegalArgumentException("" +
-                            "Please specify the signatures pecs map for all supported key schemes."
-                    )
-                },
                 testResultsDirectory = testResultsDirectory,
                 concurrency = concurrency,
                 sessionComplianceSpec = sessionComplianceSpec
@@ -147,19 +128,19 @@ class ExecutionBuilder(
                         null
                     },
                 sessionComplianceTimeout = sessionComplianceTimeout,
-                retries = retries,
-                timeout = timeout,
+                maxAttempts = retries,
+                attemptTimeout = timeout,
                 tests = tests
             )
         )
     }
 
     private fun defaultSessionComplianceSpec() = if (ifSupported(ECDSA_SECP256R1_CODE_NAME)) {
-        Pair(ECDSA_SECP256R1_CODE_NAME, ECDSA_SHA256_SIGNATURE_SPEC)
+        Pair(ECDSA_SECP256R1_CODE_NAME, SignatureSpec.ECDSA_SHA256)
     } else if (ifSupported(ECDSA_SECP256K1_CODE_NAME)) {
-        Pair(ECDSA_SECP256K1_CODE_NAME, ECDSA_SHA256_SIGNATURE_SPEC)
+        Pair(ECDSA_SECP256K1_CODE_NAME, SignatureSpec.ECDSA_SHA256)
     } else if (ifSupported(RSA_CODE_NAME)) {
-        Pair(RSA_CODE_NAME, RSA_SHA256_SIGNATURE_SPEC)
+        Pair(RSA_CODE_NAME, SignatureSpec.RSA_SHA256)
     } else {
         throw IllegalArgumentException(
             "Please specify the session spec explicitly as none of the default schemes are supported."
@@ -167,7 +148,7 @@ class ExecutionBuilder(
     }
 
     private fun ifSupported(codeName: String) =
-        tck.schemeMetadata.schemes.any { it.codeName.equals(codeName, true) }
+        tck.schemeMetadata.schemes.any { it.codeName == codeName }
 
     /**
      * TCK suite runner.

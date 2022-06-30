@@ -9,8 +9,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.exceptions.BadGroupPolicyException
-import net.corda.membership.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -41,7 +41,7 @@ class RegistrationProxyImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationProxy {
-        fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
+        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
     }
 
     companion object {
@@ -123,16 +123,25 @@ class RegistrationProxyImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult = impl.register(member)
+    override fun register(
+        member: HoldingIdentity,
+        context: Map<String, String>
+    ): MembershipRequestRegistrationResult = impl.register(member, context)
 
     private object InactiveImpl : InnerRegistrationProxy {
-        override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult =
+        override fun register(
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult =
             throw IllegalStateException("RegistrationProxy currently inactive.")
 
     }
 
     private inner class ActiveImpl: InnerRegistrationProxy {
-        override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
+        override fun register(
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult {
             val service = getRegistrationService(
                 try {
                     groupPolicyProvider.getGroupPolicy(member).registrationProtocol
@@ -143,7 +152,7 @@ class RegistrationProxyImpl @Activate constructor(
                     throw RegistrationProtocolSelectionException(err, e)
                 }
             )
-            return service.register(member)
+            return service.register(member, context)
         }
 
         private fun getRegistrationService(protocol: String): MemberRegistrationService {

@@ -5,7 +5,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -21,8 +20,8 @@ class StartFlowTest : FlowServiceTestBase() {
 
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
         }
 
@@ -60,8 +59,8 @@ class StartFlowTest : FlowServiceTestBase() {
     @Test
     fun `RPC Start Flow - Retry scenario 1 - Fail then succeeds`() {
         given {
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 3)
         }
@@ -114,8 +113,8 @@ class StartFlowTest : FlowServiceTestBase() {
     @Test
     fun `RPC Start Flow - Retry scenario 2 - Hit the retry limit and fail the flow`() {
         given {
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 1)
         }

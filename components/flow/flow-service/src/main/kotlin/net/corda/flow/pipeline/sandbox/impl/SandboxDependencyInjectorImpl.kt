@@ -33,7 +33,7 @@ class SandboxDependencyInjectorImpl(
         closeable.close()
     }
 
-    override fun injectServices(flow: Flow<*>) {
+    override fun injectServices(flow: Flow) {
 
         val requiredFields = flow::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
@@ -65,13 +65,9 @@ class SandboxDependencyInjectorImpl(
      * Finally, we need to filter so that only fields annotated with [CordaInject] are returned.
      */
     private fun Class<*>.getFieldsForInjection(): Collection<Field> {
-        return this.getFieldsForInjection(CordaInject::class.java)
-    }
-
-    private fun Class<*>.getFieldsForInjection(annotationType: Class<out Annotation>): Collection<Field> {
         return getSuperClassesFor(this).flatMap { it.declaredFields.toSet() }
             .filter { field ->
-                field.isAnnotationPresent(annotationType)
+                field.isAnnotationPresent(CordaInject::class.java)
             }
     }
 

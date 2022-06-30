@@ -13,8 +13,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
@@ -42,8 +40,7 @@ internal class OutboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    private val retryThreadPoolFactory: () -> ScheduledExecutorService
-        = { Executors.newSingleThreadScheduledExecutor() },
+    retryThreadPoolFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
     companion object {
@@ -72,26 +69,19 @@ internal class OutboundMessageHandler(
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundSubscription,
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
+        setOf(connectionManager.dominoTile.coordinatorName, connectionConfigReader.dominoTile.coordinatorName),
+        setOf(connectionManager.dominoTile.toNamedLifecycle(), connectionConfigReader.dominoTile.toNamedLifecycle())
     )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
-        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
-        createResources = ::createResources
+        onClose = { retryThreadPool.shutdown() },
+        dependentChildren = listOf(outboundSubscriptionTile.coordinatorName, trustStoresMap.dominoTile.coordinatorName),
+        managedChildren = listOf(outboundSubscriptionTile.toNamedLifecycle(), trustStoresMap.dominoTile.toNamedLifecycle()),
     )
 
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        retryThreadPool = retryThreadPoolFactory()
-        resources.keep(AutoClosableExecutorService(retryThreadPool))
-        return CompletableFuture.completedFuture(Unit)
-    }
-
-    @Volatile
-    private lateinit var retryThreadPool: ScheduledExecutorService
+    private val retryThreadPool = retryThreadPoolFactory()
 
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
         return dominoTile.withLifecycleLock {
@@ -102,7 +92,8 @@ internal class OutboundMessageHandler(
             val peerMessage = event.value
             return@withLifecycleLock if (peerMessage != null) {
                 try {
-                    val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
+                    val trustStore = trustStoresMap.getTrustStore(peerMessage.header.sourceIdentity.x500Name,
+                                                                  peerMessage.header.destinationIdentity.groupId)
 
                     val sni = SniCalculator.calculateSni(
                         peerMessage.header.destinationIdentity.x500Name,

@@ -36,8 +36,7 @@
     bnd.identity;id='org.postgresql.jdbc',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='slf4j.simple',\
-    bnd.identity;id='junit-platform-launcher',\
-    bnd.identity;id='org.apache.aries.spifly.dynamic.bundle'
+    bnd.identity;id='junit-platform-launcher'
 
 -runstartlevel: \
     order=sortbynameversion,\

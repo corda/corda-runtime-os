@@ -22,14 +22,9 @@ import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
-import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SM2_SM3_SIGNATURE_SPEC
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -71,11 +66,11 @@ class CertificatesRpcOpsImpl @Activate constructor(
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
             ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            EDDSA_ED25519_TEMPLATE to EDDSA_ED25519_NONE_SIGNATURE_SPEC,
-            GOST3410_GOST3411_TEMPLATE to GOST3410_GOST3411_SIGNATURE_SPEC,
-            RSA_CODE_NAME to RSA_SHA512_SIGNATURE_SPEC,
-            SM2_CODE_NAME to SM2_SM3_SIGNATURE_SPEC,
-            SPHINCS256_CODE_NAME to SPHINCS256_SHA512_SIGNATURE_SPEC,
+            EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
+            GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
+            RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
+            SM2_CODE_NAME to SignatureSpec.SM2_SM3,
+            SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
         )
 
         fun getSignatureSpec(
@@ -137,13 +132,27 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun importCertificate(tenantId: String, alias: String, certificate: HttpFileUpload) {
+    override fun importCertificateChain(tenantId: String, alias: String, certificates: List<HttpFileUpload>) {
         // validate certificate
-        val rawCertificate = certificate.content.reader().readText()
+        if (certificates.isEmpty()) {
+            throw InvalidInputDataException(
+                details = mapOf("certificate" to "No certificates")
+            )
+        }
+        val rawCertificates = certificates.map {
+            it.content.reader().readText()
+        }
         try {
-            CertificateFactory
-                .getInstance("X.509")
-                .generateCertificate(rawCertificate.byteInputStream())
+            rawCertificates.forEach { rawCertificate ->
+                if (CertificateFactory
+                    .getInstance("X.509")
+                    .generateCertificates(rawCertificate.byteInputStream()).isEmpty()
+                ) {
+                    throw InvalidInputDataException(
+                        "No certificates in PEM"
+                    )
+                }
+            }
         } catch (e: Exception) {
             logger.warn("Invalid certificate", e)
             throw InvalidInputDataException(
@@ -152,7 +161,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
 
         try {
-            certificatesClient.importCertificate(tenantId, alias, rawCertificate)
+            certificatesClient.importCertificates(tenantId, alias, rawCertificates.joinToString(separator = "\n"))
         } catch (e: Exception) {
             logger.warn("Could not import certificate", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

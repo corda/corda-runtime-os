@@ -11,22 +11,23 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.crypto.exceptions.CryptoConfigurationException
+import net.corda.v5.crypto.failures.CryptoException
 
 /*
 {
   "rootKey": {
-    "salt": "<plain-text-value>",
-    "passphrase": {
-        "configSecret": {
-            "encryptedSecret": "<encrypted-value>"
+        "salt": "<plain-text-value>",
+        "passphrase": {
+            "configSecret": {
+                "encryptedSecret": "<encrypted-value>"
+            }
         }
     },
     "softPersistence": {
         "expireAfterAccessMins": 240,
         "maximumSize": 1000,
-        "retries": 0,
-        "timeoutMills": 20000,
+        "maxAttempts": 1,
+        "attemptTimeoutMills": 20000,
         "salt": "<plain-text-value>",
         "passphrase": {
             "configSecret": {
@@ -45,7 +46,27 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
     "hsmPersistence": {
         "expireAfterAccessMins": 240,
         "maximumSize": 1000,
-        "downstreamRetries": 3
+        "downstreamMaxAttempts": 3
+    },
+    "bus": {
+        "processors": {
+            "ops": {
+                "maxAttempts": 3,
+                "waitBetweenMills": [200]
+            },
+            "flow": {
+                "maxAttempts": 3,
+                "waitBetweenMills": [200]
+            },
+            "config": {
+                "maxAttempts": 3,
+                "waitBetweenMills": [200]
+            },
+            "registration": {
+                "maxAttempts": 3,
+                "waitBetweenMills": [200]
+            }
+        }
     }
 }
  */
@@ -55,6 +76,11 @@ private const val ROOT_KEY_SALT = "rootKey.salt"
 private const val SOFT_PERSISTENCE_OBJ = "softPersistence"
 private const val SIGNING_PERSISTENCE_OBJ = "signingPersistence"
 private const val HSM_PERSISTENCE_OBJ = "hsmPersistence"
+private const val BUS_PROCESSORS_OBJ = "bus.processors"
+private const val OPS_BUS_PROCESSOR_OBJ = "ops"
+private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
+private const val HSM_CONFIG_BUS_PROCESSOR_OBJ = "config"
+private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
 
 fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
     createDefaultCryptoConfig(
@@ -73,7 +99,7 @@ fun createDefaultCryptoConfig(
     smartFactoryKey: KeyCredentials,
     cryptoRootKey: KeyCredentials,
     softKey: KeyCredentials
-): SmartConfig = try {
+): SmartConfig =
     SmartConfigFactory.create(
         ConfigFactory.parseString(
             """
@@ -82,11 +108,6 @@ fun createDefaultCryptoConfig(
         """.trimIndent()
         )
     ).createDefaultCryptoConfig(cryptoRootKey, softKey)
-} catch (e: CryptoConfigurationException) {
-    throw e
-} catch (e: Throwable) {
-    throw CryptoConfigurationException("Failed to create default crypto config", e)
-}
 
 fun SmartConfig.addDefaultBootCryptoConfig(
     fallbackCryptoRootKey: KeyCredentials,
@@ -155,8 +176,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                         CryptoSoftPersistenceConfig::passphrase.name to ConfigValueFactory.fromMap(
                             makeSecret(softKey.passphrase).root().unwrapped()
                         ),
-                        CryptoSoftPersistenceConfig::retries.name to "0",
-                        CryptoSoftPersistenceConfig::timeoutMills.name to "20000"
+                        CryptoSoftPersistenceConfig::maxAttempts.name to "1",
+                        CryptoSoftPersistenceConfig::attemptTimeoutMills.name to "20000"
                     )
                 )
             )
@@ -176,17 +197,38 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                     mapOf(
                         CryptoHSMPersistenceConfig::expireAfterAccessMins.name to "240",
                         CryptoHSMPersistenceConfig::maximumSize.name to "1000",
-                        CryptoHSMPersistenceConfig::downstreamRetries.name to "3",
+                        CryptoHSMPersistenceConfig::downstreamMaxAttempts.name to "3",
                     )
+                )
+            ).withValue(
+                BUS_PROCESSORS_OBJ, ConfigValueFactory.fromMap(
+                    mapOf(
+                        OPS_BUS_PROCESSOR_OBJ to mapOf(
+                            BusProcessorConfig::maxAttempts.name to "3",
+                            BusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                        ),
+                        FLOW_BUS_PROCESSOR_OBJ to mapOf(
+                            BusProcessorConfig::maxAttempts.name to "3",
+                            BusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                        ),
+                        HSM_CONFIG_BUS_PROCESSOR_OBJ to mapOf(
+                            BusProcessorConfig::maxAttempts.name to "3",
+                            BusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                        ),
+                        HSM_REGISTRATION_BUS_PROCESSOR_OBJ to mapOf(
+                            BusProcessorConfig::maxAttempts.name to "3",
+                            BusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                        )
+                    ),
                 )
             )
     )
 } catch (e: Throwable) {
-    throw CryptoConfigurationException("Failed to create default crypto config", e)
+    throw CryptoException("Failed to create default crypto config", e)
 }
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
-    this[CRYPTO_CONFIG] ?: throw CryptoConfigurationException(
+    this[CRYPTO_CONFIG] ?: throw IllegalStateException(
         "Could not generate a crypto configuration due to missing key: $CRYPTO_CONFIG"
     )
 
@@ -198,26 +240,54 @@ fun SmartConfig.rootEncryptor(): Encryptor =
         )
         AesEncryptor(key)
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create Encryptor.", e)
+        throw IllegalStateException("Failed to get Encryptor.", e)
     }
 
 fun SmartConfig.softPersistence(): CryptoSoftPersistenceConfig =
     try {
         CryptoSoftPersistenceConfig(getConfig(SOFT_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoSoftPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get CryptoSoftPersistenceConfig.", e)
     }
 
 fun SmartConfig.signingPersistence(): CryptoSigningPersistenceConfig =
     try {
         CryptoSigningPersistenceConfig(getConfig(SIGNING_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoSigningPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get CryptoSigningPersistenceConfig.", e)
     }
 
 fun SmartConfig.hsmPersistence(): CryptoHSMPersistenceConfig =
     try {
         CryptoHSMPersistenceConfig(getConfig(HSM_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoHSMPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get CryptoHSMPersistenceConfig.", e)
+    }
+
+fun SmartConfig.opsBusProcessor(): BusProcessorConfig =
+    try {
+        BusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(OPS_BUS_PROCESSOR_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get BusProcessorConfig for ops operations.", e)
+    }
+
+fun SmartConfig.flowBusProcessor(): BusProcessorConfig =
+    try {
+        BusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(FLOW_BUS_PROCESSOR_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get BusProcessorConfig for flow ops operations.", e)
+    }
+
+fun SmartConfig.hsmConfigBusProcessor(): BusProcessorConfig =
+    try {
+        BusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(HSM_CONFIG_BUS_PROCESSOR_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get BusProcessorConfig for hsm config operations.", e)
+    }
+
+fun SmartConfig.hsmRegistrationBusProcessor(): BusProcessorConfig =
+    try {
+        BusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(HSM_REGISTRATION_BUS_PROCESSOR_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get BusProcessorConfig for hsm registration operations.", e)
     }

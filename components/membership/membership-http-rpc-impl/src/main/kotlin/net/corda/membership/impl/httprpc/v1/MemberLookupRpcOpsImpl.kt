@@ -93,18 +93,12 @@ class MemberLookupRpcOpsImpl @Activate constructor(
 
     fun activate(reason: String) {
         impl = ActiveImpl()
-        updateStatus(LifecycleStatus.UP, reason)
+        coordinator.updateStatus(LifecycleStatus.UP, reason)
     }
 
     fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
+        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         impl = InactiveImpl
-    }
-
-    private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if (coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
     }
 
     private object InactiveImpl : InnerMemberLookupRpcOps {

@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -141,13 +140,15 @@ internal class SessionManagerImpl(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        ::createResources,
+        ::onTileStart,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile,
-            inboundAssignmentListener.dominoTile,
+            heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
+            pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
+            linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
         ),
-        managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
+        managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
+            publisher.dominoTile.toNamedLifecycle()),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -269,7 +270,7 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+    private fun onTileStart() {
         inboundAssignmentListener.registerCallbackForTopic { partitions ->
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
@@ -277,7 +278,6 @@ internal class SessionManagerImpl(
             }
             if (records.isNotEmpty()) publisher.publish(records)
         }
-        return CompletableFuture.completedFuture(Unit)
     }
 
     private fun refreshOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
@@ -313,10 +313,10 @@ internal class SessionManagerImpl(
         multiplicity: Int
     ): List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
 
-        val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
+        val groupInfo = groups.getGroupInfo(counterparties.ourId)
         if (groupInfo == null) {
             logger.warn(
-                "Could not find the group information in the GroupPolicyProvider for groupId ${counterparties.ourId.groupId}." +
+                "Could not find the group information in the GroupPolicyProvider for ${counterparties.ourId}." +
                     " The sessionInit message was not sent."
             )
             return emptyList()
@@ -380,10 +380,10 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
+        val groupInfo = groups.getGroupInfo(counterparties.ourId)
         if (groupInfo == null) {
             logger.warn(
-                "Could not find the group information in the GroupPolicyProvider for groupId ${counterparties.ourId.groupId}." +
+                "Could not find the group information in the GroupPolicyProvider for ${counterparties.ourId}." +
                     " The sessionInit message was not sent."
             )
             return emptyList()
@@ -395,7 +395,7 @@ internal class SessionManagerImpl(
             linkOutMessages.add(
                 Pair(
                     message.first.sessionId,
-                    createLinkOutMessage(message.second, responderMemberInfo, groupInfo.networkType)
+                    createLinkOutMessage(message.second, counterparties.ourId, responderMemberInfo, groupInfo.networkType)
                 )
             )
         }
@@ -478,9 +478,9 @@ internal class SessionManagerImpl(
             sessionInfo
         )
 
-        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity)
         if (groupInfo == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity.groupId)
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
         heartbeatManager.sessionMessageSent(
@@ -488,7 +488,7 @@ internal class SessionManagerImpl(
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, responderMemberInfo, groupInfo.networkType)
+        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, groupInfo.networkType)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -560,9 +560,19 @@ internal class SessionManagerImpl(
             )
             return null
         }
-        val groupInfo = groups.getGroupInfo(peer.holdingIdentity.groupId)
+
+        //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
+        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .find { it.groupId == peer.holdingIdentity.groupId }
+        if (hostedIdentityInSameGroup == null) {
+            logger.warn("There is no locally hosted identity in the same group with the initiator ${peer.holdingIdentity}. " +
+                    "The initiator message was discarded.")
+            return null
+        }
+
+        val groupInfo = groups.getGroupInfo(hostedIdentityInSameGroup)
         if (groupInfo == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
 
@@ -578,7 +588,8 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, peer, groupInfo.networkType)
+        return createLinkOutMessage(responderHello, HoldingIdentity(hostedIdentityInSameGroup.x500Name, hostedIdentityInSameGroup.groupId),
+                                    peer, groupInfo.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -625,9 +636,9 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity)
         if (groupInfo == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity.groupId)
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
 
@@ -664,7 +675,7 @@ internal class SessionManagerImpl(
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, peer, groupInfo.networkType)
+        return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, groupInfo.networkType)
     }
 
     class HeartbeatManager(
@@ -676,7 +687,7 @@ internal class SessionManagerImpl(
         private val members: LinkManagerMembershipGroupReader,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
-        private val executorServiceFactory: () -> ScheduledExecutorService
+        executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -710,16 +721,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-            val future = CompletableFuture<Unit>()
-            executorService = executorServiceFactory()
-            resources.keep(AutoClosableExecutorService(executorService))
-            future.complete(Unit)
-            return future
-        }
-
-        @Volatile
-        private lateinit var executorService: ScheduledExecutorService
+        private val executorService = executorServiceFactory()
 
         private fun fromConfig(config: Config): HeartbeatManagerConfig {
             return HeartbeatManagerConfig(
@@ -740,9 +742,13 @@ internal class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            ::createResources,
-            dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
-            managedChildren = setOf(publisher.dominoTile),
+            onClose = { executorService.shutdownNow() },
+            dependentChildren = setOf(
+                groups.dominoTile.coordinatorName,
+                members.dominoTile.coordinatorName,
+                publisher.dominoTile.coordinatorName
+            ),
+            managedChildren = setOf(publisher.dominoTile.toNamedLifecycle()),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
 

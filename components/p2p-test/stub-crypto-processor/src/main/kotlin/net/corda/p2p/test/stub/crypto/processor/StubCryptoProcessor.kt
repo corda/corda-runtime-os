@@ -7,15 +7,16 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.TenantKeys
-import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 
 class StubCryptoProcessor(
@@ -42,20 +43,17 @@ class StubCryptoProcessor(
         emptyList(),
         emptyList(),
     )
-    override val dominoTile = ComplexDominoTile(
+    private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
-        managedChildren = listOf(subscriptionTile),
-        dependentChildren = listOf(subscriptionTile),
+        readyFuture
     )
-
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER")
-        resources: ResourcesHolder
-    ): CompletableFuture<Unit> {
-        return readyFuture
-    }
+    override val namedLifecycle = ComplexDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
+        managedChildren = listOf(subscriptionTile.toNamedLifecycle(), blockingDominoTile.toNamedLifecycle()),
+    ).toNamedLifecycle()
 
     override fun sign(
         tenantId: String,
@@ -77,7 +75,7 @@ class StubCryptoProcessor(
             providerName
         )
         signature.initSign(privateKey)
-        signature.setParameter(spec.params)
+        (spec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
         signature.update(data)
         return signature.sign()
     }

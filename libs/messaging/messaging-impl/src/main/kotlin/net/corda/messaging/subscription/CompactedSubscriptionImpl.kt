@@ -108,8 +108,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     ::onError
                 ).use {
                     val partitions = it.getPartitions(
-                        config.topic,
-                        config.pollTimeout
+                        config.topic
                     )
                     it.assign(partitions)
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)

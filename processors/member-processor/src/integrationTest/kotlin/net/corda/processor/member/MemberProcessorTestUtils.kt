@@ -12,7 +12,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.GroupPolicy
+import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -42,6 +42,8 @@ import java.time.Duration
 import java.lang.IllegalStateException
 import java.util.UUID
 import net.corda.test.util.time.TestClock
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.calculateHash
 import java.time.Instant
 
 class MemberProcessorTestUtils {
@@ -70,6 +72,8 @@ class MemberProcessorTestUtils {
         instanceId=1
         bus.busType = INMEMORY
     """
+
+        private const val KEY_SCHEME = "corda.key.scheme"
 
         fun makeMessagingConfig(boostrapConfig: SmartConfig): SmartConfig =
             boostrapConfig.factory.create(
@@ -108,7 +112,7 @@ class MemberProcessorTestUtils {
         val aliceX500Name = MemberX500Name.parse(aliceName)
         val bobX500Name = MemberX500Name.parse(bobName)
         val charlieX500Name = MemberX500Name.parse(charlieName)
-        val groupId = "ABC123"
+        val groupId = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
         val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
         val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
 
@@ -131,7 +135,8 @@ class MemberProcessorTestUtils {
                 holdingIdentity = holdingIdentity,
                 cpiIdentifier = cpiMetadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = cryptoConnectionId
+                cryptoDmlConnectionId = cryptoConnectionId,
+                timestamp = clock.instant()
             )
 
             // Publish test data
@@ -179,14 +184,16 @@ class MemberProcessorTestUtils {
         fun getRegistrationResult(
             registrationProxy: RegistrationProxy,
             holdingIdentity: HoldingIdentity
-        ): MembershipRequestRegistrationResult =
-            eventually(
+        ): MembershipRequestRegistrationResult {
+            val context = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
+            return eventually(
                 waitBetween = Duration.ofMillis(1000)
             ) {
                 assertDoesNotThrow {
-                    registrationProxy.register(holdingIdentity)
+                    registrationProxy.register(holdingIdentity, context)
                 }
             }
+        }
 
         fun assertLookupSize(groupReader: MembershipGroupReader, expectedSize: Int) = eventually {
             groupReader.lookup().also {
@@ -205,8 +212,10 @@ class MemberProcessorTestUtils {
             assertNull(lookupResult)
         }
 
-        fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
-            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.sessionInitiationKey))
+        fun lookUpBySessionKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
+            val result = member?.let {
+                groupReader.lookupBySessionKey(it.sessionInitiationKey.calculateHash())
+            }
             assertNotNull(result)
             result!!
         }
@@ -233,7 +242,7 @@ class MemberProcessorTestUtils {
                 assertNotEquals(new, it)
             }
             assertEquals(groupId, new!!.groupId)
-            assertEquals(5, new.keys.size)
+            assertEquals(7, new.keys.size)
         }
 
         fun assertSecondGroupPolicy(new: GroupPolicy?, old: GroupPolicy?) {
@@ -298,7 +307,7 @@ class MemberProcessorTestUtils {
 
         private val schemaVersion = ConfigurationSchemaVersion(1,0)
         private fun Publisher.publishConf(configKey: String, conf: String) =
-            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, "1", schemaVersion))
+            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, 0, schemaVersion))
 
         private fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())

@@ -1,8 +1,8 @@
 package net.corda.membership.grouppolicy
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -21,4 +21,9 @@ interface GroupPolicyProvider : Lifecycle {
      * @throws [BadGroupPolicyException] if the group policy does not exist for the holding identity or is badly formed.
      */
     fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
+
+    /**
+     * Registers a listener callback in order to be notified for creation of a new group policy or update of an existing one.
+     */
+    fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit)
 }

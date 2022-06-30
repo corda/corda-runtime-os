@@ -1,16 +1,17 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,7 +23,7 @@ internal class StubGroupPolicyProvider(
     companion object {
         fun GroupPolicyEntry.toGroupInfo(): GroupPolicyListener.GroupInfo {
             return GroupPolicyListener.GroupInfo(
-                this.groupId,
+                this.holdingIdentity,
                 this.networkType,
                 this.protocolModes.toSet(),
                 this.trustedCertificates
@@ -56,7 +57,7 @@ internal class StubGroupPolicyProvider(
         ) {
             val newValue = newRecord.value
             if (newValue == null) {
-                groups.remove(oldValue?.groupId)
+                groups.remove(oldValue?.holdingIdentity)
             } else {
                 addGroup(newValue)
             }
@@ -64,7 +65,7 @@ internal class StubGroupPolicyProvider(
 
         private fun addGroup(group: GroupPolicyEntry) {
             val info = group.toGroupInfo()
-            groups[group.groupId] = info
+            groups[group.holdingIdentity] = info
             listeners.forEach {
                 it.groupAdded(info)
             }
@@ -80,22 +81,23 @@ internal class StubGroupPolicyProvider(
     private val listeners = ConcurrentHashMap.newKeySet<GroupPolicyListener>()
 
     private val readyFuture = CompletableFuture<Unit>()
+    private val blockingTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        readyFuture
+    )
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ::createResources,
-        setOf(groupSubscriptionTile),
-        setOf(groupSubscriptionTile)
+        dependentChildren = setOf(groupSubscriptionTile.coordinatorName, blockingTile.coordinatorName),
+        managedChildren = setOf(groupSubscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
-        return readyFuture
-    }
+    private val groups = ConcurrentHashMap<HoldingIdentity, GroupPolicyListener.GroupInfo>()
 
-    private val groups = ConcurrentHashMap<String, GroupPolicyListener.GroupInfo>()
-
-    override fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
-        return groups[groupId]
+    override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
+        return groups[holdingIdentity]
     }
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {

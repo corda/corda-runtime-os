@@ -1,5 +1,6 @@
 import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
+import com.google.cloud.tools.jib.api.buildplan.Platform
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.model.ObjectFactory
@@ -11,6 +12,7 @@ import org.gradle.api.tasks.*
 
 import javax.inject.Inject
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
@@ -173,6 +175,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
         }
+        List<Path> imageFiles = project.configurations.getByName("image").collect { it.toPath() }
+        if (!imageFiles.empty) {
+            builder.addLayer(imageFiles, CONTAINER_LOCATION)
+        }
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())
                 .addLayer(
@@ -201,6 +207,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
         builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
         builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
+
+        if (System.properties['os.arch'] == "aarch64") {
+            logger.quiet("Detected arm64 host, switching Jib to produce arm64 images")
+            Set<Platform> platformSet = new HashSet<Platform>()
+            platformSet.add(new Platform("arm64", "linux"))
+            builder.setPlatforms(platformSet)
+        }
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 

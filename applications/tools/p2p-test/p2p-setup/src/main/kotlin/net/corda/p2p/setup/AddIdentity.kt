@@ -5,8 +5,8 @@ import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.test.HostedIdentityEntry
-import net.corda.schema.TestSchema
+import net.corda.p2p.HostedIdentityEntry
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -23,7 +23,7 @@ import java.util.concurrent.Callable
 )
 class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
     companion object {
-        fun Config.toIdentityRecord(topic: String = TestSchema.HOSTED_MAP_TOPIC): Record<String, HostedIdentityEntry> {
+        fun Config.toIdentityRecord(topic: String = P2P_HOSTED_IDENTITIES_TOPIC): Record<String, HostedIdentityEntry> {
             val x500Name = this.getString("x500name")
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
@@ -66,7 +66,7 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
             "Topic to write the locally hosted identity information records to."
         ]
     )
-    private var identityInfoTopic: String = TestSchema.HOSTED_MAP_TOPIC
+    private var identityInfoTopic: String = P2P_HOSTED_IDENTITIES_TOPIC
 
     @Parameters(
         description = [

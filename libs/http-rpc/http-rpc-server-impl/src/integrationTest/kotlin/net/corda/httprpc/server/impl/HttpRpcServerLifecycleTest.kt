@@ -1,17 +1,17 @@
 package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
-import net.corda.httprpc.server.impl.utils.WebRequest
-import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.LifecycleRPCOpsImpl
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.nio.file.Path
 import kotlin.test.assertEquals
 
 
@@ -66,7 +66,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
         lifecycleRPCOpsImpl.use {
             with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
                 assertEquals(HttpStatus.SC_OK, responseStatus)
-                assertEquals(""""Hello 1 : world"""", body)
+                assertEquals("Hello 1 : world", body)
             }
         }
 

@@ -1,9 +1,9 @@
 package net.corda.membership.impl.read.subscription
 
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -27,7 +27,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
     class Impl(
         private val subscriptionFactory: SubscriptionFactory,
         private val groupReadCache: MembershipGroupReadCache,
-        private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+        private val memberInfoFactory: MemberInfoFactory
     ) : MembershipGroupReadSubscriptions {
 
         companion object {
@@ -52,18 +52,20 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
             throw CordaRuntimeException("Must provide membership configuration in order to start the subscriptions.")
         }
 
-        override fun stop() = subscriptions.forEach { it?.stop() }
+        override fun stop() = subscriptions.forEach { it?.close() }
 
         /**
          * Start the member list subscription.
          */
         private fun startMemberListSubscription(config: SmartConfig) {
+            memberListSubscription?.close()
+
             val subscriptionConfig = SubscriptionConfig(
                 CONSUMER_GROUP,
                 MEMBER_LIST_TOPIC
             )
 
-            val processor = MemberListProcessor(groupReadCache, layeredPropertyMapFactory)
+            val processor = MemberListProcessor(groupReadCache, memberInfoFactory)
 
             subscriptionFactory.createCompactedSubscription(
                 subscriptionConfig,
@@ -71,7 +73,6 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
                 config
             ).apply {
                 start()
-                memberListSubscription?.close()
                 memberListSubscription = this
             }
         }

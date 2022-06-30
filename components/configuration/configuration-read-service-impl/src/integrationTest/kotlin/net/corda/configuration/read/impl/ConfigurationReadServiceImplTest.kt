@@ -20,12 +20,8 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_PASS
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_USER
@@ -96,7 +92,7 @@ class ConfigurationReadServiceImplTest {
         // Publish new configuration and verify it gets delivered
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         val confString = flowConfig.root().render()
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1", ConfigurationSchemaVersion(1,0)))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, 0, ConfigurationSchemaVersion(1,0)))))
         eventually {
             assertTrue(receivedKeys.contains(FLOW_CONFIG), "$FLOW_CONFIG key was missing from received keys")
             assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
@@ -111,7 +107,6 @@ class ConfigurationReadServiceImplTest {
     @Test
     fun `when a client registers all current configuration is delivered to the client`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
-        val messagingConfig = smartConfigFactory.create(ConfigFactory.parseString(MESSAGING_CONFIG_STRING))
 
         val latch = CountDownLatch(1)
         val prepareLatch = CountDownLatch(1)
@@ -123,7 +118,7 @@ class ConfigurationReadServiceImplTest {
         val confString = flowConfig.root().render()
         val schemaVersion = ConfigurationSchemaVersion(1,0)
         val publisher = publisherFactory.createPublisher(PublisherConfig("foo"), bootConfig)
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1", schemaVersion))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, 0, schemaVersion))))
         eventually(duration = 5.seconds) {
             assertTrue(configurationReadService.isRunning)
         }
@@ -140,9 +135,10 @@ class ConfigurationReadServiceImplTest {
 
         // Register and verify everything gets delivered
         val emptyConfig = SmartConfigImpl.empty()
-        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG, RECONCILIATION_CONFIG, DB_CONFIG, RPC_CONFIG, CRYPTO_CONFIG)
-        val expectedConfig = mutableMapOf(BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig,
-            RPC_CONFIG to emptyConfig, RECONCILIATION_CONFIG to emptyConfig, DB_CONFIG to emptyConfig)
+        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, DB_CONFIG)
+        val expectedConfig = mutableMapOf(
+            BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig, DB_CONFIG to emptyConfig
+        )
         var receivedKeys = emptySet<String>()
         var receivedConfig = mapOf<String, SmartConfig>()
         val reg = configurationReadService.registerForUpdates { keys, config ->
@@ -154,9 +150,7 @@ class ConfigurationReadServiceImplTest {
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
         assertEquals(expectedConfig[BOOT_CONFIG], receivedConfig[BOOT_CONFIG], "Incorrect config")
         assertEquals(expectedConfig[FLOW_CONFIG], receivedConfig[FLOW_CONFIG], "Incorrect config")
-        assertEquals(expectedConfig[RECONCILIATION_CONFIG], receivedConfig[RECONCILIATION_CONFIG], "Incorrect config")
         assertEquals(expectedConfig[DB_CONFIG], receivedConfig[DB_CONFIG], "Incorrect config")
-        assertEquals(expectedConfig[RPC_CONFIG], receivedConfig[RPC_CONFIG], "Incorrect config")
 
         // Cleanup
         reg.close()

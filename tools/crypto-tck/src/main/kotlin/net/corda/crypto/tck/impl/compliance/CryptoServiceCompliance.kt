@@ -3,11 +3,15 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.crypto.impl.decorators.requiresWrappingKey
+import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ComplianceSpec
-import net.corda.test.util.createTestCase
+import net.corda.crypto.tck.impl.ConcurrentTests.Companion.createTestCase
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -19,9 +23,7 @@ import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -32,7 +34,9 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -70,12 +74,14 @@ class CryptoServiceCompliance : AbstractCompliance() {
         lateinit var verifier: SignatureVerificationService
     }
 
-    private lateinit var schemesAndSignatureSpecs: List<Pair<String, SignatureSpec>>
+    private val schemesAndSignatureSpecs = mutableListOf<Pair<String, SignatureSpec>>()
 
     @BeforeEach
     fun setup(spec: ComplianceSpec) {
         super.setup(spec, providers)
-        schemesAndSignatureSpecs = compliance.getFlattenedSchemesAndSignatureSpecs()
+        service.supportedSchemes.forEach {
+            it.value.forEach { s -> schemesAndSignatureSpecs.add(Pair(it.key.codeName, s)) }
+        }
     }
 
     @AfterEach
@@ -88,32 +94,44 @@ class CryptoServiceCompliance : AbstractCompliance() {
     @Test
     fun `Should support at least one key schema supported by scheme matadata`() {
         logger.info(
-            "Supported key schemes by service: [${service.supportedSchemes().joinToString { it.codeName }}]"
+            "Supported key schemes by service: [${service.supportedSchemes.keys.joinToString()}]"
         )
-        logger.info(
-            "Supported key schemes by scheme metadata: [${service.supportedSchemes().joinToString { it.codeName }}]"
-        )
-        val supported = service.supportedSchemes().filter {
-            schemeMetadata.schemes.contains(it)
+        val supported = service.supportedSchemes.filter {
+            schemeMetadata.schemes.contains(it.key)
         }
-        logger.info("Supported by service and scheme metadata: [${supported.joinToString { it.codeName }}]")
+        logger.info("Supported by service and scheme metadata: [${supported.keys.joinToString()}]")
         assertTrue(supported.isNotEmpty(), "The service must support at least one key scheme.")
-        assertEquals(
-            supported.size,
-            compliance.options.signatureSpecs.size,
-            "Not all supported schemes are configured for the ${CryptoServiceCompliance::class.simpleName} tests."
+        val withoutSignatureSpec = supported.filter { it.value.isEmpty() }.map { it.key.toString() }
+        assertTrue(
+            withoutSignatureSpec.isEmpty(),
+            "There must be at least one signatures spec for [${withoutSignatureSpec.joinToString()}]"
         )
-        compliance.options.signatureSpecs.keys.forEach {
-            assertTrue(
-                supported.any { s -> s.codeName == it },
-                "The key scheme $it is not among supported."
-            )
+    }
+
+    @Test
+    fun `delete should throw UnsupportedOperationException if it's not supported but still called`() {
+        assumeFalse(service.supportsKeyDelete)
+        assertThrows(UnsupportedOperationException::class.java) {
+            service.delete("alias", mapOf(
+                CRYPTO_TENANT_ID to tenantId,
+                CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
+            ))
+        }
+    }
+
+    @Test
+    fun `createWrappingKey should throw UnsupportedOperationException if it's not supported but still called`() {
+        assumeFalse(service.requiresWrappingKey)
+        assertThrows(UnsupportedOperationException::class.java) {
+            service.createWrappingKey("masterKeyAlias", false, mapOf(
+                CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+            ))
         }
     }
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should be able to generate key pair with suggested alias then endcode & decode public key and then sign and verify`() {
+    fun `Should be able to generate key pair with proposed alias then endcode & decode public key and then sign and verify`() {
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
@@ -125,7 +143,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                     val key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
                     generatedKeys.add(key.publicKey)
                     experiments.addAll(
-                        `Should be able to sign`(key, keyScheme, signatureSpec)
+                        `Should be able to sign byte arrays of different lengths`(key, keyScheme, signatureSpec)
                     )
                 }.runAndValidate()
             } catch (e: Throwable) {
@@ -138,7 +156,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should be able to generate key pair without suggested alias, suggesting wrapped key, then endcode & decode public key and then sign and verify`() {
+    fun `Should be able to generate key pair without proposed alias, suggesting wrapped key, then encode & decode public key and then sign and verify`() {
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
@@ -149,7 +167,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                     val key = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
                     generatedKeys.add(key.publicKey)
                     experiments.addAll(
-                        `Should be able to sign`(key, keyScheme, signatureSpec)
+                        `Should be able to sign byte arrays of different lengths`(key, keyScheme, signatureSpec)
                     )
                 }.runAndValidate()
             } catch (e: Throwable) {
@@ -161,9 +179,9 @@ class CryptoServiceCompliance : AbstractCompliance() {
     }
 
     @Test
-    fun `Should throw CryptoServiceException when wrapping key is required and already exists`() {
+    fun `Should throw IllegalStateException when wrapping key is required and already exists`() {
         assumeTrue(!masterKeyAlias.isNullOrBlank())
-        assertThrows<CryptoServiceException> {
+        assertThrows<IllegalStateException> {
             service.createWrappingKey(
                 masterKeyAlias!!, true, mapOf(
                     CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
@@ -173,8 +191,8 @@ class CryptoServiceCompliance : AbstractCompliance() {
     }
 
     @Test
-    fun `Should throw CryptoServiceException when key scheme is not supported`() {
-        assertThrows<CryptoServiceException> {
+    fun `Should throw IllegalArgumentException when key scheme is not supported`() {
+        assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
                     keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
@@ -188,7 +206,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                 )
             )
         }
-        assertThrows<CryptoServiceException> {
+        assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
                     keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
@@ -233,10 +251,16 @@ class CryptoServiceCompliance : AbstractCompliance() {
     }
 
     private fun Collection<Experiment>.cleanupKeyPairs() {
-        map {
+        val candidates = mapNotNull {
             (it.key as? GeneratedPublicKey)?.hsmAlias
-        }.filter { !it.isNullOrBlank() }.distinct().forEach {
-            deleteKeyPair(it!!)
+        }.distinct()
+        logger.info(
+            "Considering {} keys for deleting [{}])",
+            candidates.size,
+            candidates.joinToString()
+        )
+        candidates.forEach {
+            deleteKeyPair(it)
         }
     }
 
@@ -323,7 +347,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
     private fun signByCA(keyPair: KeyPair, data: ByteArray): ByteArray {
         val scheme = schemeMetadata.findKeyScheme(keyPair.public)
         val signature = Signature.getInstance(
-            EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName,
+            SignatureSpec.EDDSA_ED25519.signatureName,
             schemeMetadata.providers[scheme.providerName]
         )
         signature.initSign(keyPair.private, schemeMetadata.secureRandom)

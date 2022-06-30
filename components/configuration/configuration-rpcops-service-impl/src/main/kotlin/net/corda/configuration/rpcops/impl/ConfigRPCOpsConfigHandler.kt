@@ -4,10 +4,10 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
@@ -17,6 +17,10 @@ internal class ConfigRPCOpsConfigHandler(
     private val coordinator: LifecycleCoordinator,
     private val configRPCOps: ConfigRPCOpsInternal
 ) : ConfigurationHandler {
+
+    private companion object {
+        val requiredKeys = setOf(MESSAGING_CONFIG, RPC_CONFIG)
+    }
 
     /**
      * When [RPC_CONFIG] configuration is received, updates [configRPCOps]'s request timeout and creates and starts
@@ -28,8 +32,12 @@ internal class ConfigRPCOpsConfigHandler(
      * is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (RPC_CONFIG in changedKeys) processRPCConfig(config)
-        if (configRPCOps.isRunning) coordinator.updateStatus(UP)
+        if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
+            processRPCConfig(config)
+        }
+        if (configRPCOps.isRunning) {
+            coordinator.updateStatus(UP)
+        }
     }
 
     /**
@@ -42,12 +50,10 @@ internal class ConfigRPCOpsConfigHandler(
      *  [configRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
-        val config = configSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
-            "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
-        )
+        val rpcConfig = configSnapshot.getConfig(RPC_CONFIG)
 
-        if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
-            val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
+        if (rpcConfig.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
+            val timeoutMillis = rpcConfig.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
             configRPCOps.setTimeout(timeoutMillis)
         }
 
@@ -59,6 +65,5 @@ internal class ConfigRPCOpsConfigHandler(
                 "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
             )
         }
-
     }
 }

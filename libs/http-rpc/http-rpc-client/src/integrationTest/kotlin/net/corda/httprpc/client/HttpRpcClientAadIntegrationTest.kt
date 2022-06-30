@@ -7,13 +7,13 @@ import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.impl.HttpRpcServerImpl
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.httprpc.test.utls.AzureAdMock
-import net.corda.httprpc.test.utls.findFreePort
+import net.corda.httprpc.test.utils.AzureAdMock
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.nio.file.Path
 import kotlin.test.assertEquals
 
 class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
@@ -60,7 +60,7 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
                 val connection = client.start()
 
                 with(connection.proxy) {
-                    assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                    assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 }
             }
         }

@@ -22,7 +22,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -281,7 +281,7 @@ class CryptoFlowOpsTransformerTests {
             buildTransformer().createSign(
                 knownTenantId,
                 publicKey,
-                EDDSA_ED25519_NONE_SIGNATURE_SPEC,
+                SignatureSpec.EDDSA_ED25519,
                 data,
                 knownOperationContext
             )
@@ -292,7 +292,7 @@ class CryptoFlowOpsTransformerTests {
         val command = result.value.request as SignFlowCommand
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
-        assertEquals(EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName, command.signatureSpec.signatureName)
+        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, command.signatureSpec.signatureName)
         assertRequestContext<SignFlowCommand>(result)
         assertOperationContext(knownOperationContext, command.context)
     }
@@ -302,7 +302,7 @@ class CryptoFlowOpsTransformerTests {
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
-            buildTransformer().createSign(knownTenantId, publicKey, EDDSA_ED25519_NONE_SIGNATURE_SPEC, data)
+            buildTransformer().createSign(knownTenantId, publicKey, SignatureSpec.EDDSA_ED25519, data)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -310,7 +310,7 @@ class CryptoFlowOpsTransformerTests {
         val command = result.value.request as SignFlowCommand
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
-        assertEquals(EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName, command.signatureSpec.signatureName)
+        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, command.signatureSpec.signatureName)
         assertRequestContext<SignFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
     }

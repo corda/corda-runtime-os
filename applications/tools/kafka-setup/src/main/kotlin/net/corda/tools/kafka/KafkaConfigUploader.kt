@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import java.io.File
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 import kotlin.random.Random
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.config.Configuration
@@ -116,8 +116,11 @@ class KafkaConfigUploader @Activate constructor(
     private fun recordForComponent(componentKey: String, packageKey: String, packageConfig: Config): Record<String, Configuration>? {
         return try {
             val recordKey = "$packageKey.$componentKey"
-            val version = packageConfig.getString("$componentKey.componentVersion")
-            val content = Configuration(packageConfig.getConfig(componentKey).root().render(ConfigRenderOptions.concise()), version,
+            // TODO - the following version should be revised. `Configuration.version` is meant for DB optimistic locking.
+            //val version = packageConfig.getString("$componentKey.componentVersion")
+            val content = Configuration(
+                packageConfig.getConfig(componentKey).root().render(ConfigRenderOptions.concise()),
+                0,
                 ConfigurationSchemaVersion(1, 0)
             )
             Record(CONFIG_TOPIC, recordKey, content)

@@ -38,13 +38,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
  * @param lifecycleEventHandler The user event handler for lifecycle events.
  */
+@Suppress("TooManyFunctions")
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
     private val registry: LifecycleRegistryCoordinatorAccess,
     private val scheduler: LifecycleCoordinatorScheduler,
     lifecycleEventHandler: LifecycleEventHandler,
-) : LifecycleCoordinator {
+) : LifecycleCoordinatorInternal {
 
     companion object {
         private val logger: Logger = contextLogger()
@@ -131,10 +132,17 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun postEvent(event: LifecycleEvent) {
-        if (_isClosed.get()) {
+        if (isClosed) {
             logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
         }
+        postInternalEvent(event)
+    }
+
+    /**
+     * See [LifecycleCoordinatorInternal].
+     */
+    override fun postInternalEvent(event: LifecycleEvent) {
         lifecycleState.postEvent(event)
         scheduleIfRequired()
     }
@@ -180,7 +188,8 @@ class LifecycleCoordinatorImpl(
             logger.error("An attempt was made to register coordinator $name on itself")
             throw LifecycleException("Attempt was made to register coordinator $name on itself")
         }
-        val registration = Registration(coordinators, this)
+        val coordinatorRegistrationAccess = coordinators.map { it as LifecycleCoordinatorInternal }.toSet()
+        val registration = Registration(coordinatorRegistrationAccess, this)
         postEvent(TrackRegistration(registration))
         coordinators.forEach { it.postEvent(NewRegistration(registration)) }
         return registration
@@ -191,7 +200,7 @@ class LifecycleCoordinatorImpl(
      */
     override fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle {
         val coordinators = try {
-            coordinatorNames.map { registry.getCoordinator(it) }.toSet()
+            coordinatorNames.mapTo(LinkedHashSet(), registry::getCoordinator)
         } catch (e: LifecycleRegistryException) {
             logger.error("Failed to register on coordinator as an invalid name was provided. ${e.message}", e)
             throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)

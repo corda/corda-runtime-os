@@ -3,21 +3,22 @@ package net.corda.virtualnode.read.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.common.ConfigChangedEvent
-import net.corda.virtualnode.impl.VirtualNodeInfoProcessor
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.stream.Stream
 
 /**
  * Virtual Node Info Service Component which implements [VirtualNodeInfoReadService]
@@ -53,15 +54,10 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
     private val eventHandler: VirtualNodeInfoReaderEventHandler = VirtualNodeInfoReaderEventHandler(
         configurationReadService,
         virtualNodeInfoProcessor,
-        subscriptionFactory,
-        instanceId,
-        this::onConfigChangeEvent
+        subscriptionFactory
     )
 
     private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoReadService>(eventHandler)
-
-    /** Post a [ConfigChangedEvent]  */
-    private fun onConfigChangeEvent(event: ConfigChangedEvent) = coordinator.postEvent(event)
 
     /** The processor calls this method on snapshot, and it updates the status of the coordinator. */
     private fun setStatusToUp() = coordinator.updateStatus(LifecycleStatus.UP)
@@ -96,4 +92,19 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
         virtualNodeInfoProcessor.registerCallback(listener)
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? =
+        getAll()
+            .stream()
+            .map {
+                object : VersionedRecord<HoldingIdentity, VirtualNodeInfo> {
+                    override val version = it.version
+                    override val isDeleted = false
+                    override val key = it.holdingIdentity
+                    override val value = it
+                }
+            }
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = coordinator.name
 }

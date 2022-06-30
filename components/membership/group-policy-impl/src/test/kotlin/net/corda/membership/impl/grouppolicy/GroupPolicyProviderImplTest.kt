@@ -10,8 +10,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -37,6 +37,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -101,7 +102,7 @@ class GroupPolicyProviderImplTest {
     var virtualNodeListener: VirtualNodeInfoListener? = null
 
     fun createVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
-        holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID()
+        holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID(), timestamp = Instant.now()
     )
     val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(holdingIdentity1)) } doReturn createVirtualNodeInfo(holdingIdentity1, cpiIdentifier1)
@@ -264,7 +265,8 @@ class GroupPolicyProviderImplTest {
                     null,
                     UUID.randomUUID(),
                     null,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    timestamp = Instant.now()
                 )
             )
         )
@@ -289,7 +291,8 @@ class GroupPolicyProviderImplTest {
                     null,
                     UUID.randomUUID(),
                     null,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    timestamp = Instant.now()
                 )
             )
         )

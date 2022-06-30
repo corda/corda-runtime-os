@@ -1,9 +1,10 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -12,7 +13,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.linkmanager.StubGroupPolicyProvider.Companion.toGroupInfo
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -34,28 +35,29 @@ class StubGroupPolicyProviderTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), eq(configuration)) } doReturn mock()
     }
-    private lateinit var ready: CompletableFuture<Unit>
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        val createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
-        ready = createResources.invoke(mock())
+        ready = context.arguments()[2] as CompletableFuture<Unit>
+    }
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
     }
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val groupOne = GroupPolicyEntry(
-        "Group-1",
+        HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "Group-1"),
         NetworkType.CORDA_5,
         listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         listOf("cert1.1", "cert1.2")
     )
     private val groupTwo = GroupPolicyEntry(
-        "Group-2",
+        HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "Group-2"),
         NetworkType.CORDA_4,
         listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY),
         listOf("cert2")
     )
     private val groupThree = GroupPolicyEntry(
-        "Group-3",
+        HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "Group-3"),
         NetworkType.CORDA_5,
         listOf(ProtocolMode.AUTHENTICATION_ONLY),
         listOf("cert3")
@@ -69,6 +71,7 @@ class StubGroupPolicyProviderTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
+        blockingDominoTile.close()
     }
 
     @Test
@@ -87,18 +90,18 @@ class StubGroupPolicyProviderTest {
     fun `onSnapshots keeps groups`() {
         val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
-                it.groupId
+                "${it.holdingIdentity.x500Name}-${it.holdingIdentity.groupId}"
             }
         processor.firstValue.onSnapshot(groupsToPublish)
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isEqualTo(
                 groupOne.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.groupId)).isNull()
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isNull()
         }
     }
 
@@ -106,7 +109,7 @@ class StubGroupPolicyProviderTest {
     fun `onSnapshots remove old groups`() {
         val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
-                it.groupId
+                "${it.holdingIdentity.x500Name}-${it.holdingIdentity.groupId}"
             }
         processor.firstValue.onSnapshot(groupsToPublish)
 
@@ -117,11 +120,11 @@ class StubGroupPolicyProviderTest {
         )
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.groupId)).isNull()
-            it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isNull()
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.groupId)).isNull()
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isNull()
         }
     }
 
@@ -129,13 +132,13 @@ class StubGroupPolicyProviderTest {
     fun `onNext remove old group`() {
         val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
-                it.groupId
+                "${it.holdingIdentity.x500Name}-${it.holdingIdentity.groupId}"
             }
         processor.firstValue.onSnapshot(groupsToPublish)
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_POLICIES_TOPIC,
+                GROUP_POLICIES_TOPIC,
                 "group1",
                 null
             ),
@@ -144,11 +147,11 @@ class StubGroupPolicyProviderTest {
         )
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.groupId)).isNull()
-            it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isNull()
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.groupId)).isNull()
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isNull()
         }
     }
 
@@ -156,13 +159,13 @@ class StubGroupPolicyProviderTest {
     fun `onNext adds new group`() {
         val groupsToPublish = listOf(groupOne, groupTwo)
             .associateBy {
-                it.groupId
+                "${it.holdingIdentity.x500Name}-${it.holdingIdentity.groupId}"
             }
         processor.firstValue.onSnapshot(groupsToPublish)
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_POLICIES_TOPIC,
+                GROUP_POLICIES_TOPIC,
                 "g",
                 groupThree
             ),
@@ -171,13 +174,13 @@ class StubGroupPolicyProviderTest {
         )
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isEqualTo(
                 groupOne.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupTwo.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.groupId)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isEqualTo(
                 groupThree.toGroupInfo()
             )
         }
@@ -191,7 +194,7 @@ class StubGroupPolicyProviderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_POLICIES_TOPIC,
+                GROUP_POLICIES_TOPIC,
                 "g",
                 groupThree,
             ),

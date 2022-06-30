@@ -1,9 +1,9 @@
 package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
-import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
@@ -21,7 +21,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
-import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_PASS
@@ -29,6 +28,7 @@ import net.corda.schema.configuration.ConfigKeys.DB_USER
 import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ReconciliationConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -39,6 +39,8 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicReference
+import javax.persistence.EntityManagerFactory
 
 class PermissionStorageReaderServiceEventHandlerTest {
 
@@ -48,11 +50,11 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
     private val pvCache = mock<PermissionValidationCache>()
     private val permissionValidationCacheService = mock<PermissionValidationCacheService>().apply {
-        whenever(permissionValidationCache).thenReturn(pvCache)
+        whenever(permissionValidationCacheRef).thenReturn(AtomicReference(pvCache))
     }
-    private val pmCache = mock<PermissionManagementCache>()
+    private val pmCacheRef = AtomicReference(mock<PermissionManagementCache>())
     private val permissionManagementCacheService = mock<PermissionManagementCacheService>().apply {
-        whenever(permissionManagementCache).thenReturn(pmCache)
+        whenever(permissionManagementCacheRef).thenReturn(pmCacheRef)
     }
     private val permissionStorageReader = mock<PermissionStorageReader>()
     private val permissionStorageReaderFactory = mock<PermissionStorageReaderFactory>().apply {
@@ -69,7 +71,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
             setOf(
                 LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
                 LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
             )
         )).thenReturn(registrationHandle)
     }
@@ -191,9 +194,9 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
 
     @Test
-    fun `processing an onConfigurationUpdated event creates publisher and permission storage reader`() {
+    fun `processing a ConfigChangedEvent event creates publisher and creates permission storage reader`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
-        whenever(permissionStorageReaderFactory.create(eq(pvCache), eq(pmCache), eq(publisher), any()))
+        whenever(permissionStorageReaderFactory.create(eq(AtomicReference(pvCache)), eq(pmCacheRef), eq(publisher), any()))
             .thenReturn(permissionStorageReader)
 
         handler.processEvent(

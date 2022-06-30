@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.List;
 
-import static net.corda.httprpc.test.utls.TestUtilsKt.findFreePort;
+import static net.corda.httprpc.test.utils.TestUtilsKt.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -62,7 +62,7 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
             TestHealthCheckAPI proxy = connection.getProxy();
             assertEquals(3, proxy.plus(2L));
             assertDoesNotThrow(() -> proxy.voidResponse());
-            assertEquals("\"Pong for str = value\"", proxy.ping(new TestHealthCheckAPI.PingPongData("value")));
+            assertEquals("Pong for str = value", proxy.ping(new TestHealthCheckAPI.PingPongData("value")));
             assertEquals(List.of(2.0, 3.0, 4.0), proxy.plusOne(List.of("1", "2", "3")));
         }
     }

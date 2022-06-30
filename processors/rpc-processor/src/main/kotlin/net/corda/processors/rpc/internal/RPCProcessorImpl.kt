@@ -6,10 +6,8 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMConfigurationClient
-import net.corda.crypto.client.HSMRegistrationClient
-import net.corda.data.config.Configuration
-import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.crypto.client.hsm.HSMConfigurationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
@@ -23,14 +21,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -77,10 +71,14 @@ class RPCProcessorImpl @Activate constructor(
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
+    @Reference(service = GroupPolicyProvider::class)
+    private val groupPolicyProvider: GroupPolicyProvider,
 ) : RPCProcessor {
 
     private companion object {
         val log = contextLogger()
+
+        const val CLIENT_ID_RPC_PROCESSOR = "rpc.processor"
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(::eventHandler)
@@ -99,6 +97,7 @@ class RPCProcessorImpl @Activate constructor(
         ::hsmConfigurationClient,
         ::hsmRegistrationClient,
         ::certificatesClient,
+        ::groupPolicyProvider,
     )
 
     override fun start(bootConfig: SmartConfig) {
@@ -124,24 +123,6 @@ class RPCProcessorImpl @Activate constructor(
             }
             is BootConfigEvent -> {
                 configReadService.bootstrapConfig(event.config)
-
-                //this config code needs to be removed in the future. currently required by the e2e tests
-                val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR)
-                val publisher = publisherFactory.createPublisher(publisherConfig, configMerger.getMessagingConfig(event.config, null))
-                publisher.start()
-                publisher.use {
-                    val bootstrapServersConfig = if (event.config.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {
-                        val bootstrapServers = event.config.getString(KAFKA_BOOTSTRAP_SERVERS)
-                        "\n$KAFKA_BOOTSTRAP_SERVERS=\"$bootstrapServers\""
-                    } else {
-                        ""
-                    }
-                    val configValue = "$CONFIG_HTTP_RPC$bootstrapServersConfig"
-
-                    val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1",
-                        ConfigurationSchemaVersion(1, 0)))
-                    publisher.publish(listOf(record)).forEach { future -> future.get() }
-                }
             }
             is StopEvent -> {
                 dependentComponents.stopAll()

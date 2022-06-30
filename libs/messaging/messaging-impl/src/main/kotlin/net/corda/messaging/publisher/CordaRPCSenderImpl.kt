@@ -209,7 +209,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                         val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
                         future.completeExceptionally(
                             CordaRPCAPIResponderException(
-                                "Cause:${response.errorType}. Message: ${response.errorMessage}"
+                                errorType = response.errorType,
+                                message = response.errorMessage
                             )
                         )
                         log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
@@ -251,8 +252,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
 
         if (partitions.isEmpty()) {
-            future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
-            log.error("No partitions. Couldn't send")
+            future.completeExceptionally(CordaRPCAPISenderException("No partitions for topic ${config.topic}. Couldn't send"))
+            log.error("No partitions for topic ${config.topic}. Couldn't send")
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(

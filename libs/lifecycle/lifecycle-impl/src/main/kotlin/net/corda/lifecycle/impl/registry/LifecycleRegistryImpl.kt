@@ -1,8 +1,8 @@
 package net.corda.lifecycle.impl.registry
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.impl.LifecycleCoordinatorInternal
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.registry.LifecycleRegistryException
@@ -26,7 +26,8 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
         private val logger = contextLogger()
     }
 
-    private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinator> = ConcurrentHashMap()
+    private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinatorInternal> =
+        ConcurrentHashMap()
 
     private val statuses: MutableMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
 
@@ -35,20 +36,23 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      */
     override fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String) {
         if (statuses[name] == null) {
-            throw LifecycleRegistryException(
-                "Attempt was made to update the status of coordinator $name to $status " +
-                        "($reason) that has not been registered with the registry."
-            )
+            logger.warn("Attempt was made to update the status of coordinator $name to $status " +
+                    "($reason) that has not been registered with the registry.")
+//            throw LifecycleRegistryException(
+//                "Attempt was made to update the status of coordinator $name to $status " +
+//                        "($reason) that has not been registered with the registry."
+//            )
+        } else {
+            val coordinatorStatus = CoordinatorStatus(name, status, reason)
+            statuses[name] = coordinatorStatus
+            logger.trace { "Coordinator status update: $name is now $status ($reason)" }
         }
-        val coordinatorStatus = CoordinatorStatus(name, status, reason)
-        statuses[name] = coordinatorStatus
-        logger.trace { "Coordinator status update: $name is now $status ($reason)" }
     }
 
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun registerCoordinator(name: LifecycleCoordinatorName, coordinator: LifecycleCoordinator) {
+    override fun registerCoordinator(name: LifecycleCoordinatorName, coordinator: LifecycleCoordinatorInternal) {
         val coordinatorStatus = CoordinatorStatus(name, LifecycleStatus.DOWN, NEW_COORDINATOR_REASON)
         val oldValue = coordinators.putIfAbsent(name, coordinator)
         if (oldValue != null) {
@@ -61,7 +65,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun getCoordinator(name: LifecycleCoordinatorName): LifecycleCoordinator {
+    override fun getCoordinator(name: LifecycleCoordinatorName): LifecycleCoordinatorInternal {
         return coordinators[name]
             ?: throw LifecycleRegistryException("No coordinator with name $name has been registered")
     }

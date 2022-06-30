@@ -5,7 +5,7 @@ import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.DbPrivilege
@@ -19,7 +19,7 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -46,7 +46,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPol
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySessionKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
@@ -437,8 +437,8 @@ class MemberProcessorIntegrationTest {
 
         assertLookupSize(bobReader, 2)
 
-        assertEquals(aliceMemberInfo, lookUpFromPublicKey(aliceGroupReader, aliceMemberInfo))
-        assertEquals(bobMemberInfo, lookUpFromPublicKey(aliceGroupReader, bobMemberInfo))
+        assertEquals(aliceMemberInfo, lookUpBySessionKey(aliceGroupReader, aliceMemberInfo))
+        assertEquals(bobMemberInfo, lookUpBySessionKey(aliceGroupReader, bobMemberInfo))
 
     }
 }

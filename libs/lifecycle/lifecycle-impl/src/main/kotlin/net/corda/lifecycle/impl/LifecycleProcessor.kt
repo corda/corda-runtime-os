@@ -49,7 +49,7 @@ internal class LifecycleProcessor(
      * @param timerGenerator A function to create timers for use if a SetUpTimer event is encountered.
      */
     fun processEvents(
-        coordinator: LifecycleCoordinator,
+        coordinator: LifecycleCoordinatorInternal,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
         return state.nextBatch().map { processEvent(it, coordinator, timerGenerator) }.all { it }
@@ -60,7 +60,7 @@ internal class LifecycleProcessor(
      */
     private fun processEvent(
         event: LifecycleEvent,
-        coordinator: LifecycleCoordinator,
+        coordinator: LifecycleCoordinatorInternal,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
         return when (event) {
@@ -134,7 +134,7 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
+    private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinatorInternal): Boolean {
         logger.trace { "Processing start event for ${coordinator.name}" }
         return if (!state.isRunning) {
             state.isRunning = true
@@ -148,7 +148,7 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinator): Boolean {
+    private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinatorInternal): Boolean {
         logger.trace { "Processing stop event for ${coordinator.name}" }
         if (state.isRunning) {
             state.isRunning = false
@@ -187,7 +187,7 @@ internal class LifecycleProcessor(
         return true
     }
 
-    private fun processClose(coordinator: LifecycleCoordinator): Boolean {
+    private fun processClose(coordinator: LifecycleCoordinatorInternal): Boolean {
         logger.trace { "Closing coordinator ${coordinator.name}" }
         state.isRunning = false
         state.trackedRegistrations.forEach {
@@ -207,7 +207,7 @@ internal class LifecycleProcessor(
      * Perform any logic for updating the status of the coordinator. This includes informing other registered
      * coordinators of the status change and informing the registry.
      */
-    private fun updateStatus(coordinator: LifecycleCoordinator, newStatus: LifecycleStatus, reason: String) {
+    private fun updateStatus(coordinator: LifecycleCoordinatorInternal, newStatus: LifecycleStatus, reason: String) {
         state.status = newStatus
         state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
         registry.updateStatus(coordinator.name, newStatus, reason)

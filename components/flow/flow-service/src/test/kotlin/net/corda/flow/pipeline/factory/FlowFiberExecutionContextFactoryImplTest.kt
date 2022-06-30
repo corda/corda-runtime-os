@@ -34,7 +34,7 @@ class FlowFiberExecutionContextFactoryImplTest {
     @Test
     fun `create fiber execution context returns initialized context instance`() {
         val flowStartContext = FlowStartContext().apply {
-            initiatedBy = BOB_X500_HOLDING_IDENTITY
+            identity = BOB_X500_HOLDING_IDENTITY
         }
 
         val context = buildFlowEventContext<Any>(Wakeup())
