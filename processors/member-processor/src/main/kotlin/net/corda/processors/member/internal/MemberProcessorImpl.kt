@@ -16,6 +16,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationManagementService
 import net.corda.membership.service.MemberOpsService
 import net.corda.membership.registration.RegistrationProxy
+import net.corda.membership.verification.service.MembershipVerificationService
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.member.internal.lifecycle.MemberProcessorLifecycleHandler
 import net.corda.v5.base.util.contextLogger
@@ -55,6 +56,8 @@ class MemberProcessorImpl @Activate constructor(
     private val registrationManagementService: RegistrationManagementService,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipVerificationService::class)
+    private val membershipVerificationService: MembershipVerificationService,
 ) : MemberProcessor {
 
     companion object {
@@ -75,6 +78,7 @@ class MemberProcessorImpl @Activate constructor(
         ::membershipQueryClient,
         ::registrationManagementService,
         ::membershipGroupReaderProvider,
+        ::membershipVerificationService,
     )
 
     private val coordinator =

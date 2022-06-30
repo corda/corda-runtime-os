@@ -14,6 +14,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.StartRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.VerificationRequest
+import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
@@ -25,6 +27,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.p2p.MembershipP2PReadService
+import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -33,18 +36,24 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.AppMessage
+import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_VERIFICATION_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -53,7 +62,8 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.*
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -79,6 +89,7 @@ class MembershipP2PIntegrationTest {
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
         val logger = contextLogger()
+        val clock: Clock = UTCClock()
 
         const val MEMBER_CONTEXT_KEY = "key"
         const val MEMBER_CONTEXT_VALUE = "value"
@@ -114,6 +125,7 @@ class MembershipP2PIntegrationTest {
         lateinit var registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest>
         lateinit var keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
+        lateinit var verificationRequestSerializer: CordaAvroSerializer<VerificationRequest>
 
         @JvmStatic
         @BeforeAll
@@ -137,6 +149,7 @@ class MembershipP2PIntegrationTest {
             keyValuePairListSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
             keyValuePairListDeserializer =
                 cordaAvroSerializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
+            verificationRequestSerializer = cordaAvroSerializationFactory.createAvroSerializer {  }
 
             setupConfig()
             membershipP2PReadService.start()
@@ -152,6 +165,11 @@ class MembershipP2PIntegrationTest {
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
             }
+        }
+
+        @AfterAll
+        fun tearDown() {
+            p2pSender.close()
         }
 
         private fun setupConfig() {
@@ -184,7 +202,7 @@ class MembershipP2PIntegrationTest {
         // Set up subscription to gather results of processing p2p message
         val registrationRequestSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("membership_p2p_test_receiver", REGISTRATION_COMMAND_TOPIC),
-            getTestProcessor { s, e ->
+            getStateAndEventTestProcessor { s, e ->
                 completableResult.complete(Pair(s, e))
             },
             messagingConfig = bootConfig
@@ -222,7 +240,6 @@ class MembershipP2PIntegrationTest {
             completableResult.getOrThrow(Duration.ofSeconds(5))
         }
         registrationRequestSubscription.close()
-        p2pSender.close()
 
         // Assert Results
         assertThat(sendFuture).hasSize(1)
@@ -266,6 +283,64 @@ class MembershipP2PIntegrationTest {
         }
     }
 
+    @Test
+    fun `membership p2p service reads verification requests from the p2p topic and puts them on a membership topic for further processing`() {
+        val groupId = UUID.randomUUID().toString()
+        val source = HoldingIdentity(MemberX500Name.parse("O=MGM,C=GB,L=London").toString(), groupId)
+        val destination = HoldingIdentity(MemberX500Name.parse("O=Alice,C=GB,L=London").toString(), groupId)
+        val requestId = UUID.randomUUID().toString()
+        val requestTimestamp = clock.instant().truncatedTo(ChronoUnit.MILLIS)
+        val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
+        val completableResult = CompletableFuture<Record<String, VerificationRequest>>()
+
+        // Set up subscription to gather results of processing p2p message
+        val verificationRequestSubscription = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("membership_p2p_test_receiver", MEMBERSHIP_VERIFICATION_TOPIC),
+            getDurableTestProcessor {
+                completableResult.complete(it)
+            },
+            messagingConfig = bootConfig,
+            null
+        ).also { it.start() }
+
+        val messageHeader = AuthenticatedMessageHeader(destination, source, 1000L, requestId, requestId, MEMBERSHIP_P2P_SUBSYSTEM)
+        val verificationRequest = VerificationRequest(
+            destination,
+            source,
+            requestId,
+            requestTimestamp,
+            requestBody
+        )
+
+        val sendFuture = p2pSender.publish(
+            listOf(
+                buildAuthenticatedP2PRequest(
+                    messageHeader,
+                    ByteBuffer.wrap(verificationRequestSerializer.serialize(verificationRequest))
+                )
+            )
+        )
+
+        val result = assertDoesNotThrow {
+            completableResult.getOrThrow(Duration.ofSeconds(5))
+        }
+        verificationRequestSubscription.close()
+
+        assertThat(sendFuture).hasSize(1)
+            .allSatisfy {
+                assertThat(it).isCompletedWithValue(Unit)
+            }
+        assertThat(sendFuture.single().isDone).isTrue
+
+        assertThat(result).isNotNull
+        assertThat(result.topic).isEqualTo(MEMBERSHIP_VERIFICATION_TOPIC)
+        assertThat(result.value?.requestId).isEqualTo(requestId)
+        assertThat(result.value?.source).isEqualTo(source)
+        assertThat(result.value?.destination).isEqualTo(destination)
+        assertThat(result.value?.requestTimestamp).isEqualTo(requestTimestamp)
+        assertThat(result.value?.payload).isEqualTo(requestBody)
+    }
+
     private fun buildUnauthenticatedP2PRequest(
         messageHeader: UnauthenticatedMessageHeader,
         payload: ByteBuffer
@@ -282,7 +357,25 @@ class MembershipP2PIntegrationTest {
         )
     }
 
-    private fun getTestProcessor(resultCollector: (RegistrationState?, Record<String, RegistrationCommand>) -> Unit): StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
+    private fun buildAuthenticatedP2PRequest(
+        messageHeader: AuthenticatedMessageHeader,
+        payload: ByteBuffer
+    ): Record<String, AppMessage> {
+        return Record(
+            Schemas.P2P.P2P_IN_TOPIC,
+            UUID.randomUUID().toString(),
+            AppMessage(
+                AuthenticatedMessage(
+                    messageHeader,
+                    payload
+                )
+            )
+        )
+    }
+
+    private fun getStateAndEventTestProcessor(
+        resultCollector: (RegistrationState?, Record<String, RegistrationCommand>) -> Unit
+    ): StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
         class TestProcessor : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
             override fun onNext(
                 state: RegistrationState?,
@@ -295,6 +388,27 @@ class MembershipP2PIntegrationTest {
             override val keyClass = String::class.java
             override val stateValueClass = RegistrationState::class.java
             override val eventValueClass = RegistrationCommand::class.java
+        }
+        return TestProcessor()
+    }
+
+    private fun getDurableTestProcessor(
+        resultCollector: (Record<String, VerificationRequest>) -> Unit
+    ): DurableProcessor<String, VerificationRequest> {
+        class TestProcessor : DurableProcessor<String, VerificationRequest> {
+            override fun onNext(events: List<Record<String, VerificationRequest>>): List<Record<*, *>> {
+                resultCollector(events.first())
+                return listOf(
+                    Record(
+                        "dummyTopic",
+                        "dummyKey",
+                        VerificationResponse("ID", clock.instant(), clock.instant(), KeyValuePairList(emptyList<KeyValuePair>()))
+                    )
+                )
+            }
+
+            override val keyClass = String::class.java
+            override val valueClass = VerificationRequest::class.java
         }
         return TestProcessor()
     }

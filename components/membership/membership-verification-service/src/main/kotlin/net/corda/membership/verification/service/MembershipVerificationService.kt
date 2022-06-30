@@ -4,8 +4,8 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 
 /**
- * Listens and responds to verification requests from the MGM.
+ * Listens and responds to verification requests sent by the MGM.
  */
-interface VerificationService : Lifecycle {
+interface MembershipVerificationService : Lifecycle {
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 }
