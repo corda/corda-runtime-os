@@ -64,7 +64,5 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
         assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
         assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
         assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL])
-
-        Thread.sleep(1_000_000)
     }
 }

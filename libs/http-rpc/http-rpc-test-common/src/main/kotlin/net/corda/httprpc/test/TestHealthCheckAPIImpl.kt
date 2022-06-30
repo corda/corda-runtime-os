@@ -5,6 +5,7 @@ import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.DuplexChannelCloseContext
 import net.corda.httprpc.ws.DuplexConnectContext
 import net.corda.httprpc.ws.impl.DefaultDuplexChannel
+import net.corda.lifecycle.Lifecycle
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -17,13 +18,25 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI> {
+class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI>, Lifecycle {
 
     override val targetInterface: Class<TestHealthCheckAPI>
         get() = TestHealthCheckAPI::class.java
 
     override val protocolVersion: Int
         get() = 2
+
+    private val scheduler = Executors.newScheduledThreadPool(1)
+
+    override val isRunning: Boolean
+        get() = !scheduler.isShutdown
+
+    override fun start() {
+    }
+
+    override fun stop() {
+        scheduler.shutdown()
+    }
 
     override fun void() = "Sane"
 
@@ -93,8 +106,6 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
     override fun echoPath(requestString: String): String {
         return requestString
     }
-
-    private val scheduler = Executors.newScheduledThreadPool(1)
 
     override fun counterFeed(): DuplexChannel {
 
