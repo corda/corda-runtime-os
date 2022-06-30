@@ -23,7 +23,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   P2POutMarkersDlqTopic:
     name: p2p.out.markers.dlq
@@ -39,7 +39,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   LinkInTopic:
     name: link.in
@@ -60,7 +60,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   GatewayTLSTruststoresTopic:
     name: gateway.tls.truststores
@@ -71,7 +71,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   SessionOutPartitionsTopic:
     name: session.out.partitions
@@ -82,7 +82,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   # Below are topics for stub components that will be removed after full integration with MGM/membership/crypto components
   P2PMembersInfoTopic:
@@ -94,7 +94,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   P2PGroupPoliciesTopic:
     name: p2p.group.policies
@@ -105,7 +105,7 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   P2PCryptoKeyTopic:
     name: p2p.crypto.keys
@@ -116,5 +116,5 @@ topics:
       segment.ms: 600000
       delete.retention.ms: 300000
       min.compaction.lag.ms: 60000
-      max.compaction.lag.ms: 300000
+      max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
