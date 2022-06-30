@@ -1,6 +1,10 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.ws.DuplexChannel
+import net.corda.httprpc.ws.DuplexChannelCloseContext
+import net.corda.httprpc.ws.DuplexConnectContext
+import net.corda.httprpc.ws.impl.DefaultDuplexChannel
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -8,6 +12,9 @@ import java.util.Calendar
 import java.util.Calendar.DAY_OF_YEAR
 import java.util.GregorianCalendar
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI> {
@@ -85,5 +92,36 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
 
     override fun echoPath(requestString: String): String {
         return requestString
+    }
+
+    private val scheduler = Executors.newScheduledThreadPool(1)
+
+    override fun counterFeed(): DuplexChannel {
+
+        var counter = 0
+        var scheduledFuture: ScheduledFuture<*>? = null
+
+        return object : DefaultDuplexChannel() {
+            override fun onConnect(connectContext: DuplexConnectContext) {
+                super.onConnect(connectContext)
+
+                scheduledFuture = scheduler.scheduleAtFixedRate(
+                    { connectContext.send("${counter++}") },
+                    10,
+                    10,
+                    TimeUnit.MILLISECONDS
+                )
+            }
+
+            override fun onClose(context: DuplexChannelCloseContext) {
+                scheduledFuture?.cancel(true)
+                super.onClose(context)
+            }
+
+            override fun close() {
+                scheduledFuture?.cancel(true)
+                super.close()
+            }
+        }
     }
 }
