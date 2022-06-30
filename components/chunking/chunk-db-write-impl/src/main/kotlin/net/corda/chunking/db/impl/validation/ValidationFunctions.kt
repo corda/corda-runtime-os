@@ -135,7 +135,7 @@ fun CpiPersistence.persistCpiToDatabase(
  */
 fun Cpi.validateAndGetGroupId(): String {
     if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
-    return GroupPolicyParser.groupId(this.metadata.groupPolicy!!)
+    return GroupPolicyParser.getOrCreateGroupId(this.metadata.groupPolicy!!)
 }
 
 /**
