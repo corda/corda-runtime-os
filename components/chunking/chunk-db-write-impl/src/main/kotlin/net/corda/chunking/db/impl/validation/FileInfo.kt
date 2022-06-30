@@ -12,7 +12,7 @@ import java.nio.file.Path
  * @param checksum the checksum of the file
  * @param properties a bag of miscellaneous properties
  * */
-internal data class FileInfo(val name: String, val path: Path, val checksum: SecureHash, val properties: Map<String, String?>?) {
+data class FileInfo(val name: String, val path: Path, val checksum: SecureHash, val properties: Map<String, String?>?) {
     val forceUpload: Boolean get() {
         return properties?.get(PropertyKeys.FORCE_UPLOAD)?.let { java.lang.Boolean.parseBoolean(it) } ?: false
     }
