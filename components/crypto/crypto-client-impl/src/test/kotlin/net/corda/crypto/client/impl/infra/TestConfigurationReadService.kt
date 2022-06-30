@@ -24,7 +24,7 @@ class TestConfigurationReadService(
         ConfigKeys.MESSAGING_CONFIG to emptyConfig
     )
 ) : ConfigurationReadService {
-    val coordinator = coordinatorFactory.createCoordinator(
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
@@ -61,13 +61,13 @@ class TestConfigurationReadService(
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }

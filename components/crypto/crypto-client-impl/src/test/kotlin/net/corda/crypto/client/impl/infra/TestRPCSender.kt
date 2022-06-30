@@ -17,7 +17,7 @@ class TestRPCSender<REQUEST, RESPONSE>(
         private val logger = contextLogger()
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator(subscriptionName) { event, coordinator ->
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(subscriptionName) { event, coordinator ->
         logger.info("LifecycleEvent received: $event")
         if(event is StartEvent) { coordinator.updateStatus(LifecycleStatus.UP) }
     }

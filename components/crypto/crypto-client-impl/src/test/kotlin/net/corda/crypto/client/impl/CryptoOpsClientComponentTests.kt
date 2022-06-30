@@ -1079,7 +1079,7 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
-    fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
+    fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             component.impl.ops
@@ -1090,11 +1090,35 @@ class CryptoOpsClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(component.impl.ops)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertNotNull(component.impl.ops)
+        assertEquals(0, sender.stopped.get())
+    }
+
+    @Test
+    fun `Should go UP and DOWN as its downstream dependencies go UP and DOWN`() {
+        assertFalse(component.isRunning)
+        assertThrows(IllegalStateException::class.java) {
+            component.impl.ops
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertNotNull(component.impl.ops)
+        sender.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        sender.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
@@ -1115,11 +1139,11 @@ class CryptoOpsClientComponentTests {
         }
         val originalImpl = component.impl
         assertNotNull(component.impl.ops)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
