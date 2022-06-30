@@ -9,7 +9,7 @@ import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
-
+/*
 @InitiatingFlow
 @StartableByRPC
 class CalculatorFlow(private val jsonArg: String) : Flow<String> {
@@ -42,4 +42,4 @@ class CalculatorFlow(private val jsonArg: String) : Flow<String> {
 
         return resultMessage
     }
-}
+} */

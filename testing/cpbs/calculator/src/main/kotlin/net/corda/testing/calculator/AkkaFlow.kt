@@ -69,7 +69,7 @@ class FlowDashboard(context: ActorContext<FlowCommands>, val senderIdentity: Str
         processes["TokenExample"] = context.spawn(TransferTokensProcess.create(context.self, senderIdentity), "TokenExample")
         processes["TokenExample-Responder"] = context.spawn(IssueTokensHell.IssueTokensHellResponder.create(context.self, senderIdentity), "TokenExample-Responder")
 
-        meh.tell(ExamplePersistentBehaviorCommands.ChangeTo("It works?"))
+     //   meh.tell(ExamplePersistentBehaviorCommands.ChangeTo("It works?"))
 
         return this
     }
@@ -363,6 +363,7 @@ class TransferTokensProcess(
             .onMessage(Commands.Issuing::class.java, ::onReceiveIssue)
             .onMessage(Commands.SaySomething::class.java, ::onSaySomething)
             .onMessage(Commands::class.java, ::uncaught)
+
             .build()
     }
 

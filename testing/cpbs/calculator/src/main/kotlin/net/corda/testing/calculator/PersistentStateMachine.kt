@@ -24,7 +24,7 @@ interface AuthenticatedCommunicator {
 
 sealed class WireMessage
 
-sealed class SessionMessage {
+open class SessionMessage {
     sealed class SystemMessages : SessionMessage() {
         data class SessionEstablished(val channel: FlowManager.SessionChannel) : SystemMessages()
     }
@@ -352,8 +352,9 @@ class PersistentStateMachine(
             object Fresh: StateMachineEvent() //Just started
         }
 
+        data class EventWrapper<T>(val event: T, val sender: ChannelIdentity)
 
-        fun<T: Any> onEvent(clazz: Class<*>, operation: Context.(T)->StateMachineEvent) = this.let { flowContext ->
+        fun<T: Any> onEvent(clazz: Class<*>, operation: Context.(EventWrapper<T>)->StateMachineEvent) = this.let { flowContext ->
             if (currentContextBuilder != null) throw IllegalStateException("Trying to build something weird")
 
             respondingStages[clazz] = ComputationPathContext()

@@ -1,4 +1,5 @@
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource
+import akka.actor.typed.javadsl.Behaviors
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
@@ -18,7 +19,7 @@ import kotlin.concurrent.thread
 
 @EnableRuleMigrationSupport
 class TestingTest {
-
+/*
     companion object {
         @ClassRule
         val testKit = TestKitJunitResource(EventSourcedBehaviorTestKit.config().withFallback(ConfigFactory.defaultApplication()))
@@ -34,6 +35,11 @@ class TestingTest {
         val example = Environment()
         example.nodes[0].issueTokens("PartyB", "PartyC", 25)
         Thread.sleep(10000)
+    }
+
+    @Test
+    fun `persistent flows`() {
+
     }
 
     @Test
@@ -73,8 +79,8 @@ class TestingTest {
                 val uuid = UUID.randomUUID().toString()
                 val sessionId = testEnvSpawnResponder!!.invoke(uuid)
 
-                establishPersistentSession("PartyA")
-                StateMachineEvent.WaitFor(String::class.java, sessionId)
+                //establishPersistentSession("PartyA")
+                return@start StateMachineEvent.WaitFor(String::class.java, sessionId)
 
             }.then { assetTypeID: String ->
 
@@ -105,6 +111,7 @@ class TestingTest {
             }.finally { computed: String ->
                 "Result: $computed"
             }
+
         }
     }
 
@@ -157,4 +164,5 @@ class TestingTest {
             Thread.sleep(3000)
         }
     } */
+} */
 }
