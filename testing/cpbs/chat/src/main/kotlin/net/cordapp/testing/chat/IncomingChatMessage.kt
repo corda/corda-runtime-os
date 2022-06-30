@@ -3,12 +3,7 @@ package net.cordapp.testing.chat
 import net.corda.v5.base.annotations.CordaSerializable
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.NamedQuery
-
-@NamedQuery(
-    name = "IncomingChatMessage.all",
-    query = "select * from IncomingChatMessage"
-)
+import javax.persistence.Id
 
 /**
  * An incoming chat message, one received by this member sent from another.
@@ -16,10 +11,9 @@ import javax.persistence.NamedQuery
 @CordaSerializable
 @Entity
 data class IncomingChatMessage(
+    @Id
     @Column
     val name: String,
     @Column
     val message: String
-) {
-    constructor() : this(name = "", message = "")
-}
+)

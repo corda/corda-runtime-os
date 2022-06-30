@@ -44,7 +44,7 @@ class ChatOutgoingFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
-        val inputs = requestBody.getRequestBodyAs<OutgoingChatMessage>(jsonMarshallingService)
+        val inputs = requestBody.getRequestBodyAs<ChatOutgoingFlowParameter>(jsonMarshallingService)
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
         inputs.message ?: throw IllegalArgumentException("Chat message not supplied")
 
@@ -90,9 +90,15 @@ class ChatIncomingFlow : ResponderFlow {
 }
 
 /**
- * Returns any outstanding messages unread to the caller. Read messages are removed from the store thus it becomes the
- * responsibility of the caller to keep track of them after this point. This mechanism allows a client to poll for new
- * messages to a member repeatedly, however precludes multiple clients reading chats to the same member.
+ * Returns any outstanding messages unread for the virtual node member. Read messages are removed from the store thus it
+ * becomes the responsibility of the caller to keep track of them after this point. This mechanism allows a client to
+ * poll for new messages to a member repeatedly, however precludes multiple clients reading chats to the same member.
+ * As an input parameter, the originating sender for which you wish to read messages much be supplied.
+ * JSON argument should look something like:
+ * {
+ *   "recipientX500Name": "CN=Alice, O=R3, L=London, C=GB"
+ * }
+ *
  * The output will look something like:
  * {
  *   "messages": [
@@ -125,7 +131,11 @@ class ChatReaderFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
-        with(MessageStore.readAndClear(persistenceService)) {
+
+        val inputs = requestBody.getRequestBodyAs<ChatReaderFlowParameter>(jsonMarshallingService)
+        inputs.fromName ?: throw IllegalArgumentException("Recipient X500 name not supplied")
+
+        with(MessageStore.readAndClear(persistenceService, inputs.fromName)) {
             log.info("Returning ${this.messages.size} unread messages")
             return jsonMarshallingService.format(this)
         }

@@ -5,6 +5,7 @@ import net.corda.v5.application.flows.RPCRequestData;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.messaging.FlowMessaging;
 import net.corda.v5.application.messaging.UntrustworthyData;
+import net.corda.v5.application.persistence.PersistenceService;
 import net.corda.v5.base.types.MemberX500Name;
 import net.cordapp.testing.chatframework.FlowMockHelper;
 import net.cordapp.testing.chatframework.FlowMockMessageLink;
@@ -37,12 +38,14 @@ public class ChatFlowCollaborationTestsJava {
                     .createMockService(FlowEngine.class));
     static final FlowMockHelper incomingFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
-                    .createMockService(FlowEngine.class));
+                    .createMockService(FlowEngine.class)
+                    .createMockService(PersistenceService.class));
 
     static final FlowMockHelper readerFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
                     .createMockService(FlowEngine.class)
-                    .createMockService(JsonMarshallingService.class));
+                    .createMockService(JsonMarshallingService.class)
+                    .createMockService(PersistenceService.class));
 
     static final ChatOutgoingFlow outgoingChatFlow = outgoingFlowMockHelper.createFlow(ChatOutgoingFlow.class);
     static final ChatIncomingFlow incomingChatFlow = incomingFlowMockHelper.createFlow(ChatIncomingFlow.class);
@@ -69,8 +72,8 @@ public class ChatFlowCollaborationTestsJava {
         RPCRequestData requestData = mock(RPCRequestData.class);
         when(requestData.getRequestBodyAs(
                 (JsonMarshallingService) outgoingFlowMockHelper.getMockService(JsonMarshallingService.class),
-                OutgoingChatMessage.class)
-        ).thenReturn(new OutgoingChatMessage(RECIPIENT_X500_NAME, MESSAGE));
+                ChatOutgoingFlowParameter.class)
+        ).thenReturn(new ChatOutgoingFlowParameter(RECIPIENT_X500_NAME, MESSAGE));
 
         executeConcurrently(() -> {
                     outgoingChatFlow.call(requestData);
