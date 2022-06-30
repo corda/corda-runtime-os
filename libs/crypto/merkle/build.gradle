@@ -18,6 +18,8 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:crypto:cipher-suite-impl")
 
     implementation project(":libs:crypto:crypto-core")
 

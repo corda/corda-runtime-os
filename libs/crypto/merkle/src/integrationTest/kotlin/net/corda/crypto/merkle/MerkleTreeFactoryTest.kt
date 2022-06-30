@@ -6,7 +6,7 @@ import net.corda.crypto.core.toByteArray
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.merkle.MerkleService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -16,10 +16,10 @@ import org.osgi.test.common.annotation.InjectService
 
 @TestInstance(PER_CLASS)
 @Suppress("FunctionName")
-class MerkleServiceTest {
+class MerkleTreeFactoryTest {
 
     @InjectService(timeout = 1000)
-    lateinit var merkleService: MerkleService
+    lateinit var merkleTreeFactory: MerkleTreeFactory
 
     private val digestAlgorithm = DigestAlgorithmName.SHA2_256D
     private lateinit var digestService: DigestService
@@ -42,7 +42,7 @@ class MerkleServiceTest {
 
         val leafData = (0 until 8).map { it.toByteArray() }
         val merkleTreeDirect = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
-        val merkleTreeFromService = merkleService.createTree(leafData, nonceHashDigestProvider)
+        val merkleTreeFromService = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
 
         assertEquals(merkleTreeDirect.root, merkleTreeFromService.root)
     }
