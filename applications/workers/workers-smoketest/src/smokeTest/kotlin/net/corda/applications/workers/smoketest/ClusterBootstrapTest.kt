@@ -30,7 +30,9 @@ class ClusterBootstrapTest {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
             // check all workers are up and "ready"
-            healthChecks.map {
+            healthChecks
+                .filter { it.value.isNullOrBlank() }
+                .map {
                 async {
                     val response = tryUntil(Duration.ofSeconds(120)) { checkReady(it.key, it.value) }
                     if (response)
