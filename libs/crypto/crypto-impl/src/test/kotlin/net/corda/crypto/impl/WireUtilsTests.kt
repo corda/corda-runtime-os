@@ -90,7 +90,7 @@ class WireUtilsTests {
                 KeyValuePair("key1", "value1")
             )
         )
-        val ctx = createWireRequestContext<WireUtilsTests>(tenantId, other)
+        val ctx = createWireRequestContext<WireUtilsTests>(UUID.randomUUID().toString(), tenantId, other)
         assertEquals(WireUtilsTests::class.simpleName, ctx.requestingComponent)
         assertThat(ctx.requestTimestamp)
             .isAfterOrEqualTo(Instant.now().minusSeconds(30))

@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,7 +30,7 @@ class FindRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Find): FlowEventContext<Any> {
         val findRequest = FindEntity(request.className, ByteBuffer.wrap(request.primaryKey))
         val checkpoint = context.checkpoint
-        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity, findRequest)
+        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity.toAvro(), findRequest)
         return context.apply { checkpoint.persistenceState = persistenceManager.processMessageToSend(request.requestId, entityRequest) }
     }
 }

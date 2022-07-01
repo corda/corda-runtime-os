@@ -35,6 +35,8 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun cryptoSignEvents(vararg requestId: String)
+
     fun scheduleFlowMapperCleanupEvents(vararg key: String)
 
     fun flowDidNotResume()
