@@ -1,0 +1,13 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.section {
+    background-color: var(--color-light-gray-400);
+    border-radius: var(--rounded-lg);
+    padding: var(--p-6);
+    height: fit-content;
+}
+
+.title {
+    opacity: 0.75;
+    font-size: var(--text-4xl);
+}

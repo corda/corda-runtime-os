@@ -1,18 +1,11 @@
-import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
+import style from './formContentWrapper.module.scss';
 
 type Props = {
     children?: React.ReactNode;
 };
 
 const FormContentWrapper: React.FC<Props> = ({ children }) => {
-    const isMobile = useMobileMediaQuery();
-    return (
-        <div
-            className={`max-w-md ${isMobile ? 'pl-4' : 'pl-8'} pr-6 mt-6 flex flex-col ${isMobile ? 'gap-6' : 'gap-8'}`}
-        >
-            {children}
-        </div>
-    );
+    return <div className={style.formContentWrapper}>{children}</div>;
 };
 
 export default FormContentWrapper;

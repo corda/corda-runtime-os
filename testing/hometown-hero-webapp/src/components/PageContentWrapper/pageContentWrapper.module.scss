@@ -1,0 +1,18 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.pageContentWrapper {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 65px);
+
+    padding-top: var(--p-2);
+    padding-left: var(--p-8);
+
+    @include phone-only {
+        padding-left: 0px;
+    }
+
+    @include phone-up {
+        min-height: 98vh;
+    }
+}

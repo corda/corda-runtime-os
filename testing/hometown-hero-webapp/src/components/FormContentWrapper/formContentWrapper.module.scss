@@ -1,0 +1,16 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.formContentWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: var(--max-w-md);
+    margin-top: var(--m-6);
+    padding-right: var(--p-6);
+    padding-left: var(--p-8);
+
+    @include phone-only {
+        padding-left: var(--p-4);
+        gap: 12px;
+    }
+}

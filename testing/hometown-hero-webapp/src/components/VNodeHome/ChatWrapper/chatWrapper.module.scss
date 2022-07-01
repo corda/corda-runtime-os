@@ -1,0 +1,8 @@
+.chatWrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: var(--m-8);
+    margin-left: var(--m-4);
+}

@@ -1,0 +1,23 @@
+.selectedParticipantsWrapper {
+    display: flex;
+    margin-bottom: var(--m-2);
+}
+
+.text {
+    margin: auto auto auto var(--m-2);
+    font-size: var(--text-md);
+    color: var(--color-blue);
+}
+
+.clearButton {
+    margin: auto var(--m-4) auto auto;
+}
+
+.blue {
+    color: var(--color-blue);
+}
+
+.error {
+    color: var(--color-red);
+    opacity: 0.75;
+}
