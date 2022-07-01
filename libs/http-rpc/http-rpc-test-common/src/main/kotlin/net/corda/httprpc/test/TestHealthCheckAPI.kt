@@ -112,5 +112,9 @@ interface TestHealthCheckAPI : RpcOps {
     fun echoPath(@HttpRpcPathParameter(name = "requestString", description = "The name") requestString: String): String
 
     @HttpRpcGET(path = "counterFeed", responseDescription = "Given number supplied produces a WebSocket feed incrementing it")
-    fun counterFeed(): DuplexChannel
+    fun counterFeed(
+        channel: DuplexChannel/*,
+        @HttpRpcPathParameter start: Int,
+        @HttpRpcQueryParameter(required = false) range: Int?*/
+    )
 }

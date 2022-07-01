@@ -2,10 +2,9 @@ package net.corda.httprpc.test
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.ws.DuplexChannel
-import net.corda.httprpc.ws.DuplexChannelCloseContext
-import net.corda.httprpc.ws.DuplexConnectContext
-import net.corda.httprpc.ws.impl.DefaultDuplexChannel
 import net.corda.lifecycle.Lifecycle
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -19,6 +18,10 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI>, Lifecycle {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     override val targetInterface: Class<TestHealthCheckAPI>
         get() = TestHealthCheckAPI::class.java
@@ -107,32 +110,31 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
         return requestString
     }
 
-    override fun counterFeed(): DuplexChannel {
+    override fun counterFeed(channel: DuplexChannel/*, start: Int, range: Int?*/)  {
 
-        var counter = 0
+        var counter = 0 //start
         var scheduledFuture: ScheduledFuture<*>? = null
 
-        return object : DefaultDuplexChannel() {
-            override fun onConnect(connectContext: DuplexConnectContext) {
-                super.onConnect(connectContext)
-
-                scheduledFuture = scheduler.scheduleAtFixedRate(
-                    { connectContext.send("${counter++}") },
-                    10,
-                    10,
-                    TimeUnit.MILLISECONDS
-                )
-            }
-
-            override fun onClose(context: DuplexChannelCloseContext) {
-                scheduledFuture?.cancel(true)
-                super.onClose(context)
-            }
-
-            override fun close() {
-                scheduledFuture?.cancel(true)
-                super.close()
-            }
+        channel.onConnect = {
+            log.info("onConnect")
+            scheduledFuture = scheduler.scheduleAtFixedRate(
+                {
+                    log.debug { "Sending: $counter" }
+                    channel.send("${counter++}")
+                    /*if (range != null) {
+                        if (counter >= start + range - 1) {
+                            channel.close()
+                        }
+                    }*/
+                },
+                10,
+                10,
+                TimeUnit.MILLISECONDS
+            )
+        }
+        channel.onClose = { statusCode, reason ->
+            log.info("onClose : $statusCode - $reason")
+            scheduledFuture?.cancel(true)
         }
     }
 }

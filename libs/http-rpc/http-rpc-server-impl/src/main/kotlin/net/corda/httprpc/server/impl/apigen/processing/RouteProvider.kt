@@ -5,10 +5,7 @@ import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
-import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexCloseContextImpl
-import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexConnectContextImpl
-import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexErrorContextImpl
-import net.corda.httprpc.server.impl.apigen.processing.ws.DuplexTextMessageContextImpl
+import net.corda.httprpc.server.impl.apigen.processing.ws.WebsocketRouteAdaptor
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.isDuplexRoute
@@ -159,11 +156,11 @@ internal class RouteInfo(
         return { wsConfig ->
             log.info("Setting-up WS call for '$fullPath'")
             try {
-                val result = invokeDelegatedMethod() as DuplexChannel
-                wsConfig.onMessage { result.onMessage(DuplexTextMessageContextImpl.from(it)) }
-                wsConfig.onClose { result.onClose(DuplexCloseContextImpl.from(it)) }
-                wsConfig.onConnect { result.onConnect(DuplexConnectContextImpl.from(it)) }
-                wsConfig.onError { result.onError(DuplexErrorContextImpl.from(it)) }
+                val adaptor = WebsocketRouteAdaptor(this)
+                wsConfig.onMessage(adaptor)
+                wsConfig.onClose(adaptor)
+                wsConfig.onConnect(adaptor)
+                wsConfig.onError(adaptor)
 
                 log.debug { "Setting-up WS call for '$fullPath' completed." }
             } catch (e: Exception) {

@@ -16,5 +16,5 @@ fun Method.isStaticallyExposedGet(): Boolean {
 }
 
 fun Method.isDuplexRoute(): Boolean {
-    return returnType == DuplexChannel::class.java
+    return parameters.isNotEmpty() && parameters[0].type == DuplexChannel::class.java
 }

@@ -14,7 +14,9 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
+import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.Session
+import org.eclipse.jetty.websocket.api.StatusCode
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 import org.eclipse.jetty.websocket.client.WebSocketClient
@@ -104,6 +106,7 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
             override fun onWebSocketText(message: String) {
                 list.add(message)
                 if (list.size >= desiredCount) {
+                    log.info("All received")
                     closeLatch.countDown()
                 }
             }
@@ -130,14 +133,12 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
         val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest()/*, upgradeListener*/)
             .get(10, TimeUnit.SECONDS)
-
         log.info("Session established: $session")
-
         closeLatch.await()
-
+        session.close(CloseStatus(StatusCode.NORMAL, "All items received. Thank you!"))
         wsClient.stop()
 
         val expectedContent = (0..99).map { "$it" }
-        assertThat(list).isEqualTo(expectedContent)
+        assertThat(list).containsAll(expectedContent)
     }
 }
