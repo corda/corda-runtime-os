@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl.apigen.processing.ws
 
 import io.javalin.websocket.WsConnectContext
 import net.corda.httprpc.ws.DuplexChannel
+import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.util.concurrent.Future
 
@@ -17,8 +18,9 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
     }
 
     override fun close() {
-        closeHook?.let { it(StatusCode.NORMAL, "Server closed") }
-        ctx.closeSession()
+        val closeStatus = CloseStatus(StatusCode.NORMAL, "Server closed")
+        closeHook?.let { it(closeStatus.code, closeStatus.phrase) }
+        ctx.closeSession(closeStatus)
     }
 
     override var onConnect: (() -> Unit)?
