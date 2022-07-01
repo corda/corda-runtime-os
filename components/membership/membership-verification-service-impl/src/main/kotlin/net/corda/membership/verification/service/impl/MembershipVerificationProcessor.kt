@@ -40,7 +40,7 @@ class MembershipVerificationProcessor(
                 it.value?.source,
                 // member
                 it.value?.destination,
-                TTL,
+                it.value?.requestTimestamp?.plusMillis(TTL)?.toEpochMilli(),
                 it.value?.requestId,
                 it.value?.requestId,
                 MEMBERSHIP_P2P_SUBSYSTEM

@@ -58,7 +58,7 @@ class MembershipVerificationProcessorTest {
         with(appMessage.message as AuthenticatedMessage) {
             assertThat(this.header.source).isEqualTo(member)
             assertThat(this.header.destination).isEqualTo(mgm)
-            assertThat(this.header.ttl).isEqualTo(1000L)
+            assertThat(this.header.ttl).isEqualTo(response.firstValue.requestTimestamp.plusMillis(1000L).toEpochMilli())
             assertThat(this.header.messageId).isEqualTo(REQUEST_ID)
             assertThat(this.header.traceId).isEqualTo(REQUEST_ID)
             assertThat(this.header.subsystem).isEqualTo("membership")

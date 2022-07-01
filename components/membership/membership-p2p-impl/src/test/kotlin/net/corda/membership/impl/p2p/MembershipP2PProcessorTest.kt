@@ -190,7 +190,12 @@ class MembershipP2PProcessorTest {
         return AppMessage(
             AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    destination, source, 1000L, "mid", "tid", MEMBERSHIP_P2P_SUBSYSTEM
+                    destination,
+                    source,
+                    clock.instant().plusMillis(1000L).toEpochMilli(),
+                    "mid",
+                    "tid",
+                    MEMBERSHIP_P2P_SUBSYSTEM
                 ),
                 this
             )
