@@ -1,12 +1,14 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.tests
 
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.crypto.core.toByteArray
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.crypto.core.toByteArray
+import net.corda.crypto.merkle.MerkleTreeImpl
+import net.corda.crypto.merkle.NonceHashDigestProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
