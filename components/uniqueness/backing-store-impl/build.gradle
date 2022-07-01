@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Backing store component implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+
+    api project(':libs:lifecycle:lifecycle')
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+}
