@@ -44,22 +44,6 @@ class MerkleTreeFactoryImplTest {
     }
 
     @Test
-    fun createProof() {
-        val leafData = (0 until 8).map { it.toByteArray() }
-        var indices = listOf(1,3,5)
-
-        val merkleTreeDirect = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
-        val proofDirect = merkleTreeDirect.createAuditProof(indices)
-
-        val merkleTreeFromFactory = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
-        val proofFromService = merkleTreeFromFactory.createAuditProof(indices)
-
-        assertEquals(proofDirect, proofFromService)
-        assertTrue(proofDirect.verify(merkleTreeFromFactory.root, nonceHashDigestProvider))
-        assertTrue(proofFromService.verify(merkleTreeDirect.root, nonceHashDigestProvider))
-    }
-
-    @Test
     fun createHashDigestProvider() {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(

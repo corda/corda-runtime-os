@@ -2,8 +2,6 @@ package net.corda.crypto.merkle
 
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -19,12 +17,6 @@ class MerkleTreeFactoryImpl @Activate constructor(
 ) : MerkleTreeFactory, SingletonSerializeAsToken {
     override fun createTree(leaves: List<ByteArray>, digestProvider: MerkleTreeHashDigestProvider) =
         MerkleTreeImpl(leaves, digestProvider)
-
-    override fun createProof(
-        treeSize: Int,
-        leaves: List<IndexedMerkleLeaf>,
-        hashes: List<SecureHash>
-    ) = MerkleProofImpl(treeSize, leaves, hashes)
 
     override fun createHashDigestProvider(
         merkleTreeHashDigestProviderName: String,
