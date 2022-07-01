@@ -9,7 +9,6 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -23,20 +22,16 @@ import org.mockito.kotlin.mock
 class MembershipVerificationProcessorTest {
     private companion object {
         const val GROUP_ID = "ABC123"
-        const val REQUEST_ID = "REQ-01"
-
-        val clock = UTCClock()
+        const val REGISTRATION_ID = "REG-01"
     }
 
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
     private val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
-    private val requestTimestamp = clock.instant()
     private val verificationRequest = VerificationRequest(
         member,
         mgm,
-        REQUEST_ID,
-        requestTimestamp,
+        REGISTRATION_ID,
         requestBody
     )
 
@@ -58,15 +53,13 @@ class MembershipVerificationProcessorTest {
         with(appMessage.message as AuthenticatedMessage) {
             assertThat(this.header.source).isEqualTo(member)
             assertThat(this.header.destination).isEqualTo(mgm)
-            assertThat(this.header.ttl).isEqualTo(response.firstValue.responseTimestamp.plusMillis(1000L).toEpochMilli())
-            assertThat(this.header.messageId).isEqualTo(REQUEST_ID)
-            assertThat(this.header.traceId).isEqualTo(REQUEST_ID)
+            assertThat(this.header.ttl).isNotNull
+            assertThat(this.header.messageId).isNotNull
+            assertThat(this.header.traceId).isNull()
             assertThat(this.header.subsystem).isEqualTo("membership")
         }
         with(response.firstValue) {
-            assertThat(this.requestId).isEqualTo(REQUEST_ID)
-            assertThat(this.requestTimestamp).isEqualTo(requestTimestamp)
-            assertThat(this.responseTimestamp).isAfter(requestTimestamp)
+            assertThat(this.registrationId).isEqualTo(REGISTRATION_ID)
         }
     }
 }

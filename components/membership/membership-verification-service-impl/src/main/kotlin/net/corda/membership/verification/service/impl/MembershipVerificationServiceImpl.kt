@@ -44,20 +44,20 @@ class MembershipVerificationServiceImpl @Activate constructor(
     private companion object {
         val logger = contextLogger()
 
-        @Volatile
-        var dependencyHandle: RegistrationHandle? = null
-
-        @Volatile
-        var subHandle: RegistrationHandle? = null
-
-        @Volatile
-        var configHandle: AutoCloseable? = null
-
-        @Volatile
-        var subscription: Subscription<String, VerificationRequest>? = null
-
         const val GROUP_NAME = "membership.verification.service"
     }
+
+    @Volatile
+    private var dependencyHandle: RegistrationHandle? = null
+
+    @Volatile
+    private var subHandle: RegistrationHandle? = null
+
+    @Volatile
+    private var configHandle: AutoCloseable? = null
+
+    @Volatile
+    private var subscription: Subscription<String, VerificationRequest>? = null
 
     override val lifecycleCoordinatorName =
         LifecycleCoordinatorName.forComponent<MembershipVerificationService>()

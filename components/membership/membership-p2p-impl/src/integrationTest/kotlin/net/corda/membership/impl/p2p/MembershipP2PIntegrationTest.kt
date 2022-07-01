@@ -288,7 +288,7 @@ class MembershipP2PIntegrationTest {
         val groupId = UUID.randomUUID().toString()
         val source = HoldingIdentity(MemberX500Name.parse("O=MGM,C=GB,L=London").toString(), groupId)
         val destination = HoldingIdentity(MemberX500Name.parse("O=Alice,C=GB,L=London").toString(), groupId)
-        val requestId = UUID.randomUUID().toString()
+        val registrationId = UUID.randomUUID().toString()
         val requestTimestamp = clock.instant().truncatedTo(ChronoUnit.MILLIS)
         val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
         val completableResult = CompletableFuture<Record<String, VerificationRequest>>()
@@ -307,15 +307,14 @@ class MembershipP2PIntegrationTest {
             destination,
             source,
             requestTimestamp.plusMillis(1000L).toEpochMilli(),
-            requestId,
-            requestId,
+            registrationId,
+            null,
             MEMBERSHIP_P2P_SUBSYSTEM
         )
         val verificationRequest = VerificationRequest(
             destination,
             source,
-            requestId,
-            requestTimestamp,
+            registrationId,
             requestBody
         )
 
@@ -341,10 +340,9 @@ class MembershipP2PIntegrationTest {
 
         assertThat(result).isNotNull
         assertThat(result.topic).isEqualTo(MEMBERSHIP_VERIFICATION_TOPIC)
-        assertThat(result.value?.requestId).isEqualTo(requestId)
+        assertThat(result.value?.registrationId).isEqualTo(registrationId)
         assertThat(result.value?.source).isEqualTo(source)
         assertThat(result.value?.destination).isEqualTo(destination)
-        assertThat(result.value?.requestTimestamp).isEqualTo(requestTimestamp)
         assertThat(result.value?.payload).isEqualTo(requestBody)
     }
 
@@ -409,7 +407,7 @@ class MembershipP2PIntegrationTest {
                     Record(
                         "dummyTopic",
                         "dummyKey",
-                        VerificationResponse("ID", clock.instant(), clock.instant(), KeyValuePairList(emptyList<KeyValuePair>()))
+                        VerificationResponse("ID", KeyValuePairList(emptyList<KeyValuePair>()))
                     )
                 )
             }
