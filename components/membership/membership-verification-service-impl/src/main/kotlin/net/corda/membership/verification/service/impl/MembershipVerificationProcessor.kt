@@ -34,13 +34,14 @@ class MembershipVerificationProcessor(
     override fun onNext(events: List<Record<String, VerificationRequest>>): List<Record<*, *>> {
         logger.info("Handling request")
         return events.map {
+            val responseTimestamp = clock.instant()
             val authenticatedMessageHeader = AuthenticatedMessageHeader(
                 // we need to switch here the source and destination
                 // MGM
                 it.value?.source,
                 // member
                 it.value?.destination,
-                it.value?.requestTimestamp?.plusMillis(TTL)?.toEpochMilli(),
+                responseTimestamp.plusMillis(TTL)?.toEpochMilli(),
                 it.value?.requestId,
                 it.value?.requestId,
                 MEMBERSHIP_P2P_SUBSYSTEM
@@ -52,7 +53,7 @@ class MembershipVerificationProcessor(
                         VerificationResponse(
                             it.value?.requestId,
                             it.value?.requestTimestamp,
-                            clock.instant(),
+                            responseTimestamp,
                             KeyValuePairList(emptyList<KeyValuePair>())
                         )
                     )
