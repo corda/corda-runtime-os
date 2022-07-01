@@ -2,7 +2,6 @@ package net.corda.httprpc.server.impl.apigen.processing.ws
 
 import io.javalin.websocket.WsConnectContext
 import net.corda.httprpc.ws.DuplexChannel
-import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.util.concurrent.Future
 

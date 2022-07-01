@@ -10,7 +10,6 @@ import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.isDuplexRoute
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger

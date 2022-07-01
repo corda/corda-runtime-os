@@ -266,7 +266,8 @@ private fun Resource.toTag(): Tag {
 private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider): Map<String, PathItem> {
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
     return this.endpoints.groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
-        val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method && !endpoint.invocationMethod.method.isDuplexRoute() }
+        val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method &&
+                !endpoint.invocationMethod.method.isDuplexRoute() }
         val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
         val putEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.PUT == endpoint.method }
         val deleteEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.DELETE == endpoint.method }

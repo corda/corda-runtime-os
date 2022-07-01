@@ -27,7 +27,7 @@ internal class WebsocketRouteAdaptor(private val routeInfo: RouteInfo) : WsMessa
 
         ServerDuplexChannel(ctx).let { newChannel ->
             channel = newChannel
-            // TODO: Decode params
+            // Decode params
             routeInfo.invokeDelegatedMethod(newChannel)
             newChannel.onConnect?.let { it() }
         }
