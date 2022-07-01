@@ -303,7 +303,14 @@ class MembershipP2PIntegrationTest {
             null
         ).also { it.start() }
 
-        val messageHeader = AuthenticatedMessageHeader(destination, source, 1000L, requestId, requestId, MEMBERSHIP_P2P_SUBSYSTEM)
+        val messageHeader = AuthenticatedMessageHeader(
+            destination,
+            source,
+            requestTimestamp.plusMillis(1000L).toEpochMilli(),
+            requestId,
+            requestId,
+            MEMBERSHIP_P2P_SUBSYSTEM
+        )
         val verificationRequest = VerificationRequest(
             destination,
             source,
