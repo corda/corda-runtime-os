@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventContext
 
 /**

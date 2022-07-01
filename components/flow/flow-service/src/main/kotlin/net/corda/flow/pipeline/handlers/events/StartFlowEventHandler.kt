@@ -13,8 +13,7 @@ class StartFlowEventHandler : FlowEventHandler<StartFlow> {
 
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
         if (!context.checkpoint.inRetryState) {
-            context.checkpoint.initFromNew(
-                context.inputEvent.flowId,
+            context.checkpoint.initFlowState(
                 context.inputEventPayload.startContext,
             )
         }

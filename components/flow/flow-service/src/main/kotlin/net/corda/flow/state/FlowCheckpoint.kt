@@ -1,16 +1,16 @@
 package net.corda.flow.state
 
-import java.nio.ByteBuffer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.serialization.checkpoint.NonSerializable
+import java.nio.ByteBuffer
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
@@ -47,7 +47,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val pendingPlatformError: ExceptionEnvelope?
 
-    fun initFromNew(flowId: String, flowStartContext: FlowStartContext)
+    fun initFlowState(flowStartContext: FlowStartContext)
 
     fun getSessionState(sessionId: String): SessionState?
 

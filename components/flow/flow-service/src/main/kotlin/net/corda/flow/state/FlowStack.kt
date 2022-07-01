@@ -1,7 +1,7 @@
 package net.corda.flow.state
 
-import net.corda.data.flow.FlowStackItem
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 

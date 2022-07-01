@@ -43,6 +43,7 @@ class ChatOutgoingFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
+        log.info("Added some extra logging")
         val inputs = requestBody.getRequestBodyAs<OutgoingChatMessage>(jsonMarshallingService)
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
         inputs.message ?: throw IllegalArgumentException("Chat message not supplied")

@@ -22,7 +22,7 @@ class StartFlowEventHandlerTest {
     fun `initialises the flow checkpoint from the avro checkpoint`() {
         val inputContext = buildFlowEventContext(mock(), inputEventPayload = startFlow, flowId = flowId)
         handler.preProcess(inputContext)
-        verify(inputContext.checkpoint).initFromNew(flowId, startFlow.startContext)
+        verify(inputContext.checkpoint).initFlowState(startFlow.startContext)
         verify(inputContext.checkpoint).waitingFor = WaitingFor(WaitingForStartFlow)
     }
 
@@ -33,7 +33,7 @@ class StartFlowEventHandlerTest {
 
         handler.preProcess(inputContext)
 
-        verify(inputContext.checkpoint, times(0)).initFromNew(any(),any())
+        verify(inputContext.checkpoint, times(0)).initFlowState(any())
         verify(inputContext.checkpoint).waitingFor = WaitingFor(WaitingForStartFlow)
     }
 }

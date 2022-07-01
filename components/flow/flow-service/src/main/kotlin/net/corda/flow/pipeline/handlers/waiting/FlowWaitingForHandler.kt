@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting
 
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 

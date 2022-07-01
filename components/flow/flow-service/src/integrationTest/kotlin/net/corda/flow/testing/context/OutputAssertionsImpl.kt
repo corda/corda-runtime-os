@@ -12,7 +12,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
@@ -136,13 +136,13 @@ class OutputAssertionsImpl(
 
     override fun hasPendingUserException() {
         asserts.add{ testRun ->
-            assertThat(testRun.response?.updatedState?.pendingPlatformError).isNotNull()
+            assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNotNull()
         }
     }
 
     override fun noPendingUserException() {
         asserts.add{ testRun ->
-            assertThat(testRun.response?.updatedState?.pendingPlatformError).isNull()
+            assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNull()
         }
     }
 
@@ -155,8 +155,8 @@ class OutputAssertionsImpl(
 
     override fun checkpointHasRetry(expectedCount: Int) {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.retryState).isNotNull
-            val retry = testRun.response!!.updatedState!!.retryState
+            assertThat(testRun.response?.updatedState?.pipelineState?.retryState).isNotNull
+            val retry = testRun.response!!.updatedState!!.pipelineState!!.retryState
 
             assertThat(retry.retryCount).isEqualTo(expectedCount)
 
@@ -173,7 +173,7 @@ class OutputAssertionsImpl(
 
     override fun checkpointDoesNotHaveRetry() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.retryState).isNull()
+            assertThat(testRun.response?.updatedState?.pipelineState?.retryState).isNull()
         }
     }
 

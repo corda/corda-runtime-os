@@ -4,12 +4,13 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.RetryState
-import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.checkpoint.PipelineState
+import net.corda.data.flow.state.checkpoint.RetryState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
@@ -35,7 +36,7 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `accessing checkpoint before initialisation should throw`() {
-        val flowCheckpoint = createFlowCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(Checkpoint())
 
         assertThrows<IllegalStateException> { flowCheckpoint.flowId }
         assertThrows<IllegalStateException> { flowCheckpoint.flowStack }
@@ -47,10 +48,12 @@ class FlowCheckpointImplTest {
     @Test
     fun `existing checkpoint - ensures flow stack items are initialised`() {
         val flowStackItem = FlowStackItem()
-        val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext()
             flowStackItems = listOf(flowStackItem)
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
@@ -59,8 +62,11 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `existing checkpoint - guard against null flow state`() {
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext()
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
         val error = assertThrows<IllegalStateException> { createFlowCheckpoint(checkpoint) }
@@ -70,8 +76,9 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `existing checkpoint - guard against null flow start context`() {
+        val newFlowState = FlowState()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
+            flowState = newFlowState
         }
 
         val error = assertThrows<IllegalStateException> { createFlowCheckpoint(checkpoint) }
@@ -83,11 +90,13 @@ class FlowCheckpointImplTest {
     fun `existing checkpoint - guard against duplicate sessions`() {
         val session1 = SessionState().apply { sessionId = "S1" }
         val session2 = SessionState().apply { sessionId = "S1" }
+        val newFlowState = FlowState().apply {
+            sessions = listOf(session1, session2)
+            flowStartContext = FlowStartContext()
+        }
         val checkpoint = Checkpoint().apply {
             flowId = "F1"
-            sessions = listOf(session1, session2)
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
+            flowState = newFlowState
         }
 
         val error = assertThrows<IllegalStateException> { createFlowCheckpoint(checkpoint) }
@@ -99,10 +108,13 @@ class FlowCheckpointImplTest {
     fun `existing checkpoint - sets sessions`() {
         val session1 = SessionState().apply { sessionId = "S1" }
         val session2 = SessionState().apply { sessionId = "S2" }
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             sessions = listOf(session1, session2)
-            flowState = StateMachineState()
             flowStartContext = FlowStartContext()
+        }
+        val checkpoint = Checkpoint().apply {
+            flowId = "F1"
+            flowState = newFlowState
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
@@ -112,10 +124,12 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `existing checkpoint - sets flow id`() {
+        val newFlowState = FlowState().apply {
+            flowStartContext = FlowStartContext()
+        }
         val checkpoint = Checkpoint().apply {
             flowId = "F1"
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
+            flowState = newFlowState
         }
 
         assertThat(createFlowCheckpoint(checkpoint).flowId).isEqualTo("F1")
@@ -124,12 +138,13 @@ class FlowCheckpointImplTest {
     @Test
     fun `existing checkpoint - sets flow key`() {
         val flowKey = FlowKey("R1", BOB_X500_HOLDING_IDENTITY)
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext().apply {
                 statusKey = flowKey
-                flowState = StateMachineState()
-                flowStartContext = FlowStartContext()
             }
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
         assertThat(createFlowCheckpoint(checkpoint).flowKey).isEqualTo(flowKey)
@@ -138,13 +153,14 @@ class FlowCheckpointImplTest {
     @Test
     fun `existing checkpoint - sets holding identity`() {
         val flowKey = FlowKey("R1", BOB_X500_HOLDING_IDENTITY)
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext().apply {
                 statusKey = flowKey
                 identity = BOB_X500_HOLDING_IDENTITY
-                flowState = StateMachineState()
-                flowStartContext = FlowStartContext()
             }
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
         assertThat(createFlowCheckpoint(checkpoint).holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY)
@@ -154,8 +170,9 @@ class FlowCheckpointImplTest {
     fun `existing checkpoint - sets flow start context`() {
         val context = FlowStartContext()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = context
+            flowState = FlowState().apply {
+                flowStartContext = context
+            }
         }
 
         assertThat(createFlowCheckpoint(checkpoint).flowStartContext).isEqualTo(context)
@@ -163,11 +180,12 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `existing checkpoint - sets suspended on`() {
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext()
-            flowState = StateMachineState().apply {
-                suspendedOn = "classA"
-            }
+            suspendedOn = "classA"
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
         assertThat(createFlowCheckpoint(checkpoint).suspendedOn).isEqualTo("classA")
@@ -175,37 +193,42 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `existing checkpoint - sets waiting for`() {
-        val waitingFor = WaitingFor(Any())
-        val checkpoint = Checkpoint().apply {
+        val newWaitingFor = WaitingFor(Any())
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext()
-            flowState = StateMachineState().apply {
-                this.waitingFor = waitingFor
-            }
+            waitingFor = newWaitingFor
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
-        assertThat(createFlowCheckpoint(checkpoint).waitingFor).isEqualTo(waitingFor)
+        assertThat(createFlowCheckpoint(checkpoint).waitingFor).isEqualTo(newWaitingFor)
     }
 
     @Test
     fun `existing checkpoint - sets serialised fiber`() {
-        val fiber = ByteBuffer.wrap(byteArrayOf())
-        val checkpoint = Checkpoint().apply {
-            this.fiber = fiber
-            flowState = StateMachineState()
+        val newFiber = ByteBuffer.wrap(byteArrayOf())
+        val newFlowState = FlowState().apply {
+            fiber = newFiber
             flowStartContext = FlowStartContext()
         }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
+        }
 
-        assertThat(createFlowCheckpoint(checkpoint).serializedFiber).isEqualTo(fiber)
+        assertThat(createFlowCheckpoint(checkpoint).serializedFiber).isEqualTo(newFiber)
     }
 
     @Test
     fun `get session`() {
         val session1 = SessionState().apply { sessionId = "S1" }
         val session2 = SessionState().apply { sessionId = "S2" }
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             sessions = listOf(session1, session2)
-            flowState = StateMachineState()
             flowStartContext = FlowStartContext()
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
         assertThat(createFlowCheckpoint(checkpoint).getSessionState("S2")).isEqualTo(session2)
@@ -214,10 +237,12 @@ class FlowCheckpointImplTest {
     @Test
     fun `put session`() {
         val session1 = SessionState().apply { sessionId = "S1" }
-        val checkpoint = Checkpoint().apply {
+        val newFlowState = FlowState().apply {
             sessions = listOf()
-            flowState = StateMachineState()
             flowStartContext = FlowStartContext()
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
@@ -234,9 +259,9 @@ class FlowCheckpointImplTest {
             identity = BOB_X500_HOLDING_IDENTITY
         }
 
-        val flowCheckpoint = createFlowCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(Checkpoint())
 
-        flowCheckpoint.initFromNew(flowId, flowStartContext)
+        flowCheckpoint.initFlowState(flowStartContext)
 
         assertThat(flowCheckpoint.flowId).isEqualTo(flowId)
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
@@ -254,10 +279,15 @@ class FlowCheckpointImplTest {
         val flow = NonInitiatingFlowExample()
         val session1 = SessionState().apply { sessionId = "S1" }
         val waitingFor = WaitingFor(Any())
-        val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext()
+        }
+        val newPipelineState = PipelineState().apply {
             maxFlowSleepDuration = 60000
+        }
+        val checkpoint = Checkpoint().apply {
+            flowState = newFlowState
+            pipelineState = newPipelineState
         }
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
@@ -271,10 +301,10 @@ class FlowCheckpointImplTest {
 
         assertThat(avroCheckpoint.flowState.suspendedOn).isEqualTo("A")
         assertThat(avroCheckpoint.flowState.waitingFor).isEqualTo(waitingFor)
-        assertThat(avroCheckpoint.flowStackItems.first()).isEqualTo(flowStackItem)
-        assertThat(avroCheckpoint.sessions.first()).isEqualTo(session1)
-        assertThat(avroCheckpoint.fiber).isEqualTo(fiber)
-        assertThat(avroCheckpoint.maxFlowSleepDuration).isEqualTo(60000)
+        assertThat(avroCheckpoint.flowState.flowStackItems.first()).isEqualTo(flowStackItem)
+        assertThat(avroCheckpoint.flowState.sessions.first()).isEqualTo(session1)
+        assertThat(avroCheckpoint.flowState.fiber).isEqualTo(fiber)
+        assertThat(avroCheckpoint.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
 
         flowCheckpoint.markDeleted()
         assertThat(flowCheckpoint.toAvro()).isNull()
@@ -282,10 +312,12 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `mark delete returns null from to avro`() {
+        val newFlowState = FlowState().apply {
+            flowStartContext = FlowStartContext()
+        }
         val checkpoint = Checkpoint().apply {
             flowId = "F1"
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
+            flowState = newFlowState
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
@@ -296,7 +328,7 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `flow stack - peek first throws if stack empty`() {
-        val flowCheckpoint = createFlowCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(Checkpoint())
         assertThrows<IllegalStateException> { flowCheckpoint.flowStack.peekFirst() }
     }
 
@@ -305,10 +337,12 @@ class FlowCheckpointImplTest {
         val item1 = FlowStackItem()
         val item2 = FlowStackItem()
 
-        val flowCheckpoint = createFlowCheckpoint(Checkpoint().apply {
-            flowState = StateMachineState()
+        val newFlowState = FlowState().apply {
             flowStartContext = FlowStartContext()
             flowStackItems = listOf(item1, item2)
+        }
+        val flowCheckpoint = createFlowCheckpoint(Checkpoint().apply {
+            flowState = newFlowState
         })
 
         assertThat(flowCheckpoint.flowStack.peekFirst()).isSameAs(item1)
@@ -320,9 +354,10 @@ class FlowCheckpointImplTest {
         val flowStackItem0 = FlowStackItem()
         val flowStackItem1 = FlowStackItem()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -335,9 +370,10 @@ class FlowCheckpointImplTest {
     fun `flow stack - pop removes and returns null when stack empty`() {
         val flowStackItem0 = FlowStackItem()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf(flowStackItem0)
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf(flowStackItem0)
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -350,9 +386,10 @@ class FlowCheckpointImplTest {
         val flowStackItem0 = FlowStackItem()
         val flowStackItem1 = FlowStackItem()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -363,9 +400,10 @@ class FlowCheckpointImplTest {
     @Test
     fun `flow stack - peek returns null for empty stack`() {
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf()
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -376,9 +414,10 @@ class FlowCheckpointImplTest {
     fun `flow stack - push adds to to the top of the stack`() {
         val flow = NonInitiatingFlowExample()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf()
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -391,9 +430,10 @@ class FlowCheckpointImplTest {
         val flow1 = InitiatingFlowExample()
         val flow2 = NonInitiatingFlowExample()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf()
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -416,9 +456,10 @@ class FlowCheckpointImplTest {
         val flowStackItem2 = FlowStackItem("3", false, mutableListOf())
 
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf(flowStackItem0, flowStackItem1, flowStackItem2)
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf(flowStackItem0, flowStackItem1, flowStackItem2)
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -431,9 +472,10 @@ class FlowCheckpointImplTest {
         val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
 
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+            }
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
@@ -448,13 +490,13 @@ class FlowCheckpointImplTest {
         val session1 = SessionState().apply { sessionId = "sid1" }
         val session2 = SessionState().apply { sessionId = "sid2" }
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState().apply {
+            flowState = FlowState().apply {
                 suspendedOn = "s1"
                 waitingFor = WaitingFor(Wakeup())
+                flowStartContext = FlowStartContext()
+                flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
+                sessions = mutableListOf(session1, session2)
             }
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf(flowStackItem0, flowStackItem1)
-            this.sessions = mutableListOf(session1, session2)
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
@@ -463,7 +505,7 @@ class FlowCheckpointImplTest {
 
         flowCheckpoint.putSessionState(SessionState().apply { sessionId = "sid3" })
 
-        flowCheckpoint.suspendedOn="s2"
+        flowCheckpoint.suspendedOn = "s2"
         flowCheckpoint.waitingFor = null
 
         flowCheckpoint.rollback()
@@ -471,17 +513,17 @@ class FlowCheckpointImplTest {
         val afterRollback = flowCheckpoint.toAvro()
         assertThat(afterRollback?.flowState?.suspendedOn).isEqualTo("s1")
         assertThat(afterRollback?.flowState?.waitingFor).isEqualTo(WaitingFor(Wakeup()))
-        assertThat(afterRollback?.flowStackItems).hasSize(2)
-        assertThat(afterRollback?.sessions).hasSize(2)
+        assertThat(afterRollback?.flowState?.flowStackItems).hasSize(2)
+        assertThat(afterRollback?.flowState?.sessions).hasSize(2)
     }
 
     @Test
     fun `rollback - original state restored when checkpoint rolled back from init`() {
-        val flowCheckpoint = createFlowCheckpoint(null)
+        val flowCheckpoint = createFlowCheckpoint(Checkpoint())
 
-        flowCheckpoint.initFromNew("id1", FlowStartContext())
+        flowCheckpoint.initFlowState(FlowStartContext())
         flowCheckpoint.putSessionState(SessionState().apply { sessionId = "sid1" })
-        flowCheckpoint.suspendedOn="s2"
+        flowCheckpoint.suspendedOn = "s2"
         flowCheckpoint.waitingFor = WaitingFor(Wakeup())
 
         flowCheckpoint.rollback()
@@ -489,7 +531,7 @@ class FlowCheckpointImplTest {
         val afterRollback = flowCheckpoint.toAvro()
         assertThat(afterRollback?.flowState?.suspendedOn).isNull()
         assertThat(afterRollback?.flowState?.waitingFor).isNull()
-        assertThat(afterRollback?.sessions).hasSize(0)
+        assertThat(afterRollback?.flowState?.sessions).hasSize(0)
     }
 
     @Test
@@ -497,9 +539,10 @@ class FlowCheckpointImplTest {
         val flowEvent = FlowEvent()
         val error = Exception()
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
@@ -508,50 +551,63 @@ class FlowCheckpointImplTest {
 
         val result = flowCheckpoint.toAvro()!!
 
-        assertThat(result.retryState).isNotNull
-        assertThat(result.retryState.retryCount).isEqualTo(1)
-        assertThat(result.retryState.failedEvent).isSameAs(flowEvent)
-        assertThat(result.retryState.firstFailureTimestamp).isEqualTo(now)
-        assertThat(result.retryState.lastFailureTimestamp).isEqualTo(now)
+        assertThat(result.pipelineState.retryState).isNotNull
+        assertThat(result.pipelineState.retryState.retryCount).isEqualTo(1)
+        assertThat(result.pipelineState.retryState.failedEvent).isSameAs(flowEvent)
+        assertThat(result.pipelineState.retryState.firstFailureTimestamp).isEqualTo(now)
+        assertThat(result.pipelineState.retryState.lastFailureTimestamp).isEqualTo(now)
     }
 
     @Test
     fun `retry - mark for retry should apply doubling retry delay`() {
         val checkpoint1 = Checkpoint().apply {
-            flowState = StateMachineState()
-            retryState = null
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
+            pipelineState = PipelineState().apply {
+                retryState = null
+            }
         }
 
         val checkpoint2 = Checkpoint().apply {
-            flowState = StateMachineState()
-            retryState = RetryState().apply { retryCount = 1 }
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
+            pipelineState = PipelineState().apply {
+                retryState = RetryState().apply {
+                    retryCount = 1
+                }
+            }
         }
 
         val checkpoint3 = Checkpoint().apply {
-            flowState = StateMachineState()
-            retryState = RetryState().apply { retryCount = 2 }
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
+            pipelineState = PipelineState().apply {
+                retryState = RetryState().apply {
+                    retryCount = 2
+                }
+            }
         }
 
         var flowCheckpoint = createFlowCheckpoint(checkpoint1)
         flowCheckpoint.markForRetry(FlowEvent(), Exception())
         var result = flowCheckpoint.toAvro()!!
-        assertThat(result.maxFlowSleepDuration).isEqualTo(1000)
+        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(1000)
 
         flowCheckpoint = createFlowCheckpoint(checkpoint2)
         flowCheckpoint.markForRetry(FlowEvent(), Exception())
         result = flowCheckpoint.toAvro()!!
-        assertThat(result.maxFlowSleepDuration).isEqualTo(2000)
+        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(2000)
 
         flowCheckpoint = createFlowCheckpoint(checkpoint3)
         flowCheckpoint.markForRetry(FlowEvent(), Exception())
         result = flowCheckpoint.toAvro()!!
-        assertThat(result.maxFlowSleepDuration).isEqualTo(4000)
+        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(4000)
     }
 
     @Test
@@ -562,54 +618,63 @@ class FlowCheckpointImplTest {
         val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
 
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            retryState = RetryState().apply { retryCount = 5 }
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
+            pipelineState = PipelineState().apply {
+                retryState = RetryState().apply {
+                    retryCount = 5
+                }
+            }
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
         flowCheckpoint.markForRetry(FlowEvent(), Exception())
         val result = flowCheckpoint.toAvro()!!
-        assertThat(result.maxFlowSleepDuration).isEqualTo(3000)
+        assertThat(result.pipelineState.maxFlowSleepDuration).isEqualTo(3000)
     }
 
     @Test
     fun `set sleep duration should always keep the min value seen`() {
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
 
         // Defaults to configured value
-        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
+        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
 
         flowCheckpoint.setFlowSleepDuration(500)
-        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(500)
+        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(500)
 
         flowCheckpoint.setFlowSleepDuration(1000)
-        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(500)
+        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(500)
 
         flowCheckpoint.setFlowSleepDuration(200)
-        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(200)
+        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(200)
     }
 
     @Test
     fun `set sleep duration should default to configured value for existing checkpoint`() {
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = listOf()
-            maxFlowSleepDuration = 100
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+                flowStackItems = listOf()
+            }
+            pipelineState = PipelineState().apply {
+                maxFlowSleepDuration = 100
+            }
         }
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
 
         // Defaults to configured value
-        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
+        assertThat(flowCheckpoint.toAvro()!!.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
     }
 
     @Test
@@ -621,7 +686,7 @@ class FlowCheckpointImplTest {
     @Test
     fun `pending error set from checkpoint`() {
         val (checkpoint, flowCheckpoint) = getMinimumCheckpoint()
-        checkpoint.pendingPlatformError = ExceptionEnvelope("a", "b")
+        checkpoint.pipelineState.pendingPlatformError = ExceptionEnvelope("a", "b")
 
         assertThat(flowCheckpoint.pendingPlatformError!!.errorType).isEqualTo("a")
         assertThat(flowCheckpoint.pendingPlatformError!!.errorMessage).isEqualTo("b")
@@ -630,7 +695,7 @@ class FlowCheckpointImplTest {
     @Test
     fun `clear pending error`() {
         val (checkpoint, flowCheckpoint) = getMinimumCheckpoint()
-        checkpoint.pendingPlatformError = ExceptionEnvelope("a", "b")
+        checkpoint.pipelineState.pendingPlatformError = ExceptionEnvelope("a", "b")
 
         flowCheckpoint.clearPendingPlatformError()
         assertThat(flowCheckpoint.pendingPlatformError).isNull()
@@ -639,14 +704,15 @@ class FlowCheckpointImplTest {
     private fun getMinimumCheckpoint(): Pair<Checkpoint, FlowCheckpointImpl> {
         val checkpoint = Checkpoint().apply {
             flowId = "F1"
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+            }
         }
 
         return checkpoint to createFlowCheckpoint(checkpoint)
     }
 
-    private fun createFlowCheckpoint(checkpoint: Checkpoint? = null, config: SmartConfig? = null): FlowCheckpointImpl {
+    private fun createFlowCheckpoint(checkpoint: Checkpoint, config: SmartConfig? = null): FlowCheckpointImpl {
         return FlowCheckpointImpl(checkpoint, config ?: smartFlowConfig) { now }
     }
 
@@ -657,8 +723,9 @@ class FlowCheckpointImplTest {
         val session1 = SessionState().apply { sessionId = "S1" }
         val waitingFor = WaitingFor(Any())
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+            }
         }
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
@@ -680,8 +747,9 @@ class FlowCheckpointImplTest {
     @Test
     fun `checkpoint cannot be modified after markDeleted called`() {
         val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
+            flowState = FlowState().apply {
+                flowStartContext = FlowStartContext()
+            }
         }
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 

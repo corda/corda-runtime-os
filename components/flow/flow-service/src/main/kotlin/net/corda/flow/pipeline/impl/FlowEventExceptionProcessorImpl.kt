@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventExceptionProcessor

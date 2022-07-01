@@ -1,10 +1,9 @@
 package net.corda.flow.pipeline.handlers.waiting.persistence
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
@@ -26,6 +25,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.nio.ByteBuffer
+import java.time.Instant
 
 class EntityResponseWaitingForHandlerTest {
 
@@ -184,8 +185,8 @@ class EntityResponseWaitingForHandlerTest {
 
     private fun stubFlowContext(entityResponse: EntityResponse, persistenceState: PersistenceState? = null) :
             FlowEventContext<EntityResponse> {
-        val flowCheckpoint = FlowCheckpointImpl(null, flowConfig) { Instant.now() }
-        flowCheckpoint.initFromNew(flowId, FlowStartContext())
+        val flowCheckpoint = FlowCheckpointImpl(Checkpoint(), flowConfig) { Instant.now() }
+        flowCheckpoint.initFlowState(FlowStartContext())
         flowCheckpoint.persistenceState = persistenceState
         return buildFlowEventContext(flowCheckpoint, entityResponse, flowConfig, emptyList(), flowId)
     }

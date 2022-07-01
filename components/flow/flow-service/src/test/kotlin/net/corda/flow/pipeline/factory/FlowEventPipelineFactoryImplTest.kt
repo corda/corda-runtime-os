@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.factory
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
@@ -19,6 +19,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -31,7 +32,7 @@ class FlowEventPipelineFactoryImplTest {
     private val flowRunner = mock<FlowRunner>()
     private val config = mock<SmartConfig>()
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().apply {
-        whenever(this.create(checkpoint, config)).thenReturn(flowCheckpoint)
+        whenever(this.create(any(), checkpoint, config)).thenReturn(flowCheckpoint)
     }
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
 
