@@ -13,6 +13,7 @@ import net.cordapp.testing.chatframework.InjectableMockServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ import java.util.List;
 
 import static net.cordapp.testing.chat.FlowTestUtilsKt.executeConcurrently;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -64,19 +67,20 @@ public class ChatFlowCollaborationTestsJava {
     void FlowSendsMessage() {
         FlowMockMessageLink messageLink = new FlowMockMessageLink(outgoingFlowMockHelper, incomingFlowMockHelper);
 
+        // When receive is called in the 'to' flow, wait on/return the next message in the queue
         when(messageLink.getToFlowSession().receive(MessageContainer.class)).thenAnswer(
                 (Answer<UntrustworthyData<MessageContainer>>) invocation ->
                         new UntrustworthyData(messageLink.messageQueue.getOrWaitForNextMessage())
         );
 
-        RPCRequestData requestData = mock(RPCRequestData.class);
-        when(requestData.getRequestBodyAs(
+        RPCRequestData outGoingFlowRequestData = mock(RPCRequestData.class);
+        when(outGoingFlowRequestData.getRequestBodyAs(
                 (JsonMarshallingService) outgoingFlowMockHelper.getMockService(JsonMarshallingService.class),
                 ChatOutgoingFlowParameter.class)
         ).thenReturn(new ChatOutgoingFlowParameter(RECIPIENT_X500_NAME, MESSAGE));
 
         executeConcurrently(() -> {
-                    outgoingChatFlow.call(requestData);
+                    outgoingChatFlow.call(outGoingFlowRequestData);
                 },
                 () -> {
                     incomingChatFlow.call(messageLink.toFlowSession);
@@ -91,7 +95,18 @@ public class ChatFlowCollaborationTestsJava {
         when(((JsonMarshallingService) readerFlowMockHelper.getMockService(JsonMarshallingService.class))
                 .format(expectedMessages)).thenReturn(DUMMY_FLOW_RETURN);
 
-        String messagesJson = readerChatFlow.call(mock(RPCRequestData.class)); // Parameter not used by Flow
+        RPCRequestData readerFlowRequestData = mock(RPCRequestData.class);
+        when(readerFlowRequestData.getRequestBodyAs(
+                (JsonMarshallingService) readerFlowMockHelper.getMockService(JsonMarshallingService.class),
+                ChatReaderFlowParameter.class)
+        ).thenReturn(new ChatReaderFlowParameter(FROM_X500_NAME));
+
+        // Very basic persistence mocking, just force every find to return the correct message
+        when(((PersistenceService) readerFlowMockHelper.getMockService(PersistenceService.class))
+                .find(IncomingChatMessage.class, FROM_X500_NAME)
+        ).thenReturn(new IncomingChatMessage(FROM_X500_NAME, MESSAGE));
+
+        String messagesJson = readerChatFlow.call(readerFlowRequestData);
         assertThat(messagesJson).isEqualTo(DUMMY_FLOW_RETURN);
     }
 }
