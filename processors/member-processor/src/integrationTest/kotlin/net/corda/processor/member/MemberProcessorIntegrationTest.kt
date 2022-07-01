@@ -46,7 +46,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPol
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySessionKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
@@ -437,8 +437,8 @@ class MemberProcessorIntegrationTest {
 
         assertLookupSize(bobReader, 2)
 
-        assertEquals(aliceMemberInfo, lookUpFromPublicKey(aliceGroupReader, aliceMemberInfo))
-        assertEquals(bobMemberInfo, lookUpFromPublicKey(aliceGroupReader, bobMemberInfo))
+        assertEquals(aliceMemberInfo, lookUpBySessionKey(aliceGroupReader, aliceMemberInfo))
+        assertEquals(bobMemberInfo, lookUpBySessionKey(aliceGroupReader, bobMemberInfo))
 
     }
 }
