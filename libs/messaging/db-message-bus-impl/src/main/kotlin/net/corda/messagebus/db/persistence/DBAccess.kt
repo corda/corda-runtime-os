@@ -16,7 +16,6 @@ import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.LockModeType
 import javax.persistence.PersistenceException
 
 /**
@@ -113,7 +112,7 @@ class DBAccess(
             "get topic partition map",
             allowDuplicate = true,
         ) { entityManager ->
-            entityManager.find(TopicEntry::class.java, topic, LockModeType.PESSIMISTIC_WRITE)
+            entityManager.find(TopicEntry::class.java, topic)
                 ?: if (autoCreate) {
                     val topicEntry = TopicEntry(topic, defaultNumPartitions)
                     entityManager.persist(topicEntry)
@@ -345,9 +344,6 @@ class DBAccess(
         } ?: throw CordaMessageAPIFatalException("Internal error.  DB result should not be null.")
     }
 
-    private fun Exception.isDuplicate() =
-        isCausedBy(SQLIntegrityConstraintViolationException::class.java) || isCausedBy(PersistenceException::class.java)
-
     private fun <T : Exception> Exception.isCausedBy(exceptionType: Class<T>): Boolean {
         var currentCause = this.cause
         while (currentCause != null) {
@@ -358,4 +354,7 @@ class DBAccess(
         }
         return false
     }
+
+    private fun Exception.isDuplicate() =
+        isCausedBy(SQLIntegrityConstraintViolationException::class.java) || isCausedBy(PersistenceException::class.java)
 }
