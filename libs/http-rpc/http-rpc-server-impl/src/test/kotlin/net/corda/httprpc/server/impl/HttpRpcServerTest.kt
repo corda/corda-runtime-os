@@ -12,6 +12,7 @@ import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.SS
 import net.corda.httprpc.server.impl.rpcops.impl.MultipleParamAnnotationApiImpl
 import net.corda.httprpc.server.impl.security.SecurityManagerRPCImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.tools.isDuplexRoute
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions
@@ -96,7 +97,8 @@ class HttpRpcServerTest {
         doReturn(true).whenever(configProvider).isDevModeEnabled()
 
         val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
-        val endpointsCount = resources.sumOf { it.endpoints.count() }
+        val endpointsCount =
+            resources.sumOf { resource -> resource.endpoints.filterNot { it.invocationMethod.method.isDuplexRoute() }.count() }
         val openApiJson = OpenApiInfoProvider(resources, configProvider).openApiString
         val openApi = Json.mapper().readValue(openApiJson, OpenAPI::class.java)
         val totalPathsCount = openApi.paths.count { it.value.get != null } + openApi.paths.count { it.value.post != null }
