@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.crypto.manager.CryptoManager
 import java.util.stream.Stream
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
@@ -70,12 +71,14 @@ class FlowGlobalPostProcessorImplTest {
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
     private val sessionManager = mock<SessionManager>()
+    private val cryptoManager = mock<CryptoManager>()
     private val persistenceManager = mock<PersistenceManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
+        cryptoManager,
         sessionManager,
         persistenceManager,
         flowMessageFactory,

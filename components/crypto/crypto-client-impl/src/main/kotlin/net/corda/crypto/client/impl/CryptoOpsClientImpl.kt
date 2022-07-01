@@ -40,6 +40,7 @@ import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -348,7 +349,7 @@ class CryptoOpsClientImpl(
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext<CryptoOpsClientImpl>(tenantId),
+            createWireRequestContext<CryptoOpsClientImpl>(requestId = UUID.randomUUID().toString(), tenantId),
             request
         )
 

@@ -30,6 +30,7 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -65,7 +66,7 @@ class FlowRunnerImplTest {
         flowFiberExecutionContext = FlowFiberExecutionContext(
             flowCheckpoint,
             sandboxGroupContext,
-            BOB_X500_HOLDING_IDENTITY,
+            BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock()
         )
     }
