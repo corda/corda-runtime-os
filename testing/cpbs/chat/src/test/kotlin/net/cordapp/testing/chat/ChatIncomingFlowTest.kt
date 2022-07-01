@@ -10,12 +10,9 @@ import net.cordapp.testing.chatframework.getMockService
 import net.cordapp.testing.chatframework.willReceive
 import net.cordapp.testing.chatframework.withCounterpartyName
 import net.cordapp.testing.chatframework.withVirtualNodeName
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class ChatIncomingFlowTest {
     companion object {
