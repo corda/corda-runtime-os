@@ -12,10 +12,10 @@ import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.LockModeType
 
 /**
  * Class for DB reads and writes.  Handles the query execution.
@@ -108,10 +108,9 @@ class DBAccess(
      */
     fun getTopicPartitionMapFor(topic: String): Set<CordaTopicPartition> {
         val topicEntry = executeWithErrorHandling(
-            "get topic partition map",
-            allowDuplicate = true
+            "get topic partition map"
         ) { entityManager ->
-            entityManager.find(TopicEntry::class.java, topic)
+            entityManager.find(TopicEntry::class.java, topic, LockModeType.PESSIMISTIC_WRITE)
                 ?: if (autoCreate) {
                     val topicEntry = TopicEntry(topic, defaultNumPartitions)
                     entityManager.persist(topicEntry)
@@ -201,8 +200,7 @@ class DBAccess(
      */
     fun writeAtomicTransactionRecord() {
         executeWithErrorHandling(
-            "write atomic transaction record",
-            allowDuplicate = true
+            "write atomic transaction record"
         ) { entityManager ->
             if (entityManager.find(TransactionRecordEntry::class.java, ATOMIC_TRANSACTION.transactionId) == null) {
                 entityManager.persist(ATOMIC_TRANSACTION)
@@ -322,7 +320,6 @@ class DBAccess(
      */
     private fun <T> executeWithErrorHandling(
         operationName: String,
-        allowDuplicate: Boolean = false,
         operation: (emf: EntityManager) -> T,
     ): T {
         var result: T? = null
@@ -332,25 +329,9 @@ class DBAccess(
                 result
             }
         } catch (e: Exception) {
-            if (allowDuplicate && e.isCausedBy(SQLIntegrityConstraintViolationException::class.java)) {
-                // Someone got here first, not a problem
-                log.info("Attempt at duplicate record is allowed in this instance.")
-                result
-            } else {
-                log.error("Error while trying to $operationName. Transaction has been rolled back.", e)
-                throw e
-            }
+            log.error("Error while trying to $operationName. Transaction has been rolled back.", e)
+            throw e
         } ?: throw CordaMessageAPIFatalException("Internal error.  DB result should not be null.")
     }
-}
 
-fun <T : Exception> Exception.isCausedBy(exceptionType: Class<T>): Boolean {
-    var currentCause = this.cause
-    while (currentCause != null) {
-        if (currentCause::class.java.isAssignableFrom(exceptionType)) {
-            return true
-        }
-        currentCause = currentCause.cause
-    }
-    return false
 }

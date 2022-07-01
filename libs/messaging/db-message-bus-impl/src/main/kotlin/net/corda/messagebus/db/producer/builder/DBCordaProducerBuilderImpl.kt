@@ -7,7 +7,7 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.configuration.ResolvedProducerConfig
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.EntityManagerFactoryCache
+import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
 import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
@@ -25,8 +25,8 @@ import org.osgi.service.component.annotations.Reference
 class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    @Reference(service = EntityManagerFactoryCache::class)
-    private val entityManagerFactoryCache: EntityManagerFactoryCache,
+    @Reference(service = EntityManagerFactoryHolder::class)
+    private val entityManagerFactoryHolder: EntityManagerFactoryHolder,
 ) : CordaProducerBuilder {
 
     private var writeOffsets: WriteOffsets? = null
@@ -34,7 +34,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Synchronized
     fun getWriteOffsets(resolvedConfig: ResolvedProducerConfig): WriteOffsets {
         if (writeOffsets == null) {
-            val emf = entityManagerFactoryCache.getEmf(
+            val emf = entityManagerFactoryHolder.getEmf(
                 resolvedConfig.jdbcUrl,
                 resolvedConfig.jdbcUser,
                 resolvedConfig.jdbcPass
@@ -48,7 +48,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         val isTransactional = producerConfig.transactional
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val resolvedConfig = resolver.resolve(messageBusConfig, producerConfig)
-        val emf = entityManagerFactoryCache.getEmf(
+        val emf = entityManagerFactoryHolder.getEmf(
             resolvedConfig.jdbcUrl,
             resolvedConfig.jdbcUser,
             resolvedConfig.jdbcPass

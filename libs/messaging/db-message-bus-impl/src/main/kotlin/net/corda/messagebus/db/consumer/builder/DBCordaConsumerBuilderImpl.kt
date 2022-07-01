@@ -9,7 +9,7 @@ import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.EntityManagerFactoryCache
+import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.serialization.CordaDBAvroDeserializerImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
@@ -23,11 +23,11 @@ import org.osgi.service.component.annotations.Reference
 class DBCordaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    @Reference(service = EntityManagerFactoryCache::class)
-    private val entityManagerFactoryCache: EntityManagerFactoryCache,
+    @Reference(service = EntityManagerFactoryHolder::class)
+    private val entityManagerFactoryHolder: EntityManagerFactoryHolder,
 ) : CordaConsumerBuilder {
 
-    private val consumerGroupFactory = ConsumerGroupFactory(entityManagerFactoryCache)
+    private val consumerGroupFactory = ConsumerGroupFactory(entityManagerFactoryHolder)
 
     override fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
@@ -44,7 +44,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             consumerConfig.group,
             resolvedConfig
         )
-        val emf = entityManagerFactoryCache.getEmf(
+        val emf = entityManagerFactoryHolder.getEmf(
             resolvedConfig.jdbcUrl,
             resolvedConfig.jdbcUser,
             resolvedConfig.jdbcPass

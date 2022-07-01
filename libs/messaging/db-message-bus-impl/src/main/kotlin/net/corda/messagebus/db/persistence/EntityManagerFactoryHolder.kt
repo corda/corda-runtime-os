@@ -5,11 +5,12 @@ import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -17,34 +18,35 @@ import javax.persistence.EntityManagerFactory
  * cache the individual [EntityManagerFactory] instances per jdbc connection for
  * re-use across all of the DB message bus.
  */
-@Component(service = [EntityManagerFactoryCache::class])
-class EntityManagerFactoryCache @Activate constructor(
+@Component(service = [EntityManagerFactoryHolder::class])
+class EntityManagerFactoryHolder @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) {
     companion object {
-        const val INMEM_EMF = "InMemoryEmf"
+        private val logger = contextLogger()
     }
 
-    private var emfs = ConcurrentHashMap<String, EntityManagerFactory>()
+    private var emf: EntityManagerFactory? = null
 
     @Deactivate
     fun close() {
-        emfs.values.forEach { it.close() }
+        emf?.close()
     }
 
+    @Synchronized
     fun getEmf(
         jdbcUrl: String?,
         jdbcUsername: String,
         jdbcPassword: String,
     ): EntityManagerFactory {
-        val key = jdbcUrl ?: INMEM_EMF
-        return emfs.computeIfAbsent(key) {
-            entityManagerFactoryFactory.create(
+        if (emf == null) {
+            logger.info("Creating emf for $jdbcUrl")
+            emf = entityManagerFactoryFactory.create(
                 jdbcUrl,
                 jdbcUsername,
                 jdbcPassword,
-                "DB Message Bus for $it",
+                "DB Message Bus for $jdbcUrl",
                 listOf(
                     TopicRecordEntry::class.java,
                     CommittedPositionEntry::class.java,
@@ -53,5 +55,6 @@ class EntityManagerFactoryCache @Activate constructor(
                 ),
             )
         }
+        return emf ?: throw CordaRuntimeException("emf should never be null.")
     }
 }
