@@ -1,13 +1,16 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.fail
 import java.time.Duration
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(2)
+    var interval: Duration = Duration.ofMillis(250)
     var command: (() -> SimpleResponse)? = null
     var condition: ((SimpleResponse) -> Boolean)? = null
+    var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
     var failMessage: String = ""
 }
 
@@ -17,12 +20,20 @@ class AssertWithRetryBuilder(private val args: AssertWithRetryArgs) {
         args.timeout = timeout
     }
 
+    fun interval(duration: Duration) {
+        args.interval = duration
+    }
+
     fun command(command: () -> SimpleResponse) {
         args.command = command
     }
 
     fun condition(condition: (SimpleResponse) -> Boolean) {
         args.condition = condition
+    }
+
+    fun immediateFailCondition(condition: (SimpleResponse) -> Boolean) {
+        args.immediateFailCondition = condition
     }
 
     fun failMessage(failMessage: String) {
@@ -45,18 +56,24 @@ class AssertWithRetryBuilder(private val args: AssertWithRetryArgs) {
  * @return [SimpleResponse] if successful
  */
 fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
-    var timeout = Duration.ofMillis(250)
     val args = AssertWithRetryArgs()
 
     AssertWithRetryBuilder(args).apply(initialize).run {
         var response: SimpleResponse?
 
+        var retry = 0
+        var timeTried: Long
         do {
-            Thread.sleep(timeout.toMillis())
-            timeout = timeout.multipliedBy(2)
+            Thread.sleep(args.interval.toMillis())
             response = args.command!!.invoke()
+            if(null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
+                fail("Failed without retry with status code = ${response.code} and body =\n${response.body}")
+            }
             if (args.condition!!.invoke(response)) break
-        } while (timeout.toMillis() < args.timeout.toMillis())
+            retry++
+            timeTried = args.interval.toMillis() * retry
+            println("Failed after $retry retry ($timeTried ms): $response")
+        } while (timeTried < args.timeout.toMillis())
 
         assertThat(args.condition!!.invoke(response!!))
             .withFailMessage(

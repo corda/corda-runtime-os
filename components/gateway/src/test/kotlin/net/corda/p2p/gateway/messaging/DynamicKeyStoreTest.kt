@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -62,10 +63,10 @@ class DynamicKeyStoreTest {
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
     private val signer = mockConstruction(StubCryptoProcessor::class.java) { mock, _ ->
-        val mockDominoTile = mock<ComplexDominoTile> {
-            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        val mockNamedLifecycle = mock<NamedLifecycle> {
+            whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
         }
-        whenever(mock.dominoTile).doReturn(mockDominoTile)
+        whenever(mock.namedLifecycle).doReturn(mockNamedLifecycle)
     }
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private var futures: MutableList<CompletableFuture<Unit>> = mutableListOf()

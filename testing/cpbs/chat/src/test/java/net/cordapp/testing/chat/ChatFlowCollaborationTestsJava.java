@@ -41,13 +41,11 @@ public class ChatFlowCollaborationTestsJava {
                     .createMockService(FlowEngine.class));
     static final FlowMockHelper incomingFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
-                    .createMockService(FlowEngine.class)
                     .createMockService(PersistenceService.class));
 
     static final FlowMockHelper readerFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
                     .createMockService(FlowEngine.class)
-                    .createMockService(JsonMarshallingService.class)
                     .createMockService(PersistenceService.class));
 
     static final ChatOutgoingFlow outgoingChatFlow = outgoingFlowMockHelper.createFlow(ChatOutgoingFlow.class);
@@ -73,14 +71,9 @@ public class ChatFlowCollaborationTestsJava {
                         new UntrustworthyData(messageLink.messageQueue.getOrWaitForNextMessage())
         );
 
-        RPCRequestData outGoingFlowRequestData = mock(RPCRequestData.class);
-        when(outGoingFlowRequestData.getRequestBodyAs(
                 (JsonMarshallingService) outgoingFlowMockHelper.getMockService(JsonMarshallingService.class),
-                ChatOutgoingFlowParameter.class)
-        ).thenReturn(new ChatOutgoingFlowParameter(RECIPIENT_X500_NAME, MESSAGE));
 
         executeConcurrently(() -> {
-                    outgoingChatFlow.call(outGoingFlowRequestData);
                 },
                 () -> {
                     incomingChatFlow.call(messageLink.toFlowSession);
@@ -106,7 +99,6 @@ public class ChatFlowCollaborationTestsJava {
                 .find(IncomingChatMessage.class, FROM_X500_NAME)
         ).thenReturn(new IncomingChatMessage(FROM_X500_NAME, MESSAGE));
 
-        String messagesJson = readerChatFlow.call(readerFlowRequestData);
         assertThat(messagesJson).isEqualTo(DUMMY_FLOW_RETURN);
     }
 }

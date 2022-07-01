@@ -443,6 +443,43 @@
         }
       }
     },
+    "/flow/{holdershortid}" : {
+      "get" : {
+        "tags" : [ "FlowRPCOps" ],
+        "description" : "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
+        "operationId" : "get_flow__holdershortid_",
+        "parameters" : [ {
+          "name" : "holdershortid",
+          "in" : "path",
+          "description" : "Short form of the Holder Identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short form of the Holder Identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HTTPFlowStatusResponses"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/flow/{holdershortid}/{clientrequestid}" : {
       "get" : {
         "tags" : [ "FlowRPCOps" ],
@@ -2779,6 +2816,21 @@
             "format" : "datetime",
             "nullable" : false,
             "example" : "2022-06-24T10:15:30Z"
+          }
+        },
+        "nullable" : false
+      },
+      "HTTPFlowStatusResponses" : {
+        "required" : [ "httpFlowStatusResponses" ],
+        "type" : "object",
+        "properties" : {
+          "httpFlowStatusResponses" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
+            }
           }
         },
         "nullable" : false

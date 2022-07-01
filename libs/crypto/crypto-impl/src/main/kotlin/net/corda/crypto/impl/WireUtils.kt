@@ -16,24 +16,25 @@ import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
-import java.util.UUID
 
 val emptyKeyValuePairList = KeyValuePairList(emptyList())
 
 inline fun <reified CALLER> createWireRequestContext(
+    requestId: String,
     tenantId: String,
     other: KeyValuePairList = emptyKeyValuePairList
-): CryptoRequestContext = createWireRequestContext(CALLER::class.java.simpleName, tenantId, other)
+): CryptoRequestContext = createWireRequestContext(CALLER::class.java.simpleName, requestId, tenantId, other)
 
 fun createWireRequestContext(
     caller: String,
+    requestId: String,
     tenantId: String,
     other: KeyValuePairList = emptyKeyValuePairList
 ): CryptoRequestContext {
     return CryptoRequestContext(
         caller,
         Instant.now(),
-        UUID.randomUUID().toString(),
+        requestId,
         tenantId,
         other
     )

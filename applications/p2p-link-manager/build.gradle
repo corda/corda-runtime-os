@@ -23,6 +23,7 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation project(":components:membership:group-policy")
+    implementation project(":components:crypto:crypto-client")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
@@ -43,6 +44,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
 
+    runtimeOnly project(":components:crypto:crypto-client-impl")
     implementation project(":libs:utilities")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")

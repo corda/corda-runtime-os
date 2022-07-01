@@ -12,6 +12,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
+import net.corda.virtualnode.toCorda
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -36,7 +37,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)
-        whenever(flowCheckpoint.holdingIdentity).thenReturn(holdingIdentity)
+        whenever(flowCheckpoint.holdingIdentity).thenReturn(holdingIdentity.toCorda())
     }
 
     val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, mock(), recordList)

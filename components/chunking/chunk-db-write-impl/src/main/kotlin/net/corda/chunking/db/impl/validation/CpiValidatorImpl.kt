@@ -7,6 +7,7 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.packaging.Cpi
@@ -15,23 +16,20 @@ import net.corda.utilities.time.Clock
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
-import net.corda.chunking.db.impl.persistence.CpiPersistence
 
 @Suppress("LongParameterList")
 class CpiValidatorImpl constructor(
     private val publisher: StatusPublisher,
-    chunkPersistence: ChunkPersistence,
-    cpiPersistence: CpiPersistence,
+    private val chunkPersistence: ChunkPersistence,
+    private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
-    cpiCacheDir: Path,
-    cpiPartsDir: Path,
+    private val cpiCacheDir: Path,
+    private val cpiPartsDir: Path,
     private val clock: Clock
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
     }
-
-    private val validationFunctions = ValidationFunctions(cpiCacheDir, cpiPartsDir, chunkPersistence, cpiPersistence)
 
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
@@ -39,10 +37,10 @@ class CpiValidatorImpl constructor(
 
         // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
-        val fileInfo = validationFunctions.getFileInfo(requestId)
+        val fileInfo = getCpiFileInfo(cpiCacheDir, chunkPersistence, requestId)
 
         publisher.update(requestId, "Checking signatures")
-        validationFunctions.checkSignature(fileInfo)
+        fileInfo.checkSignature()
 
         // The following bit in only just adds the verifyCpi call site to compile. Having said that:
         // - The following (cordadevcodesignpublic.pem) is the certificate of "cordadevcodesign.p12" (default)
@@ -60,26 +58,21 @@ class CpiValidatorImpl constructor(
         }
 
         publisher.update(requestId, "Validating CPI")
-        val cpi: Cpi = validationFunctions.checkCpi(fileInfo)
+        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir)
 
         publisher.update(requestId, "Checking group id in CPI")
-        validationFunctions.getGroupId(cpi)
+        cpi.validateAndGetGroupId()
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
-            validationFunctions.checkGroupIdDoesNotExistForThisCpi(cpi)
+            cpiPersistence.checkGroupIdDoesNotExistForCpi(cpi)
         }
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
-        val cpkDbChangeLogEntities = validationFunctions.extractLiquibaseScriptsFromCpi(cpi)
+        val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity = validationFunctions.persistToDatabase(
-            cpi,
-            fileInfo,
-            requestId,
-            cpkDbChangeLogEntities
-        )
+        val cpiMetadataEntity = cpiPersistence.persistCpiToDatabase(cpi, fileInfo, requestId, cpkDbChangeLogEntities, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(

@@ -28,6 +28,9 @@ class MemberInfoExtension {
         const val PARTY_NAME = "corda.name"
         const val PARTY_SESSION_KEY = "corda.session.key"
 
+        /** Key name for the session key hash **/
+        const val SESSION_KEY_HASH = "corda.sessionKeyHash"
+
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
         const val NOTARY_SERVICE_SESSION_KEY = "corda.notaryService.session.key"
@@ -137,6 +140,11 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
+
+        /** Collection of ledger key hashes for member's node. */
+        @JvmStatic
+        val MemberInfo.sessionKeyHash: PublicKeyHash
+            get() = memberProvidedContext.parse(SESSION_KEY_HASH)
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic

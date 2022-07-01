@@ -60,9 +60,10 @@ internal class ConfigProcessor(
         if (newConfig != null) {
             val config = mergeConfigs(currentData)
             val newConfigKey = newRecord.key
-            logger.info(
-                "Received configuration for key $newConfigKey: " +
-                    newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+            logger.info( "Received configuration for key $newConfigKey")
+            logger.debug(
+                "$newConfigKey configuration: " +
+                        newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
             )
             coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
         } else {

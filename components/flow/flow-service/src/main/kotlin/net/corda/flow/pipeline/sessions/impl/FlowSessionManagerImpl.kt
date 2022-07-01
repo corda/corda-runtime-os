@@ -16,6 +16,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,7 +49,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(instant)
             .setSequenceNum(null)
-            .setInitiatingIdentity(checkpoint.holdingIdentity)
+            .setInitiatingIdentity(checkpoint.holdingIdentity.toAvro())
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
@@ -175,7 +176,7 @@ class FlowSessionManagerImpl @Activate constructor(
     ): SessionState {
         val sessionState = getAndRequireSession(checkpoint, sessionId)
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-            sessionState, checkpoint.holdingIdentity
+            sessionState, checkpoint.holdingIdentity.toAvro()
         )
 
         return sessionManager.processMessageToSend(
