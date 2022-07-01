@@ -3072,9 +3072,9 @@
         "type" : "object",
         "properties" : {
           "action" : {
+            "type" : "string",
             "nullable" : false,
-            "example" : "requestJoin",
-            "enum" : [ "requestJoin" ]
+            "example" : "string"
           },
           "holdingIdentityId" : {
             "type" : "string",
