@@ -1,6 +1,9 @@
 package net.corda.schema.configuration
 
 object FlowConfig {
+        const val CRYPTO_RESEND_BUFFER = "crypto.messageResendWindowBuffer"
+        const val CRYPTO_MESSAGE_RESEND_WINDOW = "crypto.messageResendWindow"
+        const val CRYPTO_MAX_RETRIES = "crypto.maxRetries"
         const val PERSISTENCE_RESEND_BUFFER = "persistence.messageResendWindowBuffer"
         const val PERSISTENCE_MESSAGE_RESEND_WINDOW = "persistence.messageResendWindow"
         const val PERSISTENCE_MAX_RETRIES = "persistence.maxRetries"

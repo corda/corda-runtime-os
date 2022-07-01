@@ -14,9 +14,15 @@
       "type": [
         "net.corda.data.crypto.wire.CryptoPublicKey",
         "net.corda.data.crypto.wire.CryptoSigningKeys",
-        "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+        "net.corda.data.crypto.wire.CryptoSignatureWithKey",
+        "net.corda.data.crypto.wire.CryptoNoContentValue"
       ],
       "doc": "Response's payload, depends on the requested operation"
+    },
+    {
+      "name": "exception",
+      "doc": "Exception information",
+      "type": ["null", "net.corda.data.ExceptionEnvelope"]
     }
   ]
 }

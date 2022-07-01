@@ -74,6 +74,25 @@
           "default": 5
         }
       }
+    },
+    "crypto": {
+      "description": "Settings for crypto interactions within a flow",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "messageResendWindow": {
+          "description": "Length of time to wait before resending unacknowledged crypto events, in milliseconds",
+          "type": "integer",
+          "minimum": 100,
+          "default": 5000
+        },
+        "maxRetries": {
+          "description": "The maximum amount of times to retry a request before returning an exception to the user code.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 5
+        }
+      }
     }
   }
 }

@@ -35,4 +35,15 @@ interface SigningService {
      */
     @Suspendable
     fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey
+
+    /**
+    * TODO Remove this API from C5. Added as a temporary API for testing until MGM code is fully integrated.
+    *
+    * Decodes public key from PEM encoded string.
+    *
+    * @throws IllegalArgumentException if the key scheme is not supported.
+    * @throws net.corda.v5.crypto.failures.CryptoException for general cryptographic exceptions.
+    */
+    @Suspendable
+    fun decodePublicKey(encodedKey: String): PublicKey
 }

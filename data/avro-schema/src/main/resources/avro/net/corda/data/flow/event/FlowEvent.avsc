@@ -14,7 +14,8 @@
         "net.corda.data.flow.event.Wakeup",
         "net.corda.data.flow.output.FlowStatus",
         "net.corda.data.flow.event.SessionEvent",
-        "net.corda.data.persistence.EntityResponse"
+        "net.corda.data.persistence.EntityResponse",
+        "net.corda.data.crypto.wire.ops.flow.FlowOpsResponse"
       ]
     }
   ]
