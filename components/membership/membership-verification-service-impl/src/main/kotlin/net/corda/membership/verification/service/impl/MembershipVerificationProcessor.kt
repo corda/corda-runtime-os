@@ -15,6 +15,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
+import java.util.UUID
 
 class MembershipVerificationProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory
@@ -33,17 +34,17 @@ class MembershipVerificationProcessor(
 
     override fun onNext(events: List<Record<String, VerificationRequest>>): List<Record<*, *>> {
         logger.info("Handling request")
-        return events.map {
+        return events.mapNotNull { it.value }.map {
             val responseTimestamp = clock.instant()
             val authenticatedMessageHeader = AuthenticatedMessageHeader(
                 // we need to switch here the source and destination
                 // MGM
-                it.value?.source,
+                it.source,
                 // member
-                it.value?.destination,
+                it.destination,
                 responseTimestamp.plusMillis(TTL)?.toEpochMilli(),
-                it.value?.requestId,
-                it.value?.requestId,
+                UUID.randomUUID().toString(),
+                null,
                 MEMBERSHIP_P2P_SUBSYSTEM
             )
             val authenticatedMessage = AuthenticatedMessage(
@@ -51,9 +52,7 @@ class MembershipVerificationProcessor(
                 ByteBuffer.wrap(
                     responseSerializer.serialize(
                         VerificationResponse(
-                            it.value?.requestId,
-                            it.value?.requestTimestamp,
-                            responseTimestamp,
+                            it.registrationId,
                             KeyValuePairList(emptyList<KeyValuePair>())
                         )
                     )
@@ -61,7 +60,7 @@ class MembershipVerificationProcessor(
             )
             Record(
                 P2P_OUT_TOPIC,
-                it.value?.source?.toCorda()?.id ?: "",
+                it.source.toCorda().id,
                 AppMessage(authenticatedMessage)
             )
         }

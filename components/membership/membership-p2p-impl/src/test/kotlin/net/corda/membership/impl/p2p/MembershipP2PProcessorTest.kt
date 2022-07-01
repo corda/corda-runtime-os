@@ -18,7 +18,7 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_VERIFICATION_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -28,6 +28,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID
 
 class MembershipP2PProcessorTest {
@@ -35,6 +36,8 @@ class MembershipP2PProcessorTest {
     private companion object {
         const val TOPIC = "foo"
         const val KEY = "bar"
+
+        val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
@@ -54,12 +57,10 @@ class MembershipP2PProcessorTest {
     private val member = HoldingIdentity("C=GB, L=London, O=Alice", groupId)
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
 
-    private val clock = UTCClock()
     private val verificationRequest = VerificationRequest(
         member,
         mgm,
         UUID.randomUUID().toString(),
-        clock.instant(),
         KeyValuePairList(listOf(KeyValuePair("A", "B")))
     )
 
@@ -194,7 +195,7 @@ class MembershipP2PProcessorTest {
                     source,
                     clock.instant().plusMillis(1000L).toEpochMilli(),
                     "mid",
-                    "tid",
+                    null,
                     MEMBERSHIP_P2P_SUBSYSTEM
                 ),
                 this
