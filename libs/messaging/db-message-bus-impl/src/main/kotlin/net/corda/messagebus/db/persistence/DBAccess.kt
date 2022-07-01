@@ -322,11 +322,9 @@ class DBAccess(
         operationName: String,
         operation: (emf: EntityManager) -> T,
     ): T {
-        var result: T? = null
         return try {
             entityManagerFactory.transaction {
-                result = operation(it)
-                result
+                operation(it)
             }
         } catch (e: Exception) {
             log.error("Error while trying to $operationName. Transaction has been rolled back.", e)
