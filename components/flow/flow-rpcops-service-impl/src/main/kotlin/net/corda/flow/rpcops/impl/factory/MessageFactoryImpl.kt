@@ -9,8 +9,8 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.v1.response.HTTPFlowStateErrorResponse
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStateErrorResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
