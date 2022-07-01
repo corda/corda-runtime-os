@@ -7,6 +7,7 @@ import java.time.Duration
 import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 import net.corda.applications.workers.smoketest.virtualnode.toJson
@@ -20,7 +21,7 @@ const val RPC_FLOW_STATUS_FAILED = "FAILED"
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
-fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
+fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput, expectedCode: Int = 200): String {
 
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -33,10 +34,10 @@ fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
                     holdingId,
                     requestId,
                     SMOKE_TEST_CLASS_NAME,
-                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
+                    escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 200 }
+            condition { it.code == expectedCode }
         }
 
         requestId
@@ -55,7 +56,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     holdingId,
                     requestId,
                     flowName,
-                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
+                    escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
             condition { it.code == 200 }
