@@ -11,10 +11,10 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.StartRegistration
 import net.corda.data.membership.command.registration.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.membership.impl.MemberInfoExtension.Companion.ENDPOINTS
-import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult

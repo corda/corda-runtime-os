@@ -6,7 +6,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -24,12 +25,20 @@ class ForwardingGroupPolicyProviderTest {
 
     private val alice = HoldingIdentity("alice", "group-1")
     private val groupInfo =
-        GroupPolicyListener.GroupInfo(alice, NetworkType.CORDA_5, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), listOf())
+        GroupPolicyListener.GroupInfo(
+            alice,
+            NetworkType.CORDA_5,
+            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
+            listOf()
+        )
+    private val p2pParams = mock<GroupPolicy.P2PParameters>().also {
+        whenever(it.tlsPki).thenReturn(P2PParameters.TlsPkiMode.STANDARD)
+        whenever(it.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH_ENCRYPT)
+        whenever(it.tlsTrustRoots).thenReturn(emptyList())
+    }
     private val groupPolicy = mock<GroupPolicy>().also {
         whenever(it.groupId).thenReturn(alice.groupId)
-        whenever(it.tlsPki).thenReturn("C5")
-        whenever(it.p2pProtocolMode).thenReturn("AUTHENTICATED_ENCRYPTION")
-        whenever(it.tlsTrustStore).thenReturn(arrayOf())
+        whenever(it.p2pParameters).thenReturn(p2pParams)
     }
 
     private var dependentChildren: Collection<LifecycleCoordinatorName> = mutableListOf()
@@ -84,7 +93,10 @@ class ForwardingGroupPolicyProviderTest {
         assertThat(managedChildren).hasSize(3)
         assertThat(managedChildren).containsExactlyInAnyOrder(
             NamedLifecycle(realGroupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
-            NamedLifecycle(virtualNodeInfoReadService, LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
+            NamedLifecycle(
+                virtualNodeInfoReadService,
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
+            ),
             NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>())
         )
     }
@@ -108,7 +120,7 @@ class ForwardingGroupPolicyProviderTest {
     @Test
     fun `get group info delegates to the real policy provider properly for c4 network`() {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
-        whenever(groupPolicy.tlsPki).thenReturn("C4")
+        whenever(groupPolicy.p2pParameters.tlsPki).thenReturn(P2PParameters.TlsPkiMode.CORDA_4)
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo.copy(networkType = NetworkType.CORDA_4))
@@ -117,7 +129,7 @@ class ForwardingGroupPolicyProviderTest {
     @Test
     fun `get group info delegates to the real policy provider properly for network with authentication only mode`() {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
-        whenever(groupPolicy.p2pProtocolMode).thenReturn("AUTHENTICATION_ONLY")
+        whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice))
@@ -125,11 +137,11 @@ class ForwardingGroupPolicyProviderTest {
     }
 
     @Test
-    fun `get group info returns null if real group policy provider fails with an exception`() {
+    fun `get group info returns null if real group policy provider fails to find a group policy for the holding identity`() {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
-        whenever(groupPolicy.p2pProtocolMode).thenReturn("AUTHENTICATION_ONLY")
+        whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
-        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenThrow(RuntimeException())
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(null)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isNull()
     }
 
@@ -156,8 +168,10 @@ class ForwardingGroupPolicyProviderTest {
     }
 
     private fun createForwardingGroupPolicyProvider(mode: ThirdPartyComponentsMode): ForwardingGroupPolicyProvider {
-        return  ForwardingGroupPolicyProvider(mock(), mock(), mock(),
-            realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, mode)
+        return ForwardingGroupPolicyProvider(
+            mock(), mock(), mock(),
+            realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, mode
+        )
     }
 
 }

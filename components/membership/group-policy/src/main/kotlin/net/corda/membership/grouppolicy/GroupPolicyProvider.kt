@@ -1,8 +1,7 @@
 package net.corda.membership.grouppolicy
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.lib.GroupPolicy
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -15,12 +14,9 @@ interface GroupPolicyProvider : Lifecycle {
      **
      * @param holdingIdentity The holding identity of the member doing the lookup.
      * @return The current [GroupPolicy] file that was bundled with the CPI which was installed for the given holding
-     *  identity.
-     *
-     * @throws [IllegalStateException] if trying to access group policies while the component is inactive.
-     * @throws [BadGroupPolicyException] if the group policy does not exist for the holding identity or is badly formed.
+     *  identity. Returns null if no group policy was found or if error occurs when retrieving group policy.
      */
-    fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
+    fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy?
 
     /**
      * Registers a listener callback in order to be notified for creation of a new group policy or update of an existing one.

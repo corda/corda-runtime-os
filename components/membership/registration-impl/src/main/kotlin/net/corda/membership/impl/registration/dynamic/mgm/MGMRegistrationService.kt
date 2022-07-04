@@ -15,18 +15,21 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
-import net.corda.membership.impl.MemberInfoExtension
-import net.corda.membership.impl.MemberInfoExtension.Companion.ECDH_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -188,10 +191,10 @@ class MGMRegistrationService @Activate constructor(
                         SERIAL to SERIAL_CONST,
                     )).toSortedMap(),
                     mgmContext = sortedMapOf(
-                        MemberInfoExtension.CREATED_TIME to now,
-                        MemberInfoExtension.MODIFIED_TIME to now,
-                        MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                        MemberInfoExtension.IS_MGM to "true"
+                        CREATED_TIME to now,
+                        MODIFIED_TIME to now,
+                        STATUS to MEMBER_STATUS_ACTIVE,
+                        IS_MGM to "true"
                     )
                 )
                 val mgmRecord = Record(
