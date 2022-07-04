@@ -27,6 +27,8 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.security.MessageDigest
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.Base64
 import java.util.jar.JarFile
 import java.util.stream.Collectors
@@ -52,7 +54,22 @@ class CPKTests {
 
     private lateinit var workflowCPKLibraries: Map<String, SecureHash>
 
-    private val cordaDevKey = SecureHash.create("SHA-256:${System.getProperty("net.corda.dev.cert")}")
+    private val cordaDevCertSummaryHash = run {
+        val cordaDevCert = Base64.getDecoder().decode(System.getProperty("net.corda.dev.cert")).run {
+            val certFactory = CertificateFactory.getInstance("X.509")
+            certFactory.generateCertificate(ByteArrayInputStream(this)) as X509Certificate
+        }
+
+        val sha256Name = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
+        SecureHash(
+            sha256Name,
+            run {
+                val md = MessageDigest.getInstance(sha256Name)
+                md.update(cordaDevCert.subjectX500Principal.name.toByteArray())
+                md.digest()
+            }
+        )
+    }
 
     @BeforeAll
     fun setup(@TempDir junitTestDir: Path) {
@@ -228,7 +245,7 @@ class CPKTests {
             Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.symbolic.name"), name)
             Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.version"), version)
             Assertions.assertEquals(
-                cordaDevKey.toString().toByteArray().hash(), signerSummaryHash,
+                cordaDevCertSummaryHash.toString().toByteArray().hash(), signerSummaryHash,
                 "The cpk dependency is expected to be signed with corda development key only"
             )
         }
@@ -237,7 +254,7 @@ class CPKTests {
     @Test
     fun `Verify cordapp signature`() {
         Assertions.assertEquals(
-            sequenceOf(cordaDevKey).summaryHash(),
+            sequenceOf(cordaDevCertSummaryHash).summaryHash(),
             workflowCPK.metadata.cpkId.signerSummaryHash
         )
     }
@@ -426,7 +443,7 @@ class CPKTests {
     @Test
     fun `signers summary hash is computed correctly`() {
         val md = MessageDigest.getInstance(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name)
-        md.update(cordaDevKey.toString().toByteArray())
+        md.update(cordaDevCertSummaryHash.toString().toByteArray())
         val expectedHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, md.digest())
         Assertions.assertEquals(expectedHash, workflowCPK.metadata.cpkId.signerSummaryHash)
     }
