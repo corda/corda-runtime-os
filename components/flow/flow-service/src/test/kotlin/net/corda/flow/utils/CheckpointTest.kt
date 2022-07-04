@@ -1,7 +1,7 @@
 package net.corda.flow.utils
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_NAME
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

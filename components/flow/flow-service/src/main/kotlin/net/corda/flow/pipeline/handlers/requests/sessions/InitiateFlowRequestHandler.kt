@@ -10,7 +10,6 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,10 +35,10 @@ class InitiateFlowRequestHandler @Activate constructor(
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
 
         val protocolStore = try {
-            flowSandboxService.get(context.checkpoint.holdingIdentity.toCorda()).protocolStore
+            flowSandboxService.get(context.checkpoint.holdingIdentity).protocolStore
         } catch (e: Exception) {
             throw FlowTransientException(
-                "Failed to create the flow sandbox for identity ${context.checkpoint.holdingIdentity.toCorda()}: ${e.message}",
+                "Failed to create the flow sandbox for identity ${context.checkpoint.holdingIdentity}: ${e.message}",
                 context,
                 e
             )

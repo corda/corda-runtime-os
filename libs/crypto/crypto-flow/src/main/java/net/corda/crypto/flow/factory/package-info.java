@@ -1,4 +1,4 @@
 @Export
-package net.corda.flow.rpcops.v1.response;
+package net.corda.crypto.flow.factory;
 
 import org.osgi.annotation.bundle.Export;

@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,7 +30,7 @@ class MergeRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Merge): FlowEventContext<Any> {
         val persistRequest = MergeEntity(ByteBuffer.wrap(request.obj))
         val checkpoint = context.checkpoint
-        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity, persistRequest)
+        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity.toAvro(), persistRequest)
         return context.apply { checkpoint.persistenceState = persistenceManager.processMessageToSend(request.requestId, entityRequest) }
     }
 }

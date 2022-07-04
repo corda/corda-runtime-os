@@ -1,11 +1,11 @@
 package net.corda.flow.rpcops.v1
 
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponses
-import net.corda.flow.rpcops.v1.response.HTTPStartFlowResponse
+import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -25,8 +25,8 @@ interface FlowRpcOps : RpcOps {
      */
     fun initialise(config: SmartConfig)
 
-    @HttpRpcPUT(
-        path = "{holderShortId}/{clientRequestId}/{flowClassName}",
+    @HttpRpcPOST(
+        path = "{holderShortId}",
         title = "Start Flow",
         description = "Instructs Corda to start a new instance of the specified flow",
         responseDescription = "The initial status of the flow, if the flow already exists the status of the existing" +
@@ -35,13 +35,9 @@ interface FlowRpcOps : RpcOps {
     fun startFlow(
         @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
         holderShortId: String,
-        @HttpRpcPathParameter(description = "Client provided flow identifier")
-        clientRequestId: String,
-        @HttpRpcPathParameter(description ="Fully qualified class name of the flow to start.")
-        flowClassName: String,
-        @HttpRpcRequestBodyParameter(description = "Optional start arguments string passed to the flow.", required = false)
-        requestBody: String
-    ): HTTPStartFlowResponse
+        @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
+        httpStartFlow: HTTPStartFlowRequest
+    ): HTTPFlowStatusResponse
 
     @HttpRpcGET(
         path = "{holderShortId}/{clientRequestId}",

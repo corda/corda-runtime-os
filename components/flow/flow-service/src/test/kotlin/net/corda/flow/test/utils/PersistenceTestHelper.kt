@@ -6,6 +6,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.state.impl.FlowCheckpointImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.virtualnode.HoldingIdentity
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -31,7 +32,9 @@ fun <R> mockPersistenceStateInFlowContext(
 ): FlowEventContext<R> {
     val mockCheckpoint = mock<FlowCheckpointImpl>()
     val stubContext = buildFlowEventContext(mockCheckpoint, inputEventPayload, config)
+    val holdingIdentity = HoldingIdentity("x500", "group")
     whenever(mockCheckpoint.persistenceState).thenReturn(stubPersistenceState)
+    whenever(mockCheckpoint.holdingIdentity).thenReturn(holdingIdentity)
     return stubContext
 }
 

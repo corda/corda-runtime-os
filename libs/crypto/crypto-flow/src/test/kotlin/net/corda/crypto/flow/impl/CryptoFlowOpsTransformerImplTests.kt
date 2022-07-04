@@ -1,8 +1,9 @@
-package net.corda.crypto.flow
+package net.corda.crypto.flow.impl
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
+import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
 import net.corda.crypto.flow.infra.ActResult
 import net.corda.crypto.flow.infra.act
@@ -43,7 +44,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class CryptoFlowOpsTransformerTests {
+class CryptoFlowOpsTransformerImplTests {
     private lateinit var knownComponentName: String
     private lateinit var knownResponseTopic: String
     private lateinit var knownTenantId: String
@@ -52,8 +53,8 @@ class CryptoFlowOpsTransformerTests {
     private lateinit var knownExternalId: String
     private lateinit var keyEncodingService: KeyEncodingService
 
-    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformer =
-        CryptoFlowOpsTransformer(
+    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
+        CryptoFlowOpsTransformerImpl(
             serializer = mock(),
             requestingComponent = knownComponentName,
             responseTopic = knownResponseTopic,
@@ -101,6 +102,7 @@ class CryptoFlowOpsTransformerTests {
         FlowOpsResponse(
             createWireResponseContext(requestType, error, ttl),
             response,
+            null
         )
 
     private fun createWireResponseContext(
@@ -118,7 +120,7 @@ class CryptoFlowOpsTransformerTests {
                 if(error != null) {
                     listOf(
                         KeyValuePair(REQUEST_OP_KEY, requestType.simpleName),
-                        KeyValuePair(CryptoFlowOpsTransformer.RESPONSE_ERROR_KEY, error),
+                        KeyValuePair(RESPONSE_ERROR_KEY, error),
                         KeyValuePair(REQUEST_TTL_KEY, ttl.toString()),
                     )
                 } else {
@@ -279,6 +281,7 @@ class CryptoFlowOpsTransformerTests {
         val data = "Hello World!".toByteArray()
         val result = act {
             buildTransformer().createSign(
+                UUID.randomUUID().toString(),
                 knownTenantId,
                 publicKey,
                 SignatureSpec.EDDSA_ED25519,
@@ -302,7 +305,7 @@ class CryptoFlowOpsTransformerTests {
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
-            buildTransformer().createSign(knownTenantId, publicKey, SignatureSpec.EDDSA_ED25519, data)
+            buildTransformer().createSign(UUID.randomUUID().toString(),knownTenantId, publicKey, SignatureSpec.EDDSA_ED25519, data)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)

@@ -6,6 +6,9 @@ import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
+import java.security.PublicKey
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
@@ -102,4 +105,10 @@ interface FlowIORequest<out R> {
 
     data class Delete(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
 
+    data class SignBytes(
+        val requestId: String,
+        val bytes: ByteArray,
+        val publicKey: PublicKey,
+        val signatureSpec: SignatureSpec
+    ) : FlowIORequest<DigitalSignature.WithKey>
 }

@@ -1,6 +1,7 @@
 package net.corda.crypto.core.aes
 
 import net.corda.crypto.core.Encryptor
+import net.corda.crypto.core.concatByteArrays
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -24,20 +25,6 @@ class AesEncryptor(
             }
         }
 
-        private fun concatByteArrays(vararg concat: ByteArray): ByteArray {
-            if (concat.isEmpty()) {
-                return ByteArray(0)
-            }
-            val length = concat.sumOf { it.size }
-            val output = ByteArray(length)
-            var offset = 0
-            for (segment in concat) {
-                val segmentSize = segment.size
-                System.arraycopy(segment, 0, output, offset, segmentSize)
-                offset += segmentSize
-            }
-            return output
-        }
     }
 
     /**
