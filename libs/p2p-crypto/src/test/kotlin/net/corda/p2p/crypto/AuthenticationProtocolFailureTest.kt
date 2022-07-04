@@ -73,9 +73,9 @@ class AuthenticationProtocolFailureTest {
             ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag
         )
         assertThatThrownBy {
-            authenticationProtocolB.validatePeerHandshakeMessage(
-                modifiedInitiatorHandshakeMessage, partyASessionKey.public, SignatureSpec.ECDSA_SHA256
-            )
+            authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { _, _, _ ->
+                partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+            }
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
@@ -103,9 +103,9 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
         assertThatThrownBy {
-            authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, partyASessionKey.public, SignatureSpec.ECDSA_SHA256
-            )
+            authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+                partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+            }
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
@@ -134,9 +134,9 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
         assertThatThrownBy {
-            authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, wrongPublicKey, SignatureSpec.ECDSA_SHA256
-            )
+            authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+                wrongPublicKey to SignatureSpec.ECDSA_SHA256
+            }
         }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
     }
@@ -163,11 +163,9 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(
-            initiatorHandshakeMessage,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
-        )
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        }
 
         // Step 4: responder creating different signature than the one expected.
         val signingCallbackForB = { data: ByteArray ->

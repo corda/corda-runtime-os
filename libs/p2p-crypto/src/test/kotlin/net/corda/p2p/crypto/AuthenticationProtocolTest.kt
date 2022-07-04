@@ -102,11 +102,13 @@ class AuthenticationProtocolTest {
         }
         val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyASessionKey.public, signatureSpec)
+        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ -> partyASessionKey.public to signatureSpec }
         if (duplicateInvocations) {
             assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA))
                 .isEqualTo(initiatorHandshakeMessage)
-            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyASessionKey.public, signatureSpec)
+            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+                partyASessionKey.public to signatureSpec
+            }
         }
 
         // Step 4: responder sending handshake message and initiator validating it.

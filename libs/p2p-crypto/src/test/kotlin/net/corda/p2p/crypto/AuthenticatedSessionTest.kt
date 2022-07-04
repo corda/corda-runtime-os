@@ -64,11 +64,9 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(
-            initiatorHandshakeMessage,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
-        )
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _, ->
+            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        }
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -136,11 +134,9 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(
-            initiatorHandshakeMessage,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
-        )
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _, ->
+            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        }
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -199,11 +195,9 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(
-            initiatorHandshakeMessage,
-            partyASessionKey.public,
-            SignatureSpec.ECDSA_SHA256,
-        )
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        }
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->

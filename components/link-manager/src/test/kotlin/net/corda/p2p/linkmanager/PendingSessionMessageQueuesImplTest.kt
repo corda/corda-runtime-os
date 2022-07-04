@@ -54,12 +54,8 @@ class PendingSessionMessageQueuesImplTest {
         HoldingIdentity("david", "group-2")
     )
     private val members = mock<LinkManagerMembershipGroupReader> {
-        on { getMemberInfo(sessionCounterparties.counterpartyId) } doReturn LinkManagerMembershipGroupReader.MemberInfo(
-            sessionCounterparties.counterpartyId,
-            mock(),
-            KeyAlgorithm.ECDSA,
-            "",
-        )
+        on { getMemberInfo(sessionCounterparties.ourId, sessionCounterparties.counterpartyId) } doReturn
+                LinkManagerMembershipGroupReader.MemberInfo(sessionCounterparties.counterpartyId, mock(), KeyAlgorithm.ECDSA, "",)
     }
     private val groups = mock<LinkManagerGroupPolicyProvider> {
         on { getGroupInfo(sessionCounterparties.ourId) } doReturn GroupPolicyListener.GroupInfo(
