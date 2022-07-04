@@ -95,6 +95,17 @@ class FlowTests {
     }
 
     @Test
+    fun `start RPC flow twice, second returns an error code of 409`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "echo"
+            data = mapOf("echo_value" to "hello")
+        }
+
+        startRpcFlow(bobHoldingId, requestBody, 200)
+        startRpcFlow(bobHoldingId, requestBody, 409)
+    }
+
+    @Test
     fun `start RPC flow - flow failure test`() {
         // 1) Start the flow but signal it to throw an exception when it starts
         val requestBody = RpcSmokeTestInput().apply {
@@ -244,5 +255,53 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
         assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+    }
+
+    @Test
+    fun `SubFlow - Create an initiated session in an initiating flow and pass it to a inline subflow`() {
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "subflow_passed_in_initiated_session"
+            data = mapOf(
+                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "messages" to "m1;m2"
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
+        assertThat(flowResult.result)
+            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+    }
+
+    @Test
+    fun `SubFlow - Create an uninitiated session in an initiating flow and pass it to a inline subflow`() {
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "subflow_passed_in_non_initiated_session"
+            data = mapOf(
+                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "messages" to "m1;m2"
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
+        assertThat(flowResult.result)
+            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
     }
 }

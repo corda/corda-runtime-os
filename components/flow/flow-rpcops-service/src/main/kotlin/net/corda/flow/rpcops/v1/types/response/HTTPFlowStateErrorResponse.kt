@@ -1,4 +1,4 @@
-package net.corda.flow.rpcops.v1.response
+package net.corda.flow.rpcops.v1.types.response
 
 /**
  * Represents the error for a flow that is in the FAILED state.
