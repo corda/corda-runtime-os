@@ -43,9 +43,12 @@ class InitiateFlowRequestHandler @Activate constructor(
                 e
             )
         }
-        val initiator =
-            checkpoint.flowStack.peek()?.flowName ?: throw FlowFatalException("Flow stack is empty", context)
+
+        val initiator = checkpoint.flowStack.nearestFirst { it.isInitiatingFlow }?.flowName
+            ?: throw FlowFatalException("Flow stack is empty or did not contain an initiating flow in the stack", context)
+
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
+
         checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(
                 checkpoint,

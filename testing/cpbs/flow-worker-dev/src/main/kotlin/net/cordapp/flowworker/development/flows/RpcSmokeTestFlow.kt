@@ -2,6 +2,7 @@ package net.cordapp.flowworker.development.flows
 
 import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -18,7 +19,7 @@ import net.cordapp.flowworker.development.messages.InitiatedSmokeTestMessage
 import net.cordapp.flowworker.development.messages.RpcSmokeTestInput
 import net.cordapp.flowworker.development.messages.RpcSmokeTestOutput
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 @Suppress("unused")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -37,10 +38,15 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "persist_update" to this::persistenceUpdateDog,
         "persist_find" to this::persistenceFindDog,
         "throw_platform_error" to this::throwPlatformError,
+        "subflow_passed_in_initiated_session" to  { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
+        "subflow_passed_in_non_initiated_session" to  { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) }
     )
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -146,6 +152,34 @@ class RpcSmokeTestFlow : RPCStartableFlow {
                 .unwrap { it }
 
             log.info("Received response from session '${session}'.")
+
+            outputs.add("${x500}=${response.message}")
+        }
+
+        return outputs.joinToString("; ")
+    }
+
+    @Suspendable
+    private fun createSessionsInInitiatingFlowAndPassToInlineFlow(
+        input: RpcSmokeTestInput,
+        initiateSessionInInitiatingFlow: Boolean
+    ): String {
+        val sessions = input.getValue("sessions").split(";")
+        val messages = input.getValue("messages").split(";")
+        if (sessions.size != messages.size) {
+            throw IllegalStateException("Sessions test run with unmatched messages to sessions")
+        }
+
+        log.info("SubFlow - Starting sessions for '${input.getValue("sessions")}'")
+        val outputs = mutableListOf<String>()
+        sessions.forEachIndexed { idx, x500 ->
+            val response = flowEngine.subFlow(
+                InitiatingSubFlowSmokeTestFlow(
+                    MemberX500Name.parse(x500),
+                    initiateSessionInInitiatingFlow,
+                    messages[idx]
+                )
+            )
 
             outputs.add("${x500}=${response.message}")
         }

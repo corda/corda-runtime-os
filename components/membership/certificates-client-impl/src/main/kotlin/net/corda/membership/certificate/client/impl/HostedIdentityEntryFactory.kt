@@ -130,16 +130,13 @@ internal class HostedIdentityEntryFactory(
             ?: throw CordaRuntimeException("This certificate public key is unknown to $tenantId")
 
         val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
-        val p2pParameters = policy["p2pParameters"] as? Map<*, *>
-            ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} has no p2pParameters")
-        val tlsTrustRoots = p2pParameters["tlsTrustRoots"] as? Collection<*>
-            ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters has no tlsTrustRoots")
+            ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${holdingIdentity.id}].")
+        val tlsTrustRoots = policy.p2pParameters.tlsTrustRoots
         if (tlsTrustRoots.isEmpty()) {
             throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
         }
         tlsTrustRoots
             .asSequence()
-            .map { it.toString() }
             .map { tlsRootCertificateStr ->
                 CertificateFactory.getInstance("X.509")
                     .generateCertificate(tlsRootCertificateStr.byteInputStream())

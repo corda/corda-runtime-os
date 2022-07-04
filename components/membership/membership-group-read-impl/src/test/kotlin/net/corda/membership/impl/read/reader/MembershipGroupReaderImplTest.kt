@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES
-import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache

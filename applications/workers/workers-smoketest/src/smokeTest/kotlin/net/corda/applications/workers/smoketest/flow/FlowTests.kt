@@ -273,4 +273,52 @@ class FlowTests {
         assertThat(flows.size).isEqualTo(5)
         assertTrue(flows.containsAll(expectedFlows))
     }
+
+    @Test
+    fun `SubFlow - Create an initiated session in an initiating flow and pass it to a inline subflow`() {
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "subflow_passed_in_initiated_session"
+            data = mapOf(
+                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "messages" to "m1;m2"
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
+        assertThat(flowResult.result)
+            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+    }
+
+    @Test
+    fun `SubFlow - Create an uninitiated session in an initiating flow and pass it to a inline subflow`() {
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "subflow_passed_in_non_initiated_session"
+            data = mapOf(
+                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "messages" to "m1;m2"
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
+        assertThat(flowResult.result)
+            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+    }
 }
