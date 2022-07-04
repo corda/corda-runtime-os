@@ -10,7 +10,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +19,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 
 class SoftCryptoKeyStoreProviderTests {
@@ -55,74 +53,61 @@ class SoftCryptoKeyStoreProviderTests {
         )
     }
 
-    private fun act() =
-        component.impl.getInstance()
-
     @Test
     fun `Should create ActiveImpl only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> { act() }
+        assertThrows<IllegalStateException> { component.impl.getInstance() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.ActiveImpl::class.java, component.impl)
-        assertNotNull(act())
+        assertNotNull(component.impl.getInstance())
     }
 
     @Test
     fun `Should use InactiveImpl when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> { act() }
+        assertThrows<IllegalStateException> { component.impl.getInstance() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.ActiveImpl::class.java, component.impl)
-        assertNotNull(act())
+        assertNotNull(component.impl.getInstance())
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> { act() }
+        assertThrows<IllegalStateException> { component.impl.getInstance() }
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> { act() }
+        assertThrows<IllegalStateException> { component.impl.getInstance() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.ActiveImpl::class.java, component.impl)
-        val instance11 = act()
-        val instance12 = act()
+        val instance11 = component.impl.getInstance()
+        val instance12 = component.impl.getInstance()
         assertNotNull(instance11)
         assertSame(instance11, instance12)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.InactiveImpl::class.java, component.impl)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyStoreProviderImpl.ActiveImpl::class.java, component.impl)
-        val instance21 = act()
-        val instance22 = act()
+        val instance21 = component.impl.getInstance()
+        val instance22 = component.impl.getInstance()
         assertNotNull(instance21)
         assertSame(instance21, instance22)
-        assertNotSame(instance11, instance21)
     }
 }
 
