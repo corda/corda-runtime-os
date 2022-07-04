@@ -71,18 +71,12 @@ internal class VirtualNodeWriterProcessor(
         try {
             val cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(create.cpiFileChecksum)
             if (cpiMetadata == null) {
-//            handleException(respFuture, "CPI with file checksum ${create.cpiFileChecksum} was not found.", request)
                 handleException(respFuture, VirtualNodeWriteServiceException("CPI with file checksum ${create.cpiFileChecksum} was not found."))
                 return
             }
 
             val holdingId = HoldingIdentity(create.getX500CanonicalName(), cpiMetadata.mgmGroupId)
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
-                /*handleException(
-                    respFuture,
-                    "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists.",
-                    create
-                )*/
                 handleException(
                     respFuture,
                     VirtualNodeWriteServiceException("Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists.")
@@ -308,16 +302,14 @@ internal class VirtualNodeWriterProcessor(
         val instant = clock.instant()
         val response = VirtualNodeManagementResponse(
             instant,
-            VirtualNodeManagementResponseSuccess(
-                VirtualNodeCreateResponse(
-                    holdingIdentity.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
-                    holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.id,
-                    dbConnections.vaultDdlConnectionId?.toString(),
-                    dbConnections.vaultDmlConnectionId.toString(),
-                    dbConnections.cryptoDdlConnectionId?.toString(),
-                    dbConnections.cryptoDmlConnectionId.toString(),
-                    null
-                )
+            VirtualNodeCreateResponse(
+                holdingIdentity.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
+                holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.id,
+                dbConnections.vaultDdlConnectionId?.toString(),
+                dbConnections.vaultDmlConnectionId.toString(),
+                dbConnections.cryptoDdlConnectionId?.toString(),
+                dbConnections.cryptoDmlConnectionId.toString(),
+                null
             )
         )
         respFuture.complete(response)

@@ -98,18 +98,18 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         logger.info(resp.responseType.toString())
 
         return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeManagementResponseSuccess -> {
-                when (val responseData = resolvedResponse.result) {
-                    is VirtualNodeCreateResponse -> {
-                        val cpiId = CpiIdentifier.fromAvro(responseData.cpiIdentifier)
-
-                        VirtualNodeCreateResponse(
-                            responseData.holdingIdentity.x500Name, cpiId, request.cpiFileChecksum, responseData.holdingIdentity.groupId, HoldingIdentity(responseData.holdingIdentity.x500Name, responseData.holdingIdentity.groupId).toCorda().hash,
-                            responseData.vaultDdlConnectionId, responseData.vaultDmlConnectionId, responseData.cryptoDdlConnectionId, responseData.cryptoDmlConnectionId
-                        )
-                    }
-                    else -> throw UnknownResponseDataTypeException(resolvedResponse.result::class.java.name)
-                }
+            is VirtualNodeCreateResponse -> {
+                HTTPCreateVirtualNodeResponse(
+                    resolvedResponse.x500Name,
+                    CpiIdentifier.fromAvro(resolvedResponse.cpiIdentifier),
+                    resolvedResponse.cpiFileChecksum,
+                    resolvedResponse.mgmGroupId,
+                    resolvedResponse.holdingIdentifierHash,
+                    resolvedResponse.vaultDdlConnectionId,
+                    resolvedResponse.vaultDmlConnectionId,
+                    resolvedResponse.cryptoDdlConnectionId,
+                    resolvedResponse.cryptoDmlConnectionId
+                )
             }
             is VirtualNodeManagementResponseFailure -> {
                 val exception = resolvedResponse.exception
