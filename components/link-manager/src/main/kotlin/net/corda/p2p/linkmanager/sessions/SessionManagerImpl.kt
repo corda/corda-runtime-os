@@ -30,6 +30,7 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.HostingMapListener
 import net.corda.p2p.linkmanager.InboundAssignmentListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerHostingMap
@@ -59,9 +60,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -110,7 +109,10 @@ internal class SessionManagerImpl(
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
-    private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
+    private val pendingInboundSessions = ConcurrentHashMap<
+            String,
+            AuthenticationProtocolResponder<Pair<HostingMapListener.IdentityInfo, LinkManagerMembershipGroupReader.MemberInfo>>
+            >()
     private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionCounterparties, Session>>()
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
@@ -592,15 +594,14 @@ internal class SessionManagerImpl(
     }
 
     private fun lookupInitiatorPublicKey(
-        initiatorPublicKeyHash: ByteArray,
-        responderPublicKeyHash: ByteArray,
-        groupId: String
-    ): Pair<PublicKey, SignatureSpec> {
-        val responderHoldingIdentity = linkManagerHostingMap.getInfo(responderPublicKeyHash, groupId)
-            ?: throw OurHashNotInNetworkMapException(responderPublicKeyHash.toBase64())
-        val initiatorMemberInfo = members.getMemberInfo(responderHoldingIdentity.holdingIdentity, initiatorPublicKeyHash)
-            ?: throw PeerHashNotInNetworkMapException(initiatorPublicKeyHash.toBase64())
-        return initiatorMemberInfo.sessionPublicKey to initiatorMemberInfo.publicKeyAlgorithm.getSignatureSpec()
+        identityData: AuthenticationProtocolResponder.KeyLookupData
+    ): AuthenticationProtocolResponder.KeyLookupResult<Pair<HostingMapListener.IdentityInfo, LinkManagerMembershipGroupReader.MemberInfo>> {
+        val responderHoldingIdentity = linkManagerHostingMap.getInfo(identityData.responderPublicKeyHash, identityData.groupId)
+            ?: throw OurHashNotInNetworkMapException(identityData.responderPublicKeyHash.toBase64())
+        val initiatorMemberInfo = members.getMemberInfo(responderHoldingIdentity.holdingIdentity, identityData.initiatorPublicKeyHash)
+            ?: throw PeerHashNotInNetworkMapException(identityData.initiatorPublicKeyHash.toBase64())
+        val identities = responderHoldingIdentity to initiatorMemberInfo
+        return AuthenticationProtocolResponder.KeyLookupResult(initiatorMemberInfo.sessionPublicKey, initiatorMemberInfo.publicKeyAlgorithm.getSignatureSpec(), identities)
     }
 
     private class OurHashNotInNetworkMapException(val hash: String) : IllegalStateException()
@@ -634,32 +635,22 @@ internal class SessionManagerImpl(
             )
             return null
         }
-        // Find the correct Holding Identity to use (using the public key hash).
-        val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
-        if (ourIdentityInfo == null) {
-            logger.ourHashNotInMembersMapWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                ourIdentityData.responderPublicKeyHash.toBase64()
-            )
-            return null
-        }
 
-        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity)
+        val groupInfo = groups.getGroupInfo(ourIdentityData.first.holdingIdentity)
         if (groupInfo == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityData.first.holdingIdentity)
             return null
         }
 
-        val tenantId = ourIdentityInfo.sessionKeyTenantId
+        val tenantId = ourIdentityData.first.sessionKeyTenantId
 
         val response = try {
-            val ourPublicKey = ourIdentityInfo.sessionPublicKey
+            val ourPublicKey = ourIdentityData.first.sessionPublicKey
             val signData = { data: ByteArray ->
                 cryptoProcessor.sign(
                     tenantId,
-                    ourIdentityInfo.sessionPublicKey,
-                    ourIdentityInfo.sessionPublicKey.toKeyAlgorithm().getSignatureSpec(),
+                    ourPublicKey,
+                    ourPublicKey.toKeyAlgorithm().getSignatureSpec(),
                     data
                 )
             }
@@ -672,30 +663,19 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val initiatorIdentityData = session.getInitiatorIdentity()
-        val peer = members.getMemberInfo(ourIdentityInfo.holdingIdentity, initiatorIdentityData.initiatorPublicKeyHash.array())
-        if (peer == null) {
-            logger.peerHashNotInMembersMapWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
-            )
-            return null
-        }
-
         activeInboundSessions[message.header.sessionId] = Pair(
-            SessionCounterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
+            SessionCounterparties(ourIdentityData.first.holdingIdentity, ourIdentityData.second.holdingIdentity),
             session.getSession()
         )
         logger.info(
             "Inbound session ${message.header.sessionId} established " +
-                "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity})."
+                "(local=${ourIdentityData.first.holdingIdentity}, remote=${ourIdentityData.second.holdingIdentity})."
         )
         /**
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, groupInfo.networkType)
+        return createLinkOutMessage(response, ourIdentityData.first.holdingIdentity, ourIdentityData.second, groupInfo.networkType)
     }
 
     class HeartbeatManager(

@@ -38,7 +38,7 @@ class AuthenticatedSessionTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(
+    private val authenticationProtocolB = AuthenticationProtocolResponder<Unit>(
         sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
     )
 
@@ -64,8 +64,8 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _, ->
-            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
+            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, SignatureSpec.ECDSA_SHA256, Unit)
         }
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -134,8 +134,8 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _, ->
-            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
+            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, SignatureSpec.ECDSA_SHA256, Unit)
         }
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -195,8 +195,8 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
-            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
+            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, SignatureSpec.ECDSA_SHA256, Unit)
         }
 
         // Step 4: responder sending handshake message and initiator validating it.

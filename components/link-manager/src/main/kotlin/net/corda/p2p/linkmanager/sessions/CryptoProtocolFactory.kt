@@ -3,6 +3,8 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.linkmanager.HostingMapListener
+import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import java.security.PublicKey
 
 internal class CryptoProtocolFactory: ProtocolFactory {
@@ -11,8 +13,8 @@ internal class CryptoProtocolFactory: ProtocolFactory {
         return AuthenticationProtocolInitiator(sessionId, supportedModes, ourMaxMessageSize, ourPublicKey, groupId)
     }
 
-    override fun createResponder(sessionId: String,
-                                 supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int): AuthenticationProtocolResponder {
-        return AuthenticationProtocolResponder(sessionId, supportedModes, ourMaxMessageSize)
+    override fun createResponder(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int):
+            AuthenticationProtocolResponder<Pair<HostingMapListener.IdentityInfo, LinkManagerMembershipGroupReader.MemberInfo>> {
+        return  AuthenticationProtocolResponder(sessionId, supportedModes, ourMaxMessageSize)
     }
 }

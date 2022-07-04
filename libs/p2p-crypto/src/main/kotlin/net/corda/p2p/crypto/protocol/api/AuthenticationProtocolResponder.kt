@@ -50,7 +50,7 @@ import kotlin.math.min
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
-class AuthenticationProtocolResponder(val sessionId: String,
+class AuthenticationProtocolResponder<VALIDATE_PEER_HANDSHAKE_RESULT>(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
@@ -60,7 +60,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
     }
 
     private var step = Step.INIT
-    private var handshakeIdentityData: HandshakeIdentityData? = null
+    private var keyLookupResult: VALIDATE_PEER_HANDSHAKE_RESULT? = null
     private var responderHandshakeMessage: ResponderHandshakeMessage? = null
     private var session: Session? = null
 
@@ -123,7 +123,8 @@ class AuthenticationProtocolResponder(val sessionId: String,
      * Validates the handshake message from the peer.
      *
      * @param keyLookupFn a function which looks up the initiator public key and its signature spec from the SHA-256 hashes of the
-     * initiator and responder public keys, and the group id.
+     * initiator and responder public keys, and the group id. The template argument VALIDATE_PEER_HANDSHAKE_RESULT can be used to
+     * pass extra data back from keyLookupFn to caller of validatePeerHandshakeMessage.
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      *
      * @return the SHA-256 of the public key we need to use in the handshake.
@@ -133,10 +134,9 @@ class AuthenticationProtocolResponder(val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        keyLookupFn: (initiatorPublicKeyHash: ByteArray, responderPublicKeyHash: ByteArray, groupId: String)
-            -> Pair<PublicKey, SignatureSpec>
-    ): HandshakeIdentityData {
-        return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { handshakeIdentityData!! }) {
+        keyLookupFn: (identityData: KeyLookupData) -> KeyLookupResult<VALIDATE_PEER_HANDSHAKE_RESULT>
+    ): VALIDATE_PEER_HANDSHAKE_RESULT {
+        return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { keyLookupResult!! }) {
             val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
             try {
                 initiatorHandshakePayloadBytes = aesCipher.decrypt(initiatorRecordHeaderBytes,
@@ -150,13 +150,14 @@ class AuthenticationProtocolResponder(val sessionId: String,
 
             val initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
 
-            val (initiatorPublicKey, initiatorSignatureSpec) = keyLookupFn(
-                initiatorHandshakePayload.initiatorPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.groupId
+            val keyLookup = keyLookupFn(
+                KeyLookupData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
+                    initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
+                    initiatorHandshakePayload.initiatorEncryptedExtensions.groupId
+                )
             )
 
-            val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
+            val initiatorPublicKeyHash = messageDigest.hash(keyLookup.initiatorPublicKey.encoded)
             val expectedInitiatorPublicKeyHash = getInitiatorIdentity().initiatorPublicKeyHash.array()
             if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
                 throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
@@ -171,7 +172,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
             // validate signature
             val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
                     initiatorHandshakePayloadIncomplete.toByteBuffer().array()
-            val signatureWasValid = getSignature(initiatorSignatureSpec).verify(initiatorPublicKey,
+            val signatureWasValid = getSignature(keyLookup.signatureSpec).verify(keyLookup.initiatorPublicKey,
                 INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
                         messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
                 initiatorHandshakePayload.initiatorPartyVerify.array())
@@ -198,10 +199,8 @@ class AuthenticationProtocolResponder(val sessionId: String,
                 agreedMaxMessageSize = min(ourMaxMessageSize, this)
             }
 
-            handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
-            handshakeIdentityData!!
+            keyLookupResult = keyLookup.result
+            keyLookup.result
         }
     }
 
@@ -289,6 +288,32 @@ class AuthenticationProtocolResponder(val sessionId: String,
         return value
     }
 
+    /**
+     * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.
+     * @property responderPublicKeyHash the SHA-256 hash of the public key to be used by the responder.
+     * @property groupId the group identifier the two identities are part of.
+     */
+    data class KeyLookupData(val initiatorPublicKeyHash: ByteArray, val responderPublicKeyHash: ByteArray, val groupId: String) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as KeyLookupData
+
+            if (!initiatorPublicKeyHash.contentEquals(other.initiatorPublicKeyHash)) return false
+            if (!responderPublicKeyHash.contentEquals(other.responderPublicKeyHash)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = initiatorPublicKeyHash.contentHashCode()
+            result = 31 * result + responderPublicKeyHash.contentHashCode()
+            return result
+        }
+    }
+
+    data class KeyLookupResult<T>(val initiatorPublicKey: PublicKey, val signatureSpec: SignatureSpec, val result: T)
 }
 
 /**
@@ -297,30 +322,3 @@ class AuthenticationProtocolResponder(val sessionId: String,
 class NoCommonModeError(initiatorModes: Set<ProtocolMode>, responderModes: Set<ProtocolMode>):
     CordaRuntimeException("There was no common mode between those supported by the initiator ($initiatorModes) " +
                           "and those supported by the responder ($responderModes).")
-
-/**
- * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.
- * @property responderPublicKeyHash the SHA-256 hash of the public key to be used by the responder.
- * @property groupId the group identifier the two identities are part of.
- */
-data class HandshakeIdentityData(val initiatorPublicKeyHash: ByteArray, val responderPublicKeyHash: ByteArray, val groupId: String) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as HandshakeIdentityData
-
-        if (!initiatorPublicKeyHash.contentEquals(other.initiatorPublicKeyHash)) return false
-        if (!responderPublicKeyHash.contentEquals(other.responderPublicKeyHash)) return false
-        if (groupId != other.groupId) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = initiatorPublicKeyHash.contentHashCode()
-        result = 31 * result + responderPublicKeyHash.contentHashCode()
-        result = 31 * result + groupId.hashCode()
-        return result
-    }
-}
