@@ -114,7 +114,7 @@ interface TestHealthCheckAPI : RpcOps {
     @HttpRpcGET(path = "counterFeed/{start}", responseDescription = "Given number supplied produces a WebSocket feed incrementing it")
     fun counterFeed(
         channel: DuplexChannel,
-        @HttpRpcPathParameter start: Int/*,
-        @HttpRpcQueryParameter(required = false) range: Int?*/
+        @HttpRpcPathParameter start: Int,
+        @HttpRpcQueryParameter(required = false) range: Int?
     )
 }

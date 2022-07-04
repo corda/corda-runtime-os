@@ -26,7 +26,7 @@ interface ClientRequestContext {
     /**
      * Gets a map with all the form param keys and values.
      */
-    val formParams: Map<String, List<String>> get() = throw UnsupportedOperationException()
+    val formParams: Map<String, List<String>> get() = emptyMap()
 
     /**
      * Gets the request body as a [String].

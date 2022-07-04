@@ -92,7 +92,7 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
         val closeLatch = CountDownLatch(1)
 
-        val desiredCount = 100
+        val maximumDesiredCount = 100
         val list = mutableListOf<String>()
 
         val wsHandler = object : NoOpEndpoint() {
@@ -102,15 +102,15 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
             }
 
             override fun onWebSocketClose(statusCode: Int, reason: String?) {
-                log.info("onClose: $statusCode - $reason")
+                log.info("Reacting to server closed: $statusCode - $reason")
                 closeLatch.countDown()
                 super.onWebSocketClose(statusCode, reason)
             }
 
             override fun onWebSocketText(message: String) {
                 list.add(message)
-                if (list.size >= desiredCount) {
-                    log.info("All received")
+                if (list.size >= maximumDesiredCount) {
+                    log.warn("Too many received!")
                     closeLatch.countDown()
                 }
             }
@@ -129,9 +129,12 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
             }
         }
 
+        val start = 100
+        val range = 50
+
         val uri = URI(
             "ws://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/100?range=50"
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/$start?range=$range"
         )
 
         log.info("Connecting to: $uri")
@@ -140,10 +143,10 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
             .get(10, TimeUnit.SECONDS)
         log.info("Session established: $session")
         closeLatch.await()
-        session.close(CloseStatus(StatusCode.NORMAL, "All items received. Thank you!"))
+        session.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing from client side."))
         wsClient.stop()
 
-        val expectedContent = (100..199).map { "$it" }
-        assertThat(list).containsAll(expectedContent)
+        val expectedContent = (start until start + range).map { "$it" }
+        assertThat(list).isEqualTo(expectedContent)
     }
 }

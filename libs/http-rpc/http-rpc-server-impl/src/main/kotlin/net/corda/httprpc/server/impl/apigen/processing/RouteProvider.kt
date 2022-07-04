@@ -8,6 +8,7 @@ import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.processing.ws.WebsocketRouteAdaptor
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
+import net.corda.httprpc.tools.isDuplexChannel
 import net.corda.httprpc.tools.isDuplexRoute
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
@@ -133,7 +134,7 @@ internal class RouteInfo(
 
     private fun mapEndpointParameters(parameters: List<EndpointParameter>): List<Parameter> {
         log.trace { "Map endpoint parameters of endpoint \"$fullPath\" to route provider parameters, list size: \"${parameters.size}\"." }
-        return parameters.map {
+        return parameters.filterNot { it.classType.isDuplexChannel() }.map {
             log.trace { "Map endpoint parameter \"${it.name}\"." }
             Parameter(
                 it.classType,

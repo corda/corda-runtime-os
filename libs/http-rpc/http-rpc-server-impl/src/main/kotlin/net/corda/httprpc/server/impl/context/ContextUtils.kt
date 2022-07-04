@@ -115,8 +115,7 @@ internal object ContextUtils {
                 log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
 
                 @Suppress("SpreadOperator")
-                //TODO if one parameter is a list and it's exposed as a query parameter, we may need to cast list elements here
-                val result = invokeDelegatedMethod(*paramValues)
+                val result = invokeDelegatedMethod(*paramValues.toTypedArray())
 
                 buildJsonResult(result, ctx, this)
 
@@ -133,12 +132,12 @@ internal object ContextUtils {
         }
     }
 
-    private fun RouteInfo.retrieveParameters(ctx: ClientRequestContext): Array<Any?> {
+    fun RouteInfo.retrieveParameters(ctx: ClientRequestContext): List<Any?> {
         val parametersRetrieverContext = ParametersRetrieverContext(ctx)
         val paramValues = parameters.map {
             val parameterRetriever = ParameterRetrieverFactory.create(it, this.isMultipartFileUpload)
             parameterRetriever.apply(parametersRetrieverContext)
-        }.toTypedArray()
+        }
         return paramValues
     }
 

@@ -9,6 +9,8 @@ import io.javalin.websocket.WsErrorHandler
 import io.javalin.websocket.WsMessageContext
 import io.javalin.websocket.WsMessageHandler
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
+import net.corda.httprpc.server.impl.context.ClientWsRequestContext
+import net.corda.httprpc.server.impl.context.ContextUtils.retrieveParameters
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.util.contextLogger
 
@@ -27,8 +29,13 @@ internal class WebsocketRouteAdaptor(private val routeInfo: RouteInfo) : WsMessa
 
         ServerDuplexChannel(ctx).let { newChannel ->
             channel = newChannel
-            // Decode params
-            routeInfo.invokeDelegatedMethod(newChannel, 100)
+
+            val clientWsRequestContext = ClientWsRequestContext(ctx)
+            val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
+            val fullListOfParams = listOf(newChannel) + paramsFromRequest
+
+            @Suppress("SpreadOperator")
+            routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
             newChannel.onConnect?.let { it() }
         }
     }

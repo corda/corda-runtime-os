@@ -110,7 +110,7 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
         return requestString
     }
 
-    override fun counterFeed(channel: DuplexChannel, start: Int/*, range: Int?*/)  {
+    override fun counterFeed(channel: DuplexChannel, start: Int, range: Int?)  {
 
         var counter = start
         var scheduledFuture: ScheduledFuture<*>? = null
@@ -121,11 +121,11 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
                 {
                     log.debug { "Sending: $counter" }
                     channel.send("${counter++}")
-                    /*if (range != null) {
-                        if (counter >= start + range - 1) {
+                    if (range != null) {
+                        if (counter >= start + range) {
                             channel.close()
                         }
-                    }*/
+                    }
                 },
                 10,
                 10,
@@ -133,7 +133,7 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
             )
         }
         channel.onClose = { statusCode, reason ->
-            log.info("onClose : $statusCode - $reason")
+            log.info("Reacting to close event : $statusCode - $reason")
             scheduledFuture?.cancel(true)
         }
     }
