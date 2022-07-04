@@ -126,7 +126,7 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
         val uri = URI(
             "ws://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
-                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed"
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/100?range=50"
         )
 
         log.info("Connecting to: $uri")
@@ -138,7 +138,7 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
         session.close(CloseStatus(StatusCode.NORMAL, "All items received. Thank you!"))
         wsClient.stop()
 
-        val expectedContent = (0..99).map { "$it" }
+        val expectedContent = (100..199).map { "$it" }
         assertThat(list).containsAll(expectedContent)
     }
 }

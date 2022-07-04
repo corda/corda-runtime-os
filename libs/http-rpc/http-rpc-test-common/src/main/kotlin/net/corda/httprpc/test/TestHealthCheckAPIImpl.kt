@@ -110,9 +110,9 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
         return requestString
     }
 
-    override fun counterFeed(channel: DuplexChannel/*, start: Int, range: Int?*/)  {
+    override fun counterFeed(channel: DuplexChannel, start: Int/*, range: Int?*/)  {
 
-        var counter = 0 //start
+        var counter = start
         var scheduledFuture: ScheduledFuture<*>? = null
 
         channel.onConnect = {
