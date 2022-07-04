@@ -26,6 +26,8 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.KeyLookupData
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.KeyLookupResult
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
@@ -594,14 +596,14 @@ internal class SessionManagerImpl(
     }
 
     private fun lookupInitiatorPublicKey(
-        identityData: AuthenticationProtocolResponder.KeyLookupData
-    ): AuthenticationProtocolResponder.KeyLookupResult<Pair<HostingMapListener.IdentityInfo, LinkManagerMembershipGroupReader.MemberInfo>> {
+        identityData: KeyLookupData
+    ): KeyLookupResult<Pair<HostingMapListener.IdentityInfo, LinkManagerMembershipGroupReader.MemberInfo>> {
         val responderHoldingIdentity = linkManagerHostingMap.getInfo(identityData.responderPublicKeyHash, identityData.groupId)
             ?: throw OurHashNotInNetworkMapException(identityData.responderPublicKeyHash.toBase64())
         val initiatorMemberInfo = members.getMemberInfo(responderHoldingIdentity.holdingIdentity, identityData.initiatorPublicKeyHash)
             ?: throw PeerHashNotInNetworkMapException(identityData.initiatorPublicKeyHash.toBase64())
         val identities = responderHoldingIdentity to initiatorMemberInfo
-        return AuthenticationProtocolResponder.KeyLookupResult(initiatorMemberInfo.sessionPublicKey, initiatorMemberInfo.publicKeyAlgorithm.getSignatureSpec(), identities)
+        return KeyLookupResult(initiatorMemberInfo.sessionPublicKey, initiatorMemberInfo.publicKeyAlgorithm.getSignatureSpec(), identities)
     }
 
     private class OurHashNotInNetworkMapException(val hash: String) : IllegalStateException()
