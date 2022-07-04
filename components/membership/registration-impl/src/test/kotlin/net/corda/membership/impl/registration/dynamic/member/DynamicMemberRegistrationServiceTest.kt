@@ -6,9 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,8 +17,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -29,6 +27,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.AppMessage
+import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
@@ -39,6 +39,7 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
@@ -65,22 +66,39 @@ class DynamicMemberRegistrationServiceTest {
         private const val LEDGER_KEY = "5678"
         private const val LEDGER_KEY_ID = "2"
         private const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
+        private const val GROUP_NAME = "dummy_group"
+
+        private val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
+        private val REQUEST_BYTES = "3333".toByteArray()
     }
 
+    private val memberProvidedContext: MemberContext = mock()
+    private val mgmProvidedContext: MGMContext = mock()
+    private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
+    private val mgm = HoldingIdentity(mgmName.toString(), GROUP_NAME)
+    private val mgmInfo: MemberInfo = mock {
+        on { memberProvidedContext } doReturn memberProvidedContext
+        on { mgmProvidedContext } doReturn mgmProvidedContext
+        on { name } doReturn mgmName
+        on { groupId } doReturn GROUP_NAME
+        on { isMgm } doReturn true
+    }
     private val memberName = MemberX500Name("Alice", "London", "GB")
-    private val member = HoldingIdentity(memberName.toString(), "dummy_group")
+    private val member = HoldingIdentity(memberName.toString(), GROUP_NAME)
     private val memberId = member.id
     private val sessionKey: PublicKey = mock {
         on { encoded } doReturn SESSION_KEY.toByteArray()
     }
     private val sessionCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY.toByteArray())
+        on { id } doReturn "1"
     }
     private val ledgerKey: PublicKey = mock {
         on { encoded } doReturn LEDGER_KEY.toByteArray()
     }
     private val ledgerCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(LEDGER_KEY.toByteArray())
+        on { id } doReturn "2"
     }
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
@@ -96,13 +114,11 @@ class DynamicMemberRegistrationServiceTest {
         on { encodeAsString(any()) } doReturn SESSION_KEY
         on { encodeAsString(ledgerKey) } doReturn LEDGER_KEY
     }
-    private val mockSignature: DigitalSignature.WithKey = mock{
-//        on { bytes } doReturn "1111".toByteArray()
-    }
+    private val mockSignature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), byteArrayOf(1), emptyMap())
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookup(memberId, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
         on { lookup(memberId, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
-        on { sign(any(), any(), eq(any<SignatureSpec>()), any()) } doReturn mockSignature
+        on { sign(any(), any(), any<SignatureSpec>(), any(), eq(CryptoOpsClient.EMPTY_CONTEXT)) }.doReturn(mockSignature)
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -139,27 +155,17 @@ class DynamicMemberRegistrationServiceTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
-        on { serialize(any()) } doReturn "2222".toByteArray()
+    private val keyValuePairListSerializer: CordaAvroSerializer<Any> = mock {
+        on { serialize(any()) } doReturn MEMBER_CONTEXT_BYTES
     }
-    private val registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest> = mock {
+    private val registrationRequestSerializer: CordaAvroSerializer<Any> = mock {
         on { serialize(any()) } doReturn "3333".toByteArray()
     }
     private val serializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList> {  } } doReturn keyValuePairListSerializer
-        on { createAvroSerializer<MembershipRegistrationRequest> {  } } doReturn registrationRequestSerializer
-    }
-    private val memberProvidedContext: MemberContext = mock()
-    private val mgmProvidedContext: MGMContext = mock()
-    private val mgm: MemberInfo = mock {
-        on { memberProvidedContext } doReturn memberProvidedContext
-        on { mgmProvidedContext } doReturn mgmProvidedContext
-        on { name } doReturn MemberX500Name("Corda MGM", "London", "GB")
-        on { groupId } doReturn "ABCD"
-        on { isMgm } doReturn true
+        on { createAvroSerializer<Any>(any()) }.thenReturn(registrationRequestSerializer, keyValuePairListSerializer)
     }
     private val groupReader: MembershipGroupReader = mock {
-        on { lookup() } doReturn listOf(mgm)
+        on { lookup() } doReturn listOf(mgmInfo)
     }
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
@@ -245,9 +251,10 @@ class DynamicMemberRegistrationServiceTest {
             val publishedMessage = publishedMessageList.first()
             it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
             it.assertThat(publishedMessage.key).isEqualTo(memberId)
-//            val unauthenticatedMessagePublished = publishedMessage.value as UnauthenticatedMessage
-//            val deserializedContext = keyValuePairListDeserializer.deserialize(this.memberContext.array())
-//            it.assertThat(mgmPublished.name.toString()).isEqualTo(memberName.toString())
+            val unauthenticatedMessagePublished = (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
+            it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
+            it.assertThat(unauthenticatedMessagePublished.header.destination).isEqualTo(mgm.toAvro())
+            it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(REQUEST_BYTES))
         }
         registrationService.stop()
     }

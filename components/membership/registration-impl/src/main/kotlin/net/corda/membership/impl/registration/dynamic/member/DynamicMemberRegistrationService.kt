@@ -20,19 +20,18 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
-import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEYS
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.toWire
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MemberRegistrationService
@@ -69,6 +68,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
 class DynamicMemberRegistrationService @Activate constructor(
     @Reference(service = PublisherFactory::class)
@@ -194,11 +194,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val registrationId = UUID.randomUUID().toString()
                 val memberContext = buildMemberContext(context, registrationId, member.id)
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
-                val publicKey = keyEncodingService.decodePublicKey(context[PARTY_SESSION_KEY].toString())
+                val publicKey =
+                    keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value.toByteArray())
                 val memberSignature = cryptoOpsClient.sign(
                     member.id,
                     publicKey,
-                    SignatureSpec(context[SESSION_KEY_SIGNATURE_SPEC].toString()),
+                    SignatureSpec(memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value),
                     serializedMemberContext!!
                 ).bytes.run {
                     CryptoSignatureWithKey(
@@ -222,7 +223,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val record = buildUnauthenticatedP2PRequest(
                     messageHeader,
                     ByteBuffer.wrap(registrationRequestSerializer.serialize(message)),
-                    member.id // holding identity ID is used as topic key to be able to ensure serial processing of registration for the same member.
+                    // holding identity ID is used as topic key to be able to ensure serial processing of registration
+                    // for the same member.
+                    member.id
                 )
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
@@ -292,11 +295,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                     true
                 }
 
+        @Suppress("NestedBlockDepth")
         private fun getKeysFromIds(keyIds: List<String>, tenantId: String): List<CryptoSigningKey> =
             with(cryptoOpsClient) {
                 lookup(tenantId, keyIds).apply {
-                    require(isNotEmpty()) { throw IllegalArgumentException("No key found for tenant: $tenantId under ID: $keyIds.") }
-                    // TODO check if keys for all IDs were found?
+                    map { it.id }.apply {
+                        keyIds.forEach { keyId ->
+                            if (!contains(keyId)) {
+                                throw IllegalArgumentException("No key found for tenant: $tenantId under $keyId.")
+                            }
+                        }
+                    }
                 }
             }
 
@@ -305,7 +314,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                 return SignatureSpec(specFromContext)
             }
             return defaultCodeNameToSpec[key.schemeCodeName]
-                ?: throw IllegalArgumentException("Could not find a suitable signature spec for ${key.schemeCodeName}. Specify signature spec for key with ID: ${key.id} explicitly in the context.")
+                ?: throw IllegalArgumentException("Could not find a suitable signature spec for ${key.schemeCodeName}. " +
+                        "Specify signature spec for key with ID: ${key.id} explicitly in the context.")
         }
 
         private fun generateLedgerKeyData(context: Map<String, String>, tenantId: String): KeyValuePairList {
