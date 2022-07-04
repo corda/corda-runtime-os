@@ -142,17 +142,16 @@ class RegistrationProxyImpl @Activate constructor(
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
-            val service = getRegistrationService(
-                try {
-                    groupPolicyProvider.getGroupPolicy(member).registrationProtocol
-                } catch (e: BadGroupPolicyException) {
-                    val err =
-                        "Failed to select correct registration protocol due to problems retrieving the group policy."
-                    logger.error(err, e)
-                    throw RegistrationProtocolSelectionException(err, e)
-                }
-            )
-            return service.register(member, context)
+            val protocol = try {
+                groupPolicyProvider.getGroupPolicy(member)?.registrationProtocol
+            } catch (e: BadGroupPolicyException) {
+                val err =
+                    "Failed to select correct registration protocol due to problems retrieving the group policy."
+                logger.error(err, e)
+                throw RegistrationProtocolSelectionException(err, e)
+            } ?: throw RegistrationProtocolSelectionException("Could not find group policy file for holding identity: [$member]")
+
+            return getRegistrationService(protocol).register(member, context)
         }
 
         private fun getRegistrationService(protocol: String): MemberRegistrationService {

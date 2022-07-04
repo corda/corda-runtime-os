@@ -15,7 +15,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger

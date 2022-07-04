@@ -18,11 +18,11 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.impl.MemberInfoFactoryImpl
-import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.membership.impl.converter.PublicKeyConverter
-import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.MemberInfoFactoryImpl
+import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher

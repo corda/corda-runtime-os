@@ -7,8 +7,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
-import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
@@ -59,12 +60,8 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
         return if (thirdPartyComponentsMode == ThirdPartyComponentsMode.REAL) {
-            try {
-                val groupPolicy = groupPolicyProvider.getGroupPolicy(holdingIdentity.toCorda())
-                toGroupInfo(holdingIdentity, groupPolicy)
-            } catch (e: Exception) {
-                logger.error("Received exception while trying to retrieve group policy for identity $holdingIdentity.")
-                null
+            groupPolicyProvider.getGroupPolicy(holdingIdentity.toCorda())?.let {
+                toGroupInfo(holdingIdentity, it)
             }
         } else {
             stubGroupPolicyProvider.getGroupInfo(holdingIdentity)
@@ -84,19 +81,19 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
     }
 
     private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo {
-        val networkType = when (groupPolicy.tlsPki) {
-            "C5" -> NetworkType.CORDA_5
-            "C4" -> NetworkType.CORDA_4
-            else -> throw IllegalStateException("Invalid tlsPki value: ${groupPolicy.tlsPki}")
+        val networkType = when (groupPolicy.p2pParameters.tlsPki) {
+            P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5
+            P2PParameters.TlsPkiMode.CORDA_4 -> NetworkType.CORDA_4
+            else -> throw IllegalStateException("Invalid tlsPki value: ${groupPolicy.p2pParameters.tlsPki}")
         }
 
-        val protocolModes = when (groupPolicy.p2pProtocolMode) {
-            "AUTHENTICATED_ENCRYPTION" -> setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-            "AUTHENTICATION_ONLY" -> setOf(ProtocolMode.AUTHENTICATION_ONLY)
-            else -> throw IllegalStateException("Invalid protocol mode: ${groupPolicy.p2pProtocolMode}")
+        val protocolModes = when (groupPolicy.p2pParameters.protocolMode) {
+            P2PParameters.ProtocolMode.AUTH_ENCRYPT -> setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+            P2PParameters.ProtocolMode.AUTH -> setOf(ProtocolMode.AUTHENTICATION_ONLY)
+            else -> throw IllegalStateException("Invalid protocol mode: ${groupPolicy.p2pParameters.protocolMode}")
         }
 
-        val trustedCertificates = groupPolicy.tlsTrustStore.toList()
+        val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
 
         return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
     }
