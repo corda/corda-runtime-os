@@ -17,14 +17,18 @@ import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.StatusCode
+import org.eclipse.jetty.websocket.api.UpgradeRequest
+import org.eclipse.jetty.websocket.api.UpgradeResponse
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 import org.eclipse.jetty.websocket.client.WebSocketClient
+import org.eclipse.jetty.websocket.client.io.UpgradeListener
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.net.URI
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -112,17 +116,18 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
             }
         }
 
-        /*
+        fun toBasicAuthValue(username: String, password: String): String {
+            return "Basic " + Base64.getEncoder().encodeToString("$username:$password".toByteArray())
+        }
+
         val upgradeListener = object: UpgradeListener {
             override fun onHandshakeRequest(request: UpgradeRequest) {
-                // Todo set basic auth headers
+                request.setHeader("Authorization", toBasicAuthValue(userName, password))
             }
 
             override fun onHandshakeResponse(response: UpgradeResponse) {
-
             }
         }
-         */
 
         val uri = URI(
             "ws://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
@@ -131,7 +136,7 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
         log.info("Connecting to: $uri")
 
-        val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest()/*, upgradeListener*/)
+        val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest(), upgradeListener)
             .get(10, TimeUnit.SECONDS)
         log.info("Session established: $session")
         closeLatch.await()
