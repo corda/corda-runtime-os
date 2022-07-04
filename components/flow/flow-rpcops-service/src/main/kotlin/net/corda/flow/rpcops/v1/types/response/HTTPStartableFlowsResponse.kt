@@ -5,6 +5,6 @@ package net.corda.flow.rpcops.v1.types.response
  *
  * @param flowClassNames List of flow class names.
  */
-data class HTTPRunnableFlowsResponse(
+data class HTTPStartableFlowsResponse(
     val flowClassNames: List<String>
 )

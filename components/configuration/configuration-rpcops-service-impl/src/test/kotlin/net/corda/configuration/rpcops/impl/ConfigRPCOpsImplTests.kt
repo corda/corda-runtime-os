@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.configuration.rpcops.impl
 
 import java.util.concurrent.CompletableFuture
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException

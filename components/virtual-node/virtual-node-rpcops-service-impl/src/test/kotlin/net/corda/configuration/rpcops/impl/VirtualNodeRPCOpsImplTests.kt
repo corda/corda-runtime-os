@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.configuration.rpcops.impl
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
