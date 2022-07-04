@@ -101,7 +101,7 @@ internal object ContextUtils {
         }
     }
 
-    fun RouteInfo.invokeMethod(): (Context) -> Unit {
+    fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
             log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
@@ -109,7 +109,8 @@ internal object ContextUtils {
             try {
                 validateRequestContentType(this, ctx)
 
-                val paramValues = retrieveParameters(ctx)
+                val clientHttpRequestContext = ClientHttpRequestContext(ctx)
+                val paramValues = retrieveParameters(clientHttpRequestContext)
 
                 log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
 
@@ -132,7 +133,7 @@ internal object ContextUtils {
         }
     }
 
-    private fun RouteInfo.retrieveParameters(ctx: Context): Array<Any?> {
+    private fun RouteInfo.retrieveParameters(ctx: ClientRequestContext): Array<Any?> {
         val parametersRetrieverContext = ParametersRetrieverContext(ctx)
         val paramValues = parameters.map {
             val parameterRetriever = ParameterRetrieverFactory.create(it, this.isMultipartFileUpload)

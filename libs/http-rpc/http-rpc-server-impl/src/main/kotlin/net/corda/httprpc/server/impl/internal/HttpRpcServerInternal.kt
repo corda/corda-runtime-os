@@ -18,7 +18,7 @@ import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCreden
 import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
 import net.corda.httprpc.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.httprpc.server.impl.context.ContextUtils.getResourceAccessString
-import net.corda.httprpc.server.impl.context.ContextUtils.invokeMethod
+import net.corda.httprpc.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -183,7 +183,7 @@ internal class HttpRpcServerInternal(
         try {
             log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
 
-            addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+            addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
 
             log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {
