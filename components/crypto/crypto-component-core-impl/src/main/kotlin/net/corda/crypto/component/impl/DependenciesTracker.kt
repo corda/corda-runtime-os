@@ -1,10 +1,15 @@
 package net.corda.crypto.component.impl
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 interface DependenciesTracker {
     val isUp: Boolean
@@ -14,7 +19,7 @@ interface DependenciesTracker {
 
     enum class EventHandling { HANDLED, UNHANDLED }
 
-    class Default(
+    open class Default(
         private val dependencies: Set<LifecycleCoordinatorName>
     ) : DependenciesTracker {
         @Volatile
@@ -45,15 +50,36 @@ interface DependenciesTracker {
         }
     }
 
-    class AlwaysUp : DependenciesTracker {
-        override val isUp: Boolean = true
+    class AlwaysUp(
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        impl: Any,
+        implName: LifecycleCoordinatorName = LifecycleCoordinatorName(impl::class.java.name)
+    ) : Default(setOf(implName)), Lifecycle {
+        private val logger: Logger = LoggerFactory.getLogger(impl::class.java)
 
-        override fun follow(coordinator: LifecycleCoordinator) {
+        private val lifecycleCoordinator = coordinatorFactory.createCoordinator(implName) { event, coordinator ->
+            if(event is StartEvent) {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
         }
 
-        override fun clear() {
+        override val isRunning: Boolean
+            get() = lifecycleCoordinator.isRunning
+
+        override fun start() {
+            logger.info("Starting...")
+            lifecycleCoordinator.start()
         }
 
-        override fun on(event: RegistrationStatusChangeEvent): EventHandling = EventHandling.UNHANDLED
+        override fun stop() {
+            logger.info("Stopping...")
+            lifecycleCoordinator.stop()
+        }
+
+        override fun close() {
+            logger.info("Closing...")
+            super.close()
+            lifecycleCoordinator.close()
+        }
     }
 }

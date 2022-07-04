@@ -673,36 +673,6 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
-    fun `Should generate fresh key without external id by proxy`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val publicKey = ByteBuffer.wrap(
-            schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
-        )
-        setupCompletedResponse {
-            CryptoPublicKey(publicKey)
-        }
-        val result = sender.act {
-            component.freshKeyProxy(
-                knownTenantId,
-                CryptoConsts.Categories.CI,
-                ECDSA_SECP256R1_CODE_NAME,
-                knownRawOperationContext
-            )
-        }
-        assertNotNull(result.value)
-        assertArrayEquals(result.value.key.array(), publicKey.array())
-        val command = assertOperationType<GenerateFreshKeyRpcCommand>()
-        assertNull(command.externalId)
-        assertEquals(CryptoConsts.Categories.CI, command.category)
-        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
     fun `Should generate fresh key with external id`() {
         component.start()
         eventually {
@@ -726,39 +696,6 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
-        val command = assertOperationType<GenerateFreshKeyRpcCommand>()
-        assertNotNull(command.externalId)
-        assertEquals(CryptoConsts.Categories.CI, command.category)
-        assertEquals(externalId, command.externalId)
-        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should generate fresh key with external id by proxy`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val externalId = UUID.randomUUID().toString()
-        val publicKey = ByteBuffer.wrap(
-            schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
-        )
-        setupCompletedResponse {
-            CryptoPublicKey(publicKey)
-        }
-        val result = sender.act {
-            component.freshKeyProxy(
-                knownTenantId,
-                CryptoConsts.Categories.CI,
-                externalId,
-                ECDSA_SECP256R1_CODE_NAME,
-                knownRawOperationContext
-            )
-        }
-        assertNotNull(result.value)
-        assertArrayEquals(result.value.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>()
         assertNotNull(command.externalId)
         assertEquals(CryptoConsts.Categories.CI, command.category)

@@ -47,7 +47,7 @@ class HSMServiceTests {
             config = config,
             hsmStore = factory.hsmCache,
             schemeMetadata = factory.schemeMetadata,
-            opsProxyClient = factory.opsProxyClient
+            cryptoOpsClient = factory.opsProxyClient
         )
     }
 

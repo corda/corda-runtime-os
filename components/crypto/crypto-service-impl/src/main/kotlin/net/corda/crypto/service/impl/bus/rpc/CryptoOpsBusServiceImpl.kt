@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.bus.rpc
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -35,10 +36,11 @@ class CryptoOpsBusServiceImpl @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsBusService>(),
     configurationReadService = configurationReadService,
-    impl = InactiveImpl(),
-    upstream = setOf(
-        LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     ),
     configKeys = setOf(
         MESSAGING_CONFIG,
@@ -51,17 +53,11 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         const val CLIENT_NAME = "crypto.ops.rpc"
     }
 
-    interface Impl : AutoCloseable {
-        val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = CryptoOpsBusProcessor(signingFactory, event)
-        return ActiveImpl(
+        return Impl(
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -76,16 +72,12 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         )
     }
 
-    internal class InactiveImpl : Impl {
-        override val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
-            get() = throw IllegalStateException("Component is in illegal state.")
+    class Impl(
+        val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
+    ) : AbstractImpl {
+        override val downstream: DependenciesTracker =
+            DependenciesTracker.Default(setOf(subscription.subscriptionName))
 
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
-        override val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
-    ) : Impl {
         override fun close() {
             subscription.close()
         }

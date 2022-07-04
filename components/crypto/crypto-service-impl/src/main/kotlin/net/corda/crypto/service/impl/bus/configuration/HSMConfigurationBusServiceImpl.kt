@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.bus.configuration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.service.HSMConfigurationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
@@ -35,10 +36,11 @@ class HSMConfigurationBusServiceImpl @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMConfigurationBusService>(),
     configurationReadService = configurationReadService,
-    impl = InactiveImpl(),
-    upstream = setOf(
-        LifecycleCoordinatorName.forComponent<HSMService>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<HSMService>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     ),
     configKeys = setOf(
         MESSAGING_CONFIG,
@@ -51,17 +53,11 @@ class HSMConfigurationBusServiceImpl @Activate constructor(
         const val CLIENT_NAME = "crypto.hsm.rpc.registration"
     }
 
-    interface Impl : AutoCloseable {
-        val subscription: RPCSubscription<HSMConfigurationRequest, HSMConfigurationResponse>
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_HSM_CONFIGURATION_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = HSMConfigurationBusProcessor(hsmService, event)
-        return ActiveImpl(
+        return Impl(
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -76,16 +72,12 @@ class HSMConfigurationBusServiceImpl @Activate constructor(
         )
     }
 
-    internal class InactiveImpl : Impl {
-        override val subscription: RPCSubscription<HSMConfigurationRequest, HSMConfigurationResponse>
-            get() = throw IllegalStateException("Component is in illegal state.")
+    class Impl(
+        val subscription: RPCSubscription<HSMConfigurationRequest, HSMConfigurationResponse>
+    ) : AbstractImpl {
+        override val downstream: DependenciesTracker =
+            DependenciesTracker.Default(setOf(subscription.subscriptionName))
 
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
-        override val subscription: RPCSubscription<HSMConfigurationRequest, HSMConfigurationResponse>
-    ) : Impl {
         override fun close() {
             subscription.close()
         }
