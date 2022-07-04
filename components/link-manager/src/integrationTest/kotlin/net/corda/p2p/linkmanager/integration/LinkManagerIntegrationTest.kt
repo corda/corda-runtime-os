@@ -94,10 +94,11 @@ class LinkManagerIntegrationTest {
         )
 
     private fun Publisher.publishLinkManagerConfig(config: Config) {
+        val configSource = config.root().render(ConfigRenderOptions.concise())
         this.publish(listOf(Record(
             Schemas.Config.CONFIG_TOPIC,
             "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
-            Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
+            Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
         ))).forEach { it.get() }
     }
 

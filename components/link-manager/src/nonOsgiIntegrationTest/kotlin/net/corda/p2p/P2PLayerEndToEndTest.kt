@@ -436,12 +436,13 @@ class P2PLayerEndToEndTest {
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
+            val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(
                 listOf(
                     Record(
                         CONFIG_TOPIC,
                         key,
-                        Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
+                        Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             ).forEach { it.get() }
