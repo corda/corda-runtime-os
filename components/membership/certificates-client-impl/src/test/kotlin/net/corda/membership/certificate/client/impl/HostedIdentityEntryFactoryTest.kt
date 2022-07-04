@@ -43,6 +43,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
     }
+
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn validHoldingId
     }
@@ -93,7 +94,7 @@ class HostedIdentityEntryFactoryTest {
         on { encodeAsString(sessionPublicKey) } doReturn PUBLIC_KEY_PEM
     }
     private val p2pParams: GroupPolicy.P2PParameters = mock {
-        on{tlsTrustRoots} doReturn listOf(rootPem)
+        on { tlsTrustRoots } doReturn listOf(rootPem)
     }
     private val groupPolicy = mock<GroupPolicy> {
         on { p2pParameters } doReturn p2pParams
@@ -259,6 +260,7 @@ class HostedIdentityEntryFactoryTest {
             )
         }
     }
+
     @Test
     fun `createIdentityRecord will throw an exception if the certificate public key is unknown`() {
         whenever(cryptoOpsClient.filterMyKeys(any(), any())).doReturn(emptyList())

@@ -8,7 +8,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Ro
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import java.util.*
+import java.util.UUID
 
 interface GroupPolicyParser {
 
