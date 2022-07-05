@@ -23,6 +23,6 @@ dependencies {
     implementation project(":libs:serialization:serialization-amqp:cpk-library")
 }
 
-tasks.named('cpk', Jar) {
+tasks.named('jar', Jar) {
     archiveBaseName = 'TestSerializableCpk-using-lib'
 }
