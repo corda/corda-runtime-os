@@ -19,7 +19,6 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRespon
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl

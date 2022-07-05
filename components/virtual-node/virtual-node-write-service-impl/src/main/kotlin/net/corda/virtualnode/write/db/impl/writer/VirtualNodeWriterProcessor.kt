@@ -60,9 +60,13 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
-    private fun createVirtualNode(instant: Instant, create: VirtualNodeCreateRequest, respFuture: CompletableFuture<VirtualNodeManagementResponse>) {
+    @Suppress("ReturnCount")
+    private fun createVirtualNode(
+        instant: Instant,
+        create: VirtualNodeCreateRequest,
+        respFuture: CompletableFuture<VirtualNodeManagementResponse>
+    ) {
         create.validationError()?.let { errMsg ->
-//            handleException(respFuture, errMsg, request)
             handleException(respFuture, VirtualNodeWriteServiceException(errMsg))
             return
         }
@@ -329,6 +333,7 @@ internal class VirtualNodeWriterProcessor(
             clock.instant(),
             VirtualNodeManagementResponseFailure(
                 ExceptionEnvelope().apply {
+                    errorType = e::class.java.name
                     errorMessage = e.message
                 }
             )
