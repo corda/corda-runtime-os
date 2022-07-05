@@ -30,8 +30,5 @@ tasks.named('jar', Jar) {
         // 'net.corda.bundle2' must be a private package.
         autoExport = false
     }
-}
-
-tasks.named('cpk', Jar) {
     archiveBaseName = 'TestSerializable3-workflows'
 }
