@@ -2,7 +2,7 @@
 -runfw: org.apache.felix.framework;
 -runee: JavaSE-11
 -runtrace: true
--runjdb: 5006
+#-runjdb: 5006
 
 -runsystempackages: \
     sun.security.x509
