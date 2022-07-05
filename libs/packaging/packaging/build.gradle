@@ -1,5 +1,4 @@
 import aQute.bnd.version.MavenVersion
-import java.security.cert.CertificateFactory
 
 plugins {
     id 'corda.common-library'
@@ -64,21 +63,12 @@ dependencies {
     workflowCPK project(path: 'test:workflow-cpk', configuration: 'cordaCPK')
 }
 
-def certificateProvider = provider {
-    CertificateFactory cf = CertificateFactory.getInstance('X.509')
-    def cert = file('config/dev/corda_dev_cpk.cer').withInputStream {
-        cf.generateCertificate(it)
-    }
-    Base64.getEncoder().encodeToString(cert.encoded)
-}
-
 tasks.named('test', Test) {
     inputs.files(configurations.flowsCPK, configurations.contractCPK, configurations.workflowCPK)
     .withPropertyName("CPK_CONFIG").withPathSensitivity(PathSensitivity.RELATIVE)
 
     doFirst {
         systemProperties([
-            'net.corda.dev.cert' : certificateProvider.get(),
             'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
             'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
             'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),

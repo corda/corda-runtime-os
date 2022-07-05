@@ -55,10 +55,12 @@ class CPKTests {
     private lateinit var workflowCPKLibraries: Map<String, SecureHash>
 
     private val cordaDevCertSummaryHash = run {
-        val cordaDevCert = Base64.getDecoder().decode(System.getProperty("net.corda.dev.cert")).run {
-            val certFactory = CertificateFactory.getInstance("X.509")
-            certFactory.generateCertificate(ByteArrayInputStream(this)) as X509Certificate
-        }
+        val certFactory = CertificateFactory.getInstance("X.509")
+
+        val cordaDevCert = certFactory.generateCertificate(
+            this::class.java.classLoader.getResourceAsStream("corda_dev_cpk.cer")
+                ?: throw IllegalStateException("corda_dev_cpk.cer not found")
+        ) as X509Certificate
 
         val sha256Name = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
         SecureHash(
