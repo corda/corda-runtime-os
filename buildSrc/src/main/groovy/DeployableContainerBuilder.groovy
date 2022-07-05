@@ -21,7 +21,6 @@ import java.time.Instant
  * Add custom task which will allow us to publish containerized OSGi deployable
  * Currently this deploys a 'fat jar' to the container and we run 'java - jar *args*' as the entry point.
  * A user may pass further custom arguments using the 'arguments' property when using this task type.
- * If a kafka file is present in the sub project directory it will be copied to container and
  */
 abstract class DeployableContainerBuilder extends DefaultTask {
 
@@ -143,7 +142,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
 
         if (!(new File(containerizationDir.toString())).exists()) {
-            logger.lifecycle("Created containerization dir")
+            logger.info("Created containerization dir")
             Files.createDirectories(containerizationDir)
         }
 
@@ -197,7 +196,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
         if (!environment.get().empty) {
             environment.get().each {String key, String value ->
-                logger.lifecycle("Adding Env var $key with value $value")
+                logger.info("Adding Env var $key with value $value")
                 builder.addEnvironmentVariable(key, value)
             }
         }
