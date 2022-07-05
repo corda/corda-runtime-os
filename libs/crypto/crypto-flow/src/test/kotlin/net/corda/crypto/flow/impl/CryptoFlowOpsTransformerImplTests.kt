@@ -1,6 +1,5 @@
 package net.corda.crypto.flow.impl
 
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
@@ -22,7 +21,6 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -199,83 +197,6 @@ class CryptoFlowOpsTransformerImplTests {
     }
 
     @Test
-    fun `Should create command to generate new fresh key without external id`() {
-        val result = act {
-            buildTransformer().createFreshKey(
-                knownTenantId,
-                CryptoConsts.Categories.CI,
-                EDDSA_ED25519_CODE_NAME,
-                knownOperationContext
-            )
-        }
-        assertNotNull(result.value)
-        assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
-        val command = result.value.request as GenerateFreshKeyFlowCommand
-        assertNull(command.externalId)
-        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
-        assertRequestContext<GenerateFreshKeyFlowCommand>(result)
-        assertOperationContext(knownOperationContext, command.context)
-    }
-
-    @Test
-    fun `Should create command to generate new fresh key without external id and with empty operation context`() {
-        val result = act {
-            buildTransformer().createFreshKey(knownTenantId, CryptoConsts.Categories.CI, EDDSA_ED25519_CODE_NAME)
-        }
-        assertNotNull(result.value)
-        assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
-        val command = result.value.request as GenerateFreshKeyFlowCommand
-        assertNull(command.externalId)
-        assertEquals(CryptoConsts.Categories.CI, command.category)
-        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
-        assertRequestContext<GenerateFreshKeyFlowCommand>(result)
-        assertOperationContext(emptyMap(), command.context)
-    }
-
-    @Test
-    fun `Should create command to generate new fresh key with external id`() {
-        val result = act {
-            buildTransformer().createFreshKey(
-                knownTenantId,
-                CryptoConsts.Categories.CI,
-                knownExternalId,
-                EDDSA_ED25519_CODE_NAME,
-                knownOperationContext)
-        }
-        assertNotNull(result.value)
-        assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
-        val command = result.value.request as GenerateFreshKeyFlowCommand
-        assertEquals(knownExternalId, command.externalId)
-        assertEquals(CryptoConsts.Categories.CI, command.category)
-        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
-        assertRequestContext<GenerateFreshKeyFlowCommand>(result)
-        assertOperationContext(knownOperationContext, command.context)
-    }
-
-    @Test
-    fun `Should create command to generate new fresh key with external id and with empty operation context`() {
-        val result = act {
-            buildTransformer().createFreshKey(
-                knownTenantId,
-                CryptoConsts.Categories.CI,
-                knownExternalId,
-                EDDSA_ED25519_CODE_NAME
-            )
-        }
-        assertNotNull(result.value)
-        assertEquals(knownTenantId, result.value.context.tenantId)
-        assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
-        val command = result.value.request as GenerateFreshKeyFlowCommand
-        assertEquals(knownExternalId, command.externalId)
-        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
-        assertRequestContext<GenerateFreshKeyFlowCommand>(result)
-        assertOperationContext(emptyMap(), command.context)
-    }
-
-    @Test
     fun `Should create command to sign data`() {
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
@@ -330,20 +251,6 @@ class CryptoFlowOpsTransformerImplTests {
         val response = createResponse(CryptoNoContentValue(), FilterMyKeysFlowQuery::class.java, "failed")
         val result = buildTransformer().inferRequestType(response)
         assertEquals(result, FilterMyKeysFlowQuery::class.java)
-    }
-
-    @Test
-    fun `Should infer generate fresh key command from response`() {
-        val response = createResponse(CryptoPublicKey(), GenerateFreshKeyFlowCommand::class.java)
-        val result = buildTransformer().inferRequestType(response)
-        assertEquals(result, GenerateFreshKeyFlowCommand::class.java)
-    }
-
-    @Test
-    fun `Should infer generate fresh key command from response containing error`() {
-        val response = createResponse(CryptoNoContentValue(), GenerateFreshKeyFlowCommand::class.java, "failed")
-        val result = buildTransformer().inferRequestType(response)
-        assertEquals(result, GenerateFreshKeyFlowCommand::class.java)
     }
 
     @Test
@@ -515,20 +422,6 @@ class CryptoFlowOpsTransformerImplTests {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
-    fun `Should transform response to generate fresh key command`() {
-        val publicKey = mockPublicKey()
-        val response = createResponse(
-            CryptoPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey))),
-            GenerateFreshKeyFlowCommand::class.java
-        )
-        val result = buildTransformer().transform(response)
-        assertThat(result).isInstanceOf(PublicKey::class.java)
-        val resultKey = result as PublicKey
-        assertArrayEquals(publicKey.encoded, resultKey.encoded)
-    }
-
-    @Test
     fun `Should throw IllegalStateException when transforming stale response to generate fresh key command`() {
         val publicKey = mockPublicKey()
         val response = createResponse(
@@ -540,44 +433,6 @@ class CryptoFlowOpsTransformerImplTests {
         assertThrows<IllegalStateException> {
             buildTransformer(-1).transform(response)
         }
-    }
-
-    @Test
-    fun `Should throw IllegalStateException when transforming error response to generate fresh key command`() {
-        val response = createResponse(
-            CryptoNoContentValue(),
-            GenerateFreshKeyFlowCommand::class.java,
-            "--failed--"
-        )
-        val result = assertThrows<IllegalStateException> {
-            buildTransformer().transform(response)
-        }
-        assertThat(result.message).containsSequence("--failed--")
-    }
-
-    @Test
-    fun `Should throw IllegalStateException when transforming empty error response to generate fresh key command`() {
-        val response = createResponse(
-            CryptoNoContentValue(),
-            GenerateFreshKeyFlowCommand::class.java,
-            ""
-        )
-        assertThrows<IllegalStateException> {
-            buildTransformer().transform(response)
-        }
-    }
-
-    @Test
-    fun `Should throw IllegalStateException when transforming unexpected response to generate fresh key command`() {
-        val response = createResponse(
-            CryptoSignatureWithKey(),
-            GenerateFreshKeyFlowCommand::class.java
-        )
-        val result = assertThrows<IllegalStateException> {
-            buildTransformer().transform(response)
-        }
-        assertThat(result.message).containsSequence(CryptoSignatureWithKey::class.java.name)
-        assertThat(result.message).containsSequence(CryptoPublicKey::class.java.name)
     }
 
     @Test

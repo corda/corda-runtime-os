@@ -1,43 +1,26 @@
-package net.corda.crypto.client.impl.infra
+package net.corda.crypto.component.test.utils
 
-import net.corda.messaging.api.publisher.Publisher
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.registry.LifecycleRegistry
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.verify
+import org.slf4j.Logger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.time.Instant
 
-inline fun <reified R> Publisher.act(
-    block: () -> R
-): PublishActResult<R> {
+inline fun <reified RESULT: Any> RPCSender<*, *>.act(
+    block: () -> RESULT
+): SendActResult<RESULT> {
     val result = actWithTimer(block)
-    val messages = argumentCaptor<List<Record<*, *>>>()
-    verify(this).publish(messages.capture())
-    return PublishActResult(
-        before = result.first,
-        after = result.second,
-        value = result.third,
-        messages = messages.allValues
-    )
-}
-
-inline fun <reified REQUEST: Any, reified RESPONSE: Any, reified RESULT: Any> RPCSender<REQUEST, RESPONSE>.act(
-    block: () -> RESULT?
-): SendActResult<REQUEST, RESULT> {
-    val result = actWithTimer(block)
-    val messages = argumentCaptor<REQUEST>()
-    verify(this).sendRequest(messages.capture())
     return SendActResult(
         before = result.first,
         after = result.second,
-        value = result.third,
-        messages = messages.allValues
+        value = result.third
     )
 }
 
@@ -54,25 +37,11 @@ fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
         .isLessThanOrEqualTo(after.toEpochMilli())
 }
 
-data class PublishActResult<R>(
+data class SendActResult<RESPONSE>(
     val before: Instant,
     val after: Instant,
-    val value: R,
-    val messages: List<List<Record<*, *>>>
+    val value: RESPONSE
 ) {
-    val firstRecord: Record<*, *> get() = messages.first()[0]
-
-    fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
-}
-
-data class SendActResult<REQUEST, RESPONSE>(
-    val before: Instant,
-    val after: Instant,
-    val value: RESPONSE?,
-    val messages: List<REQUEST>
-) {
-    val firstRequest: REQUEST get() = messages.first()
-
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
@@ -104,4 +73,17 @@ fun signData(
     signature.initSign(keyPair.private, schemeMetadata.secureRandom)
     signature.update(data)
     return signature.sign()
+}
+
+fun TestLifecycleCoordinatorFactoryImpl.reportDownComponents(logger: Logger): String {
+    val downReport = (registry as LifecycleRegistry).componentStatus().values.filter {
+        it.status == LifecycleStatus.DOWN
+    }.sortedBy {
+        it.name.componentName
+    }.joinToString(",${System.lineSeparator()}") {
+        "${it.name.componentName}=${it.status}"
+    }
+    val message = "LIFECYCLE COMPONENTS STILL DOWN: [${System.lineSeparator()}$downReport${System.lineSeparator()}]"
+    logger.warn(message)
+    return message
 }

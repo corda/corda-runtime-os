@@ -1,38 +1,42 @@
 package net.corda.crypto.service.impl.bus.rpc
 
+import net.corda.crypto.component.test.utils.reportDownComponents
+import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.signing.SigningServiceFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
-import org.junit.jupiter.api.Assertions.assertInstanceOf
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class CryptoOpsBusServiceTests {
+    companion object {
+        private val logger = contextLogger()
+    }
+
     private lateinit var factory: TestServicesFactory
-    private lateinit var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
+    private lateinit var subscription: TestRPCSubscription<RpcOpsRequest, RpcOpsResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var component: CryptoOpsBusServiceImpl
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        subscription = mock()
+        subscription = TestRPCSubscription(factory.coordinatorFactory)
         subscriptionFactory = mock {
             on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
         }
@@ -42,7 +46,7 @@ class CryptoOpsBusServiceTests {
             SigningServiceFactoryImpl(
                 factory.coordinatorFactory,
                 factory.schemeMetadata,
-                factory.signingCacheProvider,
+                factory.signingKeyStoreProvider,
                 factory.createCryptoServiceFactory()
             ).also {
                 it.start()
@@ -57,7 +61,6 @@ class CryptoOpsBusServiceTests {
     @Test
     fun `Should create subscription only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoOpsBusServiceImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.impl.subscription
         }
@@ -66,14 +69,12 @@ class CryptoOpsBusServiceTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsBusServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
     }
 
     @Test
     fun `Should close subscription when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoOpsBusServiceImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.impl.subscription
         }
@@ -82,21 +83,18 @@ class CryptoOpsBusServiceTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsBusServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsBusServiceImpl.InactiveImpl::class.java, component.impl)
-        Mockito.verify(subscription, times(1)).close()
+        assertEquals(1, subscription.stopped.get())
     }
 
     @Test
-    fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
+    fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoOpsBusServiceImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.impl.subscription
         }
@@ -105,19 +103,70 @@ class CryptoOpsBusServiceTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsBusServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
-        factory.readService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsBusServiceImpl.InactiveImpl::class.java, component.impl)
-        factory.readService.coordinator.updateStatus(LifecycleStatus.UP)
+        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoOpsBusServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
-        Mockito.verify(subscription, atLeast(1)).close()
+    }
+
+    @Test
+    fun `Should go UP and DOWN as its downstream dependencies go UP and DOWN`() {
+        assertFalse(component.isRunning)
+        assertThrows<IllegalStateException> {
+            component.impl.subscription
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(
+                LifecycleStatus.UP,
+                component.lifecycleCoordinator.status,
+                factory.coordinatorFactory.reportDownComponents(logger)
+            )
+        }
+        assertSame(subscription, component.impl.subscription)
+        subscription.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        subscription.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertSame(subscription, component.impl.subscription)
+    }
+
+    @Test
+    fun `Should recreate subscription on config change`() {
+        assertFalse(component.isRunning)
+        assertThrows<IllegalStateException>() {
+            component.impl.subscription
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val originalImpl = component.impl
+        assertNotNull(component.impl.subscription)
+        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        factory.readService.reissueConfigChangedEvent(component.lifecycleCoordinator)
+        eventually {
+            assertNotSame(originalImpl, component.impl)
+        }
+        assertEquals(1, subscription.stopped.get())
     }
 }
