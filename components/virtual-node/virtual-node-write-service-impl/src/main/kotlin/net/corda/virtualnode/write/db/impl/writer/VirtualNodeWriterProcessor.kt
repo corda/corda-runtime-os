@@ -2,7 +2,6 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.virtualnode.Error
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -70,7 +69,10 @@ internal class VirtualNodeWriterProcessor(
         try {
             val cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(create.cpiFileChecksum)
             if (cpiMetadata == null) {
-                handleException(respFuture, VirtualNodeWriteServiceException("CPI with file checksum ${create.cpiFileChecksum} was not found."))
+                handleException(
+                    respFuture,
+                    VirtualNodeWriteServiceException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
+                )
                 return
             }
 
@@ -78,7 +80,9 @@ internal class VirtualNodeWriterProcessor(
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
                 handleException(
                     respFuture,
-                    VirtualNodeWriteServiceException("Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists.")
+                    VirtualNodeWriteServiceException(
+                        "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists."
+                    )
                 )
                 return
             }
