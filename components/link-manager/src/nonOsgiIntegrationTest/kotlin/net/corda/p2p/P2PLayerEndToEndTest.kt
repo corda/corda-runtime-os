@@ -143,7 +143,7 @@ class P2PLayerEndToEndTest {
                 eventually(10.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
-                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
+                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
                         .map { it.key }.toSet()
 
                     assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -194,7 +194,7 @@ class P2PLayerEndToEndTest {
                 eventually(10.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
-                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
+                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
                         .map { it.key }.toSet()
 
                     assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -232,7 +232,7 @@ class P2PLayerEndToEndTest {
             host.sendMessages(numberOfMessages, receiverId, senderId)
             eventually(10.seconds) {
                 val messagesWithProcessedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key }.toSet()
-                val messagesWithReceivedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key }.toSet()
+                val messagesWithReceivedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }.map { it.key }.toSet()
                 assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                 assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                 assertThat(hostReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "ping ($it)" })
