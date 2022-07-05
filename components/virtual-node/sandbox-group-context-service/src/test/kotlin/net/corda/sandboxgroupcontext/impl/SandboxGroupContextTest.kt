@@ -8,6 +8,7 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -40,7 +41,11 @@ class SandboxGroupContextTest {
     private val cpksMetadata = setOf(cpkMetadata)
 
     private val virtualNodeContext = VirtualNodeContext(
-        holdingIdentity, cpksMetadata.map { it.cpkId }.toSet(), SandboxGroupType.FLOW, SingletonSerializeAsToken::class.java, null
+        holdingIdentity,
+        cpksMetadata.map { SecureHash.create("DUMMY:1234567890abcdef") }.toSet(),
+        SandboxGroupType.FLOW,
+        SingletonSerializeAsToken::class.java,
+        null
     )
     private lateinit var sandboxGroupContext: SandboxGroupContextImpl
 

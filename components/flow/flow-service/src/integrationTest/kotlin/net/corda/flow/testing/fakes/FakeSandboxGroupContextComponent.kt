@@ -4,7 +4,6 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -14,6 +13,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
@@ -24,11 +24,11 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 @Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class])
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
-    private val availableCpk = mutableSetOf<CpkIdentifier>()
+    private val availableCpk = mutableSetOf<SecureHash>()
     private var initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>> = mapOf()
 
-    fun putCpk(cpk: CpkIdentifier) {
-        availableCpk.add(cpk)
+    fun putCpk(cpkFileChecksum: SecureHash) {
+        availableCpk.add(cpkFileChecksum)
     }
 
     fun reset() {
@@ -59,8 +59,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         TODO("Not yet implemented")
     }
 
-    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>): Boolean {
-        return cpkIdentifiers.any { availableCpk.contains(it) }
+    override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean {
+        return cpkChecksums.any { availableCpk.contains(it) }
     }
 
     override fun initCache(cacheSize: Long) {

@@ -1,5 +1,7 @@
 package net.corda.crypto.client.impl
 
+import net.corda.crypto.component.impl.retry
+import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.createWireRequestContext
@@ -38,6 +40,7 @@ import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -346,7 +349,7 @@ class CryptoOpsClientImpl(
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext<CryptoOpsClientImpl>(tenantId),
+            createWireRequestContext<CryptoOpsClientImpl>(requestId = UUID.randomUUID().toString(), tenantId),
             request
         )
 
@@ -354,9 +357,12 @@ class CryptoOpsClientImpl(
     private fun <RESPONSE> RpcOpsRequest.execute(
         timeout: Duration,
         respClazz: Class<RESPONSE>,
-        allowNoContentValue: Boolean = false
+        allowNoContentValue: Boolean = false,
+        retries: Int = 3
     ): RESPONSE? = try {
-        val response = sender.sendRequest(this).getOrThrow(timeout)
+        val response = retry(retries, logger) {
+            sender.sendRequest(this).getOrThrow(timeout)
+        }
         check(
             response.context.requestingComponent == context.requestingComponent &&
                     response.context.tenantId == context.tenantId

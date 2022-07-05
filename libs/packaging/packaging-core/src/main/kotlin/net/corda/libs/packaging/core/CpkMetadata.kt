@@ -26,8 +26,7 @@ import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
  * @property dependencies
  * @property cordappManifest
  * @property type
- * @property fileChecksum
- * @property checksum The CPK file's checksum.
+ * @property fileChecksum The CPK file's checksum.
  * @constructor Create empty Cpk metadata
  */
 data class CpkMetadata(

@@ -63,13 +63,24 @@ class ClusterBuilder {
     fun flowStatus(holdingIdHash: String, clientRequestId: String) =
         client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId")
 
+    /** Get status of multiple flows */
+    fun multipleFlowStatus(holdingIdHash: String) =
+        client!!.get("/api/v1/flow/$holdingIdHash")
+
     /** Start a flow */
     fun flowStart(
         holdingIdHash: String,
         clientRequestId: String,
         flowClassName: String,
-        body: String
-    ) = client!!.put("/api/v1/flow/$holdingIdHash/$clientRequestId/$flowClassName", body)
+        requestData: String
+    ): SimpleResponse {
+        return client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, requestData))
+    }
+
+    private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
+        """{ "httpStartFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
+            |"$requestData"} }""".trimMargin()
+
 }
 
 fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

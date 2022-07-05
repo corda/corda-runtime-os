@@ -12,8 +12,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.common.ConfigChangedEvent
-import net.corda.virtualnode.impl.VirtualNodeInfoProcessor
 import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -56,15 +54,10 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
     private val eventHandler: VirtualNodeInfoReaderEventHandler = VirtualNodeInfoReaderEventHandler(
         configurationReadService,
         virtualNodeInfoProcessor,
-        subscriptionFactory,
-        instanceId,
-        this::onConfigChangeEvent
+        subscriptionFactory
     )
 
     private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeInfoReadService>(eventHandler)
-
-    /** Post a [ConfigChangedEvent]  */
-    private fun onConfigChangeEvent(event: ConfigChangedEvent) = coordinator.postEvent(event)
 
     /** The processor calls this method on snapshot, and it updates the status of the coordinator. */
     private fun setStatusToUp() = coordinator.updateStatus(LifecycleStatus.UP)

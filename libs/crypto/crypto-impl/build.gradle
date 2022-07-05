@@ -9,11 +9,10 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
+    api project(":libs:crypto:crypto-core")
+
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    api "net.corda:corda-cipher-suite"
-    api 'net.corda:corda-serialization'
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
@@ -23,8 +22,6 @@ dependencies {
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:utilities")
 
     testImplementation "javax.persistence:javax.persistence-api"

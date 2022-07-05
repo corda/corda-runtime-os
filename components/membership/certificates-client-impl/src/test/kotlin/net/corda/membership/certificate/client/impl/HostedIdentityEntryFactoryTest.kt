@@ -8,7 +8,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -43,6 +43,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
     }
+
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn validHoldingId
     }
@@ -53,7 +54,10 @@ class HostedIdentityEntryFactoryTest {
     private val sessionKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
     }
-    private val certificatePem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
+    private val certificatePem =
+        HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
+            .replace("\r", "")
+            .replace("\n", System.lineSeparator())
     private val rootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/root.pem")!!.readText()
     private val certificatePublicKey = certificatePem.let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
@@ -89,8 +93,11 @@ class HostedIdentityEntryFactoryTest {
         on { decodePublicKey(publicKeyBytes) } doReturn sessionPublicKey
         on { encodeAsString(sessionPublicKey) } doReturn PUBLIC_KEY_PEM
     }
+    private val p2pParams: GroupPolicy.P2PParameters = mock {
+        on { tlsTrustRoots } doReturn listOf(rootPem)
+    }
     private val groupPolicy = mock<GroupPolicy> {
-        on { get("p2pParameters") } doReturn mapOf("tlsTrustRoots" to listOf(rootPem))
+        on { p2pParameters } doReturn p2pParams
     }
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(validHoldingId) } doReturn groupPolicy
@@ -253,6 +260,7 @@ class HostedIdentityEntryFactoryTest {
             )
         }
     }
+
     @Test
     fun `createIdentityRecord will throw an exception if the certificate public key is unknown`() {
         whenever(cryptoOpsClient.filterMyKeys(any(), any())).doReturn(emptyList())
@@ -268,36 +276,11 @@ class HostedIdentityEntryFactoryTest {
     }
 
     @Test
-    fun `createIdentityRecord will throw an exception if the group has no p2pParameters`() {
-        whenever(groupPolicy.get("p2pParameters")).doReturn(null)
-
-        assertThrows<CordaRuntimeException> {
-            factory.createIdentityRecord(
-                holdingIdentityId = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                tlsTenantId = null,
-                sessionKeyId = null
-            )
-        }
-    }
-
-    @Test
-    fun `createIdentityRecord will throw an exception if the group has no tlsTrustRoots`() {
-        whenever(groupPolicy.get("p2pParameters")).doReturn(emptyMap<String, Any?>())
-
-        assertThrows<CordaRuntimeException> {
-            factory.createIdentityRecord(
-                holdingIdentityId = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                tlsTenantId = null,
-                sessionKeyId = null
-            )
-        }
-    }
-
-    @Test
     fun `createIdentityRecord will throw an exception if the group tlsTrustRoots is empty`() {
-        whenever(groupPolicy.get("p2pParameters")).doReturn(mapOf("tlsTrustRoots" to emptyList<Any?>()))
+        val p2pParams: GroupPolicy.P2PParameters = mock {
+            on { tlsTrustRoots } doReturn emptyList()
+        }
+        whenever(groupPolicy.p2pParameters) doReturn p2pParams
 
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
@@ -311,7 +294,10 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord will throw an exception if the group tlsTrustRoots is invalid`() {
-        whenever(groupPolicy.get("p2pParameters")).doReturn(mapOf("tlsTrustRoots" to listOf(certificatePem)))
+        val p2pParams: GroupPolicy.P2PParameters = mock {
+            on { tlsTrustRoots } doReturn listOf(certificatePem)
+        }
+        whenever(groupPolicy.p2pParameters) doReturn p2pParams
 
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(

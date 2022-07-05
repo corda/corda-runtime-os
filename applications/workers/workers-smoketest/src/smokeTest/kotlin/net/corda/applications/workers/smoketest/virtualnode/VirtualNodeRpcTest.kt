@@ -2,12 +2,17 @@ package net.corda.applications.workers.smoketest.virtualnode
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.time.Duration
+import java.time.Instant
 import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.PASSWORD
 import net.corda.applications.workers.smoketest.USERNAME
 import net.corda.applications.workers.smoketest.X500_ALICE
+import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.getHoldingIdShortHash
+import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
 import net.corda.applications.workers.smoketest.virtualnode.helpers.SimpleResponse
@@ -19,15 +24,12 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Duration
-import java.time.Instant
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
+const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/flow-worker-dev.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
-fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
-
 /**
  * Any 'unordered' tests are run *last*
  */
@@ -47,9 +49,7 @@ class VirtualNodeRpcTest {
         private const val EXPECTED_ERROR_NO_GROUP_POLICY = "CPI is missing a group policy file"
         private const val EXPECTED_ERROR_ALREADY_UPLOADED = "CPI already uploaded with groupId"
 
-        private fun JsonNode.toInstant(): Instant {
-            return Instant.parse(this.asText())
-        }
+        private val aliceHoldingId: String = getHoldingIdShortHash(X500_ALICE, GROUP_ID)
     }
 
     /**
@@ -68,8 +68,18 @@ class VirtualNodeRpcTest {
 
             // BUG:  returning "OK" feels 'weakly' typed
             val json = assertWithRetry {
+                // CPI upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(60))
+                interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+                condition {
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+                immediateFailCondition {
+                    it.code == 500
+                            && null != it.toJson()["title"].textValue()
+                            && ObjectMapper().readTree(it.toJson()["title"].textValue())["errorMessage"].textValue()
+                        .startsWith("CPI already uploaded")
+                }
             }.toJson()
 
             val cpiHash = json["checksum"].textValue()
@@ -81,11 +91,7 @@ class VirtualNodeRpcTest {
                 .withFailMessage("Short code length of wrong size - likely this test needs fixing")
                 .isEqualTo(12)
 
-            // Compare it to the hash in the cpi list - should be identical.
-            // CORE-4475: tests fixed behaviour previously reported as a bug
-            val cpis = cpiList().toJson()
-            val cpiJson = cpis["cpis"].first()
-            val actualChecksum = truncateLongHash(cpiJson["fileChecksum"].textValue())
+            val actualChecksum = getCpiChecksum(CPI_NAME)
 
             assertThat(actualChecksum).isNotNull.isNotEmpty
 
@@ -107,13 +113,24 @@ class VirtualNodeRpcTest {
             val requestId = cpbUpload(TEST_CPB).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
-            val json = assertWithRetry {
+            assertWithRetry {
                 command { cpiStatus(requestId) }
-                condition { it.code == 500 }
-            }.toJson()
-
-            val titleJson = ObjectMapper().readTree(json["title"].textValue())
-            assertThat(titleJson["errorMessage"].textValue()).isEqualTo(EXPECTED_ERROR_NO_GROUP_POLICY)
+                condition {
+                    try {
+                        if(it.code == 500) {
+                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                            json.has("errorMessage")
+                                    && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
+                        } else {
+                            false
+                        }
+                    }
+                    catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
+                }
+            }
         }
     }
 
@@ -125,13 +142,23 @@ class VirtualNodeRpcTest {
             val requestId = cpiUpload(TEST_CPB, GROUP_ID).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
-            val json = assertWithRetry {
+            assertWithRetry {
                 command { cpiStatus(requestId) }
-                condition { it.code == 500 }
-            }.toJson()
-
-            val titleJson = ObjectMapper().readTree(json["title"].textValue())
-            assertThat(titleJson["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)).isTrue()
+                condition {
+                    try {
+                        if(it.code == 500) {
+                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                            json["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)
+                        } else {
+                            false
+                        }
+                    }
+                    catch (e: Exception) {
+                        println("Failed, repsonse: $it")
+                        false
+                    }
+                }
+            }
         }
     }
 
@@ -169,9 +196,7 @@ class VirtualNodeRpcTest {
     fun `can create virtual node with holding id and CPI`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val cpis = cpiList().toJson()["cpis"]
-            val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-            val hash = truncateLongHash(json["fileChecksum"].textValue())
+            val hash = getCpiChecksum(CPI_NAME)
 
             val vNodeJson = assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
@@ -188,9 +213,7 @@ class VirtualNodeRpcTest {
     fun `cannot create duplicate virtual node`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val cpis = cpiList().toJson()["cpis"]
-            val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-            val hash = truncateLongHash(json["fileChecksum"].textValue())
+            val hash = getCpiChecksum(CPI_NAME)
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
@@ -199,30 +222,22 @@ class VirtualNodeRpcTest {
         }
     }
 
-
     @Test
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val json = vNodeList().toJson()["virtualNodes"].first()
-            val actualX500Name = json["holdingIdentity"]["x500Name"].textValue()
+            val nodes = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["x500Name"].textValue()
+            }
 
-            assertThat(actualX500Name).isEqualTo(X500_ALICE)
+            assertThat(nodes).contains(X500_ALICE)
         }
     }
 
     @Test
     @Order(80)
     fun `can force upload same CPI`() {
-
-        fun ClusterBuilder.getCpkTimestamp(): Instant {
-            val cpis = cpiList().toJson()["cpis"]
-            val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-            val cpksJson = cpiJson["cpks"].toList()
-            return cpksJson.first()["timestamp"].toInstant()
-        }
-
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -247,4 +262,99 @@ class VirtualNodeRpcTest {
             }
         }
     }
+
+    @Test
+    @Order(81)
+    fun `can run the uploaded CPI`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            runReturnAStringFlow("original-cpi")
+        }
+    }
+
+    @Test
+    @Order(90)
+    fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val initialCpkTimeStamp = getCpkTimestamp()
+
+            val requestId = forceCpiUpload(CACHE_INVALIDATION_TEST_CPB, GROUP_ID).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+            }
+
+            eventually(Duration.ofSeconds(20)) {
+                assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
+            }
+        }
+    }
+
+    @Test
+    @Order(91)
+    fun `can run the force-uploaded CPI with a change to ReturnAStringFlow`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            runReturnAStringFlow("force-uploaded-cpi")
+        }
+    }
+
+    @Test
+    @Order(92)
+    fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val initialCpkTimeStamp = getCpkTimestamp()
+
+            val requestId = forceCpiUpload(TEST_CPB, GROUP_ID).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+            }
+
+            eventually(Duration.ofSeconds(20)) {
+                assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
+            }
+
+            runReturnAStringFlow("original-cpi")
+        }
+    }
+
+    private fun runReturnAStringFlow(expectedResult: String) {
+        val className = "net.cordapp.flowworker.development.flows.ReturnAStringFlow"
+
+        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+
+        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+
+        assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
+    }
+
+    private fun ClusterBuilder.getCpkTimestamp(): Instant {
+        val cpis = cpiList().toJson()["cpis"]
+        val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
+        val cpksJson = cpiJson["cpks"].toList()
+        return cpksJson.first()["timestamp"].toInstant()
+    }
+
+    private fun JsonNode.toInstant(): Instant {
+        return Instant.parse(this.asText())
+    }
+
+    fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+        val cpis = cpiList().toJson()["cpis"]
+        val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
+        return truncateLongHash(cpiJson["fileChecksum"].textValue())
+    }
+
+    private fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
 }

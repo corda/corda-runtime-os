@@ -1,10 +1,14 @@
 package net.corda.flow.testing.context
 
+import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.Error
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
+import java.security.PublicKey
+import java.time.Instant
 
 interface StepSetup {
 
@@ -12,9 +16,9 @@ interface StepSetup {
 
     fun virtualNode(cpiId: String, holdingId: HoldingIdentity)
 
-    fun cpkMetadata(cpiId: String, cpkId: String)
+    fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash)
 
-    fun sandboxCpk(cpkId: String)
+    fun sandboxCpk(cpkFileChecksum: SecureHash)
 
     fun membershipGroupFor(owningMember: HoldingIdentity)
 
@@ -92,5 +96,18 @@ interface StepSetup {
         requestId: String,
         errorType: Error,
         exception: ExceptionEnvelope
+    ): FlowIoRequestSetup
+
+    fun cryptoSignResponseReceived(
+        flowId: String,
+        requestId: String,
+        publicKey: PublicKey,
+        bytes: ByteArray,
+        requestingComponent: String = "Flow Worker",
+        requestingTimestamp: Instant = Instant.now(),
+        responseTimestamp: Instant = Instant.now(),
+        tenantId: String = "tenant",
+        otherContext: KeyValuePairList = KeyValuePairList(mutableListOf()),
+        exceptionEnvelope: ExceptionEnvelope? = null
     ): FlowIoRequestSetup
 }

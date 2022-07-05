@@ -63,5 +63,9 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         override fun lookup(name: MemberX500Name): MemberInfo? {
             TODO("Not yet implemented")
         }
+
+        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+            TODO("Not yet implemented")
+        }
     }
 }

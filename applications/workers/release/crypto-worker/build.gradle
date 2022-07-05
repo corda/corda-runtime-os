@@ -12,8 +12,7 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
-    implementation project(':libs:crypto:crypto-core')
-    implementation project(':libs:crypto:crypto-impl')
+    implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(':processors:crypto-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
@@ -30,4 +29,6 @@ dependencies {
 
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

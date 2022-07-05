@@ -10,8 +10,8 @@ import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.impl.GroupPolicyParser
-import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -27,7 +27,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
@@ -253,7 +253,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
         val mgmInfo = groupPolicyParser.run {
-            getMgmInfo(groupPolicyJson)
+            getMgmInfo(holdingIdentity, groupPolicyJson)
         }
         if (mgmInfo == null) {
             logger.info("No MGM information found in group policy. MGM member info not published.")

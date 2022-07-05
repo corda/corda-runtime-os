@@ -5,6 +5,12 @@ plugins {
 
 description 'DB Worker'
 
+osgiRun {
+    frameworkProperties.putAll(
+        'org.osgi.framework.security': 'osgi'
+    )
+}
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -25,6 +31,8 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
+    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+
     testImplementation 'org.osgi:osgi.core'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
@@ -33,9 +41,5 @@ dependencies {
         exclude group: 'org.osgi'
     }
 
-    osgiRun {
-        frameworkProperties.putAll(
-                'org.osgi.framework.security': 'osgi'
-        )
-    }
+    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

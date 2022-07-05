@@ -6,7 +6,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
