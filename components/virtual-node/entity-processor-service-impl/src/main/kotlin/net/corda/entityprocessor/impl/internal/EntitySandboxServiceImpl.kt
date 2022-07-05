@@ -91,7 +91,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         val cpks = cpiInfoService.get(virtualNode.cpiIdentifier)?.cpksMetadata
             ?: throw VirtualNodeException("Could not get list of CPKs for ${virtualNode.cpiIdentifier}")
 
-        val cpkIds = cpks.map { it.cpkId }.toSet()
+        val cpkIds = cpks.map { it.fileChecksum }.toSet()
         if (!sandboxService.hasCpks(cpkIds))
             throw NotReadyException("CPKs not available (yet): $cpkIds")
 
@@ -229,7 +229,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     private fun getVirtualNodeContext(virtualNode: VirtualNodeInfo, cpks: Collection<CpkMetadata>) =
         VirtualNodeContext(
             virtualNode.holdingIdentity,
-            cpks.mapTo(LinkedHashSet(), CpkMetadata::cpkId),
+            cpks.mapTo(LinkedHashSet()) { it.fileChecksum },
             SandboxGroupType.PERSISTENCE, // TODO - we're still not doing *anything* per sandbox type
             SingletonSerializeAsToken::class.java,
             null

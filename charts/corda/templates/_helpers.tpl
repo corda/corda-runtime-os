@@ -66,7 +66,7 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker }}-worker"
+"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
 {{- end }}
 
 {{/*
@@ -136,18 +136,49 @@ resources:
 {{- end }}
 
 {{/*
-Worker JAVA_TOOL_OPTIONS
+Worker environment variables
 */}}
-{{- define "corda.workerJavaToolOptions" -}}
-{{- if ( get .Values.workers .worker ).debug.enabled -}}
+{{- define "corda.workerEnv" -}}
+- name: K8S_NODE_NAME
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: spec.nodeName
+- name: K8S_POD_NAME
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.name
+- name: K8S_POD_UID
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.uid
+- name: K8S_NAMESPACE
+  valueFrom:
+    fieldRef:
+      apiVersion: v1
+      fieldPath: metadata.namespace
 - name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}{{- if .Values.kafka.sasl.enabled -}} -Djava.security.auth.login.config=/etc/config/jaas.conf {{ end }}
-{{- else -}}
-{{- if .Values.kafka.sasl.enabled -}}
-- name: JAVA_TOOL_OPTIONS
-  value: -Djava.security.auth.login.config=/etc/config/jaas.conf 
-{{- end }}
-{{- end }}
+  value: {{- if ( get .Values.workers .worker ).debug.enabled }}
+      -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+    {{- end -}}
+    {{- if .Values.kafka.sasl.enabled }}
+      -Djava.security.auth.login.config=/etc/config/jaas.conf
+    {{- end -}}
+    {{- if .Values.openTelemetry.enabled }}
+      -javaagent:/opt/override/opentelemetry-javaagent-1.15.0.jar
+      -Dotel.resource.attributes=service.name={{ .worker }}-worker,k8s.namespace.name=$(K8S_NAMESPACE),k8s.node.name=$(K8S_NODE_NAME),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID)
+      -Dotel.instrumentation.common.default-enabled=false
+      -Dotel.instrumentation.runtime-metrics.enabled=true
+      {{- if .Values.openTelemetry.endpoint }}
+      -Dotel.exporter.otlp.endpoint={{ .Values.openTelemetry.endpoint }}
+      -Dotel.exporter.otlp.protocol={{ .Values.openTelemetry.protocol }}
+      {{- else }}
+      -Dotel.metrics.exporter=logging
+      -Dotel.traces.exporter=logging
+      {{- end -}}
+    {{- end -}}
 {{- end }}
 
 {{/*

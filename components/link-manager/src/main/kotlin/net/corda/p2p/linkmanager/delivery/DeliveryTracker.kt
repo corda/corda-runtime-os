@@ -75,7 +75,7 @@ internal class DeliveryTracker(
             replayScheduler.dominoTile.coordinatorName,
             groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName,
-            cryptoProcessor.dominoTile.coordinatorName,
+            cryptoProcessor.namedLifecycle.name,
             sessionManager.dominoTile.coordinatorName,
             appMessageReplayer.dominoTile.coordinatorName
         ),

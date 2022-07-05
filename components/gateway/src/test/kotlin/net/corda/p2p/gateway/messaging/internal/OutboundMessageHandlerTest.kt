@@ -35,12 +35,14 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.anyString
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -90,7 +92,7 @@ class OutboundMessageHandlerTest {
     }
     private val truststore = mock<KeyStore>()
     private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
-        whenever(mock.getTrustStore(GROUP_ID)).doReturn(truststore)
+        whenever(mock.getTrustStore(anyString(), eq(GROUP_ID))).doReturn(truststore)
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
@@ -170,6 +172,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -203,6 +206,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -226,6 +230,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -261,6 +266,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("O=PartyB, L=London, C=GB", GROUP_ID),
             HoldingIdentity("O=PartyA, L=London, C=GB", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
@@ -278,8 +284,8 @@ class OutboundMessageHandlerTest {
             .isEqualTo(
                 DestinationInfo(
                     URI.create("https://r3.com/"),
-                    "b597e8858a2fa87424f5e8c39dc4f93c.p2p.corda.net",
-                    X500Name("O=PartyA, L=London, C=GB"),
+                    "e7aa0d5c6b562cc528e490d58b7040fe.p2p.corda.net",
+                    X500Name("O=PartyB, L=London, C=GB"),
                     truststore
                 )
             )
@@ -296,6 +302,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("bbb", GROUP_ID),
             HoldingIdentity("aaa", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
@@ -321,6 +328,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("bbb", GROUP_ID),
             HoldingIdentity("aaa", GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
@@ -333,7 +341,7 @@ class OutboundMessageHandlerTest {
 
         handler.onNext(Record("", "", message))
 
-        verify(trustStores.constructed().first()).getTrustStore(GROUP_ID)
+        verify(trustStores.constructed().first()).getTrustStore("aaa", GROUP_ID)
     }
 
     @Test
@@ -356,6 +364,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -395,6 +404,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -439,6 +449,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
@@ -481,6 +492,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
             HoldingIdentity("a", GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",

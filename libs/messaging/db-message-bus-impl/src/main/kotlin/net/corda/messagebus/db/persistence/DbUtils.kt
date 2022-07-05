@@ -36,7 +36,7 @@ private fun EntityManagerFactoryFactory.create(jdbcUrl: String?,
                    persistenceName: String,
                    entities: List<Class<out Any>>
 ): EntityManagerFactory {
-    val dbSource = if (jdbcUrl == null) {
+    val dbSource = if (jdbcUrl == null || jdbcUrl.contains("hsqldb", ignoreCase = true)) {
         InMemoryDataSourceFactory().create(DB_MESSAGE_BUS)
     } else {
         PostgresDataSourceFactory().create(

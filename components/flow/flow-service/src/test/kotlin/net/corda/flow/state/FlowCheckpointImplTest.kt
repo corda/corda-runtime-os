@@ -20,6 +20,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -147,7 +148,7 @@ class FlowCheckpointImplTest {
             }
         }
 
-        assertThat(createFlowCheckpoint(checkpoint).holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY)
+        assertThat(createFlowCheckpoint(checkpoint).holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
     }
 
     @Test
@@ -241,7 +242,7 @@ class FlowCheckpointImplTest {
         assertThat(flowCheckpoint.flowId).isEqualTo(flowId)
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
         assertThat(flowCheckpoint.flowStartContext).isEqualTo(flowStartContext)
-        assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY)
+        assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
         assertThat(flowCheckpoint.suspendedOn).isNull()
         assertThat(flowCheckpoint.waitingFor).isNull()
         assertThat(flowCheckpoint.flowStack.size).isEqualTo(0)

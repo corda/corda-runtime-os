@@ -1,18 +1,13 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -58,7 +53,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
@@ -77,7 +71,12 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -100,6 +99,9 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
+
+        @InjectService(timeout = 5000L)
+        lateinit var cryptoFlowOpsTransformerFactory: CryptoFlowOpsTransformerFactory
 
         @InjectService(timeout = 5000L)
         lateinit var opsClient: CryptoOpsClient
@@ -181,12 +183,7 @@ class CryptoProcessorTests {
 
         private fun setupPrerequisites() {
             flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
-            transformer = CryptoFlowOpsTransformer(
-                serializer = schemeMetadata,
-                requestingComponent = "test",
-                responseTopic = RESPONSE_TOPIC,
-                keyEncodingService = schemeMetadata
-            )
+            transformer = cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
             publisher.publish(
@@ -650,7 +647,7 @@ class CryptoProcessorTests {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> RSASSA_PSS_SHA256_SIGNATURE_SPEC
+            "RSA" -> SignatureSpec.RSASSA_PSS_SHA256
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = opsClient.sign(
@@ -677,6 +674,7 @@ class CryptoProcessorTests {
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
             val event = transformer.createSign(
+                requestId = UUID.randomUUID().toString(),
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
@@ -720,6 +718,7 @@ class CryptoProcessorTests {
             val key = UUID.randomUUID().toString()
             val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
             val event = transformer.createSign(
+                requestId = UUID.randomUUID().toString(),
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,

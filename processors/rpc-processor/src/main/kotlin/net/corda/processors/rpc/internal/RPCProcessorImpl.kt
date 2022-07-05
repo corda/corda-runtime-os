@@ -6,8 +6,8 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMConfigurationClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMConfigurationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger

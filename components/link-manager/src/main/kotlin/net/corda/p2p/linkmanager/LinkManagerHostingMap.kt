@@ -18,4 +18,6 @@ interface LinkManagerHostingMap : LifecycleWithDominoTile {
     fun getInfo(hash: ByteArray, groupId: String): HostingMapListener.IdentityInfo?
 
     fun registerListener(listener: HostingMapListener)
+
+    fun allLocallyHostedIdentities(): Collection<HoldingIdentity>
 }

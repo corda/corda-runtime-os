@@ -1,5 +1,6 @@
 package net.corda.crypto.impl.retrying
 
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.failures.CryptoException
 import net.corda.v5.crypto.failures.CryptoRetryException
@@ -76,7 +77,10 @@ class CryptoRetryingExecutorsTests {
     @Test
     fun `Should execute without retrying`() {
         var called = 0
-        val result = CryptoRetryingExecutor(logger, LinearRetryStrategy(3)).executeWithRetry {
+        val result = CryptoRetryingExecutor(
+            logger,
+            BackoffStrategy.createBackoff(3, listOf(100L))
+        ).executeWithRetry {
             called++
             "Hello World!"
         }
@@ -89,7 +93,7 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         val result = CryptoRetryingExecutorWithTimeout(
             logger,
-            LinearRetryStrategy(3),
+            BackoffStrategy.createBackoff(3, listOf(100L)),
             Duration.ofSeconds(5)
         ).executeWithRetry {
             called++
@@ -105,7 +109,7 @@ class CryptoRetryingExecutorsTests {
         assertThrows<CryptoRetryException> {
             CryptoRetryingExecutorWithTimeout(
                 logger,
-                LinearRetryStrategy(1),
+                BackoffStrategy.createBackoff(1, listOf(100L)),
                 Duration.ofMillis(10)
             ).executeWithRetry {
                 called++
@@ -122,7 +126,7 @@ class CryptoRetryingExecutorsTests {
         val actual = assertThrows<Throwable> {
             CryptoRetryingExecutorWithTimeout(
                 logger,
-                LinearRetryStrategy(3),
+                BackoffStrategy.createBackoff(3, listOf(100L)),
                 Duration.ofMillis(10)
             ).executeWithRetry {
                 called++
@@ -138,7 +142,7 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         assertThrows<CryptoException> {
             CryptoRetryingExecutorWithTimeout(
-                logger, LinearRetryStrategy(3),
+                logger, BackoffStrategy.createBackoff(3, listOf(100L)),
                 Duration.ofMillis(10)
             ).executeWithRetry {
                 called++
@@ -154,7 +158,7 @@ class CryptoRetryingExecutorsTests {
         val actual = assertThrows<CryptoRetryException> {
             CryptoRetryingExecutor(
                 logger,
-                LinearRetryStrategy(3, Duration.ofMillis(10))
+                BackoffStrategy.createBackoff(3, listOf(10L))
             ).executeWithRetry {
                 called++
                 throw TimeoutException()
@@ -169,7 +173,7 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         val result = CryptoRetryingExecutor(
             logger,
-            LinearRetryStrategy(3, Duration.ofMillis(10))
+            BackoffStrategy.createBackoff(3, listOf(10L))
         ).executeWithRetry {
             called++
             if (called <= 2) {
@@ -189,7 +193,7 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         val result = CryptoRetryingExecutor(
             logger,
-            LinearRetryStrategy(3, Duration.ofMillis(10))
+            BackoffStrategy.createBackoff(3, listOf(10L))
         ).executeWithRetry {
             called++
             if (called <= 2) {
@@ -207,7 +211,7 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         val result = CryptoRetryingExecutor(
             logger,
-            LinearRetryStrategy(2, Duration.ofMillis(10))
+            BackoffStrategy.createBackoff(2, listOf(10L))
         ).executeWithRetry {
             called++
             if (called < 2) {

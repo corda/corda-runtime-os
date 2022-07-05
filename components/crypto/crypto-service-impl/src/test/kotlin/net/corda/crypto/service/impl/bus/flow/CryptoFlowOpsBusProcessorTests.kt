@@ -1,12 +1,14 @@
 package net.corda.crypto.service.impl.bus.flow
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
-import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
+import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
@@ -23,13 +25,16 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
+import net.corda.data.flow.event.FlowEvent
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -44,10 +49,16 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class CryptoFlowOpsBusProcessorTests {
+    companion object {
+        private val configEvent = ConfigChangedEvent(
+            setOf(ConfigKeys.CRYPTO_CONFIG),
+            mapOf(ConfigKeys.CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+        )
+    }
+
     private lateinit var tenantId: String
     private lateinit var componentName: String
     private lateinit var eventTopic: String
@@ -56,8 +67,8 @@ class CryptoFlowOpsBusProcessorTests {
     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
     private lateinit var processor: CryptoFlowOpsBusProcessor
 
-    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformer =
-        CryptoFlowOpsTransformer(
+    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
+        CryptoFlowOpsTransformerImpl(
             serializer = mock(),
             requestingComponent = componentName,
             responseTopic = responseTopic,
@@ -77,13 +88,14 @@ class CryptoFlowOpsBusProcessorTests {
         ttl: Long = 123
     ): RESPONSE {
         assertNotNull(result.value)
-        assertEquals(1, result.value.size)
-        assertInstanceOf(FlowOpsResponse::class.java, result.value[0].value)
-        assertInstanceOf(RESPONSE::class.java, (result.value[0].value as FlowOpsResponse).response)
-        val context = (result.value[0].value as FlowOpsResponse).context
-        val resp = (result.value[0].value as FlowOpsResponse).response as RESPONSE
-        assertResponseContext<REQUEST>(result, context, ttl)
-        return resp
+        assertEquals(1, result.value?.size)
+        return assertAndExtractFlowEventContainingFlowOpsResponse(result.value?.get(0)?.value).let { flowOpsResponse ->
+            assertInstanceOf(RESPONSE::class.java, flowOpsResponse.response)
+            val context = flowOpsResponse.context
+            val resp = flowOpsResponse.response as RESPONSE
+            assertResponseContext<REQUEST>(result, context, ttl)
+            resp
+        }
     }
 
     private inline fun <reified REQUEST> assertResponseContext(
@@ -112,6 +124,16 @@ class CryptoFlowOpsBusProcessorTests {
             } != null
         }
     }
+    
+    private fun assertAndExtractFlowEventContainingFlowOpsResponse(event: Any?): FlowOpsResponse {
+        assertInstanceOf(FlowEvent::class.java, event)
+        assertInstanceOf(FlowOpsResponse::class.java, (event as FlowEvent).payload)
+        return extractFlowOpsResponse(event)
+    }
+    
+    private fun extractFlowOpsResponse(event: Any?): FlowOpsResponse {
+        return ((event as FlowEvent).payload) as FlowOpsResponse
+    }
 
     @BeforeEach
     fun setup() {
@@ -132,7 +154,7 @@ class CryptoFlowOpsBusProcessorTests {
             }
         }
         cryptoOpsClient = mock()
-        processor = CryptoFlowOpsBusProcessor(cryptoOpsClient)
+        processor = CryptoFlowOpsBusProcessor(cryptoOpsClient, configEvent)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -214,7 +236,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
         assertEquals(2, transformed.size)
@@ -260,7 +282,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertTrue {
             passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
         }
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(PublicKey::class.java, transformed)
         val key = transformed as PublicKey
         assertArrayEquals(publicKey.encoded, key.encoded)
@@ -309,7 +331,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertTrue {
             passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
         }
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(PublicKey::class.java, transformed)
         val key = transformed as PublicKey
         assertArrayEquals(publicKey.encoded, key.encoded)
@@ -347,9 +369,10 @@ class CryptoFlowOpsBusProcessorTests {
                         topic = eventTopic,
                         key = recordKey,
                         value = transformer.createSign(
+                            UUID.randomUUID().toString(),
                             tenantId,
                             publicKey,
-                            EDDSA_ED25519_SIGNATURE_SPEC,
+                            SignatureSpec.EDDSA_ED25519,
                             data,
                             operationContext
                         )
@@ -364,13 +387,13 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(tenantId, passedTenantId)
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
         assertArrayEquals(data, passedData.array())
-        assertEquals(EDDSA_ED25519_SIGNATURE_SPEC.signatureName, passedSignatureSpec.signatureName)
+        assertEquals(SignatureSpec.EDDSA_ED25519.signatureName, passedSignatureSpec.signatureName)
         assertNotNull(passedContext.items)
         assertEquals(1, passedContext.items.size)
         assertTrue {
             passedContext.items[0].key == "key1" && passedContext.items[0].value == "value1"
         }
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(DigitalSignature.WithKey::class.java, transformed)
         val transformedSignature = transformed as DigitalSignature.WithKey
         assertArrayEquals(publicKey.encoded, transformedSignature.by.encoded)
@@ -461,7 +484,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
         assertEquals(2, transformed.size)
@@ -560,7 +583,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
         assertEquals(2, transformed.size)
@@ -660,7 +683,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]), passedList[0].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
-        val transformed = transformer.transform(result.value?.get(0)?.value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
         assertEquals(2, transformed.size)
@@ -745,33 +768,31 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(recordKey0, result.value?.get(0)?.key)
         assertEquals(recordKey1, result.value?.get(1)?.key)
         assertNotNull(result.value)
-        assertEquals(2, result.value.size)
-        assertInstanceOf(FlowOpsResponse::class.java, result.value[0].value)
-        assertInstanceOf(CryptoNoContentValue::class.java, (result.value[0].value as FlowOpsResponse).response)
-        val context0 = (result.value[0].value as FlowOpsResponse).context
-        assertResponseContext<FilterMyKeysFlowQuery>(result, context0, -1)
-        assertTrue {
-            context0.other.items.any {
-                it.key == RESPONSE_ERROR_KEY && it.value.isNotBlank()
-            }
+        assertEquals(2, result.value?.size)
+        assertAndExtractFlowEventContainingFlowOpsResponse(result.value?.get(0)?.value).let { flowOpsResponse ->
+            val context0 = flowOpsResponse.context
+            assertResponseContext<FilterMyKeysFlowQuery>(result, context0, -1)
+            assertNotNull(flowOpsResponse.exception)
         }
-        assertInstanceOf(FlowOpsResponse::class.java, result.value[1].value)
-        assertInstanceOf(CryptoSigningKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
-        val context1 = (result.value[1].value as FlowOpsResponse).context
-        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoSigningKeys
-        assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123)
-        assertNotNull(response1.keys)
-        assertEquals(2, response1.keys.size)
-        assertTrue(
-            response1.keys.any {
-                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
-            }
-        )
-        assertTrue(
-            response1.keys.any {
-                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
-            }
-        )
+
+        assertAndExtractFlowEventContainingFlowOpsResponse(result.value?.get(1)?.value).let { flowOpsResponse ->
+            assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
+            val context1 = flowOpsResponse.context
+            val response1 = flowOpsResponse.response as CryptoSigningKeys
+            assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123)
+            assertNotNull(response1.keys)
+            assertEquals(2, response1.keys.size)
+            assertTrue(
+                response1.keys.any {
+                    it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+                }
+            )
+            assertTrue(
+                response1.keys.any {
+                    it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                }
+            )
+        }
         assertEquals(1, passedTenantIds.size)
         assertEquals(tenantId, passedTenantIds[0])
         assertEquals(1, passedLists.size)
@@ -781,9 +802,9 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList[2].array())
         assertThrows<IllegalStateException> {
-            transformer.transform(result.value[0].value as FlowOpsResponse)
+            transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         }
-        val transformed = transformer.transform(result.value[1].value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(1)?.value))
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
         assertEquals(2, transformed.size)
@@ -868,29 +889,27 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(recordKey0, result.value?.get(0)?.key)
         assertEquals(recordKey1, result.value?.get(1)?.key)
         assertNotNull(result.value)
-        assertEquals(2, result.value.size)
-        assertInstanceOf(FlowOpsResponse::class.java, result.value[0].value)
-        assertInstanceOf(CryptoNoContentValue::class.java, (result.value[0].value as FlowOpsResponse).response)
-        val context0 = (result.value[0].value as FlowOpsResponse).context
-        assertResponseContext<FilterMyKeysFlowQuery>(result, context0, 123, failingTenantId)
-        assertTrue {
-            context0.other.items.any {
-                it.key == RESPONSE_ERROR_KEY && it.value.isNotBlank()
-            }
+        assertEquals(2, result.value?.size)
+        assertAndExtractFlowEventContainingFlowOpsResponse(result.value?.get(0)?.value).let { flowOpsResponse ->
+            assertInstanceOf(CryptoNoContentValue::class.java, flowOpsResponse.response)
+            val context0 = flowOpsResponse.context
+            assertResponseContext<FilterMyKeysFlowQuery>(result, context0, 123, failingTenantId)
+            assertNotNull(flowOpsResponse.exception)
         }
-        assertInstanceOf(FlowOpsResponse::class.java, result.value[1].value)
-        assertInstanceOf(CryptoSigningKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
-        val context1 = (result.value[1].value as FlowOpsResponse).context
-        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoSigningKeys
-        assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123, tenantId)
-        assertNotNull(response1.keys)
-        assertEquals(2, response1.keys.size)
-        assertTrue(
-            response1.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
-        )
-        assertTrue(
-            response1.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
-        )
+        assertAndExtractFlowEventContainingFlowOpsResponse(result.value?.get(1)?.value).let { flowOpsResponse ->
+            assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
+            val context1 = flowOpsResponse.context
+            val response1 = flowOpsResponse.response as CryptoSigningKeys
+            assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123, tenantId)
+            assertNotNull(response1.keys)
+            assertEquals(2, response1.keys.size)
+            assertTrue(
+                response1.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            )
+            assertTrue(
+                response1.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            )
+        }
         assertEquals(2, passedTenantIds.size)
         assertEquals(failingTenantId, passedTenantIds[0])
         assertEquals(tenantId, passedTenantIds[1])
@@ -906,9 +925,9 @@ class CryptoFlowOpsBusProcessorTests {
         assertArrayEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]), passedList1[1].array())
         assertArrayEquals(keyEncodingService.encodeAsByteArray(notMyKey), passedList1[2].array())
         assertThrows<IllegalStateException> {
-            transformer.transform(result.value[0].value as FlowOpsResponse)
+            transformer.transform(extractFlowOpsResponse(result.value?.get(0)?.value))
         }
-        val transformed = transformer.transform(result.value[1].value as FlowOpsResponse)
+        val transformed = transformer.transform(extractFlowOpsResponse(result.value?.get(1)?.value))
         assertInstanceOf(List::class.java, transformed)
         val keys = transformed as List<PublicKey>
         assertEquals(2, transformed.size)

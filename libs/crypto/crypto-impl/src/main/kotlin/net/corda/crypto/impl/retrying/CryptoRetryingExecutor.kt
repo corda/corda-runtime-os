@@ -1,9 +1,9 @@
 package net.corda.crypto.impl.retrying
 
 import net.corda.crypto.core.isRecoverable
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.failures.CryptoRetryException
-import net.corda.v5.crypto.failures.CryptoRetryStrategy
 import org.slf4j.Logger
 import java.util.UUID
 
@@ -12,7 +12,7 @@ import java.util.UUID
  */
 open class CryptoRetryingExecutor(
     private val logger: Logger,
-    private val strategy: CryptoRetryStrategy
+    private val strategy: BackoffStrategy
 ) {
     companion object {
         const val CRYPTO_MAX_ATTEMPT_GUARD: Int = 10
@@ -31,7 +31,6 @@ open class CryptoRetryingExecutor(
     @Suppress("NestedBlockDepth")
     fun <R> executeWithRetry(block: () -> R): R {
         var attempt = 1
-        var backoff = 0L
         var op = ""
         while (true) {
             try {
@@ -50,7 +49,7 @@ open class CryptoRetryingExecutor(
                     // throws the original exception
                     throw e
                 }
-                backoff = strategy.getBackoff(attempt, backoff)
+                val backoff = strategy.getBackoff(attempt)
                 if (backoff < 0 || attempt > CRYPTO_MAX_ATTEMPT_GUARD) {
                     // the strategy is exhausted, giving up
                     logCompleteFailure(attempt, op)

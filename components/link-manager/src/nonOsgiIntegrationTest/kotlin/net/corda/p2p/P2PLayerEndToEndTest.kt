@@ -43,6 +43,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -416,6 +417,11 @@ class P2PLayerEndToEndTest {
                 lifecycleCoordinatorFactory,
                 configReadService,
                 bootstrapConfig,
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                ThirdPartyComponentsMode.STUB
             )
 
         private val gateway =
@@ -471,15 +477,19 @@ class P2PLayerEndToEndTest {
                     }
                 }
         }
-        private val groupPolicyEntry = GroupPolicyEntry(
-            GROUP_ID,
-            NetworkType.CORDA_5,
-            listOf(
-                ProtocolMode.AUTHENTICATION_ONLY,
-                ProtocolMode.AUTHENTICATED_ENCRYPTION,
-            ),
-            listOf(String(readKeyStore("$trustStoreFileName.pem"))),
-        )
+        private val groupPolicyEntry = ourIdentities.map {
+            GroupPolicyEntry(
+                HoldingIdentity(it.x500Name, GROUP_ID),
+                NetworkType.CORDA_5,
+                listOf(
+                    ProtocolMode.AUTHENTICATION_ONLY,
+                    ProtocolMode.AUTHENTICATED_ENCRYPTION,
+                ),
+                listOf(String(readKeyStore("$trustStoreFileName.pem"))),
+            )
+        }
+
+
 
         private val memberInfoEntry = ourIdentities.mapIndexed { i, identity ->
             MemberInfoEntry(
@@ -511,11 +521,13 @@ class P2PLayerEndToEndTest {
                 )
             }.toList()
 
-            val groupPolicyRecord = Record(
-                GROUP_POLICIES_TOPIC,
-                GROUP_ID,
-                groupPolicyEntry,
-            )
+            val groupPolicyRecord = groupPolicyEntry.map {
+                Record(
+                    GROUP_POLICIES_TOPIC,
+                    "${it.holdingIdentity.x500Name}-${it.holdingIdentity.groupId}",
+                    it,
+                )
+            }
 
             val cryptoKeyRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(CRYPTO_KEYS_TOPIC, "key-1", TenantKeys(identity.x500Name, KeyPairEntry(keyPairs[i].private.toPem())))

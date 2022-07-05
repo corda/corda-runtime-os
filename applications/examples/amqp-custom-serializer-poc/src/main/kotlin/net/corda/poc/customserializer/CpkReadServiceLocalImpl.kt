@@ -4,11 +4,11 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.core.CpkIdentifier
 import org.osgi.service.component.annotations.Component
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
+import net.corda.v5.crypto.SecureHash
 
 interface CpkReadServiceLoader {
     fun load(cpiInputStream : InputStream) : Cpi
@@ -18,7 +18,7 @@ interface CpkReadServiceLoader {
 @Suppress("UNUSED")
 @Component(service = [CpkReadService::class, CpkReadServiceLoader::class])
 class CpkReadServiceLocalImpl : CpkReadService, CpkReadServiceLoader {
-    private val cpkById = mutableMapOf<CpkIdentifier, Cpk>()
+    private val cpkByFileChecksum = mutableMapOf<SecureHash, Cpk>()
 
     private val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"), "cpb")
         .apply { Files.createDirectories(this) }
@@ -30,10 +30,10 @@ class CpkReadServiceLocalImpl : CpkReadService, CpkReadServiceLoader {
     override fun load(cpiInputStream: InputStream): Cpi {
         val cpi = CpiReader.readCpi(cpiInputStream, expansionLocation = tmpDir, verifySignature = true)
 
-        cpi.cpks.forEach { cpkById[it.metadata.cpkId] = it }
+        cpi.cpks.forEach { cpkByFileChecksum[it.metadata.fileChecksum] = it }
 
         return cpi
     }
 
-    override fun get(cpkId: CpkIdentifier): Cpk? = cpkById[cpkId]
+    override fun get(cpkFileChecksum: SecureHash): Cpk? = cpkByFileChecksum[cpkFileChecksum]
 }
