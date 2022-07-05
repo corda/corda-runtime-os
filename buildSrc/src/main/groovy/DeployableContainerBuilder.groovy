@@ -22,14 +22,11 @@ import java.time.Instant
  * Currently this deploys a 'fat jar' to the container and we run 'java - jar *args*' as the entry point.
  * A user may pass further custom arguments using the 'arguments' property when using this task type.
  * If a kafka file is present in the sub project directory it will be copied to container and
- * '"--kafka", "/opt/override/kafka.properties"' also passed to the 'java -Jar' entrypoint as additional arguments.
- * Future iterations will use a more modular layered approach.
  */
 abstract class DeployableContainerBuilder extends DefaultTask {
 
     private static final String CONTAINER_LOCATION = "/opt/override/"
     private final String projectName = project.name
-    private final String projectDir = project.projectDir
     private final String version = project.version
     private String targetRepo
     private def gitTask
@@ -138,8 +135,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     @TaskAction
     def updateImage() {
         def outputFiles = sourceTasks.get().collect{ it -> it.getOutputs().files.files }.flatten() as List<File>
-        def buildBaseDir = temporaryDir.toPath();
-        def containerizationDir = Paths.get("$buildBaseDir/containerization/");
+        def buildBaseDir = temporaryDir.toPath()
+        def containerizationDir = Paths.get("$buildBaseDir/containerization/")
 
         String gitRevision = gitTask.flatMap { it.revision }.get()
         def jiraTicket = hasJiraTicket()
@@ -159,20 +156,25 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         JibContainerBuilder builder = null
 
-        if (useDaemon.get()) { // local use case
-            logger.lifecycle("Daemon available")
+        if (useDaemon.get()) { // local development
+            logger.info("Daemon available")
             def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
-            //  coerce jib to get locally built images from the docker daemon Without this it trys to `docker inspect` remote images in another thread but cant catch exception
-            builder = imageName.endsWith("-local") ? Jib.from(DockerDaemonImage.named(imageName)) : Jib.from(imageName)
-        } else {  // CI use case
-            logger.lifecycle("No daemon available")
-            def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
-            if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
-                logger.lifecycle("Add credential to image")
-                baseImage.addCredential(registryUsername.get(), registryPassword.get())
+            if (imageName.endsWith("-local")) {
+                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
+                builder = Jib.from(DockerDaemonImage.named(imageName))
+            } else if (imageName.contains("software.r3.com")) {
+                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from internal remote repo")
+                builder = setCredentialsOnBaseImage(builder)
+            } else {
+                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
+                builder = Jib.from(imageName)
             }
-            builder = Jib.from(baseImage)
+        } else {  // CI use case
+            logger.info("No daemon available")
+            logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
+            builder = setCredentialsOnBaseImage(builder)
         }
+
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())
                .addLayer(
@@ -181,6 +183,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 )
 
         List<String> javaArgs = new ArrayList<String>(arguments.get())
+        javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
         javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
 
         if (setEntry.get()) {
@@ -188,8 +191,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.setEntrypoint(
                     "/bin/sh",
                     "-c",
-                    "exec java -Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE} ${javaArgs.join(" ")} -jar " +
-                            CONTAINER_LOCATION + entryName + ".jar \$@",
+                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \$@",
                     "\$@"
             )
         }
@@ -200,6 +202,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             }
         }
         builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
+        builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
+        builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
         if (System.properties['os.arch'] == "aarch64") {
             logger.quiet("Detected arm64 host, switching Jib to produce arm64 images")
@@ -252,10 +256,23 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 
     /**
+     *  Set credentials on the base image we use
+     */
+    private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
+        def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
+        if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
+            baseImage.addCredential(registryUsername.get(), registryPassword.get())
+            builder = Jib.from(baseImage)
+        }
+        builder
+    }
+
+
+    /**
      *  Publish images either to local docker daemon or to the remote repository depending on the
      *  value of remotePublish, CI jobs set this to true by default
      */
-    private JibContainer tagContainer(JibContainerBuilder builder, String tag) {
+    private void tagContainer(JibContainerBuilder builder, String tag) {
         if (remotePublish.get()) {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
@@ -279,11 +296,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/) {
             JiraTicket = (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/)[0][0]
         }
-        if (JiraTicket != null) {
-            return JiraTicket
-        } else {
-            return ""
-        }
+        return (JiraTicket != null) ? JiraTicket : ""
     }
 
     /**
