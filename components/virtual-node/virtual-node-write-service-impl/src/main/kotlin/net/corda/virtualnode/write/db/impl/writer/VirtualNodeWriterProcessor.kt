@@ -30,6 +30,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -59,7 +60,7 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
-    private fun createVirtualNode(create: VirtualNodeCreateRequest, respFuture: CompletableFuture<VirtualNodeManagementResponse>) {
+    private fun createVirtualNode(instant: Instant, create: VirtualNodeCreateRequest, respFuture: CompletableFuture<VirtualNodeManagementResponse>) {
         create.validationError()?.let { errMsg ->
 //            handleException(respFuture, errMsg, request)
             handleException(respFuture, VirtualNodeWriteServiceException(errMsg))
@@ -100,7 +101,7 @@ internal class VirtualNodeWriterProcessor(
 
             publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
 
-            sendSuccessfulResponse(respFuture, holdingId, cpiMetadata, dbConnections)
+            sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
         } catch (e: Exception) {
 //            handleException(respFuture, e, request, cpiMetadata, holdingId)
             handleException(respFuture, e)
@@ -118,7 +119,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         when (val typedRequest = request.request) {
-            is VirtualNodeCreateRequest -> createVirtualNode(typedRequest, respFuture)
+            is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -298,11 +299,11 @@ internal class VirtualNodeWriterProcessor(
 
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
+        instant: Instant,
         holdingIdentity: HoldingIdentity,
         cpiMetadata: CpiMetadataLite,
         dbConnections: VirtualNodeDbConnections
     ) {
-        val instant = clock.instant()
         val response = VirtualNodeManagementResponse(
             instant,
             VirtualNodeCreateResponse(

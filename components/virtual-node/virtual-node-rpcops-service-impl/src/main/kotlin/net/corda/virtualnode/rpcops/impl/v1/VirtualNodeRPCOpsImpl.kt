@@ -36,12 +36,19 @@ import java.time.Duration
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
-internal class VirtualNodeRPCOpsImpl @Activate constructor(
-    @Reference(service = PublisherFactory::class)
+internal class VirtualNodeRPCOpsImpl constructor(
     private val publisherFactory: PublisherFactory,
-    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private var clock: Clock
 ) : VirtualNodeRPCOpsInternal, PluggableRPCOps<VirtualNodeRPCOps> {
+
+    @Activate constructor(
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService
+    ) : this(publisherFactory, virtualNodeInfoReadService, UTCClock())
+
     private companion object {
         // The configuration used for the RPC sender.
         private val rpcConfig = RPCConfig(
@@ -58,7 +65,6 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
     private var requestTimeout: Duration? = null
-    private var clock: Clock = UTCClock()
     override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
     override fun start() = Unit

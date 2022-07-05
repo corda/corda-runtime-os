@@ -18,6 +18,8 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeReques
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
@@ -181,7 +183,7 @@ class VirtualNodeRPCOpsImplTests {
             vnodeRPCOps.createVirtualNode(httpCreateVNRequest)
         }
 
-        assertEquals("ErrorType: errorMessage", e.message)
+        assertEquals("errorMessage", e.message)
         assertEquals(INTERNAL_SERVER_ERROR, e.responseCode)
     }
 
@@ -190,10 +192,7 @@ class VirtualNodeRPCOpsImplTests {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
             VirtualNodeManagementResponse(
                 Instant.EPOCH,
-                VirtualNodeCreateResponse(
-                    "", mock(), "", "", mock(),
-                    "", null, null, null, null, null
-                )
+                VirtualNodeManagementResponseFailure(null)
             )
         }
 
@@ -305,6 +304,9 @@ class VirtualNodeRPCOpsImplTests {
             VirtualNodeManagementResponse(Instant.EPOCH, vnCreateSuccessfulResponse)
         }
     ): Pair<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>, VirtualNodeRPCOpsInternal> {
+        val mockClock = mock<Clock>().apply {
+            whenever(instant()).thenReturn(Instant.EPOCH)
+        }
 
         val vnCreateResponseFuture = CompletableFuture.supplyAsync(vnManagementResponse)
         val rpcSender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>().apply {
@@ -314,6 +316,6 @@ class VirtualNodeRPCOpsImplTests {
             whenever(createRPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>(any(), any()))
                 .thenReturn(rpcSender)
         }
-        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock())
+        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock(), mockClock)
     }
 }
