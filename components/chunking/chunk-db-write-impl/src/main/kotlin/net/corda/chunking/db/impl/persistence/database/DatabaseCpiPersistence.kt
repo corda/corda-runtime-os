@@ -1,10 +1,5 @@
 package net.corda.chunking.db.impl.persistence.database
 
-import java.nio.file.Files
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.LockModeType
-import javax.persistence.NonUniqueResultException
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
@@ -22,6 +17,11 @@ import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import java.nio.file.Files
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.LockModeType
+import javax.persistence.NonUniqueResultException
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
@@ -262,5 +262,22 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 )
             }
         }
+    }
+
+    override fun canUpsertCpi(cpiName: String, groupId: String): Boolean {
+        val entitiesFound = entityManagerFactory.createEntityManager().transaction {
+            it.createQuery(
+                "FROM ${CpiMetadataEntity::class.simpleName} c WHERE c.groupId = :groupId",
+                CpiMetadataEntity::class.java
+            ).setParameter("groupId", groupId).resultList
+        }
+
+        // we can insert this CPI, it's the first one with this group id
+        if (entitiesFound.isEmpty()) return true
+
+        // we can insert this CPI, it has the same name and group id (we are NOT checking the version)
+        if (entitiesFound.map { it.name }.contains(cpiName)) return true
+
+        return false
     }
 }
