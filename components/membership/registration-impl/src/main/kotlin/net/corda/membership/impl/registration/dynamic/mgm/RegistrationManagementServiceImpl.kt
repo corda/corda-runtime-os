@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
@@ -30,6 +31,8 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.DigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -53,6 +56,12 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = DigestService::class)
+    private val hashingService: DigestService,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val cipherSchemeMetadata: CipherSchemeMetadata,
 ) : RegistrationManagementService {
 
     companion object {
@@ -120,7 +129,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                             coordinator,
                             setOf(MESSAGING_CONFIG, BOOT_CONFIG)
                         )
-                    } else if(event.registration == subRegistration) {
+                    } else if (event.registration == subRegistration) {
                         logger.info("Received config, started subscriptions and setting status to UP")
                         coordinator.updateStatus(LifecycleStatus.UP, "Received config, started subscriptions and setting status to UP")
                     }
@@ -146,6 +155,9 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         cordaAvroSerializationFactory,
                         membershipPersistenceClient,
                         membershipQueryClient,
+                        cryptoOpsClient,
+                        hashingService,
+                        cipherSchemeMetadata,
                     ),
                     messagingConfig
                 ).also {

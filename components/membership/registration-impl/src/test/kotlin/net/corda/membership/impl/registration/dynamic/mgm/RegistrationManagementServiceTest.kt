@@ -100,7 +100,10 @@ class RegistrationManagementServiceTest {
             membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
-            membershipQueryClient
+            membershipQueryClient,
+            mock(),
+            mock(),
+            mock(),
         )
     }
 

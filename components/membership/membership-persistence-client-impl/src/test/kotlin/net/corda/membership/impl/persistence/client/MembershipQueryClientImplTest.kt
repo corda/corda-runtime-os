@@ -3,13 +3,17 @@ package net.corda.membership.impl.persistence.client
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
-import net.corda.data.membership.db.response.query.QueryFailedResponse
+import net.corda.data.membership.db.response.query.MemberSignature
+import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
+import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -34,6 +38,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -45,6 +50,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -54,10 +60,10 @@ class MembershipQueryClientImplTest {
     lateinit var membershipQueryClient: MembershipQueryClient
 
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
-    private val ourGroupId = UUID.randomUUID().toString()
+    private val ourGroupId = "Group ID 1"
     private val ourHoldingIdentity = HoldingIdentity(ourX500Name.toString(), ourGroupId)
     private val ourMemberInfo: MemberInfo = mock()
-    private val registrationId = UUID.randomUUID().toString()
+    private val registrationId = "Group ID 2"
 
     private val lifecycleEventCaptor = argumentCaptor<LifecycleEventHandler>()
 
@@ -115,14 +121,15 @@ class MembershipQueryClientImplTest {
                     ConfigKeys.BOOT_CONFIG to testConfig,
                     ConfigKeys.MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 
     @BeforeEach
     fun setUp() {
         membershipQueryClient = MembershipQueryClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory
+            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())
@@ -247,7 +254,7 @@ class MembershipQueryClientImplTest {
         payload: Any?
     ) = MembershipPersistenceResponse(
         rsContext,
-        if (success) payload else QueryFailedResponse("Error")
+        if (success) payload else PersistenceFailedResponse("Error")
     )
 
     @Suppress("LongParameterList")
@@ -260,7 +267,7 @@ class MembershipQueryClientImplTest {
         holdingIdentityOverride: net.corda.data.identity.HoldingIdentity? = null,
     ) {
         whenever(rpcSender.sendRequest(any())).thenAnswer {
-            clock.setTime(Instant.now().plusMillis(1))
+            //clock.setTime(Instant.now().plusMillis(1))
             val rsContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     reqTimestampOverride ?: requestTimestamp,
@@ -296,7 +303,6 @@ class MembershipQueryClientImplTest {
             assertThat(firstValue.request).isInstanceOf(QueryMemberInfo::class.java)
             assertThat((firstValue.request as QueryMemberInfo).queryIdentities).isEmpty()
         }
-
     }
 
     @Test
@@ -383,7 +389,7 @@ class MembershipQueryClientImplTest {
         mockPersistenceResponse(
             true,
             emptyList(),
-            reqIdOverride = UUID.randomUUID().toString()
+            reqIdOverride = "Group ID 3"
         )
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
@@ -401,5 +407,118 @@ class MembershipQueryClientImplTest {
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
         )
+    }
+
+    @Nested
+    inner class QueryMembersSignaturesTests {
+        @Test
+        fun `it will returns an empty response for empty query`() {
+            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, emptyList())
+
+            assertThat(result.getOrThrow()).isEmpty()
+        }
+
+        @Test
+        fun `it will returns the correct data in case of successful result`() {
+            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            postConfigChangedEvent()
+            val holdingId1 = HoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
+            val signature1 = CryptoSignatureWithKey(
+                ByteBuffer.wrap("pk1".toByteArray()),
+                ByteBuffer.wrap("ct1".toByteArray()),
+                KeyValuePairList(emptyList()),
+            )
+            val holdingId2 = HoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
+            val signature2 = CryptoSignatureWithKey(
+                ByteBuffer.wrap("pk2".toByteArray()),
+                ByteBuffer.wrap("ct2".toByteArray()),
+                KeyValuePairList(emptyList()),
+            )
+            val signatures = listOf(
+                MemberSignature(
+                    holdingId1.toAvro(), signature1
+                ),
+                MemberSignature(
+                    holdingId2.toAvro(), signature2
+                ),
+            )
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        MemberSignatureQueryResponse(signatures)
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
+
+            assertThat(result.getOrThrow())
+                .containsEntry(
+                    holdingId1, signature1
+                )
+                .containsEntry(
+                    holdingId2, signature2
+                )
+        }
+
+        @Test
+        fun `it will return error for failure`() {
+            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        PersistenceFailedResponse("oops")
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
+        @Test
+        fun `it will return error for invalid reply`() {
+            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            postConfigChangedEvent()
+            whenever(rpcSender.sendRequest(any())).thenAnswer {
+                val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                    MembershipResponseContext(
+                        requestTimestamp,
+                        requestId,
+                        clock.instant(),
+                        holdingIdentity
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    MembershipPersistenceResponse(
+                        context,
+                        "Nop"
+                    )
+                )
+            }
+
+            val result = membershipQueryClient.queryMembersSignatures(ourHoldingIdentity, listOf(bob))
+
+            assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
+        }
     }
 }
