@@ -1,5 +1,5 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpk2'
 }
 
 description 'Corda Sandbox CPK Two'

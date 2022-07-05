@@ -44,7 +44,7 @@ class CpiValidatorImpl constructor(
 
         // The following bit in only just adds the verifyCpi call site to compile. Having said that:
         // - The following (cordadevcodesignpublic.pem) is the certificate of "cordadevcodesign.p12" (default)
-        // used in `corda-gradle-plugins.cordapp-cpk` (defaulted CPB developer certificate).
+        // used in `corda-gradle-plugins.cordapp-cpk2` (defaulted CPB developer certificate).
         // - Normally we would need to load two certificates to verify a CPI, the CPB developer's and the network operator's (?).
         // - The following CPI verification is de-activated for now because does not work.
         // TODO "cpiVerificationEnabled" deactivation flag is to be removed once CPI verification works as per
@@ -109,7 +109,7 @@ class CpiValidatorImpl constructor(
 
     // TODO The implementation of this method needs updating to load needed certificates from the database.
     //  It currently just loads the default certificate as a loaded resource whose private key is used at CPB signing
-    //  in `corda-gradle-plugins.cordapp-cpk`.
+    //  in `corda-gradle-plugins.cordapp-cpk2`.
     private fun getCerts(): Collection<X509Certificate> {
         val certs = mutableSetOf<X509Certificate>()
 
