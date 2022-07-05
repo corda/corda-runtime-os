@@ -10,11 +10,19 @@ import io.javalin.websocket.WsMessageContext
 import io.javalin.websocket.WsMessageHandler
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientWsRequestContext
+import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
+import net.corda.httprpc.server.impl.context.ContextUtils.authorize
 import net.corda.httprpc.server.impl.context.ContextUtils.retrieveParameters
+import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
+import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.util.contextLogger
 
-internal class WebsocketRouteAdaptor(private val routeInfo: RouteInfo) : WsMessageHandler, WsCloseHandler,
+internal class WebsocketRouteAdaptor(
+    private val routeInfo: RouteInfo,
+    private val securityManager: HttpRpcSecurityManager,
+    private val credentialResolver: DefaultCredentialResolver
+) : WsMessageHandler, WsCloseHandler,
     WsConnectHandler, WsErrorHandler {
 
     private companion object {
@@ -31,6 +39,10 @@ internal class WebsocketRouteAdaptor(private val routeInfo: RouteInfo) : WsMessa
             channel = newChannel
 
             val clientWsRequestContext = ClientWsRequestContext(ctx)
+
+            val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
+            authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
+
             val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
             val fullListOfParams = listOf(newChannel) + paramsFromRequest
 

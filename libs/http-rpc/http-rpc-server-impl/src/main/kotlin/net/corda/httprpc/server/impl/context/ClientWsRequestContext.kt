@@ -7,6 +7,10 @@ import io.javalin.websocket.WsContext
  */
 class ClientWsRequestContext(private val ctx: WsContext) : ClientRequestContext {
 
+    override val method = "GET"
+
+    override fun header(header: String): String? = ctx.header(header)
+
     override val pathParamMap: Map<String, String>
         get() = ctx.pathParamMap()
 
@@ -15,4 +19,7 @@ class ClientWsRequestContext(private val ctx: WsContext) : ClientRequestContext 
 
     override val matchedPath: String
         get() = ctx.matchedPath()
+
+    override val queryString: String?
+        get() = ctx.queryString()
 }

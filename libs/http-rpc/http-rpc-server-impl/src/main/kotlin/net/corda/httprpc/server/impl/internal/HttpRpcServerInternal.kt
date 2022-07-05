@@ -2,22 +2,21 @@ package net.corda.httprpc.server.impl.internal
 
 import io.javalin.Javalin
 import io.javalin.http.BadRequestResponse
-import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
-import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
+import net.corda.httprpc.server.impl.context.ClientHttpRequestContext
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
+import net.corda.httprpc.server.impl.context.ContextUtils.authorize
 import net.corda.httprpc.server.impl.context.ContextUtils.contentTypeApplicationJson
-import net.corda.httprpc.server.impl.context.ContextUtils.getResourceAccessString
 import net.corda.httprpc.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
@@ -125,18 +124,6 @@ internal class HttpRpcServerInternal(
             .find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
     }
 
-
-
-
-
-    private fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
-        val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
-        if (!authorizingSubject.isPermitted(resourceAccessString))
-            throw ForbiddenResponse("User not authorized.")
-        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
-    }
-
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
     private fun Javalin.addRoutes() {
 
@@ -156,7 +143,9 @@ internal class HttpRpcServerInternal(
                     // Javalin provides no way for modifying "before" handler finding logic.
                     if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
                             it.method() == "GET") {
-                        authorize(authenticate(it, securityManager, credentialResolver), it.getResourceAccessString())
+                        val clientHttpRequestContext = ClientHttpRequestContext(it)
+                        val authorizingSubject = authenticate(clientHttpRequestContext, securityManager, credentialResolver)
+                        authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
                     } else {
                         log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
                     }
@@ -209,7 +198,9 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it, securityManager, credentialResolver), it.getResourceAccessString())
+                    val clientHttpRequestContext = ClientHttpRequestContext(it)
+                    val authorizingSubject = authenticate(clientHttpRequestContext, securityManager, credentialResolver)
+                    authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
                 }
             }
             registerHandlerForRoute(routeInfo, handlerType)
@@ -367,7 +358,7 @@ internal class HttpRpcServerInternal(
         try {
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
-            ws(routeInfo.fullPath, routeInfo.setupWsCall())
+            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver))
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {

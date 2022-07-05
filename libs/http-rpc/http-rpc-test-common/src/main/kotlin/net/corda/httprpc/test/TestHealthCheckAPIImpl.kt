@@ -120,9 +120,11 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
             scheduledFuture = scheduler.scheduleAtFixedRate(
                 {
                     log.debug { "Sending: $counter" }
-                    channel.send("${counter++}")
+                    val future = channel.send("${counter++}")
                     if (range != null) {
                         if (counter >= start + range) {
+                            // Wait for sent confirmation then close the channel
+                            future.get()
                             channel.close()
                         }
                     }

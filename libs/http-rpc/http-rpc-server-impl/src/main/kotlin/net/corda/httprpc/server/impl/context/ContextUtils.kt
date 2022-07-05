@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl.context
 
 import io.javalin.core.util.Header
 import io.javalin.http.Context
+import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
@@ -29,29 +30,9 @@ internal object ContextUtils {
 
     private const val CORDA_X500_NAME = "O=Http RPC Server, L=New York, C=US"
 
-    private fun Context.addHeaderValues(name: String, values: Iterable<String>) {
-        values.forEach {
-            this.res.addHeader(name, it)
-        }
-    }
-
-    //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
-    //this allows the implementation of HTTP Digest or for example SPNEGO in the future
-    private fun Context.addWwwAuthenticateHeaders(securityManager: HttpRpcSecurityManager) {
-        val authMethods = securityManager.getSchemeProviders().map {
-            val parameters = it.provideParameters()
-            val attributes = if (parameters.isEmpty()) "" else {
-                parameters.map { (k, v) -> "$k=\"$v\"" }.joinToString(", ")
-            }
-            "${it.authenticationMethod} $attributes"
-        }
-
-        addHeaderValues(Header.WWW_AUTHENTICATE, authMethods)
-    }
-
-    fun authenticate(ctx: Context, securityManager: HttpRpcSecurityManager, credentialResolver: CredentialResolver): AuthorizingSubject {
+    fun authenticate(ctx: ClientRequestContext, securityManager: HttpRpcSecurityManager, credentialResolver: CredentialResolver): AuthorizingSubject {
         log.trace { "Authenticate request." }
-        log.debug { """Authenticate for path: "${ctx.path()}".""" }
+        log.debug { """Authenticate for path: "${ctx.path}".""" }
 
         val credentials = credentialResolver.resolve(ctx)
             ?: """User credentials are empty or cannot be resolved""".let {
@@ -80,14 +61,6 @@ internal object ContextUtils {
                 throw UnauthorizedResponse(it)
             }
         }
-    }
-
-    fun Context.getResourceAccessString(): String {
-        val queryString = queryString()
-        // Examples of strings will look like:
-        // GET:/api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
-        // POST:/api/v1/user/createuser
-        return method() + ":" + path() + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
     private fun validateRequestContentType(routeInfo: RouteInfo, ctx: Context) {
@@ -166,5 +139,13 @@ internal object ContextUtils {
                 }
             }
         }
+    }
+
+    fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
+        val principal = authorizingSubject.principal
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
+        if (!authorizingSubject.isPermitted(resourceAccessString))
+            throw ForbiddenResponse("User not authorized.")
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 }
