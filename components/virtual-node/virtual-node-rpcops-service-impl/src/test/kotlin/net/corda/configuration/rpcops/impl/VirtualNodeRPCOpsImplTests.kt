@@ -3,13 +3,16 @@ package net.corda.configuration.rpcops.impl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
-import net.corda.data.virtualnode.VirtualNodeCreationResponse
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeCreateResponse
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.ResponseCode.INTERNAL_SERVER_ERROR
 import net.corda.httprpc.ResponseCode.INVALID_INPUT_DATA
 import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
@@ -20,9 +23,9 @@ import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -30,6 +33,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
@@ -61,9 +65,7 @@ class VirtualNodeRPCOpsImplTests {
     private val hsmConnectionId = null
 
     private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash", null, null, null, null)
-    private val vnCreateSuccessfulResponse = VirtualNodeCreationResponse(
-        true,
-        null,
+    private val vnCreateSuccessfulResponse = VirtualNodeCreateResponse(
         httpCreateVNRequest.x500Name,
         cpiIdAvro,
         httpCreateVNRequest.cpiFileChecksum,
@@ -111,7 +113,10 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode sends the correct request to the RPC sender`() {
         val rpcRequest = httpCreateVNRequest.run {
-            VirtualNodeCreationRequest(x500Name, cpiFileChecksum, null, null, null, null, "test_principal")
+            VirtualNodeManagementRequest(
+                Instant.EPOCH,
+                VirtualNodeCreateRequest(x500Name, cpiFileChecksum, null, null, null, null, "test_principal")
+            )
         }
 
         val (rpcSender, vnodeRPCOps) = getVirtualNodeRPCOps()
@@ -128,7 +133,8 @@ class VirtualNodeRPCOpsImplTests {
         val successResponse =
             HTTPCreateVirtualNodeResponse(
                 holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdHash,
-                vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId)
+                vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId
+            )
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -160,9 +166,11 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode throws HttpApiException if response is failure`() {
         val exception = ExceptionEnvelope("ErrorType", "errorMessage")
-        val (_, vnodeRPCOps) = getVirtualNodeRPCOps{
-            VirtualNodeCreationResponse(false, exception, "", mock(), "", "", mock(),
-                "", null, null, null, null, null)
+        val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
+            VirtualNodeManagementResponse(
+                Instant.EPOCH,
+                VirtualNodeManagementResponseFailure(exception)
+            )
         }
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -180,8 +188,13 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode throws HttpApiException if request fails but no exception is provided`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
-            VirtualNodeCreationResponse(false, null, "", mock(), "", "", mock(),
-                "", null, null, null, null, null)
+            VirtualNodeManagementResponse(
+                Instant.EPOCH,
+                VirtualNodeCreateResponse(
+                    "", mock(), "", "", mock(),
+                    "", null, null, null, null, null
+                )
+            )
         }
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -230,7 +243,7 @@ class VirtualNodeRPCOpsImplTests {
 
     @Test
     fun `createVirtualNode throws VirtualNodeRPCOpsServiceException if response future completes exceptionally`() {
-        val vnCreateResponse =  { throw IllegalStateException() }
+        val vnCreateResponse = { throw IllegalStateException() }
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps(vnCreateResponse)
 
         vnodeRPCOps.createAndStartRpcSender(mock())
@@ -288,15 +301,17 @@ class VirtualNodeRPCOpsImplTests {
 
     /** Returns a [VirtualNodeRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */
     private fun getVirtualNodeRPCOps(
-        vnCreateResponse: () -> VirtualNodeCreationResponse = { vnCreateSuccessfulResponse }
-    ): Pair<RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>, VirtualNodeRPCOpsInternal> {
+        vnManagementResponse: () -> VirtualNodeManagementResponse = {
+            VirtualNodeManagementResponse(Instant.EPOCH, vnCreateSuccessfulResponse)
+        }
+    ): Pair<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>, VirtualNodeRPCOpsInternal> {
 
-        val vnCreateResponseFuture = CompletableFuture.supplyAsync(vnCreateResponse)
-        val rpcSender = mock<RPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>>().apply {
+        val vnCreateResponseFuture = CompletableFuture.supplyAsync(vnManagementResponse)
+        val rpcSender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>().apply {
             whenever(sendRequest(any())).thenReturn(vnCreateResponseFuture)
         }
         val publisherFactory = mock<PublisherFactory>().apply {
-            whenever(createRPCSender<VirtualNodeCreationRequest, VirtualNodeCreationResponse>(any(), any()))
+            whenever(createRPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>(any(), any()))
                 .thenReturn(rpcSender)
         }
         return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock())

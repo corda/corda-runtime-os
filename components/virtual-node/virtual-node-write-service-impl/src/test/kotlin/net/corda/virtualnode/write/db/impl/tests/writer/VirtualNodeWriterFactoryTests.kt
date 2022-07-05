@@ -1,8 +1,8 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
-import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -48,7 +48,8 @@ class VirtualNodeWriterFactoryTests {
     @Test
     fun `factory does not start the virtual node writer`() {
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock())
+            getSubscriptionFactory(), getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock()
+        )
         val virtualNodeWriter = virtualNodeWriterFactory.create(mock())
         assertFalse(virtualNodeWriter.isRunning)
     }
@@ -60,7 +61,8 @@ class VirtualNodeWriterFactoryTests {
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock())
+            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock()
+        )
         virtualNodeWriterFactory.create(expectedConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -72,14 +74,15 @@ class VirtualNodeWriterFactoryTests {
             GROUP_NAME,
             CLIENT_NAME_RPC,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
-            VirtualNodeCreationRequest::class.java,
-            VirtualNodeCreationResponse::class.java,
+            VirtualNodeCreateRequest::class.java,
+            VirtualNodeCreateResponse::class.java,
         )
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock())
+            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock()
+        )
         virtualNodeWriterFactory.create(expectedConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
