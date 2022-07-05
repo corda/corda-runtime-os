@@ -81,10 +81,9 @@ class ForwardingGroupPolicyProviderTest {
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
             LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
         )
-        assertThat(managedChildren).hasSize(3)
+        assertThat(managedChildren).hasSize(2)
         assertThat(managedChildren).containsExactlyInAnyOrder(
             NamedLifecycle(realGroupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
-            NamedLifecycle(virtualNodeInfoReadService, LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
             NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>())
         )
     }
