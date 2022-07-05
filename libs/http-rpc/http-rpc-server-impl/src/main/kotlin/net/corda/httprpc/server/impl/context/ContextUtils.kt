@@ -30,7 +30,11 @@ internal object ContextUtils {
 
     private const val CORDA_X500_NAME = "O=Http RPC Server, L=New York, C=US"
 
-    fun authenticate(ctx: ClientRequestContext, securityManager: HttpRpcSecurityManager, credentialResolver: CredentialResolver): AuthorizingSubject {
+    fun authenticate(
+        ctx: ClientRequestContext,
+        securityManager: HttpRpcSecurityManager,
+        credentialResolver: CredentialResolver
+    ): AuthorizingSubject {
         log.trace { "Authenticate request." }
         log.debug { """Authenticate for path: "${ctx.path}".""" }
 
