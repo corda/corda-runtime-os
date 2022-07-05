@@ -7,7 +7,7 @@ import java.util.concurrent.Future
  * This is a special type which is meant to be used as a first parameter in `GET` endpoint which will be exposed as
  * a Websocket endpoint.
  */
-interface DuplexChannel {
+interface DuplexChannel : AutoCloseable {
 
     /**
      * Allows to asynchronously send a message to the remote side
@@ -17,7 +17,7 @@ interface DuplexChannel {
     /**
      * Allows to close this communication channel
      */
-    fun close()
+    override fun close()
 
     /**
      * Callback to be invoked when connected to remote side

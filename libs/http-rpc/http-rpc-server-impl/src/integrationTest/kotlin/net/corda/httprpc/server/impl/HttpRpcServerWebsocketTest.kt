@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl
 
+import io.javalin.core.util.Header
 import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
 import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.core.util.Header.CACHE_CONTROL
@@ -32,6 +33,7 @@ import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
     private companion object {
@@ -116,13 +118,9 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
             }
         }
 
-        fun toBasicAuthValue(username: String, password: String): String {
-            return "Basic " + Base64.getEncoder().encodeToString("$username:$password".toByteArray())
-        }
-
         val upgradeListener = object: UpgradeListener {
             override fun onHandshakeRequest(request: UpgradeRequest) {
-                request.setHeader("Authorization", toBasicAuthValue(userName, password))
+                request.setHeader(Header.AUTHORIZATION, toBasicAuthValue(userName, password))
             }
 
             override fun onHandshakeResponse(response: UpgradeResponse) {
@@ -142,11 +140,68 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
         val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest(), upgradeListener)
             .get(10, TimeUnit.SECONDS)
         log.info("Session established: $session")
-        closeLatch.await()
+        assertTrue(closeLatch.await(10, TimeUnit.SECONDS))
         session.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing from client side."))
         wsClient.stop()
 
         val expectedContent = (start until start + range).map { "$it" }
         assertThat(list).isEqualTo(expectedContent)
+    }
+
+    private fun toBasicAuthValue(username: String, password: String): String {
+        return "Basic " + Base64.getEncoder().encodeToString("$username:$password".toByteArray())
+    }
+
+    @Test
+    fun `check WebSocket wrong credentials connectivity`() {
+        val wsClient = WebSocketClient()
+        wsClient.start()
+
+        val latch = CountDownLatch(2)
+        var closeStatus: CloseStatus? = null
+
+        val wsHandler = object : NoOpEndpoint() {
+
+            override fun onWebSocketConnect(session: Session) {
+                log.info("onWebSocketConnect : $session")
+                latch.countDown()
+            }
+
+            override fun onWebSocketClose(statusCode: Int, reason: String?) {
+                super.onWebSocketClose(statusCode, reason)
+                closeStatus = CloseStatus(statusCode, reason)
+                latch.countDown()
+
+            }
+
+            override fun onWebSocketError(cause: Throwable?) {
+                log.info("onWebSocketError : $session", cause)
+            }
+        }
+
+        val upgradeListener = object: UpgradeListener {
+            override fun onHandshakeRequest(request: UpgradeRequest) {
+                request.setHeader(Header.AUTHORIZATION, toBasicAuthValue("alienUser", "wrongPassword"))
+            }
+
+            override fun onHandshakeResponse(response: UpgradeResponse) {
+            }
+        }
+
+        val uri = URI(
+            "ws://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/" +
+                    "${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/health/counterfeed/100"
+        )
+
+        log.info("Connecting to: $uri")
+
+        val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest(), upgradeListener)
+            .get(10, TimeUnit.SECONDS)
+        log.info("Session established: $session")
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS))
+        wsClient.stop()
+
+        assertThat(closeStatus?.code).isEqualTo(StatusCode.POLICY_VIOLATION)
     }
 }

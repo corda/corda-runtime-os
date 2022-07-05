@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.processing.ws
 
+import io.javalin.http.UnauthorizedResponse
 import io.javalin.websocket.WsCloseContext
 import io.javalin.websocket.WsCloseHandler
 import io.javalin.websocket.WsConnectContext
@@ -17,6 +18,8 @@ import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.util.contextLogger
+import org.eclipse.jetty.websocket.api.CloseStatus
+import org.eclipse.jetty.websocket.api.StatusCode.POLICY_VIOLATION
 
 internal class WebsocketRouteAdaptor(
     private val routeInfo: RouteInfo,
@@ -40,15 +43,22 @@ internal class WebsocketRouteAdaptor(
 
             val clientWsRequestContext = ClientWsRequestContext(ctx)
 
-            val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
-            authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
+            try {
+                val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
+                authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
 
-            val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
-            val fullListOfParams = listOf(newChannel) + paramsFromRequest
+                val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
+                val fullListOfParams = listOf(newChannel) + paramsFromRequest
 
-            @Suppress("SpreadOperator")
-            routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
-            newChannel.onConnect?.let { it() }
+                @Suppress("SpreadOperator")
+                routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
+                newChannel.onConnect?.let { it() }
+            } catch (ex: UnauthorizedResponse) {
+                "Websocket operation not permitted".let {
+                    log.warn("$it - ${ex.message}")
+                    newChannel.close(CloseStatus(POLICY_VIOLATION, it))
+                }
+            }
         }
     }
 
