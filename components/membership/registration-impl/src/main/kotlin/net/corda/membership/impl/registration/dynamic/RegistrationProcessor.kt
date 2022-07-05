@@ -1,16 +1,18 @@
-package net.corda.membership.impl.registration.dynamic.mgm
+package net.corda.membership.impl.registration.dynamic
 
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.membership.command.registration.ApproveRegistration
-import net.corda.data.membership.command.registration.DeclineRegistration
-import net.corda.data.membership.command.registration.ProcessMemberVerification
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.StartRegistration
-import net.corda.data.membership.command.registration.VerifyMember
+import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
+import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
-import net.corda.membership.impl.registration.dynamic.mgm.handler.RegistrationHandler
-import net.corda.membership.impl.registration.dynamic.mgm.handler.RegistrationHandlerResult
-import net.corda.membership.impl.registration.dynamic.mgm.handler.StartRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -46,7 +48,8 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             cordaAvroSerializationFactory
-        )
+        ),
+        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(cordaAvroSerializationFactory)
     )
 
     override fun onNext(
@@ -64,8 +67,8 @@ class RegistrationProcessor(
                 logger.warn("Unimplemented command.")
                 null
             }
-            is ProcessMemberVerification -> {
-                logger.info("Received process member during registration command.")
+            is ProcessMemberVerificationResponse -> {
+                logger.info("Received process member verification response during registration command.")
                 logger.warn("Unimplemented command.")
                 null
             }
@@ -79,6 +82,10 @@ class RegistrationProcessor(
                 logger.warn("Unimplemented command.")
                 logger.warn("Declining registration because: ${command.reason}")
                 null
+            }
+            is ProcessMemberVerificationRequest -> {
+                logger.info("Received process member verification request during registration command.")
+                handlers[ProcessMemberVerificationRequest::class.java]?.invoke(event)
             }
             else -> {
                 logger.warn("Unhandled registration command received.")

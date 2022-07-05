@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm
+package net.corda.membership.impl.registration.dynamic
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService

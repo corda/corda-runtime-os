@@ -5,7 +5,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.StartRegistration
+import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
@@ -15,7 +16,6 @@ import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
-import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_VERIFICATION_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.TestClock
@@ -58,8 +58,6 @@ class MembershipP2PProcessorTest {
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
 
     private val verificationRequest = VerificationRequest(
-        member,
-        mgm,
         UUID.randomUUID().toString(),
         KeyValuePairList(listOf(KeyValuePair("A", "B")))
     )
@@ -153,8 +151,9 @@ class MembershipP2PProcessorTest {
         assertThat(result)
             .isNotEmpty
             .hasSize(1)
-        assertThat(result.first().topic).isEqualTo(MEMBERSHIP_VERIFICATION_TOPIC)
-        assertThat(result.first().value).isInstanceOf(VerificationRequest::class.java)
+        assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+        val command = result.first().value as? RegistrationCommand
+        assertThat(command?.command).isInstanceOf(ProcessMemberVerificationRequest::class.java)
         assertThat(result.first().key).isEqualTo(member.toCorda().id)
     }
 
