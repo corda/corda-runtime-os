@@ -356,7 +356,6 @@ class VirtualNodeWriterProcessorTests {
             VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
         ).responseType as VirtualNodeManagementResponseFailure
 
-        println(resp)
         assertEquals(expectedEnvelope.errorType, resp.exception.errorType)
         assertTrue(resp.exception.errorMessage.contains("written to the database, but couldn't be published"))
     }

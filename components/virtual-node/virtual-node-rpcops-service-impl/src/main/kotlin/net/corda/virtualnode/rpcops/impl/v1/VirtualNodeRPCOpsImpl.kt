@@ -37,17 +37,11 @@ import java.time.Duration
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
 internal class VirtualNodeRPCOpsImpl constructor(
+    @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
+    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private var clock: Clock
 ) : VirtualNodeRPCOpsInternal, PluggableRPCOps<VirtualNodeRPCOps> {
-
-    @Activate constructor(
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory,
-        @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService
-    ) : this(publisherFactory, virtualNodeInfoReadService, UTCClock())
 
     private companion object {
         // The configuration used for the RPC sender.
@@ -65,6 +59,7 @@ internal class VirtualNodeRPCOpsImpl constructor(
     override val protocolVersion = 1
     private var rpcSender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
     private var requestTimeout: Duration? = null
+    private var clock: Clock = UTCClock()
     override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
     override fun start() = Unit
@@ -122,7 +117,7 @@ internal class VirtualNodeRPCOpsImpl constructor(
                 logger.warn("Remote request to create virtual node responded with exception: ${exception.errorMessage}")
                 throw InternalServerException(exception.errorMessage)
             }
-            else -> throw throw UnknownResponseTypeException(resp.responseType::class.java.name)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
     }
 

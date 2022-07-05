@@ -107,7 +107,6 @@ internal class VirtualNodeWriterProcessor(
 
             sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
         } catch (e: Exception) {
-//            handleException(respFuture, e, request, cpiMetadata, holdingId)
             handleException(respFuture, e)
         }
     }
