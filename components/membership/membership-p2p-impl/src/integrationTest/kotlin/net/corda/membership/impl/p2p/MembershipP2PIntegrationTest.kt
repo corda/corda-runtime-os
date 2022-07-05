@@ -200,7 +200,9 @@ class MembershipP2PIntegrationTest {
         val registrationRequestSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("membership_p2p_test_receiver", REGISTRATION_COMMAND_TOPIC),
             getTestProcessor { s, e ->
-                completableResult.complete(Pair(s, e))
+                if(e.value?.command is StartRegistration) {
+                    completableResult.complete(Pair(s, e))
+                }
             },
             messagingConfig = bootConfig
         ).also { it.start() }
@@ -294,7 +296,9 @@ class MembershipP2PIntegrationTest {
         val verificationRequestSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("membership_p2p_test_receiver", REGISTRATION_COMMAND_TOPIC),
             getTestProcessor { s, e ->
-                completableResult.complete(Pair(s, e))
+                if(e.value?.command is ProcessMemberVerificationRequest) {
+                    completableResult.complete(Pair(s, e))
+                }
             },
             messagingConfig = bootConfig,
             null
@@ -338,7 +342,7 @@ class MembershipP2PIntegrationTest {
             with(this.value?.command as ProcessMemberVerificationRequest) {
                 assertThat(this.source).isEqualTo(source)
                 assertThat(this.destination).isEqualTo(destination)
-                assertThat(this.verificationRequest).isEqualTo(requestBody)
+                assertThat(this.verificationRequest).isEqualTo(verificationRequest)
             }
         }
     }
