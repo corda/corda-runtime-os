@@ -24,7 +24,7 @@ class ForwardingMembershipGroupReader(
 ): LinkManagerMembershipGroupReader {
 
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
     }
 
     override fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity):
