@@ -21,7 +21,7 @@ class MerkleTreeFactoryImpl @Activate constructor(
     override fun createHashDigestProvider(
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
-        options: HashMap<String, Any>?,
+        options: Map<String, Any>,
     ): MerkleTreeHashDigestProvider {
         when (merkleTreeHashDigestProviderName) {
             "DefaultHashDigestProvider" ->
@@ -31,7 +31,6 @@ class MerkleTreeFactoryImpl @Activate constructor(
             "NonceHashDigestProvider.SizeOnlyVerify" ->
                 return NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithmName, digestService)
             "TweakableHashDigestProvider" -> {
-                require(options != null){"TweakableHashDigestProvider needs leafPrefix and nodePrefix options"}
                 require(options.containsKey("leafPrefix")){"TweakableHashDigestProvider needs a leafPrefix option"}
                 require(options.containsKey("nodePrefix")){"TweakableHashDigestProvider needs a nodePrefix option"}
                 val leafPrefix = options["leafPrefix"]
@@ -41,7 +40,6 @@ class MerkleTreeFactoryImpl @Activate constructor(
                 return TweakableHashDigestProvider(digestAlgorithmName, digestService, leafPrefix, nodePrefix)
             }
             "NonceHashDigestProvider" -> {
-                require(options != null){"NonceHashDigestProvider needs an entropy option"}
                 require(options.containsKey("entropy")){"NonceHashDigestProvider needs an entropy option"}
                 val entropy = options["entropy"]
                 require(entropy is ByteArray){"NonceHashDigestProvider needs a ByteArray entropy option"}
