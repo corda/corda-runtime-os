@@ -44,8 +44,8 @@ pluginManagement {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
-        id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
-        id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
+        id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
+        id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
