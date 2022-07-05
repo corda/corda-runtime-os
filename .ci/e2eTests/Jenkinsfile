@@ -114,8 +114,9 @@ pipeline {
 
 
                 sh '''
-                    # Forward RPC worker port
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 > forward.txt 2>&1 &
+                    # Forward ports for testing
+                    nohup kubectl port-forward -n ${NAMESPACE} prereqs-kafka-0 9094 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-flow-worker 7003:7000 >> forward.txt 2>&1 &

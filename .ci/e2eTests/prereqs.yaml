@@ -8,6 +8,12 @@ kafka:
   auth:
     enabled: true
     clientProtocol: sasl_tls
+  externalAccess:
+    enabled: true
+    service:
+      domain: "localhost"
+      loadBalancerIPs:
+        - 127.0.0.1
   replicaCount: 3
   resources:
     requests:
