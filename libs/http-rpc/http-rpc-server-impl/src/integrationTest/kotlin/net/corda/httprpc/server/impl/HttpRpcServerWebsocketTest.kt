@@ -154,6 +154,25 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
     @Test
     fun `check WebSocket wrong credentials connectivity`() {
+        val upgradeListener = object: UpgradeListener {
+            override fun onHandshakeRequest(request: UpgradeRequest) {
+                request.setHeader(Header.AUTHORIZATION, toBasicAuthValue("alienUser", "wrongPassword"))
+            }
+
+            override fun onHandshakeResponse(response: UpgradeResponse) {
+            }
+        }
+
+        performUnauthorizedTest(upgradeListener)
+    }
+
+    @Test
+    fun `check WebSocket no credentials connectivity`() {
+
+        performUnauthorizedTest(null)
+    }
+
+    private fun performUnauthorizedTest(upgradeListener: UpgradeListener?) {
         val wsClient = WebSocketClient()
         wsClient.start()
 
@@ -176,15 +195,6 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
             override fun onWebSocketError(cause: Throwable?) {
                 log.info("onWebSocketError : $session", cause)
-            }
-        }
-
-        val upgradeListener = object: UpgradeListener {
-            override fun onHandshakeRequest(request: UpgradeRequest) {
-                request.setHeader(Header.AUTHORIZATION, toBasicAuthValue("alienUser", "wrongPassword"))
-            }
-
-            override fun onHandshakeResponse(response: UpgradeResponse) {
             }
         }
 
