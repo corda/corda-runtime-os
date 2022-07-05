@@ -320,15 +320,12 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
         e: Exception,
     ): Boolean {
-        val exception = ExceptionEnvelope().apply {
-            errorType = "VIRTUALNODESAD"
-            errorMessage = e.message
-        }
         val response = VirtualNodeManagementResponse(
             clock.instant(),
             VirtualNodeManagementResponseFailure(
-                Error.VIRTUAL_NODE,
-                exception
+                ExceptionEnvelope().apply {
+                    errorMessage = e.message
+                }
             )
         )
         return respFuture.complete(response)

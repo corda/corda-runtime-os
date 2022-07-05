@@ -113,8 +113,8 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                     throw InternalServerException("Request was unsuccessful but no exception was provided.")
                 }
-                logger.warn("Remote request to create virtual node responded with exception: ${exception.errorType}: ${exception.errorMessage}")
-                throw InternalServerException("${exception.errorType}: ${exception.errorMessage}")
+                logger.warn("Remote request to create virtual node responded with exception: ${exception.errorMessage}")
+                throw InternalServerException(exception.errorMessage)
             }
             else -> throw throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
