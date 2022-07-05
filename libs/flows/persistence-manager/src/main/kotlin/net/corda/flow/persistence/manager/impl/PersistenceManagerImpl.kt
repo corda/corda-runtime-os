@@ -1,6 +1,5 @@
 package net.corda.flow.persistence.manager.impl
 
-import java.time.Instant
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
@@ -10,6 +9,7 @@ import net.corda.schema.configuration.FlowConfig.PERSISTENCE_MESSAGE_RESEND_WIND
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
+import java.time.Instant
 
 @Component(service = [PersistenceManager::class])
 class PersistenceManagerImpl : PersistenceManager {
