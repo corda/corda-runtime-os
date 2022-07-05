@@ -123,6 +123,7 @@ fun createVirtualNodeFor(x500: String): String {
     }
 }
 
+//
 fun addSoftHsmFor(holdingId: String, category: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
