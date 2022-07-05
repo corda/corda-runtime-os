@@ -450,7 +450,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and SentMarker and doesn't queue messages if SessionEstablished`() {
+    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and doesn't queue messages if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMsg = AuthenticatedMessage(
