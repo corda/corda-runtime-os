@@ -1,9 +1,11 @@
-package net.corda.membership.verification.service.impl
+package net.corda.membership.impl.registration.dynamic.handler.member
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.messaging.api.records.Record
@@ -19,7 +21,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
-class MembershipVerificationProcessorTest {
+class VerificationRequestHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
@@ -29,8 +31,6 @@ class MembershipVerificationProcessorTest {
     private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
     private val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
     private val verificationRequest = VerificationRequest(
-        member,
-        mgm,
         REGISTRATION_ID,
         requestBody
     )
@@ -43,13 +43,21 @@ class MembershipVerificationProcessorTest {
         on { createAvroSerializer<VerificationResponse>(any()) } doReturn requestSerializer
     }
 
-    private val membershipVerificationProcessor = MembershipVerificationProcessor(cordaAvroSerializationFactory)
+    private val verificationRequestHandler = VerificationRequestHandler(cordaAvroSerializationFactory)
 
     @Test
-    fun `processor returns response message`() {
-        val result = membershipVerificationProcessor.onNext(events = listOf(Record("topic", "key", verificationRequest)))
-        assertThat(result).hasSize(1)
-        val appMessage = result.first().value as AppMessage
+    fun `handler returns response message`() {
+        val result = verificationRequestHandler.invoke(
+            Record(
+                "dummyTopic",
+                member.toString(),
+                RegistrationCommand(
+                    ProcessMemberVerificationRequest(member, mgm, verificationRequest)
+                )
+            )
+        )
+        assertThat(result.outputStates).hasSize(1)
+        val appMessage = result.outputStates.first().value as AppMessage
         with(appMessage.message as AuthenticatedMessage) {
             assertThat(this.header.source).isEqualTo(member)
             assertThat(this.header.destination).isEqualTo(mgm)
