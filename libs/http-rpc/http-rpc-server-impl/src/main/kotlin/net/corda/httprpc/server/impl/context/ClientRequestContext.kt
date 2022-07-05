@@ -45,7 +45,7 @@ interface ClientRequestContext {
     /**
      * Gets the request path.
      */
-    val path: String get() = matchedPath
+    val path: String
 
     /**
      * Gets a map with all the form param keys and values.
