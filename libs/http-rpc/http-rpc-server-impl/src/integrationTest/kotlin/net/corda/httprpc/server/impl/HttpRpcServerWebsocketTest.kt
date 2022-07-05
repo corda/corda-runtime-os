@@ -120,7 +120,9 @@ class HttpRpcServerWebsocketTest : HttpRpcServerTestBase() {
 
         val upgradeListener = object: UpgradeListener {
             override fun onHandshakeRequest(request: UpgradeRequest) {
-                request.setHeader(Header.AUTHORIZATION, toBasicAuthValue(userName, password))
+                val headerValue = toBasicAuthValue(userName, password)
+                log.info("Header value: $headerValue")
+                request.setHeader(Header.AUTHORIZATION, headerValue)
             }
 
             override fun onHandshakeResponse(response: UpgradeResponse) {
