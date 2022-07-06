@@ -1,21 +1,8 @@
 {
   "type": "record",
-  "name": "VirtualNodeCreationResponse",
+  "name": "VirtualNodeCreateResponse",
   "namespace": "net.corda.data.virtualnode",
   "fields": [
-    {
-      "name": "success",
-      "type": "boolean",
-      "doc": "Whether the request was successful."
-    },
-    {
-      "name": "exception",
-      "type": [
-        "null",
-        "net.corda.data.ExceptionEnvelope"
-      ],
-      "doc": "The cause of failure if the request was unsuccessful."
-    },
     {
       "name": "x500Name",
       "type": "string"

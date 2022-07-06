@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "VirtualNodeManagementResponse",
+  "doc": "The response to an {@link VirtualNodeRequest}. Succeeds with type of {@link VirtualNodeResponse#responseType}, on failure it is {@link VirtualNodeManagementResponseFailure}",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ({@link java.time.Instant}) in milliseconds when the record was created."
+    },
+    {
+      "name": "responseType",
+      "doc": "Result of request, either a success or failure message",
+      "type": [
+        "net.corda.data.virtualnode.VirtualNodeCreateResponse",
+        "net.corda.data.virtualnode.VirtualNodeManagementResponseFailure"
+      ]
+    }
+  ]
+}
