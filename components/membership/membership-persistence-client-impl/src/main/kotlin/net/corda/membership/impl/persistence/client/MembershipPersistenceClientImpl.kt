@@ -9,7 +9,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
-import net.corda.data.membership.db.response.query.UpdateMemberAndRequestResponse
+import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -137,7 +137,7 @@ class MembershipPersistenceClientImpl(
         ).execute()
 
         return when (val payload = result.payload) {
-            is UpdateMemberAndRequestResponse -> MembershipPersistenceResult.Success(
+            is UpdateMemberAndRegistrationRequestResponse -> MembershipPersistenceResult.Success(
                 memberInfoFactory.create(payload.memberInfo)
             )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)

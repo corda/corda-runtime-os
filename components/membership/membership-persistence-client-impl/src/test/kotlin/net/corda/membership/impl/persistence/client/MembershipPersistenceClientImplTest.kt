@@ -12,7 +12,7 @@ import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
-import net.corda.data.membership.db.response.query.UpdateMemberAndRequestResponse
+import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -424,7 +424,7 @@ class MembershipPersistenceClientImplTest {
             postConfigChangedEvent()
             mockPersistenceResponse(
                 true,
-                payload = UpdateMemberAndRequestResponse(
+                payload = UpdateMemberAndRegistrationRequestResponse(
                     persistentMemberInfo
                 )
             )

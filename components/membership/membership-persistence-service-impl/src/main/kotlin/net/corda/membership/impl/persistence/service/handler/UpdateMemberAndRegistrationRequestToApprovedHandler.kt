@@ -6,7 +6,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
-import net.corda.data.membership.db.response.query.UpdateMemberAndRequestResponse
+import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -16,7 +16,10 @@ import net.corda.virtualnode.toCorda
 
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<UpdateMemberAndRegistrationRequestToApproved, UpdateMemberAndRequestResponse>(persistenceHandlerServices) {
+) : BasePersistenceHandler<
+    UpdateMemberAndRegistrationRequestToApproved,
+    UpdateMemberAndRegistrationRequestResponse
+    >(persistenceHandlerServices) {
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
@@ -30,7 +33,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     override fun invoke(
         context: MembershipRequestContext,
         request: UpdateMemberAndRegistrationRequestToApproved,
-    ): UpdateMemberAndRequestResponse {
+    ): UpdateMemberAndRegistrationRequestResponse {
         logger.info("Update member and registration request to approve.")
         return transaction(context.holdingIdentity.toCorda().id) { em ->
             val now = clock.instant()
@@ -49,7 +52,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
 
-            UpdateMemberAndRequestResponse(
+            UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(
                     context.holdingIdentity,
                     keyValuePairListDeserializer.deserialize(member.memberContext),
