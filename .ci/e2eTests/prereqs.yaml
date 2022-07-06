@@ -11,11 +11,10 @@ kafka:
   externalAccess:
     enabled: true
     service:
-      domain: "localhost"
-      loadBalancerIPs:
-        - 127.0.0.1
-        - 127.0.0.1
-        - 127.0.0.1
+      loadBalancerNames:
+        - prereqs-kafka-0
+        - prereqs-kafka-1
+        - prereqs-kafka-2
   replicaCount: 3
   resources:
     requests:
