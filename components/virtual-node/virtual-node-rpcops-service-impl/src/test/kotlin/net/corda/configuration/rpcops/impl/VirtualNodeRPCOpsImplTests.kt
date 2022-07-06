@@ -64,6 +64,9 @@ class VirtualNodeRPCOpsImplTests {
     private val cryptoDdlConnectionId = null
     private val cryptoDmlConnectionId = UUID.randomUUID().toString()
     private val hsmConnectionId = null
+    private val clock = mock<Clock>().apply {
+        whenever(instant()).thenReturn(Instant.EPOCH)
+    }
 
     private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash", null, null, null, null)
     private val vnCreateSuccessfulResponse = VirtualNodeCreateResponse(
@@ -115,7 +118,7 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode sends the correct request to the RPC sender`() {
         val rpcRequest = httpCreateVNRequest.run {
             VirtualNodeManagementRequest(
-                Instant.EPOCH,
+                clock.instant(),
                 VirtualNodeCreateRequest(x500Name, cpiFileChecksum, null, null, null, null, "test_principal")
             )
         }
@@ -169,7 +172,7 @@ class VirtualNodeRPCOpsImplTests {
         val exception = ExceptionEnvelope("ErrorType", "errorMessage")
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
             VirtualNodeManagementResponse(
-                Instant.EPOCH,
+                clock.instant(),
                 VirtualNodeManagementResponseFailure(exception)
             )
         }
@@ -190,7 +193,7 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode throws HttpApiException if request fails but no exception is provided`() {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps {
             VirtualNodeManagementResponse(
-                Instant.EPOCH,
+                clock.instant(),
                 VirtualNodeManagementResponseFailure(null)
             )
         }
@@ -300,13 +303,9 @@ class VirtualNodeRPCOpsImplTests {
     /** Returns a [VirtualNodeRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */
     private fun getVirtualNodeRPCOps(
         vnManagementResponse: () -> VirtualNodeManagementResponse = {
-            VirtualNodeManagementResponse(Instant.EPOCH, vnCreateSuccessfulResponse)
+            VirtualNodeManagementResponse(clock.instant(), vnCreateSuccessfulResponse)
         }
     ): Pair<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>, VirtualNodeRPCOpsInternal> {
-        val mockClock = mock<Clock>().apply {
-            whenever(instant()).thenReturn(Instant.EPOCH)
-        }
-
         val vnCreateResponseFuture = CompletableFuture.supplyAsync(vnManagementResponse)
         val rpcSender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>().apply {
             whenever(sendRequest(any())).thenReturn(vnCreateResponseFuture)
@@ -315,6 +314,6 @@ class VirtualNodeRPCOpsImplTests {
             whenever(createRPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>(any(), any()))
                 .thenReturn(rpcSender)
         }
-        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock(), mockClock)
+        return rpcSender to VirtualNodeRPCOpsImpl(publisherFactory, mock(), clock)
     }
 }
