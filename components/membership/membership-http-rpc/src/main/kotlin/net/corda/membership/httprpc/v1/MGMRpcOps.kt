@@ -26,8 +26,8 @@ interface MGMRpcOps : RpcOps {
         path = "{holdingIdentityId}",
         description = "Fetches the requested group policy string"
     )
-    fun getGroupPolicy(
+    fun generateGroupPolicy(
         @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String
-    ): String
+    ): Set<Map.Entry<String, String?>>
 }

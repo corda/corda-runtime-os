@@ -22,6 +22,7 @@ dependencies {
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
+    implementation project(":components:membership:membership-group-read")
     testImplementation project(":testing:test-utilities")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

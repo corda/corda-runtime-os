@@ -2,10 +2,8 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.*
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,22 +15,17 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MGMOpsClient
-import net.corda.membership.client.dto.MemberInfoSubmittedDto
-import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(
@@ -41,7 +34,7 @@ class MGMOpsClientImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
-    val configurationReadService: ConfigurationReadService
+    val configurationReadService: ConfigurationReadService,
 ) : MGMOpsClient {
 
     companion object {
@@ -55,7 +48,7 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
-        fun getGroupPolicy(holdingIdentityId: String): String
+        fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>>
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -83,8 +76,8 @@ class MGMOpsClientImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun getGroupPolicy(holdingIdentityId: String) =
-        impl.getGroupPolicy(holdingIdentityId)
+    override fun generateGroupPolicy(holdingIdentityId: String) =
+        impl.generateGroupPolicy(holdingIdentityId)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -145,7 +138,7 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMGMOpsClient {
-        override fun getGroupPolicy(holdingIdentityId: String) =
+        override fun generateGroupPolicy(holdingIdentityId: String) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun close() = Unit
@@ -154,63 +147,11 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun getGroupPolicy(holdingIdentityId: String): String {
-//            val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
-//                ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
-
-//            val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                MGMGroupPolicyRequest(holdingIdentityId)
-            )
-
-            return registrationResponse(request.sendRequest()).toString()
+        override fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>> {
+            return emptySet()
         }
 
         override fun close() = rpcSender.close()
 
-        @Suppress("SpreadOperator")
-        private fun registrationResponse(response: RegistrationRpcResponse): RegistrationRequestProgressDto =
-            RegistrationRequestProgressDto(
-                response.registrationSent,
-                response.registrationStatus.toString(),
-                MemberInfoSubmittedDto(
-                    mapOf(
-                        "registrationProtocolVersion" to response.registrationProtocolVersion.toString(),
-                        *response.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
-                    )
-                )
-            )
-
-        @Suppress("UNCHECKED_CAST")
-        private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
-            try {
-                logger.info("Sending request: $this")
-                val response = rpcSender.sendRequest(this).getOrThrow()
-                require(response != null && response.responseContext != null && response.response != null) {
-                    "Response cannot be null."
-                }
-                require(this.requestContext.requestId == response.responseContext.requestId) {
-                    "Request ID must match in the request and response."
-                }
-                require(this.requestContext.requestTimestamp == response.responseContext.requestTimestamp) {
-                    "Request timestamp must match in the request and response."
-                }
-                require(response.response is RESPONSE) {
-                    "Expected ${RESPONSE::class.java} as response type, but received ${response.response.javaClass}."
-                }
-
-                return response.response as RESPONSE
-            } catch (e: Exception) {
-                throw CordaRuntimeException(
-                    "Failed to send request and receive response for membership RPC operation. " + e.message, e
-                )
-            }
-        }
     }
 }

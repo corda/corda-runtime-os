@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -31,15 +30,13 @@ class MGMRpcOpsImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = GroupPolicyParser::class)
-    private val groupPolicyParser: GroupPolicyParser,
 ) : MGMRpcOps, PluggableRPCOps<MGMRpcOps>, Lifecycle {
     companion object {
         private val logger: Logger = contextLogger()
     }
 
     private interface InnerMGMRpcOps {
-        fun getGroupPolicy(holdingIdentityId: String): String
+        fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>>
     }
 
     private val className = this::class.java.simpleName
@@ -75,8 +72,8 @@ class MGMRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun getGroupPolicy(holdingIdentityId: String) =
-        impl.getGroupPolicy(holdingIdentityId)
+    override fun generateGroupPolicy(holdingIdentityId: String) =
+        impl.generateGroupPolicy(holdingIdentityId)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -89,26 +86,32 @@ class MGMRpcOpsImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMGMRpcOps {
-        override fun getGroupPolicy(holdingIdentityId: String) =
+        override fun generateGroupPolicy(holdingIdentityId: String) =
             throw ServiceUnavailableException(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
     }
 
     private inner class ActiveImpl : InnerMGMRpcOps {
-        override fun getGroupPolicy(holdingIdentityId: String): String {
-//            val vnode =
+        override fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>> {
+
             val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
                 ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
 
-
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-            val filteredMembers = reader.lookup(parse(holdingIdentity.x500Name))?.isMgm
+            val isMgm = reader.lookup(parse(holdingIdentity.x500Name))?.isMgm
                 ?: throw ResourceNotFoundException("The current member is not a MGM")
-//            val filteredMembers = reader.lookup().filter { member ->member.isMgm.equals(true)}
-            return filteredMembers.toString()
-//            return mgmOpsClient.getGroupPolicy(holdingIdentityId)
+
+            if(isMgm) {
+                val filteredMembers = reader.lookup(parse(holdingIdentity.x500Name))
+
+                val memberProvidedContext = filteredMembers!!.memberProvidedContext
+
+                return memberProvidedContext.entries
+            }
+            return emptySet()
+            mgmOpsClient.generateGroupPolicy(holdingIdentityId)
         }
     }
 }

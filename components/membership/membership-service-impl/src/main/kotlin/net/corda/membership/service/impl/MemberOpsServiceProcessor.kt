@@ -141,12 +141,12 @@ class MemberOpsServiceProcessor(
     private class MGMGroupPolicyRequestHandler(
         private val registrationProxy: RegistrationProxy,
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService
-    ) : RpcHandler<MGMGroupPolicyRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: MGMGroupPolicyRequest): Any {
+    ) : RpcHandler<RegistrationRpcRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
             val result = try {
-                registrationProxy.register(holdingIdentity)
+                registrationProxy.register(holdingIdentity,request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.")
                 null

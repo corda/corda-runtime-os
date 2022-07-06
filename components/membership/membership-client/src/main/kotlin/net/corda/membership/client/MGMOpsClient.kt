@@ -15,5 +15,5 @@ interface MGMOpsClient : Lifecycle {
      * @return [String] to indicate the last known status of the registration request based on
      * local member data.
      */
-    fun getGroupPolicy(holdingIdentityId: String): String
+    fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>>
 }
