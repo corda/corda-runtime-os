@@ -163,6 +163,9 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
+    {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
+      -Dco.paralleluniverse.fibers.verifyInstrumentation=true
+    {{- end -}}
     {{- if .Values.kafka.sasl.enabled }}
       -Djava.security.auth.login.config=/etc/config/jaas.conf
     {{- end -}}

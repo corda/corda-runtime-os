@@ -14,7 +14,6 @@ import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.FlowEvent
@@ -33,7 +32,6 @@ class CryptoFlowOpsBusProcessor(
         private val logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
             FilterMyKeysFlowQuery::class.java to FilterMyKeysFlowQueryHandler::class.java,
-            GenerateFreshKeyFlowCommand::class.java to GenerateFreshKeyFlowCommandHandler::class.java,
             SignFlowCommand::class.java to SignFlowCommandHandler::class.java
         )
     }
@@ -155,28 +153,6 @@ class CryptoFlowOpsBusProcessor(
                 tenantId = context.tenantId,
                 candidateKeys = request.keys
             )
-    }
-
-    private class GenerateFreshKeyFlowCommandHandler(
-        private val client: CryptoOpsProxyClient
-    ) : Handler<GenerateFreshKeyFlowCommand> {
-        override fun handle(context: CryptoRequestContext, request: GenerateFreshKeyFlowCommand): Any =
-            if (request.externalId.isNullOrBlank()) {
-                client.freshKeyProxy(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    scheme = request.schemeCodeName,
-                    context = request.context
-                )
-            } else {
-                client.freshKeyProxy(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    externalId = request.externalId,
-                    scheme = request.schemeCodeName,
-                    context = request.context
-                )
-            }
     }
 
     private class SignFlowCommandHandler(

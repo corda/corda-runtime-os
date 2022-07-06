@@ -98,7 +98,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     init {
         // define the different DB Entity Sets
-        //  entities can be in different packages, but all JPA classes must be passed in.
+        // entities can be in different packages, but all JPA classes must be passed in.
         entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
     }
@@ -123,6 +123,12 @@ class CryptoProcessorImpl @Activate constructor(
         ::vnodeInfo
     )
 
+    @Volatile
+    private var hsmAssociated: Boolean = false
+
+    @Volatile
+    private var dependenciesUp: Boolean = false
+
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 
@@ -137,6 +143,7 @@ class CryptoProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Crypto processor received event $event.")
         when (event) {
@@ -148,19 +155,16 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Assigning SOFT HSMs")
-                    val failed = temporaryAssociateClusterWithSoftHSM()
-                    if (failed.isNotEmpty()) {
-                        logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
-                        coordinator.updateStatus(
-                            LifecycleStatus.ERROR,
-                            "Failed to associate SOFT HSMs with cluster tenants."
-                        )
-                        return
+                    dependenciesUp = true
+                    if (hsmAssociated) {
+                        setStatus(event.status, coordinator)
+                    } else {
+                        coordinator.postEvent(AssociateHSM())
                     }
+                } else {
+                    dependenciesUp = false
+                    setStatus(event.status, coordinator)
                 }
-                logger.info("Crypto processor is set to be ${event.status}")
-                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 logger.info("Crypto  processor bootstrapping {}", configurationReadService::class.simpleName)
@@ -171,10 +175,29 @@ class CryptoProcessorImpl @Activate constructor(
 
                 publishCryptoBootstrapConfig(event)
             }
-            else -> {
-                logger.warn("Unexpected event $event!")
+            is AssociateHSM -> {
+                if(dependenciesUp) {
+                    if (hsmAssociated) {
+                        setStatus(LifecycleStatus.UP, coordinator)
+                    } else {
+                        logger.info("Assigning SOFT HSMs")
+                        val failed = temporaryAssociateClusterWithSoftHSM()
+                        if (failed.isNotEmpty()) {
+                            logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
+                            coordinator.postEvent(AssociateHSM()) // try again
+                        } else {
+                            hsmAssociated = true
+                            setStatus(LifecycleStatus.UP, coordinator)
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
+        logger.info("Crypto processor is set to be $status")
+        coordinator.updateStatus(status)
     }
 
     private fun publishCryptoBootstrapConfig(event: BootConfigEvent) {
@@ -192,7 +215,8 @@ class CryptoProcessorImpl @Activate constructor(
                 )
             }.root().render()
             logger.info("Crypto Worker config\n: {}", configValue)
-            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, 0, ConfigurationSchemaVersion(1, 0)))
+            val record =
+                Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, 0, ConfigurationSchemaVersion(1, 0)))
             it.publish(listOf(record)).forEach { future -> future.get() }
         }
     }
@@ -231,5 +255,7 @@ class CryptoProcessorImpl @Activate constructor(
         logger.error("Failed to assign SOFT HSM for $tenantId:$category", e)
         false
     }
+
+    class AssociateHSM : LifecycleEvent
 }
 

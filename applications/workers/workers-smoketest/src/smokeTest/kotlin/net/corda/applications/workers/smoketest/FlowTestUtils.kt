@@ -123,6 +123,34 @@ fun createVirtualNodeFor(x500: String): String {
     }
 }
 
+fun addSoftHsmFor(holdingId: String, category: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        assertWithRetry {
+            timeout(Duration.ofSeconds(5))
+            command { addSoftHsmToVNode(holdingId, category) }
+            condition { it.code == 200 }
+            failMessage("Failed to add SoftHSM for holding id '$holdingId'")
+        }
+    }
+}
+
+fun createKeyFor(holdingId: String, alias: String, category: String, scheme: String): String {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        val keyId = assertWithRetry {
+            command { createKey(holdingId, alias, category, scheme) }
+            condition { it.code == 200 }
+            failMessage("Failed to create key for holding id '$holdingId'")
+        }.body
+        assertWithRetry {
+            command { getKey(holdingId, keyId) }
+            condition { it.code == 200 }
+            failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
+        }.body
+    }
+}
+
 /**
  *This is a crude method for getting the holdingID short hash,it assumes the formatting of the
  *x500 is a perfect match for the internal formatting used in the platform code.

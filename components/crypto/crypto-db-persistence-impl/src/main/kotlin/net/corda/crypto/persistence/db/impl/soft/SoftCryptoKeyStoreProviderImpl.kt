@@ -3,11 +3,12 @@ package net.corda.crypto.persistence.db.impl.soft
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
-import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
@@ -24,7 +25,7 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [SoftCryptoKeyStoreProvider::class])
 class SoftCryptoKeyStoreProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
@@ -32,44 +33,33 @@ class SoftCryptoKeyStoreProviderImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata
 ) : AbstractConfigurableComponent<SoftCryptoKeyStoreProviderImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<SoftCryptoKeyStoreProvider>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<SoftCryptoKeyStoreProvider>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     ),
-    setOf(
+    configKeys = setOf(
         ConfigKeys.MESSAGING_CONFIG,
         ConfigKeys.BOOT_CONFIG,
         ConfigKeys.CRYPTO_CONFIG
     )
 ), SoftCryptoKeyStoreProvider {
-    interface Impl: AutoCloseable {
-        fun getInstance(): SoftCryptoKeyStore
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, dbConnectionManager, schemeMetadata)
+        Impl(coordinatorFactory, event, dbConnectionManager, schemeMetadata)
 
     override fun getInstance(): SoftCryptoKeyStore =
         impl.getInstance()
 
-    class InactiveImpl : Impl {
-        override fun getInstance(): SoftCryptoKeyStore =
-            throw IllegalStateException("The component is in illegal state.")
-
-        override fun close() = Unit
-    }
-
-    class ActiveImpl(
+    class Impl(
+        coordinatorFactory: LifecycleCoordinatorFactory,
         event: ConfigChangedEvent,
         private val dbConnectionOps: DbConnectionOps,
         private val schemeMetadata: CipherSchemeMetadata
-    ) : Impl {
+    ) : AbstractImpl {
         private val config: SmartConfig
 
         init {
@@ -92,9 +82,17 @@ class SoftCryptoKeyStoreProviderImpl @Activate constructor(
             )
         }
 
-        override fun getInstance(): SoftCryptoKeyStore = _instance
+        fun getInstance(): SoftCryptoKeyStore = _instance
+
+        private val _downstream = DependenciesTracker.AlwaysUp(
+            coordinatorFactory,
+            this
+        ).also { it.start() }
+
+        override val downstream: DependenciesTracker = _downstream
 
         override fun close() {
+            _downstream.close()
             _instance.close()
         }
     }

@@ -32,27 +32,6 @@ interface CryptoFlowOpsTransformer {
     fun createFilterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): FlowOpsRequest
 
     /**
-     * Generates [GenerateFreshKeyFlowCommand].
-     */
-    fun createFreshKey(
-        tenantId: String,
-        category: String,
-        scheme: String,
-        context: Map<String, String> = EMPTY_CONTEXT
-    ): FlowOpsRequest
-
-    /**
-     * Generates [GenerateFreshKeyFlowCommand].
-     */
-    fun createFreshKey(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: String,
-        context: Map<String, String> = EMPTY_CONTEXT
-    ): FlowOpsRequest
-
-    /**
      * Generates [SignFlowCommand]
      */
     @Suppress("LongParameterList")

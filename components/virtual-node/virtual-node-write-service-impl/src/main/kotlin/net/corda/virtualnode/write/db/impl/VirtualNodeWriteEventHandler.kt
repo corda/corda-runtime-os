@@ -14,7 +14,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
@@ -45,19 +44,17 @@ internal class VirtualNodeWriteEventHandler(
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         val msgConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
-        if (msgConfig.hasPath(MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS)) {
-            try {
-                virtualNodeWriter?.close()
-                virtualNodeWriter = virtualNodeWriterFactory
-                    .create(msgConfig)
-                    .apply { start() }
-                coordinator.updateStatus(UP)
-            } catch (e: Exception) {
-                coordinator.updateStatus(ERROR)
-                throw VirtualNodeWriteServiceException(
-                    "Could not start the virtual node writer for handling virtual node creation requests.", e
-                )
-            }
+        try {
+            virtualNodeWriter?.close()
+            virtualNodeWriter = virtualNodeWriterFactory
+                .create(msgConfig)
+                .apply { start() }
+            coordinator.updateStatus(UP)
+        } catch (e: Exception) {
+            coordinator.updateStatus(ERROR)
+            throw VirtualNodeWriteServiceException(
+                "Could not start the virtual node writer for handling virtual node creation requests.", e
+            )
         }
     }
 

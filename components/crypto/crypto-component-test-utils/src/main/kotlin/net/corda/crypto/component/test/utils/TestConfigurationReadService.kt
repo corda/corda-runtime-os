@@ -1,4 +1,4 @@
-package net.corda.crypto.client.hsm.impl.infra
+package net.corda.crypto.component.test.utils
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
@@ -24,9 +24,20 @@ class TestConfigurationReadService(
         ConfigKeys.MESSAGING_CONFIG to emptyConfig
     )
 ) : ConfigurationReadService {
-    val coordinator = coordinatorFactory.createCoordinator(
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
+
+    fun reissueConfigChangedEvent(coordinator: LifecycleCoordinator) {
+        if(configUpdates.isNotEmpty()) {
+            coordinator.postEvent(
+                ConfigChangedEvent(
+                    configUpdates.map { it.first }.toSet(),
+                    configUpdates.toMap()
+                )
+            )
+        }
+    }
 
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable =
         mock()
@@ -50,13 +61,13 @@ class TestConfigurationReadService(
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }
