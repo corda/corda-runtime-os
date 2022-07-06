@@ -61,6 +61,8 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
     implementation project(":components:membership:membership-group-read")
+    //This will be removed as a part of CORE-4163
+    implementation project(":libs:membership:membership-impl")
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

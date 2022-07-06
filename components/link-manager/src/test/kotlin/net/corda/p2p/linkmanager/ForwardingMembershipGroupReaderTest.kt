@@ -4,10 +4,12 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
+import net.corda.membership.lib.impl.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
@@ -45,6 +47,7 @@ class ForwardingMembershipGroupReaderTest {
     }
     private val bobMemberContext = mock<MemberContext> {
         on { parseList<EndpointInfo>("corda.endpoints") } doReturn listOf(bobEndpointInfo)
+        on { parse<String>(MemberInfoExtension.GROUP_ID) } doReturn BOB.groupId
     }
 
     private var dependentChildren: Collection<LifecycleCoordinatorName> = mutableListOf()
