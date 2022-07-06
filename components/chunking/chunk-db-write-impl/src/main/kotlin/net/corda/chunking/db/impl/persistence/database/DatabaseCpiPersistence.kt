@@ -85,7 +85,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
 
-            updateExistingAndPersistNewCpkFiles(em, cpi.cpks)
+            createOrUpdateCpkFileEntities(em, cpi.cpks)
 
             cpkDbChangeLogEntities.forEach { em.merge(it) }
 
@@ -129,7 +129,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             val cpiMetadataEntity = em.merge(updatedMetadata)
 
-            updateExistingAndPersistNewCpkFiles(em, cpi.cpks)
+            createOrUpdateCpkFileEntities(em, cpi.cpks)
 
             cpkDbChangeLogEntities.forEach { em.merge(it) }
 
@@ -233,12 +233,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    data class CpkFileEntityQueryResult(val id: CpkKey, val fileChecksum: String, val entityVersion: Int)
-
-    private fun updateExistingAndPersistNewCpkFiles(em: EntityManager, cpks: Collection<Cpk>) {
+    private fun createOrUpdateCpkFileEntities(em: EntityManager, cpks: Collection<Cpk>) {
         val query = """
-            SELECT NEW 
-            net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence$${CpkFileEntityQueryResult::class.java.simpleName}(
+            SELECT NEW ${CpkFileEntityQueryResult::class.qualifiedName}(
                 f.id, f.fileChecksum, f.entityVersion
             ) 
             from ${CpkFileEntity::class.java.simpleName} f  
@@ -260,7 +257,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     val updateQuery = """
                         UPDATE ${CpkFileEntity::class.java.simpleName} f 
                         SET f.fileChecksum = :fileChecksum, 
-                        f.data = :data 
+                        f.data = :data,
+                        f.entityVersion = :incrementedEntityVersion 
                         WHERE f.entityVersion = :entityVersion 
                         AND f.id = :id
                     """.trimIndent()
@@ -268,6 +266,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                         .setParameter("fileChecksum", cpk.metadata.fileChecksum.toString())
                         .setParameter("data", Files.readAllBytes(cpk.path!!))
                         .setParameter("entityVersion", existingCpkFile.entityVersion)
+                        .setParameter("incrementedEntityVersion", existingCpkFile.entityVersion + 1)
                         .setParameter("id", cpkKey)
                         .executeUpdate()
 
@@ -301,3 +300,5 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         return false
     }
 }
+
+data class CpkFileEntityQueryResult(val id: CpkKey, val fileChecksum: String, val entityVersion: Int)
