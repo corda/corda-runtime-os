@@ -21,6 +21,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -37,7 +38,7 @@ import java.time.Duration
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
 // Primary constructor is for test. This is until a clock service is available
-internal class VirtualNodeRPCOpsImpl constructor(
+internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     private val publisherFactory: PublisherFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private var clock: Clock
