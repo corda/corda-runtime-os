@@ -59,6 +59,22 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
+    fun addSoftHsmToVNode(holdingIdHash: String, category: String) =
+        client!!.post("/api/v1/$holdingIdHash/hsm/soft?category=$category", body = "")
+
+    fun createKey(holdingIdHash: String, alias: String, category: String, scheme: String) =
+        client!!.post(
+            "/api/v1/keys/$holdingIdHash",
+            body = """{
+                    "alias": "$alias",
+                    "hsmCategory": "$category",
+                    "scheme": "$scheme"
+                }""".trimIndent()
+        )
+
+    fun getKey(holdingIdHash: String, keyId: String) =
+        client!!.get("/api/v1/keys/$holdingIdHash/$keyId")
+
     /** Get status of a flow */
     fun flowStatus(holdingIdHash: String, clientRequestId: String) =
         client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId")

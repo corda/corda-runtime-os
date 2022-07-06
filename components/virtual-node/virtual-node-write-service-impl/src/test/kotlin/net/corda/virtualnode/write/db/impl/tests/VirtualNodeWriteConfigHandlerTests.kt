@@ -13,7 +13,6 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteEventHandler
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -76,22 +75,6 @@ class VirtualNodeWriteConfigHandlerTests {
             "Could not start the virtual node writer for handling virtual node creation requests.",
             e.message
         )
-    }
-
-    @Test
-    fun `does not throw if RPC sender config is not provided under RPC config`() {
-        val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any())).thenAnswer { throw IllegalStateException() }
-        }
-        val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
-
-        assertDoesNotThrow {
-            val event = ConfigChangedEvent(
-                setOf(RPC_CONFIG, MESSAGING_CONFIG),
-                mapOf(RPC_CONFIG to mock(), MESSAGING_CONFIG to mock())
-            )
-            eventHandler.processEvent(event, mock())
-        }
     }
 
     @Test

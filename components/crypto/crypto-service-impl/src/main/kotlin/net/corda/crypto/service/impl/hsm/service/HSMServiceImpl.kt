@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.hsm.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
@@ -36,7 +36,7 @@ class HSMServiceImpl(
     config: SmartConfig,
     private val hsmStore: HSMStore,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val opsProxyClient: CryptoOpsProxyClient
+    private val cryptoOpsClient: CryptoOpsClient
 ) : AutoCloseable {
     companion object {
         private val logger = contextLogger()
@@ -203,7 +203,7 @@ class HSMServiceImpl(
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
             executor.executeWithRetry {
-                opsProxyClient.createWrappingKey(
+                cryptoOpsClient.createWrappingKey(
                     configId = association.config.info.id,
                     failIfExists = false,
                     masterKeyAlias = association.masterKeyAlias!!,
@@ -220,7 +220,7 @@ class HSMServiceImpl(
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
             executor.executeWithRetry {
-                opsProxyClient.createWrappingKey(
+                cryptoOpsClient.createWrappingKey(
                     configId = info.id,
                     failIfExists = false,
                     masterKeyAlias = info.masterKeyAlias,
