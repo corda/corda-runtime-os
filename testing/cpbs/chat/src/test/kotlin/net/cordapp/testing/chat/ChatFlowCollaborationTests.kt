@@ -59,16 +59,16 @@ class ChatFlowCollaborationTests {
         }
 
         // Simulate that there's not already a stored message for this sender
-        val previouslyStoredMessage = IncomingChatMessage(name = FROM_X500_NAME, message = "")
+        val previouslyStoredMessage = IncomingChatMessage(sender = FROM_X500_NAME, message = "")
         incomingFlowMockHelper.returnOnFind(
-            findKey = previouslyStoredMessage.name,
+            findKey = previouslyStoredMessage.sender,
             result = null
         )
 
         // When a persist occurs in the incoming Flow, link the results of the persist to a find in the reader Flow
         incomingFlowMockHelper.expectPersistAndLinkToFind<IncomingChatMessage>(
             helperForFlowCallingFind = readerFlowMockHelper,
-            findKey = previouslyStoredMessage.name
+            findKey = previouslyStoredMessage.sender
         )
 
         executeConcurrently({
@@ -86,7 +86,7 @@ class ChatFlowCollaborationTests {
         val expectedMessages = ReceivedChatMessages(
             messages = listOf(
                 IncomingChatMessage(
-                    name = FROM_X500_NAME, message = MESSAGE
+                    sender = FROM_X500_NAME, message = MESSAGE
                 )
             )
         )
@@ -113,18 +113,18 @@ class ChatFlowCollaborationTests {
         }
 
         // Simulate that there's already a stored message for this sender
-        val previouslyStoredMessage = IncomingChatMessage(name = FROM_X500_NAME, message = "an older message")
+        val previouslyStoredMessage = IncomingChatMessage(sender = FROM_X500_NAME, message = "an older message")
         incomingFlowMockHelper.returnOnFind(
-            findKey = previouslyStoredMessage.name,
+            findKey = previouslyStoredMessage.sender,
             result = previouslyStoredMessage
         )
 
         // When a merge occurs in the incoming Flow, link the results of the merge to a find in the reader Flow
         incomingFlowMockHelper.expectMergeAndLinkToFind<IncomingChatMessage>(
             helperForFlowCallingFind = readerFlowMockHelper,
-            findKey = previouslyStoredMessage.name,
-            keyExtractor = { mergeParam -> mergeParam.name },
-            mergeOperation = { mergeParam -> IncomingChatMessage(previouslyStoredMessage.name, mergeParam.message) }
+            findKey = previouslyStoredMessage.sender,
+            keyExtractor = { mergeParam -> mergeParam.sender },
+            mergeOperation = { mergeParam -> IncomingChatMessage(previouslyStoredMessage.sender, mergeParam.message) }
         )
 
         executeConcurrently({
@@ -142,7 +142,7 @@ class ChatFlowCollaborationTests {
         val expectedMessages = ReceivedChatMessages(
             messages = listOf(
                 IncomingChatMessage(
-                    name = FROM_X500_NAME, message = MESSAGE
+                    sender = FROM_X500_NAME, message = MESSAGE
                 )
             )
         )

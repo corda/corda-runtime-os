@@ -37,7 +37,7 @@ class ChatIncomingFlowTest {
 
         verify(flowMockHelper.getMockService<PersistenceService>()).persist(
             IncomingChatMessage(
-                name = COUNTERPARTY_X500_NAME,
+                sender = COUNTERPARTY_X500_NAME,
                 message = MESSAGE
             )
         )

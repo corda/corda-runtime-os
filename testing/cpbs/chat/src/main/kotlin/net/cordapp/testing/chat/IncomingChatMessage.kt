@@ -13,7 +13,7 @@ import javax.persistence.Id
 data class IncomingChatMessage(
     @Id
     @Column
-    val name: String,
+    val sender: String,
     @Column
     val message: String
 )
