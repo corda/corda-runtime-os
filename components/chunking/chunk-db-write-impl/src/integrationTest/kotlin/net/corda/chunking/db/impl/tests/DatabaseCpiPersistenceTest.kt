@@ -301,10 +301,39 @@ internal class DatabaseCpiPersistenceTest {
             )
         }
 
-        findAndAssertCpk(cpi1.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpkChecksum.toString(), 0, 0, 0)
-        findAndAssertCpk(cpi2.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpkChecksum.toString(), 0, 0, 0)
-        findAndAssertCpk(cpi1.metadata.cpiId, cpk1.metadata.cpkId, cpk1Checksum.toString(), 0, 0, 0)
-        findAndAssertCpk(cpi2.metadata.cpiId, cpk2.metadata.cpkId, cpk2Checksum.toString(), 0, 0, 0)
+        // no updates to existing CPKs have occurred hence why all entity versions are 0
+        findAndAssertCpk(
+            cpiId = cpi1.metadata.cpiId,
+            cpkId = sharedCpk.metadata.cpkId,
+            expectedCpkFileChecksum = sharedCpkChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
+        findAndAssertCpk(
+            cpiId = cpi2.metadata.cpiId,
+            cpkId = sharedCpk.metadata.cpkId,
+            expectedCpkFileChecksum = sharedCpkChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
+        findAndAssertCpk(
+            cpiId = cpi1.metadata.cpiId,
+            cpkId = cpk1.metadata.cpkId,
+            expectedCpkFileChecksum = cpk1Checksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
+        findAndAssertCpk(
+            cpiId = cpi2.metadata.cpiId,
+            cpkId = cpk2.metadata.cpkId,
+            expectedCpkFileChecksum = cpk2Checksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
     }
 
     @Test
@@ -468,8 +497,23 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(cpi.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpk.metadata.fileChecksum.toString(), 0, 0, 0)
-        findAndAssertCpk(cpi2.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpk.metadata.fileChecksum.toString(), 0, 0, 0)
+        // no updates to existing CPKs have occurred hence why all entity versions are 0
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = sharedCpk.metadata.cpkId,
+            expectedCpkFileChecksum = sharedCpk.metadata.fileChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
+        findAndAssertCpk(
+            cpiId = cpi2.metadata.cpiId,
+            cpkId = sharedCpk.metadata.cpkId,
+            expectedCpkFileChecksum = sharedCpk.metadata.fileChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
     }
 
     @Test
@@ -501,8 +545,23 @@ internal class DatabaseCpiPersistenceTest {
 
         assertThat(cpi.metadata.cpiId).isEqualTo(updatedCpi.metadata.cpiId)
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, cpk.metadata.fileChecksum.toString(), 0, 0, 0)
-        findAndAssertCpk(cpi.metadata.cpiId, newCpk.metadata.cpkId, newCpk.metadata.fileChecksum.toString(), 0, 0, 0)
+        // no updates to existing CPKs have occurred hence why all entity versions are 0. We are updating a CPI by adding a new CPK to it
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = cpk.metadata.cpkId,
+            expectedCpkFileChecksum = cpk.metadata.fileChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = newCpk.metadata.cpkId,
+            expectedCpkFileChecksum = newCpk.metadata.fileChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
     }
 
     @Test
@@ -535,7 +594,15 @@ internal class DatabaseCpiPersistenceTest {
 
         assertThat(cpi.metadata.cpiId).isEqualTo(updatedCpi.metadata.cpiId)
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, newChecksum.toString(), 1, 1, 1)
+        // we have updated an existing CPK with a new checksum (and data) hence why its entityVersion has incremented.
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = cpk.metadata.cpkId,
+            expectedCpkFileChecksum = newChecksum.toString(),
+            expectedMetadataEntityVersion = 1,
+            expectedFileEntityVersion = 1,
+            expectedCpiCpkEntityVersion = 1
+        )
     }
 
     @Test
@@ -553,7 +620,14 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, firstCpkChecksum.toString(), 0, 0, 0)
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = cpk.metadata.cpkId,
+            expectedCpkFileChecksum = firstCpkChecksum.toString(),
+            expectedMetadataEntityVersion = 0,
+            expectedFileEntityVersion = 0,
+            expectedCpiCpkEntityVersion = 0
+        )
 
         // a new cpi object, but with same cpk
         val secondCpkChecksum = newRandomSecureHash()
@@ -569,7 +643,15 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, secondCpkChecksum.toString(), 1, 1, 1)
+        // we have updated an existing CPK hence why the entity versions are incremented.
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = cpk.metadata.cpkId,
+            expectedCpkFileChecksum = secondCpkChecksum.toString(),
+            expectedMetadataEntityVersion = 1,
+            expectedFileEntityVersion = 1,
+            expectedCpiCpkEntityVersion = 1
+        )
 
         // a new cpi object, but with same cpk
         val thirdChecksum = newRandomSecureHash()
@@ -585,7 +667,15 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, thirdChecksum.toString(), 2, 2, 2)
+        // We have updated the same CPK again hence why the entity versions are incremented again.
+        findAndAssertCpk(
+            cpiId = cpi.metadata.cpiId,
+            cpkId = cpk.metadata.cpkId,
+            expectedCpkFileChecksum = thirdChecksum.toString(),
+            expectedMetadataEntityVersion = 2,
+            expectedFileEntityVersion = 2,
+            expectedCpiCpkEntityVersion = 2
+        )
     }
 
     private fun findAndAssertCpk(
