@@ -307,7 +307,7 @@ class MemberProcessorTestUtils {
 
         private val schemaVersion = ConfigurationSchemaVersion(1, 0)
         private fun Publisher.publishConf(configKey: String, conf: String) =
-            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, 0, schemaVersion))
+            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, conf, 0, schemaVersion))
 
         private fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())

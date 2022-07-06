@@ -1,12 +1,10 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.flow.rpcops.impl
 
 import java.util.stream.Stream
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.impl.CacheLoadCompleteEvent
-import net.corda.flow.rpcops.impl.FlowRPCOpsServiceImpl
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator

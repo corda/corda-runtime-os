@@ -71,11 +71,16 @@ internal class ConfigProcessor(
         }
     }
 
+    fun get(key: String): Configuration? {
+        return configCache[key]?.value
+    }
+
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
         return if (currentData.isNotEmpty()) {
             val config = currentData.mapValues { config ->
                 config.value.toSmartConfig().also { smartConfig ->
-                    logger.info(
+                    logger.info("Received configuration for key ${config.key}")
+                    logger.debug(
                         "Received configuration for key ${config.key}: " +
                                 smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
                     )

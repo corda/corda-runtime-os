@@ -1,19 +1,18 @@
 package net.corda.configuration.write.impl.writer
 
 import com.typesafe.config.ConfigFactory
-import java.time.Clock
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.v5.base.versioning.Version
+import java.time.Clock
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -106,23 +105,23 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture
     ) {
         val configSection = entity.section
-        val config = Configuration(
-            entity.config,
-            entity.version,
-            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor)
-        )
         try {
-            configPublishService.put(configSection, config)
+            configPublishService.put(
+                configSection,
+                entity.config,
+                entity.version,
+                ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor))
         } catch (e: Exception) {
             // TODO using the entity for now. Maybe we should be introducing a DTO for Configuration.
-            val errMsg = "Configuration ${configSection to config} was written to the database, but couldn't be published. Cause: $e"
+            val errMsg = "Configuration '$configSection' (${entity.config}) was written to the database, " +
+                    "but couldn't be published. Cause: $e"
             handleException(
-                respFuture, errMsg, e, configSection, config.value,
+                respFuture, errMsg, e, configSection, entity.config,
                 ConfigurationSchemaVersion(
-                    config.schemaVersion.majorVersion,
-                    config.schemaVersion.minorVersion
+                    entity.schemaVersionMajor,
+                    entity.schemaVersionMinor
                 ),
-                config.version
+                entity.version
             )
             return
         }
@@ -131,12 +130,12 @@ internal class ConfigWriterProcessor(
             true,
             null,
             configSection,
-            config.value,
+            entity.config,
             ConfigurationSchemaVersion(
-                config.schemaVersion.majorVersion,
-                config.schemaVersion.minorVersion
+                entity.schemaVersionMajor,
+                entity.schemaVersionMinor
             ),
-            config.version
+            entity.version
         )
         respFuture.complete(response)
     }

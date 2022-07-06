@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfig

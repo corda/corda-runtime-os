@@ -1,7 +1,6 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
-import net.corda.configuration.rpcops.impl.ConfigRPCOpsConfigHandler
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
