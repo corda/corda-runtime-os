@@ -5,7 +5,13 @@
   "fields": [
     {
       "name": "value",
-      "type": "string"
+      "type": "string",
+      "doc": "Configuration values, as a JSON/HCON structure, with defaults applied."
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "doc": "Configuration values, as a JSON/HCON structure, before defaults applied."
     },
     {
       "name": "version",
