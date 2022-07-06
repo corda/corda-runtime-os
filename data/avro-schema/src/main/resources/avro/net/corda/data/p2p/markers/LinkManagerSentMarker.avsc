@@ -2,12 +2,6 @@
   "type": "record",
   "name": "LinkManagerSentMarker",
   "namespace": "net.corda.p2p.markers",
-  "fields": [
-    {
-      "name": "message",
-      "type": "net.corda.p2p.AuthenticatedMessageAndKey",
-      "doc": "A copy of the original message in P2P_OUT_TOPIC."
-    }
-  ],
-  "doc": "The message was processed by the sending Link Manager."
+  "fields": [],
+  "doc": "The message was sent by the sending Link Manager."
 }
