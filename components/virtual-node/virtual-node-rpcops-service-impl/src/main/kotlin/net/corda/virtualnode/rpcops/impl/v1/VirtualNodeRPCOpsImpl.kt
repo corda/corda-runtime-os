@@ -36,6 +36,7 @@ import java.time.Duration
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
+// Primary constructor is for test. This is until a clock service is available
 internal class VirtualNodeRPCOpsImpl constructor(
     private val publisherFactory: PublisherFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
