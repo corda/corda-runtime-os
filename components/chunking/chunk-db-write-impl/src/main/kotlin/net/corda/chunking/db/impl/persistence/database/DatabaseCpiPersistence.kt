@@ -233,19 +233,25 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
+    data class CpkFileEntityQueryResult(val id: CpkKey, val fileChecksum: String, val entityVersion: Int)
+
     private fun createOrUpdateCpkFileEntities(em: EntityManager, cpks: Collection<Cpk>) {
         val query = """
-            SELECT NEW ${CpkFileEntityQueryResult::class.qualifiedName}(
-                f.id, f.fileChecksum, f.entityVersion
-            ) 
+            SELECT f.id, f.fileChecksum, f.entityVersion 
             from ${CpkFileEntity::class.java.simpleName} f  
             where f.id IN :ids
         """.trimIndent()
-        val existingCpkFiles = em.createQuery(query, CpkFileEntityQueryResult::class.java)
+        val existingCpkFiles = em.createQuery(query)
             .setLockMode(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
             .setParameter("ids", cpks.map { it.metadata.cpkId.toCpkKey() })
             .resultList
-            .associateBy { it.id }
+            .associate {
+                it as Array<*>
+                val cpkKey = it[0] as CpkKey
+                val fileChecksum = it[1] as String
+                val entityVersion = it[2] as Int
+                cpkKey to CpkFileEntityQueryResult(cpkKey, fileChecksum, entityVersion)
+            }
 
         cpks.map { cpk ->
             val cpkKey = cpk.metadata.cpkId.toCpkKey()
@@ -301,4 +307,3 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     }
 }
 
-data class CpkFileEntityQueryResult(val id: CpkKey, val fileChecksum: String, val entityVersion: Int)
