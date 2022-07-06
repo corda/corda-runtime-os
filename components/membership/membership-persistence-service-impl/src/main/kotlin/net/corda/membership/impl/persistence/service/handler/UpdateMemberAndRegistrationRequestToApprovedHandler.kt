@@ -45,7 +45,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
                 request.registrationId,
-            ) ?: throw MembershipPersistenceException("Could not registrarion request: ${request.registrationId}")
+            ) ?: throw MembershipPersistenceException("Could not find registration request: ${request.registrationId}")
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
 

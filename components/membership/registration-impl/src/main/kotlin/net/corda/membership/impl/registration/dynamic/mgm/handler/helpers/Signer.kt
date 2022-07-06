@@ -34,7 +34,7 @@ internal class Signer(
         val keyInfo = cryptoOpsClient.lookup(
             tenantId,
             listOf(publicKey.publicKeyId()),
-        ).firstOrNull() ?: throw CordaRuntimeException("Public key is not own by $tenantId")
+        ).firstOrNull() ?: throw CordaRuntimeException("Public key is not owned by $tenantId")
         defaultCodeNameToSpec[keyInfo.schemeCodeName]
             ?: throw CordaRuntimeException("Can not find spec for ${keyInfo.schemeCodeName}")
     }
