@@ -1,13 +1,15 @@
 package net.corda.flow.rpcops.impl.v1
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
 import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
 import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -26,8 +28,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
 class FlowRPCOpsImpl @Activate constructor(
