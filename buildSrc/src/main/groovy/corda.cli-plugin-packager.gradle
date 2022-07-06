@@ -8,11 +8,13 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
     inputs.property('cliPluginClass', cliPlugin.cliPluginClass)
     inputs.property('cliPluginProvider', cliPlugin.cliPluginProvider)
     inputs.property('cliPluginDescription', cliPlugin.cliPluginDescription)
+    inputs.property('doNotPackage', cliPlugin.doNotPackage)
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     archiveBaseName = "${cliPlugin.cliPluginId.get()}-cli-plugin"
     from sourceSets.main.output
+
     dependsOn configurations.runtimeClasspath
     from {
         configurations.runtimeClasspath.collect { zipTree(it) }
@@ -23,6 +25,10 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
         exclude "module-info.class"
         exclude "META-INF/versions/*/module-info.class"
         exclude "org/slf4j/**"
+        exclude "kotlin/**"
+        cliPlugin.doNotPackage.get().forEach({
+            exclude it
+        })
     }
     manifest {
         attributes['Plugin-Class'] = cliPlugin.cliPluginClass
@@ -45,10 +51,12 @@ class CliPluginPackagerExtension {
         cliPluginClass = objects.property(String)
         cliPluginProvider = objects.property(String).convention("R3 Ltd")
         cliPluginDescription = objects.property(String)
+        doNotPackage = objects.listProperty(String).convention([])
     }
 
     final Property<String> cliPluginId
     final Property<String> cliPluginClass
     final Property<String> cliPluginProvider
     final Property<String> cliPluginDescription
+    final ListProperty<String> doNotPackage
 }
