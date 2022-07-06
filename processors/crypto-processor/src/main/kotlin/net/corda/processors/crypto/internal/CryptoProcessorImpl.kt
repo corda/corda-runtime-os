@@ -214,9 +214,9 @@ class CryptoProcessorImpl @Activate constructor(
                     softKey = KeyCredentials("soft-passphrase", "soft-salt")
                 )
             }.root().render()
-            logger.info("Crypto Worker config\n: {}", configValue)
+            logger.debug("Crypto Processor config\n: {}", configValue)
             val record =
-                Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, 0, ConfigurationSchemaVersion(1, 0)))
+                Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, configValue, 0, ConfigurationSchemaVersion(1, 0)))
             it.publish(listOf(record)).forEach { future -> future.get() }
         }
     }
