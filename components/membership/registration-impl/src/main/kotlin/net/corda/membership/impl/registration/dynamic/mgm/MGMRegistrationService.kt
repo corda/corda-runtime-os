@@ -30,6 +30,8 @@ import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -66,6 +68,8 @@ class MGMRegistrationService @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = MemberInfoFactory::class)
     val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = MembershipPersistenceClient::class)
+    val membershipPersistenceClient: MembershipPersistenceClient,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -197,6 +201,15 @@ class MGMRegistrationService @Activate constructor(
                         IS_MGM to "true"
                     )
                 )
+
+                val persistenceResult = membershipPersistenceClient.persistMemberInfo(member, listOf(mgmInfo))
+                if (persistenceResult is MembershipPersistenceResult.Failure) {
+                    return MembershipRequestRegistrationResult(
+                        MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                        "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
+                    )
+                }
+
                 val mgmRecord = Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                     "${member.id}-${member.id}",
