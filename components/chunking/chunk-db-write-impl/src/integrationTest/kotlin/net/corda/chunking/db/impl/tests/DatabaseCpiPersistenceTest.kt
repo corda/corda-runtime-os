@@ -301,8 +301,8 @@ internal class DatabaseCpiPersistenceTest {
             )
         }
 
-        findAndAssertCpk(cpi1.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpkChecksum.toString(), 0, 1, 0)
-        findAndAssertCpk(cpi2.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpkChecksum.toString(), 0, 1, 0)
+        findAndAssertCpk(cpi1.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpkChecksum.toString(), 0, 0, 0)
+        findAndAssertCpk(cpi2.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpkChecksum.toString(), 0, 0, 0)
         findAndAssertCpk(cpi1.metadata.cpiId, cpk1.metadata.cpkId, cpk1Checksum.toString(), 0, 0, 0)
         findAndAssertCpk(cpi2.metadata.cpiId, cpk2.metadata.cpkId, cpk2Checksum.toString(), 0, 0, 0)
     }
@@ -468,22 +468,8 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(
-            cpi.metadata.cpiId,
-            sharedCpk.metadata.cpkId,
-            sharedCpk.metadata.fileChecksum.toString(),
-            0,
-            1,
-            0
-        )
-        findAndAssertCpk(
-            cpi2.metadata.cpiId,
-            sharedCpk.metadata.cpkId,
-            sharedCpk.metadata.fileChecksum.toString(),
-            0,
-            1,
-            0
-        )
+        findAndAssertCpk(cpi.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpk.metadata.fileChecksum.toString(), 0, 0, 0)
+        findAndAssertCpk(cpi2.metadata.cpiId, sharedCpk.metadata.cpkId, sharedCpk.metadata.fileChecksum.toString(), 0, 0, 0)
     }
 
     @Test
@@ -515,7 +501,7 @@ internal class DatabaseCpiPersistenceTest {
 
         assertThat(cpi.metadata.cpiId).isEqualTo(updatedCpi.metadata.cpiId)
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, cpk.metadata.fileChecksum.toString(), 0, 1, 0)
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, cpk.metadata.fileChecksum.toString(), 0, 0, 0)
         findAndAssertCpk(cpi.metadata.cpiId, newCpk.metadata.cpkId, newCpk.metadata.fileChecksum.toString(), 0, 0, 0)
     }
 
@@ -549,7 +535,7 @@ internal class DatabaseCpiPersistenceTest {
 
         assertThat(cpi.metadata.cpiId).isEqualTo(updatedCpi.metadata.cpiId)
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, newChecksum.toString(), 1, 2, 1)
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, newChecksum.toString(), 1, 1, 1)
     }
 
     @Test
@@ -583,7 +569,7 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, secondCpkChecksum.toString(), 1, 2, 1)
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, secondCpkChecksum.toString(), 1, 1, 1)
 
         // a new cpi object, but with same cpk
         val thirdChecksum = newRandomSecureHash()
@@ -599,7 +585,7 @@ internal class DatabaseCpiPersistenceTest {
             emptyList()
         )
 
-        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, thirdChecksum.toString(), 2, 4, 2)
+        findAndAssertCpk(cpi.metadata.cpiId, cpk.metadata.cpkId, thirdChecksum.toString(), 2, 2, 2)
     }
 
     private fun findAndAssertCpk(
