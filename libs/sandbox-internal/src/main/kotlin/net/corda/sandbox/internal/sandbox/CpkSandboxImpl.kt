@@ -2,6 +2,8 @@ package net.corda.sandbox.internal.sandbox
 
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor.*
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.FrameworkUtil
@@ -45,5 +47,11 @@ internal class CpkSandboxImpl(
         return adapt(BundleWiring::class.java).getCapabilities(PACKAGE_WIRING).any { capability ->
             capability.attributes[PACKAGE_WIRING] == clazz.packageName
         }
+    }
+
+    override fun accept(visitor: SandboxVisitor) {
+        visitor.visit(this)
+        this.publicBundles.forEach { visitor.visit(PublicBundle(id, it)) }
+        this.privateBundles.forEach { visitor.visit(PrivateBundle(id, it)) }
     }
 }

@@ -494,8 +494,8 @@ class SandboxServiceImplTests {
 private data class CpkAndContents(
     val mainBundleClass: Class<*>,
     val libraryClass: Class<*>,
-    val mainBundleName: String? = "${random.nextInt()}",
-    val libraryBundleName: String? = "${random.nextInt()}",
+    val mainBundleName: String? = "Main Bundle ${random.nextInt()}",
+    val libraryBundleName: String? = "Lib Bundle ${random.nextInt()}",
     private val cpkDependencies: List<CpkIdentifier> = emptyList()
 ) {
     val bundleNames = setOf(mainBundleName, libraryBundleName)

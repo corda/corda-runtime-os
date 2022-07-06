@@ -12,6 +12,7 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.sandbox.internal.utilities.dot.DotSandboxVisitor
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
@@ -202,6 +203,11 @@ internal class SandboxServiceImpl @Activate constructor(
 
         bundles.forEach { bundle ->
             bundleIdToSandboxGroup[bundle.bundleId] = sandboxGroup
+        }
+
+        DotSandboxVisitor(this, System.out).also {
+            sandboxGroup.accept(it)
+            it.complete()
         }
 
         return sandboxGroup

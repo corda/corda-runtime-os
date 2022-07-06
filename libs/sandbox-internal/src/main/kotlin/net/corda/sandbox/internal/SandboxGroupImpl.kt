@@ -10,6 +10,7 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import java.util.Collections.unmodifiableMap
@@ -28,7 +29,6 @@ internal class SandboxGroupImpl(
     private val classTagFactory: ClassTagFactory,
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
-
     companion object {
         val logger = contextLogger()
     }
@@ -145,5 +145,11 @@ internal class SandboxGroupImpl(
             throw SandboxException("Attempted to create evolvable class tag for cpk private bundle ${bundle.symbolicName}.")
         }
         return classTagFactory.createSerialisedTag(isStaticTag, bundle, cpkSandbox)
+    }
+
+    /** Visit all sandboxes */
+    internal fun accept(visitor: SandboxVisitor) {
+        cpkSandboxes.forEach { it.accept(visitor) }
+        publicSandboxes.forEach { it.accept(visitor) }
     }
 }
