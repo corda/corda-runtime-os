@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.verify.internal
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
@@ -39,7 +39,7 @@ object VerifierFactory {
     }
 
     /** Creates CPK verifier for specified format */
-    fun createCpkVerifier(format: String?, jarReader: JarReader): CpkVerifier {
+    private fun createCpkVerifier(format: String?, jarReader: JarReader): CpkVerifier {
         return when (format) {
             FORMAT_1 -> CpkV1Verifier(jarReader)
             FORMAT_2 -> CpkV2Verifier(jarReader)
@@ -63,7 +63,7 @@ object VerifierFactory {
     }
 
     /** Creates CPB verifier for specified format */
-    fun createCpbVerifier(format: String?, jarReader: JarReader): CpbVerifier {
+    private fun createCpbVerifier(format: String?, jarReader: JarReader): CpbVerifier {
         return when (format) {
             null, FORMAT_1 -> CpbV1Verifier(jarReader)
             FORMAT_2 -> CpbV2Verifier(jarReader)
@@ -86,7 +86,7 @@ object VerifierFactory {
     }
 
     /** Creates CPI verifier for specified format */
-    fun createCpiVerifier(format: String?, jarReader: JarReader): CpiVerifier {
+    private fun createCpiVerifier(format: String?, jarReader: JarReader): CpiVerifier {
         return when (format) {
             null, FORMAT_1 -> CpiV1Verifier(jarReader)
             FORMAT_2 -> CpiV2Verifier(jarReader)

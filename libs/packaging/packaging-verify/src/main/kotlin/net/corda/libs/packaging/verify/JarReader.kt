@@ -1,4 +1,4 @@
-package net.corda.libs.packaging
+package net.corda.libs.packaging.verify
 
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import java.io.ByteArrayInputStream
@@ -12,7 +12,7 @@ import java.util.jar.Manifest
  * Stores JAR in memory, validates it and allows access to [Manifest] and [Entry]s.
  * Validation checks that JAR was not tampered and that signatures lead to [trustedCerts].
  */
-class JarReader(val jarName: String, jarBytes: ByteArray, val trustedCerts: Collection<X509Certificate>) {
+internal class JarReader private constructor(val jarName: String, jarBytes: ByteArray, val trustedCerts: Collection<X509Certificate>) {
     val manifest: Manifest
     val entries: List<Entry>
     val codeSigners: List<CodeSigner>
@@ -44,5 +44,11 @@ class JarReader(val jarName: String, jarBytes: ByteArray, val trustedCerts: Coll
             }
         }
         entries = jarEntries
+    }
+}
+
+private fun InputStream.readAllBytesAndClose(): ByteArray {
+    return this.use {
+        it.readAllBytes()
     }
 }

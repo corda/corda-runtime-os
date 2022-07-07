@@ -3,13 +3,9 @@ package net.corda.libs.packaging
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
-import java.security.CodeSigner
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.security.cert.CertPathValidator
 import java.security.cert.Certificate
-import java.security.cert.PKIXParameters
-import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import java.util.Arrays
 import java.util.jar.JarEntry
@@ -73,34 +69,9 @@ fun Sequence<Certificate>.certSummaryHash(): SecureHash? =
         it.subjectX500Principal.name.toByteArray().hash()
     }.summaryHash()
 
-/** Verifies that signatures lead to trusted certificate */
-internal fun verifyCertificates(codeSigners: List<CodeSigner>, trustedCerts: Collection<X509Certificate>) {
-    require(codeSigners.isNotEmpty()) {
-        "Code signers not set"
-    }
-    require(trustedCerts.isNotEmpty()) {
-        "Trusted certificates not set"
-    }
-
-    val params = trustedCerts
-        .mapTo(HashSet()) { TrustAnchor(it, null) }
-        .let(::PKIXParameters)
-    params.isRevocationEnabled = false
-
-    val certPathValidator = CertPathValidator.getInstance("PKIX")
-    codeSigners.forEach {
-        certPathValidator.validate(it.signerCertPath, params)
-    }
-}
-
 private const val DEFAULT_VERIFY_JAR_SIGNATURES_KEY = "net.corda.packaging.jarSignatureVerification"
 internal fun jarSignatureVerificationEnabledByDefault() = System.getProperty(DEFAULT_VERIFY_JAR_SIGNATURES_KEY)?.toBoolean() ?: true
 
 fun signerInfo(jarEntry: JarEntry) =
     jarEntry.codeSigners.mapTo(LinkedHashSet()) { (it.signerCertPath.certificates[0]).publicKey }
 
-internal fun InputStream.readAllBytesAndClose(): ByteArray {
-    return this.use {
-        it.readAllBytes()
-    }
-}

@@ -1,7 +1,8 @@
-package net.corda.libs.packaging
+package net.corda.libs.packaging.verify
 
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
+import net.corda.libs.packaging.signerInfo
 import java.io.InputStream
 import java.security.CodeSigner
 import java.security.cert.X509Certificate
@@ -24,7 +25,7 @@ import java.util.jar.Manifest
  * @param inputStream Input stream for reading JAR
  * @param trustedCerts Trusted certificates
  */
-class JarVerifier(
+internal class JarVerifier(
     val jarName: String,
     private val inputStream: InputStream,
     private val trustedCerts: Collection<X509Certificate>

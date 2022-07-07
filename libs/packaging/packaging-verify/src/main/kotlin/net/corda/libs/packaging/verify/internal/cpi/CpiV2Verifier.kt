@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.verify.internal.cpi
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FILE_EXTENSION
 import net.corda.libs.packaging.PackagingConstants.CPI_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
@@ -17,7 +17,7 @@ import java.util.jar.Manifest
 /**
  * Verifies CPI format 2.0
  */
-class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
+internal class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
     private val cpbVerifier: CpbV2Verifier

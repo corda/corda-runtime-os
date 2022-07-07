@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.verify.internal.cpb
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_VERSION_ATTRIBUTE
@@ -17,7 +17,7 @@ import java.util.jar.Manifest
 /**
  * Verifies CPB format 2.0
  */
-class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
+internal class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
     private val cpkVerifiers: List<CpkV2Verifier>
