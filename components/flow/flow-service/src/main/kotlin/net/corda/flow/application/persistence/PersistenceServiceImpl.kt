@@ -48,6 +48,18 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
+    override fun <R : Any, S : List<R>> findAll(entityClass: Class<R>, containerClass: Class<S>): S? {
+        val request = FlowIORequest.FindAll(UUID.randomUUID().toString(), entityClass.canonicalName)
+        log.debug { "Preparing to send FindAll query for class of type ${request.className} with id ${request.requestId} " }
+        val received = fiber.suspend(request)
+
+        return if (received != null) deserializeReceivedPayload(
+            received.array(),
+            containerClass
+        ) else containerClass.getDeclaredConstructor().newInstance()
+    }
+
+    @Suspendable
     override fun <R : Any> merge(entity: R): R? {
         val entityClass = entity::class.java
         val request = FlowIORequest.Merge(UUID.randomUUID().toString(), serialize(entity))
@@ -84,7 +96,11 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <R> query(queryName: String, namedParameters: Map<String, Any>, postFilter: NamedQueryFilter): Cursor<R> {
+    override fun <R> query(
+        queryName: String,
+        namedParameters: Map<String, Any>,
+        postFilter: NamedQueryFilter
+    ): Cursor<R> {
         TODO("Not yet implemented")
     }
 
@@ -131,13 +147,13 @@ class PersistenceServiceImpl @Activate constructor(
 
     private fun <R : Any> deserializeReceivedPayload(received: ByteArray, receiveType: Class<R>): R {
         return try {
-                val payload = getSerializationService().deserialize(received, receiveType)
-                checkPayloadIs(payload, receiveType)
-                payload
-            } catch (e: NotSerializableException) {
-                log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
-                throw e
-            }
+            val payload = getSerializationService().deserialize(received, receiveType)
+            checkPayloadIs(payload, receiveType)
+            payload
+        } catch (e: NotSerializableException) {
+            log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
+            throw e
+        }
 
     }
 
