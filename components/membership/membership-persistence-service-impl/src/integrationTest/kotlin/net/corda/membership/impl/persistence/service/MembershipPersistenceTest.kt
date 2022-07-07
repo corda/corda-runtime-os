@@ -504,7 +504,7 @@ class MembershipPersistenceTest {
             registrationId,
         ).getOrThrow()
 
-        assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_PENDING)
+        assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(approveResult.groupId).isEqualTo(groupId)
         assertThat(approveResult.name.toString()).isEqualTo(registeringHoldingIdentity.x500Name)
         val newMemberEntity = vnodeEmf.use {

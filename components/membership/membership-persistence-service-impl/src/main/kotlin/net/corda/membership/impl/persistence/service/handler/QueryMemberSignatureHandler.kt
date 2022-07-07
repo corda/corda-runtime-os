@@ -9,7 +9,7 @@ import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MemberSignatureEntity
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -38,7 +38,7 @@ internal class QueryMemberSignatureHandler(
                             holdingIdentity.groupId,
                             holdingIdentity.x500Name
                         )
-                    ) ?: throw CordaRuntimeException("Could not find signature for $holdingIdentity")
+                    ) ?: throw MembershipPersistenceException("Could not find signature for $holdingIdentity")
                     val signatureContext = if (signatureEntity.context.isEmpty()) {
                         KeyValuePairList(emptyList())
                     } else {

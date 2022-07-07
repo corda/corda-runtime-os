@@ -267,7 +267,6 @@ class MembershipQueryClientImplTest {
         holdingIdentityOverride: net.corda.data.identity.HoldingIdentity? = null,
     ) {
         whenever(rpcSender.sendRequest(any())).thenAnswer {
-            //clock.setTime(Instant.now().plusMillis(1))
             val rsContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     reqTimestampOverride ?: requestTimestamp,

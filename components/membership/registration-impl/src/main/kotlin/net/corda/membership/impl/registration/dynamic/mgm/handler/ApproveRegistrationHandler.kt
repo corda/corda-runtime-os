@@ -11,8 +11,10 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.status
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
@@ -62,7 +64,9 @@ internal class ApproveRegistrationHandler(
         )
         val memberInfo = persistState.getOrThrow()
 
-        val allMembers = getAllMembers(approvedBy)
+        val allMembers = getAllMembers(approvedBy).filter {
+            it.status == MEMBER_STATUS_ACTIVE
+        }
         val membershipPackageFactory = createMembershipPackageFactory(
             command.approvedBy.toCorda(),
             allMembers,
@@ -82,7 +86,7 @@ internal class ApproveRegistrationHandler(
 
         // Send all approved members from the same group to the newly approved member over P2P
         val allMembersPackage = membershipPackageFactory.invoke(allMembers)
-        val allMembersToNewMember = p2pRecordsFactory.createRecords(
+        val allMembersToNewMember = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = command.approvedBy,
             destination = command.approvedMember,
             content = allMembersPackage,
@@ -93,7 +97,7 @@ internal class ApproveRegistrationHandler(
         val memberToAllMembers = allMembers.filter {
             it.holdingIdentity != command.approvedMember.toCorda()
         }.map { memberToSendUpdateTo ->
-            p2pRecordsFactory.createRecords(
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = command.approvedBy,
                 destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                 content = memberPackage,

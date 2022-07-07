@@ -1,7 +1,5 @@
 package net.corda.membership.persistence.client
 
-import net.corda.v5.base.exceptions.CordaRuntimeException
-
 sealed class MembershipPersistenceResult<T> {
     companion object {
         /**
@@ -26,12 +24,17 @@ sealed class MembershipPersistenceResult<T> {
     data class Failure<T>(val errorMsg: String) : MembershipPersistenceResult<T>()
 
     /**
+     * An exception in the persistence request
+     */
+    class PersistenceRequestException(failure: Failure<*>) : MembershipPersistenceClientException(failure.errorMsg)
+
+    /**
      * Return the value or throw an exception if the persistence failed.
      */
     fun getOrThrow(): T {
         return when (this) {
             is Success -> this.payload
-            is Failure -> throw CordaRuntimeException(this.errorMsg)
+            is Failure -> throw PersistenceRequestException(this)
         }
     }
 }

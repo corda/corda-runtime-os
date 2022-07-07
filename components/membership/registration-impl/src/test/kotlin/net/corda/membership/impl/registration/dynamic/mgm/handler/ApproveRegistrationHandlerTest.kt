@@ -8,15 +8,16 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.ApproveRegistration
 import net.corda.data.membership.p2p.MembershipPackage
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.Signer
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
+import net.corda.membership.lib.impl.MemberInfoExtension
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -58,11 +59,15 @@ class ApproveRegistrationHandlerTest {
     )
     private val key = "key"
     private val memberInfo = mockMemberInfo(member)
+    private val inactiveMember = mockMemberInfo(
+        createHoldingIdentity("inactive"),
+        status = MEMBER_STATUS_SUSPENDED
+    )
     private val mgm = mockMemberInfo(
         createHoldingIdentity("mgm"),
         isMgm = true,
     )
-    private val allMembers = (1..3).map {
+    private val allActiveMembers = (1..3).map {
         mockMemberInfo(createHoldingIdentity("member-$it"))
     } + memberInfo + mgm
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
@@ -74,7 +79,7 @@ class ApproveRegistrationHandlerTest {
             )
         } doReturn MembershipPersistenceResult.Success(memberInfo)
     }
-    private val signatures = allMembers.associate {
+    private val signatures = allActiveMembers.associate {
         val name = it.name.toString()
         it.holdingIdentity to CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
@@ -87,11 +92,11 @@ class ApproveRegistrationHandlerTest {
         )
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allMembers)
+        on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allActiveMembers + inactiveMember)
         on {
             queryMembersSignatures(
                 owner,
-                allMembers.map { it.holdingIdentity },
+                allActiveMembers.map { it.holdingIdentity },
             )
         } doReturn MembershipQueryResult.Success(
             signatures
@@ -109,7 +114,7 @@ class ApproveRegistrationHandlerTest {
     private val record = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createRecords(
+            createAuthenticatedMessageRecord(
                 any(),
                 any(),
                 any()
@@ -174,12 +179,12 @@ class ApproveRegistrationHandlerTest {
             membershipPackageFactory.createMembershipPackage(
                 signer,
                 signatures,
-                allMembers
+                allActiveMembers
             )
         ).doReturn(allMembershipPackage)
         val allMemberPackage = mock<Record<String, AppMessage>>()
         whenever(
-            p2pRecordsFactory.createRecords(
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
                 owner.toAvro(),
                 member.toAvro(),
                 allMembershipPackage
@@ -203,10 +208,10 @@ class ApproveRegistrationHandlerTest {
                 }
             )
         ).doReturn(memberPackage)
-        val membersRecord = allMembers.map {
+        val membersRecord = allActiveMembers.map {
             val record = mock<Record<String, AppMessage>>()
             whenever(
-                p2pRecordsFactory.createRecords(
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
                     owner.toAvro(),
                     it.holdingIdentity.toAvro(),
                     memberPackage,
@@ -233,7 +238,7 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `Error is thrown when there is no MGM`() {
-        whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(allMembers - mgm))
+        whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(allActiveMembers - mgm))
 
         assertThrows<ApproveRegistrationHandler.FailToFindMgm> {
             handler.invoke(key, command)
@@ -243,9 +248,11 @@ class ApproveRegistrationHandlerTest {
     private fun mockMemberInfo(
         holdingIdentity: HoldingIdentity,
         isMgm: Boolean = false,
+        status: String = MemberInfoExtension.MEMBER_STATUS_ACTIVE,
     ): MemberInfo {
         val mgmContext = mock<MGMContext> {
             on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn isMgm
+            on { parse(eq(STATUS), any<Class<String>>()) } doReturn status
             on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name).entries
         }
         val memberContext = mock<MemberContext> {

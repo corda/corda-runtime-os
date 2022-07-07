@@ -37,7 +37,7 @@ class MemberInfoEntity(
     val memberContext: ByteArray,
 
     @Column(name = "mgm_context", nullable = false)
-    val mgmContext: ByteArray,
+    var mgmContext: ByteArray,
 
     @Column(name = "serial_number", nullable = false)
     val serialNumber: Long,

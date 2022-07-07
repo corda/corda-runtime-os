@@ -25,7 +25,7 @@ class P2pRecordsFactory(
         private val TTL = Duration.ofMinutes(5)
     }
 
-    fun <T : Any> createRecords(
+    fun <T : Any> createAuthenticatedMessageRecord(
         source: HoldingIdentity,
         destination: HoldingIdentity,
         content: T

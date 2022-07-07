@@ -36,7 +36,7 @@ class P2pRecordsFactoryTest {
         whenever(serializer.serialize(any())).doReturn(null)
 
         assertThrows<CordaRuntimeException> {
-            factory.createRecords(
+            factory.createAuthenticatedMessageRecord(
                 HoldingIdentity(
                     "name1", "group"
                 ),
@@ -53,7 +53,7 @@ class P2pRecordsFactoryTest {
         val data = mock<LayeredPropertyMap>()
         whenever(serializer.serialize(eq(data))).doReturn("data".toByteArray())
 
-        val record = factory.createRecords(
+        val record = factory.createAuthenticatedMessageRecord(
             HoldingIdentity(
                 "name1", "group"
             ),

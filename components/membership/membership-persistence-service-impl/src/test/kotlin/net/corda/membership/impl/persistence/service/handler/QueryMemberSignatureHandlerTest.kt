@@ -15,10 +15,10 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -104,7 +104,7 @@ class QueryMemberSignatureHandlerTest {
         )
         whenever(entityManager.find(eq(MemberSignatureEntity::class.java), any())).doReturn(null)
 
-        assertThrows<CordaRuntimeException> {
+        assertThrows<MembershipPersistenceException> {
             handler.invoke(context, request)
         }
     }
