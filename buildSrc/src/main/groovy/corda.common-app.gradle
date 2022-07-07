@@ -73,6 +73,7 @@ dependencies {
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
+    systemPackages "org.slf4j:slf4j-simple:$slf4jVersion"
     systemPackages project(":osgi-framework-api")
 }
 

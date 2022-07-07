@@ -30,8 +30,6 @@ dependencies {
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
-    runtimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-    runtimeOnly "org.slf4j:slf4j-api:$slf4jVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }
