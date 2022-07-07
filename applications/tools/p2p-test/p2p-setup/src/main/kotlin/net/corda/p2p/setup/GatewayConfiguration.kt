@@ -133,7 +133,7 @@ class GatewayConfiguration : Callable<Collection<Record<String, Configuration>>>
 
         return listOf(
             configuration.toConfigurationRecord(
-                "p2p",
+                "corda.p2p",
                 "gateway",
                 topic
             )

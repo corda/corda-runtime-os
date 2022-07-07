@@ -157,7 +157,7 @@ open class TestBase {
             val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
-                "p2p.gateway",
+                "corda.p2p.gateway",
                 Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
