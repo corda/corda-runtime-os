@@ -281,6 +281,43 @@
         }
       }
     },
+    "/config/{section}" : {
+      "get" : {
+        "tags" : [ "ConfigRPCOps" ],
+        "description" : "Get Configuration. Returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
+        "operationId" : "get_config__section_",
+        "parameters" : [ {
+          "name" : "section",
+          "in" : "path",
+          "description" : "Section name for the configuration.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Section name for the configuration.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HTTPGetConfigResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/cpi" : {
       "get" : {
         "tags" : [ "CpiUploadRPCOps" ],
@@ -2887,6 +2924,37 @@
         },
         "nullable" : false
       },
+      "HTTPGetConfigResponse" : {
+        "required" : [ "configWithDefaults", "schemaVersion", "section", "sourceConfig", "version" ],
+        "type" : "object",
+        "properties" : {
+          "configWithDefaults" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/Version"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sourceConfig" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
       "HTTPGetVirtualNodesResponse" : {
         "required" : [ "virtualNodes" ],
         "type" : "object",
@@ -3154,15 +3222,10 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "holdingIdentityId", "context" ],
+        "required" : [ "action", "context", "holdingIdentityId" ],
         "type" : "object",
         "properties" : {
           "action" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "holdingIdentityId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3176,6 +3239,11 @@
             },
             "nullable" : false,
             "example" : "No example available for this type"
+          },
+          "holdingIdentityId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           }
         },
         "description" : "Data required to initialise the registration process.",
