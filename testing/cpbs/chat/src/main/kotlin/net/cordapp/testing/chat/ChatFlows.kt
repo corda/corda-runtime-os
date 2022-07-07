@@ -127,6 +127,10 @@ class ChatReaderFlow : RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
+
+        //val all = persistenceService.findAll(IncomingChatMessage::class.java)
+        //log.info("Chat reader read: ${all}")
+
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
         val inputs = requestBody.getRequestBodyAs<ChatReaderFlowParameter>(jsonMarshallingService)
         inputs.fromName ?: throw IllegalArgumentException("Recipient X500 name not supplied")

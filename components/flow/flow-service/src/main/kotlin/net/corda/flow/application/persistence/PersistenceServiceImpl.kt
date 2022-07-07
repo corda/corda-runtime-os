@@ -48,15 +48,22 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <R : Any, S : List<R>> findAll(entityClass: Class<R>, containerClass: Class<S>): S? {
+    override fun <R : Any> findAll(entityClass: Class<R>): List<R> {
         val request = FlowIORequest.FindAll(UUID.randomUUID().toString(), entityClass.canonicalName)
         log.debug { "Preparing to send FindAll query for class of type ${request.className} with id ${request.requestId} " }
         val received = fiber.suspend(request)
 
-        return if (received != null) deserializeReceivedPayload(
-            received.array(),
-            containerClass
-        ) else containerClass.getDeclaredConstructor().newInstance()
+        val deserialized = received?.let {
+            deserializeReceivedPayload(
+                it.array(),
+                ArrayList::class.java
+            )
+        }
+        if (deserialized != null) {
+            @Suppress("Unchecked_cast")
+            return deserialized as List<R>
+        }
+        return emptyList()
     }
 
     @Suspendable
