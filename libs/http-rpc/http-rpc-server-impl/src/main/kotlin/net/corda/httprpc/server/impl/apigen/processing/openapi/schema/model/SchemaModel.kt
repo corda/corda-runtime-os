@@ -35,7 +35,7 @@ open class SchemaObjectModel(
     val properties: Map<String, SchemaModel> = emptyMap()
 ) : SchemaModel(type = DataType.OBJECT), SchemaModelFieldsHelper {
     override fun getRequiredFields() =
-        this.properties.filter { it.value.required && !it.value.nullable }.keys.toList()
+        this.properties.filter { it.value.required && !it.value.nullable }.keys.toList().sorted()
 }
 
 open class SchemaPairModel(
@@ -60,5 +60,5 @@ open class SchemaMultiRefObjectModel(
     val properties: Map<String, SchemaModel> = emptyMap(), ref: String
 ) : SchemaRefObjectModel(ref) {
     override fun getRequiredFields() =
-        this.properties.filter { it.value.required && !it.value.nullable }.keys.toList()
+        this.properties.filter { it.value.required && !it.value.nullable }.keys.toList().sorted()
 }
