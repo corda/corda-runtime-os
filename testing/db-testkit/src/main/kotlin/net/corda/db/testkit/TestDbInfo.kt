@@ -28,15 +28,15 @@ class TestDbInfo(
         fun createConfig() = TestDbInfo(name = CordaDb.CordaCluster.persistenceUnitName)
     }
 
-    // TODO This was temporarily changed to work with in-memory DB until CORE-5418 is fixed
     val config: SmartConfig = configFactory.create(
-        ConfigFactory.empty()
-            .withValue(ConfigKeys.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
-            .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$name"))
-            .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef("sa"))
-            .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(""))
+        DbUtils.createConfig(
+            inMemoryDbName = name,
+            schemaName = schemaName
+        )
     )
 
-    // TODO This was temporarily changed to work with in-memory DB until CORE-5418 is fixed
-    val emConfig: EntityManagerConfiguration = TestInMemoryEntityManagerConfiguration(name)
+    val emConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
+        inMemoryDbName = name,
+        schemaName = schemaName
+    )
 }
