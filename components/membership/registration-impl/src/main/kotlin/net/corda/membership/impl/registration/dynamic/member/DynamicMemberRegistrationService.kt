@@ -198,7 +198,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
-                    keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value.toByteArray())
+                    keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value)
                 val memberSignature = cryptoOpsClient.sign(
                     member.id,
                     publicKey,

@@ -109,6 +109,7 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(SESSION_KEY.toByteArray()) } doReturn sessionKey
+        on { decodePublicKey(SESSION_KEY) } doReturn sessionKey
         on { decodePublicKey(LEDGER_KEY.toByteArray()) } doReturn ledgerKey
 
         on { encodeAsString(any()) } doReturn SESSION_KEY
