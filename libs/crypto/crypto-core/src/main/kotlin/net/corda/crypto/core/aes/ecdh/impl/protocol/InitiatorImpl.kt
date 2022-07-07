@@ -2,26 +2,24 @@ package net.corda.crypto.core.aes.ecdh.impl.protocol
 
 import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.aes.ecdh.ECDHAgreementParams
+import net.corda.crypto.core.aes.ecdh.ECDHFactory.Companion.HKDF_INITIAL_KEY_INFO
 import net.corda.crypto.core.aes.ecdh.EphemeralKeyPair
-import net.corda.crypto.core.aes.ecdh.handshakes.InitiatingHandshake
-import net.corda.crypto.core.aes.ecdh.handshakes.ReplyHandshake
+import net.corda.crypto.core.aes.ecdh.asBytes
+import net.corda.crypto.core.aes.ecdh.fromBytes
+import net.corda.crypto.core.aes.ecdh.protocol.InitiatingHandshake
+import net.corda.crypto.core.aes.ecdh.protocol.ReplyHandshake
 import net.corda.crypto.core.aes.ecdh.impl.EphemeralKeyPairImpl
 import net.corda.crypto.core.aes.ecdh.protocol.Initiator
 import net.corda.crypto.core.aes.ecdh.protocol.InitiatorState
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class InitiatorImpl(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val verifier: SignatureVerificationService,
-    private val otherStablePublicKey: PublicKey, // only used to verify signature on the handshake reply
-    private val signatureSpec: SignatureSpec,
-    ephemeralScheme: KeyScheme,
+    private val otherStablePublicKey: PublicKey // only used for handshake exchange
 ) : Initiator {
 
     private val lock: ReentrantLock = ReentrantLock(true)
@@ -35,7 +33,12 @@ class InitiatorImpl(
     @Volatile
     private var _encryptor: Encryptor? = null
 
-    private val ephemeralKeyPair: EphemeralKeyPair = EphemeralKeyPairImpl(schemeMetadata, ephemeralScheme)
+    private val ephemeralScheme: KeyScheme = schemeMetadata.findKeyScheme(otherStablePublicKey)
+
+    private val ephemeralKeyPair: EphemeralKeyPair = EphemeralKeyPairImpl.create(
+        schemeMetadata,
+        ephemeralScheme
+    )
 
     override val state: InitiatorState get() = _state
 
@@ -49,23 +52,16 @@ class InitiatorImpl(
         _state = InitiatorState.INIT
         _params = params
         InitiatingHandshake(
-            params = params,
+            params = handshakeEncryptor().encrypt(params.asBytes()),
             ephemeralPublicKey = schemeMetadata.encodeAsByteArray(ephemeralKeyPair.publicKey)
         )
     }
 
-    override fun processReplyHandshake(reply: ReplyHandshake, info: ByteArray) = lock.withLock {
+    override fun processReplyHandshake(replyBytes: ByteArray, info: ByteArray) = lock.withLock {
         if(_state != InitiatorState.INIT) {
             throw IllegalStateException("The initiator must be in '${InitiatorState.INIT}' state.")
         }
-        /* TODO: verify
-        verifier.verify(
-            publicKey = otherStablePublicKey,
-            signatureSpec = signatureSpec,
-            signatureData = reply.signature,
-            clearData = reply.ephemeralPublicKey
-        )
-         */
+        val reply = handshakeEncryptor().decrypt(replyBytes).fromBytes<ReplyHandshake>()
         _encryptor = ephemeralKeyPair.deriveSharedEncryptor(
             otherEphemeralPublicKey = schemeMetadata.decodePublicKey(reply.ephemeralPublicKey),
             params = _params!!,
@@ -73,4 +69,10 @@ class InitiatorImpl(
         )
         _state = InitiatorState.READY
     }
+
+    private fun handshakeEncryptor() = ephemeralKeyPair.deriveSharedEncryptor(
+        otherEphemeralPublicKey = otherStablePublicKey,
+        params = _params!!,
+        info = HKDF_INITIAL_KEY_INFO
+    )
 }

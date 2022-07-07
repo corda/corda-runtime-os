@@ -15,8 +15,7 @@ import java.security.PublicKey
 
 //@Component
 class ECDHFactoryImpl(
-    private val schemeMetadata: CipherSchemeMetadata,
-    private val verifier: SignatureVerificationService
+    private val schemeMetadata: CipherSchemeMetadata
 ) : ECDHFactory {
 
     override fun createInitiator(
@@ -24,7 +23,7 @@ class ECDHFactoryImpl(
         ephemeralScheme: KeyScheme,
         signatureSpec: SignatureSpec
     ): Initiator =
-        InitiatorImpl(schemeMetadata, verifier, otherStablePublicKey, signatureSpec, ephemeralScheme)
+        InitiatorImpl(schemeMetadata, otherStablePublicKey, ephemeralScheme)
 
     override fun createReplier(
         stablePublicKey: PublicKey,

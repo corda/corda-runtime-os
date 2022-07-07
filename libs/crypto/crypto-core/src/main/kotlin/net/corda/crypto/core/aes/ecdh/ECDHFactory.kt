@@ -7,17 +7,19 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
+// the KeyScheme for the ephemeral keys must be the same as for otherStablePublicKey
+
 interface ECDHFactory {
+    companion object {
+        val HKDF_INITIAL_KEY_INFO: ByteArray = "corda-mgm-initial-handshake".toByteArray()
+    }
+
     fun createInitiator(
-        otherStablePublicKey: PublicKey,
-        ephemeralScheme: KeyScheme,
-        signatureSpec: SignatureSpec
+        otherStablePublicKey: PublicKey
     ): Initiator
 
     fun createReplier(
-        stablePublicKey: PublicKey,
-        ephemeralScheme: KeyScheme,
-        signatureSpec: SignatureSpec
+        stablePublicKey: PublicKey
     ): Replier
 
     fun createAgreementParams(

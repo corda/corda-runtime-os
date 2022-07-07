@@ -1,5 +1,6 @@
 package net.corda.crypto.core.aes.ecdh
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
@@ -43,10 +44,11 @@ class ECDHTests {
             params
         )
 
+        val initiatingHandshakeEncryptedBytes = member.encryptor.encrypt(initiatingHandshake.asBytes())
         // send initiatingHandshake: member -> mgm
 
         val replyHandshake = mgm.produceReplyHandshake(
-            initiatingHandshake,
+            initiatingHandshakeEncryptedBytes,
             info
         )
 

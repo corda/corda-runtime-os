@@ -14,30 +14,46 @@ import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.Provider
 import java.security.PublicKey
 import javax.crypto.KeyAgreement
 import javax.crypto.spec.SecretKeySpec
 
-class EphemeralKeyPairImpl(
-    private val schemeMetadata: CipherSchemeMetadata,
-    private val scheme: KeyScheme
-) : EphemeralKeyPair {
+class EphemeralKeyPairImpl private constructor(
+    private val provider: Provider,
     private val keyPair: KeyPair
+) : EphemeralKeyPair {
+    companion object {
+        fun create(
+            schemeMetadata: CipherSchemeMetadata,
+            scheme: KeyScheme
+        ): EphemeralKeyPairImpl {
+            val provider = schemeMetadata.providers.getValue(scheme.providerName)
+            val keyPairGenerator = KeyPairGenerator.getInstance(
+                scheme.algorithmName,
+                provider
+            )
+            if (scheme.algSpec != null) {
+                keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
+            } else if (scheme.keySize != null) {
+                keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
+            }
+            return EphemeralKeyPairImpl(
+                provider,
+                keyPairGenerator.generateKeyPair()
+            )
+        }
+
+        fun create(
+            schemeMetadata: CipherSchemeMetadata,
+            keyPair: KeyPair
+        ): EphemeralKeyPairImpl = EphemeralKeyPairImpl(
+            schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(keyPair.public).providerName),
+            keyPair
+        )
+    }
 
     override val publicKey: PublicKey get() = keyPair.public
-
-    init {
-        val keyPairGenerator = KeyPairGenerator.getInstance(
-            scheme.algorithmName,
-            schemeMetadata.providers.getValue(scheme.providerName)
-        )
-        if (scheme.algSpec != null) {
-            keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
-        } else if (scheme.keySize != null) {
-            keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
-        }
-        keyPair = keyPairGenerator.generateKeyPair()
-    }
 
     override fun deriveSharedEncryptor(
         otherEphemeralPublicKey: PublicKey,
@@ -53,10 +69,7 @@ class EphemeralKeyPairImpl(
         require(params.length > 0) {
             "The length must be greater than 0"
         }
-        val ikm = KeyAgreement.getInstance(
-            ECDH_KEY_AGREEMENT_ALGORITHM,
-            schemeMetadata.providers.getValue(scheme.providerName)
-        ).apply {
+        val ikm = KeyAgreement.getInstance(ECDH_KEY_AGREEMENT_ALGORITHM, provider).apply {
             init(keyPair.private)
             doPhase(otherEphemeralPublicKey, true)
         }.generateSecret()

@@ -1,4 +1,4 @@
-package net.corda.crypto.core.aes.ecdh.handshakes
+package net.corda.crypto.core.aes.ecdh.protocol
 
 // Avro
 class ReplyHandshake(

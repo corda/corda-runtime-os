@@ -2,24 +2,20 @@ package net.corda.crypto.core.aes.ecdh.impl.protocol
 
 import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.aes.ecdh.EphemeralKeyPair
-import net.corda.crypto.core.aes.ecdh.handshakes.InitiatingHandshake
-import net.corda.crypto.core.aes.ecdh.handshakes.ReplyHandshake
+import net.corda.crypto.core.aes.ecdh.protocol.InitiatingHandshake
+import net.corda.crypto.core.aes.ecdh.protocol.ReplyHandshake
 import net.corda.crypto.core.aes.ecdh.impl.EphemeralKeyPairImpl
 import net.corda.crypto.core.aes.ecdh.protocol.Replier
 import net.corda.crypto.core.aes.ecdh.protocol.ReplierState
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class ReplierImpl(
     private val schemeMetadata: CipherSchemeMetadata,
-    //private val cryptoOpsClient: CryptoOpsClient,
-    private val stablePublicKey: PublicKey, // only used to sign the handshake reply
-    private val signatureSpec: SignatureSpec,
-    ephemeralScheme: KeyScheme,
+    private val stablePublicKey: PublicKey // only used for the initial handshake
 ) : Replier {
 
     private val lock: ReentrantLock = ReentrantLock(true)
@@ -30,7 +26,9 @@ class ReplierImpl(
     @Volatile
     private var _encryptor: Encryptor? = null
 
-    private val ephemeralKeyPair: EphemeralKeyPair = EphemeralKeyPairImpl(schemeMetadata, ephemeralScheme)
+    private val ephemeralScheme: KeyScheme = schemeMetadata.findKeyScheme(stablePublicKey)
+
+    private val ephemeralKeyPair: EphemeralKeyPair = EphemeralKeyPairImpl.create(schemeMetadata, ephemeralScheme)
 
     override val state: ReplierState get() = _state
 
