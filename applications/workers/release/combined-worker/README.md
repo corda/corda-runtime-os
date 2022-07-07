@@ -82,7 +82,7 @@ Build the worker using:
 
 Run the worker using:
 ```bash
-java -jar \
+java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
   --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
   -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
