@@ -20,6 +20,11 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":testing:test-utilities")
+
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 }
 
 
