@@ -6,8 +6,11 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions
 import org.mockito.Mockito
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.reflect.Field
@@ -195,3 +198,63 @@ inline fun <reified T> FlowMockHelper.rpcRequestGenerator(parameterObject: T) = 
             it.getRequestBodyAs(this.getMockService<JsonMarshallingService>(), T::class.java)
         ).thenReturn(parameterObject)
     }
+
+inline fun <reified T : Any> FlowMockHelper.returnOnFind(findKey: Any, result: T?) {
+    whenever(
+        this.getMockService<PersistenceService>()
+            .find(T::class.java, findKey)
+    ).thenReturn(result)
+}
+
+/**
+ * When merge is called in the Flow created by this helper, set up a corresponding Find to return the results of that
+ * merge. The Flow in which Find is called can be configured by passing its helper.
+ * @param helperForFlowCallingFind The FlowMockHelper which is tied to the Flow which is expected to call find
+ * @param findKey The key which is expected to be passed to the find call
+ * @param keyExtractor A lambda which will extract a key from the type of data being persisted. This is used to validate
+ * the parameter passed to merge was the expected key
+ * @param mergeOperation The merge operation, a simulation of what the persistence service would do
+ */
+inline fun <reified T : Any> FlowMockHelper.expectMergeAndLinkToFind(
+    helperForFlowCallingFind: FlowMockHelper,
+    findKey: Any,
+    crossinline keyExtractor: (T) -> Any,
+    crossinline mergeOperation: (T) -> T
+) {
+    whenever(
+        this.getMockService<PersistenceService>().merge(any<T>())
+    ).then {
+        // Validate merge is occurring on same key
+        val mergeParam = it.arguments[0] as T
+        Assertions.assertThat(keyExtractor(mergeParam)).isEqualTo(findKey)
+        // Merge
+        val toReturn = mergeOperation(mergeParam)
+        // Tie find to return
+        whenever(
+            helperForFlowCallingFind.getMockService<PersistenceService>()
+                .find(T::class.java, findKey)
+        ).thenReturn(toReturn)
+    }
+}
+
+/**
+ * When persist is called in the Flow created by this helper, set up a corresponding Find to return the results of that
+ * persist. The Flow in which Find is called can be configured by passing its helper.
+ * @param helperForFlowCallingFind The FlowMockHelper which is tied to the Flow which is expected to call find
+ * @param findKey The key which is expected to be passed to the find call
+ */
+inline fun <reified T : Any> FlowMockHelper.expectPersistAndLinkToFind(
+    helperForFlowCallingFind: FlowMockHelper,
+    findKey: Any
+) {
+    whenever(
+        this.getMockService<PersistenceService>().persist(any<T>())
+    ).then {
+        val toReturn = it.arguments[0] as T
+        // Tie find to return
+        whenever(
+            helperForFlowCallingFind.getMockService<PersistenceService>()
+                .find(T::class.java, findKey)
+        ).thenReturn(toReturn)
+    }
+}
