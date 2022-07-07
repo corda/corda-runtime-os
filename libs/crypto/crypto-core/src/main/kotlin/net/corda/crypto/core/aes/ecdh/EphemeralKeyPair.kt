@@ -1,6 +1,5 @@
 package net.corda.crypto.core.aes.ecdh
 
-import net.corda.crypto.core.Encryptor
 import java.security.PublicKey
 
 interface EphemeralKeyPair {
@@ -9,5 +8,5 @@ interface EphemeralKeyPair {
         otherEphemeralPublicKey: PublicKey,
         params: ECDHAgreementParams,
         info: ByteArray
-    ): Encryptor
+    ): AesGcmEncryptor
 }

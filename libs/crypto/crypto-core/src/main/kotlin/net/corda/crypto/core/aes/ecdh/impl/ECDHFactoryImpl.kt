@@ -19,25 +19,12 @@ class ECDHFactoryImpl(
 ) : ECDHFactory {
 
     override fun createInitiator(
-        otherStablePublicKey: PublicKey,
-        ephemeralScheme: KeyScheme,
-        signatureSpec: SignatureSpec
+        otherStablePublicKey: PublicKey
     ): Initiator =
-        InitiatorImpl(schemeMetadata, otherStablePublicKey, ephemeralScheme)
+        InitiatorImpl(schemeMetadata, otherStablePublicKey)
 
     override fun createReplier(
-        stablePublicKey: PublicKey,
-        ephemeralScheme: KeyScheme,
-        signatureSpec: SignatureSpec
+        stablePublicKey: PublicKey
     ): Replier =
-        ReplierImpl(schemeMetadata, stablePublicKey, signatureSpec, ephemeralScheme)
-
-    override fun createAgreementParams(digestName: String, length: Int): ECDHAgreementParams =
-        ECDHAgreementParams(
-            salt = ByteArray(DigestFactory.getDigest(digestName).digestSize).apply {
-                schemeMetadata.secureRandom.nextBytes(this)
-            },
-            digestName = digestName,
-            length = length
-        )
+        ReplierImpl(schemeMetadata, stablePublicKey)
 }
