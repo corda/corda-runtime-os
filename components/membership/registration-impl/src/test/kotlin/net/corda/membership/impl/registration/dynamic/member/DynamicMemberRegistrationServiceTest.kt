@@ -118,7 +118,15 @@ class DynamicMemberRegistrationServiceTest {
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookup(memberId, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
         on { lookup(memberId, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
-        on { sign(any(), any(), any<SignatureSpec>(), any(), eq(CryptoOpsClient.EMPTY_CONTEXT)) }.doReturn(mockSignature)
+        on {
+            sign(
+                any(),
+                any(),
+                any<SignatureSpec>(),
+                any(),
+                eq(CryptoOpsClient.EMPTY_CONTEXT)
+            )
+        }.doReturn(mockSignature)
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -251,7 +259,8 @@ class DynamicMemberRegistrationServiceTest {
             val publishedMessage = publishedMessageList.first()
             it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
             it.assertThat(publishedMessage.key).isEqualTo(memberId)
-            val unauthenticatedMessagePublished = (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
+            val unauthenticatedMessagePublished =
+                (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
             it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
             it.assertThat(unauthenticatedMessagePublished.header.destination).isEqualTo(mgm.toAvro())
             it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(REQUEST_BYTES))
@@ -299,7 +308,7 @@ class DynamicMemberRegistrationServiceTest {
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
-                .isEqualTo("Registration failed. Reason: Provided ledger keys are incorrectly numbered.")
+                .isEqualTo("Registration failed. Reason: Provided ledger key IDs are incorrectly numbered.")
         }
         registrationService.stop()
     }

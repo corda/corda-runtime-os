@@ -136,10 +136,10 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
     private val registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest> =
-        cordaAvroSerializationFactory.createAvroSerializer { }
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize registration request.") }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer { }
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
     private var impl: InnerRegistrationService = InactiveImpl
 
@@ -176,11 +176,13 @@ class DynamicMemberRegistrationService @Activate constructor(
         override fun register(
             member: HoldingIdentity,
             context: Map<String, String>
-        ): MembershipRequestRegistrationResult =
-            MembershipRequestRegistrationResult(
+        ): MembershipRequestRegistrationResult {
+            logger.warn("DynamicMemberRegistrationService is currently inactive.")
+            return MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
             )
+        }
 
         override fun close() = Unit
     }
@@ -194,13 +196,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val registrationId = UUID.randomUUID().toString()
                 val memberContext = buildMemberContext(context, registrationId, member.id)
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
+                    ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
                     keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value.toByteArray())
                 val memberSignature = cryptoOpsClient.sign(
                     member.id,
                     publicKey,
                     SignatureSpec(memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value),
-                    serializedMemberContext!!
+                    serializedMemberContext
                 ).bytes.run {
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(publicKey.encoded),
@@ -249,10 +252,11 @@ class DynamicMemberRegistrationService @Activate constructor(
         ): KeyValuePairList {
             validateContext(context)
             return KeyValuePairList(
-                context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }.toWire().items
-                + generateSessionKeyData(context, tenantId).items
-                + generateLedgerKeyData(context, tenantId).items
-                + listOf(
+                context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
+                    .toWire().items
+                        + generateSessionKeyData(context, tenantId).items
+                        + generateLedgerKeyData(context, tenantId).items
+                        + listOf(
                     KeyValuePair(REGISTRATION_ID, registrationId),
                     // temporarily hardcoded
                     KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),
@@ -263,7 +267,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }
 
         private fun validateContext(context: Map<String, String>) {
-            context[SESSION_KEY_ID] ?: throw IllegalArgumentException("No session key was provided.")
+            context[SESSION_KEY_ID] ?: throw IllegalArgumentException("No session key ID was provided.")
             context.keys.filter { URL_KEY.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No endpoint URL was provided." }
                 require(isOrdered(this, 2)) { "Provided endpoint URLs are incorrectly numbered." }
@@ -273,8 +277,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                 require(isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
             }
             context.keys.filter { LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it) }.apply {
-                require(isNotEmpty()) { "No ledger key was provided." }
-                require(isOrdered(this, 2)) { "Provided ledger keys are incorrectly numbered." }
+                require(isNotEmpty()) { "No ledger key ID was provided." }
+                require(isOrdered(this, 2)) { "Provided ledger key IDs are incorrectly numbered." }
             }
         }
 
@@ -314,13 +318,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                 return SignatureSpec(specFromContext)
             }
             return defaultCodeNameToSpec[key.schemeCodeName]
-                ?: throw IllegalArgumentException("Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                        "Specify signature spec for key with ID: ${key.id} explicitly in the context.")
+                ?: throw IllegalArgumentException(
+                    "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
+                            "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                )
         }
 
         private fun generateLedgerKeyData(context: Map<String, String>, tenantId: String): KeyValuePairList {
             val ledgerKeys =
-                getKeysFromIds(context.filter { LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it.key) }.values.toList(), tenantId)
+                getKeysFromIds(context.filter {
+                    LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it.key)
+                }.values.toList(), tenantId)
             val ledgerPublicKeys = ledgerKeys.map { keyEncodingService.decodePublicKey(it.publicKey.array()) }
             return KeyValuePairList(
                 ledgerPublicKeys.mapIndexed { index, ledgerKey ->
@@ -328,7 +336,10 @@ class DynamicMemberRegistrationService @Activate constructor(
                     KeyValuePair(String.format(LEDGER_KEY_HASHES_KEY, index), ledgerKey.calculateHash().value)
                     KeyValuePair(
                         String.format(LEDGER_KEY_SIGNATURE_SPEC, index),
-                        getSignatureSpec(ledgerKeys[index], context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]).signatureName
+                        getSignatureSpec(
+                            ledgerKeys[index],
+                            context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
+                        ).signatureName
                     )
                 }
             )
@@ -341,7 +352,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                 listOf(
                     KeyValuePair(PARTY_SESSION_KEY, keyEncodingService.encodeAsString(sessionPublicKey)),
                     KeyValuePair(SESSION_KEY_HASH, sessionPublicKey.calculateHash().value),
-                    KeyValuePair(SESSION_KEY_SIGNATURE_SPEC, getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
+                    KeyValuePair(
+                        SESSION_KEY_SIGNATURE_SPEC,
+                        getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
                     )
                 )
             )
