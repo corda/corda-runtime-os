@@ -17,8 +17,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
@@ -26,14 +26,10 @@ import java.nio.ByteBuffer
 @Suppress("LongParameterList")
 internal class MembershipPackageFactory(
     private val clock: Clock,
-    hashingService: DigestService,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cipherSchemeMetadata: CipherSchemeMetadata,
     private val type: DistributionType,
-    private val merkleTreeFactory: MerkleTreeFactory = MerkleTreeFactory(
-        cordaAvroSerializationFactory,
-        hashingService,
-    ),
+    private val merkleTreeFactory: MerkleTreeFactory,
     private val idFactory: () -> String,
 ) {
     private companion object {
@@ -60,6 +56,7 @@ internal class MembershipPackageFactory(
         mgmSigner: Signer,
         membersSignatures: Map<HoldingIdentity, CryptoSignatureWithKey>,
         membersToSend: Collection<MemberInfo>,
+        hashCheck: SecureHash,
     ): MembershipPackage {
         val signedMembers = membersToSend.map {
             val memberTree = merkleTreeFactory.buildTree(listOf(it))
@@ -73,10 +70,9 @@ internal class MembershipPackageFactory(
                 .setMgmSignature(mgmSignature)
                 .build()
         }
-        val membersTree = merkleTreeFactory.buildTree(membersToSend)
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
-            .setHashCheck(membersTree.root.toAvro())
+            .setHashCheck(hashCheck.toAvro())
             .build()
         return MembershipPackage.newBuilder()
             .setDistributionType(type)

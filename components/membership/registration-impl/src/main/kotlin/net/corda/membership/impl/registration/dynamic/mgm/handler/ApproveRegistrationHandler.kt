@@ -9,6 +9,7 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -43,12 +44,16 @@ internal class ApproveRegistrationHandler(
         cordaAvroSerializationFactory,
         clock,
     ),
+    private val merkleTreeFactory: MerkleTreeFactory = MerkleTreeFactory(
+        cordaAvroSerializationFactory,
+        hashingService,
+    ),
     private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
-        hashingService,
         cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
+        merkleTreeFactory,
     ) { UUID.randomUUID().toString() }
 ) : RegistrationHandler<ApproveRegistration> {
 
@@ -125,11 +130,14 @@ internal class ApproveRegistrationHandler(
                     it.holdingIdentity
                 }
             ).getOrThrow()
+        val membersTree = merkleTreeFactory.buildTree(members)
+
         return {
             membershipPackageFactory.createMembershipPackage(
                 mgmSigner,
                 signatures,
                 it,
+                membersTree.root,
             )
         }
     }

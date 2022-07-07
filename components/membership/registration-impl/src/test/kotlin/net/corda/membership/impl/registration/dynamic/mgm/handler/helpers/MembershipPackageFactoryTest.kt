@@ -15,7 +15,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -38,7 +37,6 @@ import java.time.Instant
 
 class MembershipPackageFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
-    private val hashingService = mock<DigestService>()
     private val serializer = mock<CordaAvroSerializer<LayeredPropertyMap>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<LayeredPropertyMap>(any()) } doReturn serializer
@@ -93,30 +91,14 @@ class MembershipPackageFactoryTest {
             ),
         )
     }
-    private val allAlg = "all-alg".also { allAlg ->
-        val allRoot = mock<SecureHash> {
-            on { bytes } doReturn "all".toByteArray()
-            on { algorithm } doReturn allAlg
-        }
-        mock<MerkleTree> {
-            on { root } doReturn allRoot
-        }.also {
-            whenever(merkleTreeFactory.buildTree(members)).doReturn(it)
-        }
-        DigitalSignature.WithKey(
-            mock {
-                on { encoded } doReturn "pk-all".toByteArray()
-            },
-            "all-sig".toByteArray(),
-            mapOf("name" to "all")
-        ).also {
-            whenever(mgmSigner.sign(allRoot.bytes)).doReturn(it)
-        }
+    private val allAlg = "all-alg"
+    private val checkHash = mock<SecureHash> {
+        on { bytes } doReturn "all".toByteArray()
+        on { algorithm } doReturn allAlg
     }
 
     private val factory = MembershipPackageFactory(
         clock,
-        hashingService,
         cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
@@ -129,6 +111,7 @@ class MembershipPackageFactoryTest {
             mgmSigner,
             signature,
             members,
+            checkHash,
         )
 
         assertSoftly {
@@ -152,6 +135,7 @@ class MembershipPackageFactoryTest {
             mgmSigner,
             signature,
             members,
+            checkHash,
         ).memberships.hashCheck
 
         assertSoftly {
@@ -166,6 +150,7 @@ class MembershipPackageFactoryTest {
             mgmSigner,
             signature,
             members,
+            checkHash,
         ).memberships.memberships
 
         val expectedMembers = (1..membersCount).map { index ->
@@ -206,6 +191,7 @@ class MembershipPackageFactoryTest {
                 mgmSigner,
                 signature.minus(members.last().holdingIdentity),
                 members,
+                checkHash,
             )
         }
     }

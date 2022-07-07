@@ -9,6 +9,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.ApproveRegistration
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.Signer
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
@@ -29,6 +30,8 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -121,13 +124,21 @@ class ApproveRegistrationHandlerTest {
             )
         } doReturn record
     }
+    private val checkHash = mock<SecureHash>()
+    private val marketTree = mock<MerkleTree>() {
+        on { root } doReturn checkHash
+    }
+    private val merkleTreeFactory = mock<MerkleTreeFactory> {
+        on { buildTree(allActiveMembers) } doReturn marketTree
+    }
     private val membershipPackage = mock<MembershipPackage>()
     private val membershipPackageFactory = mock<MembershipPackageFactory> {
         on {
             createMembershipPackage(
                 eq(signer),
                 eq(signatures),
-                any()
+                any(),
+                any(),
             )
         } doReturn membershipPackage
     }
@@ -142,6 +153,7 @@ class ApproveRegistrationHandlerTest {
         cordaAvroSerializationFactory,
         signerFactory,
         p2pRecordsFactory,
+        merkleTreeFactory,
         membershipPackageFactory,
     )
 
@@ -179,7 +191,8 @@ class ApproveRegistrationHandlerTest {
             membershipPackageFactory.createMembershipPackage(
                 signer,
                 signatures,
-                allActiveMembers
+                allActiveMembers,
+                checkHash,
             )
         ).doReturn(allMembershipPackage)
         val allMemberPackage = mock<Record<String, AppMessage>>()
@@ -205,7 +218,8 @@ class ApproveRegistrationHandlerTest {
                 eq(signatures),
                 argThat {
                     this.size == 1
-                }
+                },
+                eq(checkHash),
             )
         ).doReturn(memberPackage)
         val membersRecord = allActiveMembers.map {

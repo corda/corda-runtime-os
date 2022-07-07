@@ -69,7 +69,7 @@ class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         queryFilter: Collection<HoldingIdentity>
     ): MembershipQueryResult<Collection<MemberInfo>> {
-        if(queryFilter.isNotEmpty()) {
+        if (queryFilter.isNotEmpty()) {
             logger.info("Querying for member infos represented by ${queryFilter.size} holding identities")
         }
         val result = MembershipPersistenceRequest(
@@ -105,14 +105,14 @@ class MembershipQueryClientImpl(
 
     override fun queryMembersSignatures(
         viewOwningIdentity: HoldingIdentity,
-        holdingIdentities: Collection<HoldingIdentity>,
+        holdingsIdentities: Collection<HoldingIdentity>,
     ): MembershipQueryResult<Map<HoldingIdentity, CryptoSignatureWithKey>> {
-        if (holdingIdentities.isEmpty()) {
+        if (holdingsIdentities.isEmpty()) {
             return MembershipQueryResult.Success(emptyMap())
         }
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryMemberSignature(holdingIdentities.map { it.toAvro() })
+            QueryMemberSignature(holdingsIdentities.map { it.toAvro() })
         ).execute()
         return when (val payload = result.payload) {
             is MemberSignatureQueryResponse -> {
