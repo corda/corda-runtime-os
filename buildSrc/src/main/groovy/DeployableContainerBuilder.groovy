@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
 import com.google.cloud.tools.jib.api.buildplan.Platform
