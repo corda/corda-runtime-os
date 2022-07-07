@@ -3222,10 +3222,15 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "context", "holdingIdentityId" ],
+        "required" : [ "action", "holdingIdentityId", "context" ],
         "type" : "object",
         "properties" : {
           "action" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingIdentityId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3239,11 +3244,6 @@
             },
             "nullable" : false,
             "example" : "No example available for this type"
-          },
-          "holdingIdentityId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
           }
         },
         "description" : "Data required to initialise the registration process.",
