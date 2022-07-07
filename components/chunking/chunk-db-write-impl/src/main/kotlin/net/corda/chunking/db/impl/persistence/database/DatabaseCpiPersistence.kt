@@ -264,7 +264,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                         UPDATE ${CpkFileEntity::class.java.simpleName} f 
                         SET f.fileChecksum = :fileChecksum, 
                         f.data = :data,
-                        f.entityVersion = :incrementedEntityVersion 
+                        f.entityVersion = :incrementedEntityVersion, 
+                        f.insertTimestamp = CURRENT_TIMESTAMP 
                         WHERE f.entityVersion = :entityVersion 
                         AND f.id = :id
                     """.trimIndent()
