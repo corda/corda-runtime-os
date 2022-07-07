@@ -1,12 +1,10 @@
 package net.corda.db.testkit
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.orm.EntityManagerConfiguration
-import net.corda.schema.configuration.ConfigKeys
 
 /**
  * Database information, such as name, schema, [SmartConfig] and [EntityManagerConfiguration]
