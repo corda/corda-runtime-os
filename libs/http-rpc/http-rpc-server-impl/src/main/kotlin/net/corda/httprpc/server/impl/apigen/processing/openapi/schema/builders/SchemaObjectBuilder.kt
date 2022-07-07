@@ -57,7 +57,7 @@ internal class SchemaObjectBuilder(
                         )
 
                     )
-                }
+                }.toSortedMap()
             )
         } catch (th: Throwable) {
             log.error("Cannot create SchemaObjectModel for: $clazz with $parameterizedClassList", th)

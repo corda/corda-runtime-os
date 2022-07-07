@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
-import java.time.Duration
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
@@ -12,10 +12,12 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
+import net.corda.libs.configuration.endpoints.v1.types.HTTPGetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -30,6 +32,7 @@ import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 /** An implementation of [ConfigRPCOpsInternal]. */
 @Suppress("Unused")
@@ -38,7 +41,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationValidatorFactory::class)
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = ConfigurationGetService::class)
+    private val configurationGetService: ConfigurationGetService,
 ) : ConfigRPCOpsInternal, PluggableRPCOps<ConfigRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
@@ -111,6 +116,20 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                 response.config
             )
         }
+    }
+
+    override fun get(section: String): HTTPGetConfigResponse {
+        val config = configurationGetService.get(section)
+            ?: throw ResourceNotFoundException(
+                "Configuration for section '${section} not found."
+            )
+        return HTTPGetConfigResponse(
+            section,
+            config.source,
+            config.value,
+            Version(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            config.version
+        )
     }
 
     /**

@@ -89,7 +89,7 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
     override fun toSchemaModel(properties: List<EndpointParameter>, schemaModelName: String): SchemaModel {
         val schemaRefObjectModel: SchemaRefObjectModel
         log.debug { """To schema model "$schemaModelName" from endpointParameters: "${properties.joinToString(",")}".""" }
-        properties.associateBy({ it.id }, { toSchemaModel(it) }).also { schemaRefObjectModels ->
+        properties.associateBy({ it.id }, { toSchemaModel(it) }).toSortedMap().also { schemaRefObjectModels ->
             schemaRefObjectModel = SchemaMultiRefObjectModel(ref = schemaModelName, properties = schemaRefObjectModels)
                 .also {
                     it.name = schemaModelName

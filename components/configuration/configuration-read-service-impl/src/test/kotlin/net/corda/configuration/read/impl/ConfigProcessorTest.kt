@@ -88,7 +88,7 @@ class ConfigProcessorTest {
     }
 
     @Test
-    fun `cache us updated with both source and defaulted config`() {
+    fun `cache is updated with both source and defaulted config`() {
         val coordinator = mock<LifecycleCoordinator>()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, BOOT_CONFIG_STRING.toSmartConfig(), configMerger)
         val config = Configuration(CONFIG_STRING, SOURCE_CONFIG_STRING, 0, schemaVersion)
