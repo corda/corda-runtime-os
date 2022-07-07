@@ -51,7 +51,9 @@ dependencies {
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
-    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+//  swap these around in order to use a "real" Kafka message bus rather than the emulation.
+    runtimeOnly project(':libs:messaging:db-message-bus-impl')
+//    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
