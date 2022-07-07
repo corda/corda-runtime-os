@@ -2,8 +2,10 @@ package net.corda.flow.pipeline.handlers.waiting.persistence
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.flow.state.checkpoint.PipelineState
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
@@ -13,6 +15,8 @@ import net.corda.data.persistence.EntityResponseSuccess
 import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.flow.BOB_X500_HOLDING_IDENTITY
+import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -185,8 +189,12 @@ class EntityResponseWaitingForHandlerTest {
 
     private fun stubFlowContext(entityResponse: EntityResponse, persistenceState: PersistenceState? = null) :
             FlowEventContext<EntityResponse> {
-        val flowCheckpoint = FlowCheckpointImpl(Checkpoint(), flowConfig) { Instant.now() }
-        flowCheckpoint.initFlowState(FlowStartContext())
+        val flowCheckpoint = FlowCheckpointImpl(Checkpoint().apply { pipelineState = PipelineState() }, flowConfig) { Instant.now() }
+        val startContext = FlowStartContext().apply {
+            statusKey = FlowKey(FLOW_ID_1, BOB_X500_HOLDING_IDENTITY)
+            identity = BOB_X500_HOLDING_IDENTITY
+        }
+        flowCheckpoint.initFlowState(startContext)
         flowCheckpoint.persistenceState = persistenceState
         return buildFlowEventContext(flowCheckpoint, entityResponse, flowConfig, emptyList(), flowId)
     }

@@ -19,7 +19,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -32,7 +31,7 @@ class FlowEventPipelineFactoryImplTest {
     private val flowRunner = mock<FlowRunner>()
     private val config = mock<SmartConfig>()
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().apply {
-        whenever(this.create(any(), checkpoint, config)).thenReturn(flowCheckpoint)
+        whenever(this.create(FLOW_ID_1, checkpoint, config)).thenReturn(flowCheckpoint)
     }
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
 
