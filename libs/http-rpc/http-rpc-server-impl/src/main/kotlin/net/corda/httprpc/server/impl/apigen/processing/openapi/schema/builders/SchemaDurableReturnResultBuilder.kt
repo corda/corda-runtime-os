@@ -34,7 +34,7 @@ internal class SchemaDurableReturnResultBuilder(private val schemaModelProvider:
                             it.returnType.isMarkedNullable
                         )
                     )
-                }
+                }.toSortedMap()
         )
     }
 

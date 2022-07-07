@@ -2354,15 +2354,15 @@
       "AddPermissionRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
           "permissionId" : {
             "type" : "string",
             "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
             "nullable" : false,
             "example" : "string"
           }
@@ -2686,27 +2686,11 @@
       "GenerateCsrRequest" : {
         "required" : [ "certificateRole", "x500name" ],
         "properties" : {
-          "x500name" : {
-            "type" : "string",
-            "description" : "The X500 name",
-            "nullable" : false,
-            "example" : "string"
-          },
           "certificateRole" : {
             "type" : "string",
             "description" : "Certificate role. For example: TLS, SESSION_INIT, ...",
             "nullable" : false,
             "example" : "string"
-          },
-          "subjectAlternativeNames" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : true,
-            "items" : {
-              "type" : "string",
-              "nullable" : false,
-              "example" : "string"
-            }
           },
           "contextMap" : {
             "type" : "object",
@@ -2718,6 +2702,22 @@
             "description" : "Context Map. For example: `signatureSpec` to signature spec (SHA512withECDSA, SHA384withRSA...)",
             "nullable" : true,
             "example" : "No example available for this type"
+          },
+          "subjectAlternativeNames" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : true,
+            "items" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            }
+          },
+          "x500name" : {
+            "type" : "string",
+            "description" : "The X500 name",
+            "nullable" : false,
+            "example" : "string"
           }
         },
         "description" : "GenerateCsrRequest",
@@ -3222,15 +3222,10 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "holdingIdentityId", "context" ],
+        "required" : [ "action", "context", "holdingIdentityId" ],
         "type" : "object",
         "properties" : {
           "action" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "holdingIdentityId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3244,6 +3239,11 @@
             },
             "nullable" : false,
             "example" : "No example available for this type"
+          },
+          "holdingIdentityId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           }
         },
         "description" : "Data required to initialise the registration process.",
@@ -3390,15 +3390,15 @@
       "RemovePermissionRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
           "permissionId" : {
             "type" : "string",
             "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
             "nullable" : false,
             "example" : "string"
           }
@@ -3566,15 +3566,15 @@
             "nullable" : false,
             "example" : "string"
           },
-          "tlsTenantId" : {
-            "type" : "string",
-            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
-            "nullable" : true,
-            "example" : "string"
-          },
           "sessionKeyId" : {
             "type" : "string",
             "description" : "The session key ID (will use the first session one by default).",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "tlsTenantId" : {
+            "type" : "string",
+            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
             "nullable" : true,
             "example" : "string"
           }
