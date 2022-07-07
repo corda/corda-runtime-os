@@ -26,7 +26,6 @@ dependencies {
 cliPlugin {
     cliPluginClass = 'net.corda.cli.plugins.vnode.VirtualNodeCliPlugin'
     cliPluginDescription = 'A CLI plug-in for operations on Virtual Node'
-    doNotPackage = ['avro/**', 'com/fasterxml/**']
 }
 
 tasks.named("installDist") {
