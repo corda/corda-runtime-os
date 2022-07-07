@@ -61,6 +61,10 @@ class CombinedWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
 
+        if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
+            logger.info("Quasar's instrumentation verification is enabled")
+        }
+
         PostgresDbSetup().run()
 
         JavaSerialisationFilter.install()

@@ -38,6 +38,11 @@ class FlowWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [flowProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
+
+        if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
+            logger.info("Quasar's instrumentation verification is enabled")
+        }
+
         JavaSerialisationFilter.install()
 
         val params = getParams(args, FlowWorkerParams())

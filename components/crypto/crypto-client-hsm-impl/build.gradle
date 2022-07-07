@@ -22,14 +22,9 @@ dependencies {
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:messaging:messaging")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    testImplementation project(":libs:lifecycle:lifecycle-impl")
-    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
-    testImplementation project(":libs:lifecycle:registry")
-    testImplementation project(":testing:test-utilities")
+    testImplementation project(":components:crypto:crypto-component-test-utils")
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

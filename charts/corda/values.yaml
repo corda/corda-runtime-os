@@ -202,6 +202,8 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the flow worker containers
       limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
 
   # membership worker configuration
   membership:

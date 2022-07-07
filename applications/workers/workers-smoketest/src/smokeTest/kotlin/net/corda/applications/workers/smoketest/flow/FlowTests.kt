@@ -10,13 +10,17 @@ import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.X500_SESSION_USER1
 import net.corda.applications.workers.smoketest.X500_SESSION_USER2
+import net.corda.applications.workers.smoketest.addSoftHsmFor
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.createKeyFor
 import net.corda.applications.workers.smoketest.createVirtualNodeFor
+import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
@@ -38,6 +42,13 @@ class FlowTests {
         var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
+        val expectedFlows = listOf(
+            "net.cordapp.flowworker.development.flows.MessagingFlow",
+            "net.cordapp.flowworker.development.flows.PersistenceFlow",
+            "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
+            "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
+            "net.cordapp.flowworker.development.flows.TestFlow"
+        )
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
@@ -58,6 +69,8 @@ class FlowTests {
 
             createVirtualNodeFor(X500_SESSION_USER1)
             createVirtualNodeFor(X500_SESSION_USER2)
+
+            addSoftHsmFor(bobHoldingId, "LEDGER")
         }
     }
 
@@ -258,6 +271,14 @@ class FlowTests {
     }
 
     @Test
+    fun `Get runnable flows for a holdingId`() {
+        val flows = getFlowClasses(bobHoldingId)
+
+        assertThat(flows.size).isEqualTo(5)
+        assertTrue(flows.containsAll(expectedFlows))
+    }
+
+    @Test
     fun `SubFlow - Create an initiated session in an initiating flow and pass it to a inline subflow`() {
 
         val requestBody = RpcSmokeTestInput().apply {
@@ -303,5 +324,49 @@ class FlowTests {
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
         assertThat(flowResult.result)
             .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+    }
+
+    @Test
+    fun `Crypto - Sign and verify bytes`() {
+
+        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "crypto_sign_and_verify"
+            data = mapOf("publicKey" to publicKey)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("crypto_sign_and_verify")
+        assertThat(flowResult.result).isEqualTo(true.toString())
+    }
+
+    @Test
+    fun `Crypto - Verify invalid signature`() {
+
+        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "crypto_verify_invalid_signature"
+            data = mapOf("publicKey" to publicKey)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
+        assertThat(flowResult.result).isEqualTo(true.toString())
     }
 }

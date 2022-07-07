@@ -1,11 +1,9 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.flow.rpcops.impl
 
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.rpcops.impl.CacheLoadCompleteEvent
-import net.corda.flow.rpcops.impl.FlowStatusCacheServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler

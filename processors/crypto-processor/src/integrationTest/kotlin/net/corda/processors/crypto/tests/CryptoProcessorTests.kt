@@ -191,7 +191,7 @@ class CryptoProcessorTests {
                     Record(
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
-                        Configuration(messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
+                        Configuration(messagingConfig.root().render(), messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             )
@@ -439,91 +439,6 @@ class CryptoProcessorTests {
             CryptoConsts.Categories.CI,
             null
         )
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
-    }
-
-    @ParameterizedTest
-    @MethodSource("testTenants")
-    fun `Should generate fresh key pair without external id by flow ops then find it and use for signing`(
-        tenantId: String
-    ) {
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createFreshKey(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.CI,
-            scheme = RSA_CODE_NAME
-        )
-        logger.info(
-            "Publishing: createFreshKey({}, {}, {})",
-            tenantId,
-            CryptoConsts.Categories.CI,
-            RSA_CODE_NAME
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
-            )
-        ).forEach { it.get() }
-        logger.info("Waiting for response for createFreshKey")
-        val response = flowOpsResponses.waitForResponse(key)
-        val original = transformer.transform(response) as PublicKey
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
-    }
-
-    @ParameterizedTest
-    @MethodSource("testTenants")
-    fun `Should generate fresh key pair with external id by flow ops then find it and use for signing`(
-        tenantId: String
-    ) {
-        val externalId = UUID.randomUUID().toString()
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createFreshKey(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.CI,
-            scheme = RSA_CODE_NAME,
-            externalId = externalId
-        )
-        logger.info(
-            "Publishing: createFreshKey({}, {}, {}, {})",
-            tenantId,
-            CryptoConsts.Categories.CI,
-            RSA_CODE_NAME,
-            externalId
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
-            )
-        ).forEach { it.get() }
-        logger.info("Waiting for response for createFreshKey")
-        val response = flowOpsResponses.waitForResponse(key)
-        val original = transformer.transform(response) as PublicKey
 
         `Should be able to sign and verify`(tenantId, original)
 

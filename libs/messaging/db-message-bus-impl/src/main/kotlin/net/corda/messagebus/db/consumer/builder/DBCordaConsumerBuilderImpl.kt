@@ -8,14 +8,9 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
-import net.corda.messagebus.db.datamodel.CommittedPositionEntry
-import net.corda.messagebus.db.datamodel.TopicEntry
-import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.create
+import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.serialization.CordaDBAvroDeserializerImpl
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,11 +23,11 @@ import org.osgi.service.component.annotations.Reference
 class DBCordaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    @Reference(service = EntityManagerFactoryHolder::class)
+    private val entityManagerFactoryHolder: EntityManagerFactoryHolder,
 ) : CordaConsumerBuilder {
 
-    private val consumerGroupFactory = ConsumerGroupFactory(entityManagerFactoryFactory)
+    private val consumerGroupFactory = ConsumerGroupFactory(entityManagerFactoryHolder)
 
     override fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
@@ -45,27 +40,19 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val resolvedConfig = resolver.resolve(messageBusConfig, consumerConfig)
 
-        val dbAccess = DBAccess(
-            entityManagerFactoryFactory.create(
-                resolvedConfig,
-                "DB Consumer for ${consumerConfig.clientId}",
-                listOf(
-                    TopicRecordEntry::class.java,
-                    CommittedPositionEntry::class.java,
-                    TopicEntry::class.java,
-                    TransactionRecordEntry::class.java,
-                )
-            )
-        )
-
         val consumerGroup = consumerGroupFactory.getGroupFor(
             consumerConfig.group,
             resolvedConfig
         )
+        val emf = entityManagerFactoryHolder.getEmf(
+            resolvedConfig.jdbcUrl,
+            resolvedConfig.jdbcUser,
+            resolvedConfig.jdbcPass
+        )
 
         return DBCordaConsumerImpl(
             resolvedConfig,
-            dbAccess,
+            DBAccess(emf),
             consumerGroup,
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz),

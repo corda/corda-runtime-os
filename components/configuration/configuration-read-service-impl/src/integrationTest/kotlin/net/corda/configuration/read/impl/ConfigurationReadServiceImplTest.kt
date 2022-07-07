@@ -92,7 +92,7 @@ class ConfigurationReadServiceImplTest {
         // Publish new configuration and verify it gets delivered
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         val confString = flowConfig.root().render()
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, 0, ConfigurationSchemaVersion(1,0)))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, confString, 0, ConfigurationSchemaVersion(1,0)))))
         eventually {
             assertTrue(receivedKeys.contains(FLOW_CONFIG), "$FLOW_CONFIG key was missing from received keys")
             assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
@@ -118,7 +118,7 @@ class ConfigurationReadServiceImplTest {
         val confString = flowConfig.root().render()
         val schemaVersion = ConfigurationSchemaVersion(1,0)
         val publisher = publisherFactory.createPublisher(PublisherConfig("foo"), bootConfig)
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, 0, schemaVersion))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, confString, 0, schemaVersion))))
         eventually(duration = 5.seconds) {
             assertTrue(configurationReadService.isRunning)
         }

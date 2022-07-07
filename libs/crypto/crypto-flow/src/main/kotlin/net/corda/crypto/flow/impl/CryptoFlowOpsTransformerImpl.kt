@@ -11,12 +11,10 @@ import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
-import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
@@ -62,33 +60,6 @@ class CryptoFlowOpsTransformerImpl(
         )
     }
 
-    override fun createFreshKey(
-        tenantId: String,
-        category: String,
-        scheme: String,
-        context: Map<String, String>
-    ): FlowOpsRequest {
-        return createRequest(
-            requestId = UUID.randomUUID().toString(),
-            tenantId,
-            GenerateFreshKeyFlowCommand(category, null, scheme, context.toWire())
-        )
-    }
-
-    override fun createFreshKey(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: String,
-        context: Map<String, String>
-    ): FlowOpsRequest {
-        return createRequest(
-            requestId = UUID.randomUUID().toString(),
-            tenantId,
-            GenerateFreshKeyFlowCommand(category, externalId, scheme, context.toWire())
-        )
-    }
-
     override fun createSign(
         requestId: String,
         tenantId: String,
@@ -112,7 +83,6 @@ class CryptoFlowOpsTransformerImpl(
     override fun inferRequestType(response: FlowOpsResponse): Class<*>? {
         return when (response.getContextValue(REQUEST_OP_KEY)) {
             SignFlowCommand::class.java.simpleName -> SignFlowCommand::class.java
-            GenerateFreshKeyFlowCommand::class.java.simpleName -> GenerateFreshKeyFlowCommand::class.java
             FilterMyKeysFlowQuery::class.java.simpleName -> FilterMyKeysFlowQuery::class.java
             else -> null
         }
@@ -127,19 +97,10 @@ class CryptoFlowOpsTransformerImpl(
         }
         return when (inferRequestType(response)) {
             SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
-            GenerateFreshKeyFlowCommand::class.java -> transformCryptoPublicKey(response)
             FilterMyKeysFlowQuery::class.java -> transformCryptoSigningKeys(response)
             else -> throw IllegalArgumentException(
                 "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}")
         }
-    }
-
-    /**
-     * Transforms [CryptoPublicKey]
-     */
-    private fun transformCryptoPublicKey(response: FlowOpsResponse): PublicKey {
-        val resp = response.validateAndGet<CryptoPublicKey>()
-        return keyEncodingService.decodePublicKey(resp.key.array())
     }
 
     /**

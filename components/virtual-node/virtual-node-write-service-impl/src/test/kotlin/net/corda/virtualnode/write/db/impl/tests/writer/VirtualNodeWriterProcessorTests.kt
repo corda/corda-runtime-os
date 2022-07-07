@@ -5,9 +5,12 @@ import net.corda.data.KeyValuePair
 import net.corda.data.crypto.SecureHash
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.packaging.CpiIdentifier
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
-import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
@@ -98,7 +101,7 @@ class VirtualNodeWriterProcessorTests {
         )
 
     private val vnodeCreationReq =
-        VirtualNodeCreationRequest(
+        VirtualNodeCreateRequest(
             vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
             "dummy_vault_ddl_config", "dummy_vault_dml_config",
             "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
@@ -199,10 +202,10 @@ class VirtualNodeWriterProcessorTests {
     /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
     private fun processRequest(
         processor: VirtualNodeWriterProcessor,
-        req: VirtualNodeCreationRequest
-    ): VirtualNodeCreationResponse {
+        req: VirtualNodeManagementRequest
+    ): VirtualNodeManagementResponse {
 
-        val respFuture = CompletableFuture<VirtualNodeCreationResponse>()
+        val respFuture = CompletableFuture<VirtualNodeManagementResponse>()
         processor.onNext(req, respFuture)
         return respFuture.get()
     }
@@ -221,7 +224,7 @@ class VirtualNodeWriterProcessorTests {
             clock
         )
 
-        processRequest(processor, vnodeCreationReq)
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         verify(publisher).publish(listOf(expectedRecord))
     }
@@ -240,7 +243,7 @@ class VirtualNodeWriterProcessorTests {
             groupPolicyParser,
             clock
         )
-        processRequest(processor, vnodeCreationReq)
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         // called twice for publishing virtual node info and MGM info
@@ -286,7 +289,7 @@ class VirtualNodeWriterProcessorTests {
             groupPolicyParser,
             clock
         )
-        processRequest(processor, vnodeCreationReq)
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         // called once for publishing virtual node info
@@ -303,20 +306,21 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `sends RPC success response after publishing virtual node info to Kafka`() {
-        val expectedResp = VirtualNodeCreationResponse(
-            true,
-            null,
-            vnodeCreationReq.x500Name,
-            vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiFileChecksum,
-            vnodeInfo.holdingIdentity.groupId,
-            vnodeInfo.holdingIdentity,
-            holdingIdentity.id,
-            connectionId,
-            connectionId,
-            connectionId,
-            connectionId,
-            null
+        val expectedResp = VirtualNodeManagementResponse(
+            clock.instant(),
+            VirtualNodeCreateResponse(
+                vnodeCreationReq.x500Name,
+                vnodeInfo.cpiIdentifier,
+                vnodeCreationReq.cpiFileChecksum,
+                vnodeInfo.holdingIdentity.groupId,
+                vnodeInfo.holdingIdentity,
+                holdingIdentity.id,
+                connectionId,
+                connectionId,
+                connectionId,
+                connectionId,
+                null
+            )
         )
 
         val processor = VirtualNodeWriterProcessor(
@@ -327,7 +331,7 @@ class VirtualNodeWriterProcessorTests {
             groupPolicyParser,
             clock
         )
-        val resp = processRequest(processor, vnodeCreationReq)
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
     }
@@ -338,21 +342,6 @@ class VirtualNodeWriterProcessorTests {
             VirtualNodeWriteServiceException::class.java.name,
             ""
         )
-        val expectedResp = VirtualNodeCreationResponse(
-            false,
-            expectedEnvelope,
-            vnodeCreationReq.x500Name,
-            vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiFileChecksum,
-            vnodeInfo.holdingIdentity.groupId,
-            vnodeInfo.holdingIdentity,
-            holdingIdentity.id,
-            null,
-            null,
-            null,
-            null,
-            null
-        )
 
         val processor = VirtualNodeWriterProcessor(
             getErroringPublisher(),
@@ -362,15 +351,11 @@ class VirtualNodeWriterProcessorTests {
             groupPolicyParser,
             clock
         )
-        val resp = processRequest(processor, vnodeCreationReq)
+        val resp = processRequest(
+            processor,
+            VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
+        ).responseType as VirtualNodeManagementResponseFailure
 
-        assertEquals(expectedResp.success, resp.success)
-        assertEquals(expectedResp.x500Name, resp.x500Name)
-        assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
-        assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
-        assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
-        assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)
         assertEquals(expectedEnvelope.errorType, resp.exception.errorType)
         assertTrue(resp.exception.errorMessage.contains("written to the database, but couldn't be published"))
     }
@@ -381,9 +366,11 @@ class VirtualNodeWriterProcessorTests {
             VirtualNodeWriteServiceException::class.java.name,
             "CPI with file checksum ${vnodeCreationReq.cpiFileChecksum} was not found."
         )
-        val expectedResp = VirtualNodeCreationResponse(
-            false, expectedEnvelope, x500Name, null, null, null, null, null,
-            null, null, null, null, null
+        val expectedResp = VirtualNodeManagementResponse(
+            clock.instant(),
+            VirtualNodeManagementResponseFailure(
+                expectedEnvelope
+            )
         )
 
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
@@ -397,7 +384,7 @@ class VirtualNodeWriterProcessorTests {
             groupPolicyParser,
             clock
         )
-        val resp = processRequest(processor, vnodeCreationReq)
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
     }
@@ -407,22 +394,6 @@ class VirtualNodeWriterProcessorTests {
         val expectedEnvelope = ExceptionEnvelope(
             VirtualNodeWriteServiceException::class.java.name,
             ""
-        )
-
-        val expectedResp = VirtualNodeCreationResponse(
-            false,
-            expectedEnvelope,
-            vnodeCreationReq.x500Name,
-            vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiFileChecksum,
-            vnodeInfo.holdingIdentity.groupId,
-            vnodeInfo.holdingIdentity,
-            holdingIdentity.id,
-            null,
-            null,
-            null,
-            null,
-            null
         )
 
         val collisionHoldingIdentity = mock<HoldingIdentity>() {
@@ -445,15 +416,11 @@ class VirtualNodeWriterProcessorTests {
             groupPolicyParser,
             clock
         )
-        val resp = processRequest(processor, vnodeCreationReq)
+        val resp = processRequest(
+            processor,
+            VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
+        ).responseType as VirtualNodeManagementResponseFailure
 
-        assertEquals(expectedResp.success, resp.success)
-        assertEquals(expectedResp.x500Name, resp.x500Name)
-        assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
-        assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
-        assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
-        assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)
         assertEquals(expectedEnvelope.errorType, resp.exception.errorType)
         assertTrue(
             resp.exception.errorMessage.contains(

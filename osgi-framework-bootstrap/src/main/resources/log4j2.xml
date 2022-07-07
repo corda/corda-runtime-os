@@ -16,7 +16,7 @@
                 <SizeBasedTriggeringPolicy size="10 MB" />
             </Policies>
             <DefaultRolloverStrategy>
-                <Delete basePath="${baseDir}">
+                <Delete basePath="logs/">
                     <IfFileName glob="logs/corda.*.log">
                         <IfAny>
                             <IfAccumulatedFileSize exceeds="500 MB" />
@@ -38,7 +38,7 @@
         <Logger name="org.apache.kafka" level="warn" />
         <Logger name="io.javalin.Javalin" level="warn" />
         <Logger name="org.eclipse.jetty" level="warn" />
-        <Logger name="org.hibernate.Version" level="warn" />
+        <Logger name="org.hibernate" level="warn" />
 
         <!-- default to warn only for OSGi logging -->
         <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />

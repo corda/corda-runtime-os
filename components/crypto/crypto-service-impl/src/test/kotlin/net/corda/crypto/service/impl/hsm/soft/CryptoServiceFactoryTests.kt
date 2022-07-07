@@ -11,7 +11,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -91,7 +90,6 @@ class CryptoServiceFactoryTests {
     @Test
     fun `Should start component and use active implementation only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
@@ -100,7 +98,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         )
@@ -109,7 +106,6 @@ class CryptoServiceFactoryTests {
     @Test
     fun `getInstance(tenant,category) should return same instance when params are resolved to same HSM config id`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
@@ -118,7 +114,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         val i2 = component.getInstance(tenantId2, CryptoConsts.Categories.LEDGER)
         val i3 = component.getInstance(tenantId3, CryptoConsts.Categories.LEDGER)
@@ -140,7 +135,6 @@ class CryptoServiceFactoryTests {
     fun `getInstance(tenant,category, associationId) should fail when category or tenant are not matching`() {
         assertFalse(component.isRunning)
         val associationId = UUID.randomUUID().toString()
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         }
@@ -149,7 +143,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         assertThrows<IllegalArgumentException> {
             component.getInstance(tenantId, CryptoConsts.Categories.TLS, associationId)
@@ -164,7 +157,6 @@ class CryptoServiceFactoryTests {
     fun `getInstance(tenant,category, associationId) should return same instance when params are resolved to same HSM config id`() {
         assertFalse(component.isRunning)
         val associationId = UUID.randomUUID().toString()
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         }
@@ -173,7 +165,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         val i2 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         assertNotNull(i1)
@@ -189,7 +180,6 @@ class CryptoServiceFactoryTests {
     @Suppress("MaxLineLength")
     fun `getInstance(tenant,category) should return different instance when params are not resolved to same HSM config id`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
@@ -198,7 +188,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         val i2 = component.getInstance(tenantId4, CryptoConsts.Categories.JWT_KEY)
         assertNotNull(i1)
@@ -213,7 +202,6 @@ class CryptoServiceFactoryTests {
     @Test
     fun `getInstance(configId) should return different instances for different HSM config id`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
@@ -222,7 +210,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance(CryptoConsts.SOFT_HSM_CONFIG_ID)
         val i2 = component.getInstance(customHSMConfigId)
         assertNotNull(i1)
@@ -234,7 +221,6 @@ class CryptoServiceFactoryTests {
     @Suppress("MaxLineLength")
     fun `getInstance(tenant,category,associationId) should return different instance when params are not resolved to same HSM config id`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
         }
@@ -243,7 +229,6 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
         val i2 = component.getInstance(tenantId4, CryptoConsts.Categories.JWT_KEY, UUID.randomUUID().toString())
         assertNotNull(i1)
@@ -258,40 +243,33 @@ class CryptoServiceFactoryTests {
     @Test
     fun `Should deactivate implementation when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
     }
 
     @Test
-    fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
+    fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         factory.hsmService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         factory.hsmService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
     }
 }
