@@ -449,7 +449,7 @@ class P2PLayerEndToEndTest {
         }
 
         private fun publishConfig() {
-            val gatewayConfigKey = "p2p.gateway"
+            val gatewayConfigKey = "corda.p2p.gateway"
             configPublisher.publishConfig(gatewayConfigKey, gatewayConfig)
             val linkManagerConfigKey = "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}"
             configPublisher.publishConfig(linkManagerConfigKey, linkManagerConfig)

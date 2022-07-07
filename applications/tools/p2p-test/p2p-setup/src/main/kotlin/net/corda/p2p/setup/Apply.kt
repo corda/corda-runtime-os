@@ -53,7 +53,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             listOf(
                 data
                     .getConfig("gatewayConfig")
-                    .toConfigurationRecord("p2p", "gateway")
+                    .toConfigurationRecord("corda.p2p", "gateway")
             )
         } catch (_: Missing) {
             emptyList()
