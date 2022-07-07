@@ -3,9 +3,9 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
-import net.corda.testing.akka.ExamplePersistentBehavior
-import net.corda.testing.akka.ExamplePersistentBehaviorCommands
 import net.corda.testing.calculator.*
+import net.corda.testing.calculator.system.FlowManager
+import net.corda.testing.calculator.system.WireMessage
 import org.junit.ClassRule
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport
 import java.util.*

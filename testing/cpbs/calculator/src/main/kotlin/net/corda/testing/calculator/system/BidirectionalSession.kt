@@ -6,6 +6,7 @@ import akka.persistence.typed.javadsl.EventHandler
 import akka.persistence.typed.javadsl.EventSourcedBehavior
 import com.fasterxml.jackson.annotation.JsonProperty
 import net.corda.testing.calculator.SessionMessage
+import java.util.concurrent.CompletableFuture
 
 data class SessionMessageID(@JsonProperty("msg") val id: String)
 
@@ -24,7 +25,7 @@ class BidirectionalSession(
 
     sealed class Commands : SessionMessage() {
         data class DeliverMessage(@JsonProperty("msg") val msg: QueuedMessage) : Commands()
-        data class SendMessage(@JsonProperty("msg") val msg: QueuedMessage) :  Commands()
+        data class SendMessage(@JsonProperty("msg") val msg: QueuedMessage, val doneSignal: CompletableFuture<Unit>?) :  Commands()
 
         sealed class Reconcile(val ids: List<SessionMessageID>) : Commands() {
             class Request(@JsonProperty("ids") ids: List<SessionMessageID>, @JsonProperty("isLocal") val isLocal: Boolean) : Reconcile(ids)

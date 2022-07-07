@@ -2,11 +2,8 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Behaviors
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit
-import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
-import net.corda.testing.calculator.FlowManager
 import net.corda.testing.calculator.SessionMessage
-import net.corda.testing.calculator.WireMessage
 import net.corda.testing.calculator.system.BidirectionalSession
 import net.corda.testing.calculator.system.LocalPipe
 import net.corda.testing.calculator.system.SessionMessageID
@@ -78,7 +75,7 @@ class BidirectionalSessionTest {
 
         systemA.runCommand(BidirectionalSession.Commands.SendMessage(BidirectionalSession.QueuedMessage(SessionMessageID("55"), TestStringMessage("Hello"))))
         Thread.sleep(5000)
-        systemB.restart()
-        systemB.runCommand(BidirectionalSession.Commands.Reconcile.Request(listOf(), true))
+      //  systemB.restart()
+      //  systemB.runCommand(BidirectionalSession.Commands.Reconcile.Request(listOf(), true))
     }
 }

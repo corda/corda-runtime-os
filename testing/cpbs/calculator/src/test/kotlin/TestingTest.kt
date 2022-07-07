@@ -1,3 +1,4 @@
+import akka.actor.ActorSystem
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource
 import akka.actor.typed.javadsl.Behaviors
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit
@@ -19,6 +20,13 @@ import kotlin.concurrent.thread
 
 @EnableRuleMigrationSupport
 class TestingTest {
+
+    fun smh() {
+        ActorSystem.create("hehe").let {
+
+        }
+    }
+
 /*
     companion object {
         @ClassRule
