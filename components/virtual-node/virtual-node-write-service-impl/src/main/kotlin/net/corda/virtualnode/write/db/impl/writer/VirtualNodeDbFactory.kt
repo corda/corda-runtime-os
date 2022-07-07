@@ -1,7 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import com.typesafe.config.ConfigFactory
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
@@ -41,8 +41,8 @@ class VirtualNodeDbFactory(
      *
      * @return map of [VirtualNodeDbType]s to [VirtualNodeDb]s
      */
-    fun createVNodeDbs(holdingIdentityId: String, request: VirtualNodeCreationRequest): Map<VirtualNodeDbType, VirtualNodeDb> {
-        with (request) {
+    fun createVNodeDbs(holdingIdentityId: String, request: VirtualNodeCreateRequest): Map<VirtualNodeDbType, VirtualNodeDb> {
+        with(request) {
             return mapOf(
                 Pair(VAULT, createVNodeDb(VAULT, holdingIdentityId, vaultDdlConnection, vaultDmlConnection)),
                 Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityId, cryptoDdlConnection, cryptoDmlConnection))
@@ -65,11 +65,13 @@ class VirtualNodeDbFactory(
             if (connectionsProvided) {
                 mapOf(
                     Pair(DDL, ddlConfig?.let { createConnection(dbType, holdingIdentityId, DDL, ddlConfig) }),
-                    Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityId, DML, dmlConfig) }))
+                    Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityId, DML, dmlConfig) })
+                )
             } else {
                 mapOf(
                     Pair(DDL, createClusterConnection(dbType, holdingIdentityId, DDL)),
-                    Pair(DML, createClusterConnection(dbType, holdingIdentityId, DML)))
+                    Pair(DML, createClusterConnection(dbType, holdingIdentityId, DML))
+                )
             }
         return VirtualNodeDb(dbType, !connectionsProvided, holdingIdentityId, dbConnections, dbAdmin, dbConnectionManager, schemaMigrator)
     }
@@ -85,8 +87,12 @@ class VirtualNodeDbFactory(
      * @return [DbConnection] created from provided connection configuration
      */
     private fun createConnection(
-        dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege, config: String): DbConnection {
-        with (dbType) {
+        dbType: VirtualNodeDbType,
+        holdingIdentityId: String,
+        dbPrivilege: DbPrivilege,
+        config: String
+    ): DbConnection {
+        with(dbType) {
             return DbConnection(
                 getConnectionName(holdingIdentityId),
                 dbPrivilege,
@@ -106,10 +112,10 @@ class VirtualNodeDbFactory(
      * @return created cluster [DbConnection]
      */
     private fun createClusterConnection(dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege): DbConnection {
-        with (dbType) {
+        with(dbType) {
             val user = getUserName(dbPrivilege, holdingIdentityId)
             val password = generatePassword()
-            val maxPoolSize = when(dbPrivilege) {
+            val maxPoolSize = when (dbPrivilege) {
                 DDL -> ddlMaxPoolSize
                 DML -> dmlMaxPoolSize
             }
@@ -117,7 +123,8 @@ class VirtualNodeDbFactory(
             val config = createDbConfig(
                 smartConfigFactory, user, password.concatToString(),
                 jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)),
-                maxPoolSize = maxPoolSize)
+                maxPoolSize = maxPoolSize
+            )
             return DbConnection(
                 getConnectionName(holdingIdentityId),
                 dbPrivilege,

@@ -11,6 +11,13 @@ osgiRun {
     )
 }
 
+quasar {
+    excludePackages.addAll([
+        'org.eclipse.jetty**',
+        'net.corda.membership**'
+    ])
+}
+
 dependencies {
     // for BundleManager
     compileOnly "org.osgi:osgi.core"
