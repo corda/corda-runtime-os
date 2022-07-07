@@ -111,7 +111,7 @@ class MGMRpcOpsImpl @Activate constructor(
                 return memberProvidedContext.entries
             }
             return emptySet()
-            mgmOpsClient.generateGroupPolicy(holdingIdentityId)
+//            mgmOpsClient.generateGroupPolicy(holdingIdentityId)
         }
     }
 }
