@@ -73,10 +73,10 @@ internal class MembershipPackageFactory(
                 .setMgmSignature(mgmSignature)
                 .build()
         }
-        val allMembersTree = merkleTreeFactory.buildTree(membersToSend)
+        val membersTree = merkleTreeFactory.buildTree(membersToSend)
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
-            .setHashCheck(allMembersTree.root.toAvro())
+            .setHashCheck(membersTree.root.toAvro())
             .build()
         return MembershipPackage.newBuilder()
             .setDistributionType(type)
