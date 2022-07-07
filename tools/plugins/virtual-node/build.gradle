@@ -8,7 +8,7 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly project(":libs:http-rpc:http-rpc-client")
+    implementation project(":libs:http-rpc:http-rpc-client")
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
 
@@ -26,7 +26,7 @@ dependencies {
 cliPlugin {
     cliPluginClass = 'net.corda.cli.plugins.vnode.VirtualNodeCliPlugin'
     cliPluginDescription = 'A CLI plug-in for operations on Virtual Node'
-//    doNotPackage = ['avro/**', 'com/fasterxml/**']
+    doNotPackage = ['avro/**', 'com/fasterxml/**']
 }
 
 tasks.named("installDist") {
