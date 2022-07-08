@@ -5,6 +5,7 @@ import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.FormatVersionReader
+import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path
@@ -36,7 +37,7 @@ class CpkReader {
             ByteArrayInputStream(buffer).use {
                 return when (formatVersion) {
                     version1 -> CpkLoaderV1.loadCPK(it, cacheDir, cpkLocation, verifySignature, cpkFileName)
-                    version2 -> TODO("Implement format version 2")
+                    version2 -> CpkLoaderV2().loadCPK(it, cacheDir, cpkLocation, verifySignature, cpkFileName)
                     else -> throw UnknownFormatVersionException("Unknown Corda-CPK-Format - \"$formatVersion\"")
                 }
             }

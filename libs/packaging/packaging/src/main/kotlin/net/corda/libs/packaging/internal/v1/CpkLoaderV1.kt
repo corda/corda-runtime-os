@@ -45,7 +45,7 @@ import java.util.zip.ZipEntry
 internal object CpkLoaderV1 : CpkLoader {
     private val logger = loggerFor<CpkLoaderV1>()
 
-    private const val CPK_TYPE = "Corda-CPK-Type"
+    internal const val CPK_TYPE = "Corda-CPK-Type"
 
     @Suppress("LongParameterList")
     private class CpkContext(

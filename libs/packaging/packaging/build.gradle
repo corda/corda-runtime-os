@@ -40,7 +40,9 @@ dependencies {
     api 'net.corda:corda-cipher-suite'
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
+    implementation project(':libs:utilities')
     implementation project(":libs:packaging:packaging-core")
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation 'org.osgi:osgi.core'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
