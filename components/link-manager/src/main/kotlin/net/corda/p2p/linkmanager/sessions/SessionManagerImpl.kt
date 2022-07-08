@@ -55,6 +55,7 @@ import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
@@ -160,7 +161,7 @@ internal class SessionManagerImpl(
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
         configurationReaderService,
-        LinkManagerConfiguration.CONFIG_KEY,
+        ConfigKeys.P2P_LINK_MANAGER_CONFIG,
         ::fromConfig
     ) {
         override fun applyNewConfiguration(
@@ -706,7 +707,7 @@ internal class SessionManagerImpl(
         @VisibleForTesting
         internal inner class HeartbeatManagerConfigChangeHandler : ConfigurationChangeHandler<HeartbeatManagerConfig>(
             configurationReaderService,
-            LinkManagerConfiguration.CONFIG_KEY,
+            ConfigKeys.P2P_LINK_MANAGER_CONFIG,
             ::fromConfig
         ) {
             override fun applyNewConfiguration(

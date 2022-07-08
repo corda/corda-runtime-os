@@ -6,9 +6,9 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 
@@ -43,7 +43,7 @@ class ReconfigurableConnectionManager(
 
     inner class ConnectionManagerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
-        CONFIG_KEY,
+        ConfigKeys.P2P_GATEWAY_CONFIG,
         { it.toGatewayConfiguration() }
     ) {
         override fun applyNewConfiguration(

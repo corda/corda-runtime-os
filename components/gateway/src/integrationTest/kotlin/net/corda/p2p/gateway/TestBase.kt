@@ -55,6 +55,7 @@ import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys
 
 open class TestBase {
     companion object {
@@ -157,8 +158,8 @@ open class TestBase {
             val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
-                "corda.p2p.gateway",
-                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
+                ConfigKeys.P2P_GATEWAY_CONFIG,
+                Configuration(configSource, 0, ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 

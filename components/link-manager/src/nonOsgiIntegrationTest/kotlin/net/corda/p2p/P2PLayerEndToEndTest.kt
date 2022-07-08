@@ -61,6 +61,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -449,10 +450,8 @@ class P2PLayerEndToEndTest {
         }
 
         private fun publishConfig() {
-            val gatewayConfigKey = "corda.p2p.gateway"
-            configPublisher.publishConfig(gatewayConfigKey, gatewayConfig)
-            val linkManagerConfigKey = "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}"
-            configPublisher.publishConfig(linkManagerConfigKey, linkManagerConfig)
+            configPublisher.publishConfig(ConfigKeys.P2P_GATEWAY_CONFIG, gatewayConfig)
+            configPublisher.publishConfig(ConfigKeys.P2P_LINK_MANAGER_CONFIG, linkManagerConfig)
         }
 
         private val keyStores = ourIdentities.mapNotNull {
