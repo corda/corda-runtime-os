@@ -34,7 +34,7 @@ class BidirectionalSession(
             class Pull(@JsonProperty("ids") ids: List<SessionMessageID>) : Reconcile(ids)
         }
 
-        data class Acknowledge(@JsonProperty("id") val id: SessionMessageID) :  Commands()
+        data class Acknowledge(@JsonProperty("id") val sessionMessageID: SessionMessageID) :  Commands()
     }
 
     sealed class Events {
@@ -78,7 +78,7 @@ class BidirectionalSession(
                     }
             }.onCommand(Commands.Acknowledge::class.java) { cmd : Commands.Acknowledge ->
                 Effect()
-                    .persist(Events.Acknowledge(cmd.id))
+                    .persist(Events.Acknowledge(cmd.sessionMessageID))
             }.onCommand(Commands.Reconcile.Pull::class.java) { state, cmd: Commands.Reconcile.Pull ->
                 Effect()
                     .none()
@@ -119,7 +119,7 @@ class BidirectionalSession(
             }.onCommand(Commands.Reconcile.Response::class.java) { state, cmd: Commands.Reconcile.Response ->
                 val effect = when (cmd.previouslyAcknowledged.isEmpty()) {
                     true -> Effect().none()
-                    false -> Effect().persist(cmd.previouslyAcknowledged.map { Events.Acknowledge(it.id) })
+                    false -> Effect().persist(cmd.previouslyAcknowledged.map { Events.Acknowledge(it.sessionMessageID) })
                 }
 
                 effect.thenRun {

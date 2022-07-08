@@ -73,7 +73,7 @@ class BidirectionalSessionTest {
             BidirectionalSession("6", ::tellLocalActorB, ::tellRemoteA)
         }, EventSourcedBehaviorTestKit.enabledSerializationSettings())
 
-        systemA.runCommand(BidirectionalSession.Commands.SendMessage(BidirectionalSession.QueuedMessage(SessionMessageID("55"), TestStringMessage("Hello"))))
+       // systemA.runCommand(BidirectionalSession.Commands.SendMessage(BidirectionalSession.QueuedMessage(SessionMessageID("55"), TestStringMessage("Hello"))))
         Thread.sleep(5000)
       //  systemB.restart()
       //  systemB.runCommand(BidirectionalSession.Commands.Reconcile.Request(listOf(), true))

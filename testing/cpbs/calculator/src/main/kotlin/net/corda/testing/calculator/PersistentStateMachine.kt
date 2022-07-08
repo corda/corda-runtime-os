@@ -26,6 +26,14 @@ interface AuthenticatedCommunicator {
 
 
 open class SessionMessage {
+    internal var sessionId : String = "undefined"
+    fun whichSession() = sessionId
+
+    internal var authenticatedSender: String = "unknown"
+    fun sender() = authenticatedSender
+
+    internal var id: String = UUID.randomUUID().toString()
+
     sealed class SystemMessages : SessionMessage() {
         data class SessionEstablished(val channel: FlowManager.SessionChannel) : SystemMessages()
     }
