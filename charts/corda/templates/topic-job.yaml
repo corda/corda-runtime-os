@@ -43,21 +43,22 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
+
             - /bin/bash
             - -c
           args:
             - |
                 touch /tmp/working_dir/config.properties
-                {{- if .Values.kafka.confluentCloud }}
-                echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
-                echo "sasl.mechanism=PLAIN\n" >> /tmp/working_dir/config.properties
-                echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
-                {{- else }}
                 {{- if .Values.kafka.tls.enabled }}
                 {{- if .Values.kafka.sasl.enabled }}
                 echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
+                {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+                echo "sasl.mechanism=PLAIN\n" >> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- else }}
                 echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
                 echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
                 {{- else }}
                 echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
                 {{- end }}
@@ -74,7 +75,6 @@ spec:
 
                 echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
                 echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
-                {{- end }}
                 {{- end }}
                 {{- end }}
           volumeMounts:

@@ -105,7 +105,6 @@ kafka:
     # -- enable/disable SASL for client connection to Kafka 
     enabled: false
   # Specifies whether the Kafka cluster to connect to is deployed in Confluent Cloud or not
-  confluentCloud: false
 
 # Configuration for the bootstrapper
 bootstrap:
