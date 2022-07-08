@@ -41,7 +41,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPol
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySessionKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
@@ -170,8 +169,6 @@ class MemberProcessorIntegrationTest {
         @JvmStatic
         @BeforeAll
         fun setUp() {
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
-
             setupDatabases()
 
             // Set basic bootstrap config
@@ -191,6 +188,7 @@ class MemberProcessorIntegrationTest {
                 )
             ).also { it.startAndWait() }
 
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
