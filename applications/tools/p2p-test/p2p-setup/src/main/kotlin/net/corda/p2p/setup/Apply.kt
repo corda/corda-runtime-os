@@ -3,8 +3,6 @@ package net.corda.p2p.setup
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.COMPONENT_NAME
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PACKAGE_NAME
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.setup.AddGroup.Companion.toGroupRecord
 import net.corda.p2p.setup.AddIdentity.Companion.toIdentityRecord
