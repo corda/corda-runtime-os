@@ -72,10 +72,10 @@ class GatewayConfiguration : Callable<Collection<Record<String, Configuration>>>
     var connectionInitialReconnectionDelaySec = 1L
 
     @Option(
-        names = ["--connectionMaximalReconnectionDelaySec"],
-        description = ["The maximal duration (in seconds) to delay before trying to reconnect"]
+        names = ["--connectionMaxReconnectionDelaySec"],
+        description = ["The maximum duration (in seconds) to delay before trying to reconnect"]
     )
-    var connectionMaximalReconnectionDelaySec = 16L
+    var connectionMaxReconnectionDelaySec = 16L
 
     @Option(
         names = ["--responseTimeoutMilliSecs"],
@@ -128,8 +128,8 @@ class GatewayConfiguration : Callable<Collection<Record<String, Configuration>>>
                 ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionInitialReconnectionDelaySec))
             )
             .withValue(
-                "connectionConfig.maximalReconnectionDelay",
-                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaximalReconnectionDelaySec))
+                "connectionConfig.maxReconnectionDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaxReconnectionDelaySec))
             )
 
         return listOf(configuration.toConfigurationRecord(ConfigKeys.P2P_GATEWAY_CONFIG, topic))

@@ -47,7 +47,7 @@ class GatewayConfigurationTest {
             on { getDuration("connectionIdleTimeout") } doReturn 10.hours
             on { getDuration("responseTimeout") } doReturn 20.seconds
             on { getDuration("retryDelay") } doReturn 21.minutes
-            on { getDuration("maximalReconnectionDelay") } doReturn 15.minutes
+            on { getDuration("maxReconnectionDelay") } doReturn 15.minutes
             on { getDuration("initialReconnectionDelay") } doReturn 11.millis
         }
         val sslConfig = mock<Config> {
@@ -75,7 +75,7 @@ class GatewayConfigurationTest {
                     responseTimeout = 20.seconds,
                     retryDelay = 21.minutes,
                     initialReconnectionDelay = 11.millis,
-                    maximalReconnectionDelay = 15.minutes,
+                    maxReconnectionDelay = 15.minutes,
                 ),
                 sslConfig = SslConfiguration(
                     revocationCheck =
