@@ -6,6 +6,7 @@ import net.corda.data.config.Configuration
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.time.Duration
@@ -131,12 +132,6 @@ class GatewayConfiguration : Callable<Collection<Record<String, Configuration>>>
                 ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionMaximalReconnectionDelaySec))
             )
 
-        return listOf(
-            configuration.toConfigurationRecord(
-                "corda.p2p",
-                "gateway",
-                topic
-            )
-        )
+        return listOf(configuration.toConfigurationRecord(ConfigKeys.P2P_GATEWAY_CONFIG, topic))
     }
 }

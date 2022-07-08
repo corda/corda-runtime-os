@@ -13,6 +13,7 @@ import net.corda.p2p.setup.AddMember.Companion.toMemberRecord
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
 import java.io.File
@@ -53,7 +54,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             listOf(
                 data
                     .getConfig("gatewayConfig")
-                    .toConfigurationRecord("corda.p2p", "gateway")
+                    .toConfigurationRecord(ConfigKeys.P2P_GATEWAY_CONFIG)
             )
         } catch (_: Missing) {
             emptyList()
@@ -63,10 +64,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             listOf(
                 data
                     .getConfig("linkManagerConfig")
-                    .toConfigurationRecord(
-                        PACKAGE_NAME,
-                        COMPONENT_NAME,
-                    )
+                    .toConfigurationRecord(ConfigKeys.P2P_GATEWAY_CONFIG)
             )
         } catch (_: Missing) {
             emptyList()

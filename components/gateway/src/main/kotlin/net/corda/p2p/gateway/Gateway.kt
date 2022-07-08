@@ -58,8 +58,4 @@ class Gateway(
 
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = children.map { it.coordinatorName }, managedChildren = children.map { it.toNamedLifecycle() })
-
-    companion object {
-        const val CONFIG_KEY = "corda.p2p.gateway"
-    }
 }
