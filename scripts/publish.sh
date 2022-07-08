@@ -1,21 +1,31 @@
 #check for docker 
-if ! docker info > /dev/null 2>&1; then
-  echo "This script uses docker, and it isn't running - please start docker and try again!"
-  exit 1
-fi
+#if ! docker info > /dev/null 2>&1; then
+#  echo "This script uses docker, and it isn't running - please start docker and try again!"
+#  exit 1
+#fi
 
 #check for buildkit deamon
-if [ "$(docker inspect -f '{{.State.Running}}' "buildkitd" 2>/dev/null)" = "true" ]
-then echo "daemon running"
-else docker run -d --name buildkitd --privileged moby/buildkit:latest
-fi
-
-export BUILDKIT_HOST=docker-container://buildkitd
+#if [ "$(docker inspect -f '{{.State.Running}}' "buildkitd" 2>/dev/null)" = "true" ]
+#then echo "daemon running"
+#else docker run -d --name buildkitd --privileged moby/buildkit:latest
+#fi
 
 export CORDA_ARTIFACTORY_USERNAME=jan.szkaradek@r3.com
-export CORDA_ARTIFACTORY_PASSWORD=AKCp8mYxymGWqjABN3pqfDc8Gdc4QsT1pp3nWgNwUCFs4xNchQyMdA71D29E9ucFdXod27WhH
+export CORDA_ARTIFACTORY_PASSWORD=AKCp8mYxymGWqjABN3pqfDc8Gdc4QsT1pp3nWgNwUCFs4xNchQyMdA71D29E9ucFdXod27WhH 
 
-docker login docker-js-temp.software.r3.com -p $CORDA_ARTIFACTORY_PASSWORD  -u $CORDA_ARTIFACTORY_USERNAME
+kubectl apply -f .certs/buildkit-daemon-certs.yaml
+kubectl create secret docker-registry docker-registry-cred \
+  --docker-server "docker-js-temp.software.r3.com" \
+  --docker-username $CORDA_ARTIFACTORY_USERNAME \
+  --docker-password $CORDA_ARTIFACTORY_PASSWORD
+kubectl apply -f ./kubernetes/deployment+service.rootless.yaml
+kubectl scale --replicas=6 deployment/buildkitd
+
+kubectl wait --for=condition=Ready deployment/buildkitd
+
+wait
+
+kubectl port-forward service/buildkitd 1234 &
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
@@ -31,7 +41,12 @@ cp ./tools/plugins/virtual-node/build/libs/virtual-node-cli-plugin-5.0.0.0-SNAPS
 cp ./tools/plugins/virtual-node/build/libs/plugin-virtual-node-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/plugin-virtual-node.jar
 
 
-buildctl build --frontend=dockerfile.v0 \
+buildctl \
+    --addr tcp://127.0.0.1:1234 \
+    --tlscacert .certs/client/ca.pem \
+    --tlscert .certs/client/cert.pem \
+    --tlskey .certs/client/key.pem \
+build --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=./docker \
     --opt build-arg:BASE_IMAGE=corda-os-docker.software.r3.com/corda-os-cli:unstable \
@@ -42,7 +57,12 @@ buildctl build --frontend=dockerfile.v0 \
     --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-plugins-cache \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-plugins-cache &
 
-buildctl build --frontend=dockerfile.v0 \
+buildctl \
+    --addr tcp://127.0.0.1:1234 \
+    --tlscacert .certs/client/ca.pem \
+    --tlscert .certs/client/cert.pem \
+    --tlskey .certs/client/key.pem \
+build --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=./docker \
     --opt build-arg:BASE_IMAGE=azul/zulu-openjdk:11.0.5\
@@ -53,7 +73,12 @@ buildctl build --frontend=dockerfile.v0 \
     --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-crypto-worker-cache \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-crypto-worker-cache &
 
-buildctl build --frontend=dockerfile.v0 \
+buildctl \
+    --addr tcp://127.0.0.1:1234 \
+    --tlscacert .certs/client/ca.pem \
+    --tlscert .certs/client/cert.pem \
+    --tlskey .certs/client/key.pem \
+build --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=./docker \
     --opt build-arg:BASE_IMAGE=azul/zulu-openjdk:11.0.5 \
@@ -65,7 +90,12 @@ buildctl build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-flow-worker-cache &
     
     
-buildctl build --frontend=dockerfile.v0 \
+buildctl \
+    --addr tcp://127.0.0.1:1234 \
+    --tlscacert .certs/client/ca.pem \
+    --tlscert .certs/client/cert.pem \
+    --tlskey .certs/client/key.pem \
+build --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=./docker \
     --opt build-arg:BASE_IMAGE=azul/zulu-openjdk:11.0.5 \
@@ -76,7 +106,12 @@ buildctl build --frontend=dockerfile.v0 \
     --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-db-worker-cache \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-db-worker-cache &
 
-buildctl build --frontend=dockerfile.v0 \
+buildctl \
+    --addr tcp://127.0.0.1:1234 \
+    --tlscacert .certs/client/ca.pem \
+    --tlscert .certs/client/cert.pem \
+    --tlskey .certs/client/key.pem \
+build --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=./docker \
     --opt build-arg:BASE_IMAGE=azul/zulu-openjdk:11.0.5 \
@@ -87,7 +122,12 @@ buildctl build --frontend=dockerfile.v0 \
     --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-member-worker-cache \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-member-worker-cache &
 
-buildctl build --frontend=dockerfile.v0 \
+buildctl \
+    --addr tcp://127.0.0.1:1234 \
+    --tlscacert .certs/client/ca.pem \
+    --tlscert .certs/client/cert.pem \
+    --tlskey .certs/client/key.pem \
+build --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=./docker \
     --opt build-arg:BASE_IMAGE=azul/zulu-openjdk:11.0.5 \
@@ -96,24 +136,25 @@ buildctl build --frontend=dockerfile.v0 \
     --opt build-arg:IMAGE_ENTRYPOINT=\"exec java -Dlog4j2.debug=false -Dlog4j.configurationFile=log4j2-console.xml -jar /opt/override/corda-rpc-worker.jar\" \
     --output type=image,name=docker-js-temp.software.r3.com/corda-os-rpc-worker,push=true \
     --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-rpc-worker-cache \
-    --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-rpc-worker-cache &
+    --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-rpc-worker-cache
 
-wait
+kubectl delete deploy buildkitd
 
-docker stop "buildkitd"
-docker rm "buildkitd"
-
-docker pull docker-js-temp.software.r3.com/corda-os-plugins:latest
-docker pull docker-js-temp.software.r3.com/corda-os-crypto-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-flow-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-member-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-db-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-rpc-worker:latest
-
-docker tag docker-js-temp.software.r3.com/corda-os-crypto-worker:latest corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-member-worker:latest corda-os-docker-dev.software.r3.com/corda-os-member-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-rpc-worker:latest corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-flow-worker:latest corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-db-worker:latest corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-plugins:latest corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local
-
+#
+#docker stop "buildkitd"
+#docker rm "buildkitd"
+#
+#docker pull docker-js-temp.software.r3.com/corda-os-plugins:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-crypto-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-flow-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-member-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-db-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-rpc-worker:latest
+#
+#docker tag docker-js-temp.software.r3.com/corda-os-crypto-worker:latest corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-member-worker:latest corda-os-docker-dev.software.r3.com/corda-os-member-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-rpc-worker:latest corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-flow-worker:latest corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-db-worker:latest corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-plugins:latest corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local
+#
