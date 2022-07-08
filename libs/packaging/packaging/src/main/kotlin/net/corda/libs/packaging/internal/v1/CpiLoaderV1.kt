@@ -12,6 +12,7 @@ import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
 import net.corda.libs.packaging.certSummaryHash
 import net.corda.libs.packaging.internal.CpiImpl
+import net.corda.libs.packaging.internal.CpiLoader
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -24,12 +25,12 @@ import java.util.jar.JarInputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipEntry
 
-internal object CpiLoaderV1 {
+internal object CpiLoaderV1 : CpiLoader {
     private const val cpkFileExtension = ".cpk"
     private fun isCpk(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(cpkFileExtension)
     private fun isGroupPolicy(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(CPI_GROUP_POLICY_ENTRY)
 
-    fun loadCpi(inputStream : InputStream, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : Cpi {
+    override fun loadCpi(inputStream : InputStream, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : Cpi {
         val ctx = load(inputStream, expansionLocation, cpiLocation, verifySignature)
         return CpiImpl(ctx.metadata, ctx.cpks)
     }

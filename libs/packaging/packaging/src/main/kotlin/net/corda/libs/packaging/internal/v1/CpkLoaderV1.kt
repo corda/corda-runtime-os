@@ -18,6 +18,7 @@ import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.libs.packaging.core.exception.LibraryIntegrityException
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.CpkImpl
+import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -41,7 +42,7 @@ import java.util.jar.JarInputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipEntry
 
-internal object CpkLoaderV1 {
+internal object CpkLoaderV1 : CpkLoader {
     private val logger = loggerFor<CpkLoaderV1>()
 
     private const val CPK_TYPE = "Corda-CPK-Type"
@@ -294,9 +295,9 @@ internal object CpkLoaderV1 {
         return ctx
     }
 
-    fun loadCPK(source: InputStream, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean, cpkFileName: String?) =
+    override fun loadCPK(source: InputStream, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean, cpkFileName: String?) =
         createContext(source, cacheDir, cpkLocation, verifySignature, cpkFileName).buildCpk()
 
-    fun loadMetadata(source: InputStream, cpkLocation: String?, verifySignature: Boolean) =
+    override fun loadMetadata(source: InputStream, cpkLocation: String?, verifySignature: Boolean) =
         createContext(source, null, cpkLocation, verifySignature, null).buildMetadata()
 }
