@@ -77,7 +77,14 @@ class PostgresDbSetup: DbSetup {
             .getConnection(DB_SUPERUSER_URL)
             .use { connection ->
                 connection.createStatement().execute(
-                    "ALTER ROLE \"$DB_ADMIN\" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;")
+                    // NOTE: this is different to the cli as this is set up to be using the official postgres image
+                    //   instead of the Bitnami. The official image doesn't already have the "user" user.
+                    """
+                        CREATE USER "$DB_ADMIN" WITH ENCRYPTED PASSWORD '$DB_ADMIN_PASSWORD';
+                        ALTER ROLE "$DB_ADMIN" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
+                        ALTER DATABASE "$DB_NAME" OWNER TO "$DB_ADMIN";
+                        ALTER SCHEMA public OWNER TO "$DB_ADMIN";
+                    """.trimIndent())
             }
     }
 
