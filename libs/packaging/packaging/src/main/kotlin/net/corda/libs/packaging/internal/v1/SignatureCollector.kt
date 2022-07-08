@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.internal
+package net.corda.libs.packaging.internal.v1
 
 import java.security.CodeSigner
 import java.security.cert.Certificate
