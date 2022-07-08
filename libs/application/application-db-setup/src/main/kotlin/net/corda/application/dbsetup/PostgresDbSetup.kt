@@ -97,6 +97,7 @@ class PostgresDbSetup: DbSetup {
                     val schemaMigrator = LiquibaseSchemaMigratorImpl()
                     if (schema != null) {
                         createDbSchema(schema)
+                        connection.prepareStatement("SET search_path TO $schema;").execute()
                         schemaMigrator.updateDb(connection, dbChange, schema)
                     } else {
                         schemaMigrator.updateDb(connection, dbChange)
