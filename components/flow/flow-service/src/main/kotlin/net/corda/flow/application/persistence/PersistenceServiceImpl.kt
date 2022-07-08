@@ -54,10 +54,7 @@ class PersistenceServiceImpl @Activate constructor(
         val received = fiber.suspend(request)
 
         val deserialized = received?.let {
-            deserializeReceivedPayload(
-                it.array(),
-                ArrayList::class.java
-            )
+            deserializeReceivedPayload(it.array(), List::class.java)
         }
         if (deserialized != null) {
             @Suppress("Unchecked_cast")

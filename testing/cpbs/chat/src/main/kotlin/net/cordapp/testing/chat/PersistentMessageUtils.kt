@@ -29,9 +29,18 @@ fun readAndClear(
 ): ReceivedChatMessages {
     // Find the last message from this sender
     // TODO race condition: if readAndClear is called concurrently, each invocation could return the same message
-    return ReceivedChatMessages(persistenceService.find(IncomingChatMessage::class.java, sender)?.let { lastMessage ->
+    return ReceivedChatMessages(persistenceService.find(IncomingChatMessage::class.java, sender)?.let { message ->
         // TODO race condition: the message being removed may no longer exist if readAndClear was called concurrently
-        persistenceService.remove(lastMessage)
-        listOf(lastMessage)
+        persistenceService.remove(message)
+        listOf(message)
     } ?: emptyList())
+}
+
+@Suspendable
+fun readAllAndClear(persistenceService: PersistenceService): ReceivedChatMessages {
+    // TODO race condition: the message being removed may no longer exist if readAndClear was called concurrently
+    return persistenceService.findAll(IncomingChatMessage::class.java)
+        .onEach { message -> persistenceService.remove(message) }.let {
+            ReceivedChatMessages(it)
+        }
 }
