@@ -8,11 +8,11 @@ import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.exceptions.FlowTransientException
-import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.libs.configuration.SmartConfig
@@ -75,13 +75,23 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             exception
         )
 
+        val records = try {
+            val status = flowMessageFactory.createFlowRetryingStatusMessage(exception.getFlowContext().checkpoint)
+            listOf(
+                flowRecordFactory.createFlowStatusRecord(status)
+            )
+        } catch (e: IllegalStateException) {
+            // Most transient failures should happen after a flow has been initialised. However, it is possible for
+            // initialisation to have not yet happened at the point the failure is hit if it's a session init message
+            // and something goes wrong in trying to retrieve the sandbox. In this case we cannot update the status
+            // correctly.
+            listOf()
+        }
+
+        // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
+        // but before the first checkpoint has been recorded.
         flowCheckpoint.rollback()
         flowCheckpoint.markForRetry(context.inputEvent, exception)
-
-        val status = flowMessageFactory.createFlowRetryingStatusMessage(exception.getFlowContext().checkpoint)
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status)
-        )
 
         return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
     }

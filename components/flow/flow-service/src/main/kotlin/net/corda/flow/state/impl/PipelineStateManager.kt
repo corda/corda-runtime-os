@@ -37,7 +37,7 @@ class PipelineStateManager(
 
     val retryEvent: FlowEvent
         get() = state.retryState?.failedEvent
-            ?: throw IllegalStateException("Attempt to access null retry state while. inRetryState must be tested before accessing retry fields")
+            ?: throw IllegalStateException("Attempt to access null retry state. inRetryState must be tested before accessing retry fields")
 
     val retryCount: Int
         get() = state.retryState?.retryCount ?: -1

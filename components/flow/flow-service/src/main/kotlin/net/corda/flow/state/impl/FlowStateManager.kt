@@ -18,9 +18,10 @@ import java.nio.ByteBuffer
 class FlowStateManager(private val initialState: FlowState) {
 
     private var state = FlowState.newBuilder(initialState).build()
-    var stack = FlowStackImpl(initialState.flowStackItems)
 
-    private var sessionMap = validateAndCreateSessionMap(state.sessions)
+    private var sessionMap = validateAndCreateSessionMap(initialState.sessions)
+
+    var stack = FlowStackImpl(state.flowStackItems)
 
     val flowKey : FlowKey = state.flowStartContext.statusKey
 
@@ -47,11 +48,23 @@ class FlowStateManager(private val initialState: FlowState) {
         sessionMap[sessionState.sessionId] = sessionState
     }
 
-    var persistenceState : PersistenceState? = state.persistenceState
+    var persistenceState : PersistenceState?
+        get() = state.persistenceState
+        set(value) {
+            state.persistenceState = value
+        }
 
-    var waitingFor : WaitingFor? = state.waitingFor
+    var waitingFor : WaitingFor?
+        get() = state.waitingFor
+        set(value) {
+            state.waitingFor = value
+        }
 
-    var suspendedOn : String? = state.suspendedOn
+    var suspendedOn : String?
+        get() = state.suspendedOn
+        set(value) {
+            state.suspendedOn = value
+        }
 
     fun rollback() {
         state = FlowState.newBuilder(initialState).build()

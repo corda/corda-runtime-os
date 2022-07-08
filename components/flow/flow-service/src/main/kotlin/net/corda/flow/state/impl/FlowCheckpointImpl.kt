@@ -33,6 +33,8 @@ class FlowCheckpointImpl(
 
     private var deleted = false
 
+    private val flowInitialisedOnCreation = checkpoint.flowState != null
+
     override val flowId: String
         get() = checkpoint.flowId
 
@@ -79,7 +81,13 @@ class FlowCheckpointImpl(
     override val sessions: List<SessionState>
         get() = flowStateManager?.sessions ?: throw IllegalStateException("Attempted to access sessions before the flow has been initialised.")
 
-    override var persistenceState: PersistenceState? = flowStateManager?.persistenceState
+    override var persistenceState: PersistenceState?
+        get() = flowStateManager?.persistenceState
+        set(value) {
+            checkNotNull(flowStateManager) {
+                "Attempt to set the flow state before it has been created"
+            }.persistenceState = value
+        }
 
     override val doesExist: Boolean
         get() = flowStateManager != null && !deleted
@@ -88,7 +96,7 @@ class FlowCheckpointImpl(
         get() = pipelineStateManager.retryCount
 
     override val inRetryState: Boolean
-        get() = doesExist && pipelineStateManager.retryState != null
+        get() = pipelineStateManager.retryState != null
 
     override val retryEvent: FlowEvent
         get() = pipelineStateManager.retryEvent
@@ -136,7 +144,13 @@ class FlowCheckpointImpl(
     }
 
     override fun rollback() {
-        flowStateManager?.rollback()
+        if (flowInitialisedOnCreation) {
+            flowStateManager?.rollback()
+        } else {
+            // The flow was initialised as part of processing this event, so on rollback the flow state should be
+            // removed. Next time the event is processed, the flow data will be recreated.
+            flowStateManager = null
+        }
     }
 
     override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {

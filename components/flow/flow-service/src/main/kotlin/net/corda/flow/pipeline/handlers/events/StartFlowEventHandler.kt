@@ -12,11 +12,9 @@ class StartFlowEventHandler : FlowEventHandler<StartFlow> {
     override val type = StartFlow::class.java
 
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
-        if (!context.checkpoint.inRetryState) {
-            context.checkpoint.initFlowState(
-                context.inputEventPayload.startContext,
-            )
-        }
+        context.checkpoint.initFlowState(
+            context.inputEventPayload.startContext
+        )
         context.checkpoint.waitingFor =  WaitingFor(WaitingForStartFlow)
         return context
     }
