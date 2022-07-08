@@ -43,7 +43,6 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
-
             - /bin/bash
             - -c
           args:

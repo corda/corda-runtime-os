@@ -104,7 +104,6 @@ kafka:
     mechanism: "SCRAM-SHA-256"
     # -- enable/disable SASL for client connection to Kafka 
     enabled: false
-  # Specifies whether the Kafka cluster to connect to is deployed in Confluent Cloud or not
 
 # Configuration for the bootstrapper
 bootstrap:
