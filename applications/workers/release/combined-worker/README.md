@@ -30,6 +30,16 @@ Run the worker using:
 ```bash
 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
+  --instanceId=0 -mbus.busType=DATABASE
+  -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
+  -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
+```
+
+Or if you want to connect to "real" KAFKA (see below):
+```bash
+java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+  ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
   --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
   -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
