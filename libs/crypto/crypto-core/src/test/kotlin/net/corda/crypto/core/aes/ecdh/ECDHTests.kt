@@ -1,6 +1,5 @@
 package net.corda.crypto.core.aes.ecdh
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
@@ -22,7 +21,7 @@ class ECDHTests {
     private val verifier: SignatureVerificationService = SignatureVerificationServiceImpl(schemeMetadata, digestService)
     private val factory: ECDHFactory = ECDHFactoryImpl(schemeMetadata)
     private val mgmStableKeyPair = generateStableKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-    private val params = ECDHAgreementParams(
+    private val params = AgreementParams(
         salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
             schemeMetadata.secureRandom.nextBytes(this)
         },

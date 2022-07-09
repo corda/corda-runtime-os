@@ -1,9 +1,9 @@
 package net.corda.crypto.core.aes.ecdh.impl.protocol
 
 import net.corda.crypto.core.Encryptor
-import net.corda.crypto.core.aes.ecdh.ECDHAgreementParams
+import net.corda.crypto.core.aes.ecdh.AgreementParams
 import net.corda.crypto.core.aes.ecdh.ECDHFactory.Companion.HKDF_INITIAL_KEY_INFO
-import net.corda.crypto.core.aes.ecdh.EphemeralKeyPair
+import net.corda.crypto.core.aes.ecdh.ECDHKeyPair
 import net.corda.crypto.core.aes.ecdh.asBytes
 import net.corda.crypto.core.aes.ecdh.fromBytes
 import net.corda.crypto.core.aes.ecdh.protocol.InitiatingHandshake
@@ -28,14 +28,14 @@ class InitiatorImpl(
     private var _state: InitiatorState = InitiatorState.NEW
 
     @Volatile
-    private var _params: ECDHAgreementParams? = null
+    private var _params: AgreementParams? = null
 
     @Volatile
     private var _encryptor: Encryptor? = null
 
     private val ephemeralScheme: KeyScheme = schemeMetadata.findKeyScheme(otherStablePublicKey)
 
-    private val ephemeralKeyPair: EphemeralKeyPair = EphemeralKeyPairImpl.create(
+    private val ECDHKeyPair: ECDHKeyPair = EphemeralKeyPairImpl.create(
         schemeMetadata,
         ephemeralScheme
     )
@@ -45,7 +45,7 @@ class InitiatorImpl(
     override val encryptor: Encryptor get() = _encryptor
         ?: throw IllegalStateException("The initiator must be in '${InitiatorState.READY}' state.")
 
-    override fun createInitiatingHandshake(params: ECDHAgreementParams): InitiatingHandshake = lock.withLock {
+    override fun createInitiatingHandshake(params: AgreementParams): InitiatingHandshake = lock.withLock {
         if(_state != InitiatorState.NEW) {
             throw IllegalStateException("The initiator must be in '${InitiatorState.NEW}' state.")
         }
@@ -53,7 +53,7 @@ class InitiatorImpl(
         _params = params
         InitiatingHandshake(
             params = handshakeEncryptor().encrypt(params.asBytes()),
-            ephemeralPublicKey = schemeMetadata.encodeAsByteArray(ephemeralKeyPair.publicKey)
+            ephemeralPublicKey = schemeMetadata.encodeAsByteArray(ECDHKeyPair.publicKey)
         )
     }
 
@@ -62,7 +62,7 @@ class InitiatorImpl(
             throw IllegalStateException("The initiator must be in '${InitiatorState.INIT}' state.")
         }
         val reply = handshakeEncryptor().decrypt(replyBytes).fromBytes<ReplyHandshake>()
-        _encryptor = ephemeralKeyPair.deriveSharedEncryptor(
+        _encryptor = ECDHKeyPair.deriveEncryptor(
             otherEphemeralPublicKey = schemeMetadata.decodePublicKey(reply.ephemeralPublicKey),
             params = _params!!,
             info = info
@@ -70,7 +70,7 @@ class InitiatorImpl(
         _state = InitiatorState.READY
     }
 
-    private fun handshakeEncryptor() = ephemeralKeyPair.deriveSharedEncryptor(
+    private fun handshakeEncryptor() = ECDHKeyPair.deriveEncryptor(
         otherEphemeralPublicKey = otherStablePublicKey,
         params = _params!!,
         info = HKDF_INITIAL_KEY_INFO

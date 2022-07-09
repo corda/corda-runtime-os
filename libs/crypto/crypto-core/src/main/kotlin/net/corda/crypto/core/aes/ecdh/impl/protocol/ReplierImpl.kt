@@ -1,7 +1,7 @@
 package net.corda.crypto.core.aes.ecdh.impl.protocol
 
 import net.corda.crypto.core.Encryptor
-import net.corda.crypto.core.aes.ecdh.EphemeralKeyPair
+import net.corda.crypto.core.aes.ecdh.ECDHKeyPair
 import net.corda.crypto.core.aes.ecdh.protocol.InitiatingHandshake
 import net.corda.crypto.core.aes.ecdh.protocol.ReplyHandshake
 import net.corda.crypto.core.aes.ecdh.impl.EphemeralKeyPairImpl
@@ -28,7 +28,7 @@ class ReplierImpl(
 
     private val ephemeralScheme: KeyScheme = schemeMetadata.findKeyScheme(stablePublicKey)
 
-    private val ephemeralKeyPair: EphemeralKeyPair = EphemeralKeyPairImpl.create(schemeMetadata, ephemeralScheme)
+    private val ECDHKeyPair: ECDHKeyPair = EphemeralKeyPairImpl.create(schemeMetadata, ephemeralScheme)
 
     override val state: ReplierState get() = _state
 
@@ -39,14 +39,14 @@ class ReplierImpl(
         if(_state != ReplierState.NEW) {
             throw IllegalStateException("The initiator must be in '${ReplierState.NEW}' state.")
         }
-        _encryptor = ephemeralKeyPair.deriveSharedEncryptor(
+        _encryptor = ECDHKeyPair.deriveEncryptor(
             otherEphemeralPublicKey = schemeMetadata.decodePublicKey(handshake.ephemeralPublicKey),
             params = handshake.params,
             info = info
         )
         _state = ReplierState.READY
         ReplyHandshake(
-            ephemeralPublicKey = schemeMetadata.encodeAsByteArray(ephemeralKeyPair.publicKey),
+            ephemeralPublicKey = schemeMetadata.encodeAsByteArray(ECDHKeyPair.publicKey),
             signature = ByteArray(0) // TODO: sign
         )
     }

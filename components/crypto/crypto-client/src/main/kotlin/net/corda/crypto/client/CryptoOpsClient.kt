@@ -195,4 +195,14 @@ interface CryptoOpsClient : Lifecycle {
         masterKeyAlias: String,
         context: Map<String, String>
     )
+
+    /**
+     * Derive ECDH shared secret
+     */
+    fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): ByteArray
 }

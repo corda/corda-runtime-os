@@ -1,15 +1,9 @@
-package net.corda.crypto.core.aes
-
-import java.security.SecureRandom
+package net.corda.crypto.ecdh
 
 const val GCM_NONCE_LENGTH = 12 // in bytes
 const val GCM_TAG_LENGTH = 16 // in bytes
 const val GCM_TRANSFORMATION = "AES/GCM/NoPadding"
-const val AES_DERIVE_ITERATION_COUNT = 65536
 const val AES_KEY_ALGORITHM = "AES"
-const val AES_KEY_SIZE = 256 // in bits
 const val AES_KEY_SIZE_BYTES = 32
 const val AES_PROVIDER = "SunJCE"
 const val ECDH_KEY_AGREEMENT_ALGORITHM = "ECDH"
-
-internal val secureRandom = SecureRandom()

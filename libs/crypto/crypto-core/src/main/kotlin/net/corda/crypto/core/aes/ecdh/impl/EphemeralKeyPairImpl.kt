@@ -1,12 +1,12 @@
 package net.corda.crypto.core.aes.ecdh.impl
 
-import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.aes.AES_KEY_ALGORITHM
-import net.corda.crypto.core.aes.AesEncryptor
-import net.corda.crypto.core.aes.AesKey
+import net.corda.crypto.core.aes.AES_KEY_SIZE_BYTES
 import net.corda.crypto.core.aes.ECDH_KEY_AGREEMENT_ALGORITHM
-import net.corda.crypto.core.aes.ecdh.ECDHAgreementParams
-import net.corda.crypto.core.aes.ecdh.EphemeralKeyPair
+import net.corda.crypto.core.aes.GCM_NONCE_LENGTH
+import net.corda.crypto.core.aes.ecdh.AesGcmEncryptor
+import net.corda.crypto.core.aes.ecdh.AgreementParams
+import net.corda.crypto.core.aes.ecdh.ECDHKeyPair
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
@@ -22,7 +22,7 @@ import javax.crypto.spec.SecretKeySpec
 class EphemeralKeyPairImpl private constructor(
     private val provider: Provider,
     private val keyPair: KeyPair
-) : EphemeralKeyPair {
+) : ECDHKeyPair {
     companion object {
         fun create(
             schemeMetadata: CipherSchemeMetadata,
@@ -55,29 +55,26 @@ class EphemeralKeyPairImpl private constructor(
 
     override val publicKey: PublicKey get() = keyPair.public
 
-    override fun deriveSharedEncryptor(
+    override fun deriveEncryptor(
         otherEphemeralPublicKey: PublicKey,
-        params: ECDHAgreementParams,
+        params: AgreementParams,
         info: ByteArray
-    ): Encryptor {
+    ): AesGcmEncryptor {
         require(params.salt.isNotEmpty()) {
             "The salt must not be empty"
         }
         require(info.isNotEmpty()) {
             "The info must not be empty"
         }
-        require(params.length > 0) {
-            "The length must be greater than 0"
-        }
         val ikm = KeyAgreement.getInstance(ECDH_KEY_AGREEMENT_ALGORITHM, provider).apply {
             init(keyPair.private)
             doPhase(otherEphemeralPublicKey, true)
         }.generateSecret()
-        val okm = ByteArray(params.length)
+        val okm = ByteArray(AES_KEY_SIZE_BYTES + GCM_NONCE_LENGTH)
         HKDFBytesGenerator(DigestFactory.getDigest(params.digestName)).apply {
             init(HKDFParameters(ikm, params.salt, info))
-            generateBytes(okm, 0, params.length)
+            generateBytes(okm, 0, okm.size)
         }
-        return AesEncryptor(AesKey(SecretKeySpec(okm, AES_KEY_ALGORITHM)))
+        return AesGcmEncryptor(SecretKeySpec(okm, AES_KEY_ALGORITHM))
     }
 }
