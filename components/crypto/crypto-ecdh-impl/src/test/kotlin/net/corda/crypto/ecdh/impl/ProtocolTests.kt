@@ -1,19 +1,19 @@
 package net.corda.crypto.ecdh.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.ecdh.ECDH_KEY_AGREEMENT_ALGORITHM
-import net.corda.crypto.ecdh.EphemeralKeyPairProvider
-import net.corda.crypto.ecdh.StableKeyPairProvider
+import net.corda.crypto.ecdh.impl.infra.TestCryptoOpsClient
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.sha256Bytes
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -21,37 +21,47 @@ import org.mockito.kotlin.mock
 import java.security.KeyPair
 import java.util.UUID
 import javax.crypto.KeyAgreement
+import kotlin.test.assertEquals
 
 
 class ProtocolTests {
-    private val digestName = "SHA-256"
-    private lateinit var tenantId: String
-    private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
-    private lateinit var schemeMetadata: CipherSchemeMetadata
-    private lateinit var cryptoOpsClient: CryptoOpsClient
-    private lateinit var ephemeralProvider: EphemeralKeyPairProvider
-    private lateinit var stableProvider: StableKeyPairProvider
-    private lateinit var mgmStableKeyPair: KeyPair
+    companion object {
+        private val digestName = "SHA-256"
+        private lateinit var tenantId: String
+        private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
+        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var cryptoOpsClient: TestCryptoOpsClient
+        private lateinit var ephemeralProvider: EphemeralKeyPairProviderImpl
+        private lateinit var stableProvider: StableKeyPairProviderImpl
+        private lateinit var mgmStableKeyPair: KeyPair
 
-    @BeforeEach
-    fun setup() {
-        tenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
-        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        schemeMetadata = CipherSchemeMetadataImpl()
-        mgmStableKeyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        cryptoOpsClient = mock {
-            on { deriveSharedSecret(any(), any(), any(), any()) } doAnswer {
-                KeyAgreement.getInstance(
-                    ECDH_KEY_AGREEMENT_ALGORITHM,
-                    schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(mgmStableKeyPair.public).providerName)
-                ).apply {
-                    init(mgmStableKeyPair.private)
-                    doPhase(it.getArgument(2), true)
-                }.generateSecret()
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            tenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
+            coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+            schemeMetadata = CipherSchemeMetadataImpl()
+            mgmStableKeyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+            cryptoOpsClient = TestCryptoOpsClient(
+                coordinatorFactory,
+                mock {
+                    on { deriveSharedSecret(any(), any(), any(), any()) } doAnswer {
+                        KeyAgreement.getInstance(
+                            ECDH_KEY_AGREEMENT_ALGORITHM,
+                            schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(mgmStableKeyPair.public).providerName)
+                        ).apply {
+                            init(mgmStableKeyPair.private)
+                            doPhase(it.getArgument(2), true)
+                        }.generateSecret()
+                    }
+                }
+            ).also { it.start() }
+            ephemeralProvider = EphemeralKeyPairProviderImpl(schemeMetadata)
+            stableProvider = StableKeyPairProviderImpl(coordinatorFactory, cryptoOpsClient).also { it.start() }
+            eventually {
+                assertEquals(LifecycleStatus.UP, stableProvider.lifecycleCoordinator.status)
             }
         }
-        ephemeralProvider = EphemeralKeyPairProviderImpl(schemeMetadata)
-        stableProvider = StableKeyPairProviderImpl(coordinatorFactory, cryptoOpsClient)
     }
 
     private fun generateSalt() = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
