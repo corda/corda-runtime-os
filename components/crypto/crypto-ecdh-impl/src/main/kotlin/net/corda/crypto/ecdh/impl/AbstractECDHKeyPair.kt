@@ -26,6 +26,8 @@ abstract class AbstractECDHKeyPair(
     override val digestName: String
 ) : ECDHKeyPair {
     companion object {
+        private val nonceCounter = AtomicInteger(0)
+
         private val pool = ConcurrentLinkedQueue<Cipher>()
 
         private fun withGcmCipherInstance(block: Cipher.() -> ByteArray): ByteArray {
@@ -36,10 +38,7 @@ abstract class AbstractECDHKeyPair(
             } finally {
                 pool.offer(cipher)
             }
-        }
-    }
-
-    private val nonceCounter = AtomicInteger(0)
+        }    }
 
     final override fun encrypt(
         salt: ByteArray,
@@ -78,11 +77,12 @@ abstract class AbstractECDHKeyPair(
                 aad ?: ByteArray(0), otherPublicKey.encoded, publicKey.encoded
             )
         )
+        val cipherTextAndTag = cipherText.sliceArray(Int.SIZE_BYTES until cipherText.size)
         return withGcmCipherInstance {
             val spec = GCMParameterSpec(GCM_TAG_LENGTH * 8, data.nonce)
             init(Cipher.DECRYPT_MODE, data.key, spec)
             updateAAD(data.aad)
-            doFinal(cipherText)
+            doFinal(cipherTextAndTag)
         }
     }
 
