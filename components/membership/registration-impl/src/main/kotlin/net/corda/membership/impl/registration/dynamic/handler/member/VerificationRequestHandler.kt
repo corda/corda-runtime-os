@@ -39,7 +39,7 @@ class VerificationRequestHandler(
         }
         val responseTimestamp = clock.instant()
         val mgm = request.source
-        val member = request.source
+        val member = request.destination
         val authenticatedMessageHeader = AuthenticatedMessageHeader(
             // we need to switch here the source and destination
             mgm,
