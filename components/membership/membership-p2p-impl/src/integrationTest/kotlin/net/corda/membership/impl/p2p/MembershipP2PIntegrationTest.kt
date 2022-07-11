@@ -178,7 +178,7 @@ class MembershipP2PIntegrationTest {
                     Record(
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(messagingConf, 0, schemaVersion)
+                        Configuration(messagingConf, messagingConf, 0, schemaVersion)
                     )
                 )
             )
