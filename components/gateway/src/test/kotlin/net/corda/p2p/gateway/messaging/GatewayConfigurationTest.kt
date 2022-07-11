@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
 import net.corda.v5.base.util.hours
-import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
