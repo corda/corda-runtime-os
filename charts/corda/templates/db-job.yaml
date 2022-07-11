@@ -57,6 +57,8 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
+            - name: TEST
+              value: TEST
             - name: SALT
               valueFrom:
                 secretKeyRef:
