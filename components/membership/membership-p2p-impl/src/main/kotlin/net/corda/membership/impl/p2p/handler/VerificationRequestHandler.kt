@@ -35,5 +35,4 @@ internal class VerificationRequestHandler(
             )
         )
     }
-
 }

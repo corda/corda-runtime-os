@@ -10,7 +10,6 @@ import net.corda.schema.registry.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
-import java.util.*
 
 internal class RegistrationRequestHandler(
     private val avroSchemaRegistry: AvroSchemaRegistry
