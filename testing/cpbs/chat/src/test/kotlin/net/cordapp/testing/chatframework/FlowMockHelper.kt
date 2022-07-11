@@ -18,27 +18,27 @@ import java.lang.reflect.Field
 /**
  * A Helper class which injects Mockito mock services into Flows in order to unit test Flows.
  * To construct a FlowMockHelper in Kotlin use the DSL builder as follows:
- * <pre>
+ * ```kotlin
  *     val flowMockHelper = FlowMockHelper {
  *         createMockService<FlowMessaging>()
  *         createMockService<FlowEngine>()
  *         createMockService<JsonMarshallingService>()
  *     }
- * </pre>
+ * ```
  * Note that each mockService<>() declaration returns that mock service such that it can be further customised inline
  * during the building. For example:
- * <pre>
+ * ```kotlin
  *     mockService<FlowEngine>().withVirtualNodeName(FROM_X500_NAME)
- * </pre>
+ * ```
  *
  * To construct a FlowMockHelper in Java do something like the following:
- * <pre>
+ * ```java
  *     FlowMockHelper outgoingFlowMockHelper = FlowMockHelper.fromInjectableServices(
  *             new InjectableMockServices()
  *                     .createMockService(FlowMessaging.class)
  *                     .createMockService(JsonMarshallingService.class)
  *                     .createMockService(FlowEngine.class));
- * </pre>
+ * ```
  *
  * In either language createFlow()/createFlow<>() can then be called to instantiate a Flow with the necessary mock
  * services injected.
@@ -138,18 +138,18 @@ class FlowMockHelper(init: InjectableMockServices.() -> Unit) {
 /**
  * Instantiates a Flow of the provided type and injects all services of this FlowMockHelper into it.
  * Only one Flow can be bound to one FlowMockHelper.
- * <pre>
+ * ```kotlin
  *     val outgoingChatFlow = outgoingFlowMockHelper.createFlow<ChatOutgoingFlow>()
- * </pre>
+ * ```
  */
 inline fun <reified T : Flow> FlowMockHelper.createFlow() = createFlow(T::class.java)
 
 /**
  * Returns a service mock from a FlowMockHelper in order to set expectations on it. For example:
- * <pre>
+ * ```kotlin
  *     whenever(readerFlowMockHelper.serviceMock<JsonMarshallingService>().format(expectedMessages))
  *         .thenReturn(jsonReturn)
- * </pre>
+ * ```
  */
 inline fun <reified T : Any> FlowMockHelper.getMockService(): T {
     return this.getMockService(T::class.java) as T
@@ -183,13 +183,13 @@ inline fun <reified T : Any> InjectableMockServices.createMockService(): T = moc
  * This method allows the injection of RPC parameters to a Flow without having to test/mock json masrshalling
  * whilst ensuring the Flow implementation under test is using the correct JsonMarshallingService itself.
  * Typical use would be to pass the output of this method directly to the call() invocation on a Flow:
- * <pre>
+ * ```kotlin
  *     flow.call(
  *         flowMockHelper.rpcRequestGenerator(
  *             OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME)
  *         )
  *     }
- * </pre>
+ * ```
  * @return A mock RPCRequestData set up to return the correct object when queried for it
  */
 inline fun <reified T> FlowMockHelper.rpcRequestGenerator(parameterObject: T) = mock<RPCRequestData>()
