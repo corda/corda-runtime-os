@@ -23,7 +23,7 @@ class CreateConnect : Runnable {
         names = ["-w", "--wait"],
         description = ["Time to wait for Kafka operations to complete in seconds"]
     )
-    var wait: Long = 30
+    var wait: Long = 60
 
     @CommandLine.Option(
         names = ["-d", "--delete"],
@@ -40,12 +40,14 @@ class CreateConnect : Runnable {
         val topicConfigs = create!!.getTopicConfigs().map { it.copy(name = create!!.getTopicName(it)) }
 
         try {
-            val existingTopicNames = client.listTopics().names().get(wait, TimeUnit.SECONDS)
-                .filter { it.startsWith(create!!.topic!!.namePrefix) }
+            val existingTopicNames = client.existingTopicNamesWithPrefix(create!!.topic!!.namePrefix, wait)
 
             val topicConfigsToProcess = if (delete) {
-                println("Deleting existing topics: ${existingTopicNames.joinToString()}")
-                client.deleteTopics(existingTopicNames).all().get(wait, TimeUnit.SECONDS)
+                if (existingTopicNames.isNotEmpty()) {
+                    println("Deleting existing topics: ${existingTopicNames.joinToString()}")
+                    client.deleteTopics(existingTopicNames).all().get(wait, TimeUnit.SECONDS)
+                    client.waitForTopicDeletion(create!!.topic!!.namePrefix, wait)
+                }
                 topicConfigs
             } else {
                 val existingTopicsToIgnore = topicConfigs.map { it.name }.filter { existingTopicNames.contains(it) }
