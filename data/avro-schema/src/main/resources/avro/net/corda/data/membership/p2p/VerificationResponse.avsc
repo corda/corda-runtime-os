@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "VerificationResponse",
+  "namespace": "net.corda.data.membership.p2p",
+  "doc": "Response to the verification request coming from the MGM side.",
+  "fields": [
+    {
+      "name": "registrationId",
+      "doc": "ID of the registration we can associate the verification response with.",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "payload",
+      "doc": "Response's payload.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

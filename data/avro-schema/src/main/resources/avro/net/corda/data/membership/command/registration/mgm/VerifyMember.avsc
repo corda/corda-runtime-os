@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "VerifyMember",
-  "namespace": "net.corda.data.membership.command.registration",
+  "namespace": "net.corda.data.membership.command.registration.mgm",
   "doc": "Command issued when a member registration request has been validated and the MGM must communication with the member for verify information provided.",
   "fields": [
   ]

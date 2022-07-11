@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "DeclineRegistration",
-  "namespace": "net.corda.data.membership.command.registration",
+  "namespace": "net.corda.data.membership.command.registration.mgm",
   "doc": "Command issued when a member registration has been declined and needs to be updated to declined status.",
   "fields": [
     {

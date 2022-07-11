@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "ProcessMemberVerification",
-  "namespace": "net.corda.data.membership.command.registration",
+  "name": "ProcessMemberVerificationResponse",
+  "namespace": "net.corda.data.membership.command.registration.mgm",
   "doc": "Command issued when a member responds to the member verification request send to the member by the MGM during registration.",
   "fields": [
   ]

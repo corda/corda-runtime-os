@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "ApproveRegistration",
-  "namespace": "net.corda.data.membership.command.registration",
+  "namespace": "net.corda.data.membership.command.registration.mgm",
   "doc": "Command issued when a member registration has been fully approved and needs to be updated to approved status.",
   "fields": [
   ]

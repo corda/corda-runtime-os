@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ProcessMemberVerificationRequest",
+  "namespace": "net.corda.data.membership.command.registration.member",
+  "doc": "Command issued when a member starts to process the member verification request sent by the MGM.",
+  "fields": [
+    {
+      "name": "destination",
+      "doc": "Holding identity of the member who needs to be verified.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "source",
+      "doc": "Holding identity of the MGM.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "verificationRequest",
+      "doc" : "Request from an MGM to verify a member's data supplied in the registration request.",
+      "type": "net.corda.data.membership.p2p.VerificationRequest"
+    }
+  ]
+}
