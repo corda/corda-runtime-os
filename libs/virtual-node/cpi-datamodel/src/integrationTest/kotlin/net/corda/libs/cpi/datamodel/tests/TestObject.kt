@@ -6,6 +6,8 @@ import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import java.util.UUID
 import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
+import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
 
 object TestObject {
     fun randomChecksumString(): String {
@@ -65,14 +67,14 @@ object TestObject {
         val id = UUID.randomUUID().toString()
         val cpiName = "test-cpi-$id"
         val cpiVersion = "1.0"
-        val cpiSSH = "test-cpi-hash"
+        val cpiSSH = SecureHash("SHA1","test-cpi-hash".toByteArray()).toString()
         val cpkList: List<CpiCpkEntity> = (1..numberOfCpks).map {
             val cpkFileChecksum = randomChecksumString()
             val cpkName = UUID.randomUUID().toString()
             val cpkId = "test-cpk-$cpkName.cpk"
             createCpiCpkEntity(
                 cpiName, cpiVersion, cpiSSH,
-                cpkId, "1.0", "test-cpk-hash",
+                cpkId, "1.0", SecureHash("SHA1", "test-cpk-hash".toByteArray()).toString(),
                 "test-cpi-$id.cpk", cpkFileChecksum
             )
         }
