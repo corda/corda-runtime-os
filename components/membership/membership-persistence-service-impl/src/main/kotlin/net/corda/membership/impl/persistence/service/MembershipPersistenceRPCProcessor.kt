@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.PersistGroupPolicyRequest
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -10,6 +11,7 @@ import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.membership.impl.persistence.service.handler.PersistGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandler
@@ -50,6 +52,7 @@ internal class MembershipPersistenceRPCProcessor(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
         PersistMemberInfo::class.java to { PersistMemberInfoHandler(persistenceHandlerServices) },
         QueryMemberInfo::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
+        PersistGroupPolicyRequest::class.java to { PersistGroupPolicyHandler(persistenceHandlerServices) },
     )
 
     override fun onNext(
@@ -81,7 +84,7 @@ internal class MembershipPersistenceRPCProcessor(
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
         val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
             "No handler has been registered to handle the persistence request received." +
-                    "Request received: [$requestClass]"
+                "Request received: [$requestClass]"
         )
         return factory.invoke() as PersistenceHandler<Any, Any>
     }

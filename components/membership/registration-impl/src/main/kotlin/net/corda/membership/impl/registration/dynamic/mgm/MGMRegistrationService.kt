@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -43,8 +44,10 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -70,6 +73,8 @@ class MGMRegistrationService @Activate constructor(
     val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
     val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -82,17 +87,19 @@ class MGMRegistrationService @Activate constructor(
         val logger: Logger = contextLogger()
         const val errorMessageTemplate = "No %s was provided."
 
+        const val GROUP_POLICY_PREFIX = "corda.group"
+        const val GROUP_POLICY_PREFIX_WITH_DOT = "$GROUP_POLICY_PREFIX."
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
         const val ECDH_KEY_ID = "$ECDH_KEY.id"
-        const val REGISTRATION_PROTOCOL = "corda.group.protocol.registration"
-        const val SYNCHRONISATION_PROTOCOL = "corda.group.protocol.synchronisation"
-        const val P2P_MODE = "corda.group.protocol.p2p.mode"
-        const val SESSION_KEY_POLICY = "corda.group.key.session.policy"
-        const val PKI_SESSION = "corda.group.pki.session"
-        const val PKI_TLS = "corda.group.pki.tls"
-        const val TRUSTSTORE_SESSION = "corda.group.truststore.session.%s"
-        const val TRUSTSTORE_TLS = "corda.group.truststore.tls.%s"
+        const val REGISTRATION_PROTOCOL = "$GROUP_POLICY_PREFIX.protocol.registration"
+        const val SYNCHRONISATION_PROTOCOL = "$GROUP_POLICY_PREFIX.protocol.synchronisation"
+        const val P2P_MODE = "$GROUP_POLICY_PREFIX.protocol.p2p.mode"
+        const val SESSION_KEY_POLICY = "$GROUP_POLICY_PREFIX.key.session.policy"
+        const val PKI_SESSION = "$GROUP_POLICY_PREFIX.pki.session"
+        const val PKI_TLS = "$GROUP_POLICY_PREFIX.pki.tls"
+        const val TRUSTSTORE_SESSION = "$GROUP_POLICY_PREFIX.truststore.session.%s"
+        const val TRUSTSTORE_TLS = "$GROUP_POLICY_PREFIX.truststore.tls.%s"
         const val PLATFORM_VERSION_CONST = "5000"
         const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
@@ -207,6 +214,26 @@ class MGMRegistrationService @Activate constructor(
                     return MembershipRequestRegistrationResult(
                         MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
                         "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
+                    )
+                }
+
+                val groupPolicyMap = context.filterKeys {
+                    it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
+                }.mapKeys {
+                    it.key.removePrefix(GROUP_POLICY_PREFIX_WITH_DOT)
+                }
+                val groupPolicy = object :
+                    GroupPolicyProperties,
+                    LayeredPropertyMap by
+                    layeredPropertyMapFactory.createMap(groupPolicyMap){}
+                val groupPolicyPersistenceResult = membershipPersistenceClient.persistGroupPolicy(
+                    member,
+                    groupPolicy,
+                )
+                if (groupPolicyPersistenceResult is MembershipPersistenceResult.Failure) {
+                    return MembershipRequestRegistrationResult(
+                        MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                        "Registration failed, persistence error. Reason: ${groupPolicyPersistenceResult.errorMsg}"
                     )
                 }
 

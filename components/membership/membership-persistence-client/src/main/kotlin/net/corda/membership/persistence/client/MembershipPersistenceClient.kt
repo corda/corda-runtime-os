@@ -2,6 +2,7 @@ package net.corda.membership.persistence.client
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
@@ -26,6 +27,20 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceResult<Unit>
 
     /**
+     * Persist a new version of the group policy.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param groupPolicy The group policy.
+     *
+     * @return membership persistence result to indicate the result of the persistence operation.
+     *  In the case of success the payload will include the newly created version number.
+     */
+    fun persistGroupPolicy(
+        viewOwningIdentity: HoldingIdentity,
+        groupPolicy: GroupPolicyProperties,
+    ): MembershipPersistenceResult<Int>
+
+    /**
      * Persists a registration request record as viewed by a specific holding identity.
      * The registration request is updated if it already exists.
      *
@@ -40,4 +55,3 @@ interface MembershipPersistenceClient : Lifecycle {
         registrationRequest: RegistrationRequest
     ): MembershipPersistenceResult<Unit>
 }
-

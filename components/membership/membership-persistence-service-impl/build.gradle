@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:utilities')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:test-utilities')
 
@@ -48,6 +49,7 @@ dependencies {
     integrationTestImplementation project(':libs:messaging:topic-admin')
     integrationTestImplementation project(':libs:membership:membership-impl')
     integrationTestImplementation project(':testing:message-patterns')
+    integrationTestImplementation project(':libs:layered-property-map:layered-property-map-test-converter')
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"

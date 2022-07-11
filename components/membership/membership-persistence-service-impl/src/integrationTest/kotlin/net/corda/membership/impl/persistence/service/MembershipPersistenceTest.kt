@@ -18,6 +18,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -60,9 +61,11 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -148,6 +151,9 @@ class MembershipPersistenceTest {
         @InjectService(timeout = 5000)
         lateinit var virtualNodeReadService: TestVirtualNodeInfoReadService
 
+        @InjectService(timeout = 5000)
+        lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+
         /**
          * Wrapper class which allows the client to wait until the underlying DB message bus has been set up correctly with partitions required.
          * Without this the client often tries to send RPC requests before the service has set up the kafka topics required
@@ -161,6 +167,12 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfos)
             }
 
+            override fun persistGroupPolicy(
+                viewOwningIdentity: HoldingIdentity,
+                groupPolicy: GroupPolicyProperties,
+            ) = safeCall {
+                membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
+            }
 
             override fun persistRegistrationRequest(
                 viewOwningIdentity: HoldingIdentity,
@@ -345,6 +357,19 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
+    }
+    @Test
+    fun `persistGroupPolicy will increase the version every persistance`() {
+        val groupPolicy1 = object : LayeredPropertyMap by layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB")), GroupPolicyProperties {}
+        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1)
+        assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val version1 = (persisted1 as? MembershipPersistenceResult.Success<Int>)?.payload !!
+
+        val groupPolicy2 = object : LayeredPropertyMap by layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1")), GroupPolicyProperties {}
+        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2)
+        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val version2 = (persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload
+        assertThat(version2).isEqualTo(version1 + 1)
     }
 
     @Test
