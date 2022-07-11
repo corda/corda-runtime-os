@@ -1,7 +1,6 @@
 package net.corda.membership.service.impl
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
@@ -37,8 +36,7 @@ class MemberOpsServiceProcessor(
 
         private val handlers = mapOf<Class<*>, Class<out RpcHandler<out Any>>>(
             RegistrationRpcRequest::class.java to RegistrationRequestHandler::class.java,
-            RegistrationStatusRpcRequest::class.java to RegistrationStatusRequestHandler::class.java,
-            MGMGroupPolicyRequest::class.java to MGMGroupPolicyRequestHandler::class.java
+            RegistrationStatusRpcRequest::class.java to RegistrationStatusRequestHandler::class.java
         )
 
         private val constructors = ConcurrentHashMap<Class<*>, Constructor<*>>()
@@ -93,11 +91,6 @@ class MemberOpsServiceProcessor(
                     type.constructors.first { it.parameterCount == 2 }
                 }.newInstance(registrationProxy, virtualNodeInfoReadService) as RpcHandler<Any>
             }
-            MGMGroupPolicyRequestHandler::class.java -> {
-                constructors.computeIfAbsent(request.request::class.java) {
-                    type.constructors.first { it.parameterCount == 3 }
-                }.newInstance(registrationProxy, virtualNodeInfoReadService) as RpcHandler<Any>
-            }
             else -> {
                 constructors.computeIfAbsent(request.request::class.java) {
                     type.constructors.first { it.parameterCount == 0 }
@@ -137,31 +130,4 @@ class MemberOpsServiceProcessor(
             TODO("Not yet implemented")
         }
     }
-
-    private class MGMGroupPolicyRequestHandler(
-        private val registrationProxy: RegistrationProxy,
-        private val virtualNodeInfoReadService: VirtualNodeInfoReadService
-    ) : RpcHandler<RegistrationRpcRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
-            val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
-                ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
-            val result = try {
-                registrationProxy.register(holdingIdentity,request.context.toMap())
-            } catch (e: RegistrationProtocolSelectionException) {
-                logger.warn("Could not select registration protocol.")
-                null
-            }
-            val registrationStatus = result?.outcome?.let {
-                RegistrationRpcStatus.valueOf(it.toString())
-            } ?: RegistrationRpcStatus.NOT_SUBMITTED
-            return RegistrationRpcResponse(
-                context.requestTimestamp,
-                registrationStatus,
-                REGISTRATION_PROTOCOL_VERSION,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList())
-            )
-        }
-    }
-
 }

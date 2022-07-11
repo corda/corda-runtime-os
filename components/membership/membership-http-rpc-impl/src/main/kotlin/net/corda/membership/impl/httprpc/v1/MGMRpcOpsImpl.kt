@@ -106,9 +106,9 @@ class MGMRpcOpsImpl @Activate constructor(
             if(isMgm) {
                 val filteredMembers = reader.lookup(parse(holdingIdentity.x500Name))
 
-                val memberProvidedContext = filteredMembers!!.memberProvidedContext
+                val mgmProvidedContext = filteredMembers!!.mgmProvidedContext
 
-                return memberProvidedContext.entries
+                return mgmProvidedContext.entries
             }
             return emptySet()
 //            mgmOpsClient.generateGroupPolicy(holdingIdentityId)

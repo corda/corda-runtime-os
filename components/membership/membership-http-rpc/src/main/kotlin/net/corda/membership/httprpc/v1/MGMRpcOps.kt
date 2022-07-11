@@ -11,7 +11,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
  */
 @HttpRpcResource(
     name = "MGMRpcOps",
-    description = "MGM Registration APIs",
+    description = "Membership Group Management APIs",
     path = "mgm"
 )
 interface MGMRpcOps : RpcOps {
@@ -19,11 +19,11 @@ interface MGMRpcOps : RpcOps {
      * GET endpoint to fetch the requested group policy string
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
-     * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
+     * @return [Set<Map.Entry<String, String?>>] to indicate the last known status of the registration request based on
      *  local member data.
      */
     @HttpRpcGET(
-        path = "{holdingIdentityId}",
+        path = "{holdingIdentityId}/info",
         description = "Fetches the requested group policy string"
     )
     fun generateGroupPolicy(

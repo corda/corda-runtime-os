@@ -12,7 +12,7 @@ interface MGMOpsClient : Lifecycle {
      * outwards communication.
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
-     * @return [String] to indicate the last known status of the registration request based on
+     * @return [Set<Map.Entry<String, String?>>] to indicate the last known status of the registration request based on
      * local member data.
      */
     fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>>
