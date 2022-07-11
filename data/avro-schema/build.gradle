@@ -44,6 +44,8 @@ sourceSets {
 }
 
 def generateAvro = tasks.register("generateAvro", GenerateAvroJavaTask) {
+    outputs.cacheIf { false }
+    outputs.upToDateWhen { false }
     group = "codeGeneration"
     source("src/main/resources/avro")
     outputDir = generatedAvroDir
@@ -58,6 +60,7 @@ avro {
 // generate through Avro
 
 def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
+    outputs.cacheIf { false }
     group = "codeGeneration"
     def packages = [] as Set<String>
     def classes = [] as Set<String>
