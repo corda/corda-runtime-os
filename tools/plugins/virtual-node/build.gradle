@@ -11,6 +11,8 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc-client")
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
+    implementation project(":libs:http-rpc:http-rpc")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
