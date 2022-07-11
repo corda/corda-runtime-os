@@ -9,6 +9,7 @@ import java.util.Random
 import java.util.UUID
 import javax.persistence.PersistenceException
 import net.corda.chunking.datamodel.ChunkingEntities
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.toCpkKey
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -22,6 +23,12 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -676,6 +683,60 @@ internal class DatabaseCpiPersistenceTest {
             expectedFileEntityVersion = 2,
             expectedCpiCpkEntityVersion = 2
         )
+    }
+
+    @Test
+    fun `after CPK file has been persisted we can update its data using the CpkFileEntity updateFileData named query`() {
+
+        val testId = UUID.randomUUID().toString()
+
+        val firstCpkChecksum = newRandomSecureHash()
+        val cpk = mockCpk("$testId.cpk", firstCpkChecksum)
+        val cpi = mockCpi(listOf(cpk))
+
+        cpiPersistence.persistMetadataAndCpks(
+            cpi,
+            "$testId.cpi",
+            newRandomSecureHash(),
+            UUID.randomUUID().toString(),
+            "group-a",
+            emptyList()
+        )
+
+        val cpkKey = cpk.metadata.cpkId.toCpkKey()
+        val initialFile = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpkFileEntity::class.java, cpkKey)
+        }
+
+        val initialTimestamp = initialFile.insertTimestamp
+        assertThat(initialFile.fileChecksum).isEqualTo(cpk.metadata.fileChecksum.toString())
+        assertThat(initialFile.entityVersion).isEqualTo(0)
+
+        val newCpkChecksum = newRandomSecureHash().toString()
+        entityManagerFactory.createEntityManager().transaction {
+            val entitiesUpdated = it.createNamedQuery(QUERY_NAME_UPDATE_CPK_FILE_DATA)
+                .setParameter(QUERY_PARAM_FILE_CHECKSUM, newCpkChecksum)
+                .setParameter(QUERY_PARAM_DATA, testId.toByteArray())
+                .setParameter(QUERY_PARAM_ENTITY_VERSION, 0)
+                .setParameter(QUERY_PARAM_INCREMENTED_ENTITY_VERSION, 1)
+                .setParameter(QUERY_PARAM_ID, cpkKey)
+                .executeUpdate()
+
+            assertThat(entitiesUpdated)
+                .withFailMessage("An error occurred invoking named query to update cpk file data.")
+                .isEqualTo(1)
+        }
+
+        val file = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpkFileEntity::class.java, cpkKey)
+        }
+
+        assertThat(file.entityVersion).isEqualTo(1)
+        assertThat(file.fileChecksum).isEqualTo(newCpkChecksum)
+        assertThat(String(file.data)).isEqualTo(testId)
+        assertThat(file.insertTimestamp)
+            .withFailMessage("Insert timestamp should be updated")
+            .isAfter(initialTimestamp)
     }
 
     private fun findAndAssertCpk(
