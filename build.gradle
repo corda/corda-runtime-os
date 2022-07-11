@@ -137,18 +137,30 @@ allprojects {
         //needed for C5 binaries
         maven {
             url = "$artifactoryContextUrl/corda-os-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
             credentials {
                 username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
                 password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
 
-        // needed for plugin-host dependencies
         maven {
-            url = "$artifactoryContextUrl/engineering-tools-maven-unstable-local"
+            url = "$artifactoryContextUrl/engineering-tools-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
             credentials {
                 username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
                 password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+            content {
+                // YourKit Java Profiler agent artifact.
+                // To publish agent locally:
+                //   $ cd profiler
+                //   $ ../gradlew publishToMavenLocal
+                includeGroup 'com.yourkit.corda'
             }
         }
 
