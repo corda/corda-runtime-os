@@ -24,6 +24,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import net.corda.httprpc.test.NullabilityRPCOpsImpl
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
@@ -37,7 +38,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl()),
+                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl(), NullabilityRPCOpsImpl()),
                 securityManager,
                 httpRpcSettings,
                 multipartDir,

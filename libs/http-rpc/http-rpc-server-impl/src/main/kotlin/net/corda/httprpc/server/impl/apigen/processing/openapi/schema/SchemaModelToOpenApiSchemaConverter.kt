@@ -75,6 +75,7 @@ object SchemaModelToOpenApiSchemaConverter {
 
     private fun Schema<Any>.setRequiredAndNullable(schemaModel: SchemaModel) {
         this.required = if (schemaModel is SchemaModelFieldsHelper) schemaModel.getRequiredFields() else emptyList()
-        this.nullable = schemaModel.nullable
+        // we don't want to set a referenced object as nullable. It's up to the parent to decide if it's nullable.
+        this.nullable = if (schemaModel is SchemaRefObjectModel || schemaModel is SchemaObjectModel) null else schemaModel.nullable
     }
 }

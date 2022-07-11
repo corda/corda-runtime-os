@@ -126,11 +126,9 @@ private fun Schema<Any>.diff(baseline: Schema<Any>, key: String): List<String> {
         differences.add("Schema differences for: $key. Current 'properties': $properties, baseline: ${baseline.properties}")
     }
 
-    /* Caused by the problem captured in CORE-5335, uncomment once fixed.
     if (nullable != baseline.nullable) {
         differences.add("Schema differences for: $key. Current 'nullable': $nullable, baseline: ${baseline.nullable}")
     }
-     */
 
     return differences
 }
