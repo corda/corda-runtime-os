@@ -26,9 +26,9 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
         exclude "META-INF/versions/*/module-info.class"
         exclude "org/slf4j/**"
         exclude "kotlin/**"
-//        cliPlugin.doNotPackage.get().forEach({
-//            exclude it
-//        })
+        cliPlugin.doNotPackage.get().forEach({
+            exclude it
+        })
     }
     manifest {
         attributes['Plugin-Class'] = cliPlugin.cliPluginClass
