@@ -6,7 +6,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.command.registration.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory

@@ -95,9 +95,13 @@ interface FlowIORequest<out R> {
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
      */
-    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) : FlowIORequest<Unit>
+    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) :
+        FlowIORequest<Unit>
 
-    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) : FlowIORequest<ByteBuffer?>
+    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) :
+        FlowIORequest<ByteBuffer?>
+
+    data class FindAll(val requestId: String, val className: String) : FlowIORequest<ByteBuffer?>
 
     data class Merge(val requestId: String, val obj: ByteArray) : FlowIORequest<ByteBuffer?>
 

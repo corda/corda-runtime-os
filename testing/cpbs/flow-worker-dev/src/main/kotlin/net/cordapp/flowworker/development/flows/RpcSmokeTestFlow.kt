@@ -41,9 +41,10 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "persist_delete" to this::persistenceDeleteDog,
         "persist_update" to this::persistenceUpdateDog,
         "persist_find" to this::persistenceFindDog,
+        "persist_findall" to this::persistenceFindAllDogs,
         "throw_platform_error" to this::throwPlatformError,
-        "subflow_passed_in_initiated_session" to  { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
-        "subflow_passed_in_non_initiated_session" to  { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
+        "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
+        "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature
     )
@@ -111,6 +112,17 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             "no dog found"
         } else {
             "found dog id='${dog.id}' name='${dog.name}"
+        }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    @Suspendable
+    private fun persistenceFindAllDogs(input: RpcSmokeTestInput): String {
+        val dogs = persistenceService.findAll(Dog::class.java)
+        return if (dogs.isEmpty()) {
+            "no dog found"
+        } else {
+            "found one or more dogs"
         }
     }
 
@@ -219,7 +231,12 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
         return try {
-            digitalSignatureVerificationService.verify(publicKey, SignatureSpec.ECDSA_SHA256, signedBytes.bytes, bytesToSign)
+            digitalSignatureVerificationService.verify(
+                publicKey,
+                SignatureSpec.ECDSA_SHA256,
+                signedBytes.bytes,
+                bytesToSign
+            )
             false
         } catch (e: CryptoSignatureException) {
             log.info("Crypto - Failed to verify $signedBytes as the signature of $bytesToSign when using wrong signature spec")

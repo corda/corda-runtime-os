@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler
+package net.corda.membership.impl.registration.dynamic.handler
 
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.messaging.api.records.Record
