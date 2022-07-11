@@ -54,114 +54,11 @@ class AuthenticationProtocolTest {
         executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, true)
     }
 
-    @Test
-    fun `validatePeerHandshakeMessage passes back the result from the lambda correctly`() {
-        val signatureSpec = SignatureSpec.ECDSA_SHA256
-        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
-        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        val partyASessionKey = keyPairGenerator.generateKeyPair()
-        val partyBSessionKey = keyPairGenerator.generateKeyPair()
-
-        val protocolInitiator = AuthenticationProtocolInitiator(
-            sessionId,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            partyAMaxMessageSize,
-            partyASessionKey.public,
-            groupId
-        )
-        class ValidatePeerHandshakeResult
-        val validatePeerHandshakeResult = ValidatePeerHandshakeResult()
-
-        val protocolResponder = AuthenticationProtocolResponder<ValidatePeerHandshakeResult>(
-            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
-
-        // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = protocolInitiator.generateInitiatorHello()
-        assertThat(initiatorHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolResponder.receiveInitiatorHello(initiatorHelloMsg)
-
-        // Step 2: responder sending hello message to initiator.
-        val responderHelloMsg = protocolResponder.generateResponderHello()
-        assertThat(responderHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolInitiator.receiveResponderHello(responderHelloMsg)
-
-        // Both sides generate handshake secrets.
-        protocolInitiator.generateHandshakeSecrets()
-        protocolResponder.generateHandshakeSecrets()
-
-        // Step 3: initiator sending handshake message and responder validating it.
-        val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyASessionKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
-        assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        val result = protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, signatureSpec, validatePeerHandshakeResult)
-        }
-        assertThat(result).isSameAs(validatePeerHandshakeResult)
-    }
-
-    @Test
-    fun `validatePeerHandshakeMessage passes back the result from the lambda correctly if invoked twice`() {
-        val signatureSpec = SignatureSpec.ECDSA_SHA256
-        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
-        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        val partyASessionKey = keyPairGenerator.generateKeyPair()
-        val partyBSessionKey = keyPairGenerator.generateKeyPair()
-
-        val protocolInitiator = AuthenticationProtocolInitiator(
-            sessionId,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            partyAMaxMessageSize,
-            partyASessionKey.public,
-            groupId
-        )
-        class ValidatePeerHandshakeResult
-        val firstResult = ValidatePeerHandshakeResult()
-
-        val protocolResponder = AuthenticationProtocolResponder<ValidatePeerHandshakeResult>(
-            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
-
-        // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = protocolInitiator.generateInitiatorHello()
-        assertThat(initiatorHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolResponder.receiveInitiatorHello(initiatorHelloMsg)
-
-        // Step 2: responder sending hello message to initiator.
-        val responderHelloMsg = protocolResponder.generateResponderHello()
-        assertThat(responderHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolInitiator.receiveResponderHello(responderHelloMsg)
-
-        // Both sides generate handshake secrets.
-        protocolInitiator.generateHandshakeSecrets()
-        protocolResponder.generateHandshakeSecrets()
-
-        // Step 3: initiator sending handshake message and responder validating it.
-        val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyASessionKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
-        assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        val validatePeerHandshakeResult = protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, signatureSpec, firstResult)
-        }
-        assertThat(validatePeerHandshakeResult).isSameAs(firstResult)
-        val validatePeerHandshakeSecondResult = protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, signatureSpec, ValidatePeerHandshakeResult())
-        }
-        assertThat(validatePeerHandshakeSecondResult).isSameAs(firstResult)
-    }
-
     private fun executeProtocol(partyASessionKey: KeyPair,
                                 partyBSessionKey: KeyPair,
                                 signature: Signature,
                                 signatureSpec: SignatureSpec,
-                                duplicateInvocations: Boolean = false,
-    ) {
+                                duplicateInvocations: Boolean = false) {
         val protocolInitiator = AuthenticationProtocolInitiator(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -169,8 +66,7 @@ class AuthenticationProtocolTest {
             partyASessionKey.public,
             groupId
         )
-        val protocolResponder = AuthenticationProtocolResponder<Unit>(
-            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+        val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = protocolInitiator.generateInitiatorHello()
@@ -206,14 +102,12 @@ class AuthenticationProtocolTest {
         }
         val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-            AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, signatureSpec, Unit)
-        }
+        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ -> partyASessionKey.public to signatureSpec }
         if (duplicateInvocations) {
             assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA))
                 .isEqualTo(initiatorHandshakeMessage)
-            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-                AuthenticationProtocolResponder.KeyLookupResult(partyASessionKey.public, signatureSpec, Unit)
+            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+                partyASessionKey.public to signatureSpec
             }
         }
 

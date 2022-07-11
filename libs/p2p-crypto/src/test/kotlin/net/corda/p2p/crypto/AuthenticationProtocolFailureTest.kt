@@ -2,7 +2,6 @@ package net.corda.p2p.crypto
 
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.KeyLookupResult
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
@@ -42,7 +41,7 @@ class AuthenticationProtocolFailureTest {
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolB =
-        AuthenticationProtocolResponder<Unit>(
+        AuthenticationProtocolResponder(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
         )
@@ -74,8 +73,8 @@ class AuthenticationProtocolFailureTest {
             ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag
         )
         assertThatThrownBy {
-            authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { _ ->
-                KeyLookupResult(partyASessionKey.public, SignatureSpec.ECDSA_SHA256, Unit)
+            authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { _, _, _ ->
+                partyASessionKey.public to SignatureSpec.ECDSA_SHA256
             }
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -104,8 +103,8 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
         assertThatThrownBy {
-            authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-                KeyLookupResult(partyASessionKey.public, SignatureSpec.ECDSA_SHA256, Unit)
+            authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+                partyASessionKey.public to SignatureSpec.ECDSA_SHA256
             }
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -135,8 +134,8 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
         assertThatThrownBy {
-            authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-                KeyLookupResult(wrongPublicKey, SignatureSpec.ECDSA_SHA256, Unit)
+            authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+                wrongPublicKey to SignatureSpec.ECDSA_SHA256
             }
         }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
@@ -164,8 +163,8 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) {
-            KeyLookupResult(partyASessionKey.public, SignatureSpec.ECDSA_SHA256, Unit)
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { _, _, _ ->
+            partyASessionKey.public to SignatureSpec.ECDSA_SHA256
         }
 
         // Step 4: responder creating different signature than the one expected.
@@ -193,7 +192,7 @@ class AuthenticationProtocolFailureTest {
             partyASessionKey.public,
             sessionId
         )
-        val authenticationProtocolB = AuthenticationProtocolResponder<Unit>(
+        val authenticationProtocolB = AuthenticationProtocolResponder(
             sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize
         )
 
