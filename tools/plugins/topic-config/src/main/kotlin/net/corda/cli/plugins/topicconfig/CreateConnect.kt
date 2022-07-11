@@ -48,6 +48,7 @@ class CreateConnect : Runnable {
                     client.deleteTopics(existingTopicNames).all().get(wait, TimeUnit.SECONDS)
                     println("Waiting for existing topics to be deleted")
                     client.waitForTopicDeletion(create!!.topic!!.namePrefix, wait)
+                    println("Existing topics deleted")
                 }
                 topicConfigs
             } else {
