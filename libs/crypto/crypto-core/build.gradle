@@ -13,7 +13,9 @@ dependencies {
 
     api "net.corda:corda-cipher-suite"
 
+    testImplementation "javax.persistence:javax.persistence-api"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 

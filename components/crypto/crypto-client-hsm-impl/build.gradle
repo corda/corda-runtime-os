@@ -1,0 +1,31 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Crypto client components'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-client-hsm")
+    implementation project(":components:crypto:crypto-component-core-impl")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    testImplementation project(":components:crypto:crypto-component-test-utils")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+

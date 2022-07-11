@@ -2,7 +2,7 @@ package net.corda.libs.packaging.verify.internal.cpk
 
 import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
-import net.corda.libs.packaging.verify.InMemoryZipFile
+import net.corda.test.util.InMemoryZipFile
 import net.corda.libs.packaging.verify.TestUtils
 import net.corda.libs.packaging.verify.TestUtils.addFile
 import net.corda.libs.packaging.verify.TestUtils.signedBy

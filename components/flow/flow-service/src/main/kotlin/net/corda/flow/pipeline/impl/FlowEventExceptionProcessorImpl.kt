@@ -1,6 +1,8 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -8,7 +10,9 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
+import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.libs.configuration.SmartConfig
@@ -107,9 +111,26 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return flowEventContextConverter.convert(exception.getFlowContext())
     }
 
+    override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> {
+        val context = exception.getFlowContext()
+        val checkpoint = context.checkpoint
+
+        /**
+         * the exception message can't be null, we can remove the !! as
+         * part of this ticket:
+         * https://r3-cev.atlassian.net/browse/CORE-5170
+         */
+        checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message!!)
+        checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
+
+        val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+        return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+    }
+
     private fun FlowProcessingException.getFlowContext(): FlowEventContext<*> {
         /** Hack: the !! is temporary , for now we are leaving the FlowProcessingException with an optional flow event
          *  context this can be changed once all the exception handling is implemented.
+         *  https://r3-cev.atlassian.net/browse/CORE-5170
          */
         return flowEventContext!!
     }

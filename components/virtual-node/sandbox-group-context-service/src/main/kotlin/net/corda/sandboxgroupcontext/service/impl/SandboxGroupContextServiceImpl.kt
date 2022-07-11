@@ -2,7 +2,6 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -27,6 +26,7 @@ import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 import java.util.Hashtable
+import net.corda.v5.crypto.SecureHash
 
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
 
@@ -76,12 +76,12 @@ class SandboxGroupContextServiceImpl(
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
         return cache.get(virtualNodeContext) {
-            val cpks = virtualNodeContext.cpkIdentifiers.mapNotNull(cpkReadService::get)
-            if (cpks.size != virtualNodeContext.cpkIdentifiers.size) {
+            val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
+            if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {
                 logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
-                logger.error("Wanted all of:  ${virtualNodeContext.cpkIdentifiers}")
+                logger.error("Wanted all of:  ${virtualNodeContext.cpkFileChecksums}")
                 val receivedIdentifiers = cpks.map { it.metadata.cpkId }
-                val missing = setOf(virtualNodeContext.cpkIdentifiers) - setOf(receivedIdentifiers)
+                val missing = setOf(virtualNodeContext.cpkFileChecksums) - setOf(receivedIdentifiers)
                 logger.error("Returned:  $receivedIdentifiers")
                 logger.error("Missing:  $missing")
                 throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)\"")
@@ -266,8 +266,8 @@ class SandboxGroupContextServiceImpl(
         )
     }
 
-    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>) =
-        cpkIdentifiers.all {
+    override fun hasCpks(cpkChecksums: Set<SecureHash>) =
+        cpkChecksums.all {
             cpkReadService.get(it) != null
         }
 

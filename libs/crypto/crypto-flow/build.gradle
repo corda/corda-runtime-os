@@ -7,6 +7,7 @@ description 'Crypto flow helpers'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -14,8 +15,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     api "net.corda:corda-cipher-suite"
 
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:cipher-suite-impl")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

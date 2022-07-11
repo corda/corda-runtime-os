@@ -200,9 +200,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
 
-    override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
+    override fun getPartitions(topic: String): List<CordaTopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
-            consumer.partitionsFor(config.topicPrefix + topic, timeout)
+            consumer.partitionsFor(config.topicPrefix + topic)
         } catch (ex: Exception) {
             when (ex) {
                 is AuthenticationException,

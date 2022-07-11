@@ -23,7 +23,7 @@ class SigningServiceFactoryTests {
         component = SigningServiceFactoryImpl(
             factory.coordinatorFactory,
             factory.schemeMetadata,
-            factory.signingCacheProvider,
+            factory.signingKeyStoreProvider,
             factory.createCryptoServiceFactory()
         )
     }
@@ -95,12 +95,12 @@ class SigningServiceFactoryTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
-        factory.signingCacheProvider.coordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.signingKeyStoreProvider.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
-        factory.signingCacheProvider.coordinator.updateStatus(LifecycleStatus.UP)
+        factory.signingKeyStoreProvider.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

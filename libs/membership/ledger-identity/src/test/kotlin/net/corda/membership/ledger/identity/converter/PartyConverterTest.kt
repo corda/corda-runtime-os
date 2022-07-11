@@ -3,11 +3,14 @@ package net.corda.membership.ledger.identity.converter
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.ledger.identity.PartyImpl
-import net.corda.membership.impl.MemberContextImpl
-import net.corda.membership.impl.MemberInfoExtension
+import net.corda.membership.lib.impl.MemberContextImpl
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.NOTARY_SERVICE_SESSION_KEY
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.ledger.identity.Party
+import net.corda.v5.ledger.obsolete.identity.Party
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +21,7 @@ import java.security.PublicKey
 class PartyConverterTest {
     companion object {
         private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
-        private const val PARTY = "corda.party"
+        private const val PARTY = "corda"
         private const val partyName = "O=Alice,L=London,C=GB"
         private const val notaryName = "O=Notary,L=London,C=GB"
         private const val NOTARY_SERVICE_PARTY = "corda.notaryService"
@@ -30,10 +33,10 @@ class PartyConverterTest {
 
         val memberContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
-                MemberInfoExtension.PARTY_NAME to partyName,
-                MemberInfoExtension.PARTY_SESSION_KEY to KEY,
-                MemberInfoExtension.NOTARY_SERVICE_PARTY_NAME to notaryName,
-                MemberInfoExtension.NOTARY_SERVICE_SESSION_KEY to KEY
+                PARTY_NAME to partyName,
+                PARTY_SESSION_KEY to KEY,
+                NOTARY_SERVICE_PARTY_NAME to notaryName,
+                NOTARY_SERVICE_SESSION_KEY to KEY
             )
         )
 

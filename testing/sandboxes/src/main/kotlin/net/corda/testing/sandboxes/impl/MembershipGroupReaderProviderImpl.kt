@@ -1,6 +1,6 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.membership.CPIWhiteList
+import net.corda.membership.lib.CPIWhiteList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name
@@ -51,6 +51,10 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         }
 
         override fun lookup(name: MemberX500Name): MemberInfo? {
+            return null
+        }
+
+        override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
             return null
         }
     }

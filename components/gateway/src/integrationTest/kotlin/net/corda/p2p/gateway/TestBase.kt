@@ -154,10 +154,11 @@ open class TestBase {
         }
 
         private fun Publisher.publishGatewayConfig(config: Config) {
+            val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
                 "p2p.gateway",
-                Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
+                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 

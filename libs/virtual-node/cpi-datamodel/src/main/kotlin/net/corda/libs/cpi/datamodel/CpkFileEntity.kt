@@ -24,12 +24,12 @@ import javax.persistence.Version
 @Table(name = "cpk_file", schema = DbSchema.CONFIG)
 data class CpkFileEntity(
     @EmbeddedId
-    var id: CpkKey,
+    val id: CpkKey,
     @Column(name = "file_checksum", nullable = false, unique = true)
-    val fileChecksum: String,
+    var fileChecksum: String,
     @Lob
     @Column(name = "data", nullable = false)
-    val data: ByteArray,
+    var data: ByteArray,
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 ) {
@@ -38,7 +38,7 @@ data class CpkFileEntity(
     var entityVersion: Int = 0
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
-    val insertTimestamp: Instant? = null
+    var insertTimestamp: Instant? = null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

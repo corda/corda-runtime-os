@@ -17,6 +17,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -94,7 +95,7 @@ class CpkWriteServiceImplTest {
     }
 
     @Test
-    fun `on onConfigChangedEvent fully sets the component`() {
+    fun `on ConfigChangedEvent fully sets the component`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
         whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
         whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
@@ -120,7 +121,7 @@ class CpkWriteServiceImplTest {
     }
 
     @Test
-    fun `on onConfigChangedEvent with reconciliation config overwrites the config set in bootstrap`() {
+    fun `on ConfigChangedEvent with reconciliation config overwrites the config set in bootstrap`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
         whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
         whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
@@ -181,9 +182,18 @@ class CpkWriteServiceImplTest {
         cpkWriteServiceImpl.cpkChunksPublisher = cpkChunksPublisher
 
         cpkWriteServiceImpl.putMissingCpk()
-        assertTrue(chunks.size == 2)
+
+        // assert that we can publish multiple CPKs
+        cpkWriteServiceImpl.putMissingCpk()
+
+        assertTrue(chunks.size == 4)
         assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
+        assertTrue(chunks[1].data.limit() == 0)
+        assertTrue(chunks[2].data.equals(ByteBuffer.wrap(cpkData)))
+        assertTrue(chunks[3].data.limit() == 0)
+
         assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
+        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[2].fileName)
     }
 
     @Test
@@ -207,5 +217,11 @@ class CpkWriteServiceImplTest {
         assertNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNull(cpkWriteServiceImpl.cpkChunksPublisher)
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+    }
+
+    @Test
+    fun `on StopEvent cancels timer`() {
+        cpkWriteServiceImpl.processEvent(StopEvent(), coordinator)
+        verify(coordinator).cancelTimer(CpkWriteServiceImpl::class.simpleName!!)
     }
 }

@@ -14,6 +14,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation 'net.corda:corda-config-schema'
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
@@ -22,7 +23,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":components:virtual-node:virtual-node-common")
+
     api project(":components:virtual-node:cpi-info-read-service")
     api project(":components:virtual-node:cpi-info-write-service")
 

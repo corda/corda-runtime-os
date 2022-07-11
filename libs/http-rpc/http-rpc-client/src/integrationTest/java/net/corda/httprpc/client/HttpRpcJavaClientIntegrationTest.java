@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.List;
 
-import static net.corda.httprpc.test.utls.TestUtilsKt.findFreePort;
+import static net.corda.httprpc.test.utils.TestUtilsKt.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

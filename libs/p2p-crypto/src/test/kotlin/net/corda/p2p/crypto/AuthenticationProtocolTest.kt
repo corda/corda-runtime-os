@@ -3,8 +3,6 @@ package net.corda.p2p.crypto
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -28,32 +26,32 @@ class AuthenticationProtocolTest {
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {
-        val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, ECDSA_SHA256_SIGNATURE_SPEC)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256)
     }
 
     @Test
     fun `authentication protocol works successfully with RSA signatures`() {
-        val signature = Signature.getInstance(RSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpec.RSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, RSA_SHA256_SIGNATURE_SPEC)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.RSA_SHA256)
     }
 
     @Test
     fun `authentication protocol methods are idempotent`() {
-        val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
+        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyASessionKey, partyBSessionKey, signature, ECDSA_SHA256_SIGNATURE_SPEC, true)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, true)
     }
 
     private fun executeProtocol(partyASessionKey: KeyPair,

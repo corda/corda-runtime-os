@@ -6,6 +6,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,6 +15,8 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,32 +33,30 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<CryptoFlowOpsBusServiceImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoFlowOpsBusService>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<CryptoFlowOpsBusService>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
+    ),
+    configKeys = setOf(
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
     )
 ), CryptoFlowOpsBusService {
     private companion object {
         const val GROUP_NAME = "crypto.ops.flow"
     }
 
-    interface Impl : AutoCloseable {
-        val subscription: Subscription<String, FlowOpsRequest>
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating durable subscription for '{}' topic", FLOW_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val processor = CryptoFlowOpsBusProcessor(
-            cryptoOpsClient = cryptoOpsClient
-        )
-        return ActiveImpl(
+        val processor = CryptoFlowOpsBusProcessor(cryptoOpsClient, event)
+        return Impl(
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
                     groupName = GROUP_NAME,
@@ -68,16 +69,12 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
         )
     }
 
-    internal class InactiveImpl : Impl {
-        override val subscription: Subscription<String, FlowOpsRequest>
-            get() = throw IllegalStateException("Component is in illegal state.")
+    class Impl(
+        val subscription: Subscription<String, FlowOpsRequest>
+    ) : AbstractImpl {
+        override val downstream: DependenciesTracker =
+            DependenciesTracker.Default(setOf(subscription.subscriptionName))
 
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
-        override val subscription: Subscription<String, FlowOpsRequest>
-    ) : Impl {
         override fun close() {
             subscription.close()
         }

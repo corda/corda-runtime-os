@@ -15,6 +15,7 @@ import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
+import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -37,7 +38,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                 if (eventPayload is SessionInit) {
                     SessionInitExecutor(eventKey, sessionEvent, eventPayload, state, sessionEventSerializer)
                 } else {
-                    SessionEventExecutor(eventKey, sessionEvent, state, instant, sessionEventSerializer)
+                    SessionEventExecutor(eventKey, sessionEvent, state, instant, sessionEventSerializer, ::generateAppMessage)
                 }
             }
             is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, sessionEvent, state)

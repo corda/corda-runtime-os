@@ -3,7 +3,6 @@ package net.corda.sandboxgroupcontext.service.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -32,6 +31,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.Collections.unmodifiableList
+import net.corda.v5.crypto.SecureHash
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
@@ -69,7 +69,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
-                "org.apache.aries.spifly.dynamic.bundle",
+                "org.apache.aries.spifly.dynamic.framework.extension",
                 "org.apache.felix.framework",
                 "org.apache.felix.scr",
                 "org.hibernate.orm.core",
@@ -114,8 +114,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxGroupContextService?.registerCustomCryptography(sandboxGroupContext)?:
             throw IllegalStateException("SandboxGroupContextService is not ready.")
 
-    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>): Boolean =
-        sandboxGroupContextService?.hasCpks(cpkIdentifiers)?:
+    override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean =
+        sandboxGroupContextService?.hasCpks(cpkChecksums)?:
         throw IllegalStateException("SandboxGroupContextService is not ready.")
 
     override val isRunning: Boolean

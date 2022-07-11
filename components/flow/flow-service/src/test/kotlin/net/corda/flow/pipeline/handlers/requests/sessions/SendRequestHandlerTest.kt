@@ -5,8 +5,8 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -68,10 +68,10 @@ class SendRequestHandlerTest {
     }
 
     @Test
-    fun `Throws exception when session does not exist within checkpoint`() {
-        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any()))
-            .thenThrow(FlowSessionMissingException("Session does not exist"))
+    fun `Throws exception when any of the sessions are invalid`() {
+        whenever(testContext.flowSessionManager.validateSessionStates(any(), any()))
+            .thenThrow(FlowSessionStateException(""))
 
-        assertThrows<FlowFatalException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
+        assertThrows<FlowPlatformException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
     }
 }

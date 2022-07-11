@@ -32,7 +32,7 @@ dependencies {
         exclude group: 'org.osgi'
     }
 
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    integrationTestImplementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation "net.corda:corda-application"
     integrationTestImplementation 'org.slf4j:slf4j-api'

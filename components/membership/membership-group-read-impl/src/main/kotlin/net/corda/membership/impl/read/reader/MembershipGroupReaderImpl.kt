@@ -1,7 +1,8 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.CPIWhiteList
-import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.sessionKeyHash
+import net.corda.membership.lib.CPIWhiteList
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.crypto.PublicKeyHash
@@ -31,6 +32,9 @@ class MembershipGroupReaderImpl(
 
     override fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActive && ledgerKeyHash in it.ledgerKeyHashes }
+
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
+        memberList.singleOrNull { it.isActive && sessionKeyHash == it.sessionKeyHash }
 
     override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.isActive && it.name == name }
 }

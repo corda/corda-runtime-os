@@ -3,7 +3,7 @@ package net.corda.membership.ledger.identity.converter
 import net.corda.membership.ledger.identity.AnonymousPartyImpl
 import net.corda.membership.ledger.identity.PartyImpl
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.identity.AbstractParty
+import net.corda.v5.ledger.obsolete.identity.AbstractParty
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.security.PublicKey

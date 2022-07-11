@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -19,7 +20,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -155,10 +156,10 @@ class DeliveryTrackerTest {
                 whenever(it.dominoTile).thenReturn(mockDominoTile)
             },
             mock {
-                val mockDominoTile = mock<ComplexDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                val mockNamedLifecycle = mock<NamedLifecycle> {
+                    whenever(it.name).doReturn(LifecycleCoordinatorName("", ""))
                 }
-                whenever(it.dominoTile).thenReturn(mockDominoTile)
+                whenever(it.namedLifecycle).thenReturn(mockNamedLifecycle)
             },
             mock {
                 val mockDominoTile = mock<ComplexDominoTile> {
@@ -179,11 +180,11 @@ class DeliveryTrackerTest {
     }
 
     @Test
-    fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerSentMarker`() {
+    fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerProcessedMarker`() {
         val (tracker, processor) = createTracker()
         tracker.start()
         val messageId = UUID.randomUUID().toString()
-        val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(messageAndKey), timeStamp))
+        val event = Record("topic", messageId, AppMessageMarker(LinkManagerProcessedMarker(messageAndKey), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
 

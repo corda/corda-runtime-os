@@ -64,8 +64,8 @@ allprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             allWarningsAsErrors = true
-            languageVersion = '1.6'
-            apiVersion = '1.6'
+            languageVersion = '1.7'
+            apiVersion = '1.7'
             jvmTarget = javaVersion
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs += [
@@ -256,8 +256,8 @@ void configureKotlinForOSGi(Configuration configuration) {
 }
 
 logger.quiet("********************** CORDA FLOW WORKER BUILD **********************")
-if (JavaVersion.current() != javaVersion) {
-    throw new GradleException("The java version used ${JavaVersion.current()} is not the expected version ${javaVersion}.")
+if (!JavaVersion.current().isCompatibleWith(javaVersion)) {
+    throw new GradleException("The java version used ${JavaVersion.current()} is not compatible with the expected version ${javaVersion}.")
 }
 logger.quiet("SDK version: {}", JavaVersion.current())
 logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
@@ -310,18 +310,13 @@ subprojects {
         }
     }
     
-    // NOTE: Needed to ensure we do not normalize projects which apply CPK plugin
-    afterEvaluate {
-        if (!pluginManager.hasPlugin("net.corda.plugins.cordapp-cpk")) {
-            // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
-            // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
-            // a task is up-to-date, this has no impact on publishing or production of jar.
-            normalization {
-                runtimeClasspath {
-                    metaInf {
-                        ignoreAttribute("Bnd-LastModified")
-                    }
-                }
+    // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
+    // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
+    // a task is up-to-date, this has no impact on publishing or production of jar.
+    normalization {
+        runtimeClasspath {
+            metaInf {
+                ignoreAttribute("Bnd-LastModified")
             }
         }
     }
@@ -350,6 +345,8 @@ subprojects {
     task allDependencies(type: DependencyReportTask) {}
 
     configurations {
+        // configuration used by DeployableContainerBuilder to add dependencies to Docker images
+        image { transitive = false }
         all {
             resolutionStrategy {
                 // FORCE Gradle to use latest dynamic versions.
