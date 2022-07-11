@@ -278,7 +278,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             context.keys.filter { LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No ledger key ID was provided." }
-                require(isOrdered(this, 2)) { "Provided ledger key IDs are incorrectly numbered." }
+                require(isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
         }
 

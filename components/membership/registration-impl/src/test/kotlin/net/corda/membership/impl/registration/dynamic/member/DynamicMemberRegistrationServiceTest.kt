@@ -194,8 +194,8 @@ class DynamicMemberRegistrationServiceTest {
         "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
         "corda.endpoints.0.connectionURL" to "localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.ledgerKeys.0.id" to LEDGER_KEY_ID,
-        "corda.ledgerKeys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
+        "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
+        "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
     )
 
     private fun postStartEvent() {
@@ -302,7 +302,7 @@ class DynamicMemberRegistrationServiceTest {
         postConfigChangedEvent()
         val testProperties =
             context + mapOf(
-                "corda.ledgerKeys.100.id" to "9999"
+                "corda.ledger.keys.100.id" to "9999"
             )
         registrationService.start()
         val result = registrationService.register(member, testProperties)

@@ -249,8 +249,8 @@ class MemberRegistrationIntegrationTest {
             "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
-            "corda.ledgerKeys.0.id" to ledgerKeyId,
-            "corda.ledgerKeys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
+            "corda.ledger.keys.0.id" to ledgerKeyId,
+            "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
         )
     }
 
