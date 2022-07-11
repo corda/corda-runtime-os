@@ -59,9 +59,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -591,40 +589,38 @@ internal class SessionManagerImpl(
                                     peer, groupInfo.networkType)
     }
 
-    private fun lookupInitiatorPublicKey(
-        initiatorPublicKeyHash: ByteArray,
-        responderPublicKeyHash: ByteArray,
-        groupId: String
-    ): Pair<PublicKey, SignatureSpec> {
-        val responderHoldingIdentity = linkManagerHostingMap.getInfo(responderPublicKeyHash, groupId)
-            ?: throw OurHashNotInNetworkMapException(responderPublicKeyHash.toBase64())
-        val initiatorMemberInfo = members.getMemberInfo(responderHoldingIdentity.holdingIdentity, initiatorPublicKeyHash)
-            ?: throw PeerHashNotInNetworkMapException(initiatorPublicKeyHash.toBase64())
-        return initiatorMemberInfo.sessionPublicKey to initiatorMemberInfo.publicKeyAlgorithm.getSignatureSpec()
-    }
-
-    private class OurHashNotInNetworkMapException(val hash: String) : IllegalStateException()
-    private class PeerHashNotInNetworkMapException(val hash: String) : IllegalStateException()
-
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val session = pendingInboundSessions[message.header.sessionId]
         if (session == null) {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
+
+        val initiatorIdentityData = session.getInitiatorIdentity()
+        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .find { it.groupId == initiatorIdentityData.groupId }
+        if (hostedIdentityInSameGroup == null) {
+            logger.warn("There is no locally hosted identity in group ${initiatorIdentityData.groupId}. The initiator handshake message" +
+                    " was discarded.")
+            return null
+        }
+
+        val peer = members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+        if (peer == null) {
+            logger.peerHashNotInMembersMapWarning(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
+            )
+            return null
+        }
 
         session.generateHandshakeSecrets()
         val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, ::lookupInitiatorPublicKey)
+            session.validatePeerHandshakeMessage(message, peer.sessionPublicKey, peer.publicKeyAlgorithm.getSignatureSpec())
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
-            return null
-        } catch (exception: OurHashNotInNetworkMapException) {
-            logger.ourHashNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, exception.hash)
-            return null
-        } catch (exception: PeerHashNotInNetworkMapException) {
-            logger.peerHashNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, exception.hash)
             return null
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(
@@ -668,17 +664,6 @@ internal class SessionManagerImpl(
             logger.warn(
                 "Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                     " The message was discarded."
-            )
-            return null
-        }
-
-        val initiatorIdentityData = session.getInitiatorIdentity()
-        val peer = members.getMemberInfo(ourIdentityInfo.holdingIdentity, initiatorIdentityData.initiatorPublicKeyHash.array())
-        if (peer == null) {
-            logger.peerHashNotInMembersMapWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
             )
             return null
         }

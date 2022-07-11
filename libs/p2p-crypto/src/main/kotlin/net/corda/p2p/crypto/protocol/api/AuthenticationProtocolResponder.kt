@@ -122,8 +122,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
     /**
      * Validates the handshake message from the peer.
      *
-     * @param keyLookupFn a function which looks up the initiator public key and its signature spec from the SHA-256 hashes of the
-     * initiator and responder public keys, and the group id.
+     * @param initiatorPublicKey the public key used to validate the handshake message.
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      *
      * @return the SHA-256 of the public key we need to use in the handshake.
@@ -133,10 +132,16 @@ class AuthenticationProtocolResponder(val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        keyLookupFn: (initiatorPublicKeyHash: ByteArray, responderPublicKeyHash: ByteArray, groupId: String)
-            -> Pair<PublicKey, SignatureSpec>
+        initiatorPublicKey: PublicKey,
+        initiatorSignatureSpec: SignatureSpec,
     ): HandshakeIdentityData {
         return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { handshakeIdentityData!! }) {
+            val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
+            val expectedInitiatorPublicKeyHash = getInitiatorIdentity().initiatorPublicKeyHash.array()
+            if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
+                throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
+            }
+
             val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
             try {
                 initiatorHandshakePayloadBytes = aesCipher.decrypt(initiatorRecordHeaderBytes,
@@ -149,25 +154,13 @@ class AuthenticationProtocolResponder(val sessionId: String,
             }
 
             val initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
-
-            val (initiatorPublicKey, initiatorSignatureSpec) = keyLookupFn(
-                initiatorHandshakePayload.initiatorPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
-                initiatorHandshakePayload.initiatorEncryptedExtensions.groupId
-            )
-
-            val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
-            val expectedInitiatorPublicKeyHash = getInitiatorIdentity().initiatorPublicKeyHash.array()
-            if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
-                throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
-            }
-
             val initiatorHandshakePayloadIncomplete = InitiatorHandshakePayload(
                 initiatorHandshakePayload.initiatorEncryptedExtensions,
                 initiatorHandshakePayload.initiatorPublicKeyHash,
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
             )
+
             // validate signature
             val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
                     initiatorHandshakePayloadIncomplete.toByteBuffer().array()

@@ -78,7 +78,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
-import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 import java.util.*
@@ -715,15 +714,13 @@ class SessionManagerTest {
         val initiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshakeMessage), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-        }
+        whenever(
+            protocolResponder.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                PEER_KEY.public,
+                SignatureSpec.ECDSA_SHA256,
+            )
+        ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any())).thenReturn(responderHandshakeMsg)
         val session = mock<Session>()
@@ -754,15 +751,13 @@ class SessionManagerTest {
         val initiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshakeMessage), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-        }
+        whenever(
+            protocolResponder.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                PEER_KEY.public,
+                SignatureSpec.ECDSA_SHA256,
+            )
+        ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any())).thenReturn(responderHandshakeMsg)
         val session = mock<Session>()
@@ -803,15 +798,38 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when initiator handshake is received but no locally hosted identity in the same group as the initiator, message is dropped`() {
+        val sessionId = "some-session-id"
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHandshakeIdentity = InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID)
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, initiatorHandshakeIdentity)
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(emptySet())
+        whenever(protocolResponder.getInitiatorIdentity()).thenReturn(initiatorHandshakeIdentity)
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("There is no locally hosted identity in group $GROUP_ID.")
+        loggingInterceptor
+            .assertSingleWarningContains("The initiator handshake message was discarded.")
+    }
+
+    @Test
     fun `when initiator handshake is received, but peer's member info is missing from network map, message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
         whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
-            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
         sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
 
         val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
@@ -819,16 +837,6 @@ class SessionManagerTest {
         whenever(members.getMemberInfo(OUR_PARTY, initiatorPublicKeyHash)).thenReturn(null)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            mock()
-        }
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -852,7 +860,7 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), any()))
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
             .thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), initiatorPublicKeyHash))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -875,7 +883,7 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), any()))
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
             .thenThrow(InvalidHandshakeMessageException())
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -899,15 +907,8 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-        }
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
+            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, GROUP_ID)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -933,15 +934,8 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-        }
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
+            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -967,15 +961,8 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-        }
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
+            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any()))
             .thenThrow(UnsupportedAlgorithm(OUR_KEY.public))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1001,15 +988,8 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
-        val keyLookup = argumentCaptor<(
-            initiatorPublicKeyHash: ByteArray,
-            responderPublicKeyHash: ByteArray,
-            groupId: String
-        ) -> Pair<PublicKey, SignatureSpec>>()
-        whenever(protocolResponder.validatePeerHandshakeMessage(eq(initiatorHandshake), keyLookup.capture())).doAnswer {
-            keyLookup.lastValue.invoke(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-            HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID)
-        }
+        whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, SignatureSpec.ECDSA_SHA256))
+            .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
