@@ -5,6 +5,7 @@ import net.corda.v5.application.flows.RPCRequestData;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.messaging.FlowMessaging;
 import net.corda.v5.application.messaging.UntrustworthyData;
+import net.corda.v5.application.persistence.PersistenceService;
 import net.corda.v5.base.types.MemberX500Name;
 import net.cordapp.testing.chatframework.FlowMockHelper;
 import net.cordapp.testing.chatframework.FlowMockMessageLink;
@@ -37,12 +38,14 @@ public class ChatFlowCollaborationTestsJava {
                     .createMockService(FlowEngine.class));
     static final FlowMockHelper incomingFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
-                    .createMockService(FlowEngine.class));
+                    .createMockService(FlowEngine.class)
+                    .createMockService(PersistenceService.class));
 
     static final FlowMockHelper readerFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
                     .createMockService(FlowEngine.class)
-                    .createMockService(JsonMarshallingService.class));
+                    .createMockService(JsonMarshallingService.class)
+                    .createMockService(PersistenceService.class));
 
     static final ChatOutgoingFlow outgoingChatFlow = outgoingFlowMockHelper.createFlow(ChatOutgoingFlow.class);
     static final ChatIncomingFlow incomingChatFlow = incomingFlowMockHelper.createFlow(ChatIncomingFlow.class);
@@ -61,19 +64,20 @@ public class ChatFlowCollaborationTestsJava {
     void FlowSendsMessage() {
         FlowMockMessageLink messageLink = new FlowMockMessageLink(outgoingFlowMockHelper, incomingFlowMockHelper);
 
+        // When receive is called in the 'to' flow, wait on/return the next message in the queue
         when(messageLink.getToFlowSession().receive(MessageContainer.class)).thenAnswer(
                 (Answer<UntrustworthyData<MessageContainer>>) invocation ->
                         new UntrustworthyData(messageLink.messageQueue.getOrWaitForNextMessage())
         );
 
-        RPCRequestData requestData = mock(RPCRequestData.class);
-        when(requestData.getRequestBodyAs(
+        RPCRequestData outGoingFlowRequestData = mock(RPCRequestData.class);
+        when(outGoingFlowRequestData.getRequestBodyAs(
                 (JsonMarshallingService) outgoingFlowMockHelper.getMockService(JsonMarshallingService.class),
-                OutgoingChatMessage.class)
-        ).thenReturn(new OutgoingChatMessage(RECIPIENT_X500_NAME, MESSAGE));
+                ChatOutgoingFlowParameter.class)
+        ).thenReturn(new ChatOutgoingFlowParameter(RECIPIENT_X500_NAME, MESSAGE));
 
         executeConcurrently(() -> {
-                    outgoingChatFlow.call(requestData);
+                    outgoingChatFlow.call(outGoingFlowRequestData);
                 },
                 () -> {
                     incomingChatFlow.call(messageLink.toFlowSession);
@@ -88,7 +92,18 @@ public class ChatFlowCollaborationTestsJava {
         when(((JsonMarshallingService) readerFlowMockHelper.getMockService(JsonMarshallingService.class))
                 .format(expectedMessages)).thenReturn(DUMMY_FLOW_RETURN);
 
-        String messagesJson = readerChatFlow.call(mock(RPCRequestData.class)); // Parameter not used by Flow
+        RPCRequestData readerFlowRequestData = mock(RPCRequestData.class);
+        when(readerFlowRequestData.getRequestBodyAs(
+                (JsonMarshallingService) readerFlowMockHelper.getMockService(JsonMarshallingService.class),
+                ChatReaderFlowParameter.class)
+        ).thenReturn(new ChatReaderFlowParameter(FROM_X500_NAME));
+
+        // Very basic persistence mocking, just force every find to return the correct message
+        when(((PersistenceService) readerFlowMockHelper.getMockService(PersistenceService.class))
+                .find(IncomingChatMessage.class, FROM_X500_NAME)
+        ).thenReturn(new IncomingChatMessage(FROM_X500_NAME, MESSAGE));
+
+        String messagesJson = readerChatFlow.call(readerFlowRequestData);
         assertThat(messagesJson).isEqualTo(DUMMY_FLOW_RETURN);
     }
 }

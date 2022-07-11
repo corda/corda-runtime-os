@@ -19,10 +19,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.PublicKeyConverter
 import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
@@ -40,6 +43,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
@@ -134,13 +138,17 @@ class MGMRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
+    }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
         lifecycleCoordinatorFactory,
         cryptoOpsClient,
         keyEncodingService,
-        memberInfoFactory
+        memberInfoFactory,
+        membershipPersistenceClient,
     )
 
     private val properties = mapOf(
@@ -187,7 +195,8 @@ class MGMRegistrationServiceTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 
@@ -219,13 +228,45 @@ class MGMRegistrationServiceTest {
             it.assertThat(publishedMgmInfoList.size).isEqualTo(1)
             val publishedMgmInfo = publishedMgmInfoList.first()
             it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
-            val expectedRecordKey = "${mgmId}-${mgmId}"
+            val expectedRecordKey = "$mgmId-$mgmId"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
             val mgmPublished = memberInfoFactory.create(persistentMemberPublished)
             it.assertThat(mgmPublished.name.toString()).isEqualTo(mgmName.toString())
         }
         registrationService.stop()
+    }
+
+    @Test
+    fun `registration persist the MGM member info`() {
+        postConfigChangedEvent()
+        registrationService.start()
+
+        registrationService.register(mgm, properties)
+
+        verify(membershipPersistenceClient).persistMemberInfo(
+            eq(mgm),
+            argThat {
+                this.size == 1 &&
+                    this.first().isMgm &&
+                    this.first().name == mgmName
+            }
+        )
+    }
+
+    @Test
+    fun `registration failure to persist return an error`() {
+        postConfigChangedEvent()
+        registrationService.start()
+        whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
+            .doReturn(MembershipPersistenceResult.Failure("Nop"))
+
+        val result = registrationService.register(mgm, properties)
+
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).isEqualTo("Registration failed, persistence error. Reason: Nop")
+        }
     }
 
     @Test
@@ -262,7 +303,7 @@ class MGMRegistrationServiceTest {
         val testProperties =
             properties + mapOf(
                 "corda.group.truststore.tls.100" to
-                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                    "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
         val result = registrationService.register(mgm, testProperties)
