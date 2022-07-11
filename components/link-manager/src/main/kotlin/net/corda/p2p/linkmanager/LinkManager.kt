@@ -5,10 +5,8 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -97,10 +95,6 @@ class LinkManager(
         clock = clock,
     )
 
-    private val virtualNodeInfoReadServiceNamedLifecycle = if (thirdPartyComponentsMode == ThirdPartyComponentsMode.REAL) {
-        setOf(NamedLifecycle(virtualNodeInfoReadService, LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()))
-    } else emptyList()
-
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
@@ -113,6 +107,6 @@ class LinkManager(
             commonComponents.dominoTile.toNamedLifecycle(),
             outboundLinkManager.dominoTile.toNamedLifecycle(),
             inboundLinkManager.dominoTile.toNamedLifecycle(),
-        ) + virtualNodeInfoReadServiceNamedLifecycle
+        )
     )
 }

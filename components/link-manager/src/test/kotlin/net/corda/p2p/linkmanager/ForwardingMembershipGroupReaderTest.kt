@@ -15,7 +15,6 @@ import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -78,10 +77,9 @@ class ForwardingMembershipGroupReaderTest {
 
     @Test
     fun `dependent and managed children are set properly`() {
-        assertThat(dependentChildren).hasSize(2)
+        assertThat(dependentChildren).hasSize(1)
         assertThat(dependentChildren).containsExactlyInAnyOrder(
             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
         assertThat(managedChildren).hasSize(1)
         assertThat(managedChildren).containsExactlyInAnyOrder(

@@ -14,7 +14,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 
 internal class ForwardingMembershipGroupReader(
@@ -44,10 +43,7 @@ internal class ForwardingMembershipGroupReader(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        dependentChildren = setOf(
-            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
-            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
-        ),
+        dependentChildren = setOf(LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
         managedChildren = setOf(
             NamedLifecycle(groupReaderProvider, LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
         )

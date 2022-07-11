@@ -46,6 +46,7 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
         ThirdPartyComponentsMode.STUB -> setOf(stubGroupPolicyProvider.dominoTile.toNamedLifecycle())
         ThirdPartyComponentsMode.REAL -> setOf(
             NamedLifecycle(groupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
+            NamedLifecycle(virtualNodeInfoReadService, LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
             NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>())
         )
     }
