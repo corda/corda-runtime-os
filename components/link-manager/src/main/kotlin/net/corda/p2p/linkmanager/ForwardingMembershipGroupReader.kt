@@ -36,7 +36,7 @@ internal class ForwardingMembershipGroupReader(
             LinkManagerMembershipGroupReader.MemberInfo? {
         val lookup = groupReaderProvider
             .getGroupReader(requestingIdentity.toCorda())
-            .lookup(PublicKeyHash.Companion.parse(publicKeyHashToLookup))
+            .lookupBySessionKey(PublicKeyHash.Companion.parse(publicKeyHashToLookup))
         return lookup?.toLinkManagerMemberInfo(HoldingIdentity(lookup.name.toString(), requestingIdentity.groupId))
     }
 
@@ -52,8 +52,8 @@ internal class ForwardingMembershipGroupReader(
     private fun MemberInfo.toLinkManagerMemberInfo(holdingIdentity: HoldingIdentity): LinkManagerMembershipGroupReader.MemberInfo? {
         val endpoint = this.endpoints.firstOrNull { it.protocolVersion == ProtocolConstants.PROTOCOL_VERSION }?.url
         return if (endpoint == null) {
-            logger.warn("No valid endpoint with protocol version ${ProtocolConstants.PROTOCOL_VERSION} for member " +
-                    "with identity $holdingIdentity.")
+            logger.warn("No valid endpoint with protocol version ${ProtocolConstants.PROTOCOL_VERSION} for member with identity" +
+                " $holdingIdentity. Endpoints available: ${this.endpoints.map { "${it.url} (version: ${it.protocolVersion})" }}.")
             null
         } else {
             LinkManagerMembershipGroupReader.MemberInfo(

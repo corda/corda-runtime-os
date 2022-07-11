@@ -100,7 +100,7 @@ class ForwardingMembershipGroupReaderTest {
 
     @Test
     fun `getMemberInfo by public key hash returns the correct MemberInfo`() {
-        whenever(aliceGroupReader.lookup(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(bobMemberInfo)
+        whenever(aliceGroupReader.lookupBySessionKey(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(bobMemberInfo)
 
         val memberInfo = forwardingMembershipGroupReader.getMemberInfo(ALICE, PUBLIC_KEY_HASH)
         assertThat(memberInfo!!.holdingIdentity).isEqualTo(BOB)
@@ -118,7 +118,7 @@ class ForwardingMembershipGroupReaderTest {
 
     @Test
     fun `getMemberInfo by public key hash returns null if lookup returns null`() {
-        whenever(aliceGroupReader.lookup(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(null)
+        whenever(aliceGroupReader.lookupBySessionKey(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(null)
 
         assertThat(forwardingMembershipGroupReader.getMemberInfo(ALICE, PUBLIC_KEY_HASH)).isNull()
     }
@@ -140,7 +140,7 @@ class ForwardingMembershipGroupReaderTest {
 
     @Test
     fun `getMemberInfo by public key hash returns null if endpoint missing`() {
-        whenever(aliceGroupReader.lookup(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(bobMemberInfo)
+        whenever(aliceGroupReader.lookupBySessionKey(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(bobMemberInfo)
         val bobEndpointInfo = mock<EndpointInfo> {
             on { url } doReturn BOB_ENDPOINT
             on { protocolVersion } doReturn EndpointInfo.DEFAULT_PROTOCOL_VERSION + 1
