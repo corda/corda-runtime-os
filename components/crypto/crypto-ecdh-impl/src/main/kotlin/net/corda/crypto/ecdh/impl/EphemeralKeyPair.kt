@@ -1,5 +1,7 @@
 package net.corda.crypto.ecdh.impl
 
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.X25519_TEMPLATE
 import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.Provider
@@ -18,13 +20,19 @@ class EphemeralKeyPair(
                 "Keys must use the same algorithm"
             }
             return when (privateKey.algorithm) {
-                "EC" -> {
+                ECDSA_SECP256R1_TEMPLATE.algorithmName -> {
                     KeyAgreement.getInstance("ECDH", provider).apply {
                         init(privateKey)
                         doPhase(otherPublicKey, true)
                     }.generateSecret()
                 }
-                else -> throw NotImplementedError("Can't handle algorithm ${privateKey.algorithm}")
+                X25519_TEMPLATE.algorithmName -> {
+                    KeyAgreement.getInstance("X25519", provider).apply {
+                        init(privateKey)
+                        doPhase(otherPublicKey, true)
+                    }.generateSecret()
+                }
+                else -> throw IllegalArgumentException("Can't handle algorithm ${privateKey.algorithm}")
             }
         }
     }

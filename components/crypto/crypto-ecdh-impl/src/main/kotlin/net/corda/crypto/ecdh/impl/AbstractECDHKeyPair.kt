@@ -38,7 +38,8 @@ abstract class AbstractECDHKeyPair(
             } finally {
                 pool.offer(cipher)
             }
-        }    }
+        }
+    }
 
     final override fun encrypt(
         salt: ByteArray,

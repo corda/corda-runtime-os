@@ -12,6 +12,7 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
+import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.sha256Bytes
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -45,6 +46,7 @@ class ProtocolTests {
             coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
             schemeMetadata = CipherSchemeMetadataImpl()
             ecdhKeySchemes = listOf(
+                schemeMetadata.findKeyScheme(X25519_CODE_NAME),
                 schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 schemeMetadata.findKeyScheme(ECDSA_SECP256K1_CODE_NAME),
                 schemeMetadata.findKeyScheme(SM2_CODE_NAME)
