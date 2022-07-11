@@ -23,6 +23,12 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
+import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
@@ -260,21 +266,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             if(existingCpkFile != null) {
                 // the cpk exists already, lets update it if the file checksum has changed.
                 if (existingCpkFile.fileChecksum != cpk.metadata.fileChecksum.toString()) {
-                    val updateQuery = """
-                        UPDATE ${CpkFileEntity::class.java.simpleName} f 
-                        SET f.fileChecksum = :fileChecksum, 
-                        f.data = :data,
-                        f.entityVersion = :incrementedEntityVersion, 
-                        f.insertTimestamp = CURRENT_TIMESTAMP 
-                        WHERE f.entityVersion = :entityVersion 
-                        AND f.id = :id
-                    """.trimIndent()
-                    val updatedEntities = em.createQuery(updateQuery)
-                        .setParameter("fileChecksum", cpk.metadata.fileChecksum.toString())
-                        .setParameter("data", Files.readAllBytes(cpk.path!!))
-                        .setParameter("entityVersion", existingCpkFile.entityVersion)
-                        .setParameter("incrementedEntityVersion", existingCpkFile.entityVersion + 1)
-                        .setParameter("id", cpkKey)
+                    val updatedEntities = em.createNamedQuery(QUERY_NAME_UPDATE_CPK_FILE_DATA)
+                        .setParameter(QUERY_PARAM_FILE_CHECKSUM, cpk.metadata.fileChecksum.toString())
+                        .setParameter(QUERY_PARAM_DATA, Files.readAllBytes(cpk.path!!))
+                        .setParameter(QUERY_PARAM_ENTITY_VERSION, existingCpkFile.entityVersion)
+                        .setParameter(QUERY_PARAM_INCREMENTED_ENTITY_VERSION, existingCpkFile.entityVersion + 1)
+                        .setParameter(QUERY_PARAM_ID, cpkKey)
                         .executeUpdate()
 
                     if(updatedEntities < 1)
