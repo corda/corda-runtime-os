@@ -16,7 +16,6 @@ import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.util.UUID
 
