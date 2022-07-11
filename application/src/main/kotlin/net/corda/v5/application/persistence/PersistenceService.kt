@@ -91,6 +91,16 @@ interface PersistenceService {
     fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T>
 
     /**
+     * Find all entities of the same type from the persistence context in a single transaction.
+     *
+     * @param entityClass the type of the entities to find.
+     * @return list of entities found. Empty list if none were found.
+     * @throws CordaPersistenceException if an error happens during find operation
+     */
+    @Suspendable
+    fun <T : Any> findAll(entityClass: Class<T>): List<T>
+
+    /**
      * Execute a named query in a single transaction. Casts results to the specified type [R].
      *
      * @param queryName the name of the named query registered in the persistence context.
@@ -177,9 +187,7 @@ interface PersistenceService {
  * @param T the type of entity to find.
  * @return the found entity, null if it could not be found in the persistence context.
  */
-inline fun <reified T : Any> PersistenceService.find(primaryKey: Any): T? {
-    return this.find(T::class.java, primaryKey)
-}
+inline fun <reified T : Any> PersistenceService.find(primaryKey: Any): T? = find(T::class.java, primaryKey)
 
 /**
  * Find multiple entities of the same type with different primary keys from the persistence context in a single transaction.
@@ -188,6 +196,12 @@ inline fun <reified T : Any> PersistenceService.find(primaryKey: Any): T? {
  * @param T the type of the entities to find.
  * @return list of entities found. Empty list if none were found.
  */
-inline fun <reified T : Any> PersistenceService.find(primaryKeys: List<Any>): List<T> {
-    return this.find(T::class.java, primaryKeys)
-}
+inline fun <reified T : Any> PersistenceService.find(primaryKeys: List<Any>): List<T> = find(T::class.java, primaryKeys)
+
+/**
+ * Find all entities of the same type in a single transaction.
+ *
+ * @param T the type of the entities to find.
+ * @return list of entities found. Empty list if none were found.
+ */
+inline fun <reified T : Any> PersistenceService.findAll(): List<T> = findAll(T::class.java)

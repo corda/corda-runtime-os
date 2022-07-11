@@ -84,6 +84,16 @@ public class PersistenceServiceJavaApiTest {
     }
 
     @Test
+    public void findAll() {
+        when(persistenceService.findAll(Integer.class)).thenReturn(List.of(1, 2, 3, 4));
+
+        List<Integer> result = persistenceService.findAll(Integer.class);
+
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result).isEqualTo(List.of(1, 2, 3, 4));
+    }
+
+    @Test
     public void queryWithTwo() {
         when(persistenceService.query("test", Map.of("testKey", "testValue"))).thenReturn(cursor);
 
