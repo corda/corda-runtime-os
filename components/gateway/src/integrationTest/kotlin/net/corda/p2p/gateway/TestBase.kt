@@ -159,7 +159,7 @@ open class TestBase {
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
                 ConfigKeys.P2P_GATEWAY_CONFIG,
-                Configuration(configSource, 0, ConfigurationSchemaVersion(1, 0))
+                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 
