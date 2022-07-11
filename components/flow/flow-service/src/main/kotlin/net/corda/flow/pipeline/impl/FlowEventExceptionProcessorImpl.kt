@@ -99,15 +99,24 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint> {
         val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
         log.error(msg, exception)
-        val status = flowMessageFactory.createFlowFailedStatusMessage(
-            exception.getFlowContext().checkpoint,
-            FLOW_FAILED,
-            msg
-        )
-
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status)
-        )
+        val records = try {
+            val status = flowMessageFactory.createFlowFailedStatusMessage(
+                exception.getFlowContext().checkpoint,
+                FLOW_FAILED,
+                msg
+            )
+            listOf(
+                flowRecordFactory.createFlowStatusRecord(status)
+            )
+        } catch (e: IllegalStateException) {
+            // Most fatal errors should happen after a flow has been initialised. However, it is possible for
+            // initialisation to have not yet happened at the point the failure is hit if it's a session init message
+            // and something goes wrong in trying to retrieve the sandbox. In this case we cannot update the status
+            // correctly. This shouldn't matter however - in this case we're treating the issue as the flow never
+            // starting at all. We'll still log that the error was seen.
+            log.warn("Could not create a flow status message for a failed flow as the flow start context was missing.")
+            listOf()
+        }
 
         return StateAndEventProcessor.Response(
             updatedState = null,

@@ -35,6 +35,11 @@ class FlowCheckpointImpl(
 
     private val flowInitialisedOnCreation = checkpoint.flowState != null
 
+    // The checkpoint is live if it is not marked deleted and there is either some flow state, or a retry is currently
+    // occurring (for example, if a transient failure has happened while processing a start event).
+    private val checkpointLive : Boolean
+        get() = !deleted && (flowStateManager != null || inRetryState)
+
     override val flowId: String
         get() = checkpoint.flowId
 
@@ -177,7 +182,7 @@ class FlowCheckpointImpl(
     }
 
     override fun toAvro(): Checkpoint? {
-        if (deleted) {
+        if (!checkpointLive) {
             return null
         }
 
