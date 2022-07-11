@@ -53,7 +53,7 @@ class VirtualNodeDbChangeLogTest {
         val masterFiles = changeLog.masterChangeLogFiles
 
         assertThat(masterFiles).containsAll(
-            listOf("CPK1-${masterFile1.id.filePath}", "CPK2-${masterFile2.id.filePath}")
+            listOf("CPK1/${masterFile1.id.filePath}", "CPK2/${masterFile2.id.filePath}")
         )
     }
 
@@ -71,9 +71,9 @@ class VirtualNodeDbChangeLogTest {
 
         assertThat(files).containsAll(
             listOf(
-                "CPK1-${masterFile1.id.filePath}",
-                "CPK1-${otherFile1.id.filePath}",
-                "CPK2-${masterFile2.id.filePath}"
+                "CPK1/${masterFile1.id.filePath}",
+                "CPK1/${otherFile1.id.filePath}",
+                "CPK2/${masterFile2.id.filePath}"
             )
         )
     }
@@ -87,10 +87,10 @@ class VirtualNodeDbChangeLogTest {
             )
         )
 
-        changeLog.fetch("CPK1-${masterFile1.id.filePath}").reader().use {
+        changeLog.fetch("CPK1/${masterFile1.id.filePath}").reader().use {
             assertThat(it.readText()).isEqualTo(masterFile1.content)
         }
-        changeLog.fetch("CPK1-${otherFile1.id.filePath}").reader().use {
+        changeLog.fetch("CPK1/${otherFile1.id.filePath}").reader().use {
             assertThat(it.readText()).isEqualTo(otherFile1.content)
         }
     }
