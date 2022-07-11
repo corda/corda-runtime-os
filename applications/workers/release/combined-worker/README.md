@@ -4,26 +4,94 @@
 
 ### Postgres DB
 
-Run postgres container in background:
+Run postgres container:
 ```shell
-docker run -d -p 5432:5432 --name postgresql -e POSTGRESQL_DATABASE=cordacluster -e POSTGRESQL_USERNAME=user -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_POSTGRES_PASSWORD=password bitnami/postgresql:latest
+docker run --rm -p 5432:5432 --name postgresql -e POSTGRES_DB=cordacluster -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password postgres:latest
 ```
 
-Run it with logs visible in console and ensure the container is deleted (and data wiped) when the container is stopped:
+Note that the above will give you a new "clean" DB every time the container is started. If you want to run postgres in the background and maintain the state until you manually clean, then use:
 
 ```shell
-docker run --rm -p 5432:5432 --name postgresql -e POSTGRESQL_DATABASE=cordacluster -e POSTGRESQL_USERNAME=user -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_POSTGRES_PASSWORD=password bitnami/postgresql:latest
+docker run -d -p 5432:5432 --name postgresql -e POSTGRES_DB=cordacluster -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password postgres:latest
 ```
 
 DB schema will be created automatically when worker is started.
-TODO: DB bootstraping might change as CLI could be used instead
+NOTE: DB bootstrapping might change as CLI could be used instead
 
-### Message Bus
+## Start the worker
 
-#### Kafka
+### From the command line
+Build the worker using:
+```bash
+./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar
+```
 
-TODO: Database message bus should be used instead, this is just temporary work-around (which is the reason why all containers are not created together).
-Note that topics were taken from k8s cluster and might be out of sync.
+Run the worker using:
+```bash
+java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+  ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
+  --instanceId=0 -mbus.busType=DATABASE
+  -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
+  -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
+```
+
+Or if you want to connect to "real" KAFKA (see below):
+```bash
+java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+  ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
+  --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
+  -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
+  -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
+```
+
+### From IntelliJ IDE
+
+Use one of the following run configuratons:
+
+- `Combined Worker Local (no debug)` (no debug agent attached)
+- `Combined Worker Local (debug agent 5005)` (debug agent attached and exposed on port 5005)
+- `Combined Worker Local (suspend debug agent 5005)` (debug agent attached, exposed on port 5005 and suspended on start)
+
+## Interact with the worker
+
+The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger
+The status endpoint is also exposed: http://localhost:7000/status
+
+## Smoketests
+
+Run the [smoketests](/applications/workers/workers-smoketest/) to validate the combined worker.
+
+Note that some tests require an empty environment (e.g. CPI upload).
+
+## Logs
+
+Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
+Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running,
+but it may be useful to change this on a case-by-case basis when debugging.
+
+## Message Bus
+
+### Message bus emulation
+
+By default, the combined-worker uses the DB Message Bus emulation. This means that Kafka is not required, instead the message API will be supported by the postgres DB created above.
+
+### Kafka
+
+If using a "real", Kafka, message bus is preferred, for example for debugging or troubleshooting message library issues, this can be done by changing the runtime dependency in `build.gradle`:
+
+```
+runtimeOnly project(':libs:messaging:db-message-bus-impl')
+```
+
+to:
+
+```
+runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+```
+
+You then also need to provide a Kafka installation and set it up, which can be done like so:
 
 Create file `docker-compose.yml`:
 ```
@@ -72,40 +140,3 @@ cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-pl
  ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
  cd ../corda-runtime-os/
 ```
-
-## Start the worker
-### From the command line
-Build the worker using:
-```bash
-./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar
-```
-
-Run the worker using:
-```bash
-java -jar \
-  ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
-  --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
-  -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
-  -ddatabase.user=user -ddatabase.pass=password \
-  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
-```
-
-### From IntelliJ IDE
-From IntelliJ menu choose: `Run` -> `Run...` -> `Combined Worker Local-debug`
-
-## Interact with the worker
-
-The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger 
-The status endpoint is also exposed: http://localhost:7000/status
-
-## Smoketests
-
-Run the [smoketests](/applications/workers/workers-smoketest/) to validate the combined worker.
-
-Note that some tests require an empty environment (e.g. CPI upload).
-
-## Logs
-
-Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
-Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running, 
-but it may be useful to change this on a case-by-case basis when debugging.

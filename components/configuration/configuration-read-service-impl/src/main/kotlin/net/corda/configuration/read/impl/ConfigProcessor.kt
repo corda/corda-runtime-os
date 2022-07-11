@@ -71,8 +71,8 @@ internal class ConfigProcessor(
         }
     }
 
-    fun get(key: String): Configuration? {
-        return configCache[key]?.value
+    fun get(section: String): Configuration? {
+        return configCache[section]?.value
     }
 
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {

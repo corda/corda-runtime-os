@@ -75,3 +75,4 @@ interface ConfigurationReadService : Lifecycle {
      */
     fun bootstrapConfig(config: SmartConfig)
 }
+
