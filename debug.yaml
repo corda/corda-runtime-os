@@ -26,6 +26,7 @@ workers:
 #    debug:
 #      enabled: true
 #      suspend: true
+    verifyInstrumentation: true
   membership:
     replicaCount: 1
 #    debug:

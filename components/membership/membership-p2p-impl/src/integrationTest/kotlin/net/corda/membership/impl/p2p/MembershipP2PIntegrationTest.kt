@@ -45,8 +45,8 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -60,6 +60,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -87,7 +88,7 @@ class MembershipP2PIntegrationTest {
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
         val logger = contextLogger()
-        val clock: Clock = UTCClock()
+        val clock: Clock = TestClock(Instant.ofEpochSecond(100))
 
         const val MEMBER_CONTEXT_KEY = "key"
         const val MEMBER_CONTEXT_VALUE = "value"
@@ -177,7 +178,7 @@ class MembershipP2PIntegrationTest {
                     Record(
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(messagingConf, 0, schemaVersion)
+                        Configuration(messagingConf, messagingConf, 0, schemaVersion)
                     )
                 )
             )

@@ -58,7 +58,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
     companion object {
         val logger = contextLogger()
 
-        const val CONSUMER_GROUP = "membership.registration.processor.group"
+        private const val CONSUMER_GROUP = "membership.registration.processor.group"
 
         private val clock: Clock = UTCClock()
     }

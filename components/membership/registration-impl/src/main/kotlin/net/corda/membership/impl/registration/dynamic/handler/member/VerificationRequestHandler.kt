@@ -39,12 +39,12 @@ class VerificationRequestHandler(
             "Incorrect handler used for command of type ${command.value!!.command::class.java}"
         }
         val responseTimestamp = clock.instant()
+        val mgm = request.source
+        val member = request.source
         val authenticatedMessageHeader = AuthenticatedMessageHeader(
             // we need to switch here the source and destination
-            // MGM
-            request.source,
-            // member
-            request.destination,
+            mgm,
+            member,
             responseTimestamp.plusMillis(TTL)?.toEpochMilli(),
             UUID.randomUUID().toString(),
             null,
@@ -66,7 +66,7 @@ class VerificationRequestHandler(
             listOf(
                 Record(
                     P2P_OUT_TOPIC,
-                    request.source.toCorda().id,
+                    member,
                     AppMessage(authenticatedMessage)
                 )
             )

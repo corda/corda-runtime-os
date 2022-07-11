@@ -1,10 +1,12 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.configuration.rpcops.impl
 
+import net.corda.configuration.read.ConfigurationGetService
 import java.util.concurrent.CompletableFuture
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -13,6 +15,7 @@ import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.endpoints.v1.types.HTTPGetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidationException
@@ -21,6 +24,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.versioning.Version
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -63,6 +67,12 @@ class ConfigRPCOpsImplTests {
             req.schemaVersion.minor
         ), req.version
     )
+
+    private val configSection = "section"
+    private val config = Configuration("CONFIG+DEFAULT", "CONFIG", 1, ConfigurationSchemaVersion(2,3))
+    private val configurationGetService = mock<ConfigurationGetService> {
+        on { get(configSection) }.thenReturn(config)
+    }
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
@@ -241,7 +251,7 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `is not running if RPC sender is not created`() {
-        val configRPCOps = ConfigRPCOpsImpl(mock(), mock())
+        val configRPCOps = ConfigRPCOpsImpl(mock(), mock(), mock())
         configRPCOps.setTimeout(0)
         assertFalse(configRPCOps.isRunning)
     }
@@ -259,6 +269,22 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(0)
         assertTrue(configRPCOps.isRunning)
+    }
+
+    @Test
+    fun `get returns HTTPGetConfigResponse if section is found`() {
+        val (_, configRPCOps) = getConfigRPCOps()
+
+        configRPCOps.createAndStartRPCSender(mock())
+        configRPCOps.setTimeout(1000)
+
+        assertThat(HTTPGetConfigResponse(
+            configSection,
+            config.source,
+            config.value,
+            Version(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            config.version
+        )).isEqualTo(configRPCOps.get(configSection))
     }
 
     /** Returns a [ConfigRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests.
@@ -290,6 +316,7 @@ class ConfigRPCOpsImplTests {
         val validatorFactory = mock<ConfigurationValidatorFactory>().apply {
             whenever(createConfigValidator()).thenReturn(validator)
         }
-        return rpcSender to ConfigRPCOpsImpl(publisherFactory, validatorFactory)
+
+        return rpcSender to ConfigRPCOpsImpl(publisherFactory, validatorFactory, configurationGetService)
     }
 }

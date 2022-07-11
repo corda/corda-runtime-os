@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops.impl.tests
+package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator

@@ -35,6 +35,7 @@ class ConfigWriterProcessorTests {
             section to
                     Configuration(
                         config,
+                        config,
                         version,
                         ConfigurationSchemaVersion(
                             schemaVersion.majorVersion,
@@ -66,7 +67,7 @@ class ConfigWriterProcessorTests {
 
     /** Returns a mock [Publisher] that throws an error whenever it tries to publish. */
     private fun getErroringPublishService() = mock<ConfigPublishService>().apply {
-        whenever(put(any(), any())).thenThrow(publisherError)
+        whenever(put(any(), any(), any(), any())).thenThrow(publisherError)
     }
 
     /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
@@ -106,7 +107,7 @@ class ConfigWriterProcessorTests {
         val processor = ConfigWriterProcessor(configPublishService, configEntityWriter, validator, clock)
         processRequest(processor, configMgmtReq)
 
-        verify(configPublishService).put(expectedConfigSection, expectedConfig)
+        verify(configPublishService).put(expectedConfigSection, expectedConfig.value, expectedConfig.version, expectedConfig.schemaVersion)
     }
 
     @Test
@@ -155,8 +156,8 @@ class ConfigWriterProcessorTests {
 
         val expectedEnvelope = ExceptionEnvelope(
             CordaMessageAPIIntermittentException::class.java.name,
-            "Configuration $expectedConfig was written to the database, but couldn't be published. Cause: " +
-                    "$publisherError"
+            "Configuration '${expectedConfig.first}' (${expectedConfig.second.value}) was written to the database, " +
+                    "but couldn't be published. Cause: $publisherError"
         )
         val expectedResp = configMgmtReq.run {
             ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)

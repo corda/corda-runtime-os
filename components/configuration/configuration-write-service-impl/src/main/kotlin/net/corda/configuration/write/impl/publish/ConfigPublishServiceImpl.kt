@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
@@ -51,20 +52,30 @@ class ConfigPublishServiceImpl @Activate constructor(
         get() =
             handler.publisher ?: throw IllegalStateException("Config publish service publisher is null")
 
-    override fun put(configSection: String, config: Configuration) {
-        val configWithDefaults = validateConfigAndApplyDefaults(
-            configSection,
-            config.value,
-            config.schemaVersion.majorVersion,
-            config.schemaVersion.minorVersion
+    override fun put(section: String, value: String, version: Int, schemaVersion: ConfigurationSchemaVersion) {
+        val configValueWithDefaults = validateConfigAndApplyDefaults(
+            section,
+            value,
+            schemaVersion.majorVersion,
+            schemaVersion.minorVersion
         )
-        config.value = configWithDefaults.root().render(ConfigRenderOptions.concise())
+
+        val newConfig = Configuration(
+            configValueWithDefaults.root().render(ConfigRenderOptions.concise()),
+            value,
+            version,
+            schemaVersion
+        )
 
         // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
-        val futures = publisher.publish(listOf(Record(CONFIG_TOPIC, configSection, config)))
+        val futures = publisher.publish(listOf(Record(CONFIG_TOPIC, section, newConfig)))
 
         // TODO - CORE-3730 - Define timeout policy.
         futures.first().get()
+    }
+
+    override fun put(recordKey: String, recordValue: Configuration) {
+        put(recordKey, recordValue.value, recordValue.version, recordValue.schemaVersion)
     }
 
     private fun validateConfigAndApplyDefaults(
