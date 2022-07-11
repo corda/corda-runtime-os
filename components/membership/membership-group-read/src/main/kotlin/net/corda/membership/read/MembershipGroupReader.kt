@@ -56,4 +56,14 @@ interface MembershipGroupReader {
      * @param name MemberX500Name of the member to lookup.
      */
     fun lookup(name: MemberX500Name): MemberInfo?
+
+    /**
+     * Looks up a group member matching the public key SHA-256 hash as visible by the member represented
+     * by [owningMember] having active membership status within the group represented by [groupId].
+     *
+     * If the member is not found then the null value is returned.
+     *
+     * @param sessionKeyHash Hash of the session key belonging to the member to be looked up.
+     */
+    fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo?
 }

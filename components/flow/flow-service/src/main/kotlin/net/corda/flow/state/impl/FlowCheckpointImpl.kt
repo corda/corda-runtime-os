@@ -93,6 +93,7 @@ class FlowCheckpointImpl(
                 "Attempt to set the flow state before it has been created"
             }.persistenceState = value
         }
+    override var cryptoState: CryptoState? = null
 
     override val doesExist: Boolean
         get() = flowStateManager != null && !deleted

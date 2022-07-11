@@ -15,6 +15,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
@@ -77,7 +78,6 @@ fun FileInfo.validateAndGetCpi(cpiPartsDir: Path): Cpi {
     return cpi
 }
 
-
 /**
  * Persists CPI metadata and CPK content.
  *
@@ -135,7 +135,7 @@ fun CpiPersistence.persistCpiToDatabase(
  */
 fun Cpi.validateAndGetGroupId(): String {
     if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
-    return GroupPolicyParser.groupId(this.metadata.groupPolicy!!)
+    return GroupPolicyParser.getOrCreateGroupId(this.metadata.groupPolicy!!)
 }
 
 /**

@@ -1,18 +1,13 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -76,7 +71,12 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -99,6 +99,9 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
+
+        @InjectService(timeout = 5000L)
+        lateinit var cryptoFlowOpsTransformerFactory: CryptoFlowOpsTransformerFactory
 
         @InjectService(timeout = 5000L)
         lateinit var opsClient: CryptoOpsClient
@@ -180,12 +183,7 @@ class CryptoProcessorTests {
 
         private fun setupPrerequisites() {
             flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
-            transformer = CryptoFlowOpsTransformer(
-                serializer = schemeMetadata,
-                requestingComponent = "test",
-                responseTopic = RESPONSE_TOPIC,
-                keyEncodingService = schemeMetadata
-            )
+            transformer = cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
             publisher.publish(
@@ -193,7 +191,7 @@ class CryptoProcessorTests {
                     Record(
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
-                        Configuration(messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
+                        Configuration(messagingConfig.root().render(), messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             )
@@ -453,91 +451,6 @@ class CryptoProcessorTests {
         `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
-    @ParameterizedTest
-    @MethodSource("testTenants")
-    fun `Should generate fresh key pair without external id by flow ops then find it and use for signing`(
-        tenantId: String
-    ) {
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createFreshKey(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.CI,
-            scheme = RSA_CODE_NAME
-        )
-        logger.info(
-            "Publishing: createFreshKey({}, {}, {})",
-            tenantId,
-            CryptoConsts.Categories.CI,
-            RSA_CODE_NAME
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
-            )
-        ).forEach { it.get() }
-        logger.info("Waiting for response for createFreshKey")
-        val response = flowOpsResponses.waitForResponse(key)
-        val original = transformer.transform(response) as PublicKey
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
-    }
-
-    @ParameterizedTest
-    @MethodSource("testTenants")
-    fun `Should generate fresh key pair with external id by flow ops then find it and use for signing`(
-        tenantId: String
-    ) {
-        val externalId = UUID.randomUUID().toString()
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createFreshKey(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.CI,
-            scheme = RSA_CODE_NAME,
-            externalId = externalId
-        )
-        logger.info(
-            "Publishing: createFreshKey({}, {}, {}, {})",
-            tenantId,
-            CryptoConsts.Categories.CI,
-            RSA_CODE_NAME,
-            externalId
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
-            )
-        ).forEach { it.get() }
-        logger.info("Waiting for response for createFreshKey")
-        val response = flowOpsResponses.waitForResponse(key)
-        val original = transformer.transform(response) as PublicKey
-
-        `Should be able to sign and verify`(tenantId, original)
-
-        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
-
-        `Should be able to sign using custom signature spec`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify`(tenantId, original)
-
-        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
-    }
-
     private fun `Should find existing public key by its id`(
         tenantId: String,
         alias: String?,
@@ -676,6 +589,7 @@ class CryptoProcessorTests {
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
             val event = transformer.createSign(
+                requestId = UUID.randomUUID().toString(),
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
@@ -719,6 +633,7 @@ class CryptoProcessorTests {
             val key = UUID.randomUUID().toString()
             val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
             val event = transformer.createSign(
+                requestId = UUID.randomUUID().toString(),
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,

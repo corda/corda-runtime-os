@@ -25,6 +25,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.FlowConfig
+import net.corda.v5.persistence.CordaPersistenceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -155,7 +156,7 @@ class EntityResponseWaitingForHandlerTest {
         val context = stubFlowContext(errorResponseFatal, persistenceState)
         val result = entityResponseWaitingForHandler.runOrContinue(context, net.corda.data.flow.state.waiting.EntityResponse(requestId))
         assertThat(result::class.java).isEqualTo(FlowContinuation.Error::class.java)
-        assertThat(context.checkpoint.persistenceState).isEqualTo(persistenceState)
+        assertThat(context.checkpoint.persistenceState).isNull()
     }
 
     @Test
@@ -164,8 +165,9 @@ class EntityResponseWaitingForHandlerTest {
         persistenceState.retries = maxRetries
         val context = stubFlowContext(errorResponseNotReady, persistenceState)
         val result = entityResponseWaitingForHandler.runOrContinue(context, net.corda.data.flow.state.waiting.EntityResponse(requestId))
-        assertThat(result).isEqualTo(FlowContinuation.Continue)
-        assertThat(context.checkpoint.persistenceState?.retries).isEqualTo(maxRetries+1)
+        assertThat(result).isInstanceOf(FlowContinuation.Error::class.java)
+        assertThat((result as FlowContinuation.Error).exception).isInstanceOf(CordaPersistenceException::class.java)
+        assertThat(context.checkpoint.persistenceState).isNull()
     }
 
     @Test
@@ -184,7 +186,7 @@ class EntityResponseWaitingForHandlerTest {
         val context = stubFlowContext(errorResponseVirtualNode, persistenceState)
         val result = entityResponseWaitingForHandler.runOrContinue(context, net.corda.data.flow.state.waiting.EntityResponse(requestId))
         assertThat(result::class.java).isEqualTo(FlowContinuation.Error::class.java)
-        assertThat(context.checkpoint.persistenceState?.retries).isEqualTo(maxRetries)
+        assertThat(context.checkpoint.persistenceState).isNull()
     }
 
     private fun stubFlowContext(entityResponse: EntityResponse, persistenceState: PersistenceState? = null) :

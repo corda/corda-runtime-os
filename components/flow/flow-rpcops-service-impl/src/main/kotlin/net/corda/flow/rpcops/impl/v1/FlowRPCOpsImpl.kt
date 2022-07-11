@@ -1,13 +1,17 @@
 package net.corda.flow.rpcops.impl.v1
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
-import net.corda.flow.rpcops.v1.response.HTTPStartFlowResponse
+import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
@@ -24,8 +28,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
 class FlowRPCOpsImpl @Activate constructor(
@@ -59,23 +61,22 @@ class FlowRPCOpsImpl @Activate constructor(
     @Suppress("SpreadOperator")
     override fun startFlow(
         holderShortId: String,
-        clientRequestId: String,
-        flowClassName: String,
-        requestBody: String
-    ): HTTPStartFlowResponse {
+        httpStartFlow: HTTPStartFlowRequest
+    ): HTTPFlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
         val vNode = getVirtualNode(holderShortId)
-
+        val clientRequestId = httpStartFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
         if (flowStatus != null) {
-            return HTTPStartFlowResponse(true, messageFactory.createFlowStatusResponse(flowStatus))
+            throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
         }
 
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, requestBody)
+        val flowClassName = httpStartFlow.flowClassName
+        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, httpStartFlow.requestData)
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(
@@ -91,7 +92,7 @@ class FlowRPCOpsImpl @Activate constructor(
             throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", e)
         }
 
-        return HTTPStartFlowResponse(false, messageFactory.createFlowStatusResponse(status))
+        return messageFactory.createFlowStatusResponse(status)
     }
 
     override fun getFlowStatus(holderShortId: String, clientRequestId: String): HTTPFlowStatusResponse {
@@ -104,6 +105,12 @@ class FlowRPCOpsImpl @Activate constructor(
             )
 
         return messageFactory.createFlowStatusResponse(flowStatus)
+    }
+
+    override fun getMultipleFlowStatus(holderShortId: String): HTTPFlowStatusResponses {
+        val vNode = getVirtualNode(holderShortId)
+        val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
+        return HTTPFlowStatusResponses(httpFlowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
 
     override fun start() = Unit

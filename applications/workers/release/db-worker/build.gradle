@@ -5,6 +5,12 @@ plugins {
 
 description 'DB Worker'
 
+osgiRun {
+    frameworkProperties.putAll(
+        'org.osgi.framework.security': 'osgi'
+    )
+}
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -33,12 +39,6 @@ dependencies {
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
-    }
-
-    osgiRun {
-        frameworkProperties.putAll(
-                'org.osgi.framework.security': 'osgi'
-        )
     }
 
     image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"

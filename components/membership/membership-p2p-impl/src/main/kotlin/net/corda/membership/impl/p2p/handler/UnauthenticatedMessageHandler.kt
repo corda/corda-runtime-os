@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 internal abstract class UnauthenticatedMessageHandler : MessageHandler {
     override fun invoke(header: Any, payload: ByteBuffer): Record<*, *> {
         if (header is UnauthenticatedMessageHeader) {
-            return invokeUnautheticatedMessage(header, payload)
+            return invokeUnauthenticatedMessage(header, payload)
         } else {
             throw UnsupportedOperationException(
                 "Handler does not support message type. Only UnauthenticatedMessage is allowed."
@@ -15,5 +15,5 @@ internal abstract class UnauthenticatedMessageHandler : MessageHandler {
         }
     }
 
-    abstract fun invokeUnautheticatedMessage(header: UnauthenticatedMessageHeader, payload: ByteBuffer): Record<*, *>
+    abstract fun invokeUnauthenticatedMessage(header: UnauthenticatedMessageHeader, payload: ByteBuffer): Record<*, *>
 }

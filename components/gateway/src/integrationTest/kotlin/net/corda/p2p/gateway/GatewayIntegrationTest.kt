@@ -90,6 +90,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
+import java.net.http.HttpRequest.BodyPublisher
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 import java.net.http.HttpResponse.BodyHandlers
@@ -209,7 +210,9 @@ class GatewayIntegrationTest : TestBase() {
                     .build()
 
                 val request = JavaHttpRequest.newBuilder()
-                    .uri(serverAddress)
+                    .POST(java.net.http.HttpRequest.BodyPublishers.noBody())
+                    .uri(URI("$serverAddress/gateway/send"))
+                    .header("Content-type", "application/json")
                     .build()
 
                 val response = httpClient.send(request, BodyHandlers.discarding())

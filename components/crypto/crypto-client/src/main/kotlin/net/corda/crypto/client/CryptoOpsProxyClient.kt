@@ -1,13 +1,11 @@
 package net.corda.crypto.client
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.v5.crypto.CompositeKey
 import java.nio.ByteBuffer
-import java.security.KeyPair
 import java.security.PublicKey
 
 /**
@@ -27,43 +25,6 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys
 
     /**
-     * Generates a new random [KeyPair] and adds it to the internal key storage.
-     *
-     * @param tenantId The tenant owning the key.
-     * @param category The key category, such as ACCOUNTS, CI, etc.
-     * @param scheme the key's scheme code name describing which type of the key to generate.
-     * @param context the optional key/value operation context.
-     *
-     * @return The [CryptoPublicKey] containing encoded [PublicKey] of the generated [KeyPair].
-     */
-    fun freshKeyProxy(
-        tenantId: String,
-        category: String,
-        scheme: String,
-        context: KeyValuePairList
-    ): CryptoPublicKey
-
-    /**
-     * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
-     * an external id.
-     *
-     * @param tenantId The tenant owning the key.
-     * @param category The key category, such as ACCOUNTS, CI, etc.
-     * @param externalId Some id associated with the key, the service doesn't use any semantic beyond association.
-     * @param scheme the key's scheme code name describing which type of the key to generate.
-     * @param context the optional key/value operation context.
-     *
-     * @return The [CryptoPublicKey] containing encoded [PublicKey] of the generated [KeyPair].
-     */
-    fun freshKeyProxy(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: String,
-        context: KeyValuePairList
-    ): CryptoPublicKey
-
-    /**
      * Using the provided signing public key internally looks up the matching private key information and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
      * Default signature scheme for the key scheme is used.
@@ -75,25 +36,4 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
         data: ByteBuffer,
         context: KeyValuePairList
     ): CryptoSignatureWithKey
-
-    /**
-     * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of
-     * the wrapping key in such cases the implementation should do nothing (note that [requiresWrappingKey] should
-     * return false for such implementations).
-     *
-     * @param configId the HSM's configuration id which the key is generated in.
-     * @param failIfExists a flag indicating whether the method should fail if a key already exists under
-     * the provided alias or return normally without overriding the key.
-     * @param context the optional key/value operation context.
-     *
-     * @throws IllegalArgumentException if a key already exists under this alias
-     * and [failIfExists] is set to true.
-     * @throws net.corda.v5.crypto.failures.CryptoException for general cryptographic exceptions.
-     */
-    fun createWrappingKey(
-        configId: String,
-        failIfExists: Boolean,
-        masterKeyAlias: String,
-        context: Map<String, String>
-    )
 }

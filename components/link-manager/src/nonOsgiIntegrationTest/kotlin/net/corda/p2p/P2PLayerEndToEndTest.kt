@@ -45,8 +45,8 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.KeyPairEntry
@@ -141,12 +141,12 @@ class P2PLayerEndToEndTest {
                 hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
                 eventually(10.seconds) {
-                    val messagesWithSentMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                    val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
-                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
                         .map { it.key }.toSet()
 
-                    assertThat(messagesWithSentMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                    assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
@@ -192,12 +192,12 @@ class P2PLayerEndToEndTest {
                 hostA.sendMessages(numberOfMessages, receiverId, senderId)
 
                 eventually(10.seconds) {
-                    val messagesWithSentMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                    val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
-                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
                         .map { it.key }.toSet()
 
-                    assertThat(messagesWithSentMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                    assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
@@ -231,9 +231,9 @@ class P2PLayerEndToEndTest {
 
             host.sendMessages(numberOfMessages, receiverId, senderId)
             eventually(10.seconds) {
-                val messagesWithSentMarker = hostMarkers.filter { it.value!!.marker is LinkManagerSentMarker }.map { it.key }.toSet()
-                val messagesWithReceivedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerSentMarker }.map { it.key }.toSet()
-                assertThat(messagesWithSentMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                val messagesWithProcessedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key }.toSet()
+                val messagesWithReceivedMarker = hostMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }.map { it.key }.toSet()
+                assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                 assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                 assertThat(hostReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "ping ($it)" })
             }
@@ -244,7 +244,7 @@ class P2PLayerEndToEndTest {
 
     @Test
     @Timeout(60)
-    fun `messages with expired ttl have sent marker and ttl expired marker and no received marker`() {
+    fun `messages with expired ttl have processed marker and ttl expired marker and no received marker`() {
         val numberOfMessages = 10
         val aliceId = Identity("O=Alice, L=London, C=GB", "sslkeystore_alice")
         val chipId = Identity("O=Chip, L=London, C=GB", "sslkeystore_chip")
@@ -278,7 +278,7 @@ class P2PLayerEndToEndTest {
 
                 eventually(10.seconds) {
                     val markers = hostAMarkers.filter { it.topic == P2P_OUT_MARKERS }.map { (it.value as AppMessageMarker).marker }
-                    assertThat(hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }.map { it.key })
+                    assertThat(hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAMarkers.filter { it.value!!.marker is TtlExpiredMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
@@ -420,6 +420,7 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
                 mock(),
+                mock(),
                 ThirdPartyComponentsMode.STUB
             )
 
@@ -435,12 +436,13 @@ class P2PLayerEndToEndTest {
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
+            val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(
                 listOf(
                     Record(
                         CONFIG_TOPIC,
                         key,
-                        Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
+                        Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             ).forEach { it.get() }

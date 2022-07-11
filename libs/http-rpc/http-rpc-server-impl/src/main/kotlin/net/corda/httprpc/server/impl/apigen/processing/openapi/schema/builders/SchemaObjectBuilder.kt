@@ -50,7 +50,7 @@ internal class SchemaObjectBuilder(
                     )
 
                 )
-            }
+            }.toSortedMap()
         )
     }
 }

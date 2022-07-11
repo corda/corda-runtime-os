@@ -18,6 +18,7 @@ import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -98,7 +99,7 @@ class FlowSessionManagerImplTest {
     @BeforeEach
     fun setup() {
         whenever(checkpoint.flowId).thenReturn(FLOW_ID)
-        whenever(checkpoint.holdingIdentity).thenReturn(HOLDING_IDENTITY)
+        whenever(checkpoint.holdingIdentity).thenReturn(HOLDING_IDENTITY.toCorda())
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(sessionState)
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(anotherSessionState)
     }

@@ -1,12 +1,12 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
-import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -58,14 +58,14 @@ internal class VirtualNodeWriterFactory(
     private fun createRPCSubscription(
         messagingConfig: SmartConfig,
         vnodePublisher: Publisher,
-    ): RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
+    ): RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
         val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_RPC,
             VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
-            VirtualNodeCreationRequest::class.java,
-            VirtualNodeCreationResponse::class.java,
+            VirtualNodeManagementRequest::class.java,
+            VirtualNodeManagementResponse::class.java,
         )
         val virtualNodeEntityRepository =
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())

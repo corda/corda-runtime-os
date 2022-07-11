@@ -81,12 +81,12 @@ internal class DynamicKeyStore(
     private val signerCoordinatorName = if (signingMode == SigningMode.REAL) {
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
     } else {
-        stubSigner.dominoTile.coordinatorName
+        stubSigner.namedLifecycle.name
     }
     private val signerNamedLifecycle = if (signingMode == SigningMode.REAL) {
         NamedLifecycle(cryptoOpsClient, signerCoordinatorName)
     } else {
-        stubSigner.dominoTile.toNamedLifecycle()
+        stubSigner.namedLifecycle
     }
 
     override val dominoTile = ComplexDominoTile(

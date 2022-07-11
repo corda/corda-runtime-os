@@ -3,6 +3,7 @@ package net.corda.crypto.persistence.db.impl.signing
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.signing.SigningKeyStore
@@ -25,7 +26,7 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [SigningKeyStoreProvider::class])
 class SigningKeyStoreProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
@@ -39,28 +40,23 @@ class SigningKeyStoreProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val vnodeInfo: VirtualNodeInfoReadService
 ) : AbstractConfigurableComponent<SigningKeyStoreProviderImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     ),
-    setOf(
+    configKeys = setOf(
         ConfigKeys.MESSAGING_CONFIG,
         ConfigKeys.BOOT_CONFIG,
         ConfigKeys.CRYPTO_CONFIG
     )
 ), SigningKeyStoreProvider {
-    interface Impl: AutoCloseable {
-        fun getInstance(): SigningKeyStore
-    }
-
-    override fun createInactiveImpl(): Impl =
-        InactiveImpl()
-
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
+        coordinatorFactory,
         event,
         dbConnectionManager,
         jpaEntitiesRegistry,
@@ -71,21 +67,15 @@ class SigningKeyStoreProviderImpl @Activate constructor(
 
     override fun getInstance(): SigningKeyStore = impl.getInstance()
 
-    class InactiveImpl : Impl {
-        override fun getInstance(): SigningKeyStore =
-            throw IllegalStateException("The component is in illegal state.")
-
-        override fun close() = Unit
-    }
-
-    class ActiveImpl(
+    class Impl(
+        coordinatorFactory: LifecycleCoordinatorFactory,
         event: ConfigChangedEvent,
         private val dbConnectionOps: DbConnectionOps,
         private val jpaEntitiesRegistry: JpaEntitiesRegistry,
         private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
         private val keyEncodingService: KeyEncodingService,
         private val vnodeInfo: VirtualNodeInfoReadService
-    ) : Impl {
+    ) : AbstractImpl {
         private val config: SmartConfig
 
         init {
@@ -103,8 +93,17 @@ class SigningKeyStoreProviderImpl @Activate constructor(
             )
         }
 
-        override fun getInstance(): SigningKeyStore = instance
+        fun getInstance(): SigningKeyStore = instance
 
-        override fun close() = Unit
+        private val _downstream = DependenciesTracker.AlwaysUp(
+            coordinatorFactory,
+            this
+        ).also { it.start() }
+
+        override val downstream: DependenciesTracker = _downstream
+
+        override fun close() {
+            _downstream.close()
+        }
     }
 }

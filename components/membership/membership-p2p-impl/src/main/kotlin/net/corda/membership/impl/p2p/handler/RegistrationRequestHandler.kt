@@ -1,7 +1,7 @@
 package net.corda.membership.impl.p2p.handler
 
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.StartRegistration
+import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
@@ -18,7 +18,7 @@ internal class RegistrationRequestHandler(
         private val logger = contextLogger()
     }
 
-    override fun invokeUnautheticatedMessage(
+    override fun invokeUnauthenticatedMessage(
         header: UnauthenticatedMessageHeader,
         payload: ByteBuffer
     ): Record<String, RegistrationCommand> {

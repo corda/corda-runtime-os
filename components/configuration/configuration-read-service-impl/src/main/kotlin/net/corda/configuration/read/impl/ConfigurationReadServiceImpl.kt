@@ -2,6 +2,7 @@ package net.corda.configuration.read.impl
 
 import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.data.config.Configuration
@@ -25,7 +26,7 @@ import org.osgi.service.component.annotations.Reference
  * component will then mark itself as up. Other components can register on this to identify when to register for config
  * change (although the component should cope with registration at any time after startup).
  */
-@Component(service = [ConfigurationReadService::class, ConfigReconcilerReader::class])
+@Component(service = [ConfigurationReadService::class, ConfigReconcilerReader::class, ConfigurationGetService::class])
 class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -33,7 +34,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger
-) : ConfigurationReadService, ConfigReconcilerReader {
+) : ConfigurationReadService, ConfigReconcilerReader, ConfigurationGetService {
 
     private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger)
 
@@ -64,6 +65,11 @@ class ConfigurationReadServiceImpl @Activate constructor(
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<String, Configuration>> =
         configProcessor.getAllVersionedRecords()
+
+
+    override fun get(section: String): Configuration? {
+        return configProcessor.get(section)
+    }
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning

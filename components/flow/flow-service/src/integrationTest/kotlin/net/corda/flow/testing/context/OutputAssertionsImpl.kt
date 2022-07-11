@@ -1,5 +1,7 @@
 package net.corda.flow.testing.context
 
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
+import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
@@ -86,6 +88,24 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun cryptoSignEvents(vararg requestId: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response, "Test run response value")
+
+            val cryptoSignEventRequestIds = testRun.response!!.responseEvents
+                .filter { it.topic == Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC }
+                .mapNotNull { it.value as? FlowOpsRequest }
+                .filter { it.request is SignFlowCommand }
+                .map { it.context.requestId }
+
+            assertEquals(
+                requestId.toList(),
+                cryptoSignEventRequestIds,
+                "Expected request ids: ${requestId.toList()} but found $cryptoSignEventRequestIds when expecting ${SignFlowCommand::class.simpleName} events"
+            )
+        }
+    }
+
     override fun scheduleFlowMapperCleanupEvents(vararg key: String) {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response value")
@@ -110,7 +130,8 @@ class OutputAssertionsImpl(
     override fun flowResumedWith(value: Any?) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
-            assertEquals(value, (testRun.flowContinuation as FlowContinuation.Run).value)
+            val resumedWith = (testRun.flowContinuation as FlowContinuation.Run).value
+            assertEquals(value, resumedWith, "Expected flow to resume with $value but was $resumedWith")
         }
     }
 
@@ -258,6 +279,7 @@ class OutputAssertionsImpl(
                 it.value is EntityRequest
             }
 
+            assertTrue(entityRequests.isNotEmpty(), "No entity request found in response output events")
             assertTrue(entityRequests.size == 1, "More than one entity request found in response output events")
             val foundEntityRequest = entityRequests.first().value as EntityRequest
 

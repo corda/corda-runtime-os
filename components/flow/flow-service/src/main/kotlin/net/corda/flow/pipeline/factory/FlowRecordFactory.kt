@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.factory
 
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
@@ -24,6 +25,14 @@ interface FlowRecordFactory {
      * @return a new instance of a [FlowEvent] record.
      */
     fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent>
+
+    /**
+     * Wrap an EntityRequest obj in a record to be sent to the crypto processor.
+     * @param requestId UUID of the request. Set as the record key.
+     * @param payload Request payload. Set as record value.
+     * @return Record to be sent to the crypto processor.
+     */
+    fun createFlowOpsRequestRecord(flowId: String, payload: FlowOpsRequest): Record<String, FlowOpsRequest>
 
     /**
      * Wrap an EntityRequest obj in a record to be sent to the db entity processor.

@@ -46,6 +46,7 @@ dependencies {
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:reconciliation:reconciliation")
+    implementation project(":libs:membership:membership-common")
 
     testImplementation project(':libs:db:db-admin')
     testImplementation project(':libs:db:db-admin-impl')

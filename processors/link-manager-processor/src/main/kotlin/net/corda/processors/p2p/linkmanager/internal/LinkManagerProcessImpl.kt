@@ -2,6 +2,7 @@ package net.corda.processors.p2p.linkmanager.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
@@ -45,7 +46,9 @@ class LinkManagerProcessImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -91,6 +94,7 @@ class LinkManagerProcessImpl @Activate constructor(
                     groupPolicyProvider,
                     virtualNodeInfoReadService,
                     cpiInfoReadService,
+                    cryptoOpsClient,
                     //This will be removed once integration with MGM/crypto has been completed.
                     ThirdPartyComponentsMode.STUB
                 )

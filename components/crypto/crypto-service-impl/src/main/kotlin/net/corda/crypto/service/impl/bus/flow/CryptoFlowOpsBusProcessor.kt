@@ -7,16 +7,16 @@ import net.corda.crypto.impl.config.flowBusProcessor
 import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.service.impl.WireProcessor
-import net.corda.data.KeyValuePair
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
+import net.corda.data.flow.event.FlowEvent
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.BackoffStrategy
@@ -32,7 +32,6 @@ class CryptoFlowOpsBusProcessor(
         private val logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
             FilterMyKeysFlowQuery::class.java to FilterMyKeysFlowQueryHandler::class.java,
-            GenerateFreshKeyFlowCommand::class.java to GenerateFreshKeyFlowCommandHandler::class.java,
             SignFlowCommand::class.java to SignFlowCommandHandler::class.java
         )
     }
@@ -77,7 +76,7 @@ class CryptoFlowOpsBusProcessor(
             return Record(
                 responseTopic,
                 event.key,
-                createErrorResponse(request, "Expired at $expireAt")
+                FlowEvent(event.key, createErrorResponse(request, "Expired", "Expired at $expireAt"))
             )
         }
         return try {
@@ -96,13 +95,13 @@ class CryptoFlowOpsBusProcessor(
                 return Record(
                     responseTopic,
                     event.key,
-                    createErrorResponse(request, "Expired at $expireAt")
+                    FlowEvent(event.key, createErrorResponse(request, "Expired", "Expired at $expireAt"))
                 )
             }
             val result = Record(
                 responseTopic,
                 event.key,
-                FlowOpsResponse(createResponseContext(request), response)
+                FlowEvent(event.key, FlowOpsResponse(createResponseContext(request), response, null))
             )
             logger.debug {
                 "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId}"
@@ -114,7 +113,7 @@ class CryptoFlowOpsBusProcessor(
             return Record(
                 responseTopic,
                 event.key,
-                createErrorResponse(request, e.message ?: e::class.java.name)
+                FlowEvent(event.key, createErrorResponse(request, e::class.java.name, e.message ?: e::class.java.name))
             )
         }
     }
@@ -134,21 +133,17 @@ class CryptoFlowOpsBusProcessor(
         }?.value
     }
 
-    private fun createErrorResponse(request: FlowOpsRequest, error: String): FlowOpsResponse =
-        FlowOpsResponse(createResponseContext(request, error), CryptoNoContentValue())
+    private fun createErrorResponse(request: FlowOpsRequest, errorType: String, errorMessage: String): FlowOpsResponse =
+        FlowOpsResponse(createResponseContext(request), CryptoNoContentValue(), ExceptionEnvelope(errorType, errorMessage))
 
-    private fun createResponseContext(request: FlowOpsRequest, error: String? = null) = CryptoResponseContext(
+    private fun createResponseContext(request: FlowOpsRequest) = CryptoResponseContext(
         request.context.requestingComponent,
         request.context.requestTimestamp,
         request.context.requestId,
         Instant.now(),
         request.context.tenantId,
         KeyValuePairList(request.context.other.items.toList())
-    ).also {
-        if (!error.isNullOrBlank()) {
-            it.other.items.add(KeyValuePair(CryptoFlowOpsTransformer.RESPONSE_ERROR_KEY, error))
-        }
-    }
+    )
 
     private class FilterMyKeysFlowQueryHandler(
         private val client: CryptoOpsProxyClient
@@ -158,28 +153,6 @@ class CryptoFlowOpsBusProcessor(
                 tenantId = context.tenantId,
                 candidateKeys = request.keys
             )
-    }
-
-    private class GenerateFreshKeyFlowCommandHandler(
-        private val client: CryptoOpsProxyClient
-    ) : Handler<GenerateFreshKeyFlowCommand> {
-        override fun handle(context: CryptoRequestContext, request: GenerateFreshKeyFlowCommand): Any =
-            if (request.externalId.isNullOrBlank()) {
-                client.freshKeyProxy(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    scheme = request.schemeCodeName,
-                    context = request.context
-                )
-            } else {
-                client.freshKeyProxy(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    externalId = request.externalId,
-                    scheme = request.schemeCodeName,
-                    context = request.context
-                )
-            }
     }
 
     private class SignFlowCommandHandler(

@@ -25,7 +25,7 @@ class SoftCryptoServiceProviderTests {
             factory.coordinatorFactory,
             factory.schemeMetadata,
             factory.digest,
-            factory.softCacheProvider
+            factory.softCryptoKeyStoreProvider
         )
     }
 
@@ -97,12 +97,12 @@ class SoftCryptoServiceProviderTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
-        factory.softCacheProvider.coordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.softCryptoKeyStoreProvider.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
-        factory.softCacheProvider.coordinator.updateStatus(LifecycleStatus.UP)
+        factory.softCryptoKeyStoreProvider.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

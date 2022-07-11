@@ -1,6 +1,6 @@
 plugins {
     id 'corda.common-publishing'
-    id 'corda.quasar-app'
+    id 'corda.common-app'
 }
 
 description 'Member Worker'
