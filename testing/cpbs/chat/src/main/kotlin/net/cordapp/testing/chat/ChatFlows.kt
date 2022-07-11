@@ -21,12 +21,12 @@ import net.corda.v5.base.util.contextLogger
 /**
  * Outgoing chat message flow, for sending a chat message to another member.
  * JSON argument should look something like:
- * <pre>
+ * ```json
  * {
  *   "recipientX500Name": "CN=Alice, O=R3, L=London, C=GB",
  *   "message": "Hello Alice"
  * }
- * </pre>
+ * ```
  */
 @InitiatingFlow(protocol = "chatProtocol")
 class ChatOutgoingFlow : RPCStartableFlow {
@@ -98,18 +98,18 @@ class ChatIncomingFlow : ResponderFlow {
  * Read messages are removed from the store thus it becomes the responsibility of the caller to keep track of them after
  * this point.
  * JSON argument should look something like:
- * <pre>
+ * ```json
  * {
  *   "fromName": "CN=Alice, O=R3, L=London, C=GB"
  * }
- * </pre>
+ * ```
  * or for all messages:
- * <pre>
+ * ```json
  * {}
- * </pre>
+ * ```
  *
  * The output will look something like:
- * <pre>
+ * ```json
  * {
  *   "messages": [
  *     {
@@ -118,7 +118,7 @@ class ChatIncomingFlow : ResponderFlow {
  *     }
  *   ]
  * }
- * </pre>
+ * ```
  */
 class ChatReaderFlow : RPCStartableFlow {
 
