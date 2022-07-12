@@ -11,10 +11,12 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -34,15 +36,19 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -51,6 +57,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.sql.Connection
 import java.time.Instant
 import java.util.*
@@ -139,23 +146,14 @@ class VirtualNodeWriterProcessorTests {
         DbPrivilege.DML to dbConnection,
     )
 
+    private val vaultDb = VirtualNodeDb(
+        VirtualNodeDbType.VAULT, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock())
+    private val cryptoDb = VirtualNodeDb(
+        VirtualNodeDbType.CRYPTO, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock())
     private val vNodeFactory = mock<VirtualNodeDbFactory>() {
-        on { createVNodeDbs(any(), any()) }.doReturn(
-            mapOf(
-                VirtualNodeDbType.VAULT to VirtualNodeDb(
-                    VirtualNodeDbType.VAULT, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock()
-                ),
-                VirtualNodeDbType.CRYPTO to VirtualNodeDb(
-                    VirtualNodeDbType.CRYPTO,
-                    true,
-                    "holdingIdentityId",
-                    dbConnections,
-                    mock(),
-                    connectionManager,
-                    mock()
-                )
-            )
-        )
+        on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
+            VirtualNodeDbType.VAULT to vaultDb,
+            VirtualNodeDbType.CRYPTO to cryptoDb))
     }
 
     private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
@@ -163,7 +161,6 @@ class VirtualNodeWriterProcessorTests {
         on { virtualNodeExists(any(), any()) }.doReturn(false)
         on { getHoldingIdentity(any()) }.doReturn(null)
     }
-
     private val mgmMemberContextKey = "member-context-key"
     private val mgmMgmContextKey = "mgm-context-key"
     private val mgmMemberContextValue = "member-context-value"
@@ -183,6 +180,10 @@ class VirtualNodeWriterProcessorTests {
     private val groupPolicyParser: GroupPolicyParser = mock {
         on { getMgmInfo(any(), eq(dummyGroupPolicy)) } doReturn null
         on { getMgmInfo(any(), eq(dummyGroupPolicyWithMGMInfo)) } doReturn mgmMemberInfo
+    }
+
+    private val defaultKey: PublicKey = mock {
+        on { encoded } doReturn "1234".toByteArray()
     }
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
@@ -222,11 +223,38 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        )  { _, _ ->
+            listOf()
+        }
 
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         verify(publisher).publish(listOf(expectedRecord))
+    }
+
+    @Test
+    fun `runs empty CPI DB Migrations`() {
+        val changeLog = mock<CpkDbChangeLogEntity>()
+        Mockito.mockConstruction(VirtualNodeDbChangeLog::class.java).use { vndcl ->
+            Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
+                val processor = VirtualNodeWriterProcessor(
+                    getPublisher(),
+                    connectionManager,
+                    vNodeRepo,
+                    vNodeFactory,
+                    groupPolicyParser,
+                    clock
+                ) { _, _ -> listOf(changeLog) }
+
+                processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+
+                assertEquals(vndcl.constructed().size, 1)
+                assertEquals(liquibaseSchemaMigratorImpl.constructed().size, 1)
+                verify(liquibaseSchemaMigratorImpl.constructed().first()).updateDb(any(), argThat { dbChange ->
+                    dbChange.masterChangeLogFiles.isEmpty()
+                })
+            }
+        }
     }
 
     @Test
@@ -242,7 +270,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        ) { _, _ ->
+            listOf()
+        }
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
@@ -288,7 +318,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        )  { _, _ ->
+            listOf()
+        }
         processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
@@ -330,7 +362,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        )  { _, _ ->
+            listOf()
+        }
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
@@ -338,6 +372,7 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `sends RPC failure response if fails to publish virtual node info to Kafka`() {
+        // consider eliminating these 2 instances and just test expected values directrly in the asserts at the bottom of this function
         val expectedEnvelope = ExceptionEnvelope(
             VirtualNodeWriteServiceException::class.java.name,
             ""
@@ -350,7 +385,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        ) { _, _ -> listOf() }
         val resp = processRequest(
             processor,
             VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
@@ -383,7 +418,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        )   { _, _ ->
+            listOf()
+        }
         val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
@@ -415,7 +452,7 @@ class VirtualNodeWriterProcessorTests {
             vNodeFactory,
             groupPolicyParser,
             clock
-        )
+        ) { _, _ -> listOf() }
         val resp = processRequest(
             processor,
             VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
