@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.*
+import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,6 +17,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.client.dto.MGMGenerateGroupPolicyResponseDto
+import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
@@ -24,6 +27,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -32,6 +36,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.time.Instant
+import java.util.*
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(
@@ -60,7 +66,7 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
-        fun generateGroupPolicy(holdingIdentityId: String): String
+        fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponseDto
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -159,7 +165,7 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityId: String): String {
+        override fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponseDto {
 
             val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
                 ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
@@ -169,17 +175,68 @@ class MGMOpsClientImpl @Activate constructor(
             val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("")
 
             if(filteredMembers.isMgm) {
-                val memberProvidedContext =
-                    filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.") }
-                val mgmProvidedContext =
-                    filteredMembers.mgmProvidedContext.entries
-                return objectMapper.writeValueAsString(memberProvidedContext+mgmProvidedContext)
 
+                val request = MembershipRpcRequest(
+                    MembershipRpcRequestContext(
+                        UUID.randomUUID().toString(),
+                        clock.instant()
+                    ),
+                    MGMGroupPolicyRequest(holdingIdentityId)
+                )
+
+                return generateGroupPolicyResponse(request.sendRequest())
             }
-            return ""
+
+            return  MGMGenerateGroupPolicyResponseDto(Instant.now(),"FAILED", MemberInfoSubmittedDto(emptyMap()), MemberInfoSubmittedDto(emptyMap()))
+
         }
 
         override fun close() = rpcSender.close()
+
+        @Suppress("SpreadOperator")
+        private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): MGMGenerateGroupPolicyResponseDto =
+            MGMGenerateGroupPolicyResponseDto(
+                response.requestSent,
+                response.mgmProvidedContext.toString(),
+                MemberInfoSubmittedDto(
+                    mapOf(
+                        *response.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
+                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
+                    )
+                ),
+                MemberInfoSubmittedDto(
+                    mapOf(
+                        *response.mgmProvidedContext.items.map { it.key to it.value }.toTypedArray(),
+                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
+                    )
+                )
+            )
+
+        @Suppress("UNCHECKED_CAST")
+        private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
+            try {
+                logger.info("Sending request: $this")
+                val response = rpcSender.sendRequest(this).getOrThrow()
+                require(response != null && response.responseContext != null && response.response != null) {
+                    "Response cannot be null."
+                }
+                require(this.requestContext.requestId == response.responseContext.requestId) {
+                    "Request ID must match in the request and response."
+                }
+                require(this.requestContext.requestTimestamp == response.responseContext.requestTimestamp) {
+                    "Request timestamp must match in the request and response."
+                }
+                require(response.response is RESPONSE) {
+                    "Expected ${RESPONSE::class.java} as response type, but received ${response.response.javaClass}."
+                }
+
+                return response.response as RESPONSE
+            } catch (e: Exception) {
+                throw CordaRuntimeException(
+                    "Failed to send request and receive response for membership RPC operation. " + e.message, e
+                )
+            }
+        }
 
     }
 }

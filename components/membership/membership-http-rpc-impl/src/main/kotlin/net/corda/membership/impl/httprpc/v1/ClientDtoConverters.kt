@@ -1,11 +1,9 @@
 package net.corda.membership.impl.httprpc.v1
 
-import net.corda.membership.client.dto.MemberInfoSubmittedDto
-import net.corda.membership.client.dto.MemberRegistrationRequestDto
-import net.corda.membership.client.dto.RegistrationActionDto
-import net.corda.membership.client.dto.RegistrationRequestProgressDto
+import net.corda.membership.client.dto.*
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.request.RegistrationAction
+import net.corda.membership.httprpc.v1.types.response.MGMGenerateGroupPolicyResponse
 import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 
@@ -33,6 +31,16 @@ fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
     registrationSent,
     registrationStatus,
     memberInfoSubmitted.fromDto()
+)
+
+/**
+ * Convert internal DTO [MGMGenerateGroupPolicyResponseDto] to [MGMGenerateGroupPolicyResponse] from the HTTP API.
+ */
+fun MGMGenerateGroupPolicyResponseDto.fromDto() = MGMGenerateGroupPolicyResponse(
+    requestSent,
+    groupPolicyStatus,
+    memberInfoSubmitted.fromDto(),
+    mgmInfoSubmitted.fromDto()
 )
 
 /**

@@ -6,8 +6,10 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.toMap
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -16,12 +18,17 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import java.lang.reflect.Constructor
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
+import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import com.fasterxml.jackson.databind.ObjectMapper
 
 class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
     interface RpcHandler<REQUEST> {
@@ -45,6 +52,8 @@ class MemberOpsServiceProcessor(
         private const val REGISTRATION_PROTOCOL_VERSION = 1
 
         private val clock = UTCClock()
+
+        private val objectMapper = ObjectMapper()
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
@@ -91,8 +100,8 @@ class MemberOpsServiceProcessor(
             }
             MGMGroupPolicyRequestHandler::class.java -> {
                 constructors.computeIfAbsent(request.request::class.java) {
-                    type.constructors.first { it.parameterCount == 3 }
-                }.newInstance(registrationProxy, virtualNodeInfoReadService) as RpcHandler<Any>
+                    type.constructors.first { it.parameterCount == 2 }
+                }.newInstance(virtualNodeInfoReadService, membershipGroupReaderProvider) as RpcHandler<Any>
             }
             else -> {
                 constructors.computeIfAbsent(request.request::class.java) {
@@ -135,28 +144,27 @@ class MemberOpsServiceProcessor(
     }
 
     private class MGMGroupPolicyRequestHandler(
-        private val registrationProxy: RegistrationProxy,
-        private val virtualNodeInfoReadService: VirtualNodeInfoReadService
-    ) : RpcHandler<RegistrationRpcRequest> {
-        override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
+        private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    ) : RpcHandler<MGMGroupPolicyRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: MGMGroupPolicyRequest): Any {
+
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
-            val result = try {
-                registrationProxy.register(holdingIdentity,request.context.toMap())
-            } catch (e: RegistrationProtocolSelectionException) {
-                logger.warn("Could not select registration protocol.")
-                null
+
+            val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+
+            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("")
+
+            if(filteredMembers.isMgm) {
+                val memberProvidedContext =
+                    filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.") }
+                val mgmProvidedContext =
+                    filteredMembers.mgmProvidedContext.entries
+                return objectMapper.writeValueAsString(memberProvidedContext + mgmProvidedContext )
             }
-            val registrationStatus = result?.outcome?.let {
-                RegistrationRpcStatus.valueOf(it.toString())
-            } ?: RegistrationRpcStatus.NOT_SUBMITTED
-            return RegistrationRpcResponse(
-                context.requestTimestamp,
-                registrationStatus,
-                REGISTRATION_PROTOCOL_VERSION,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList())
-            )
+//editing here
+            return ""
         }
     }
 }
