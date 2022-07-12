@@ -10,9 +10,11 @@ import {
 import { useEffect, useState } from 'react';
 
 import FormContentWrapper from '@/components/FormContentWrapper/FormContentWrapper';
+import { LOGIN } from '@/constants/routes';
 import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import RegisterViz from '@/components/Visualizations/RegisterViz';
+import { VirtualNode } from '@/models/virtualnode';
 import VisualizationWrapper from '@/components/Visualizations/VisualizationWrapper';
 import { trackPromise } from 'react-promise-tracker';
 import useAppDataContext from '@/contexts/appDataContext';
@@ -28,6 +30,7 @@ const Register = () => {
     const [password, setPassword] = useState<string>('');
     const [confirmPassword, setConfirmPassword] = useState<string>('');
     const [isUserAndPasswordSaved, setIsUserAndPasswordSaved] = useState<boolean>(true);
+    const [newVNode, setNewVNode] = useState<VirtualNode | undefined>(undefined);
 
     const { refreshVNodes, cpiList, refreshCpiList } = useAppDataContext();
 
@@ -53,6 +56,7 @@ const Register = () => {
     };
 
     const handleSubmit = async () => {
+        setNewVNode(undefined);
         //If theres no cpis prevent user from registering
         if (cpiList.length === 0) {
             NotificationService.notify(
@@ -78,9 +82,9 @@ const Register = () => {
 
         const updatedVNodes = await refreshVNodes();
 
-        const holdershortid = updatedVNodes.find((vNode) => vNode.holdingIdentity.x500Name === x500Name);
+        const newNode = updatedVNodes.find((vNode) => vNode.holdingIdentity.x500Name === x500Name);
 
-        if (!holdershortid) {
+        if (!newNode) {
             NotificationService.notify(
                 `Could not find newly created VNode with x500 name: ${x500Name}.`,
                 'Error',
@@ -89,10 +93,12 @@ const Register = () => {
             return;
         }
 
-        const postPermissionId = await createAllowPermission(`POST:/api/v1/flow/${holdershortid}`);
+        setNewVNode(newNode);
+
+        const postPermissionId = await createAllowPermission(`POST:/api/v1/flow/${newNode.holdingIdentity.id}`);
         if (!postPermissionId) return;
 
-        const getPermissionId = await createAllowPermission(`GET:/api/v1/flow/${holdershortid}/*`);
+        const getPermissionId = await createAllowPermission(`GET:/api/v1/flow/${newNode.holdingIdentity.id}/*`);
         if (!getPermissionId) return;
 
         const roleId = await createRole();
@@ -112,60 +118,108 @@ const Register = () => {
         if (!addedRoleToUser) return;
 
         NotificationService.notify(`Registration complete!`, 'Success!', 'success');
+
+        setUsername('');
+        setPassword('');
+        setConfirmPassword('');
     };
 
     const canSubmit = username.length > 0 && password.length > 0 && confirmPassword === password;
 
     return (
         <PageContentWrapper>
-            <PageHeader withBackButton>Register V-Node</PageHeader>
-            <FormContentWrapper>
-                {/* Maybe by fetching all of the node names we can check if the "username" is available to make things smoother */}
-                <TextInput
-                    required
-                    name="username"
-                    label={'Username'}
-                    value={username}
-                    onChange={handleInputChange}
-                    invalid={username.length === 0}
-                />
-                <PasswordInput
-                    required
-                    name="password"
-                    label={'Password*'}
-                    value={password}
-                    onChange={handleInputChange}
-                    invalid={password.length === 0}
-                />
-                <PasswordInput
-                    required
-                    name="confirm_password"
-                    label={'Confirm Password*'}
-                    value={confirmPassword}
-                    onChange={handleInputChange}
-                    invalid={confirmPassword !== password || confirmPassword.length === 0}
-                />
-                <Checkbox
-                    disabled={!canSubmit}
-                    value={''}
-                    checked={isUserAndPasswordSaved}
-                    onChange={handleCheckboxClick}
-                >
-                    Save username and password
-                </Checkbox>
-                <Button
-                    style={{ width: 142 }}
-                    className="h-12"
-                    size={'large'}
-                    variant={'primary'}
-                    disabled={!canSubmit}
+            <div className="flex">
+                <div
+                    style={{ opacity: !newVNode ? 1 : 0.4 }}
                     onClick={() => {
-                        trackPromise(handleSubmit());
+                        setNewVNode(undefined);
                     }}
                 >
-                    Register
-                </Button>
-            </FormContentWrapper>
+                    <PageHeader withBackButton>Register V-Node</PageHeader>
+                    <FormContentWrapper>
+                        {/* Maybe by fetching all of the node names we can check if the "username" is available to make things smoother */}
+                        <TextInput
+                            required
+                            name="username"
+                            label={'Username'}
+                            value={username}
+                            onChange={handleInputChange}
+                            invalid={username.length === 0}
+                        />
+                        <PasswordInput
+                            required
+                            name="password"
+                            label={'Password*'}
+                            value={password}
+                            onChange={handleInputChange}
+                            invalid={password.length === 0}
+                        />
+                        <PasswordInput
+                            required
+                            name="confirm_password"
+                            label={'Confirm Password*'}
+                            value={confirmPassword}
+                            onChange={handleInputChange}
+                            invalid={confirmPassword !== password || confirmPassword.length === 0}
+                        />
+                        <Checkbox
+                            disabled={!canSubmit}
+                            value={''}
+                            checked={isUserAndPasswordSaved}
+                            onChange={handleCheckboxClick}
+                        >
+                            Save username and password
+                        </Checkbox>
+                        <Button
+                            style={{ width: 142 }}
+                            className="h-12"
+                            size={'large'}
+                            variant={'primary'}
+                            disabled={!canSubmit}
+                            onClick={() => {
+                                trackPromise(handleSubmit());
+                            }}
+                        >
+                            Register
+                        </Button>
+                    </FormContentWrapper>
+                </div>
+                {newVNode && (
+                    <div className="ml-24">
+                        <PageHeader>Your own VNode!</PageHeader>
+                        <div
+                            className="shadow-2xl ml-4 mt-8"
+                            style={{
+                                marginTop: 8,
+                                border: '1px solid lightgrey',
+                                padding: 12,
+                                maxWidth: 400,
+                                borderRadius: 12,
+                                background: 'white',
+                            }}
+                        >
+                            <div>
+                                <p>
+                                    <strong>x500 Name:</strong> {newVNode.holdingIdentity.x500Name}
+                                </p>
+                                <p>
+                                    <strong>Group ID:</strong> {newVNode.holdingIdentity.groupId}
+                                </p>
+                                <p>
+                                    <strong>Holding ID:</strong> {newVNode.holdingIdentity.id}
+                                </p>
+                                <p>
+                                    <strong>Cpi : </strong>
+                                    {newVNode.cpiIdentifier.name}
+                                </p>
+                            </div>
+                            <Button className="h-12 mt-6" size={'large'} variant={'primary'}>
+                                Login
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
             <VisualizationWrapper width={700}>
                 <RegisterViz />
             </VisualizationWrapper>
