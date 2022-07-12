@@ -9,7 +9,6 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 
 class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
@@ -47,11 +46,6 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
                 server.stop()
             }
         }
-    }
-
-    @AfterEach
-    fun reset() {
-        securityManager.forgetChecks()
     }
 
     override fun createWsClient(): WebSocketClient = WebSocketClient()

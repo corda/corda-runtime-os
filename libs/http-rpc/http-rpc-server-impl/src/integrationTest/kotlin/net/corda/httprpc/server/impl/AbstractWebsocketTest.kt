@@ -5,7 +5,7 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.StatusCode
@@ -15,6 +15,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.eclipse.jetty.websocket.client.io.UpgradeListener
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import java.net.URI
@@ -33,6 +34,11 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
     protected abstract val log: Logger
 
     protected abstract val httpRpcSettings: HttpRpcSettings
+
+    @AfterEach
+    fun reset() {
+        securityManager.forgetChecks()
+    }
 
     @Test
     fun `valid path returns 200 OK`() {
@@ -104,7 +110,11 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         wsClient.stop()
 
         val expectedContent = (start until start + range).map { "$it" }
-        Assertions.assertThat(list).isEqualTo(expectedContent)
+        assertThat(list).isEqualTo(expectedContent)
+
+        assertThat(securityManager.checksExecuted).hasSize(1)
+            .allMatch { it.action == "WS:/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/" +
+                    "health/counterfeed/{start}?range=$range" }
     }
 
     private fun toBasicAuthValue(username: String, password: String): String {
@@ -171,6 +181,6 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
         assertTrue(latch.await(10, TimeUnit.SECONDS))
         wsClient.stop()
 
-        Assertions.assertThat(closeStatus?.code).isEqualTo(StatusCode.POLICY_VIOLATION)
+        assertThat(closeStatus?.code).isEqualTo(StatusCode.POLICY_VIOLATION)
     }
 }

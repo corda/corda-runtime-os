@@ -13,7 +13,6 @@ import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import java.nio.file.Files
 
@@ -66,13 +65,6 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
             }
         }
     }
-
-    @AfterEach
-    fun reset() {
-        securityManager.forgetChecks()
-    }
-
-
 
     override fun createWsClient() = WebSocketClient(HttpClient(SslContextFactory.Client(true)))
 
