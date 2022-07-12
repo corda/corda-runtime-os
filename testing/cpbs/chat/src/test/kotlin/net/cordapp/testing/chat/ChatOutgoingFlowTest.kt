@@ -31,7 +31,7 @@ class ChatOutgoingFlowTest {
         assertThrows<IllegalArgumentException> {
             flow.call(
                 flowMockHelper.rpcRequestGenerator(
-                    OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME)
+                    ChatOutgoingFlowParameter(recipientX500Name = RECIPIENT_X500_NAME)
                 )
             )
         }
@@ -42,7 +42,7 @@ class ChatOutgoingFlowTest {
         assertThrows<IllegalArgumentException> {
             flow.call(
                 flowMockHelper.rpcRequestGenerator(
-                    OutgoingChatMessage(message = MESSAGE)
+                    ChatOutgoingFlowParameter(message = MESSAGE)
                 )
             )
         }
@@ -54,7 +54,7 @@ class ChatOutgoingFlowTest {
 
         flow.call(
             flowMockHelper.rpcRequestGenerator(
-                OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
+                ChatOutgoingFlowParameter(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
             )
         )
 

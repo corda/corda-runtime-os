@@ -32,7 +32,7 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             checkpoint,
             sandbox,
             checkpoint.holdingIdentity,
-            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity.toCorda())
+            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity)
         )
     }
 }

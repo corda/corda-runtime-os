@@ -3,7 +3,7 @@ package net.corda.flow.rpcops.factory
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
 
 interface MessageFactory {
 

@@ -6,8 +6,11 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions
 import org.mockito.Mockito
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.lang.reflect.Field
@@ -15,27 +18,27 @@ import java.lang.reflect.Field
 /**
  * A Helper class which injects Mockito mock services into Flows in order to unit test Flows.
  * To construct a FlowMockHelper in Kotlin use the DSL builder as follows:
- * <pre>
+ * ```kotlin
  *     val flowMockHelper = FlowMockHelper {
  *         createMockService<FlowMessaging>()
  *         createMockService<FlowEngine>()
  *         createMockService<JsonMarshallingService>()
  *     }
- * </pre>
+ * ```
  * Note that each mockService<>() declaration returns that mock service such that it can be further customised inline
  * during the building. For example:
- * <pre>
+ * ```kotlin
  *     mockService<FlowEngine>().withVirtualNodeName(FROM_X500_NAME)
- * </pre>
+ * ```
  *
  * To construct a FlowMockHelper in Java do something like the following:
- * <pre>
+ * ```java
  *     FlowMockHelper outgoingFlowMockHelper = FlowMockHelper.fromInjectableServices(
  *             new InjectableMockServices()
  *                     .createMockService(FlowMessaging.class)
  *                     .createMockService(JsonMarshallingService.class)
  *                     .createMockService(FlowEngine.class));
- * </pre>
+ * ```
  *
  * In either language createFlow()/createFlow<>() can then be called to instantiate a Flow with the necessary mock
  * services injected.
@@ -135,18 +138,18 @@ class FlowMockHelper(init: InjectableMockServices.() -> Unit) {
 /**
  * Instantiates a Flow of the provided type and injects all services of this FlowMockHelper into it.
  * Only one Flow can be bound to one FlowMockHelper.
- * <pre>
+ * ```kotlin
  *     val outgoingChatFlow = outgoingFlowMockHelper.createFlow<ChatOutgoingFlow>()
- * </pre>
+ * ```
  */
 inline fun <reified T : Flow> FlowMockHelper.createFlow() = createFlow(T::class.java)
 
 /**
  * Returns a service mock from a FlowMockHelper in order to set expectations on it. For example:
- * <pre>
+ * ```kotlin
  *     whenever(readerFlowMockHelper.serviceMock<JsonMarshallingService>().format(expectedMessages))
  *         .thenReturn(jsonReturn)
- * </pre>
+ * ```
  */
 inline fun <reified T : Any> FlowMockHelper.getMockService(): T {
     return this.getMockService(T::class.java) as T
@@ -180,13 +183,13 @@ inline fun <reified T : Any> InjectableMockServices.createMockService(): T = moc
  * This method allows the injection of RPC parameters to a Flow without having to test/mock json masrshalling
  * whilst ensuring the Flow implementation under test is using the correct JsonMarshallingService itself.
  * Typical use would be to pass the output of this method directly to the call() invocation on a Flow:
- * <pre>
+ * ```kotlin
  *     flow.call(
  *         flowMockHelper.rpcRequestGenerator(
  *             OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME)
  *         )
  *     }
- * </pre>
+ * ```
  * @return A mock RPCRequestData set up to return the correct object when queried for it
  */
 inline fun <reified T> FlowMockHelper.rpcRequestGenerator(parameterObject: T) = mock<RPCRequestData>()
@@ -195,3 +198,63 @@ inline fun <reified T> FlowMockHelper.rpcRequestGenerator(parameterObject: T) = 
             it.getRequestBodyAs(this.getMockService<JsonMarshallingService>(), T::class.java)
         ).thenReturn(parameterObject)
     }
+
+inline fun <reified T : Any> FlowMockHelper.returnOnFind(findKey: Any, result: T?) {
+    whenever(
+        this.getMockService<PersistenceService>()
+            .find(T::class.java, findKey)
+    ).thenReturn(result)
+}
+
+/**
+ * When merge is called in the Flow created by this helper, set up a corresponding Find to return the results of that
+ * merge. The Flow in which Find is called can be configured by passing its helper.
+ * @param helperForFlowCallingFind The FlowMockHelper which is tied to the Flow which is expected to call find
+ * @param findKey The key which is expected to be passed to the find call
+ * @param keyExtractor A lambda which will extract a key from the type of data being persisted. This is used to validate
+ * the parameter passed to merge was the expected key
+ * @param mergeOperation The merge operation, a simulation of what the persistence service would do
+ */
+inline fun <reified T : Any> FlowMockHelper.expectMergeAndLinkToFind(
+    helperForFlowCallingFind: FlowMockHelper,
+    findKey: Any,
+    crossinline keyExtractor: (T) -> Any,
+    crossinline mergeOperation: (T) -> T
+) {
+    whenever(
+        this.getMockService<PersistenceService>().merge(any<T>())
+    ).then {
+        // Validate merge is occurring on same key
+        val mergeParam = it.arguments[0] as T
+        Assertions.assertThat(keyExtractor(mergeParam)).isEqualTo(findKey)
+        // Merge
+        val toReturn = mergeOperation(mergeParam)
+        // Tie find to return
+        whenever(
+            helperForFlowCallingFind.getMockService<PersistenceService>()
+                .find(T::class.java, findKey)
+        ).thenReturn(toReturn)
+    }
+}
+
+/**
+ * When persist is called in the Flow created by this helper, set up a corresponding Find to return the results of that
+ * persist. The Flow in which Find is called can be configured by passing its helper.
+ * @param helperForFlowCallingFind The FlowMockHelper which is tied to the Flow which is expected to call find
+ * @param findKey The key which is expected to be passed to the find call
+ */
+inline fun <reified T : Any> FlowMockHelper.expectPersistAndLinkToFind(
+    helperForFlowCallingFind: FlowMockHelper,
+    findKey: Any
+) {
+    whenever(
+        this.getMockService<PersistenceService>().persist(any<T>())
+    ).then {
+        val toReturn = it.arguments[0] as T
+        // Tie find to return
+        whenever(
+            helperForFlowCallingFind.getMockService<PersistenceService>()
+                .find(T::class.java, findKey)
+        ).thenReturn(toReturn)
+    }
+}

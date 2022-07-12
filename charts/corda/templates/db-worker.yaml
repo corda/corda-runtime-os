@@ -40,7 +40,7 @@ spec:
           allowPrivilegeEscalation: false
         {{- include "corda.workerResources" . | nindent 8 }} 
         env:
-        {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
+        {{- include "corda.workerEnv" . | nindent 10 }}
           - name: DATABASE_PASS
             valueFrom:
               secretKeyRef:

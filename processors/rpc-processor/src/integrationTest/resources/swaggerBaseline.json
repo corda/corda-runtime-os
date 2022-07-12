@@ -21,6 +21,9 @@
     "name" : "CpiUploadRPCOps",
     "description" : "Cpi Upload management endpoints"
   }, {
+    "name" : "FlowClassRPCOps",
+    "description" : "Startable flow classes endpoint"
+  }, {
     "name" : "FlowRPCOps",
     "description" : "Flow management endpoints"
   }, {
@@ -278,6 +281,43 @@
         }
       }
     },
+    "/config/{section}" : {
+      "get" : {
+        "tags" : [ "ConfigRPCOps" ],
+        "description" : "Get Configuration. Returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
+        "operationId" : "get_config__section_",
+        "parameters" : [ {
+          "name" : "section",
+          "in" : "path",
+          "description" : "Section name for the configuration.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Section name for the configuration.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HTTPGetConfigResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/cpi" : {
       "get" : {
         "tags" : [ "CpiUploadRPCOps" ],
@@ -478,6 +518,52 @@
             "description" : "Forbidden."
           }
         }
+      },
+      "post" : {
+        "tags" : [ "FlowRPCOps" ],
+        "description" : "Instructs Corda to start a new instance of the specified flow",
+        "operationId" : "post_flow__holdershortid_",
+        "parameters" : [ {
+          "name" : "holdershortid",
+          "in" : "path",
+          "description" : "Short form of the Holder Identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short form of the Holder Identifier",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartFlowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
       }
     },
     "/flow/{holdershortid}/{clientrequestid}" : {
@@ -528,11 +614,40 @@
         }
       }
     },
-    "/flow/{holdershortid}/{clientrequestid}/{flowclassname}" : {
-      "put" : {
-        "tags" : [ "FlowRPCOps" ],
-        "description" : "Instructs Corda to start a new instance of the specified flow",
-        "operationId" : "put_flow__holdershortid___clientrequestid___flowclassname_",
+    "/flowclass/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "FlowClassRPCOps" ],
+        "description" : "",
+        "operationId" : "get_flowclass_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/flowclass/{holdershortid}" : {
+      "get" : {
+        "tags" : [ "FlowClassRPCOps" ],
+        "description" : "Get all the flows that are startable for this holding identity.",
+        "operationId" : "get_flowclass__holdershortid_",
         "parameters" : [ {
           "name" : "holdershortid",
           "in" : "path",
@@ -544,55 +659,14 @@
             "nullable" : false,
             "example" : "string"
           }
-        }, {
-          "name" : "clientrequestid",
-          "in" : "path",
-          "description" : "Client provided flow identifier",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Client provided flow identifier",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "flowclassname",
-          "in" : "path",
-          "description" : "Fully qualified class name of the flow to start.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Fully qualified class name of the flow to start.",
-            "nullable" : false,
-            "example" : "string"
-          }
         } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "requestBody" : {
-                    "type" : "string",
-                    "description" : "Optional start arguments string passed to the flow.",
-                    "nullable" : false,
-                    "example" : "string"
-                  }
-                }
-              }
-            }
-          },
-          "required" : false
-        },
         "responses" : {
           "200" : {
             "description" : "Success.",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPStartFlowResponse"
+                  "$ref" : "#/components/schemas/HTTPStartableFlowsResponse"
                 }
               }
             }
@@ -2280,15 +2354,15 @@
       "AddPermissionRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
           "permissionId" : {
             "type" : "string",
             "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
             "nullable" : false,
             "example" : "string"
           }
@@ -2612,27 +2686,11 @@
       "GenerateCsrRequest" : {
         "required" : [ "certificateRole", "x500name" ],
         "properties" : {
-          "x500name" : {
-            "type" : "string",
-            "description" : "The X500 name",
-            "nullable" : false,
-            "example" : "string"
-          },
           "certificateRole" : {
             "type" : "string",
             "description" : "Certificate role. For example: TLS, SESSION_INIT, ...",
             "nullable" : false,
             "example" : "string"
-          },
-          "subjectAlternativeNames" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : true,
-            "items" : {
-              "type" : "string",
-              "nullable" : false,
-              "example" : "string"
-            }
           },
           "contextMap" : {
             "type" : "object",
@@ -2644,6 +2702,22 @@
             "description" : "Context Map. For example: `signatureSpec` to signature spec (SHA512withECDSA, SHA384withRSA...)",
             "nullable" : true,
             "example" : "No example available for this type"
+          },
+          "subjectAlternativeNames" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : true,
+            "items" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            }
+          },
+          "x500name" : {
+            "type" : "string",
+            "description" : "The X500 name",
+            "nullable" : false,
+            "example" : "string"
           }
         },
         "description" : "GenerateCsrRequest",
@@ -2850,6 +2924,37 @@
         },
         "nullable" : false
       },
+      "HTTPGetConfigResponse" : {
+        "required" : [ "configWithDefaults", "schemaVersion", "section", "sourceConfig", "version" ],
+        "type" : "object",
+        "properties" : {
+          "configWithDefaults" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/Version"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sourceConfig" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "nullable" : false
+      },
       "HTTPGetVirtualNodesResponse" : {
         "required" : [ "virtualNodes" ],
         "type" : "object",
@@ -2865,17 +2970,42 @@
         },
         "nullable" : false
       },
-      "HTTPStartFlowResponse" : {
-        "required" : [ "flowStatus", "isExistingFlow" ],
+      "HTTPStartFlowRequest" : {
+        "required" : [ "clientRequestId", "flowClassName", "requestData" ],
         "type" : "object",
         "properties" : {
-          "flowStatus" : {
-            "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
-          },
-          "isExistingFlow" : {
-            "type" : "boolean",
+          "clientRequestId" : {
+            "type" : "string",
             "nullable" : false,
-            "example" : true
+            "example" : "string"
+          },
+          "flowClassName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestData" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Information required to start a flow for this holdingId",
+        "nullable" : false
+      },
+      "HTTPStartableFlowsResponse" : {
+        "required" : [ "flowClassNames" ],
+        "type" : "object",
+        "properties" : {
+          "flowClassNames" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "nullable" : false,
+              "example" : "string"
+            }
           }
         },
         "nullable" : false
@@ -3092,15 +3222,10 @@
         "nullable" : false
       },
       "MemberRegistrationRequest" : {
-        "required" : [ "action", "holdingIdentityId", "context" ],
+        "required" : [ "action", "context", "holdingIdentityId" ],
         "type" : "object",
         "properties" : {
           "action" : {
-            "nullable" : false,
-            "example" : "requestJoin",
-            "enum" : [ "requestJoin" ]
-          },
-          "holdingIdentityId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3114,6 +3239,11 @@
             },
             "nullable" : false,
             "example" : "No example available for this type"
+          },
+          "holdingIdentityId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           }
         },
         "description" : "Data required to initialise the registration process.",
@@ -3260,15 +3390,15 @@
       "RemovePermissionRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          },
           "permissionId" : {
             "type" : "string",
             "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "roleId" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
             "nullable" : false,
             "example" : "string"
           }
@@ -3436,20 +3566,30 @@
             "nullable" : false,
             "example" : "string"
           },
-          "tlsTenantId" : {
-            "type" : "string",
-            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
-            "nullable" : true,
-            "example" : "string"
-          },
           "sessionKeyId" : {
             "type" : "string",
             "description" : "The session key ID (will use the first session one by default).",
             "nullable" : true,
             "example" : "string"
+          },
+          "tlsTenantId" : {
+            "type" : "string",
+            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
+            "nullable" : true,
+            "example" : "string"
           }
         },
         "description" : "SetupHostedIdentitiesRequest",
+        "nullable" : false
+      },
+      "StartFlowRequest" : {
+        "required" : [ "httpStartFlow" ],
+        "properties" : {
+          "httpStartFlow" : {
+            "$ref" : "#/components/schemas/HTTPStartFlowRequest"
+          }
+        },
+        "description" : "StartFlowRequest",
         "nullable" : false
       },
       "StartRegistrationRequest" : {

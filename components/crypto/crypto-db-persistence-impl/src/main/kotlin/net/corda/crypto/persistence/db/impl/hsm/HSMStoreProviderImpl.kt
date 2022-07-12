@@ -3,6 +3,7 @@ package net.corda.crypto.persistence.db.impl.hsm
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.persistence.hsm.HSMStore
 import net.corda.crypto.persistence.hsm.HSMStoreProvider
 import net.corda.db.connection.manager.DbConnectionManager
@@ -19,46 +20,35 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [HSMStoreProvider::class])
 class HSMStoreProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager
 ) : AbstractConfigurableComponent<HSMStoreProviderImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMStoreProvider>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<HSMStoreProvider>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        )
     ),
-    setOf(
+    configKeys = setOf(
         ConfigKeys.MESSAGING_CONFIG,
         ConfigKeys.BOOT_CONFIG,
         ConfigKeys.CRYPTO_CONFIG
     )
 ), HSMStoreProvider {
-    interface Impl: AutoCloseable {
-        fun getInstance(): HSMStore
-    }
-
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(dbConnectionManager)
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(coordinatorFactory, dbConnectionManager)
 
     override fun getInstance(): HSMStore = impl.getInstance()
 
-    class InactiveImpl : Impl {
-        override fun getInstance(): HSMStore =
-            throw IllegalStateException("The component is in illegal state.")
-
-        override fun close() = Unit
-    }
-
-    class ActiveImpl(
+    class Impl(
+        coordinatorFactory: LifecycleCoordinatorFactory,
         private val dbConnectionOps: DbConnectionOps
-    ) : Impl {
+    ) : AbstractImpl {
         private val instance by lazy(LazyThreadSafetyMode.PUBLICATION) {
             HSMStoreImpl(
                 entityManagerFactory = dbConnectionOps.getOrCreateEntityManagerFactory(
@@ -68,8 +58,17 @@ class HSMStoreProviderImpl @Activate constructor(
             )
         }
 
-        override fun getInstance(): HSMStore = instance
+        fun getInstance(): HSMStore = instance
 
-        override fun close() = Unit
+        private val _downstream = DependenciesTracker.AlwaysUp(
+            coordinatorFactory,
+            this
+        ).also { it.start() }
+
+        override val downstream: DependenciesTracker = _downstream
+
+        override fun close() {
+            _downstream.close()
+        }
     }
 }

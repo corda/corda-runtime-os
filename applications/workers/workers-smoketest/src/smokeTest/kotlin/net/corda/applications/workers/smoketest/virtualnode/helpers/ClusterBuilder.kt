@@ -19,6 +19,10 @@ class ClusterBuilder {
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
+    fun put(cmd: String, body: String) = client!!.put(cmd, body)
+
+    fun get(cmd: String) = client!!.get(cmd)
+
     private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.get(resourceName, groupId).use {
@@ -59,6 +63,22 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
+    fun addSoftHsmToVNode(holdingIdHash: String, category: String) =
+        client!!.post("/api/v1/$holdingIdHash/hsm/soft?category=$category", body = "")
+
+    fun createKey(holdingIdHash: String, alias: String, category: String, scheme: String) =
+        client!!.post(
+            "/api/v1/keys/$holdingIdHash",
+            body = """{
+                    "alias": "$alias",
+                    "hsmCategory": "$category",
+                    "scheme": "$scheme"
+                }""".trimIndent()
+        )
+
+    fun getKey(holdingIdHash: String, keyId: String) =
+        client!!.get("/api/v1/keys/$holdingIdHash/$keyId")
+
     /** Get status of a flow */
     fun flowStatus(holdingIdHash: String, clientRequestId: String) =
         client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId")
@@ -67,13 +87,24 @@ class ClusterBuilder {
     fun multipleFlowStatus(holdingIdHash: String) =
         client!!.get("/api/v1/flow/$holdingIdHash")
 
+    /** Get status of multiple flows */
+    fun runnableFlowClasses(holdingIdHash: String) =
+        client!!.get("/api/v1/flowclass/$holdingIdHash")
+
     /** Start a flow */
     fun flowStart(
         holdingIdHash: String,
         clientRequestId: String,
         flowClassName: String,
-        body: String
-    ) = client!!.put("/api/v1/flow/$holdingIdHash/$clientRequestId/$flowClassName", body)
+        requestData: String
+    ): SimpleResponse {
+        return client!!.post("/api/v1/flow/$holdingIdHash", flowStartBody(clientRequestId, flowClassName, requestData))
+    }
+
+    private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
+        """{ "httpStartFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
+            |"$requestData"} }""".trimMargin()
+
 }
 
 fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

@@ -40,6 +40,7 @@ import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -190,44 +191,6 @@ class CryptoOpsClientImpl(
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKeyProxy(
-        tenantId: String,
-        category: String,
-        scheme: String,
-        context: KeyValuePairList
-    ): CryptoPublicKey {
-        logger.info(
-            "Sending '{}'(tenant={})",
-            GenerateFreshKeyRpcCommand::class.java.simpleName,
-            tenantId
-        )
-        val request = createRequest(
-            tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(category, null, scheme, context)
-        )
-        return request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)!!
-    }
-
-    fun freshKeyProxy(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: String,
-        context: KeyValuePairList
-    ): CryptoPublicKey {
-        logger.info(
-            "Sending '{}'(tenant={},externalId={})",
-            GenerateFreshKeyRpcCommand::class.java.simpleName,
-            tenantId,
-            externalId
-        )
-        val request = createRequest(
-            tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context)
-        )
-        return request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)!!
-    }
-
     fun sign(
         tenantId: String,
         publicKey: PublicKey,
@@ -348,7 +311,7 @@ class CryptoOpsClientImpl(
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext<CryptoOpsClientImpl>(tenantId),
+            createWireRequestContext<CryptoOpsClientImpl>(requestId = UUID.randomUUID().toString(), tenantId),
             request
         )
 

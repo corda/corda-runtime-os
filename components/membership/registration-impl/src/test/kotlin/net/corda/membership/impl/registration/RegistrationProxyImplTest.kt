@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -9,11 +10,30 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.GroupPolicy
-import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.GroupPolicyExtension
-import net.corda.membership.impl.GroupPolicyImpl
+import net.corda.membership.impl.registration.staticnetwork.TestUtils
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
+import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.P2P_PARAMETERS
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_3
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
+import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -75,8 +95,30 @@ class RegistrationProxyImplTest {
     }
 
     private fun createHoldingIdentity() = HoldingIdentity("O=Alice, L=London, C=GB", "ABC")
-    private fun createGroupPolicy(registrationProtocol: String) = GroupPolicyImpl(
-        mapOf(GroupPolicyExtension.REGISTRATION_PROTOCOL_KEY to registrationProtocol)
+    private fun createGroupPolicy(registrationProtocol: String) = MemberGroupPolicyImpl(
+        ObjectMapper().readTree(
+            """
+                {
+                    "$FILE_FORMAT_VERSION": 1,
+                    "$GROUP_ID": "$DUMMY_GROUP_ID",
+                    "$REGISTRATION_PROTOCOL": "$registrationProtocol",
+                    "$SYNC_PROTOCOL": "com.foo.bar.SyncProtocol",
+                    "$PROTOCOL_PARAMETERS": {
+                        "$SESSION_KEY_POLICY": "$COMBINED"
+                    },
+                    "$P2P_PARAMETERS": {
+                        "$SESSION_PKI": "$NO_PKI",
+                        "$TLS_TRUST_ROOTS": [
+                            "${TestUtils.r3comCert}"
+                        ],
+                        "$TLS_PKI": "$STANDARD",
+                        "$TLS_VERSION": "$VERSION_1_3",
+                        "$PROTOCOL_MODE": "$AUTH_ENCRYPT"
+                    },
+                    "$CIPHER_SUITE": {}
+                }
+            """.trimIndent()
+        )
     )
 
     private fun mockGroupPolicy(groupPolicy: GroupPolicy, holdingIdentity: HoldingIdentity) =

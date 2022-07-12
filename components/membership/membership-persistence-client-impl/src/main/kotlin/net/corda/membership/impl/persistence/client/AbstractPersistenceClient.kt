@@ -7,7 +7,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
-import net.corda.data.membership.db.response.query.QueryFailedResponse
+import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -26,7 +26,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalArgumentException
@@ -37,14 +36,13 @@ abstract class AbstractPersistenceClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
     lifecycleCoordinatorName: LifecycleCoordinatorName,
     private val publisherFactory: PublisherFactory,
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    private val clock: Clock,
 ) : Lifecycle {
 
     companion object {
         private val logger = contextLogger()
         const val RPC_TIMEOUT_MS = 10000L
-
-        private val clock: Clock = UTCClock()
     }
 
     abstract val groupName: String
@@ -77,7 +75,7 @@ abstract class AbstractPersistenceClient(
                     clock.instant(),
                     context.holdingIdentity
                 ),
-                QueryFailedResponse(failureReason)
+                PersistenceFailedResponse(failureReason)
             )
         }
         logger.info("Sending membership persistence RPC request.")
@@ -110,7 +108,7 @@ abstract class AbstractPersistenceClient(
                     clock.instant(),
                     context.holdingIdentity
                 ),
-                QueryFailedResponse("Invalid response. ${e.message}")
+                PersistenceFailedResponse("Invalid response. ${e.message}")
             )
         }
         catch (e: Exception) {
@@ -121,7 +119,7 @@ abstract class AbstractPersistenceClient(
                     clock.instant(),
                     context.holdingIdentity
                 ),
-                QueryFailedResponse("Exception occurred while sending RPC request. ${e.message}")
+                PersistenceFailedResponse("Exception occurred while sending RPC request. ${e.message}")
             )
         }
     }

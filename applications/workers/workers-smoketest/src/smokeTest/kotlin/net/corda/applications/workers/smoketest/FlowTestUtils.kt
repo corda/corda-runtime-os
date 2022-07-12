@@ -7,9 +7,9 @@ import java.time.Duration
 import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
-import net.corda.applications.workers.smoketest.virtualnode.toJson
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
 const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
@@ -20,7 +20,7 @@ const val RPC_FLOW_STATUS_FAILED = "FAILED"
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
-fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
+fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput, expectedCode: Int = 200): String {
 
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -33,10 +33,10 @@ fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput): String {
                     holdingId,
                     requestId,
                     SMOKE_TEST_CLASS_NAME,
-                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
+                    escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 200 }
+            condition { it.code == expectedCode }
         }
 
         requestId
@@ -55,7 +55,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     holdingId,
                     requestId,
                     flowName,
-                    """{ "requestBody":  "${escapeJson(ObjectMapper().writeValueAsString(args))}" }"""
+                    escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
             condition { it.code == 200 }
@@ -103,6 +103,20 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
+fun getFlowClasses(holdingId: String) : List<String> {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val vNodeJson = assertWithRetry {
+            command { runnableFlowClasses(holdingId) }
+            condition { it.code == 200 }
+            failMessage("Failed to get flows for holdingId '$holdingId'")
+        }.toJson()
+
+        vNodeJson["flowClassNames"].map { it.textValue() }
+    }
+}
+
 fun createVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -119,6 +133,34 @@ fun createVirtualNodeFor(x500: String): String {
         val holdingId = vNodeJson["holdingIdHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
+    }
+}
+
+fun addSoftHsmFor(holdingId: String, category: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        assertWithRetry {
+            timeout(Duration.ofSeconds(5))
+            command { addSoftHsmToVNode(holdingId, category) }
+            condition { it.code == 200 }
+            failMessage("Failed to add SoftHSM for holding id '$holdingId'")
+        }
+    }
+}
+
+fun createKeyFor(holdingId: String, alias: String, category: String, scheme: String): String {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        val keyId = assertWithRetry {
+            command { createKey(holdingId, alias, category, scheme) }
+            condition { it.code == 200 }
+            failMessage("Failed to create key for holding id '$holdingId'")
+        }.body
+        assertWithRetry {
+            command { getKey(holdingId, keyId) }
+            condition { it.code == 200 }
+            failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
+        }.body
     }
 }
 

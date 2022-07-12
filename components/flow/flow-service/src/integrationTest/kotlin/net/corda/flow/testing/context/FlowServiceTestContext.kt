@@ -1,11 +1,15 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
+import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -55,6 +59,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
+import java.security.PublicKey
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -78,6 +86,8 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private val testConfig = mutableMapOf<String, Any>(
+        FlowConfig.CRYPTO_MAX_RETRIES to 2,
+        FlowConfig.CRYPTO_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.PERSISTENCE_MAX_RETRIES to 2,
         FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
@@ -201,7 +211,7 @@ class FlowServiceTestContext @Activate constructor(
             this.createdTimestamp = Instant.now()
         }.build()
 
-        return addTestRun(getEventRecord(flowId, StartFlow(flowStart, "{}")))
+        return addTestRun(createFlowEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
     override fun sessionInitEventReceived(
@@ -306,7 +316,49 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun wakeupEventReceived(flowId: String): FlowIoRequestSetup {
-        return addTestRun(getEventRecord(flowId, Wakeup()))
+        return addTestRun(createFlowEventRecord(flowId, Wakeup()))
+    }
+
+    override fun cryptoSignResponseReceived(
+        flowId: String,
+        requestId: String,
+        publicKey: PublicKey,
+        bytes: ByteArray,
+        requestingComponent: String,
+        requestingTimestamp: Instant,
+        responseTimestamp: Instant,
+        tenantId: String,
+        otherContext: KeyValuePairList,
+        exceptionEnvelope: ExceptionEnvelope?
+    ): FlowIoRequestSetup {
+        val context = CryptoResponseContext.newBuilder()
+            .setRequestingComponent("Flow Worker")
+            .setRequestTimestamp(requestingTimestamp)
+            .setRequestId(requestId)
+            .setResponseTimestamp(responseTimestamp)
+            .setTenantId(tenantId)
+            .setOther(otherContext)
+            .build()
+
+        context.other.items.add(KeyValuePair(CryptoFlowOpsTransformer.REQUEST_OP_KEY, SignFlowCommand::class.java.simpleName))
+
+        return addTestRun(
+            createFlowEventRecord(
+                flowId,
+                FlowOpsResponse(
+                    CryptoResponseContext.newBuilder()
+                        .setRequestingComponent("Flow Worker")
+                        .setRequestTimestamp(requestingTimestamp)
+                        .setRequestId(requestId)
+                        .setResponseTimestamp(responseTimestamp)
+                        .setTenantId(tenantId)
+                        .setOther(otherContext)
+                        .build(),
+                    CryptoSignatureWithKey(ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(bytes), KeyValuePairList(mutableListOf())),
+                    exceptionEnvelope
+                )
+            )
+        )
     }
 
     override fun entityResponseSuccessReceived(
@@ -337,7 +389,7 @@ class FlowServiceTestContext @Activate constructor(
             .setResponseType(entityResponsePayload)
             .build()
 
-        return addTestRun(getEventRecord(flowId, entityResponse))
+        return addTestRun(createFlowEventRecord(flowId, entityResponse))
     }
 
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {
@@ -413,7 +465,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity ?: sessionInitiatingIdentity!!,
             initiatedIdentity ?: sessionInitiatedIdentity!!
         )
-        return addTestRun(getEventRecord(flowId, sessionEvent))
+        return addTestRun(createFlowEventRecord(flowId, sessionEvent))
     }
 
     private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
@@ -425,7 +477,7 @@ class FlowServiceTestContext @Activate constructor(
         )
     }
 
-    private fun getEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
+    private fun createFlowEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
         return Record(FLOW_EVENT_TOPIC, key, FlowEvent(key, payload))
     }
 

@@ -16,7 +16,7 @@ interface LayeredPropertyMapFactory {
  * Creates an instance of a concrete class [T] derived from [LayeredPropertyMap] for the given map os string to string.
  * The class must implement a constructor with a single parameter of [LayeredPropertyMap].
  */
-inline fun <reified T: LayeredPropertyMap> LayeredPropertyMapFactory.create(properties: Map<String, String?>): T {
+inline fun <reified T : LayeredPropertyMap> LayeredPropertyMapFactory.create(properties: Map<String, String?>): T {
     val constructor = T::class.java.getConstructor(LayeredPropertyMap::class.java)
     val map = createMap(properties)
     return constructor.newInstance(map)

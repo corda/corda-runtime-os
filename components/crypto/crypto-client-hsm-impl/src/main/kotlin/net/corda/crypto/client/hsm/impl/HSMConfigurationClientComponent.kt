@@ -4,13 +4,14 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMConfigurationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationResponse
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -29,12 +30,13 @@ class HSMConfigurationClientComponent @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<HSMConfigurationClientComponent.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMConfigurationClient>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<HSMConfigurationClient>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     )
 ), HSMConfigurationClient {
     companion object {
@@ -42,13 +44,7 @@ class HSMConfigurationClientComponent @Activate constructor(
         const val CLIENT_ID = "crypto.hsm.configuration.client"
     }
 
-    interface Impl : AutoCloseable {
-        val registrar: HSMConfigurationClientImpl
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(publisherFactory, event)
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(publisherFactory, event)
 
     override fun putHSM(info: HSMInfo, serviceConfig: ByteArray): String =
         impl.registrar.putHSM(info, serviceConfig)
@@ -62,17 +58,10 @@ class HSMConfigurationClientComponent @Activate constructor(
     override fun getLinkedCategories(configId: String): List<HSMCategoryInfo> =
         impl.registrar.getLinkedCategories(configId)
 
-    class InactiveImpl : Impl {
-        override val registrar: HSMConfigurationClientImpl
-            get() = throw IllegalStateException("The component is in illegal state.")
-
-        override fun close() = Unit
-    }
-
-    class ActiveImpl(
+    class Impl(
         publisherFactory: PublisherFactory,
         event: ConfigChangedEvent
-    ) : Impl {
+    ) : AbstractImpl {
         private val sender: RPCSender<HSMConfigurationRequest, HSMConfigurationResponse> =
             publisherFactory.createRPCSender(
                 RPCConfig(
@@ -85,7 +74,9 @@ class HSMConfigurationClientComponent @Activate constructor(
                 event.config.getConfig(MESSAGING_CONFIG)
             ).also { it.start() }
 
-        override val registrar: HSMConfigurationClientImpl = HSMConfigurationClientImpl(sender)
+        val registrar: HSMConfigurationClientImpl = HSMConfigurationClientImpl(sender)
+
+        override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))
 
         override fun close() {
             sender.close()

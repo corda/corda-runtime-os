@@ -63,7 +63,15 @@ internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     }.takeIf { counter > 0 }
 }
 
-fun Sequence<Certificate>.certSummaryHash() : SecureHash? = map { it.publicKey.encoded.hash() }.summaryHash()
+fun Sequence<Certificate>.certSummaryHash(): SecureHash? =
+    map {
+        require(it is X509Certificate) {
+            "Certificate should be of type ${X509Certificate::class.java.name}"
+        }
+        it
+    }.map {
+        it.subjectX500Principal.name.toByteArray().hash()
+    }.summaryHash()
 
 /** Verifies that signatures lead to trusted certificate */
 internal fun verifyCertificates(codeSigners: List<CodeSigner>, trustedCerts: Collection<X509Certificate>) {
