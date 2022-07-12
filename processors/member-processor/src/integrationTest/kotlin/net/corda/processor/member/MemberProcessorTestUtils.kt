@@ -24,6 +24,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
@@ -140,7 +141,10 @@ class MemberProcessorTestUtils {
             // Publish test data
             publishCpiMetadata(cpiMetadata)
 
-            eventually(duration = 20.seconds) {
+            eventually(
+                duration = 20.seconds,
+                waitBetween = 400.millis,
+            ) {
                 val newCpiInfo = getCpiInfo(cpiInfoReadService, cpiMetadata.cpiId)
                 assertNotNull(newCpiInfo)
                 assertNotEquals(previousCpiInfo, newCpiInfo)
@@ -150,7 +154,10 @@ class MemberProcessorTestUtils {
             publishVirtualNodeInfo(virtualNodeInfo)
 
             // wait for virtual node info reader to pick up changes
-            eventually(duration = 20.seconds) {
+            eventually(
+                duration = 20.seconds,
+                waitBetween = 400.millis,
+            ) {
                 val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
                 assertNotNull(newVNodeInfo)
                 assertNotEquals(previous, newVNodeInfo)
