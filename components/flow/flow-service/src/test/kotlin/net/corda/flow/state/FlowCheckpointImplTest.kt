@@ -44,6 +44,7 @@ class FlowCheckpointImplTest {
         return checkpoint to createFlowCheckpoint(checkpoint)
     }
 
+    @Suppress("LongParameterList")
     private fun setupAvroCheckpoint(
         initialiseFlowState: Boolean = true,
         key: FlowKey = FlowKey(FLOW_ID_1, BOB_X500_HOLDING_IDENTITY),

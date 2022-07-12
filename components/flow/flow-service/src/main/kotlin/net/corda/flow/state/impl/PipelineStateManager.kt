@@ -80,7 +80,7 @@ class PipelineStateManager(
         state.maxFlowSleepDuration = min(sleepTimeMs, state.maxFlowSleepDuration)
     }
 
-    fun toAvro() : PipelineState {
+    fun toAvro(): PipelineState {
         return state
     }
 

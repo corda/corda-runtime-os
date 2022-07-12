@@ -38,7 +38,7 @@ class FlowCheckpointImpl(
 
     // The checkpoint is live if it is not marked deleted and there is either some flow state, or a retry is currently
     // occurring (for example, if a transient failure has happened while processing a start event).
-    private val checkpointLive : Boolean
+    private val checkpointLive: Boolean
         get() = !deleted && (flowStateManager != null || inRetryState)
 
     override val flowId: String
@@ -77,7 +77,8 @@ class FlowCheckpointImpl(
         { "Attempt to access checkpoint before initialisation" }.stack
 
     override var serializedFiber: ByteBuffer
-        get() = flowStateManager?.fiber ?: throw IllegalStateException("Attempted to access flow fiber before the flow has been initialised.")
+        get() = flowStateManager?.fiber
+            ?: throw IllegalStateException("Attempted to access flow fiber before the flow has been initialised.")
         set(value) {
             checkNotNull(flowStateManager) {
                 "Attempt to set the flow state before it has been created"
@@ -85,7 +86,8 @@ class FlowCheckpointImpl(
         }
 
     override val sessions: List<SessionState>
-        get() = flowStateManager?.sessions ?: throw IllegalStateException("Attempted to access sessions before the flow has been initialised.")
+        get() = flowStateManager?.sessions
+            ?: throw IllegalStateException("Attempted to access sessions before the flow has been initialised.")
 
     override var persistenceState: PersistenceState?
         get() = flowStateManager?.persistenceState
@@ -142,13 +144,15 @@ class FlowCheckpointImpl(
     }
 
     override fun getSessionState(sessionId: String): SessionState? {
-        val manager = flowStateManager ?: throw IllegalStateException("Attempted to get a session state before the flow has been initialised.")
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to get a session state before the flow has been initialised.")
         return manager.getSessionState(sessionId)
     }
 
     override fun putSessionState(sessionState: SessionState) {
         checkFlowNotDeleted()
-        val manager = flowStateManager ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
         manager.putSessionState(sessionState)
     }
 

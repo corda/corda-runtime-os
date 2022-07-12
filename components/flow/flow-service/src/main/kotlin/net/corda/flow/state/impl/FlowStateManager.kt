@@ -25,16 +25,16 @@ class FlowStateManager(private val initialState: FlowState) {
 
     var stack = FlowStackImpl(state.flowStackItems)
 
-    val flowKey : FlowKey = state.flowStartContext.statusKey
+    val flowKey: FlowKey = state.flowStartContext.statusKey
 
-    val startContext : FlowStartContext = state.flowStartContext
+    val startContext: FlowStartContext = state.flowStartContext
 
-    val holdingIdentity : HoldingIdentity = state.flowStartContext.identity.toCorda()
+    val holdingIdentity: HoldingIdentity = state.flowStartContext.identity.toCorda()
 
-    val fiber : ByteBuffer
+    val fiber: ByteBuffer
         get() = state.fiber ?: ByteBuffer.wrap(byteArrayOf())
 
-    val sessions : List<SessionState>
+    val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
     fun updateSuspendedFiber(fiber: ByteBuffer) {
@@ -50,25 +50,25 @@ class FlowStateManager(private val initialState: FlowState) {
         sessionMap[sessionState.sessionId] = sessionState
     }
 
-    var persistenceState : PersistenceState?
+    var persistenceState: PersistenceState?
         get() = state.persistenceState
         set(value) {
             state.persistenceState = value
         }
 
-    var cryptoState : CryptoState?
+    var cryptoState: CryptoState?
         get() = state.cryptoState
         set(value) {
             state.cryptoState = value
         }
 
-    var waitingFor : WaitingFor?
+    var waitingFor: WaitingFor?
         get() = state.waitingFor
         set(value) {
             state.waitingFor = value
         }
 
-    var suspendedOn : String?
+    var suspendedOn: String?
         get() = state.suspendedOn
         set(value) {
             state.suspendedOn = value
@@ -87,7 +87,7 @@ class FlowStateManager(private val initialState: FlowState) {
         return state
     }
 
-    private fun validateAndCreateSessionMap(sessions: List<SessionState>) : MutableMap<String, SessionState> {
+    private fun validateAndCreateSessionMap(sessions: List<SessionState>): MutableMap<String, SessionState> {
         val map = sessions.associateBy { it.sessionId }.toMutableMap()
         if (map.size != sessions.size) {
             // There is at least one duplicate, so identify duplicate ids and throw an error.
@@ -100,7 +100,10 @@ class FlowStateManager(private val initialState: FlowState) {
                     seen.add(it.sessionId)
                 }
             }
-            throw IllegalStateException("Invalid checkpoint, flow ${state.flowStartContext.statusKey.id} has duplicate session for Session IDs = $duplicates")
+            throw IllegalStateException(
+                "Invalid checkpoint, flow ${state.flowStartContext.statusKey.id} has duplicate session " +
+                        "for Session IDs = $duplicates"
+            )
         }
         return map
     }
