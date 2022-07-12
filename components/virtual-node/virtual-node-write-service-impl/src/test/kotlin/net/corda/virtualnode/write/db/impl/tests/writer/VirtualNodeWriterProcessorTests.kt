@@ -18,7 +18,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -41,7 +41,6 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
