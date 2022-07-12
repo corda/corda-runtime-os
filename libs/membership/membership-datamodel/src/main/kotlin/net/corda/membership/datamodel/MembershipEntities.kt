@@ -5,5 +5,6 @@ object MembershipEntities {
         RegistrationRequestEntity::class.java,
         GroupPolicyEntity::class.java,
         MemberInfoEntity::class.java,
+        MemberSignatureEntity::class.java,
     )
 }

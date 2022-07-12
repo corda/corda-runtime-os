@@ -54,4 +54,20 @@ interface MembershipPersistenceClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
     ): MembershipPersistenceResult<Unit>
+
+    /**
+     * Set a member and registration request as approved
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param approvedMember The member that had been approved
+     * @param registrationRequestId The ID of the registration request
+     *
+     * @return membership persistence result with the persisted member information
+     *  indicate the result of the persistence operation.
+     */
+    fun setMemberAndRegistrationRequestAsApproved(
+        viewOwningIdentity: HoldingIdentity,
+        approvedMember: HoldingIdentity,
+        registrationRequestId: String,
+    ): MembershipPersistenceResult<MemberInfo>
 }
