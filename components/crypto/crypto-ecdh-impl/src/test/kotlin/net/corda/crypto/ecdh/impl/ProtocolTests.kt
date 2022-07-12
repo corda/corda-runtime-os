@@ -2,6 +2,7 @@ package net.corda.crypto.ecdh.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.ecdh.deriveSharedSecret
 import net.corda.crypto.ecdh.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
@@ -61,7 +62,7 @@ class ProtocolTests {
                         val otherPublicKey: PublicKey = it.getArgument(2)
                         val provider =
                             schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(otherPublicKey).providerName)
-                        SharedSecretOps.deriveSharedSecret(provider, pair.private, otherPublicKey)
+                        deriveSharedSecret(provider, pair.private, otherPublicKey)
                     }
                 }
             ).also { it.start() }

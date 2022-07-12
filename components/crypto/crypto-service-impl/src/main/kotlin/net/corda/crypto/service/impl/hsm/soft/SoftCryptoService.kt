@@ -27,9 +27,11 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
+import net.corda.v5.crypto.publicKeyId
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
+import java.security.PublicKey
 import javax.crypto.Cipher
 
 open class SoftCryptoService(
@@ -135,6 +137,29 @@ open class SoftCryptoService(
     override fun delete(alias: String, context: Map<String, String>): Boolean =
         throw UnsupportedOperationException("The service does not support key deletion.")
 
+    override fun deriveSharedSecret(
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray {
+        val publicKeyScheme = schemeMetadata.findKeyScheme(publicKey)
+        val otherPublicKeyScheme = schemeMetadata.findKeyScheme(otherPublicKey)
+        require(publicKeyScheme.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)) {
+            "The key scheme '${publicKeyScheme.codeName}' must support the Diffie–Hellman key agreement."
+        }
+        require(publicKeyScheme == otherPublicKeyScheme) {
+            "The keys must use the same key scheme, publicKey=${publicKeyScheme}, oth"
+        }
+        logger.info(
+            "deriveSharedSecret(publicKey={}:{}, otherPublicKey={}:{})",
+            publicKey.publicKeyId(),
+            publicKeyScheme.codeName,
+            otherPublicKey.publicKeyId(),
+            otherPublicKeyScheme.codeName
+        )
+        return deriveSharedSecret(provider, fetchPrivateKey(), otherPublicKey)
+    }
+
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
         require(!spec.masterKeyAlias.isNullOrBlank()) {
             "The masterKeyAlias is not specified"
@@ -187,10 +212,13 @@ open class SoftCryptoService(
             "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName}," +
                     " signature=${spec.signatureSpec})"
         }
+        return sign(spec, fetchPrivateKey(spec), data)
+    }
+
+    private fun fetchPrivateKey(spec: SigningWrappedSpec): PrivateKey {
         val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
             ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
-        val privateKey = wrappingKey.unwrap(spec.keyMaterial)
-        return sign(spec, privateKey, data)
+        return wrappingKey.unwrap(spec.keyMaterial)
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {

@@ -11,13 +11,10 @@ import net.corda.crypto.ecdh.GCM_TRANSFORMATION
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jcajce.provider.util.DigestFactory
-import java.security.PrivateKey
-import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import javax.crypto.Cipher
-import javax.crypto.KeyAgreement
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
@@ -125,27 +122,6 @@ object SharedSecretOps {
                 it[3] = it[3] xor currentNonceCounter[3]
             }
         )
-    }
-
-    internal fun deriveSharedSecret(provider: Provider, privateKey: PrivateKey, otherPublicKey: PublicKey): ByteArray {
-        require(otherPublicKey.algorithm == privateKey.algorithm) {
-            "Keys must use the same algorithm"
-        }
-        return when (privateKey.algorithm) {
-            "EC" -> {
-                KeyAgreement.getInstance("ECDH", provider).apply {
-                    init(privateKey)
-                    doPhase(otherPublicKey, true)
-                }.generateSecret()
-            }
-            "X25519" -> {
-                KeyAgreement.getInstance("X25519", provider).apply {
-                    init(privateKey)
-                    doPhase(otherPublicKey, true)
-                }.generateSecret()
-            }
-            else -> throw IllegalArgumentException("Can't handle algorithm ${privateKey.algorithm}")
-        }
     }
 
     class DerivedData(

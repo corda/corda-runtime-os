@@ -2,6 +2,8 @@ package net.corda.crypto.ecdh.impl
 
 import net.corda.crypto.ecdh.EncryptedDataWithKey
 import net.corda.crypto.ecdh.EphemeralKeyPairEncryptor
+import net.corda.crypto.ecdh.deriveSharedSecret
+import net.corda.crypto.ecdh.publicKeyOnCurve
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import org.osgi.service.component.annotations.Component
@@ -27,6 +29,8 @@ class EphemeralKeyPairEncryptorImpl(
         val scheme = schemeMetadata.findKeyScheme(otherPublicKey)
         val provider = schemeMetadata.providers.getValue(scheme.providerName)
         val keyPair = generateEphemeralKeyPair(provider, scheme)
+        publicKeyOnCurve(scheme, keyPair.public)
+        publicKeyOnCurve(scheme, otherPublicKey)
         val cipherText = SharedSecretOps.encrypt(
             digestName = digestName,
             salt = salt,
@@ -36,7 +40,7 @@ class EphemeralKeyPairEncryptorImpl(
             plainText = plainText,
             aad = aad
         ) {
-            SharedSecretOps.deriveSharedSecret(provider, keyPair.private, otherPublicKey)
+            deriveSharedSecret(provider, keyPair.private, otherPublicKey)
         }
         return EncryptedDataWithKey(
             publicKey = keyPair.public,

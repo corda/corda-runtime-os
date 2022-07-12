@@ -3,8 +3,10 @@ package net.corda.crypto.ecdh.impl
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.ecdh.StableKeyPairDecryptor
+import net.corda.crypto.ecdh.publicKeyOnCurve
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
@@ -13,6 +15,8 @@ import java.security.PublicKey
 class StableKeyPairDecryptorImpl(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient
 ) : AbstractComponent<StableKeyPairDecryptorImpl.Impl>(
@@ -36,7 +40,7 @@ class StableKeyPairDecryptorImpl(
         ): ByteArray
     }
 
-    override fun createActiveImpl(): Impl = ActiveImpl(cryptoOpsClient)
+    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, cryptoOpsClient)
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
 
@@ -70,6 +74,7 @@ class StableKeyPairDecryptorImpl(
     }
 
     class ActiveImpl(
+        private val schemeMetadata: CipherSchemeMetadata,
         private val cryptoOpsClient: CryptoOpsClient
     ) : Impl {
         override fun decrypt(
@@ -81,8 +86,15 @@ class StableKeyPairDecryptorImpl(
             otherPublicKey: PublicKey,
             cipherText: ByteArray,
             aad: ByteArray?
-        ): ByteArray =
-            SharedSecretOps.decrypt(
+        ): ByteArray {
+            val publicKeyScheme = schemeMetadata.findKeyScheme(publicKey)
+            val otherPublicKeyScheme = schemeMetadata.findKeyScheme(otherPublicKey)
+            require(publicKeyScheme == otherPublicKeyScheme) {
+                "The keys must use the same key scheme, publicKey=$publicKeyScheme, otherPublicKey=$otherPublicKeyScheme"
+            }
+            publicKeyOnCurve(publicKeyScheme, publicKey)
+            publicKeyOnCurve(otherPublicKeyScheme, otherPublicKey)
+            return SharedSecretOps.decrypt(
                 digestName = digestName,
                 salt = salt,
                 info = info,
@@ -93,6 +105,7 @@ class StableKeyPairDecryptorImpl(
             ) {
                 cryptoOpsClient.deriveSharedSecret(tenantId, publicKey, otherPublicKey)
             }
+        }
 
         override fun close() = Unit
     }
