@@ -46,40 +46,40 @@ pipeline {
     }
     stages {
 		  //stage create DB - see shared pipline
-        // stage('Create DBs') {
-        //     environment {
-        //         KUBECONFIG = credentials('e2e-tests-credentials')
-        //     }
-        //     steps {
-        //         // port forwarding from K8s
-        //         withEnv(["PGPORT=${postgresPort}"]) {
-        //             sh 'nohup kubectl port-forward --namespace postgres svc/postgres-postgresql "${PGPORT}":"${PGPORT}" > forward.txt 2>&1 &'
-        //         }
-        //         // create new DB
-        //         withEnv([
-        //                 "PGHOST=${postgresHost}",
-        //                 "PGPORT=${postgresPort}",
-        //                 "DATABASE=${postgresDb}"
-        //         ]) {
-        //             withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-        //                     passwordVariable: 'PGPASSWORD',
-        //                     usernameVariable: 'PGUSER')]) {
-        //                 script {
-        //                     try {
-        //                         sh 'psql --quiet --tuples-only -c \'select \''
-        //                     } catch (error) {
-        //                         echo "${error.getMessage()}\nPort forwarding Postgres has not been set up yet, retrying"
-        //                         retry(5) {
-        //                             sleep(time: 5, unit: "SECONDS")
-        //                             sh 'psql --quiet --tuples-only -c \'select \''
-        //                         }
-        //                     }
-        //                     sh 'createdb -w "${DATABASE}"'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Create DBs') {
+            environment {
+                KUBECONFIG = credentials('e2e-tests-credentials')
+            }
+            steps {
+                // port forwarding from K8s
+                withEnv(["PGPORT=${postgresPort}"]) {
+                    sh 'nohup kubectl port-forward --namespace postgres svc/postgres-postgresql "${PGPORT}":"${PGPORT}" > forward.txt 2>&1 &'
+                }
+                // create new DB
+                withEnv([
+                        "PGHOST=${postgresHost}",
+                        "PGPORT=${postgresPort}",
+                        "DATABASE=${postgresDb}"
+                ]) {
+                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                            passwordVariable: 'PGPASSWORD',
+                            usernameVariable: 'PGUSER')]) {
+                        script {
+                            try {
+                                sh 'psql --quiet --tuples-only -c \'select \''
+                            } catch (error) {
+                                echo "${error.getMessage()}\nPort forwarding Postgres has not been set up yet, retrying"
+                                retry(5) {
+                                    sleep(time: 5, unit: "SECONDS")
+                                    sh 'psql --quiet --tuples-only -c \'select \''
+                                }
+                            }
+                            sh 'createdb -w "${DATABASE}"'
+                        }
+                    }
+                }
+            }
+        }
     /// Build the Jar
         stage('Build  Jar') {
             steps {
@@ -109,7 +109,7 @@ pipeline {
         always {
 	// remove Database see here https://github.com/corda/corda-shared-build-pipeline-steps/blob/5.0/vars/cordaPipeline.groovy#L487-L500
             script{
-                writeFile file: "workerLogs.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
+                writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
         }
