@@ -1,9 +1,9 @@
 package net.corda.flow.pipeline.runner.impl
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
@@ -92,6 +92,6 @@ class FlowRunnerImpl @Activate constructor(
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
-        return flowFiberFactory.createAndResumeFlowFiber(fiberContext,flowContinuation)
+        return flowFiberFactory.createAndResumeFlowFiber(fiberContext, flowContinuation)
     }
 }

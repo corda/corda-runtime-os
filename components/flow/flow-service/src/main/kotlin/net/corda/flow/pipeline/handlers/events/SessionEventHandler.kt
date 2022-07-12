@@ -97,7 +97,7 @@ class SessionEventHandler @Activate constructor(
             .setCreatedTimestamp(Instant.now())
             .build()
 
-        context.checkpoint.initFromNew(sessionInit.flowId, startContext)
+        context.checkpoint.initFlowState(startContext)
         context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
     }
 
