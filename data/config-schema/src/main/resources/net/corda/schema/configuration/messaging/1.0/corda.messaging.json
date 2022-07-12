@@ -102,7 +102,7 @@
     },
     "maxAllowedMessageSize": {
       "description": "Maximum allowed size, in bytes, for publishing Messages. This configuration is used by the platform as a guide and does _not_ change the underlying bus settings.",
-      "type": "number",
+      "type": "integer",
       "default": 972800,
       "minimum": 512000,
       "maximum": 8388608
