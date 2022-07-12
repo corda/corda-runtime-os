@@ -6,6 +6,9 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -15,6 +18,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
+import javax.persistence.EntityManager
 
 /** A factory for [VirtualNodeWriter]s. */
 @Suppress("LongParameterList")
@@ -25,6 +29,7 @@ internal class VirtualNodeWriterFactory(
     private val dbAdmin: DbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
+    private val getChangeLogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) {
 
     /**
@@ -76,7 +81,8 @@ internal class VirtualNodeWriterFactory(
             virtualNodeEntityRepository,
             vnodeDbFactory,
             groupPolicyParser,
-            UTCClock()
+            UTCClock(),
+            getChangeLogs
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
