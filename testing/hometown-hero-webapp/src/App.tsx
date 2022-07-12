@@ -1,8 +1,10 @@
 import './App.scss';
 
-import { HOME, LOGIN, REGISTER, VNODE_HOME, VNODE_NETWORK } from './constants/routes';
+import { CPI_UPLOAD, HOME, LOGIN, REGISTER, VNODE_HOME, VNODE_NETWORK } from './constants/routes';
 import { Route, Routes } from 'react-router';
 
+import Admin from './pages/Admin';
+import { AppDataContextProvider } from './contexts/AppDataContext';
 import { BrowserRouter } from 'react-router-dom';
 import Footer from './components/Footer/Footer';
 import Home from './pages/Home';
@@ -22,19 +24,22 @@ function App() {
     return (
         <div className="App">
             {promiseInProgress && <LoadingModal />}
-            <BrowserRouter>
-                <UserContextProvider>
-                    <NavBar />
-                    <Routes>
-                        <Route path={HOME} element={<Home />} />
-                        <Route path={LOGIN} element={<Login />} />
-                        <Route path={REGISTER} element={<Register />} />
-                        <Route path={VNODE_HOME} element={<VNodeHome />} />
-                        <Route path={VNODE_NETWORK} element={<VNodeNetwork />} />
-                    </Routes>
-                    {!isMobile && <Footer />}
-                </UserContextProvider>
-            </BrowserRouter>
+            <AppDataContextProvider>
+                <BrowserRouter>
+                    <UserContextProvider>
+                        <NavBar />
+                        <Routes>
+                            <Route path={HOME} element={<Home />} />
+                            <Route path={LOGIN} element={<Login />} />
+                            <Route path={REGISTER} element={<Register />} />
+                            <Route path={VNODE_HOME} element={<VNodeHome />} />
+                            <Route path={VNODE_NETWORK} element={<VNodeNetwork />} />
+                            <Route path={CPI_UPLOAD} element={<Admin />} />
+                        </Routes>
+                        {!isMobile && <Footer />}
+                    </UserContextProvider>
+                </BrowserRouter>
+            </AppDataContextProvider>
         </div>
     );
 }
