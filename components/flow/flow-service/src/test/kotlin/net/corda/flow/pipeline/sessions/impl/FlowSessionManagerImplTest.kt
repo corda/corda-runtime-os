@@ -1,12 +1,12 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType

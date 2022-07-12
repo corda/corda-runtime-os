@@ -2,8 +2,6 @@ package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.StateMachineState
 
 /**
  * [FlowEventPipeline] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -30,14 +28,14 @@ interface FlowEventPipeline {
     fun runOrContinue(): FlowEventPipeline
 
     /**
-     * Sets the pipeline's [Checkpoint]'s [StateMachineState.suspendedOn] property.
+     * Sets the pipeline's [Checkpoint]'s suspendedOn property.
      *
      * @return The updated pipeline instance.
      */
     fun setCheckpointSuspendedOn(): FlowEventPipeline
 
     /**
-     * Sets the pipeline's [Checkpoint]'s [StateMachineState.waitingFor] property.
+     * Sets the pipeline's [Checkpoint]'s waitingFor property.
      *
      * @return The updated pipeline instance.
      */

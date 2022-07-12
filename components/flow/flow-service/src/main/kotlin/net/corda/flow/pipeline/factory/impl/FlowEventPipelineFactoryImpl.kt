@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
@@ -67,7 +67,7 @@ class FlowEventPipelineFactoryImpl(
 
     override fun create(checkpoint: Checkpoint?, event: FlowEvent, config: SmartConfig): FlowEventPipeline {
         val context = FlowEventContext<Any>(
-            checkpoint = flowCheckpointFactory.create(checkpoint, config),
+            checkpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config),
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,

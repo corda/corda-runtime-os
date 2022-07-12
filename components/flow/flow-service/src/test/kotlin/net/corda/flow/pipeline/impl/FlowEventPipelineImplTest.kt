@@ -1,9 +1,9 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowContinuation
