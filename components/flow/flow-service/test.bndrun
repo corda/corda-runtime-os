@@ -26,8 +26,7 @@
     bnd.identity;id='net.corda.cpi-info-read-service-fake',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
-    bnd.identity;id='slf4j.simple',\
-    bnd.identity;id='org.apache.aries.spifly.dynamic.bundle'
+    bnd.identity;id='slf4j.simple'
 
 -runstartlevel: \
     order=sortbynameversion,\

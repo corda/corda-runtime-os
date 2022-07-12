@@ -1,8 +1,6 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.CustomEvent
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import org.junit.jupiter.api.Test
@@ -101,8 +99,8 @@ class RegistrationTest {
 
     @Test
     fun `custom event is posted to the registering coordinator`() {
-        val registeringCoordinator = mock<LifecycleCoordinator>()
-        val registeredCoordinator = mock<LifecycleCoordinator>()
+        val registeringCoordinator = mock<LifecycleCoordinatorInternal>()
+        val registeredCoordinator = mock<LifecycleCoordinatorInternal>()
         val registration = Registration(setOf(registeredCoordinator), registeringCoordinator)
 
         val customEvent = CustomEvent(registration, "hello world")
@@ -111,19 +109,9 @@ class RegistrationTest {
         verify(registeringCoordinator).postEvent(customEvent)
     }
 
-    @Test
-    fun `closing a registration when coordinator is closed does not throw`() {
-        val coordinatorName = LifecycleCoordinatorName("test", "1")
-        val coordinator = LifecycleCoordinatorImpl(coordinatorName, 1, mock(), mock(), mock())
-        val listeningMock = mock<LifecycleCoordinator>()
-        val registration = Registration(setOf(coordinator), listeningMock)
-        coordinator.close()
-        registration.close()
-    }
-
     private inner class RegistrationTestHarness {
-        private val childMocks = listOf<LifecycleCoordinator>(mock(), mock(), mock())
-        private val listeningMock = mock<LifecycleCoordinator>()
+        private val childMocks = listOf<LifecycleCoordinatorInternal>(mock(), mock(), mock())
+        private val listeningMock = mock<LifecycleCoordinatorInternal>()
         private val registration = Registration(childMocks.toSet(), listeningMock)
 
         fun setDependentStatuses(statuses: List<LifecycleStatus>) {
@@ -154,7 +142,7 @@ class RegistrationTest {
         fun closeRegistration() {
             registration.close()
             childMocks.forEach {
-                verify(it).postEvent(CancelRegistration(registration))
+                verify(it).postInternalEvent(CancelRegistration(registration))
             }
         }
 

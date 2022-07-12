@@ -36,13 +36,17 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
     }
 
     override fun execute() {
-
         val repositoryFolder =
             context.startArgs.cpiDir ?: throw IllegalStateException("CPI Directory (--cpiDir) has not been set")
 
         val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
 
-        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        val x500Identities = listOf(
+            "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+            "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+            "CN=user1, O=user1 Corp, L=LDN, C=GB",
+            "CN=user2, O=user2 Corp, L=LDN, C=GB"
+        )
 
         val virtualNodes = cpiList.flatMap { cpi ->
             x500Identities.map { x500 -> cpi to VirtualNodeInfo(

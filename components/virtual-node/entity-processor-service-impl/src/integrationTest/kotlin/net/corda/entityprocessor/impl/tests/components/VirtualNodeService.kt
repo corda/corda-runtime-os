@@ -1,6 +1,5 @@
 package net.corda.entityprocessor.impl.tests.components
 
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -16,7 +15,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
-
 
 @Component(service = [VirtualNodeService::class])
 class VirtualNodeService @Activate constructor(
@@ -52,7 +50,7 @@ class VirtualNodeService @Activate constructor(
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,
-            cpi.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::cpkId),
+            cpi.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null

@@ -41,7 +41,7 @@ class RPCTopicServiceImplTest {
 
     private val faultListener = object : RPCResponderProcessor<Int, String> {
         override fun onNext(request: Int, respFuture: CompletableFuture<String>) {
-            throw CordaRPCAPIResponderException("fail")
+            throw CordaRPCAPIResponderException("errorType", "fail")
         }
     }
 

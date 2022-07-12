@@ -1,6 +1,5 @@
 import aQute.bnd.gradle.Resolve
 import groovy.transform.CompileStatic
-import groovy.transform.TupleConstructor
 import java.nio.file.Files
 import java.util.jar.Attributes
 import java.util.jar.JarEntry
@@ -319,28 +318,64 @@ def verifyApp = tasks.register('verifyApp', Resolve) {
     System.setProperty('bnd.home.dir', "$rootDir/bnd/")
 }
 
-@TupleConstructor
 @CompileStatic
-class JavaAgent implements Serializable {
-    String className
-    String args
+class JavaAgent implements Named {
+    private final String name
+    private final Property<String> className
+    private final Property<String> args
+
+    @Inject
+    JavaAgent(ObjectFactory objects, String name) {
+        this.name = name
+        this.className = objects.property(String)
+        this.args = objects.property(String)
+    }
+
+    @Override
+    @Internal
+    String getName() {
+        return name
+    }
+
+    @Input
+    Property<String> getClassName() {
+        return className
+    }
+
+    @Input
+    Property<String> getArgs() {
+        return args
+    }
 }
 
 @CompileStatic
 class OsgiRun {
 
-    final List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
-    final MapProperty<String, String> frameworkProperties
-    final SetProperty<String> addOpensAttribute
+    private final NamedDomainObjectContainer<JavaAgent> javaAgents
+    private final MapProperty<String, String> frameworkProperties
+    private final SetProperty<String> addOpensAttribute
 
     @Inject
     OsgiRun(ObjectFactory objects) {
+        javaAgents = objects.domainObjectContainer(JavaAgent)
         frameworkProperties = objects.mapProperty(String, String).convention(new HashMap<>())
         addOpensAttribute = objects.setProperty(String)
     }
 
-    boolean agent(String className, String args) {
-        javaAgents.add(new JavaAgent(className, args))
+    void javaAgents(Action<? super NamedDomainObjectContainer<JavaAgent>> action) {
+        action.execute(javaAgents)
+    }
+
+    NamedDomainObjectContainer<JavaAgent> getJavaAgents() {
+        return javaAgents
+    }
+
+    MapProperty<String, String> getFrameworkProperties() {
+        return frameworkProperties
+    }
+
+    SetProperty<String> getAddOpensAttribute() {
+        return addOpensAttribute
     }
 }
 
@@ -388,15 +423,21 @@ class JavaAgentFile extends DefaultTask {
         return new File(temporaryDir, "javaAgents.properties")
     }
 
-    @Input
-    List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
+    @Nested
+    ListProperty<JavaAgent> javaAgents
+
+    @Inject
+    JavaAgentFile(ObjectFactory objects) {
+        javaAgents = objects.listProperty(JavaAgent)
+    }
 
     @TaskAction
     void run() {
+        List<JavaAgent> agents = javaAgents.get()
         Files.newBufferedWriter(getOutputFile().toPath()).withCloseable { Writer writer ->
             Properties props = new Properties()
-            javaAgents.each { JavaAgent javaAgent ->
-                props.setProperty(javaAgent.className, javaAgent.args)
+            agents.forEach { JavaAgent javaAgent ->
+                props.setProperty(javaAgent.className.get(), javaAgent.args.get())
             }
             props.store(writer, null)
         }

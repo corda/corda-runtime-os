@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.bus.registration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
@@ -14,7 +15,9 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,31 +33,31 @@ class HSMRegistrationBusServiceImpl @Activate constructor(
     @Reference(service = HSMService::class)
     private val hsmService: HSMService
 ) : AbstractConfigurableComponent<HSMRegistrationBusServiceImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMRegistrationBusService>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<HSMService>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<HSMRegistrationBusService>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<HSMService>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     ),
+    configKeys = setOf(
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
+    )
 ), HSMRegistrationBusService {
     private companion object {
         const val GROUP_NAME = "crypto.hsm.rpc.registration"
         const val CLIENT_NAME = "crypto.hsm.rpc.registration"
     }
 
-    interface Impl : AutoCloseable {
-        val subscription: RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC)
-        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        val processor = HSMRegistrationBusProcessor(hsmService)
-        return ActiveImpl(
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val processor = HSMRegistrationBusProcessor(hsmService, event)
+        return Impl(
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -69,16 +72,12 @@ class HSMRegistrationBusServiceImpl @Activate constructor(
         )
     }
 
-    internal class InactiveImpl : Impl {
-        override val subscription: RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>
-            get() = throw IllegalStateException("Component is in illegal state.")
+    class Impl(
+        val subscription: RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>
+    ) : AbstractImpl {
+        override val downstream: DependenciesTracker =
+            DependenciesTracker.Default(setOf(subscription.subscriptionName))
 
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
-        override val subscription: RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>
-    ) : Impl {
         override fun close() {
             subscription.close()
         }

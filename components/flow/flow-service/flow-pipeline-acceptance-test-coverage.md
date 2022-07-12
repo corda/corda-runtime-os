@@ -133,3 +133,53 @@ This document should be maintained so that we can ensure that we have quick visi
 - A flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup ✅
 - An initiated flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup ✅
 - Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then failing the flow schedules flow and session cleanup ✅
+
+## Crypto
+
+### Signing
+
+- Requesting a signature sends a signing event and resumes after receiving the response ✅
+- Receiving a user error response resumes the flow with an error ✅
+- Receiving a retriable error response when the retry count is below the threshold resends the signing request and does not resume the flow ✅
+- Receiving a retriable error response when the retry count is above the threshold resumes the flow with an error ✅
+- Receive a retriable error response, retry the request, receive wakeup events, successful response received, flow continues ✅
+- Receiving a platform error response resumes the flow with an error ✅
+- Receiving a non-crypto event does not resume the flow ✅
+
+## Persistence
+
+### Persist Requests
+- Calling 'persist' on a flow sends an EntityRequest with payload PersistEntity ✅
+- Receiving a Unit response from a persist request resumes the flow ✅
+
+### Find Requests
+- Calling 'find' on a flow sends an EntityRequest with payload FindEntity ✅
+- Receiving a null response from a Find request resumes the flow ✅
+- Receiving bytes response from a Find request resumes the flow ✅
+
+### FindAll Requests
+
+- Calling 'findAll' on a flow sends an EntityRequest with payload FindAll ✅
+- Receiving a null response from a FindAll request resumes the flow ✅
+- Receiving bytes response from a FindAll request resumes the flow ✅
+
+### Merge Requests
+- Calling 'merge' on a flow sends an EntityRequest with payload MergeEntity ✅
+- Receiving a null response from a merge request resumes the flow ✅
+- Receiving bytes response from a Merge request resumes the flow ✅
+
+### Delete Requests
+- Calling 'delete' on a flow sends an EntityRequest with payload DeleteEntity ✅
+- Receiving a Unit response from a persist request resumes the flow ✅
+
+### Resend Logic 
+- Given a request has been sent with no response within the resend window, the request is not resent ✅
+- Given a request has been sent and the resend window has been surpased, the request is resent ✅
+
+### Error Handling
+- Given an entity request has been sent, if a response is received that does not match the request, ignore it ✅
+- Receive a 'retriable' error response, retry the request, successful response received, flow continues ✅
+- Receive a 'retriable' error response, retry the request max times, error response received always, flow errors ✅
+- Receive a 'retriable' error response, retry the request, receive wakeup events, successful response received, flow continues ✅
+- Receive a 'not ready' response, retry the request multiple times, success received eventually, flow continues ✅
+- Receive a 'fatal' response, does not retry the request, flow errors ✅

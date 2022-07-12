@@ -7,8 +7,9 @@ pipeline {
             label 'docker'
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
-            // Used to mount storage from the host as a volume to persist the cache between builds
-            args '-v /tmp:/host_tmp'
+            // Volume used to mount storage from the host as a volume to persist the cache between builds
+            // Additional hosts used to facilitate access to Kafka
+            args '-v /tmp:/host_tmp --add-host prereqs-kafka-0:127.0.0.1 --add-host prereqs-kafka-1:127.0.0.1 --add-host prereqs-kafka-2:127.0.0.1'
             // make sure build image is always fresh
             alwaysPull true
         }
@@ -60,7 +61,7 @@ pipeline {
                 sh """
                     kubectl create ns $NAMESPACE
                     kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
-                    kubectl label ns $NAMESPACE branch=${env.BRANCH_NAME.replace('/','-')} --overwrite=true
+                    kubectl label ns $NAMESPACE branch=${sanitizedBranchName()} --overwrite=true
                 """
             }
         }
@@ -90,7 +91,10 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh 'helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
+                sh '''
+                    export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
+                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s
+                '''
             }
             post {
                 unsuccessful {
@@ -111,8 +115,9 @@ pipeline {
 
 
                 sh '''
-                    # Forward RPC worker port
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 > forward.txt 2>&1 &
+                    # Forward ports for testing
+                    nohup kubectl port-forward -n ${NAMESPACE} prereqs-kafka-0 9094 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-flow-worker 7003:7000 >> forward.txt 2>&1 &
@@ -151,4 +156,10 @@ pipeline {
             sh 'kubectl delete ns "${NAMESPACE}"'
         }
     }
+}
+
+// K8s labels can not be greater than 63 characters 
+// Helper method to sanitize edge cases of very long branch names
+def sanitizedBranchName(){
+    return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
 }

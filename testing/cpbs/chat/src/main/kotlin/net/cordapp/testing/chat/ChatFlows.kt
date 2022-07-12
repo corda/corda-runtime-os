@@ -13,6 +13,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -20,10 +21,12 @@ import net.corda.v5.base.util.contextLogger
 /**
  * Outgoing chat message flow, for sending a chat message to another member.
  * JSON argument should look something like:
+ * ```json
  * {
  *   "recipientX500Name": "CN=Alice, O=R3, L=London, C=GB",
  *   "message": "Hello Alice"
  * }
+ * ```
  */
 @InitiatingFlow(protocol = "chatProtocol")
 class ChatOutgoingFlow : RPCStartableFlow {
@@ -43,7 +46,7 @@ class ChatOutgoingFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
-        val inputs = requestBody.getRequestBodyAs<OutgoingChatMessage>(jsonMarshallingService)
+        val inputs = requestBody.getRequestBodyAs<ChatOutgoingFlowParameter>(jsonMarshallingService)
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
         inputs.message ?: throw IllegalArgumentException("Chat message not supplied")
 
@@ -52,7 +55,7 @@ class ChatOutgoingFlow : RPCStartableFlow {
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(inputs.recipientX500Name))
         session.send(MessageContainer(inputs.message))
 
-        log.info("Sent message to recipient")
+        log.info("Sent message from ${flowEngine.virtualNodeName} to ${inputs.recipientX500Name}")
         return ""
     }
 }
@@ -71,6 +74,9 @@ class ChatIncomingFlow : ResponderFlow {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
+
     @Suspendable
     override fun call(session: FlowSession) {
         val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
@@ -79,29 +85,40 @@ class ChatIncomingFlow : ResponderFlow {
         val sender = session.counterparty.toString()
         val message = session.receive<MessageContainer>().unwrap { it.message }
 
-        MessageStore.add(IncomingChatMessage(sender, message))
+        add(persistenceService, IncomingChatMessage(sender, message))
 
         log.info("Added incoming message from ${sender} to message store")
     }
 }
 
 /**
- * Returns any outstanding messages unread to the caller. Read messages are removed from the store thus it becomes the
- * responsibility of the caller to keep track of them after this point. This mechanism allows a client to poll for new
- * messages to a member repeatedly, however precludes multiple clients reading chats to the same member.
+ * Returns the last unread message(s) for the virtual node member in which the Flow is started. If a "fromName" is
+ * supplied it will return the last unread message which originated at the supplied member. If an empty object {} is
+ * passed or fromName is empty, all last unread messages from all originating members will be returned.
+ * Read messages are removed from the store thus it becomes the responsibility of the caller to keep track of them after
+ * this point.
+ * JSON argument should look something like:
+ * ```json
+ * {
+ *   "fromName": "CN=Alice, O=R3, L=London, C=GB"
+ * }
+ * ```
+ * or for all messages:
+ * ```json
+ * {}
+ * ```
+ *
  * The output will look something like:
+ * ```json
  * {
  *   "messages": [
  *     {
  *       "senderX500Name": "CN=Bob, O=R3, L=London, C=GB",
  *       "message": "Hello from Bob"
- *     },
- *     {
- *       "senderX500Name": "CN=Charlie, O=R3, L=London, C=GB",
- *       "message": "Hello from Charlie"
  *     }
  *   ]
  * }
+ * ```
  */
 class ChatReaderFlow : RPCStartableFlow {
 
@@ -115,12 +132,25 @@ class ChatReaderFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
-        with (MessageStore.readAndClear()) {
-            log.info("Returning ${this.messages.size} unread messages")
-            return jsonMarshallingService.format(this)
+
+        val inputs = requestBody.getRequestBodyAs<ChatReaderFlowParameter>(jsonMarshallingService)
+
+        val messages = if (inputs.fromName == null || inputs.fromName.isEmpty()) {
+            readAllAndClear(persistenceService).also {
+                log.info("Returning ${it.messages.size} unread messages from all senders")
+            }
+        } else {
+            readAndClear(persistenceService, inputs.fromName).also {
+                log.info("Returning ${it.messages.size} unread messages from ${inputs.fromName}")
+            }
         }
+
+        return jsonMarshallingService.format(messages)
     }
 }

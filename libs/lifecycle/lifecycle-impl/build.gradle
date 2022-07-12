@@ -18,6 +18,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

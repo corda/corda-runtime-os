@@ -1,12 +1,12 @@
 package net.corda.chunking.db.impl
 
-import javax.persistence.EntityManagerFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.db.ChunkWriteException
-import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
@@ -20,9 +20,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
+import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import javax.persistence.EntityManagerFactory
 
 @Suppress("UNUSED")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -58,7 +60,9 @@ class ChunkDbWriterFactoryImpl(
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
         val statusTopic = Schemas.VirtualNode.CPI_UPLOAD_STATUS_TOPIC
 
-        val subscription = createSubscription(
+        // Must hang on to a reference to the publisher that is created here such that it can be closed in the event
+        // that the subscription is closed.
+        val (publisher, subscription) = createSubscription(
             uploadTopic,
             messagingConfig,
             bootConfig,
@@ -67,7 +71,7 @@ class ChunkDbWriterFactoryImpl(
             cpiInfoWriteService
         )
 
-        return ChunkDbWriterImpl(subscription)
+        return ChunkDbWriterImpl(subscription, publisher)
     }
 
     private fun createPublisher(config: SmartConfig): Publisher {
@@ -89,20 +93,31 @@ class ChunkDbWriterFactoryImpl(
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
-    ): Subscription<RequestId, Chunk> {
-        val persistence = DatabaseChunkPersistence(entityManagerFactory)
+    ): Pair<Publisher, Subscription<RequestId, Chunk>> {
+        val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
+        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
-        val validator =
-            CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
-        val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
+        val validator = CpiValidatorImpl(
+            statusPublisher,
+            chunkPersistence,
+            cpiPersistence,
+            cpiInfoWriteService,
+            cpiCacheDir,
+            cpiPartsDir,
+            UTCClock()
+        )
+        val processor = ChunkWriteToDbProcessor(statusPublisher, chunkPersistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
-            subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null)
+            Pair(publisher, subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null))
         } catch (e: Exception) {
-             throw ChunkWriteException("Could not create subscription to process configuration update requests.", e)
+            // If a failure happens such that the subscription could not be created, the publisher we've just created
+            // needs to be deleted.
+            publisher.close()
+            throw ChunkWriteException("Could not create subscription to process configuration update requests.", e)
         }
     }
 }

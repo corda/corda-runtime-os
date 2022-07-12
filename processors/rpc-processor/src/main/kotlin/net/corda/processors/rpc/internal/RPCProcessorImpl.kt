@@ -6,8 +6,8 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.HSMConfigurationClient
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMConfigurationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
@@ -21,6 +21,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
@@ -70,6 +71,8 @@ class RPCProcessorImpl @Activate constructor(
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
+    @Reference(service = GroupPolicyProvider::class)
+    private val groupPolicyProvider: GroupPolicyProvider,
 ) : RPCProcessor {
 
     private companion object {
@@ -94,6 +97,7 @@ class RPCProcessorImpl @Activate constructor(
         ::hsmConfigurationClient,
         ::hsmRegistrationClient,
         ::certificatesClient,
+        ::groupPolicyProvider,
     )
 
     override fun start(bootConfig: SmartConfig) {

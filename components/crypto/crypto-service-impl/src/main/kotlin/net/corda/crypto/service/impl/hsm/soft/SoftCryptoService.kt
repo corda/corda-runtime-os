@@ -19,27 +19,11 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.ECDSA_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.ECDSA_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSASSA_PSS_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA256_WITH_MGF1_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA384_WITH_MGF1_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
-import net.corda.v5.crypto.RSA_SHA512_WITH_MGF1_SIGNATURE_SPEC
 import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SM2_SM3_SIGNATURE_SPEC
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -57,37 +41,37 @@ open class SoftCryptoService(
         fun produceSupportedSchemes(schemeMetadata: CipherSchemeMetadata): Map<KeyScheme, List<SignatureSpec>> =
             mutableMapOf<KeyScheme, List<SignatureSpec>>().apply {
                 addIfSupported(schemeMetadata, RSA_CODE_NAME, listOf(
-                    RSA_SHA256_SIGNATURE_SPEC,
-                    RSA_SHA384_SIGNATURE_SPEC,
-                    RSA_SHA512_SIGNATURE_SPEC,
-                    RSASSA_PSS_SHA256_SIGNATURE_SPEC,
-                    RSASSA_PSS_SHA384_SIGNATURE_SPEC,
-                    RSASSA_PSS_SHA512_SIGNATURE_SPEC,
-                    RSA_SHA256_WITH_MGF1_SIGNATURE_SPEC,
-                    RSA_SHA384_WITH_MGF1_SIGNATURE_SPEC,
-                    RSA_SHA512_WITH_MGF1_SIGNATURE_SPEC
+                    SignatureSpec.RSA_SHA256,
+                    SignatureSpec.RSA_SHA384,
+                    SignatureSpec.RSA_SHA512,
+                    SignatureSpec.RSASSA_PSS_SHA256,
+                    SignatureSpec.RSASSA_PSS_SHA384,
+                    SignatureSpec.RSASSA_PSS_SHA512,
+                    SignatureSpec.RSA_SHA256_WITH_MGF1,
+                    SignatureSpec.RSA_SHA384_WITH_MGF1,
+                    SignatureSpec.RSA_SHA512_WITH_MGF1
                 ))
                 addIfSupported(schemeMetadata, ECDSA_SECP256K1_CODE_NAME, listOf(
-                    ECDSA_SHA256_SIGNATURE_SPEC,
-                    ECDSA_SHA384_SIGNATURE_SPEC,
-                    ECDSA_SHA512_SIGNATURE_SPEC
+                    SignatureSpec.ECDSA_SHA256,
+                    SignatureSpec.ECDSA_SHA384,
+                    SignatureSpec.ECDSA_SHA512
                 ))
                 addIfSupported(schemeMetadata, ECDSA_SECP256R1_CODE_NAME, listOf(
-                    ECDSA_SHA256_SIGNATURE_SPEC,
-                    ECDSA_SHA384_SIGNATURE_SPEC,
-                    ECDSA_SHA512_SIGNATURE_SPEC
+                    SignatureSpec.ECDSA_SHA256,
+                    SignatureSpec.ECDSA_SHA384,
+                    SignatureSpec.ECDSA_SHA512
                 ))
                 addIfSupported(schemeMetadata, EDDSA_ED25519_CODE_NAME, listOf(
-                    EDDSA_ED25519_SIGNATURE_SPEC
+                    SignatureSpec.EDDSA_ED25519
                 ))
                 addIfSupported(schemeMetadata, SPHINCS256_CODE_NAME, listOf(
-                    SPHINCS256_SHA512_SIGNATURE_SPEC
+                    SignatureSpec.SPHINCS256_SHA512
                 ))
                 addIfSupported(schemeMetadata, SM2_CODE_NAME, listOf(
-                    SM2_SM3_SIGNATURE_SPEC
+                    SignatureSpec.SM2_SM3
                 ))
                 addIfSupported(schemeMetadata, GOST3410_GOST3411_CODE_NAME, listOf(
-                    GOST3410_GOST3411_SIGNATURE_SPEC
+                    SignatureSpec.GOST3410_GOST3411
                 ))
             }
 
@@ -127,7 +111,7 @@ open class SoftCryptoService(
         }
     }
 
-    override fun delete(alias: String, context: Map<String, String>) =
+    override fun delete(alias: String, context: Map<String, String>): Boolean =
         throw UnsupportedOperationException("The service does not support key deletion.")
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {

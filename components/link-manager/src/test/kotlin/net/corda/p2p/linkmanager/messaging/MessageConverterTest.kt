@@ -169,7 +169,7 @@ class MessageConverterTest {
         val groups = mockGroups(emptyList())
         assertThat(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, groups, members)).isNull()
         loggingInterceptor.assertSingleWarning(
-            "Could not find the group information in the GroupPolicyProvider for $peer." +
+            "Could not find the group information in the GroupPolicyProvider for $us." +
                 " The message was discarded."
         )
     }

@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.bus.rpc
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -14,6 +15,8 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,31 +33,31 @@ class CryptoOpsBusServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<CryptoOpsBusServiceImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoOpsBusService>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<CryptoOpsBusService>(),
+    configurationReadService = configurationReadService,
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     ),
+    configKeys = setOf(
+        MESSAGING_CONFIG,
+        BOOT_CONFIG,
+        CRYPTO_CONFIG
+    )
 ), CryptoOpsBusService {
     private companion object {
         const val GROUP_NAME = "crypto.ops.rpc"
         const val CLIENT_NAME = "crypto.ops.rpc"
     }
 
-    interface Impl : AutoCloseable {
-        val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val processor = CryptoOpsBusProcessor(signingFactory)
-        return ActiveImpl(
+        val processor = CryptoOpsBusProcessor(signingFactory, event)
+        return Impl(
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
                     groupName = GROUP_NAME,
@@ -69,16 +72,12 @@ class CryptoOpsBusServiceImpl @Activate constructor(
         )
     }
 
-    internal class InactiveImpl : Impl {
-        override val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
-            get() = throw IllegalStateException("Component is in illegal state.")
+    class Impl(
+        val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
+    ) : AbstractImpl {
+        override val downstream: DependenciesTracker =
+            DependenciesTracker.Default(setOf(subscription.subscriptionName))
 
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
-        override val subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
-    ) : Impl {
         override fun close() {
             subscription.close()
         }

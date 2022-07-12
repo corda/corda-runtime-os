@@ -1,14 +1,14 @@
 package net.corda.crypto.service.impl.hsm.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.CryptoRetryingExecutor
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
@@ -24,11 +24,11 @@ import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.time.Instant
 
 @Suppress("TooManyFunctions")
@@ -36,7 +36,7 @@ class HSMServiceImpl(
     config: SmartConfig,
     private val hsmStore: HSMStore,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val opsProxyClient: CryptoOpsProxyClient
+    private val cryptoOpsClient: CryptoOpsClient
 ) : AutoCloseable {
     companion object {
         private val logger = contextLogger()
@@ -54,7 +54,10 @@ class HSMServiceImpl(
 
     private val hsmConfig = config.hsmPersistence()
 
-    private val executor = CryptoRetryingExecutor(logger, hsmConfig.downstreamMaxAttempts)
+    private val executor = CryptoRetryingExecutor(
+        logger,
+        BackoffStrategy.createBackoff(hsmConfig.downstreamMaxAttempts, listOf(100L))
+    )
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
@@ -67,7 +70,7 @@ class HSMServiceImpl(
                 it.merge(info, encryptedServiceConfig)
                 info.id
             } else {
-                throw CryptoServiceLibraryException(
+                throw IllegalArgumentException(
                     "Cannot update the HSM Config with id '${info.id}' as it doesn't exist."
                 )
             }
@@ -200,7 +203,7 @@ class HSMServiceImpl(
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
             executor.executeWithRetry {
-                opsProxyClient.createWrappingKey(
+                cryptoOpsClient.createWrappingKey(
                     configId = association.config.info.id,
                     failIfExists = false,
                     masterKeyAlias = association.masterKeyAlias!!,
@@ -217,7 +220,7 @@ class HSMServiceImpl(
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
             executor.executeWithRetry {
-                opsProxyClient.createWrappingKey(
+                cryptoOpsClient.createWrappingKey(
                     configId = info.id,
                     failIfExists = false,
                     masterKeyAlias = info.masterKeyAlias,
@@ -266,5 +269,5 @@ class HSMServiceImpl(
     private fun tryChooseAny(stats: List<HSMStat>): HSMStat =
         stats.minByOrNull { s ->
             s.usages
-        } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
+        } ?: throw IllegalStateException("There is no available HSMs.")
 }

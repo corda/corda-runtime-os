@@ -174,4 +174,25 @@ interface CryptoOpsClient : Lifecycle {
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
+
+    /**
+     * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of
+     * the wrapping key in such cases the implementation should do nothing (note that [requiresWrappingKey] should
+     * return false for such implementations).
+     *
+     * @param configId the HSM's configuration id which the key is generated in.
+     * @param failIfExists a flag indicating whether the method should fail if a key already exists under
+     * the provided alias or return normally without overriding the key.
+     * @param context the optional key/value operation context.
+     *
+     * @throws IllegalArgumentException if a key already exists under this alias
+     * and [failIfExists] is set to true.
+     * @throws net.corda.v5.crypto.failures.CryptoException for general cryptographic exceptions.
+     */
+    fun createWrappingKey(
+        configId: String,
+        failIfExists: Boolean,
+        masterKeyAlias: String,
+        context: Map<String, String>
+    )
 }

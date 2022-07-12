@@ -3,6 +3,13 @@ plugins {
     id 'corda.common-publishing'
 }
 
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 description 'Chunk database writer impl'
 
 dependencies {
@@ -17,17 +24,20 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
-    implementation project(":libs:packaging:packaging")
 
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:chunking:chunking-core')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:db:db-admin')
+
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:cpi-datamodel")
+    implementation project(":libs:packaging:packaging")
     implementation project(":libs:packaging:packaging-core")
+    implementation project(":libs:packaging:packaging-verify")
     implementation project(":libs:utilities")
     implementation project(':components:chunking:chunk-db-write')
 
@@ -36,17 +46,32 @@ dependencies {
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:reconciliation:reconciliation")
+    implementation project(":libs:membership:membership-common")
 
     testImplementation project(':libs:db:db-admin')
     testImplementation project(':libs:db:db-admin-impl')
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':testing:db-testkit')
+    testImplementation project(':testing:test-utilities')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
+}
+
+def testResources = tasks.named('processTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+        into 'META-INF'
+    }
+}
+
+tasks.named('test', Test) {
+    dependsOn testResources
 }
 
 tasks.named('jar', Jar) {

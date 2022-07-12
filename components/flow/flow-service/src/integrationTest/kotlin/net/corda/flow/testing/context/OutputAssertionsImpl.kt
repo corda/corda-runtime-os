@@ -1,5 +1,7 @@
 package net.corda.flow.testing.context
 
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
+import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
@@ -14,6 +16,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -85,6 +88,24 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun cryptoSignEvents(vararg requestId: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response, "Test run response value")
+
+            val cryptoSignEventRequestIds = testRun.response!!.responseEvents
+                .filter { it.topic == Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC }
+                .mapNotNull { it.value as? FlowOpsRequest }
+                .filter { it.request is SignFlowCommand }
+                .map { it.context.requestId }
+
+            assertEquals(
+                requestId.toList(),
+                cryptoSignEventRequestIds,
+                "Expected request ids: ${requestId.toList()} but found $cryptoSignEventRequestIds when expecting ${SignFlowCommand::class.simpleName} events"
+            )
+        }
+    }
+
     override fun scheduleFlowMapperCleanupEvents(vararg key: String) {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response value")
@@ -106,10 +127,11 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun flowResumedWith(value: Any) {
+    override fun flowResumedWith(value: Any?) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
-            assertEquals(value, (testRun.flowContinuation as FlowContinuation.Run).value)
+            val resumedWith = (testRun.flowContinuation as FlowContinuation.Run).value
+            assertEquals(value, resumedWith, "Expected flow to resume with $value but was $resumedWith")
         }
     }
 
@@ -130,6 +152,18 @@ class OutputAssertionsImpl(
             val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
 
             assertEquals(1, wakeupEvents.size, "Expected one wakeup event")
+        }
+    }
+
+    override fun hasPendingUserException() {
+        asserts.add{ testRun ->
+            assertThat(testRun.response?.updatedState?.pendingPlatformError).isNotNull()
+        }
+    }
+
+    override fun noPendingUserException() {
+        asserts.add{ testRun ->
+            assertThat(testRun.response?.updatedState?.pendingPlatformError).isNull()
         }
     }
 
@@ -233,6 +267,39 @@ class OutputAssertionsImpl(
     override fun markedForDlq() {
         asserts.add {
             assertThat(it.response?.markForDLQ).isTrue
+        }
+    }
+
+    override fun entityRequestSent(expectedRequestPayload: Any) {
+        asserts.add { testRun ->
+            val response = testRun.response
+            assertNotNull(response, "Test run response value")
+
+            val entityRequests = response!!.responseEvents.filter {
+                it.value is EntityRequest
+            }
+
+            assertTrue(entityRequests.isNotEmpty(), "No entity request found in response output events")
+            assertTrue(entityRequests.size == 1, "More than one entity request found in response output events")
+            val foundEntityRequest = entityRequests.first().value as EntityRequest
+
+            assertNotNull(foundEntityRequest, "No entity request found in response events.")
+            val outputRequestPayload = foundEntityRequest.request
+            assertTrue(outputRequestPayload::class.java == expectedRequestPayload::class.java,
+                "Entity request found is of the wrong type. Expected ${expectedRequestPayload::class.java}, found: ${expectedRequestPayload::class.java}")
+            assertTrue(expectedRequestPayload == outputRequestPayload, "Entity request payload found does not match the expected payload")
+        }
+    }
+
+    override fun noEntityRequestSent() {
+        asserts.add { testRun ->
+            val response = testRun.response
+            assertNotNull(response, "Test run response value")
+
+            val entityRequests = response!!.responseEvents.filter {
+                it.value is EntityRequest
+            }
+            assertTrue(entityRequests.isEmpty(), "Entity request found in response events.")
         }
     }
 

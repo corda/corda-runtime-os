@@ -12,7 +12,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -55,11 +54,11 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `Should throw CryptoConfigurationException when crypto key is not found in the map`() {
+    fun `Should throw IllegalStateException when crypto key is not found in the map`() {
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             map.toCryptoConfig()
         }
     }
@@ -80,18 +79,18 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `Should throw CryptoConfigurationException to get default root encryptor when passphrase is missing`() {
+    fun `Should throw IllegalStateException to get default root encryptor when passphrase is missing`() {
         val config = configFactory.create(
             ConfigFactory.empty()
                 .withValue("rootKey.salt", ConfigValueFactory.fromAnyRef("root-salt"))
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.rootEncryptor()
         }
     }
 
     @Test
-    fun `Should throw CryptoConfigurationException to get default root encryptor when salt is missing`() {
+    fun `Should throw IllegalStateException to get default root encryptor when salt is missing`() {
         val config = configFactory.create(
             ConfigFactory.empty()
                 .withValue(
@@ -100,7 +99,7 @@ class CryptoConfigUtilsTests {
                     )
                 )
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.rootEncryptor()
         }
     }
@@ -112,7 +111,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, config.maximumSize)
         assertEquals("soft-salt", config.salt)
         assertEquals("soft-passphrase", config.passphrase)
-        assertEquals(0, config.maxAttempts)
+        assertEquals(1, config.maxAttempts)
         assertEquals(20000, config.attemptTimeoutMills)
     }
 
@@ -132,126 +131,210 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `Should throw CryptoConfigurationException when soft persistence is missing`() {
+    fun `Should be able to get BusProcessorConfig and its properties for ops operations`() {
+        val config = smartConfig.opsBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for flow ops operations`() {
+        val config = smartConfig.flowBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for hsm config operations`() {
+        val config = smartConfig.hsmConfigBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should be able to get BusProcessorConfig and its properties for hsm registration operations`() {
+        val config = smartConfig.hsmRegistrationBusProcessor()
+        assertEquals(3, config.maxAttempts)
+        assertEquals(1, config.waitBetweenMills.size)
+        assertEquals(200L, config.waitBetweenMills[0])
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when soft persistence is missing`() {
         val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.softPersistence()
         }
     }
 
     @Test
-    fun `Should throw CryptoConfigurationException when signing persistence is missing`() {
+    fun `Should throw IllegalStateException when signing persistence is missing`() {
         val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.signingPersistence()
         }
     }
 
     @Test
-    fun `Should throw CryptoConfigurationException when HSM persistence is missing`() {
+    fun `Should throw IllegalStateException when HSM persistence is missing`() {
         val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.hsmPersistence()
         }
     }
 
     @Test
-    fun `CryptoSigningPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+    fun `Should throw IllegalStateException when ops operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.opsBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when flow ops operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.flowBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when hsm config operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.hsmConfigBusProcessor()
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when hsm registration operations are missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<IllegalStateException> {
+            config.opsBusProcessor()
+        }
+    }
+
+    @Test
+    fun `CryptoSigningPersistenceConfig should throw IllegalStateException when expireAfterAccessMins is empty`() {
         val config = CryptoSigningPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.keysExpireAfterAccessMins
         }
     }
 
     @Test
-    fun `CryptoSigningPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
+    fun `CryptoSigningPersistenceConfig should throw IllegalStateException when maximumSize is empty`() {
         val config = CryptoSigningPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.keyNumberLimit
         }
     }
 
     @Test
-    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+    fun `CryptoSoftPersistenceConfig should throw IllegalStateException when expireAfterAccessMins is empty`() {
         val config = CryptoSoftPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.expireAfterAccessMins
         }
     }
 
     @Test
-    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
+    fun `CryptoSoftPersistenceConfig should throw IllegalStateException when maximumSize is empty`() {
         val config = CryptoSoftPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.maximumSize
         }
     }
 
     @Test
-    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when salt is empty`() {
+    fun `CryptoSoftPersistenceConfig should throw IllegalStateException when salt is empty`() {
         val config = CryptoSoftPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.salt
         }
     }
 
     @Test
-    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when passphrase is empty`() {
+    fun `CryptoSoftPersistenceConfig should throw IllegalStateException when passphrase is empty`() {
         val config = CryptoSoftPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.passphrase
         }
     }
 
     @Test
-    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when retries is empty`() {
+    fun `CryptoSoftPersistenceConfig should throw IllegalStateException when retries is empty`() {
         val config = CryptoSoftPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.maxAttempts
         }
     }
 
     @Test
-    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when timeoutMills is empty`() {
+    fun `CryptoSoftPersistenceConfig should throw IllegalStateException when timeoutMills is empty`() {
         val config = CryptoSoftPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.attemptTimeoutMills
         }
     }
 
     @Test
-    fun `CryptoHSMPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+    fun `CryptoHSMPersistenceConfig should throw IllegalStateException when expireAfterAccessMins is empty`() {
         val config = CryptoHSMPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.expireAfterAccessMins
         }
     }
 
     @Test
-    fun `CryptoHSMPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
+    fun `CryptoHSMPersistenceConfig should throw IllegalStateException when maximumSize is empty`() {
         val config = CryptoHSMPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<CryptoConfigurationException> {
+        assertThrows<IllegalStateException> {
             config.maximumSize
+        }
+    }
+
+    @Test
+    fun `BusProcessorConfig should throw IllegalStateException when maxAttempts is empty`() {
+        val config = BusProcessorConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<IllegalStateException> {
+            config.maxAttempts
+        }
+    }
+
+    @Test
+    fun `BusProcessorConfig should throw IllegalStateException when waitBetweenMills is empty`() {
+        val config = BusProcessorConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<IllegalStateException> {
+            config.waitBetweenMills
         }
     }
 
@@ -282,7 +365,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("soft-salt", sofPersistence.salt)
         assertEquals("soft-passphrase", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -330,7 +413,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -376,7 +459,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("soft-passphrase", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -422,7 +505,7 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("soft-salt", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
@@ -480,7 +563,7 @@ class CryptoConfigUtilsTests {
         assertEquals(77, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(1, sofPersistence.maxAttempts)
         assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(42, signingPersistence.keysExpireAfterAccessMins)

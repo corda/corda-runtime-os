@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.verify.internal.cpk
 
-import net.corda.libs.packaging.verify.InMemoryZipFile
+import net.corda.test.util.InMemoryZipFile
 import net.corda.libs.packaging.verify.TestUtils
 import net.corda.libs.packaging.verify.TestUtils.addFile
 import net.corda.libs.packaging.verify.TestUtils.signedBy

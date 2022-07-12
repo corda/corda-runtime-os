@@ -10,12 +10,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
-import net.corda.data.membership.rpc.request.RegistrationRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusRequest
+import net.corda.data.membership.rpc.request.RegistrationRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationResponse
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -28,6 +28,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
+import net.corda.membership.lib.toMap
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -45,6 +46,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import net.corda.test.util.time.TestClock
+import org.assertj.core.api.Assertions.assertThat
 import java.time.Instant
 
 class MemberOpsClientTest {
@@ -52,6 +54,7 @@ class MemberOpsClientTest {
         private const val HOLDING_IDENTITY_ID = "nodeId"
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
+
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
 
@@ -72,7 +75,7 @@ class MemberOpsClientTest {
         }
     }
 
-    private var rpcRequest: MembershipRpcRequest?  = null
+    private var rpcRequest: MembershipRpcRequest? = null
 
     private lateinit var rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
 
@@ -97,6 +100,7 @@ class MemberOpsClientTest {
     fun changeRegistrationStatus(status: LifecycleStatus) = lifecycleHandler?.processEvent(
         RegistrationStatusChangeEvent(mock(), status), coordinator
     )
+
     fun changeConfig() = lifecycleHandler?.processEvent(
         ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
         coordinator
@@ -110,7 +114,11 @@ class MemberOpsClientTest {
         changeConfig()
     }
 
-    private val request = MemberRegistrationRequestDto(HOLDING_IDENTITY_ID, RegistrationActionDto.REQUEST_JOIN)
+    private val request = MemberRegistrationRequestDto(
+        HOLDING_IDENTITY_ID,
+        RegistrationActionDto.REQUEST_JOIN,
+        mapOf("property" to "test"),
+    )
 
     @BeforeEach
     fun setUp() {
@@ -124,9 +132,9 @@ class MemberOpsClientTest {
                             rpcRequest!!.requestContext.requestTimestamp,
                             clock.instant()
                         ),
-                        RegistrationResponse(
+                        RegistrationRpcResponse(
                             clock.instant(),
-                            RegistrationStatus.SUBMITTED,
+                            RegistrationRpcStatus.SUBMITTED,
                             1,
                             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                             KeyValuePairList(emptyList())
@@ -167,10 +175,11 @@ class MemberOpsClientTest {
         memberOpsClient.startRegistration(request)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationRequest
+        val requestSent = rpcRequest?.request as RegistrationRpcRequest
 
-        assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
-        assertEquals(request.action.name, requestSent.registrationAction.name)
+        assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityId)
+        assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
+        assertThat(requestSent.context.toMap()).isEqualTo(request.context)
     }
 
     @Test
@@ -180,7 +189,7 @@ class MemberOpsClientTest {
         memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationStatusRequest
+        val requestSent = rpcRequest?.request as RegistrationStatusRpcRequest
 
         assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
     }
@@ -256,9 +265,9 @@ class MemberOpsClientTest {
                         rpcRequest!!.requestContext.requestTimestamp,
                         clock.instant()
                     ),
-                    RegistrationResponse(
+                    RegistrationRpcResponse(
                         clock.instant(),
-                        RegistrationStatus.SUBMITTED,
+                        RegistrationRpcStatus.SUBMITTED,
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())
@@ -288,9 +297,9 @@ class MemberOpsClientTest {
                         clock.instant().plusMillis(10000000),
                         clock.instant()
                     ),
-                    RegistrationResponse(
+                    RegistrationRpcResponse(
                         clock.instant(),
-                        RegistrationStatus.SUBMITTED,
+                        RegistrationRpcStatus.SUBMITTED,
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())

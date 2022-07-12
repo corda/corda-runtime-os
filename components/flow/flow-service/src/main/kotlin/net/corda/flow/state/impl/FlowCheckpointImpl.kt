@@ -8,9 +8,10 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.crypto.CryptoState
+import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
@@ -18,6 +19,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.time.Instant
 import kotlin.math.min
@@ -30,7 +33,7 @@ class FlowCheckpointImpl(
     private val instantProvider: () -> Instant
 ) : FlowCheckpoint {
 
-    companion object{
+    companion object {
         const val RETRY_INITIAL_DELAY_MS = 1000 // 1 second
     }
 
@@ -76,7 +79,7 @@ class FlowCheckpointImpl(
         get() = checkpoint.flowStartContext
 
     override val holdingIdentity: HoldingIdentity
-        get() = checkpoint.flowStartContext.identity
+        get() = checkpoint.flowStartContext.identity.toCorda()
 
     override var suspendedOn: String?
         get() = nullableSuspendOn
@@ -103,6 +106,10 @@ class FlowCheckpointImpl(
     override val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
+    override var cryptoState: CryptoState? = null
+
+    override var persistenceState: PersistenceState? = null
+
     override val doesExist: Boolean
         get() = nullableCheckpoint != null && !deleted
 
@@ -116,6 +123,9 @@ class FlowCheckpointImpl(
         get() = checkNotNull(checkpoint.retryState)
         { "Attempt to access null retry state while. inRetryState must be tested before accessing retry fields" }
             .failedEvent
+
+    override val pendingPlatformError: ExceptionEnvelope?
+        get() = checkpoint.pendingPlatformError
 
     override fun initFromNew(flowId: String, flowStartContext: FlowStartContext) {
         if (nullableCheckpoint != null) {
@@ -180,7 +190,7 @@ class FlowCheckpointImpl(
         }
 
         val maxRetrySleepTime = config.getInt(FlowConfig.PROCESSING_MAX_RETRY_DELAY)
-        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount-1.toDouble())) * RETRY_INITIAL_DELAY_MS
+        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount - 1.toDouble())) * RETRY_INITIAL_DELAY_MS
         setFlowSleepDuration(min(maxRetrySleepTime, sleepTime.toInt()))
     }
 
@@ -189,9 +199,20 @@ class FlowCheckpointImpl(
         checkpoint.retryState = null
     }
 
+    override fun clearPendingPlatformError() {
+        checkpoint.pendingPlatformError = null
+    }
+
     override fun setFlowSleepDuration(sleepTimeMs: Int) {
         checkFlowNotDeleted()
         checkpoint.maxFlowSleepDuration = min(sleepTimeMs, checkpoint.maxFlowSleepDuration)
+    }
+
+    override fun setPendingPlatformError(type: String, message: String) {
+        checkpoint.pendingPlatformError = ExceptionEnvelope().apply {
+            errorType = type
+            errorMessage = message
+        }
     }
 
     override fun toAvro(): Checkpoint? {
@@ -199,8 +220,10 @@ class FlowCheckpointImpl(
             return null
         }
 
+        checkpoint.persistenceState = persistenceState
         checkpoint.flowState.suspendedOn = nullableSuspendOn
         checkpoint.flowState.waitingFor = nullableWaitingFor
+        checkpoint.cryptoState = cryptoState
         checkpoint.sessions = sessionMap.values.toList()
         checkpoint.flowStackItems = nullableFlowStack?.flowStackItems ?: emptyList()
         return checkpoint
@@ -210,8 +233,13 @@ class FlowCheckpointImpl(
         validateAndAddStateFields()
         validateAndAddSessions()
         validateAndAddFlowStack()
+        validateAndAddPersistenceState()
+        cryptoState = checkpoint.cryptoState
     }
 
+    private fun validateAndAddPersistenceState() {
+        persistenceState = checkpoint.persistenceState
+    }
     private fun validateAndAddStateFields() {
         nullableSuspendOn = checkpoint.flowState.suspendedOn
         nullableWaitingFor = checkpoint.flowState.waitingFor

@@ -80,7 +80,7 @@ dependencies {
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     // needed to import serialization libs
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')

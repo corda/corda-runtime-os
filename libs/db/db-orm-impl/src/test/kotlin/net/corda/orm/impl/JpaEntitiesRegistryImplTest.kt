@@ -10,6 +10,7 @@ class JpaEntitiesRegistryImplTest {
 
     private val classes1 = setOf(ExampleClass1::class.java, ExampleClass2::class.java)
     private val classes2 = setOf(ExampleClass3::class.java)
+    private val classes3 = setOf(ExampleClass1::class.java, ExampleClass3::class.java)
 
     @Test
     fun `when register can get`() {
@@ -37,6 +38,20 @@ class JpaEntitiesRegistryImplTest {
         }).containsExactlyInAnyOrder(
             "set1" to classes1,
             "set2" to classes2,
+        )
+    }
+
+    @Test
+    fun `when multiple register for the same persistence unit can get all`() {
+        val registry = JpaEntitiesRegistryImpl()
+
+        registry.register("set1", classes1)
+        registry.register("set1", classes3)
+
+        assertThat(registry.all.map{
+            it.persistenceUnitName to it.classes
+        }).containsExactlyInAnyOrder(
+            "set1" to setOf(ExampleClass1::class.java, ExampleClass2::class.java, ExampleClass3::class.java),
         )
     }
 }

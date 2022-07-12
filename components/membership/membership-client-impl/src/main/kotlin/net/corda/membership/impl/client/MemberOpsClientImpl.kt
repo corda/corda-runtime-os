@@ -1,16 +1,15 @@
 package net.corda.membership.impl.client
 
 import net.corda.utilities.time.UTCClock
-import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
-import net.corda.data.membership.rpc.request.RegistrationAction
-import net.corda.data.membership.rpc.request.RegistrationRequest
-import net.corda.data.membership.rpc.request.RegistrationStatusRequest
+import net.corda.data.membership.rpc.request.RegistrationRpcAction
+import net.corda.data.membership.rpc.request.RegistrationRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationResponse
+import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -25,6 +24,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -38,6 +38,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.*
 
 @Component(service = [MemberOpsClient::class])
 class MemberOpsClientImpl @Activate constructor(
@@ -87,12 +88,6 @@ class MemberOpsClientImpl @Activate constructor(
     override fun stop() {
         logger.info("$className stopped.")
         coordinator.stop()
-    }
-
-    private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if (coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
     }
 
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
@@ -147,13 +142,13 @@ class MemberOpsClientImpl @Activate constructor(
                         it.start()
                     }
                 )
-                updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
+                coordinator.updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
             }
         }
     }
 
     private fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
+        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         val current = impl
         impl = InactiveImpl
         current.close()
@@ -179,9 +174,10 @@ class MemberOpsClientImpl @Activate constructor(
                     UUID.randomUUID().toString(),
                     clock.instant()
                 ),
-                RegistrationRequest(
+                RegistrationRpcRequest(
                     memberRegistrationRequest.holdingIdentityId,
-                    RegistrationAction.valueOf(memberRegistrationRequest.action.name)
+                    RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
+                    memberRegistrationRequest.context.toWire()
                 )
             )
 
@@ -194,7 +190,7 @@ class MemberOpsClientImpl @Activate constructor(
                     UUID.randomUUID().toString(),
                     clock.instant()
                 ),
-                RegistrationStatusRequest(holdingIdentityId)
+                RegistrationStatusRpcRequest(holdingIdentityId)
             )
 
             return registrationResponse(request.sendRequest())
@@ -203,7 +199,7 @@ class MemberOpsClientImpl @Activate constructor(
         override fun close() = rpcSender.close()
 
         @Suppress("SpreadOperator")
-        private fun registrationResponse(response: RegistrationResponse): RegistrationRequestProgressDto =
+        private fun registrationResponse(response: RegistrationRpcResponse): RegistrationRequestProgressDto =
             RegistrationRequestProgressDto(
                 response.registrationSent,
                 response.registrationStatus.toString(),

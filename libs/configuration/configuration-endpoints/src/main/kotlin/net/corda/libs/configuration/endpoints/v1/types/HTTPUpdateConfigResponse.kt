@@ -16,3 +16,4 @@ data class HTTPUpdateConfigResponse(
     val schemaVersion: Version,
     val version: Int
 )
+

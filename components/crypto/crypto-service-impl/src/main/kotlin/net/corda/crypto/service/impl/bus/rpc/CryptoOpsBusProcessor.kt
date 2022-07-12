@@ -1,5 +1,9 @@
 package net.corda.crypto.service.impl.bus.rpc
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.impl.config.opsBusProcessor
+import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
 import net.corda.crypto.impl.toWire
@@ -25,16 +29,17 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class CryptoOpsBusProcessor(
-    private val signingFactory: SigningServiceFactory
+    private val signingFactory: SigningServiceFactory,
+    event: ConfigChangedEvent
 ) : WireProcessor(handlers), RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
         private val logger: Logger = contextLogger()
@@ -49,12 +54,21 @@ class CryptoOpsBusProcessor(
         )
     }
 
+    private val config = event.config.toCryptoConfig().opsBusProcessor()
+
+    private val executor = CryptoRetryingExecutor(
+        logger,
+        BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
+    )
+
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
             val signingService = signingFactory.getInstance()
-            val response = getHandler(request.request::class.java, signingService)
-                .handle(request.context, request.request)
+            val handler = getHandler(request.request::class.java, signingService)
+            val response = executor.executeWithRetry {
+                handler.handle(request.context, request.request)
+            }
             val result = RpcOpsResponse(createResponseContext(request), response)
             logger.debug {
                 "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId} with" +
@@ -62,9 +76,8 @@ class CryptoOpsBusProcessor(
             }
             respFuture.complete(result)
         } catch (e: Throwable) {
-            val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"
-            logger.error(message, e)
-            respFuture.completeExceptionally(CryptoServiceLibraryException(message, e))
+            logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
+            respFuture.completeExceptionally(e)
         }
     }
 

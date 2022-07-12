@@ -21,6 +21,12 @@ import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 interface RoleEndpoint : RpcOps {
 
     /**
+     * Get all the roles available in RBAC permission system.
+     */
+    @HttpRpcGET(description = "Get all the roles")
+    fun getRoles(): Set<RoleResponseType>
+
+    /**
      * Create a role in the RBAC permission system.
      */
     @HttpRpcPOST(description = "Create a Role")

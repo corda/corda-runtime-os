@@ -19,7 +19,6 @@ import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.libs.configuration.SmartConfig
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -48,7 +47,7 @@ class HSMServiceTests {
             config = config,
             hsmStore = factory.hsmCache,
             schemeMetadata = factory.schemeMetadata,
-            opsProxyClient = factory.opsProxyClient
+            cryptoOpsClient = factory.opsProxyClient
         )
     }
 
@@ -383,8 +382,8 @@ class HSMServiceTests {
     }
 
     @Test
-    fun `linkCategories should throw CryptoServiceLibraryException when HSM config does not exist`() {
-        assertThrows<CryptoServiceLibraryException> {
+    fun `linkCategories should throw IllegalStateException when HSM config does not exist`() {
+        assertThrows<IllegalStateException> {
             service.linkCategories(
                 UUID.randomUUID().toString(), listOf(
                     HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
@@ -470,7 +469,7 @@ class HSMServiceTests {
     }
 
     @Test
-    fun `Should assign HSM with new master key alias and then retrieves assignment`() {
+    fun `Should assign HSM with new master key alias and then retrieve assignment`() {
         val info = HSMInfo(
             "",
             Instant.now(),

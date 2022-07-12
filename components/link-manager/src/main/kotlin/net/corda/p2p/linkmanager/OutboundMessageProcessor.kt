@@ -11,11 +11,12 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.Component
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
@@ -133,8 +134,8 @@ internal class OutboundMessageProcessor(
                 listOf(expiryMarker)
             } else {
                 listOf(
-                    recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
-                    expiryMarker,
+                    recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
+                    expiryMarker
                 )
             }
         }
@@ -149,7 +150,7 @@ internal class OutboundMessageProcessor(
                 emptyList()
             } else {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                    recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
+                    recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
@@ -157,7 +158,7 @@ internal class OutboundMessageProcessor(
             val markers = if (isReplay) {
                 emptyList()
             } else {
-                listOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
+                listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
         }
@@ -201,14 +202,16 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        return sessionManager.recordsForSessionEstablished(groups, members, state.session, messageAndKey)
+        val list = sessionManager.recordsForSessionEstablished(groups, members, state.session, messageAndKey).toMutableList()
+        list.add(recordForLMSentMarker(messageAndKey.message.header.messageId))
+        return list
     }
 
-    private fun recordForLMSentMarker(
+    private fun recordForLMProcessedMarker(
         message: AuthenticatedMessageAndKey,
         messageId: String
     ): Record<String, AppMessageMarker> {
-        val marker = AppMessageMarker(LinkManagerSentMarker(message), clock.instant().toEpochMilli())
+        val marker = AppMessageMarker(LinkManagerProcessedMarker(message), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
 
@@ -224,5 +227,12 @@ internal class OutboundMessageProcessor(
 
     private fun recordsForNewSessions(state: SessionManager.SessionState.NewSessionsNeeded): List<Record<String, *>> {
         return recordsForNewSessions(state, inboundAssignmentListener, logger)
+    }
+
+    private fun recordForLMSentMarker(
+        messageId: String
+    ): Record<String, AppMessageMarker> {
+        val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
+        return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
 }

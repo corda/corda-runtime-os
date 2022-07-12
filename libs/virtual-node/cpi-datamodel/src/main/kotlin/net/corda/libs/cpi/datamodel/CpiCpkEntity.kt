@@ -25,9 +25,9 @@ data class CpiCpkEntity(
     @EmbeddedId
     private val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
-    val cpkFileName: String,
+    var cpkFileName: String,
     @Column(name = "cpk_file_checksum", nullable = false)
-    val cpkFileChecksum: String,
+    var cpkFileChecksum: String,
     @OneToOne(cascade = [CascadeType.MERGE, CascadeType.PERSIST])
     @JoinColumns(
         JoinColumn(name = "cpk_name", referencedColumnName = "cpk_name", insertable = false, updatable = false),
@@ -39,7 +39,7 @@ data class CpiCpkEntity(
             updatable = false
         ),
     )
-    val metadata: CpkMetadataEntity,
+    var metadata: CpkMetadataEntity,
 ) {
     @Version
     @Column(name = "entity_version", nullable = false)

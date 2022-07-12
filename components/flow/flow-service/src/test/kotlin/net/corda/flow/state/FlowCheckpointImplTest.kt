@@ -2,6 +2,7 @@ package net.corda.flow.state
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
@@ -19,6 +20,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -31,10 +33,6 @@ class FlowCheckpointImplTest {
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(60000L))
     private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
     private val now = Instant.MIN
-
-    private fun createFlowCheckpoint(checkpoint: Checkpoint? = null, config: SmartConfig? = null): FlowCheckpointImpl {
-        return FlowCheckpointImpl(checkpoint, config ?: smartFlowConfig) { now }
-    }
 
     @Test
     fun `accessing checkpoint before initialisation should throw`() {
@@ -150,7 +148,7 @@ class FlowCheckpointImplTest {
             }
         }
 
-        assertThat(createFlowCheckpoint(checkpoint).holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY)
+        assertThat(createFlowCheckpoint(checkpoint).holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
     }
 
     @Test
@@ -244,7 +242,7 @@ class FlowCheckpointImplTest {
         assertThat(flowCheckpoint.flowId).isEqualTo(flowId)
         assertThat(flowCheckpoint.flowKey).isEqualTo(flowKey)
         assertThat(flowCheckpoint.flowStartContext).isEqualTo(flowStartContext)
-        assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY)
+        assertThat(flowCheckpoint.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
         assertThat(flowCheckpoint.suspendedOn).isNull()
         assertThat(flowCheckpoint.waitingFor).isNull()
         assertThat(flowCheckpoint.flowStack.size).isEqualTo(0)
@@ -613,6 +611,44 @@ class FlowCheckpointImplTest {
 
         // Defaults to configured value
         assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
+    }
+
+    @Test
+    fun `pending error is null by default`() {
+        val (_, flowCheckpoint) = getMinimumCheckpoint()
+        assertThat(flowCheckpoint.pendingPlatformError).isNull()
+    }
+
+    @Test
+    fun `pending error set from checkpoint`() {
+        val (checkpoint, flowCheckpoint) = getMinimumCheckpoint()
+        checkpoint.pendingPlatformError = ExceptionEnvelope("a", "b")
+
+        assertThat(flowCheckpoint.pendingPlatformError!!.errorType).isEqualTo("a")
+        assertThat(flowCheckpoint.pendingPlatformError!!.errorMessage).isEqualTo("b")
+    }
+
+    @Test
+    fun `clear pending error`() {
+        val (checkpoint, flowCheckpoint) = getMinimumCheckpoint()
+        checkpoint.pendingPlatformError = ExceptionEnvelope("a", "b")
+
+        flowCheckpoint.clearPendingPlatformError()
+        assertThat(flowCheckpoint.pendingPlatformError).isNull()
+    }
+
+    private fun getMinimumCheckpoint(): Pair<Checkpoint, FlowCheckpointImpl> {
+        val checkpoint = Checkpoint().apply {
+            flowId = "F1"
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+        }
+
+        return checkpoint to createFlowCheckpoint(checkpoint)
+    }
+
+    private fun createFlowCheckpoint(checkpoint: Checkpoint? = null, config: SmartConfig? = null): FlowCheckpointImpl {
+        return FlowCheckpointImpl(checkpoint, config ?: smartFlowConfig) { now }
     }
 
     @Test
