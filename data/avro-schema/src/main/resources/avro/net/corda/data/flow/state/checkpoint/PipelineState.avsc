@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "PipelineState",
+  "namespace": "net.corda.data.flow.state.checkpoint",
+  "doc": "State used by the flow engine to track pipeline details and provide diagnostics.",
+  "fields": [
+    {
+      "name": "retryState",
+      "type": ["null", "net.corda.data.flow.state.checkpoint.RetryState"],
+      "default": null,
+      "doc": "Optional retry information for a failed flow event. Setting this field marks the flow as retrying."
+    },
+    {
+      "name": "maxFlowSleepDuration",
+      "type": "int",
+      "doc": "The maximum time a flow can sleep, before a Wakeup event is generated (milliseconds)"
+    },
+    {
+      "name": "pendingPlatformError",
+      "type": ["null", "net.corda.data.ExceptionEnvelope"],
+      "default": null,
+      "doc": "Used for platform generated errors reported back to user code."
+    }
+  ]
+}

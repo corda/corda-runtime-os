@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "FlowStackItem",
-  "namespace": "net.corda.data.flow",
+  "namespace": "net.corda.data.flow.state.checkpoint",
   "doc": "Represents an item on the flow stack.",
   "fields": [
     {

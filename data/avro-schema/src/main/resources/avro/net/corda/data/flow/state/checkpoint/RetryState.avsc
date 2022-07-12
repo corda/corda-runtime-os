@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "RetryState",
-  "namespace": "net.corda.data.flow.state",
+  "namespace": "net.corda.data.flow.state.checkpoint",
   "doc": "The Retry State records the need to retry a failed event on the flow Checkpoint",
   "fields": [
     {
