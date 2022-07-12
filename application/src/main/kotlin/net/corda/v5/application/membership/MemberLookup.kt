@@ -31,6 +31,5 @@ interface MemberLookup {
     /** Returns all [MemberInfo]s in the Group the node is currently aware of (including ourselves). **/
     @Suspendable
     fun lookup(): List<MemberInfo>
-
 }
 

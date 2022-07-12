@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "MemberSignature",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "A member signature",
+  "fields": [
+    {
+      "name": "holdingIdentity",
+      "doc": "The member holding identity.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "signature",
+      "doc": "The member signature.",
+      "type": "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+    }
+  ]
+}

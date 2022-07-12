@@ -72,5 +72,25 @@
         <addPrimaryKey columnNames="group_id, member_name"
                        constraintName="vnode_member_info_pkey"
                        tableName="vnode_member_info"/>
+        <createTable tableName="vnode_member_signature">
+            <column name="group_id" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_name" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_key" type="VARBINARY(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="context" type="VARBINARY(2048)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="VARBINARY(4096)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="group_id, member_name"
+                       constraintName="vnode_member_signature_pkey"
+                       tableName="vnode_member_signature"/>
     </changeSet>
 </databaseChangeLog>

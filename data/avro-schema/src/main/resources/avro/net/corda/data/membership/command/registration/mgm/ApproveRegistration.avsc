@@ -4,5 +4,23 @@
   "namespace": "net.corda.data.membership.command.registration.mgm",
   "doc": "Command issued when a member registration has been fully approved and needs to be updated to approved status.",
   "fields": [
+    {
+      "name": "approvedBy",
+      "doc": "Holding identity of the member that approved the request.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "approvedMember",
+      "doc": "Holding identity of the member that had been approved.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "registrationId",
+      "doc": "UUID identifying the registration request",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    }
   ]
 }

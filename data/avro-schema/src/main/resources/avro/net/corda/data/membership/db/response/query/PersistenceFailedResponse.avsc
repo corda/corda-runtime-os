@@ -1,8 +1,8 @@
 {
   "type": "record",
-  "name": "QueryFailedResponse",
+  "name": "PersistenceFailedResponse",
   "namespace": "net.corda.data.membership.db.response.query",
-  "doc": "Response for when a query failed.",
+  "doc": "Response for when a persistence failed.",
   "fields": [
     {
       "name": "errorMessage",
