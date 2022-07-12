@@ -51,7 +51,9 @@ fun Admin.waitForTopicDeletion(prefix: String, wait: Long) {
     val end = LocalDateTime.now().plusSeconds(wait)
     while (true) {
         val existingTopicNames = existingTopicNamesWithPrefix(prefix, wait)
+        println("Remaining topics to be deleted: ${existingTopicNames.joinToString()}")
         if (existingTopicNames.isEmpty()) {
+            println("All topics deleted")
             break
         } else {
             if (LocalDateTime.now().isAfter(end)) {
