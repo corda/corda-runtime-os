@@ -11,7 +11,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.virtualnode.HoldingIdentity
-import java.lang.Exception
+import java.nio.ByteBuffer
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.

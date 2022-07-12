@@ -1,8 +1,8 @@
 package net.corda.flow.fiber
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

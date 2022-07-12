@@ -6,13 +6,14 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.crypto.CryptoState
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
+import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -93,7 +94,13 @@ class FlowCheckpointImpl(
                 "Attempt to set the flow state before it has been created"
             }.persistenceState = value
         }
-    override var cryptoState: CryptoState? = null
+    override var cryptoState: CryptoState?
+        get() = flowStateManager?.cryptoState
+        set(value) {
+            checkNotNull(flowStateManager) {
+                "Attempt to set the flow state before it has been created"
+            }.cryptoState = value
+        }
 
     override val doesExist: Boolean
         get() = flowStateManager != null && !deleted

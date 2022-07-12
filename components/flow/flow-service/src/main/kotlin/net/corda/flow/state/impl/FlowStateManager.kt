@@ -3,10 +3,12 @@ package net.corda.flow.state.impl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.crypto.CryptoState
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.identity.HoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
 /**
@@ -27,7 +29,7 @@ class FlowStateManager(private val initialState: FlowState) {
 
     val startContext : FlowStartContext = state.flowStartContext
 
-    val holdingIdentity : HoldingIdentity = state.flowStartContext.identity
+    val holdingIdentity : HoldingIdentity = state.flowStartContext.identity.toCorda()
 
     val fiber : ByteBuffer
         get() = state.fiber ?: ByteBuffer.wrap(byteArrayOf())
@@ -52,6 +54,12 @@ class FlowStateManager(private val initialState: FlowState) {
         get() = state.persistenceState
         set(value) {
             state.persistenceState = value
+        }
+
+    var cryptoState : CryptoState?
+        get() = state.cryptoState
+        set(value) {
+            state.cryptoState = value
         }
 
     var waitingFor : WaitingFor?
