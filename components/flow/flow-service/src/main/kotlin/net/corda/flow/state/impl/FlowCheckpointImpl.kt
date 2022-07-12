@@ -45,16 +45,19 @@ class FlowCheckpointImpl(
         get() = checkpoint.flowId
 
     override val flowKey: FlowKey
-        get() = flowStateManager?.flowKey
-            ?: throw IllegalStateException("Attempted to access flow key before the flow has been initialised.")
+        get() = checkNotNull(flowStateManager) {
+            "Attempted to access flow key before the flow has been initialised."
+        }.flowKey
 
     override val flowStartContext: FlowStartContext
-        get() = flowStateManager?.startContext
-            ?: throw IllegalStateException("Attempted to access flow start context before the flow has been initialised.")
+        get() = checkNotNull(flowStateManager) {
+            "Attempted to access flow start context before the flow has been initialised."
+        }.startContext
 
     override val holdingIdentity: HoldingIdentity
-        get() = flowStateManager?.holdingIdentity
-            ?: throw IllegalStateException("Attempted to access holding identity before the flow has been initialised.")
+        get() = checkNotNull(flowStateManager) {
+            "Attempted to access holding identity before the flow has been initialised."
+        }.holdingIdentity
 
     override var suspendedOn: String?
         get() = flowStateManager?.suspendedOn
