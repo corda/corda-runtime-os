@@ -77,7 +77,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             exception
         )
 
-        val records = createStatusRecord {
+        val records = createStatusRecord(exception.getFlowContext().checkpoint.flowId) {
             flowMessageFactory.createFlowRetryingStatusMessage(exception.getFlowContext().checkpoint)
         }
 
@@ -92,7 +92,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint> {
         val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
         log.error(msg, exception)
-        val records = createStatusRecord {
+        val records = createStatusRecord(exception.getFlowContext().checkpoint.flowId) {
             flowMessageFactory.createFlowFailedStatusMessage(
                 exception.getFlowContext().checkpoint,
                 FLOW_FAILED,
@@ -107,7 +107,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    private fun createStatusRecord(statusGenerator: () -> FlowStatus) : List<Record<*, *>>{
+    private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus) : List<Record<*, *>>{
         return try {
             val status = statusGenerator()
             listOf(flowRecordFactory.createFlowStatusRecord(status))
@@ -117,7 +117,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             // and something goes wrong in trying to retrieve the sandbox. In this case we cannot update the status
             // correctly. This shouldn't matter however - in this case we're treating the issue as the flow never
             // starting at all. We'll still log that the error was seen.
-            log.warn("Could not create a flow status message for a failed flow as the flow start context was missing.")
+            log.warn("Could not create a flow status message for a failed flow with ID $id as " +
+                    "the flow start context was missing.")
             listOf()
         }
     }
