@@ -1,13 +1,16 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler
+package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.command.registration.DeclineRegistration
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.StartRegistration
-import net.corda.data.membership.command.registration.VerifyMember
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -16,7 +19,6 @@ import net.corda.membership.lib.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.impl.toSortedMap
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult

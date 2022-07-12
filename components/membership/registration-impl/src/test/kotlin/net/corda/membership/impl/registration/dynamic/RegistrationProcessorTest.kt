@@ -1,15 +1,19 @@
-package net.corda.membership.impl.registration.dynamic.mgm
+package net.corda.membership.impl.registration.dynamic
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.StartRegistration
-import net.corda.data.membership.command.registration.VerifyMember
+import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.VerificationRequest
+import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
@@ -22,6 +26,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.AppMessage
+import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
@@ -38,7 +44,8 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.SortedMap
+import java.util.UUID
 
 class RegistrationProcessorTest {
 
@@ -70,6 +77,20 @@ class RegistrationProcessorTest {
                 registrationRequest
             )
         )
+
+        val verificationRequest = VerificationRequest(
+            registrationId,
+            KeyValuePairList(listOf(KeyValuePair("key", "value")))
+        )
+
+        val verificationResponse = VerificationResponse(
+            registrationId,
+            KeyValuePairList(emptyList<KeyValuePair>())
+        )
+
+        val verificationRequestCommand = RegistrationCommand(
+            ProcessMemberVerificationRequest(holdingIdentity, mgmHoldingIdentity, verificationRequest)
+        )
     }
 
     // Class under test
@@ -80,6 +101,7 @@ class RegistrationProcessorTest {
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
+    lateinit var verificationSerializer: CordaAvroSerializer<VerificationResponse>
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
@@ -118,8 +140,12 @@ class RegistrationProcessorTest {
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
         }
+        verificationSerializer = mock {
+            on { serialize(verificationResponse) } doReturn "RESPONSE".toByteArray()
+        }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+            on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationSerializer
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
@@ -165,5 +191,14 @@ class RegistrationProcessorTest {
         assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
             .isNotNull
             .isInstanceOf(VerifyMember::class.java)
+    }
+
+    @Test
+    fun `process member verification request command - onNext can be called for command`() {
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, verificationRequestCommand))
+        assertThat(result.updatedState).isNotNull
+        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
+        assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
+            .isNotNull
     }
 }

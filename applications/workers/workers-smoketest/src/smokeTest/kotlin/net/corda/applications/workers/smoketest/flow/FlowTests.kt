@@ -49,6 +49,7 @@ class FlowTests {
             "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
             "net.cordapp.flowworker.development.flows.TestFlow"
         )
+
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
@@ -162,12 +163,13 @@ class FlowTests {
             .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
     }
 
-   /**
-    * This test is failing unexpectedly, a bug has been raised to investigate
-    * https://r3-cev.atlassian.net/browse/CORE-5372
-    */
-    @Test @Disabled
-    fun `Platform Error - user code receives platform errors`(){
+    /**
+     * This test is failing unexpectedly, a bug has been raised to investigate
+     * https://r3-cev.atlassian.net/browse/CORE-5372
+     */
+    @Test
+    @Disabled
+    fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
             data = mapOf("x500" to X500_SESSION_USER1)
@@ -184,7 +186,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Persistence - insert a record`(){
+    fun `Persistence - insert a record`() {
         val id = UUID.randomUUID()
         val requestBody = RpcSmokeTestInput().apply {
             command = "persist_insert"
@@ -202,7 +204,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Flow persistence`(){
+    fun `Flow persistence`() {
         val id = UUID.randomUUID()
 
         // Insert a dog
@@ -252,6 +254,19 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
         assertThat(flowResult.result).isEqualTo("found dog id='${id}' name='${newDogName}")
+
+        // find all dogs
+        requestBody = RpcSmokeTestInput().apply {
+            command = "persist_findall"
+        }
+
+        requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found one or more dogs")
 
         // delete a dog
         requestBody = RpcSmokeTestInput().apply {

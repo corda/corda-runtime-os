@@ -157,6 +157,12 @@ This document should be maintained so that we can ensure that we have quick visi
 - Receiving a null response from a Find request resumes the flow ✅
 - Receiving bytes response from a Find request resumes the flow ✅
 
+### FindAll Requests
+
+- Calling 'findAll' on a flow sends an EntityRequest with payload FindAll ✅
+- Receiving a null response from a FindAll request resumes the flow ✅
+- Receiving bytes response from a FindAll request resumes the flow ✅
+
 ### Merge Requests
 - Calling 'merge' on a flow sends an EntityRequest with payload MergeEntity ✅
 - Receiving a null response from a merge request resumes the flow ✅
