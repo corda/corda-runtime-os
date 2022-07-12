@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.*
@@ -15,13 +16,18 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,6 +41,10 @@ class MGMOpsClientImpl @Activate constructor(
     val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : MGMOpsClient {
 
     companion object {
@@ -45,10 +55,12 @@ class MGMOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.ops.rpc"
 
         private val clock = UTCClock()
+
+        private val objectMapper = ObjectMapper()
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
-        fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>>
+        fun generateGroupPolicy(holdingIdentityId: String): String
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -147,8 +159,24 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityId: String): Set<Map.Entry<String, String?>> {
-            return emptySet()
+        override fun generateGroupPolicy(holdingIdentityId: String): String {
+
+            val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
+                ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
+
+            val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+
+            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("")
+
+            if(filteredMembers.isMgm) {
+                val memberProvidedContext =
+                    filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.") }
+                val mgmProvidedContext =
+                    filteredMembers.mgmProvidedContext.entries
+                return objectMapper.writeValueAsString(memberProvidedContext+mgmProvidedContext)
+
+            }
+            return ""
         }
 
         override fun close() = rpcSender.close()

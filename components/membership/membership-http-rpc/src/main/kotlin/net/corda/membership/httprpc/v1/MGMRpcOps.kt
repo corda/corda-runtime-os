@@ -19,7 +19,7 @@ interface MGMRpcOps : RpcOps {
      * GET endpoint to fetch the requested group policy string
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
-     * @return [Set<Map.Entry<String, String?>>] to indicate the last known status of the registration request based on
+     * @return [String] to indicate the last known status of the registration request based on
      *  local member data.
      */
     @HttpRpcGET(
@@ -29,5 +29,5 @@ interface MGMRpcOps : RpcOps {
     fun generateGroupPolicy(
         @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String
-    ): Set<Map.Entry<String, String?>>
+    ): String
 }
