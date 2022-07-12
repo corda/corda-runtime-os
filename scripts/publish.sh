@@ -143,16 +143,16 @@ build --frontend=dockerfile.v0 \
 #docker stop "buildkitd"
 #docker rm "buildkitd"
 #
-docker pull docker-js-temp.software.r3.com/corda-os-plugins:latest
-docker pull docker-js-temp.software.r3.com/corda-os-crypto-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-flow-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-member-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-db-worker:latest
-docker pull docker-js-temp.software.r3.com/corda-os-rpc-worker:latest
-
-docker tag docker-js-temp.software.r3.com/corda-os-crypto-worker:latest corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-member-worker:latest corda-os-docker-dev.software.r3.com/corda-os-member-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-rpc-worker:latest corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-flow-worker:latest corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-db-worker:latest corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local
-docker tag docker-js-temp.software.r3.com/corda-os-plugins:latest corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local
+#docker pull docker-js-temp.software.r3.com/corda-os-plugins:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-crypto-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-flow-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-member-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-db-worker:latest
+#docker pull docker-js-temp.software.r3.com/corda-os-rpc-worker:latest
+#
+#docker tag docker-js-temp.software.r3.com/corda-os-crypto-worker:latest corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-member-worker:latest corda-os-docker-dev.software.r3.com/corda-os-member-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-rpc-worker:latest corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-flow-worker:latest corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-db-worker:latest corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local
+#docker tag docker-js-temp.software.r3.com/corda-os-plugins:latest corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local
