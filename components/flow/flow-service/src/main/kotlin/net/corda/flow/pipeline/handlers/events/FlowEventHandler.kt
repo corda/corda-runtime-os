@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventContext
 
 /**
@@ -22,8 +21,9 @@ interface FlowEventHandler<T> {
      *
      * Pre-processing is executed as the first step and occurs before starting or resuming a flow's fiber.
      *
-     * The [FlowEventContext] returned from this method must have a non-null [Checkpoint]. The [Checkpoint] could be set on the input
-     * [context] and modified or a new [Checkpoint] instance can be created and referenced from the output [FlowEventContext].
+     * It is assumed that the flow is initialised in the checkpoint after the event handler has been executed. For most
+     * handlers, this will be true on input and no action is required. When handling events that represent a request to
+     * start a flow, the flow state inside the checkpoint object must be initiatlised before [preProcess] returns.
      *
      * @param context The [FlowEventContext] that should be modified within this processing step.
      *
