@@ -7,7 +7,7 @@ import io.javalin.websocket.WsContext
  */
 class ClientWsRequestContext(private val ctx: WsContext) : ClientRequestContext {
 
-    override val method = "GET"
+    override val method = "WS"
 
     override fun header(header: String): String? = ctx.header(header)
 

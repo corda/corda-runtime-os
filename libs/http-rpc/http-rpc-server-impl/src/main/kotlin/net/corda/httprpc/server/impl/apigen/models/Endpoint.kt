@@ -35,5 +35,6 @@ internal enum class EndpointMethod {
     POST,
     GET,
     PUT,
-    DELETE
+    DELETE,
+    WS
 }

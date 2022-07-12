@@ -15,8 +15,4 @@ fun Method.isStaticallyExposedGet(): Boolean {
     return staticExposedGetMethods.contains(name.lowercase())
 }
 
-fun Method.isDuplexRoute(): Boolean {
-    return parameters.isNotEmpty() && parameters[0].type.isDuplexChannel()
-}
-
 fun Class<*>.isDuplexChannel(): Boolean = (this == DuplexChannel::class.java)

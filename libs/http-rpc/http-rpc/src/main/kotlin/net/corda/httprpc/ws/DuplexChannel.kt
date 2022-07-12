@@ -4,8 +4,8 @@ import java.util.concurrent.Future
 
 /**
  * Channel to facilitate full duplex (i.e. two-way communication) like WebSockets protocol.
- * This is a special type which is meant to be used as a first parameter in `GET` endpoint which will be exposed as
- * a Websocket endpoint.
+ * This is a special type which is meant to be used as a first parameter in [net.corda.httprpc.annotations.HttpRpcWS] endpoint
+ * which will be exposed as a Websocket endpoint.
  */
 interface DuplexChannel : AutoCloseable {
 

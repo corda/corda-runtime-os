@@ -11,7 +11,6 @@ import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.isDuplexChannel
-import net.corda.httprpc.tools.isDuplexRoute
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
@@ -52,7 +51,6 @@ internal class JavalinRouteProviderImpl(
         .filterNot { routeInfo ->
             routeInfo.method.method.isStaticallyExposedGet()
         }
-        .filterNot { it.method.method.isDuplexRoute() }
 
     override val httpPostRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.POST)
 
@@ -60,8 +58,7 @@ internal class JavalinRouteProviderImpl(
 
     override val httpDeleteRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.DELETE)
 
-    override val httpDuplexRoutes =
-        mapResourcesToRoutesByHttpMethod(EndpointMethod.GET).filter { it.method.method.isDuplexRoute() }
+    override val httpDuplexRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.WS)
 
     private fun mapResourcesToRoutesByHttpMethod(httpMethod: EndpointMethod): List<RouteInfo> {
         log.trace { "Map resources to routes by http method." }
