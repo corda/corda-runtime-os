@@ -177,6 +177,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             }
     }
 
+    @Suppress("ComplexMethod")
     private fun Method.toEndpoint(): Endpoint {
         try {
             log.trace { "Method \"${this.name}\" to endpoint." }
