@@ -148,8 +148,8 @@ class RegistrationProcessorTest {
             on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationSerializer
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success()
+            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
             on {
@@ -157,7 +157,7 @@ class RegistrationProcessorTest {
                     eq(mgmHoldingIdentity.toCorda()),
                     any()
                 )
-            } doReturn MembershipQueryResult.Success<Collection<MemberInfo>>()
+            } doReturn MembershipQueryResult.Success(emptyList())
         }
 
         processor = RegistrationProcessor(
@@ -166,7 +166,10 @@ class RegistrationProcessorTest {
             membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
-            membershipQueryClient
+            membershipQueryClient,
+            mock(),
+            mock(),
+            mock(),
         )
     }
 

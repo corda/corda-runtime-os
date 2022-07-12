@@ -5,16 +5,20 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.query.QueryMemberInfo
+import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
-import net.corda.data.membership.db.response.query.QueryFailedResponse
+import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
+import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
+import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -50,6 +54,9 @@ internal class MembershipPersistenceRPCProcessor(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
         PersistMemberInfo::class.java to { PersistMemberInfoHandler(persistenceHandlerServices) },
         QueryMemberInfo::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
+        QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
+        UpdateMemberAndRegistrationRequestToApproved::class.java to
+            { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },
     )
 
     override fun onNext(
@@ -67,7 +74,7 @@ internal class MembershipPersistenceRPCProcessor(
         } catch (e: Exception) {
             val error = "Exception thrown while processing membership persistence request: ${e.message}"
             logger.warn(error)
-            QueryFailedResponse(error)
+            PersistenceFailedResponse(error)
         }
         respFuture.complete(
             MembershipPersistenceResponse(
@@ -81,7 +88,7 @@ internal class MembershipPersistenceRPCProcessor(
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
         val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
             "No handler has been registered to handle the persistence request received." +
-                    "Request received: [$requestClass]"
+                "Request received: [$requestClass]"
         )
         return factory.invoke() as PersistenceHandler<Any, Any>
     }

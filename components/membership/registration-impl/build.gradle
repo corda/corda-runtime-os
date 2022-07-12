@@ -26,6 +26,7 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:utilities")
+    implementation project(':libs:chunking:chunking-core')
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
@@ -40,6 +41,7 @@ dependencies {
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

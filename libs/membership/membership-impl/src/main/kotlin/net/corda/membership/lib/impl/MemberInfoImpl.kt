@@ -19,7 +19,7 @@ import java.security.PublicKey
 
 class MemberInfoImpl(
     override val memberProvidedContext: MemberContext,
-    override val mgmProvidedContext: MGMContext
+    override val mgmProvidedContext: MGMContext,
 ) : MemberInfo {
 
     init {

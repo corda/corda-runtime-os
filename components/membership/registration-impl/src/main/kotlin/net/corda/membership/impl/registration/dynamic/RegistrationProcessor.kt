@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic
 
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
@@ -13,6 +14,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.mgm.handler.ApproveRegistrationHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -21,6 +23,8 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.DigestService
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(
@@ -30,6 +34,9 @@ class RegistrationProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     membershipPersistenceClient: MembershipPersistenceClient,
     membershipQueryClient: MembershipQueryClient,
+    cryptoOpsClient: CryptoOpsClient,
+    hashingService: DigestService,
+    cipherSchemeMetadata: CipherSchemeMetadata,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -40,7 +47,7 @@ class RegistrationProcessor(
         val logger = contextLogger()
     }
 
-    private val handlers = mapOf<Class<*>, RegistrationHandler>(
+    private val handlers = mapOf<Class<*>, RegistrationHandler<*>>(
         StartRegistration::class.java to StartRegistrationHandler(
             clock,
             memberInfoFactory,
@@ -49,6 +56,16 @@ class RegistrationProcessor(
             membershipQueryClient,
             cordaAvroSerializationFactory
         ),
+        ApproveRegistration::class.java to ApproveRegistrationHandler(
+            membershipPersistenceClient,
+            membershipQueryClient,
+            cipherSchemeMetadata,
+            hashingService,
+            clock,
+            cryptoOpsClient,
+            cordaAvroSerializationFactory,
+        ),
+
         ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(cordaAvroSerializationFactory)
     )
 
@@ -74,8 +91,7 @@ class RegistrationProcessor(
             }
             is ApproveRegistration -> {
                 logger.info("Received approve registration command.")
-                logger.warn("Unimplemented command.")
-                null
+                handlers[ApproveRegistration::class.java]?.invoke(event)
             }
             is DeclineRegistration -> {
                 logger.info("Received decline registration command.")
