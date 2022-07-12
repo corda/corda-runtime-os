@@ -25,7 +25,6 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
         exclude "module-info.class"
         exclude "META-INF/versions/*/module-info.class"
         exclude "org/slf4j/**"
-        exclude "kotlin/**"
         cliPlugin.doNotPackage.get().forEach({
             exclude it
         })
