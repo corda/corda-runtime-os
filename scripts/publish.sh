@@ -29,16 +29,16 @@ kubectl port-forward service/buildkitd 1234 &
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
-cp ./tools/plugins/db-config/build/libs/db-config-cli-plugin-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/db-config-cli-plugin.jar
-cp ./tools/plugins/db-config/build/libs/plugin-dbconfig-5.0.0.0-SNAPSHOT-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/plugin-dbconfig.jar
-cp ./tools/plugins/initial-config/build/libs/initial-config-cli-plugin-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/initial-config-cli-plugin.jar
-cp ./tools/plugins/initial-config/build/libs/plugin-plugin-initial-config-5.0.0.0-SNAPSHOT-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/plugin-plugin-initial-config.jar
-cp ./tools/plugins/secret-config/build/libs/secret-config-cli-plugin-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/secret-config-cli-plugin.jar
-cp ./tools/plugins/secret-config/build/libs/plugin-plugin-secret-config-5.0.0.0-SNAPSHOT-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/plugin-plugin-secret-config.jar
-cp ./tools/plugins/topic-config/build/libs/topic-config-cli-plugin-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/topic-config-cli-plugin.jar
-cp ./tools/plugins/topic-config/build/libs/plugin-topicconfig-5.0.0.0-SNAPSHOT-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/plugin-topicconfig.jar
-cp ./tools/plugins/virtual-node/build/libs/virtual-node-cli-plugin-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/virtual-node-cli-plugin.jar
-cp ./tools/plugins/virtual-node/build/libs/plugin-virtual-node-5.0.0.0-SNAPSHOT.jar ./tools/plugins/build/tmp/buildkit/containerization/plugin-virtual-node.jar
+cp -v ./tools/plugins/db-config/build/libs/*db-config-cli-plugin* ./tools/plugins/build/tmp/buildkit/containerization/db-config-cli-plugin.jar
+cp -v ./tools/plugins/db-config/build/libs/*plugin-dbconfig* ./tools/plugins/build/tmp/buildkit/containerization/plugin-dbconfig.jar
+cp -v ./tools/plugins/initial-config/build/libs/*initial-config-cli-plugin* ./tools/plugins/build/tmp/buildkit/containerization/initial-config-cli-plugin.jar
+cp -v ./tools/plugins/initial-config/build/libs/*plugin-initial-config* ./tools/plugins/build/tmp/buildkit/containerization/plugin-plugin-initial-config.jar
+cp -v ./tools/plugins/secret-config/build/libs/*secret-config-cli-plugin* ./tools/plugins/build/tmp/buildkit/containerization/secret-config-cli-plugin.jar
+cp -v ./tools/plugins/secret-config/build/libs/*plugin-secret-config* ./tools/plugins/build/tmp/buildkit/containerization/plugin-plugin-secret-config.jar
+cp -v ./tools/plugins/topic-config/build/libs/*topic-config-cli-plugin* ./tools/plugins/build/tmp/buildkit/containerization/topic-config-cli-plugin.jar
+cp -v ./tools/plugins/topic-config/build/libs/*plugin-topicconfig* ./tools/plugins/build/tmp/buildkit/containerization/plugin-topicconfig.jar
+cp -v ./tools/plugins/virtual-node/build/libs/*virtual-node-cli-plugin* ./tools/plugins/build/tmp/buildkit/containerization/virtual-node-cli-plugin.jar
+cp -v ./tools/plugins/virtual-node/build/libs/*plugin-virtual-node* ./tools/plugins/build/tmp/buildkit/containerization/plugin-virtual-node.jar
 
 
 buildctl \
@@ -138,7 +138,6 @@ build --frontend=dockerfile.v0 \
     --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-rpc-worker-cache \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-rpc-worker-cache
 
-kubectl delete deploy buildkitd
 
 #
 #docker stop "buildkitd"
