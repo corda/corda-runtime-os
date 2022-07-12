@@ -41,10 +41,8 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
 
     useEffect(() => {
         fetchMessages();
-
         // TODO: Remove temp data of messages
         setMessages(TEMP_MESSAGES);
-
         // TODO: Set interval of polling messages if there will be no web socket implementation available
     }, [fetchMessages]);
 

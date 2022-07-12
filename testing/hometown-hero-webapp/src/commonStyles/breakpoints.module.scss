@@ -10,6 +10,12 @@
     }
 }
 
+@mixin tablet-down {
+    @media (max-width: 1024px) {
+        @content;
+    }
+}
+
 @mixin phone-up {
     @media (min-width: 768px) {
         @content;

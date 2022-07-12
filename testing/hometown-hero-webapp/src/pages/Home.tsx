@@ -1,4 +1,4 @@
-import { LOGIN, REGISTER } from '../constants/routes';
+import { LOGIN, REGISTER, VNODE_NETWORK } from '../constants/routes';
 
 import { Button } from '@r3/r3-tooling-design-system/exports';
 import HomeViz from '../components/Visualizations/HomeViz';
@@ -17,6 +17,9 @@ const Home = () => {
                 </Button>
                 <Button isLink to={REGISTER} iconLeft={'AccountPlus'} size={'large'} variant={'primary'}>
                     Register
+                </Button>
+                <Button isLink to={VNODE_NETWORK} iconLeft={'DotsHexagon'} size={'large'} variant={'secondary'}>
+                    V-Node Network
                 </Button>
             </div>
             <VisualizationWrapper width={1200}>
