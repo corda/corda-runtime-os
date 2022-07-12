@@ -1,14 +1,22 @@
 import { Button, Checkbox, NotificationService, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
+import {
+    addPermissionToRole,
+    addRoleToUser,
+    createAllowPermission,
+    createRole,
+    createUser,
+    createVNode,
+} from './utils';
+import { useEffect, useState } from 'react';
 
 import FormContentWrapper from '@/components/FormContentWrapper/FormContentWrapper';
-import { LOGIN } from '@/constants/routes';
 import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import RegisterViz from '@/components/Visualizations/RegisterViz';
 import VisualizationWrapper from '@/components/Visualizations/VisualizationWrapper';
-import apiCall from '@/api/apiCall';
+import { trackPromise } from 'react-promise-tracker';
+import useAppDataContext from '@/contexts/appDataContext';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import useUserContext from '@/contexts/userContext';
 
 const Register = () => {
@@ -20,6 +28,12 @@ const Register = () => {
     const [password, setPassword] = useState<string>('');
     const [confirmPassword, setConfirmPassword] = useState<string>('');
     const [isUserAndPasswordSaved, setIsUserAndPasswordSaved] = useState<boolean>(true);
+
+    const { refreshVNodes, cpiList, refreshCpiList } = useAppDataContext();
+
+    useEffect(() => {
+        refreshCpiList();
+    }, []);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
@@ -39,28 +53,65 @@ const Register = () => {
     };
 
     const handleSubmit = async () => {
-        //the api spec is not made available yet will just assume it will just assume its /api/register for now
-        // TODO: update api to match spec
-        const response = await apiCall({ method: 'post', path: '/api/register', params: { username, password } });
-
-        if (response.error) {
+        //If theres no cpis prevent user from registering
+        if (cpiList.length === 0) {
             NotificationService.notify(
-                `Failed to register with the provided username and password: Error: ${response.error}`,
+                `No CPIs are uploaded to the cluster. Cannot register a new VNode and User.`,
                 'Error',
                 'danger'
             );
-            setUsername('');
-            setPassword('');
-            setConfirmPassword('');
-        } else {
-            NotificationService.notify(`Successfully registered!`, 'Success!', 'success');
-
-            if (isUserAndPasswordSaved) {
-                saveLoginDetails(username, password);
-            }
-
-            navigate(LOGIN);
+            return;
         }
+
+        const cpiFileChecksum = cpiList[0].fileChecksum;
+
+        const x500Name = `CN=${username}, O=${username} node, L=LDN, C=GB`;
+
+        const vNodeCreated = await createVNode(x500Name, cpiFileChecksum);
+        if (!vNodeCreated) return;
+
+        const userCreated = await createUser(username, password);
+        if (!userCreated) return;
+
+        //give some time for vNodes list to update
+        await new Promise((r) => setTimeout(r, 2000));
+
+        const updatedVNodes = await refreshVNodes();
+
+        const holdershortid = updatedVNodes.find((vNode) => vNode.holdingIdentity.x500Name === x500Name);
+
+        if (!holdershortid) {
+            NotificationService.notify(
+                `Could not find newly created VNode with x500 name: ${x500Name}.`,
+                'Error',
+                'danger'
+            );
+            return;
+        }
+
+        const postPermissionId = await createAllowPermission(`POST:/api/v1/flow/${holdershortid}`);
+        if (!postPermissionId) return;
+
+        const getPermissionId = await createAllowPermission(`GET:/api/v1/flow/${holdershortid}/*`);
+        if (!getPermissionId) return;
+
+        const roleId = await createRole();
+
+        if (!roleId) return;
+
+        const addedPostPermission = await addPermissionToRole(postPermissionId, roleId);
+
+        if (!addedPostPermission) return;
+
+        const addedGetPermission = await addPermissionToRole(getPermissionId, roleId);
+
+        if (!addedGetPermission) return;
+
+        const addedRoleToUser = await addRoleToUser(username, roleId);
+
+        if (!addedRoleToUser) return;
+
+        NotificationService.notify(`Registration complete!`, 'Success!', 'success');
     };
 
     const canSubmit = username.length > 0 && password.length > 0 && confirmPassword === password;
@@ -108,7 +159,9 @@ const Register = () => {
                     size={'large'}
                     variant={'primary'}
                     disabled={!canSubmit}
-                    onClick={handleSubmit}
+                    onClick={() => {
+                        trackPromise(handleSubmit());
+                    }}
                 >
                     Register
                 </Button>

@@ -1,5 +1,5 @@
 import { IconButton } from '@r3/r3-tooling-design-system/exports';
-import useAppDataContext from '@/contexts/AppDataContext';
+import useAppDataContext from '@/contexts/appDataContext';
 
 const CpiList = () => {
     const { cpiList, refreshCpiList } = useAppDataContext();
@@ -29,8 +29,8 @@ const CpiList = () => {
                             }}
                         >
                             {index === 0 && (
-                                <p style={{ color: 'green!', fontSize: 18 }}>
-                                    <strong>Will be used for all new Nodes </strong>{' '}
+                                <p style={{ color: 'green', fontSize: 18 }}>
+                                    <strong>**Will be used for all new VNodes**</strong>{' '}
                                 </p>
                             )}
 

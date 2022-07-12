@@ -4,14 +4,14 @@ import { CPI_UPLOAD, HOME, LOGIN, REGISTER, VNODE_HOME, VNODE_NETWORK } from './
 import { Route, Routes } from 'react-router';
 
 import Admin from './pages/Admin';
-import { AppDataContextProvider } from './contexts/AppDataContext';
+import { AppDataContextProvider } from './contexts/appDataContext';
 import { BrowserRouter } from 'react-router-dom';
 import Footer from './components/Footer/Footer';
 import Home from './pages/Home';
 import LoadingModal from './components/LoadingModal/LoadingModal';
 import Login from './pages/Login';
 import NavBar from './components/NavBar/NavBar';
-import Register from './pages/Register';
+import Register from './pages/Register/Register';
 import { UserContextProvider } from './contexts/userContext';
 import VNodeHome from './pages/VNodeHome';
 import VNodeNetwork from './pages/VNodeNetwork';

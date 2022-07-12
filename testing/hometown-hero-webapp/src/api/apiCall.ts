@@ -1,5 +1,5 @@
 import { ResolvedPromise, resolvePromise } from './resolvePromise';
-import axios, { AxiosInstance, AxiosStatic, CancelToken } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosStatic, CancelToken } from 'axios';
 
 import { trackPromise } from 'react-promise-tracker';
 
@@ -25,7 +25,8 @@ export default async function apiCall({
     axiosInstance,
 }: ApiCallParams): Promise<ResolvedPromise> {
     const parameters = method === 'get' ? { params } : { data: params };
-    const requestConfig = {
+    const requestConfig: AxiosRequestConfig = {
+        baseURL: 'https://localhost:8888',
         url: `${path}`,
         method,
         cancelToken: cancelToken,

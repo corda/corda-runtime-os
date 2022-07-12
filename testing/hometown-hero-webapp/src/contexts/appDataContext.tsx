@@ -10,7 +10,7 @@ type AppDataContextProps = {
     cpiList: Cpi[];
     vNodes: VirtualNode[];
     refreshCpiList: () => void;
-    refreshVNodes: () => void;
+    refreshVNodes: () => Promise<VirtualNode[]>;
 };
 
 const [useAppDataContext, Provider] = createCtx<AppDataContextProps>();
@@ -35,6 +35,7 @@ export const AppDataContextProvider: React.FC<Props> = ({ children }) => {
             axiosInstance: adminAxiosInstance,
         });
         setVNodes(response.data.virtualNodes);
+        return response.data.virtualNodes;
     };
 
     useEffect(() => {
