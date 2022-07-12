@@ -29,15 +29,14 @@ import kotlin.test.assertEquals
 
 class ProtocolTests {
     companion object {
-        private val digestName = "SHA-256"
         private lateinit var tenantId: String
         private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoOpsClient: TestCryptoOpsClient
-        private lateinit var ephemeralProvider: EphemeralKeyPairProviderImpl
-        private lateinit var stableProvider: StableKeyPairProviderImpl
         private lateinit var mgmStableKeyPairs: Map<PublicKey, KeyPair>
         private lateinit var ecdhKeySchemes: List<KeyScheme>
+        private lateinit var ephemeralEncryptor: EphemeralKeyPairEncryptorImpl
+        private lateinit var stableDecryptor: StableKeyPairDecryptorImpl
 
         @BeforeAll
         @JvmStatic
@@ -60,15 +59,16 @@ class ProtocolTests {
                     on { deriveSharedSecret(any(), any(), any(), any()) } doAnswer {
                         val pair = mgmStableKeyPairs.getValue(it.getArgument(1))
                         val otherPublicKey: PublicKey = it.getArgument(2)
-                        val provider = schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(otherPublicKey).providerName)
-                        EphemeralKeyPair.deriveSharedSecret(provider, pair.private, otherPublicKey)
+                        val provider =
+                            schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(otherPublicKey).providerName)
+                        ECDHEncryptor.deriveSharedSecret(provider, pair.private, otherPublicKey)
                     }
                 }
             ).also { it.start() }
-            ephemeralProvider = EphemeralKeyPairProviderImpl(schemeMetadata)
-            stableProvider = StableKeyPairProviderImpl(coordinatorFactory, cryptoOpsClient).also { it.start() }
+            ephemeralEncryptor = EphemeralKeyPairEncryptorImpl(schemeMetadata)
+            stableDecryptor = StableKeyPairDecryptorImpl(coordinatorFactory, cryptoOpsClient).also { it.start() }
             eventually {
-                assertEquals(LifecycleStatus.UP, stableProvider.lifecycleCoordinator.status)
+                assertEquals(LifecycleStatus.UP, stableDecryptor.lifecycleCoordinator.status)
             }
         }
 
@@ -88,19 +88,24 @@ class ProtocolTests {
     ) {
         val salt = generateSalt()
         val info = "Hello".toByteArray()
-
-        val member = ephemeralProvider.create(stablePublicKey, digestName)
-        val mgm = stableProvider.create(tenantId, stablePublicKey, member.publicKey, digestName)
-
-        val plainTextA = "Hello MGM!".toByteArray()
-        val cipherTextA = member.encrypt(salt, info, plainTextA)
-        val decryptedPlainTexA = mgm.decrypt(salt, info, cipherTextA)
-        assertArrayEquals(plainTextA, decryptedPlainTexA)
-
-        val plainTextB = "Hello member!".toByteArray()
-        val cipherTextB = mgm.encrypt(salt, info, plainTextB)
-        val decryptedPlainTexB = member.decrypt(salt, info, cipherTextB)
-        assertArrayEquals(plainTextB, decryptedPlainTexB)
+        val plainText = "Hello MGM!".toByteArray()
+        val cipherText = ephemeralEncryptor.encrypt(
+            salt = salt,
+            info = info,
+            otherPublicKey = stablePublicKey,
+            plainText = plainText,
+            aad = null
+        )
+        val decryptedPlainTex = stableDecryptor.decrypt(
+            tenantId = tenantId,
+            salt = salt,
+            info = info,
+            publicKey = stablePublicKey,
+            otherPublicKey = cipherText.publicKey,
+            cipherText = cipherText.cipherText,
+            aad = null
+        )
+        assertArrayEquals(plainText, decryptedPlainTex)
     }
 
     @ParameterizedTest
@@ -112,43 +117,23 @@ class ProtocolTests {
         val salt = generateSalt()
         val info = "Hello".toByteArray()
         val aad = "Something New".toByteArray()
-
-        val member = ephemeralProvider.create(stablePublicKey, digestName)
-        val mgm = stableProvider.create(tenantId, stablePublicKey, member.publicKey, digestName)
-
-        val plainTextA = "Hello MGM!".toByteArray()
-        val cipherTextA = member.encrypt(salt, info, plainTextA, aad)
-        val decryptedPlainTexA = mgm.decrypt(salt, info, cipherTextA, aad)
-        assertArrayEquals(plainTextA, decryptedPlainTexA)
-
-        val plainTextB = "Hello member!".toByteArray()
-        val cipherTextB = mgm.encrypt(salt, info, plainTextB, aad)
-        val decryptedPlainTexB = member.decrypt(salt, info, cipherTextB, aad)
-        assertArrayEquals(plainTextB, decryptedPlainTexB)
-    }
-
-    @ParameterizedTest
-    @MethodSource("stablePublicKeys")
-    @Suppress("MaxLineLength")
-    fun `Should run through handshake using different shared keys in each direction to send and receive with aad for all supported key schemes`(
-        stablePublicKey: PublicKey
-    ) {
-        val salt = generateSalt()
-        val info1 = "Hello Service".toByteArray()
-        val info2 = "Hello Client".toByteArray()
-        val aad = "Something New".toByteArray()
-
-        val member = ephemeralProvider.create(stablePublicKey, digestName)
-        val mgm = stableProvider.create(tenantId, stablePublicKey, member.publicKey, digestName)
-
-        val plainTextA = "Hello MGM!".toByteArray()
-        val cipherTextA = member.encrypt(salt, info1, plainTextA, aad)
-        val decryptedPlainTexA = mgm.decrypt(salt, info1, cipherTextA, aad)
-        assertArrayEquals(plainTextA, decryptedPlainTexA)
-
-        val plainTextB = "Hello member!".toByteArray()
-        val cipherTextB = mgm.encrypt(salt, info2, plainTextB, aad)
-        val decryptedPlainTexB = member.decrypt(salt, info2, cipherTextB, aad)
-        assertArrayEquals(plainTextB, decryptedPlainTexB)
+        val plainText = "Hello MGM!".toByteArray()
+        val cipherText = ephemeralEncryptor.encrypt(
+            salt = salt,
+            info = info,
+            otherPublicKey = stablePublicKey,
+            plainText = plainText,
+            aad = aad
+        )
+        val decryptedPlainTex = stableDecryptor.decrypt(
+            tenantId = tenantId,
+            salt = salt,
+            info = info,
+            publicKey = stablePublicKey,
+            otherPublicKey = cipherText.publicKey,
+            cipherText = cipherText.cipherText,
+            aad = aad
+        )
+        assertArrayEquals(plainText, decryptedPlainTex)
     }
 }

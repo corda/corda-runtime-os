@@ -16,6 +16,7 @@ import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -25,6 +26,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.X25519_CODE_NAME
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -40,39 +42,54 @@ open class SoftCryptoService(
 
         fun produceSupportedSchemes(schemeMetadata: CipherSchemeMetadata): Map<KeyScheme, List<SignatureSpec>> =
             mutableMapOf<KeyScheme, List<SignatureSpec>>().apply {
-                addIfSupported(schemeMetadata, RSA_CODE_NAME, listOf(
-                    SignatureSpec.RSA_SHA256,
-                    SignatureSpec.RSA_SHA384,
-                    SignatureSpec.RSA_SHA512,
-                    SignatureSpec.RSASSA_PSS_SHA256,
-                    SignatureSpec.RSASSA_PSS_SHA384,
-                    SignatureSpec.RSASSA_PSS_SHA512,
-                    SignatureSpec.RSA_SHA256_WITH_MGF1,
-                    SignatureSpec.RSA_SHA384_WITH_MGF1,
-                    SignatureSpec.RSA_SHA512_WITH_MGF1
-                ))
-                addIfSupported(schemeMetadata, ECDSA_SECP256K1_CODE_NAME, listOf(
-                    SignatureSpec.ECDSA_SHA256,
-                    SignatureSpec.ECDSA_SHA384,
-                    SignatureSpec.ECDSA_SHA512
-                ))
-                addIfSupported(schemeMetadata, ECDSA_SECP256R1_CODE_NAME, listOf(
-                    SignatureSpec.ECDSA_SHA256,
-                    SignatureSpec.ECDSA_SHA384,
-                    SignatureSpec.ECDSA_SHA512
-                ))
-                addIfSupported(schemeMetadata, EDDSA_ED25519_CODE_NAME, listOf(
-                    SignatureSpec.EDDSA_ED25519
-                ))
-                addIfSupported(schemeMetadata, SPHINCS256_CODE_NAME, listOf(
-                    SignatureSpec.SPHINCS256_SHA512
-                ))
-                addIfSupported(schemeMetadata, SM2_CODE_NAME, listOf(
-                    SignatureSpec.SM2_SM3
-                ))
-                addIfSupported(schemeMetadata, GOST3410_GOST3411_CODE_NAME, listOf(
-                    SignatureSpec.GOST3410_GOST3411
-                ))
+                addIfSupported(
+                    schemeMetadata, RSA_CODE_NAME, listOf(
+                        SignatureSpec.RSA_SHA256,
+                        SignatureSpec.RSA_SHA384,
+                        SignatureSpec.RSA_SHA512,
+                        SignatureSpec.RSASSA_PSS_SHA256,
+                        SignatureSpec.RSASSA_PSS_SHA384,
+                        SignatureSpec.RSASSA_PSS_SHA512,
+                        SignatureSpec.RSA_SHA256_WITH_MGF1,
+                        SignatureSpec.RSA_SHA384_WITH_MGF1,
+                        SignatureSpec.RSA_SHA512_WITH_MGF1
+                    )
+                )
+                addIfSupported(
+                    schemeMetadata, ECDSA_SECP256K1_CODE_NAME, listOf(
+                        SignatureSpec.ECDSA_SHA256,
+                        SignatureSpec.ECDSA_SHA384,
+                        SignatureSpec.ECDSA_SHA512
+                    )
+                )
+                addIfSupported(
+                    schemeMetadata, ECDSA_SECP256R1_CODE_NAME, listOf(
+                        SignatureSpec.ECDSA_SHA256,
+                        SignatureSpec.ECDSA_SHA384,
+                        SignatureSpec.ECDSA_SHA512
+                    )
+                )
+                addIfSupported(
+                    schemeMetadata, EDDSA_ED25519_CODE_NAME, listOf(
+                        SignatureSpec.EDDSA_ED25519
+                    )
+                )
+                addIfSupported(schemeMetadata, X25519_CODE_NAME, emptyList())
+                addIfSupported(
+                    schemeMetadata, SPHINCS256_CODE_NAME, listOf(
+                        SignatureSpec.SPHINCS256_SHA512
+                    )
+                )
+                addIfSupported(
+                    schemeMetadata, SM2_CODE_NAME, listOf(
+                        SignatureSpec.SM2_SM3
+                    )
+                )
+                addIfSupported(
+                    schemeMetadata, GOST3410_GOST3411_CODE_NAME, listOf(
+                        SignatureSpec.GOST3410_GOST3411
+                    )
+                )
             }
 
         private fun MutableMap<KeyScheme, List<SignatureSpec>>.addIfSupported(
@@ -81,7 +98,11 @@ open class SoftCryptoService(
             signatures: List<SignatureSpec>
         ) {
             if (schemeMetadata.schemes.any { it.codeName == codeName }) {
-                put(schemeMetadata.findKeyScheme(codeName), signatures)
+                val scheme = schemeMetadata.findKeyScheme(codeName)
+                require(scheme.canDo(KeySchemeCapability.SIGN)) {
+                    "Key scheme '${scheme.codeName}' cannot be used for signing."
+                }
+                put(scheme, signatures)
             }
         }
     }
@@ -115,10 +136,10 @@ open class SoftCryptoService(
         throw UnsupportedOperationException("The service does not support key deletion.")
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
-        require (!spec.masterKeyAlias.isNullOrBlank()) {
+        require(!spec.masterKeyAlias.isNullOrBlank()) {
             "The masterKeyAlias is not specified"
         }
-        require (supportedSchemes.containsKey(spec.keyScheme)) {
+        require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
         logger.info(
@@ -147,17 +168,20 @@ open class SoftCryptoService(
     }
 
     override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
-        require (spec is SigningWrappedSpec) {
+        require(spec is SigningWrappedSpec) {
             "The service supports only ${SigningWrappedSpec::class.java}"
         }
         require(!spec.masterKeyAlias.isNullOrBlank()) {
             "The masterKeyAlias is not specified"
         }
-        require (data.isNotEmpty()) {
+        require(data.isNotEmpty()) {
             "Signing of an empty array is not permitted."
         }
-        require (supportedSchemes.containsKey(spec.keyScheme)) {
+        require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
+        }
+        require(spec.keyScheme.canDo(KeySchemeCapability.SIGN)) {
+            "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
         logger.debug {
             "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName}," +
