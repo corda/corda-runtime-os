@@ -393,8 +393,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       }""".trimIndent()
 
     private val finiteDurableReturnResultSchemaWithCalendarDayRef =  """"FiniteDurableReturnResult_of_CalendarDay" : {
