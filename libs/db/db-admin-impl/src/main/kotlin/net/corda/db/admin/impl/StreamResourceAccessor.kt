@@ -82,7 +82,7 @@ class StreamResourceAccessor(
         }
         if (null == relativeTo && null != streamPath) {
             log.debug("Fetching change log from: $streamPath")
-            return InputStreamList(URI(streamPath), dbChange.fetch(streamPath))
+            return InputStreamList(URI(streamPath), dbChange.fetch(streamPath, relativeTo))
         }
 
         throw UnsupportedOperationException(

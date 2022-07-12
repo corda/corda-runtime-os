@@ -1,5 +1,6 @@
 package net.corda.chunking.db.impl.persistence.database
 
+import javax.persistence.OptimisticLockException
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
@@ -22,6 +23,12 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
+import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
@@ -84,8 +91,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
 
-            val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
-            cpkFileEntities.forEach { em.merge(it) }
+            createOrUpdateCpkFileEntities(em, cpi.cpks)
 
             cpkDbChangeLogEntities.forEach { em.merge(it) }
 
@@ -129,8 +135,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             val cpiMetadataEntity = em.merge(updatedMetadata)
 
-            val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
-            cpkFileEntities.forEach { em.merge(it) }
+            createOrUpdateCpkFileEntities(em, cpi.cpks)
+
             cpkDbChangeLogEntities.forEach { em.merge(it) }
 
             return cpiMetadataEntity
@@ -233,32 +239,49 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    private fun createOrUpdateExistingCpkFileEntities(em: EntityManager, cpks: Collection<Cpk>): List<CpkFileEntity> {
+    data class CpkFileEntityQueryResult(val id: CpkKey, val fileChecksum: String, val entityVersion: Int)
+
+    private fun createOrUpdateCpkFileEntities(em: EntityManager, cpks: Collection<Cpk>) {
         val query = """
-                FROM ${CpkFileEntity::class.java.simpleName}
-                WHERE id IN :cpkKeys
-            """.trimIndent()
-
-        val existingCpkFileEntities = em.createQuery(query, CpkFileEntity::class.java)
-            .setParameter("cpkKeys", cpks.map { it.metadata.cpkId.toCpkKey() })
+            SELECT f.id, f.fileChecksum, f.entityVersion 
+            from ${CpkFileEntity::class.java.simpleName} f  
+            where f.id IN :ids
+        """.trimIndent()
+        val existingCpkFiles = em.createQuery(query)
             .setLockMode(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-            .resultList.associateBy { it.id }
+            .setParameter("ids", cpks.map { it.metadata.cpkId.toCpkKey() })
+            .resultList
+            .associate {
+                it as Array<*>
+                val cpkKey = it[0] as CpkKey
+                val fileChecksum = it[1] as String
+                val entityVersion = it[2] as Int
+                cpkKey to CpkFileEntityQueryResult(cpkKey, fileChecksum, entityVersion)
+            }
 
-        return cpks.map { cpk ->
+        cpks.map { cpk ->
             val cpkKey = cpk.metadata.cpkId.toCpkKey()
-            val existingCpkFileEntity = existingCpkFileEntities[cpkKey]
+            val existingCpkFile = existingCpkFiles[cpkKey]
 
-            if (existingCpkFileEntity != null) {
-                if(existingCpkFileEntity.fileChecksum != cpk.metadata.fileChecksum.toString()) {
-                    existingCpkFileEntity.fileChecksum = cpk.metadata.fileChecksum.toString()
-                    existingCpkFileEntity.data = Files.readAllBytes(cpk.path!!)
+            if(existingCpkFile != null) {
+                // the cpk exists already, lets update it if the file checksum has changed.
+                if (existingCpkFile.fileChecksum != cpk.metadata.fileChecksum.toString()) {
+                    val updatedEntities = em.createNamedQuery(QUERY_NAME_UPDATE_CPK_FILE_DATA)
+                        .setParameter(QUERY_PARAM_FILE_CHECKSUM, cpk.metadata.fileChecksum.toString())
+                        .setParameter(QUERY_PARAM_DATA, Files.readAllBytes(cpk.path!!))
+                        .setParameter(QUERY_PARAM_ENTITY_VERSION, existingCpkFile.entityVersion)
+                        .setParameter(QUERY_PARAM_INCREMENTED_ENTITY_VERSION, existingCpkFile.entityVersion + 1)
+                        .setParameter(QUERY_PARAM_ID, cpkKey)
+                        .executeUpdate()
+
+                    if(updatedEntities < 1)
+                        throw OptimisticLockException("Updating ${CpkFileEntity::class.java.simpleName} with id $cpkKey failed due to " +
+                                "optimistic lock version mismatch. Expected entityVersion ${existingCpkFile.entityVersion}.")
                 }
-                existingCpkFileEntity
             } else {
-                CpkFileEntity(
-                    cpkKey,
-                    cpk.metadata.fileChecksum.toString(),
-                    Files.readAllBytes(cpk.path!!)
+                // the cpk doesn't exist so we'll persist a new file
+                em.persist(
+                    CpkFileEntity(cpkKey, cpk.metadata.fileChecksum.toString(), Files.readAllBytes(cpk.path!!))
                 )
             }
         }
@@ -281,3 +304,4 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         return false
     }
 }
+
