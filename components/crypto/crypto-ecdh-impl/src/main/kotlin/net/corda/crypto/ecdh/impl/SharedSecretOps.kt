@@ -8,8 +8,6 @@ import net.corda.crypto.ecdh.AES_PROVIDER
 import net.corda.crypto.ecdh.GCM_NONCE_LENGTH
 import net.corda.crypto.ecdh.GCM_TAG_LENGTH
 import net.corda.crypto.ecdh.GCM_TRANSFORMATION
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.X25519_TEMPLATE
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -24,7 +22,7 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
 
-object ECDHEncryptor {
+object SharedSecretOps {
     private val nonceCounter = AtomicInteger(0)
 
     private val pool = ConcurrentLinkedQueue<Cipher>()
@@ -134,13 +132,13 @@ object ECDHEncryptor {
             "Keys must use the same algorithm"
         }
         return when (privateKey.algorithm) {
-            ECDSA_SECP256R1_TEMPLATE.algorithmName -> {
+            "EC" -> {
                 KeyAgreement.getInstance("ECDH", provider).apply {
                     init(privateKey)
                     doPhase(otherPublicKey, true)
                 }.generateSecret()
             }
-            X25519_TEMPLATE.algorithmName -> {
+            "X25519" -> {
                 KeyAgreement.getInstance("X25519", provider).apply {
                     init(privateKey)
                     doPhase(otherPublicKey, true)

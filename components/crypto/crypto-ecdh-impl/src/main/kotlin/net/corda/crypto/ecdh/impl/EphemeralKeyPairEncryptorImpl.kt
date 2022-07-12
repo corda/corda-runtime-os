@@ -27,7 +27,7 @@ class EphemeralKeyPairEncryptorImpl(
         val scheme = schemeMetadata.findKeyScheme(otherPublicKey)
         val provider = schemeMetadata.providers.getValue(scheme.providerName)
         val keyPair = generateEphemeralKeyPair(provider, scheme)
-        val cipherText = ECDHEncryptor.encrypt(
+        val cipherText = SharedSecretOps.encrypt(
             digestName = digestName,
             salt = salt,
             info = info,
@@ -36,7 +36,7 @@ class EphemeralKeyPairEncryptorImpl(
             plainText = plainText,
             aad = aad
         ) {
-            ECDHEncryptor.deriveSharedSecret(provider, keyPair.private, otherPublicKey)
+            SharedSecretOps.deriveSharedSecret(provider, keyPair.private, otherPublicKey)
         }
         return EncryptedDataWithKey(
             publicKey = keyPair.public,

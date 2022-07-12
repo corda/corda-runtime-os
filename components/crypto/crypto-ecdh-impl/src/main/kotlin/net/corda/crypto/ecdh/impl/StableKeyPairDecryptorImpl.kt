@@ -82,7 +82,7 @@ class StableKeyPairDecryptorImpl(
             cipherText: ByteArray,
             aad: ByteArray?
         ): ByteArray =
-            ECDHEncryptor.decrypt(
+            SharedSecretOps.decrypt(
                 digestName = digestName,
                 salt = salt,
                 info = info,

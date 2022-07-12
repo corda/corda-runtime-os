@@ -177,8 +177,7 @@ interface CryptoOpsClient : Lifecycle {
 
     /**
      * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of
-     * the wrapping key in such cases the implementation should do nothing (note that [requiresWrappingKey] should
-     * return false for such implementations).
+     * the wrapping key in such cases the implementation should do nothing .
      *
      * @param configId the HSM's configuration id which the key is generated in.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
@@ -197,7 +196,16 @@ interface CryptoOpsClient : Lifecycle {
     )
 
     /**
-     * Derive ECDH shared secret
+     * Derive Diffie–Hellman key agreement shared secret by using the private key associated with [publicKey]
+     * and [otherPublicKey], note that the key schemes of the [publicKey] and [otherPublicKey] must be the same and
+     * the scheme must support the key agreement secret derivation.
+     *
+     * @param tenantId the tenant which owns the key pair referenced by the [publicKey]
+     * @param publicKey the public key of the key pair
+     * @param otherPublicKey the public of the "other" party which should be used to derive the secret
+     * @param context the optional key/value operation context.
+     *
+     * @return the shared secret.
      */
     fun deriveSharedSecret(
         tenantId: String,

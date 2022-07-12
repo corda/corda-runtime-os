@@ -61,7 +61,7 @@ class ProtocolTests {
                         val otherPublicKey: PublicKey = it.getArgument(2)
                         val provider =
                             schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(otherPublicKey).providerName)
-                        ECDHEncryptor.deriveSharedSecret(provider, pair.private, otherPublicKey)
+                        SharedSecretOps.deriveSharedSecret(provider, pair.private, otherPublicKey)
                     }
                 }
             ).also { it.start() }
