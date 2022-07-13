@@ -100,7 +100,7 @@ const Register = () => {
         const postPermissionId = await createPermission(`POST:/api/v1/flow/${newNode.holdingIdentity.id}`, 'ALLOW');
         if (!postPermissionId) return;
 
-        const getPermissionId = await createPermission(`GET:/api/v1/flow/${newNode.holdingIdentity.id}/*`, 'ALLOW');
+        const getPermissionId = await createPermission(`GET:/api/v1/flow/${newNode.holdingIdentity.id}/.*`, 'ALLOW');
         if (!getPermissionId) return;
 
         const userPermissionId = await createPermission(`GET:/api/v1/user\\?loginname=${username}`, 'ALLOW');

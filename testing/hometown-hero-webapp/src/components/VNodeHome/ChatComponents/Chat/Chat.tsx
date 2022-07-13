@@ -8,7 +8,9 @@ import { TEMP_USER_500 } from '@/tempData/user';
 import apiCall from '@/api/apiCall';
 import { axiosInstance } from '@/api/axiosConfig';
 import style from './chat.module.scss';
+import useMessagesContext from '@/contexts/messagesContext';
 import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
+import useUserContext from '@/contexts/userContext';
 
 type Props = {
     selectedParticipants: string[];
@@ -20,7 +22,17 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [messageValue, setMessageValue] = useState<string>('');
 
+    const { getChatHistoryForSender } = useMessagesContext();
+    const { vNode } = useUserContext();
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (selectedParticipants.length === 0) return;
+        const chatHistory = getChatHistoryForSender(selectedParticipants[0]);
+        if (!chatHistory) return;
+        setMessages(chatHistory.messages.map((message) => ({ x500name: message.sender, message: message.message })));
+    }, [getChatHistoryForSender, selectedParticipants]);
 
     useEffect(() => {
         if (!messagesEndRef.current) return;
@@ -28,23 +40,23 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     }, [messages]);
 
     // TODO: Set the actual x500, probably in UserContext when this data is available
-    const currentUserX500 = TEMP_USER_500;
+    //const currentUserX500 = TEMP_USER_500;
 
-    const fetchMessages = useCallback(async () => {
-        const response = await apiCall({ method: 'get', path: '/api/messages', axiosInstance: axiosInstance });
-        if (response.error) {
-            NotificationService.notify(`Failed to fetch messages: Error: ${response.error}`, 'Error', 'danger');
-        } else {
-            // TODO: Set the messages here from api response data
-        }
-    }, []);
+    // const fetchMessages = useCallback(async () => {
+    //     const response = await apiCall({ method: 'get', path: '/api/messages', axiosInstance: axiosInstance });
+    //     if (response.error) {
+    //         NotificationService.notify(`Failed to fetch messages: Error: ${response.error}`, 'Error', 'danger');
+    //     } else {
+    //         // TODO: Set the messages here from api response data
+    //     }
+    // }, []);
 
-    useEffect(() => {
-        fetchMessages();
-        // TODO: Remove temp data of messages
-        setMessages(TEMP_MESSAGES);
-        // TODO: Set interval of polling messages if there will be no web socket implementation available
-    }, [fetchMessages]);
+    // useEffect(() => {
+    //     fetchMessages();
+    //     // TODO: Remove temp data of messages
+    //     setMessages(TEMP_MESSAGES);
+    //     // TODO: Set interval of polling messages if there will be no web socket implementation available
+    // }, [fetchMessages]);
 
     const handleUserTyping = (e: any) => {
         setMessageValue(e.target.value);
@@ -61,7 +73,7 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
         if (response.error) {
             NotificationService.notify(`Failed to send message: Error: ${response.error}`, 'Error', 'danger');
         } else {
-            fetchMessages();
+            //fetchMessages();
         }
         setMessageValue('');
     };
@@ -85,7 +97,7 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                 {!isChatDisabled && (
                     <div className={style.messagesList}>
                         {messages.map((message, index) => {
-                            const isMyMessage = message.x500name === currentUserX500;
+                            const isMyMessage = message.x500name === vNode?.holdingIdentity.x500Name;
                             return (
                                 <Message
                                     key={index}
