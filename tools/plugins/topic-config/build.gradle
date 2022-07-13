@@ -8,8 +8,6 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
