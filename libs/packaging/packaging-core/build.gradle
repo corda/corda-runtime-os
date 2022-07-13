@@ -3,15 +3,16 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Packaging Interfaces and Data Classes"
+description 'Packaging Interfaces and Data Classes'
 
 dependencies {
-    compileOnly "org.osgi:osgi.core"
+    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
 
     api platform("net.corda:corda-api:$cordaApiVersion")
-    api "net.corda:corda-avro-schema"
-    api "net.corda:corda-crypto"
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'net.corda:corda-avro-schema'
+    api 'net.corda:corda-crypto'
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
