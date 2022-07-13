@@ -2,9 +2,28 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'
     id 'corda.common-library'
+    id 'net.corda.plugins.quasar-utils'
 }
 
 description "Flow service"
+
+quasar {
+    version = quasarVersion
+    suspendableAnnotation = 'net.corda.v5.base.annotations.Suspendable'
+    instrumentTests = true
+    instrumentJavaExec = false
+    excludePackages = [
+            'co.paralleluniverse.**',
+            'com.esotericsoftware.**',
+            'io.opentelemetry.**',
+            'jdk**',
+            'kotlin**',
+            'org.apache.**',
+            'org.slf4j**',
+            'net.corda.sandboxhooks.**',
+            'net.corda.osgi.**'
+    ]
+}
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -60,6 +79,7 @@ dependencies {
     testImplementation project(":testing:flow:flow-utilities")
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')

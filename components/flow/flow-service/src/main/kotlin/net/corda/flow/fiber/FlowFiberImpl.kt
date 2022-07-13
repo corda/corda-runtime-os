@@ -59,9 +59,9 @@ class FlowFiberImpl(
             suspend(FlowIORequest.InitialCheckpoint)
 
             FlowIORequest.FlowFinished(flowLogic.invoke())
-        } catch (e: Exception) {
-            log.error("Flow failed", e)
-            FlowIORequest.FlowFailed(e)
+        } catch (t: Throwable) {
+            log.error("Flow failed", t)
+            FlowIORequest.FlowFailed(t)
         }
 
         try {
@@ -164,8 +164,6 @@ class FlowFiberImpl(
             }
         }
     }
-
-    private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError
 
     private fun initialiseThreadContext() {
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader
