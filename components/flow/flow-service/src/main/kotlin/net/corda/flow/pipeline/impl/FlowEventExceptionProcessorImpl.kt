@@ -46,9 +46,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         maxRetryAttempts = config.getInt(PROCESSING_MAX_RETRY_ATTEMPTS)
     }
 
-    override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+    override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
         log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
-        StateAndEventProcessor.Response(
+        return StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = listOf(),
             markForDLQ = true
@@ -123,9 +123,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         log.warn("A non critical error was reported while processing the event.", exception)
-        return flowEventContextConverter.convert(exception.getFlowContext())
+        flowEventContextConverter.convert(exception.getFlowContext())
     }
 
     override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
