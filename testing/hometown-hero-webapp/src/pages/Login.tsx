@@ -1,4 +1,4 @@
-import { Button, NotificationService, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
+import { Button, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
 
 import FormContentWrapper from '@/components/FormContentWrapper/FormContentWrapper';
 import LoginViz from '@/components/Visualizations/LoginViz';
@@ -11,7 +11,7 @@ import { useState } from 'react';
 import useUserContext from '@/contexts/userContext';
 
 const Login = () => {
-    const { username: savedUsername, password: savedPassword, login } = useUserContext();
+    const { username: savedUsername, password: savedPassword, login, saveLoginDetails } = useUserContext();
 
     const navigate = useNavigate();
 
@@ -29,18 +29,14 @@ const Login = () => {
     };
 
     const handleSubmit = async () => {
-        //the api spec is not made available yet will just assume it will just assume its /api/login for now
-        // TODO: update api to match spec
-
         const loggedInSuccessfully = await login(username, password);
-
         if (!loggedInSuccessfully) {
             setUsername('');
             setPassword('');
-        } else {
-            NotificationService.notify(`Successfully Signed in!`, 'Success!', 'success');
-            navigate(VNODE_HOME);
+            return;
         }
+        saveLoginDetails(username, password);
+        navigate(VNODE_HOME);
     };
 
     return (

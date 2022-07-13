@@ -1,16 +1,9 @@
 import { Button, Checkbox, NotificationService, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
-import {
-    addPermissionToRole,
-    addRoleToUser,
-    createAllowPermission,
-    createRole,
-    createUser,
-    createVNode,
-} from './utils';
+import { LOGIN, VNODE_HOME } from '@/constants/routes';
+import { addPermissionToRole, addRoleToUser, createPermission, createRole, createUser, createVNode } from './utils';
 import { useEffect, useState } from 'react';
 
 import FormContentWrapper from '@/components/FormContentWrapper/FormContentWrapper';
-import { LOGIN } from '@/constants/routes';
 import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import RegisterViz from '@/components/Visualizations/RegisterViz';
@@ -22,14 +15,12 @@ import { useNavigate } from 'react-router-dom';
 import useUserContext from '@/contexts/userContext';
 
 const Register = () => {
-    const { saveLoginDetails } = useUserContext();
-
+    const { login, saveLoginDetails, username: savedUserUsername, password: savedUserPassword } = useUserContext();
     const navigate = useNavigate();
 
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [confirmPassword, setConfirmPassword] = useState<string>('');
-    const [isUserAndPasswordSaved, setIsUserAndPasswordSaved] = useState<boolean>(true);
     const [newVNode, setNewVNode] = useState<VirtualNode | undefined>(undefined);
 
     const { refreshVNodes, cpiList, refreshCpiList } = useAppDataContext();
@@ -51,8 +42,10 @@ const Register = () => {
         }
     };
 
-    const handleCheckboxClick = () => {
-        setIsUserAndPasswordSaved((prev) => !prev);
+    const handleVNodeLogin = async () => {
+        const isLoggedIn = await login(savedUserUsername, savedUserPassword);
+        if (!isLoggedIn) return;
+        navigate(VNODE_HOME);
     };
 
     const handleSubmit = async () => {
@@ -74,11 +67,8 @@ const Register = () => {
         const vNodeCreated = await createVNode(x500Name, cpiFileChecksum);
         if (!vNodeCreated) return;
 
-        const userCreated = await createUser(username, password);
-        if (!userCreated) return;
-
         //give some time for vNodes list to update
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 1000));
 
         const updatedVNodes = await refreshVNodes();
 
@@ -95,29 +85,50 @@ const Register = () => {
 
         setNewVNode(newNode);
 
-        const postPermissionId = await createAllowPermission(`POST:/api/v1/flow/${newNode.holdingIdentity.id}`);
+        const userCreated = await createUser(username, password, newNode.holdingIdentity.id);
+        if (!userCreated) return;
+
+        const postPermissionId = await createPermission(`POST:/api/v1/flow/${newNode.holdingIdentity.id}`, 'ALLOW');
         if (!postPermissionId) return;
 
-        const getPermissionId = await createAllowPermission(`GET:/api/v1/flow/${newNode.holdingIdentity.id}/*`);
+        const getPermissionId = await createPermission(`GET:/api/v1/flow/${newNode.holdingIdentity.id}/*`, 'ALLOW');
         if (!getPermissionId) return;
 
-        const roleId = await createRole();
+        const userPermissionId = await createPermission(`GET:/api/v1/user\\?loginname=${username}`, 'ALLOW');
+        if (!userPermissionId) return;
 
+        const virtualNodesListPermissionId = await createPermission(`GET:/api/v1/virtualnode`, 'ALLOW');
+        if (!virtualNodesListPermissionId) return;
+
+        const roleId = await createRole();
         if (!roleId) return;
 
         const addedPostPermission = await addPermissionToRole(postPermissionId, roleId);
-
         if (!addedPostPermission) return;
 
         const addedGetPermission = await addPermissionToRole(getPermissionId, roleId);
-
         if (!addedGetPermission) return;
 
-        const addedRoleToUser = await addRoleToUser(username, roleId);
+        const addedUserPermission = await addPermissionToRole(userPermissionId, roleId);
+        if (!addedUserPermission) return;
 
+        const addedVirtualNodesPermission = await addPermissionToRole(virtualNodesListPermissionId, roleId);
+        if (!addedVirtualNodesPermission) return;
+
+        NotificationService.notify(
+            `Successfully created permissions and added to new role for user!`,
+            'Success!',
+            'success'
+        );
+
+        const addedRoleToUser = await addRoleToUser(username, roleId);
         if (!addedRoleToUser) return;
 
+        NotificationService.notify(`Successfully added new role to user!`, 'Success!', 'success');
+
         NotificationService.notify(`Registration complete!`, 'Success!', 'success');
+
+        saveLoginDetails(username, password, newNode);
 
         setUsername('');
         setPassword('');
@@ -162,14 +173,7 @@ const Register = () => {
                             onChange={handleInputChange}
                             invalid={confirmPassword !== password || confirmPassword.length === 0}
                         />
-                        <Checkbox
-                            disabled={!canSubmit}
-                            value={''}
-                            checked={isUserAndPasswordSaved}
-                            onChange={handleCheckboxClick}
-                        >
-                            Save username and password
-                        </Checkbox>
+
                         <Button
                             style={{ width: 142 }}
                             className="h-12"
@@ -188,7 +192,7 @@ const Register = () => {
                     <div className="ml-24">
                         <PageHeader>Your own VNode!</PageHeader>
                         <div
-                            className="shadow-2xl ml-4 mt-8"
+                            className="shadow-2xl ml-4 mt-8 p-12"
                             style={{
                                 marginTop: 8,
                                 border: '1px solid lightgrey',
@@ -213,7 +217,7 @@ const Register = () => {
                                     {newVNode.cpiIdentifier.name}
                                 </p>
                             </div>
-                            <Button className="h-12 mt-6" size={'large'} variant={'primary'}>
+                            <Button className="h-12 mt-6" size={'large'} variant={'primary'} onClick={handleVNodeLogin}>
                                 Login
                             </Button>
                         </div>

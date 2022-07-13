@@ -1,15 +1,19 @@
+import { FULL_NAME_SPLITTER } from '@/constants/fullNameSplit';
 import { NotificationService } from '@r3/r3-tooling-design-system/exports';
+import { VirtualNode } from '@/models/virtualnode';
 import apiCall from '@/api/apiCall';
 import { axiosInstance } from '@/api/axiosConfig';
 import createCtx from './createCtx';
-import { useEffect } from 'react';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 
 type UserContextProps = {
+    holderShortId: string;
     username: string;
     password: string;
+    vNode: VirtualNode | undefined;
     login: (username: string, password: string) => Promise<boolean>;
-    saveLoginDetails: (username: string, password: string) => void;
+    clearData: () => void;
+    saveLoginDetails: (username: string, password: string, vNode?: VirtualNode) => void;
 };
 
 const [useUserContext, Provider] = createCtx<UserContextProps>();
@@ -21,23 +25,19 @@ type ProviderProps = {
 };
 
 export const UserContextProvider: React.FC<ProviderProps> = ({ children }) => {
+    const [vNode, setVnode] = useSessionStorage<VirtualNode | undefined>('virtualNode', undefined);
+    const [holderShortId, setHolderShortId] = useSessionStorage<string>('holdershortid', '');
     const [username, setUsername] = useSessionStorage<string>('username', '');
     const [password, setPassword] = useSessionStorage<string>('password', '');
 
-    useEffect(() => {
-        const encodedHeader = btoa(`${username}:${password}`);
-        axiosInstance.defaults.headers.common = { Authorization: `Basic ${encodedHeader}` };
-    }, []);
-
     const login = async (username: string, password: string) => {
-        const encodedHeader = btoa(`${username}:${password}`);
-        axiosInstance.defaults.headers.common = { Authorization: `Basic ${encodedHeader}` };
-
         const response = await apiCall({
-            method: 'post',
-            path: '/api/login',
-            params: { username, password },
-            axiosInstance: axiosInstance,
+            method: 'get',
+            path: `/api/v1/user?loginname=${username}`,
+            auth: {
+                username: username,
+                password: password,
+            },
         });
 
         if (response.error) {
@@ -50,15 +50,27 @@ export const UserContextProvider: React.FC<ProviderProps> = ({ children }) => {
             return false;
         } else {
             NotificationService.notify(`Successfully Signed in!`, 'Success!', 'success');
-            saveLoginDetails(username, password);
+            setHolderShortId(response.data.fullName.split(FULL_NAME_SPLITTER)[1]);
             return true;
         }
     };
 
-    const saveLoginDetails = (username: string, password: string) => {
+    const saveLoginDetails = (username: string, password: string, vNode?: VirtualNode) => {
         setUsername(username);
         setPassword(password);
+        setVnode(vNode);
     };
 
-    return <Provider value={{ username, password, login, saveLoginDetails }}>{children}</Provider>;
+    const clearData = () => {
+        setUsername('');
+        setPassword('');
+        setVnode(undefined);
+        setHolderShortId('');
+    };
+
+    return (
+        <Provider value={{ holderShortId, username, password, vNode, login, clearData, saveLoginDetails }}>
+            {children}
+        </Provider>
+    );
 };

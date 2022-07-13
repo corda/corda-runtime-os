@@ -13,6 +13,7 @@ export type ApiCallParams = {
     config?: any;
     cancelToken?: CancelToken;
     axiosInstance?: AxiosInstance;
+    auth?: { username: string; password: string };
 };
 
 export default async function apiCall({
@@ -23,6 +24,7 @@ export default async function apiCall({
     cancelToken,
     config,
     axiosInstance,
+    auth,
 }: ApiCallParams): Promise<ResolvedPromise> {
     const parameters = method === 'get' ? { params } : { data: params };
     const requestConfig: AxiosRequestConfig = {
@@ -30,6 +32,7 @@ export default async function apiCall({
         url: `${path}`,
         method,
         cancelToken: cancelToken,
+        auth: auth,
         ...config,
         ...parameters,
     };

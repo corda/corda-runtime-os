@@ -1,3 +1,4 @@
+import { FULL_NAME_SPLITTER } from '@/constants/fullNameSplit';
 import { NotificationService } from '@r3/r3-tooling-design-system/exports';
 import adminAxiosInstance from '@/api/adminAxios';
 import apiCall from '@/api/apiCall';
@@ -23,14 +24,14 @@ export const createVNode = async (x500Name: string, cpiFileChecksum: string): Pr
     return true;
 };
 
-export const createUser = async (username: string, password: string): Promise<boolean> => {
+export const createUser = async (username: string, password: string, holdingShortId: string): Promise<boolean> => {
     const response = await apiCall({
         method: 'post',
         path: '/api/v1/user',
         params: {
             createUserType: {
                 enabled: true,
-                fullName: username,
+                fullName: `${username}${FULL_NAME_SPLITTER}${holdingShortId}`,
                 initialPassword: password,
                 loginName: username,
             },
@@ -51,14 +52,17 @@ export const createUser = async (username: string, password: string): Promise<bo
     return true;
 };
 
-export const createAllowPermission = async (permissionString: string): Promise<string | undefined> => {
+export const createPermission = async (
+    permissionString: string,
+    permissionType: 'DENY' | 'ALLOW'
+): Promise<string | undefined> => {
     const response = await apiCall({
         method: 'post',
         path: '/api/v1/permission',
         params: {
             createPermissionType: {
                 permissionString: permissionString,
-                permissionType: 'ALLOW',
+                permissionType: permissionType,
             },
         },
         axiosInstance: adminAxiosInstance,
@@ -70,8 +74,6 @@ export const createAllowPermission = async (permissionString: string): Promise<s
             'danger'
         );
         return undefined;
-    } else {
-        NotificationService.notify(`Successfully created permission!`, 'Success!', 'success');
     }
 
     return response.data.id;
@@ -115,8 +117,6 @@ export const addPermissionToRole = async (permissionId: string, roleId: string) 
             'danger'
         );
         return false;
-    } else {
-        NotificationService.notify(`Successfully added permission for role!`, 'Success!', 'success');
     }
 
     return true;
