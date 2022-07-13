@@ -46,8 +46,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         maxRetryAttempts = config.getInt(PROCESSING_MAX_RETRY_ATTEMPTS)
     }
 
-    override fun process(exception: Exception): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
-        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", exception)
+    override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
         StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = listOf(),
@@ -149,12 +149,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             handler()
         } catch(t: Throwable) {
             // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
-            log.error("An unrecoverable failure occurred while trying to process a flow event: ${t.message}. Sending to the dead letter queue.", t)
-            StateAndEventProcessor.Response(
-                updatedState = null,
-                responseEvents = listOf(),
-                markForDLQ = true
-            )
+            process(t)
         }
     }
 

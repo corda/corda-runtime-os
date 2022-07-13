@@ -69,8 +69,8 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e)
         } catch (e: FlowFatalException) {
             flowEventExceptionProcessor.process(e)
-        } catch (e: Exception) {
-            flowEventExceptionProcessor.process(e)
+        } catch (t: Throwable) {
+            flowEventExceptionProcessor.process(t)
         }
     }
 }
