@@ -9,7 +9,7 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation 'javax.persistence:javax.persistence-api'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
