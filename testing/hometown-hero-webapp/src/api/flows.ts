@@ -20,6 +20,7 @@ export const requestStartFlow = async (
             },
         },
         auth: auth,
+        dontTrackRequest: true,
     });
 };
 
@@ -28,5 +29,10 @@ export const requestFlowStatus = async (
     clientRequestId: string,
     auth?: { username: string; password: string }
 ) => {
-    return apiCall({ method: 'get', path: `/api/v1/flow/${shortId}/${clientRequestId}`, auth: auth });
+    return apiCall({
+        method: 'get',
+        path: `/api/v1/flow/${shortId}/${clientRequestId}`,
+        auth: auth,
+        dontTrackRequest: true,
+    });
 };

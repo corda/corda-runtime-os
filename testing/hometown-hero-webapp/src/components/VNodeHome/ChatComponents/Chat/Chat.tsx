@@ -1,12 +1,9 @@
 import { IconButton, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Message from '../Message/Message';
 import { Message as MessageType } from '@/models/Message';
-import { TEMP_MESSAGES } from '@/tempData/tempMessages';
-import { TEMP_USER_500 } from '@/tempData/user';
-import apiCall from '@/api/apiCall';
-import { axiosInstance } from '@/api/axiosConfig';
+import { handleFlow } from '@/utils/flowHelpers';
 import style from './chat.module.scss';
 import useMessagesContext from '@/contexts/messagesContext';
 import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
@@ -22,59 +19,60 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [messageValue, setMessageValue] = useState<string>('');
 
-    const { getChatHistoryForSender } = useMessagesContext();
-    const { vNode } = useUserContext();
+    const { getChatHistoryForSender, addMessageToChatHistoryForSender, userChatHistory } = useMessagesContext();
+    const { vNode, holderShortId, username, password } = useUserContext();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (selectedParticipants.length === 0) return;
+        if (selectedParticipants.length === 0) {
+            setMessages([]);
+            return;
+        }
         const chatHistory = getChatHistoryForSender(selectedParticipants[0]);
-        if (!chatHistory) return;
+        if (!chatHistory) {
+            setMessages([]);
+            return;
+        }
         setMessages(chatHistory.messages.map((message) => ({ x500name: message.sender, message: message.message })));
-    }, [getChatHistoryForSender, selectedParticipants]);
+    }, [getChatHistoryForSender, selectedParticipants, JSON.stringify(userChatHistory)]);
 
     useEffect(() => {
         if (!messagesEndRef.current) return;
         messagesEndRef.current.scrollIntoView();
     }, [messages]);
 
-    // TODO: Set the actual x500, probably in UserContext when this data is available
-    //const currentUserX500 = TEMP_USER_500;
-
-    // const fetchMessages = useCallback(async () => {
-    //     const response = await apiCall({ method: 'get', path: '/api/messages', axiosInstance: axiosInstance });
-    //     if (response.error) {
-    //         NotificationService.notify(`Failed to fetch messages: Error: ${response.error}`, 'Error', 'danger');
-    //     } else {
-    //         // TODO: Set the messages here from api response data
-    //     }
-    // }, []);
-
-    // useEffect(() => {
-    //     fetchMessages();
-    //     // TODO: Remove temp data of messages
-    //     setMessages(TEMP_MESSAGES);
-    //     // TODO: Set interval of polling messages if there will be no web socket implementation available
-    // }, [fetchMessages]);
-
     const handleUserTyping = (e: any) => {
         setMessageValue(e.target.value);
     };
 
     const handleMessageSubmit = async () => {
-        // TODO: adjust to api spec
-        const response = await apiCall({
-            method: 'post',
-            path: '/api/sendMessage',
-            params: { messageContent: messageValue },
-            axiosInstance: axiosInstance,
+        if (selectedParticipants.length === 0 || !vNode) return;
+        const sender = selectedParticipants[0];
+        const clientRequestId = 'sendMessage' + Date.now();
+        const pollingInterval = await handleFlow({
+            flowType: 'net.cordapp.testing.chat.ChatOutgoingFlow',
+            holderShortId: holderShortId,
+            clientRequestId: clientRequestId,
+            payload: JSON.stringify({
+                recipientX500Name: sender,
+                message: messageValue,
+            }),
+            auth: { username, password },
+            onStartFailure: (errorText) => {
+                NotificationService.notify(`Failed to start ChatOutgoingFlow ${errorText}`, 'Error', 'danger');
+            },
+            onStatusSuccess: (flowStatus) => {
+                addMessageToChatHistoryForSender(sender, {
+                    sender: vNode.holdingIdentity.x500Name,
+                    message: messageValue,
+                });
+                NotificationService.notify(`ChatOutgoingFlow finished, message delivered!`, 'Success', 'success');
+            },
+            onStatusFailure: (errorText) => {
+                NotificationService.notify(`ChatOutgoingFlow failed, error: ${errorText}`, 'Error', 'danger');
+            },
         });
-        if (response.error) {
-            NotificationService.notify(`Failed to send message: Error: ${response.error}`, 'Error', 'danger');
-        } else {
-            //fetchMessages();
-        }
         setMessageValue('');
     };
 

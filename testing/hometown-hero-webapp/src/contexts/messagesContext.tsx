@@ -3,9 +3,13 @@ import React, { useEffect } from 'react';
 import { NotificationService } from '@r3/r3-tooling-design-system/exports';
 import createCtx from './createCtx';
 import { handleFlow } from '@/utils/flowHelpers';
-import { requestStartFlow } from '@/api/flows';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import useUserContext from './userContext';
+
+export type UsersChatHistory = {
+    username: string;
+    chatHistories: ChatHistory[];
+};
 
 export type ChatHistory = {
     sender: string;
@@ -22,8 +26,9 @@ export type Message = {
 };
 
 type MessagesContextProps = {
-    chatHistories: ChatHistory[];
+    userChatHistory: UsersChatHistory;
     getChatHistoryForSender: (sender: string) => ChatHistory | undefined;
+    addMessageToChatHistoryForSender: (sender: string, message: Message) => void;
 };
 
 const [useMessagesContext, Provider] = createCtx<MessagesContextProps>();
@@ -31,31 +36,50 @@ export default useMessagesContext;
 
 export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const { username, password, holderShortId } = useUserContext();
-    const [chatHistories, setChatHistories] = useLocalStorage<ChatHistory[]>('chatHistory', []);
+    const [userChatHistory, setUserChatHistory] = useLocalStorage<UsersChatHistory>(`${username}chatHistory`, {
+        username: username,
+        chatHistories: [],
+    });
 
     const getChatHistoryForSender = (sender: string): ChatHistory | undefined => {
-        return chatHistories.find((chatHistory) => chatHistory.sender === sender);
+        return userChatHistory.chatHistories.find((chatHistory) => chatHistory.sender === sender);
+    };
+
+    const addMessageToChatHistoryForSender = (sender: string, message: Message) => {
+        const tempUserChatHistory = { ...userChatHistory };
+        const existingChatHistory = tempUserChatHistory.chatHistories.find((cH) => cH.sender === sender);
+        if (!existingChatHistory) {
+            tempUserChatHistory.chatHistories.push({
+                sender: sender,
+                messages: [message],
+            });
+            setUserChatHistory(tempUserChatHistory);
+            return;
+        }
+        existingChatHistory.messages = [...existingChatHistory.messages, message];
+        setUserChatHistory(tempUserChatHistory);
     };
 
     const handleAppendMessagesToChatHistories = (
-        chatHistories: ChatHistory[],
+        userChatHistory: UsersChatHistory,
         newMessages: Messages
-    ): ChatHistory[] => {
+    ): UsersChatHistory => {
         const senderKeys = new Set(newMessages.messages.map((message) => message.sender));
-        const tempChatHistories = [...chatHistories];
+        const tempUserChatHistory = { ...userChatHistory };
         senderKeys.forEach((sender) => {
             const newMessagesFromSender = newMessages.messages.filter((message) => message.sender === sender);
-            const existingChatHistory = tempChatHistories.find((cH) => cH.sender === 'sender');
+            const existingChatHistory = tempUserChatHistory.chatHistories.find((cH) => cH.sender === sender);
             if (!existingChatHistory) {
-                tempChatHistories.push({
+                tempUserChatHistory.chatHistories.push({
                     sender: sender,
                     messages: newMessagesFromSender,
                 });
                 return;
             }
+            console.log('HANDLE APPEND MESAGES', newMessages);
             existingChatHistory.messages = [...existingChatHistory.messages, ...newMessagesFromSender];
         });
-        return tempChatHistories;
+        return tempUserChatHistory;
     };
 
     useEffect(() => {
@@ -77,7 +101,9 @@ export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> =
                 },
                 onStatusSuccess: (flowResult) => {
                     const messages = JSON.parse(flowResult) as Messages;
-                    setChatHistories((prev) => handleAppendMessagesToChatHistories(prev, messages));
+                    if (messages.messages.length > 0) {
+                        setUserChatHistory((prev) => handleAppendMessagesToChatHistories(prev, messages));
+                    }
                 },
                 onStatusFailure: (errorText) => {
                     NotificationService.notify(
@@ -89,15 +115,19 @@ export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> =
                 auth: { username, password },
             });
 
-            setTimeout(() => {
-                clearInterval(flowStatusInterval);
-            }, 5000);
+            // setTimeout(() => {
+            //     clearInterval(flowStatusInterval);
+            // }, 5000);
         };
-        fetchMessages();
-        // setInterval(() => {
-        //     fetchMessages();
-        // }, 2000);
+        //fetchMessages();
+        setInterval(() => {
+            fetchMessages();
+        }, 3000);
     }, [holderShortId]);
 
-    return <Provider value={{ chatHistories, getChatHistoryForSender }}>{children}</Provider>;
+    return (
+        <Provider value={{ userChatHistory, addMessageToChatHistoryForSender, getChatHistoryForSender }}>
+            {children}
+        </Provider>
+    );
 };
