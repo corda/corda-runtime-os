@@ -7,12 +7,13 @@ import net.corda.crypto.ecdh.publicKeyOnCurve
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 
 @Component(service = [StableKeyPairDecryptor::class])
-class StableKeyPairDecryptorImpl(
+class StableKeyPairDecryptorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CipherSchemeMetadata::class)

@@ -33,6 +33,7 @@ dependencies {
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
+    testImplementation project(":components:crypto:crypto-ecdh-impl")
 
     testImplementation project(":components:crypto:crypto-db-persistence-model")
     testImplementation project(":libs:layered-property-map")

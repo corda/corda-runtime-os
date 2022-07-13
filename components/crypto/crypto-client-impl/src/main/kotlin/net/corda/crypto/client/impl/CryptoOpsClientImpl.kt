@@ -229,12 +229,10 @@ class CryptoOpsClientImpl(
         data: ByteBuffer,
         context: KeyValuePairList
     ): CryptoSignatureWithKey {
-        logger.info(
-            "Sending '{}'(tenant={},publicKey={}..)",
-            SignRpcCommand::class.java.simpleName,
-            tenantId,
-            publicKey.array().sha256Bytes().toBase58().take(12)
-        )
+        logger.debug {
+            "Sending '${SignRpcCommand::class.java.simpleName}'(tenant=${tenantId}," +
+                    "publicKey=${publicKey.array().sha256Bytes().toBase58().take(12)}..)"
+        }
         val request = createRequest(
             tenantId,
             SignRpcCommand(
@@ -270,6 +268,15 @@ class CryptoOpsClientImpl(
             )
         )
         request.execute(Duration.ofSeconds(20), CryptoNoContentValue::class.java, allowNoContentValue = true)
+    }
+
+    fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray {
+        TODO("Not yet implemented")
     }
 
     fun lookup(

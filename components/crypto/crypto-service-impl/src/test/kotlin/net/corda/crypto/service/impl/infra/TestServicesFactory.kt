@@ -26,6 +26,7 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
@@ -191,9 +192,7 @@ class TestServicesFactory {
             }
         }
 
-    fun createSigningService(
-        effectiveWrappingKeyAlias: String = wrappingKeyAlias
-    ) =
+    fun createSigningService(effectiveWrappingKeyAlias: String = wrappingKeyAlias) =
         SigningServiceImpl(
             store = signingCache,
             cryptoServiceFactory = object : CryptoServiceFactory {
@@ -281,5 +280,8 @@ class TestServicesFactory {
 
         override fun delete(alias: String, context: Map<String, String>): Boolean =
             impl.delete(alias, context)
+
+        override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray =
+            impl.deriveSharedSecret(spec, context)
     }
 }

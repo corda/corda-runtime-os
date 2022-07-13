@@ -2,7 +2,7 @@ package net.corda.crypto.ecdh.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.ecdh.deriveSharedSecret
+import net.corda.crypto.ecdh.deriveDHSharedSecret
 import net.corda.crypto.ecdh.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
@@ -62,12 +62,14 @@ class ProtocolTests {
                         val otherPublicKey: PublicKey = it.getArgument(2)
                         val provider =
                             schemeMetadata.providers.getValue(schemeMetadata.findKeyScheme(otherPublicKey).providerName)
-                        deriveSharedSecret(provider, pair.private, otherPublicKey)
+                        deriveDHSharedSecret(provider, pair.private, otherPublicKey)
                     }
                 }
             ).also { it.start() }
             ephemeralEncryptor = EphemeralKeyPairEncryptorImpl(schemeMetadata)
-            stableDecryptor = StableKeyPairDecryptorImpl(coordinatorFactory, cryptoOpsClient).also { it.start() }
+            stableDecryptor = StableKeyPairDecryptorImpl(coordinatorFactory, schemeMetadata, cryptoOpsClient).also {
+                it.start()
+            }
             eventually {
                 assertEquals(LifecycleStatus.UP, stableDecryptor.lifecycleCoordinator.status)
             }

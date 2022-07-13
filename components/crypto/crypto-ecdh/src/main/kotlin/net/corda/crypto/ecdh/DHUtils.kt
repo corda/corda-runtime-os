@@ -8,7 +8,7 @@ import java.security.Provider
 import java.security.PublicKey
 import javax.crypto.KeyAgreement
 
-fun deriveSharedSecret(provider: Provider, privateKey: PrivateKey, otherPublicKey: PublicKey): ByteArray {
+fun deriveDHSharedSecret(provider: Provider, privateKey: PrivateKey, otherPublicKey: PublicKey): ByteArray {
     require(otherPublicKey.algorithm == privateKey.algorithm) {
         "Keys must use the same algorithm"
     }

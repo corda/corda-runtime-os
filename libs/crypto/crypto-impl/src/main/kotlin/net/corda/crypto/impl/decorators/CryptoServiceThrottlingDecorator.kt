@@ -5,6 +5,7 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
@@ -84,11 +85,7 @@ class CryptoServiceThrottlingDecorator(
             cryptoService.delete(alias, context)
         }
 
-    override fun deriveSharedSecret(
-        publicKey: PublicKey,
-        otherPublicKey: PublicKey,
-        context: Map<String, String>
-    ): ByteArray=
+    override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray =
         executeWithBackingOff {
             cryptoService.deriveSharedSecret(spec, context)
         }

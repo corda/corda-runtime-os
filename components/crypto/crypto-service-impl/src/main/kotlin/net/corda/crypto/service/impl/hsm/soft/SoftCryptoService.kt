@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.ecdh.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
 import net.corda.v5.base.util.contextLogger
@@ -12,6 +13,9 @@ import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
+import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.getParamsSafely
@@ -27,11 +31,9 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
-import net.corda.v5.crypto.publicKeyId
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
-import java.security.PublicKey
 import javax.crypto.Cipher
 
 open class SoftCryptoService(
@@ -101,8 +103,10 @@ open class SoftCryptoService(
         ) {
             if (schemeMetadata.schemes.any { it.codeName == codeName }) {
                 val scheme = schemeMetadata.findKeyScheme(codeName)
-                require(scheme.canDo(KeySchemeCapability.SIGN)) {
-                    "Key scheme '${scheme.codeName}' cannot be used for signing."
+                if(signatures.isNotEmpty()) {
+                    require(scheme.canDo(KeySchemeCapability.SIGN)) {
+                        "Key scheme '${scheme.codeName}' cannot be used for signing."
+                    }
                 }
                 put(scheme, signatures)
             }
@@ -138,26 +142,22 @@ open class SoftCryptoService(
         throw UnsupportedOperationException("The service does not support key deletion.")
 
     override fun deriveSharedSecret(
-        publicKey: PublicKey,
-        otherPublicKey: PublicKey,
+        spec: SharedSecretSpec,
         context: Map<String, String>
     ): ByteArray {
-        val publicKeyScheme = schemeMetadata.findKeyScheme(publicKey)
-        val otherPublicKeyScheme = schemeMetadata.findKeyScheme(otherPublicKey)
-        require(publicKeyScheme.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)) {
-            "The key scheme '${publicKeyScheme.codeName}' must support the Diffie–Hellman key agreement."
+        require(spec is SharedSecretWrappedSpec) {
+            "The service supports only ${SharedSecretWrappedSpec::class.java}"
         }
-        require(publicKeyScheme == otherPublicKeyScheme) {
-            "The keys must use the same key scheme, publicKey=${publicKeyScheme}, oth"
+        val otherPublicKeyScheme = schemeMetadata.findKeyScheme(spec.otherPublicKey)
+        require(spec.keyScheme.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)) {
+            "The key scheme '${spec.keyScheme}' must support the Diffie–Hellman key agreement."
         }
-        logger.info(
-            "deriveSharedSecret(publicKey={}:{}, otherPublicKey={}:{})",
-            publicKey.publicKeyId(),
-            publicKeyScheme.codeName,
-            otherPublicKey.publicKeyId(),
-            otherPublicKeyScheme.codeName
-        )
-        return deriveSharedSecret(provider, fetchPrivateKey(), otherPublicKey)
+        require(spec.keyScheme == otherPublicKeyScheme) {
+            "The keys must use the same key scheme, publicKey=${spec.keyScheme}, otherPublicKey=$otherPublicKeyScheme"
+        }
+        logger.info("deriveSharedSecret(spec={})", spec)
+        val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
+        return deriveDHSharedSecret(provider, getPrivateKey(spec.keyMaterialSpec), spec.otherPublicKey)
     }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
@@ -196,9 +196,6 @@ open class SoftCryptoService(
         require(spec is SigningWrappedSpec) {
             "The service supports only ${SigningWrappedSpec::class.java}"
         }
-        require(!spec.masterKeyAlias.isNullOrBlank()) {
-            "The masterKeyAlias is not specified"
-        }
         require(data.isNotEmpty()) {
             "Signing of an empty array is not permitted."
         }
@@ -208,14 +205,14 @@ open class SoftCryptoService(
         require(spec.keyScheme.canDo(KeySchemeCapability.SIGN)) {
             "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
-        logger.debug {
-            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName}," +
-                    " signature=${spec.signatureSpec})"
-        }
-        return sign(spec, fetchPrivateKey(spec), data)
+        logger.debug { "sign(spec=$spec)" }
+        return sign(spec, getPrivateKey(spec.keyMaterialSpec), data)
     }
 
-    private fun fetchPrivateKey(spec: SigningWrappedSpec): PrivateKey {
+    private fun getPrivateKey(spec: KeyMaterialSpec): PrivateKey {
+        require(!spec.masterKeyAlias.isNullOrBlank()) {
+            "The masterKeyAlias is not specified"
+        }
         val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
             ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
         return wrappingKey.unwrap(spec.keyMaterial)

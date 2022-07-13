@@ -1,9 +1,11 @@
 package net.corda.crypto.ecdh.impl
 
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.ecdh.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -14,14 +16,16 @@ import kotlin.test.assertTrue
 
 class StableKeyPairDecryptorTests {
     private lateinit var coordinatorFactory: TestLifecycleCoordinatorFactoryImpl
+    private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var cryptoOpsClient: TestCryptoOpsClient
     private lateinit var component: StableKeyPairDecryptorImpl
 
     @BeforeEach
     fun setup() {
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+        schemeMetadata = CipherSchemeMetadataImpl()
         cryptoOpsClient = TestCryptoOpsClient(coordinatorFactory, mock()).also { it.start() }
-        component = StableKeyPairDecryptorImpl(coordinatorFactory, cryptoOpsClient)
+        component = StableKeyPairDecryptorImpl(coordinatorFactory, schemeMetadata, cryptoOpsClient)
     }
 
     @Test

@@ -2,10 +2,11 @@ package net.corda.crypto.ecdh.impl
 
 import net.corda.crypto.ecdh.EncryptedDataWithKey
 import net.corda.crypto.ecdh.EphemeralKeyPairEncryptor
-import net.corda.crypto.ecdh.deriveSharedSecret
+import net.corda.crypto.ecdh.deriveDHSharedSecret
 import net.corda.crypto.ecdh.publicKeyOnCurve
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.KeyPair
@@ -14,7 +15,7 @@ import java.security.Provider
 import java.security.PublicKey
 
 @Component(service = [EphemeralKeyPairEncryptor::class])
-class EphemeralKeyPairEncryptorImpl(
+class EphemeralKeyPairEncryptorImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata
 ) : EphemeralKeyPairEncryptor {
@@ -40,7 +41,7 @@ class EphemeralKeyPairEncryptorImpl(
             plainText = plainText,
             aad = aad
         ) {
-            deriveSharedSecret(provider, keyPair.private, otherPublicKey)
+            deriveDHSharedSecret(provider, keyPair.private, otherPublicKey)
         }
         return EncryptedDataWithKey(
             publicKey = keyPair.public,
