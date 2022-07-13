@@ -105,7 +105,7 @@ pipeline {
                     nohup java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS}  >> workerLogs.txt 2>&1 &
                     procno=$!
                     trap "kill -9 ${procno}" EXIT
-                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
+                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:8888/
                 '''
             }
         }
