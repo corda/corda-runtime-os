@@ -9,11 +9,11 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.state.RegistrationState
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
@@ -23,7 +23,7 @@ import net.corda.membership.impl.registration.dummy.TestGroupPolicy
 import net.corda.membership.impl.registration.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -41,7 +41,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -156,7 +156,7 @@ class MemberRegistrationIntegrationTest {
 
             eventually {
                 logger.info("Waiting for required services to start...")
-                Assertions.assertThat(coordinator.isRunning).isTrue
+                assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
             }
         }
@@ -189,9 +189,9 @@ class MemberRegistrationIntegrationTest {
 
         val member = HoldingIdentity(memberName.toString(), groupId)
         val context = buildTestContext(member)
-        val completableResult = CompletableFuture<Pair<RegistrationState?, Record<String, AppMessage>>>()
+        val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message
-        val registrationRequestSubscription = subscriptionFactory.createStateAndEventSubscription(
+        val registrationRequestSubscription = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("membership_p2p_test_receiver", Schemas.P2P.P2P_OUT_TOPIC),
             getTestProcessor { s, e ->
                 completableResult.complete(Pair(s, e))
@@ -212,26 +212,23 @@ class MemberRegistrationIntegrationTest {
         // Assert results
         assertSoftly {
             it.assertThat(result).isNotNull
-            it.assertThat(result?.first).isNull()
-            it.assertThat(result?.second).isNotNull
-            with(result!!.second) {
-                it.assertThat(topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-                it.assertThat(key).isEqualTo(member.id)
-                it.assertThat(value)
-                    .isNotNull
-                    .isInstanceOf(AppMessage::class.java)
-                with(value!!["message"] as UnauthenticatedMessage) {
-                    it.assertThat(this.header.destination.x500Name).isEqualTo(mgmName.toString())
-                    it.assertThat(this.header.destination.groupId).isEqualTo(groupId)
-                    it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
-                    it.assertThat(this.header.source.groupId).isEqualTo(groupId)
-                    val deserializedContext = requestDeserializer.deserialize(payload.array())!!.run {
-                        keyValuePairListDeserializer.deserialize(memberContext.array())!!
-                    }
-                    with(deserializedContext.items) {
-                        it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)
-                        it.assertThat(first { pair -> pair.key == PROTOCOL_KEY }.value).isEqualTo(PROTOCOL_VALUE)
-                    }
+            it.assertThat(result?.first)
+                .isNotNull
+                .isEqualTo(member.id)
+            it.assertThat(result?.second)
+                .isNotNull
+                .isInstanceOf(AppMessage::class.java)
+            with(result!!.second["message"] as UnauthenticatedMessage) {
+                it.assertThat(this.header.destination.x500Name).isEqualTo(mgmName.toString())
+                it.assertThat(this.header.destination.groupId).isEqualTo(groupId)
+                it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
+                it.assertThat(this.header.source.groupId).isEqualTo(groupId)
+                val deserializedContext = requestDeserializer.deserialize(payload.array())!!.run {
+                    keyValuePairListDeserializer.deserialize(memberContext.array())!!
+                }
+                with(deserializedContext.items) {
+                    it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)
+                    it.assertThat(first { pair -> pair.key == PROTOCOL_KEY }.value).isEqualTo(PROTOCOL_VALUE)
                 }
             }
         }
@@ -254,19 +251,17 @@ class MemberRegistrationIntegrationTest {
         )
     }
 
-    private fun getTestProcessor(resultCollector: (RegistrationState?, Record<String, AppMessage>) -> Unit): StateAndEventProcessor<String, RegistrationState, AppMessage> {
-        class TestProcessor : StateAndEventProcessor<String, RegistrationState, AppMessage> {
+    private fun getTestProcessor(resultCollector: (String, AppMessage) -> Unit): PubSubProcessor<String, AppMessage> {
+        class TestProcessor : PubSubProcessor<String, AppMessage> {
             override fun onNext(
-                state: RegistrationState?,
                 event: Record<String, AppMessage>
-            ): StateAndEventProcessor.Response<RegistrationState> {
-                resultCollector(state, event)
-                return StateAndEventProcessor.Response(null, emptyList())
+            ): CompletableFuture<Unit> {
+                resultCollector(event.key, event.value!!)
+                return CompletableFuture.completedFuture(Unit)
             }
 
             override val keyClass = String::class.java
-            override val stateValueClass = RegistrationState::class.java
-            override val eventValueClass = AppMessage::class.java
+            override val valueClass = AppMessage::class.java
         }
         return TestProcessor()
     }
