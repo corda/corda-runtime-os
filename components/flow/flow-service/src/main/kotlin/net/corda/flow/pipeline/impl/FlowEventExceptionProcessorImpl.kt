@@ -123,9 +123,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> {
         log.warn("A non critical error was reported while processing the event.", exception)
-        flowEventContextConverter.convert(exception.getFlowContext())
+        return flowEventContextConverter.convert(exception.getFlowContext())
     }
 
     override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
