@@ -1,14 +1,14 @@
 package net.corda.flow.fiber
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
+import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Instant
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.

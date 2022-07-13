@@ -5,4 +5,4 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 /**
  * Thrown to indicate that there was an exception during a membership persistence operation.
  */
-class MembershipPersistenceException(err: String) : CordaRuntimeException(err)
+open class MembershipPersistenceException(err: String) : CordaRuntimeException(err)

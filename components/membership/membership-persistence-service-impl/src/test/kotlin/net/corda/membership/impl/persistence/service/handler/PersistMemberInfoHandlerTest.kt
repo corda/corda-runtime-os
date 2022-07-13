@@ -72,7 +72,6 @@ class PersistMemberInfoHandlerTest {
         timestamp = clock.instant()
     )
 
-
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction

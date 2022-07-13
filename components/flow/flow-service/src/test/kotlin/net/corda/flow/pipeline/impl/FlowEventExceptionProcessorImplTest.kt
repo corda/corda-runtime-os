@@ -6,7 +6,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -30,7 +30,6 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 
 class FlowEventExceptionProcessorImplTest {
 
@@ -165,5 +164,42 @@ class FlowEventExceptionProcessorImplTest {
         val result = target.process(error)
 
         assertThat(result).isSameAs(converterResponse)
+    }
+
+    @Test
+    fun `failure to create a status message does not prevent transient failure handling from succeeding`() {
+        val error = FlowTransientException("error", context)
+        whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
+        whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(IllegalStateException())
+
+        val result = target.process(error)
+
+        assertThat(result).isSameAs(converterResponse)
+        verify(flowEventContextConverter).convert(argThat {
+            assertThat(this.outputRecords).isEmpty()
+            true
+        }
+        )
+        verify(flowCheckpoint).rollback()
+        verify(flowCheckpoint).markForRetry(context.inputEvent, error)
+    }
+
+    @Test
+    fun `failure to create a status message does not prevent fatal failure handling from succeeding`() {
+        val error = FlowFatalException("error", context)
+
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+            )
+        ).thenThrow(IllegalStateException())
+
+        val result = target.process(error)
+
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).isEmpty()
+        assertThat(result.markForDLQ).isTrue
     }
 }
