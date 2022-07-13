@@ -9,6 +9,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.lang.UnsupportedOperationException
 
@@ -39,6 +40,13 @@ class StreamResourceAccessorTest {
     }
 
     @Test
+    fun `when openStreams with master changelog path and relativeTo does a fetch on the changelog rather than creating a master changelog `() {
+        val result = sra.openStreams("flintstone", "master.xml")
+
+        assertThat(result.size()).isEqualTo(1)
+        verify(dbChange).fetch("master.xml", "flintstone")
+    }
+    @Test
     fun `when openStreams with liquibase schema URL delegate`() {
         sra.openStreams(null, "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
 
@@ -53,6 +61,13 @@ class StreamResourceAccessorTest {
     }
 
     @Test
+    fun `when openStreams with known changelog and relative path then fetch it`() {
+        sra.openStreams("flintstone", "fred.xml")
+
+        verify(dbChange).fetch("fred.xml", "flintstone")
+    }
+
+    @Test
     fun `when openStreams with null streamPath throw`() {
         assertThrows<UnsupportedOperationException> {
             sra.openStreams(null, null)
@@ -60,7 +75,7 @@ class StreamResourceAccessorTest {
     }
 
     @Test
-    fun `when openStreams with non-null relativeTo throw`() {
+    fun `when openStreams with null streamPath and non-null relativeTo throw`() {
         assertThrows<UnsupportedOperationException> {
             sra.openStreams("hello", null)
         }

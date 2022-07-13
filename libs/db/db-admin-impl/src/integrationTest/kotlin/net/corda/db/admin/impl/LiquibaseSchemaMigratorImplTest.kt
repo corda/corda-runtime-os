@@ -1,9 +1,11 @@
 package net.corda.db.admin.impl
 
+import liquibase.exception.ChangeLogParseException
 import net.corda.db.core.InMemoryDataSourceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.io.StringWriter
 
 class LiquibaseSchemaMigratorImplTest {
@@ -26,8 +28,8 @@ class LiquibaseSchemaMigratorImplTest {
     @AfterEach
     fun `clear db`() {
         ds.connection.use {
-            it.prepareStatement("DROP SCHEMA PUBLIC CASCADE").execute()
-            it.prepareStatement("DROP SCHEMA ANOTHER_SCHEMA CASCADE").execute()
+            it.prepareStatement("DROP SCHEMA IF EXISTS PUBLIC CASCADE").execute()
+            it.prepareStatement("DROP SCHEMA IF EXISTS ANOTHER_SCHEMA CASCADE").execute()
         }
     }
 
@@ -110,5 +112,53 @@ class LiquibaseSchemaMigratorImplTest {
                     db.createStatement().execute(it)
                 }
         }
+    }
+
+    @Test
+    fun `update DB with classloader path`() {
+        val lbm = LiquibaseSchemaMigratorImpl()
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-classpath.xml"))
+                )
+            )
+        lbm.updateDb(ds.connection, cl)
+    }
+
+    @Test
+    fun `update DB with unknown classloader path`() {
+        val lbm = LiquibaseSchemaMigratorImpl()
+        val cl = ClassloaderChangeLog(
+                linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-classpath-unknown.xml"))
+                )
+        )
+        val e = assertThrows<ChangeLogParseException> {
+            lbm.updateDb(ds.connection, cl)
+        }
+        assertThat(e).hasMessageContaining("IllegalArgumentException")
+        assertThat(e).hasMessageContaining("mysteryclass")
+    }
+
+    @Test
+    fun `update DB with normalized classloader reference`() {
+        val lbm = LiquibaseSchemaMigratorImpl()
+        val cl = ClassloaderChangeLog(
+                linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-classpath-malformed.xml"))
+                )
+        )
+        lbm.updateDb(ds.connection, cl)
+    }
+
+    @Test
+    fun `update DB with relative path`() {
+        val lbm = LiquibaseSchemaMigratorImpl()
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-relative-indirect.xml"))
+            )
+        )
+        lbm.updateDb(ds.connection, cl)
     }
 }

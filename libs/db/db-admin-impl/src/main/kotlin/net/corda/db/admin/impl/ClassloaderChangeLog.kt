@@ -7,12 +7,25 @@ import java.io.InputStream
 import java.net.URLEncoder
 import java.util.Collections.unmodifiableSet
 
+
+fun normalizePath(path: String) = path.replace("//+".toRegex(), "/")
+
 /**
  * Classloader implementation of [DbChange]
- * This will provide ChangeLog files that are present in the classloader as resource files.
+ * This allows ChangeLog files to be fetched that are present in the classloader as resource files.
+ *
+ * Keeps track and exposes the files that have been fetched, which is used by StreamResourceAccessor to
+ * generate a "master" changelog file.
+ *
+ * As far as Liquibase changelog files are concerned, the absolute path to this changelog will be like:
+ *
+ *   classloader://foo/migration/test/fred.txt
+ *
+ *  Note: if liquibase tries to read the master changelog before fetching all the constituent changelog files then
+ *  any which have not been fetched will not come through.
  *
  * @property list of [ChangeLogResourceFiles] that will be processed in order. Associated classloaders will be de-duped.
- * @constructor Create empty Classloader change log
+ * @constructor Create initially empty Classloader change log
  */
 class ClassloaderChangeLog(
     private val changelogFiles: LinkedHashSet<ChangeLogResourceFiles>,
@@ -63,9 +76,9 @@ class ClassloaderChangeLog(
             return unmodifiableSet(allChangeFiles)
         }
 
-
-    private fun fetchClassLoader(path: String): InputStream? {
-        val splitPath = path.removePrefix(CLASS_LOADER_PREFIX).split('/', limit = 2)
+    private fun fetchFromNominatedClassloader(path: String, relativeTo: String?): InputStream? {
+        if (relativeTo != null) throw java.lang.IllegalArgumentException("Cannot combine classloader which is an absolute path $path and relativeTo path $relativeTo")
+        val splitPath = normalizePath(path).removePrefix(normalizePath(CLASS_LOADER_PREFIX)).split('/', limit = 2)
         if (splitPath.size != 2 || splitPath[1].isEmpty())
             throw IllegalArgumentException("$path is not a valid classloader resource path.")
         val cl = changelogFiles.firstOrNull { URLEncoder.encode(it.name, "utf-8") == splitPath[0] }
@@ -74,50 +87,32 @@ class ClassloaderChangeLog(
         return cl.classLoader.getResourceAsStream(splitPath[1])
     }
 
-    private fun fetchAllClassLoaders(path: String, relativeTo: String?): InputStream? {
-        distinctLoaders.forEach {
-            val resource = it.getResourceAsStream(path)
-            if (null != resource) {
-                allChangeFiles.add(path)
-                return resource
-            }
-            if (relativeTo != null) {
+    // Search across all class loaders for path, perhaps looking relative to a specified file.
+    // If leaf is set then strip out all directory elements from path and just look for the plain filename
+    // in each classloader, which is our last ditch attempt to find something and is only used when
+    // searching for the full path name fails.
+    private fun fetchAllClassLoaders(path: String, relativeTo: String?, leaf: Boolean = false): InputStream? =
+        distinctLoaders.firstNotNullOfOrNull {
+            val pathElem = if (leaf) path.split('/').last() else path
+            val usePath = if (relativeTo != null) {
                 val segments = relativeTo.split('/')
                 val base = segments.subList(0, segments.size - 1).joinToString("/")
-                val r2 = it.getResourceAsStream(base + "/" + path)
-                if (null != r2) {
-                    allChangeFiles.add(path)
-                    return r2
-                }
+                "$base/$pathElem"
+            } else {
+                pathElem
+            }
+            return it.getResourceAsStream(usePath)?.apply {
+                allChangeFiles.add(usePath)
             }
         }
-        return null
-    }
 
-    private fun fetchAllClassLoadersFlat(name: String): InputStream? {
-        val migrationPath = "migration/"+name
-        distinctLoaders.forEach {
-            val resource = it.getResourceAsStream(migrationPath)
-            if (null != resource) {
-                allChangeFiles.add(migrationPath)
-                return resource
-            }
-        }
-        return null
-    }
-
-    override fun fetch(path: String, relativeTo:String?): InputStream {
-        // if classloader is specified
-        if (path.startsWith(CLASS_LOADER_PREFIX)) {
-            val r = fetchClassLoader(path)
-            if (null != r) return r
-        }
-        val r2 =  fetchAllClassLoaders(path, relativeTo)
-        if (r2 != null) return r2
-
-        val r3 = fetchAllClassLoadersFlat(path.split('/').last())
-        if (r3 != null) return r3
-
-        throw FileNotFoundException("$path not found with relative path $relativeTo")
-    }
+    // Lookup a path, possibly relative to another path.
+    // If path begins with CLASS_LOADER_PREFIX look only in a nominated classloader otherwise
+    // search every class loader we know.
+    override fun fetch(path: String, relativeTo:String?): InputStream =
+        (if (normalizePath(path).startsWith(normalizePath(CLASS_LOADER_PREFIX))) {
+            fetchFromNominatedClassloader(path, relativeTo)
+        } else {
+            fetchAllClassLoaders(path, relativeTo)?:fetchAllClassLoaders(path, relativeTo, leaf=true)
+        })?:throw FileNotFoundException("Changelog $path not found with relative path $relativeTo across ${distinctLoaders.size} class loaders")
 }
