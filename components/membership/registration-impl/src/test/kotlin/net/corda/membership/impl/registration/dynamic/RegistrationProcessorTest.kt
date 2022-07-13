@@ -101,7 +101,8 @@ class RegistrationProcessorTest {
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var verificationSerializer: CordaAvroSerializer<VerificationResponse>
+    lateinit var verificationResponseSerializer: CordaAvroSerializer<VerificationResponse>
+    lateinit var verificationRequestSerializer: CordaAvroSerializer<VerificationRequest>
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
@@ -140,12 +141,16 @@ class RegistrationProcessorTest {
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
         }
-        verificationSerializer = mock {
+        verificationResponseSerializer = mock {
             on { serialize(verificationResponse) } doReturn "RESPONSE".toByteArray()
+        }
+        verificationRequestSerializer = mock {
+            on { serialize(verificationRequest) } doReturn "REQUEST".toByteArray()
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-            on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationSerializer
+            on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationResponseSerializer
+            on { createAvroSerializer<VerificationRequest>(any()) } doReturn verificationRequestSerializer
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
@@ -204,4 +209,13 @@ class RegistrationProcessorTest {
         assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
             .isNotNull
     }
+
+    /*@Test
+    fun `verify member command - onNext can be called for command`() {
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, verifyMemberCommand))
+        assertThat(result.updatedState).isNotNull
+        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
+        assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
+            .isNotNull
+    }*/
 }

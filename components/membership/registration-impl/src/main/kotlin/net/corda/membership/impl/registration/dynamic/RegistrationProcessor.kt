@@ -15,6 +15,8 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.mgm.handler.ApproveRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.VerificationResponseHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -66,7 +68,8 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
         ),
 
-        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(cordaAvroSerializationFactory)
+        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(cordaAvroSerializationFactory),
+        VerifyMember::class.java to VerifyMemberHandler(cordaAvroSerializationFactory)
     )
 
     override fun onNext(
@@ -81,8 +84,7 @@ class RegistrationProcessor(
             }
             is VerifyMember -> {
                 logger.info("Received verify member during registration command.")
-                logger.warn("Unimplemented command.")
-                null
+                handlers[VerifyMember::class.java]?.invoke(event)
             }
             is ProcessMemberVerificationResponse -> {
                 logger.info("Received process member verification response during registration command.")

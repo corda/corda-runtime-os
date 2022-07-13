@@ -166,6 +166,12 @@ class StartRegistrationHandlerTest {
             assertThat(outputStates).isNotEmpty.hasSize(1)
 
             assertRegistrationStarted()
+
+            val registrationCommand = this.outputStates.first().value as RegistrationCommand
+            val verifyMemberCommand = registrationCommand.command as VerifyMember
+            assertThat(verifyMemberCommand.destination).isEqualTo(holdingIdentity)
+            assertThat(verifyMemberCommand.source).isEqualTo(mgmHoldingIdentity)
+            assertThat(verifyMemberCommand.registrationId).isEqualTo(registrationId)
         }
         verifyServices(
             persistRegistrationRequest = true,

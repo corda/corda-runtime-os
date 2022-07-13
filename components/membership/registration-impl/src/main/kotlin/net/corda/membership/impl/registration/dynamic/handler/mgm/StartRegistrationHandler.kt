@@ -116,7 +116,7 @@ class StartRegistrationHandler(
                 }
 
                 logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-                VerifyMember()
+                VerifyMember(pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro(), registrationRequest.registrationId)
             } catch (ex: InvalidRegistrationRequestException) {
                 logger.warn("Declined registration.", ex)
                 DeclineRegistration(ex.originalMessage)

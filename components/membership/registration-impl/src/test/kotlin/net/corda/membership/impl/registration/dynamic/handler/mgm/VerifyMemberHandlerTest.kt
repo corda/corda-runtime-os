@@ -1,13 +1,10 @@
-package net.corda.membership.impl.registration.dynamic.handler.member
+package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.VerificationRequest
-import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
@@ -21,7 +18,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
-class VerificationRequestHandlerTest {
+class VerifyMemberHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
@@ -29,44 +26,36 @@ class VerificationRequestHandlerTest {
 
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
-    private val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
-    private val verificationRequest = VerificationRequest(
-        REGISTRATION_ID,
-        requestBody
+    private val command = VerifyMember(
+        member,
+        mgm,
+        REGISTRATION_ID
     )
 
-    private val response: KArgumentCaptor<VerificationResponse> = argumentCaptor()
-    private val responseSerializer: CordaAvroSerializer<VerificationResponse> = mock {
-        on { serialize(response.capture()) } doReturn "RESPONSE".toByteArray()
+    private val request: KArgumentCaptor<VerificationRequest> = argumentCaptor()
+    private val requestSerializer: CordaAvroSerializer<VerificationRequest> = mock {
+        on { serialize(request.capture()) } doReturn "REQUEST".toByteArray()
     }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<VerificationResponse>(any()) } doReturn responseSerializer
+        on { createAvroSerializer<VerificationRequest>(any()) } doReturn requestSerializer
     }
 
-    private val verificationRequestHandler = VerificationRequestHandler(cordaAvroSerializationFactory)
+    private val verifyMemberHandler = VerifyMemberHandler(cordaAvroSerializationFactory)
 
     @Test
-    fun `handler returns response message`() {
-        val result = verificationRequestHandler.invoke(
-            Record(
-                "dummyTopic",
-                member.toString(),
-                RegistrationCommand(
-                    ProcessMemberVerificationRequest(member, mgm, verificationRequest)
-                )
-            )
-        )
+    fun `handler returns request message`() {
+        val result = verifyMemberHandler.invoke(Record("dummyTopic", mgm.toString(), RegistrationCommand(command)))
         assertThat(result.outputStates).hasSize(1)
         val appMessage = result.outputStates.first().value as AppMessage
         with(appMessage.message as AuthenticatedMessage) {
-            assertThat(this.header.source).isEqualTo(member)
-            assertThat(this.header.destination).isEqualTo(mgm)
+            assertThat(this.header.source).isEqualTo(mgm)
+            assertThat(this.header.destination).isEqualTo(member)
             assertThat(this.header.ttl).isNotNull
             assertThat(this.header.messageId).isNotNull
             assertThat(this.header.traceId).isNull()
             assertThat(this.header.subsystem).isEqualTo("membership")
         }
-        with(response.firstValue) {
+        with(request.firstValue) {
             assertThat(this.registrationId).isEqualTo(REGISTRATION_ID)
         }
     }
