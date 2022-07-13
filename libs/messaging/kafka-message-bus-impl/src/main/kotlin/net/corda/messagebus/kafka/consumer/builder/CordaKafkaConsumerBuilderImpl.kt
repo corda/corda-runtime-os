@@ -8,13 +8,12 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
+import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.common.KafkaException
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -45,14 +44,16 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
     ): CordaConsumer<K, V> {
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = resolver.resolve(messageBusConfig, consumerConfig)
-        return try {
-            val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
-            CordaKafkaConsumerImpl(resolvedConfig, consumer, listener)
-        } catch (ex: KafkaException) {
-            val message = "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}"
-            log.error(message, ex)
-            throw CordaMessageAPIFatalException(message, ex)
-        }
+
+        return executeKafkaActionWithRetry(
+            action = {
+                val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
+                CordaKafkaConsumerImpl(resolvedConfig, consumer, listener)
+            },
+            errorMessage = { "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}, " +
+                    "with configuration: $messageBusConfig" },
+            log = log
+        )
     }
 
     private fun <K : Any, V : Any> createKafkaConsumer(
