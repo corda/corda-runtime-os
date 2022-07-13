@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.converters
 
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.converters.impl.FlowEventContextConverterImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext

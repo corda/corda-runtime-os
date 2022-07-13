@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.waiting
 
-import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 
@@ -14,12 +13,12 @@ interface FlowWaitingForHandler<T> {
     /**
      * Determines whether a flow should run (includes starting a new fiber or resuming an existing fiber).
      *
-     * State within the [FlowEventContext], such as a flow's [Checkpoint] can be directly modified inside this method.
+     * State within the [FlowEventContext], such as a flow's checkpoint can be directly modified inside this method.
      *
      * The following should be returned:
      *
      * - [FlowContinuation.Run] - A new fiber should be started or an existing fiber should be resumed. When resumed
-     * [FlowContinuation.Run.value] is passed to the [FlowFiber].
+     * [FlowContinuation.Run.value] is passed to the fiber.
      * - [FlowContinuation.Error] - An existing fiber should be resumed and be passed [FlowContinuation.Error.exception].
      * - [FlowContinuation.Continue] - The flow should not be started or resumed.
      *

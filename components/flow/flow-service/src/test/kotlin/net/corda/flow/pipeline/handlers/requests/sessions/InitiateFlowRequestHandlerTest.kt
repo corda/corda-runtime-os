@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
