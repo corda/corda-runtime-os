@@ -30,7 +30,7 @@ import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.toWire
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -214,7 +214,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
                 val messageHeader = UnauthenticatedMessageHeader(
-                    net.corda.data.identity.HoldingIdentity(mgm.name.toString(), mgm.groupId),
+                    mgm.holdingIdentity.toAvro(),
                     member.toAvro(),
                     MEMBERSHIP_P2P_SUBSYSTEM
                 )
