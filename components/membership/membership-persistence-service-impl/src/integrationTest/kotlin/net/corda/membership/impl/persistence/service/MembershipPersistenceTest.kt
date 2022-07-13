@@ -70,7 +70,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -177,7 +176,7 @@ class MembershipPersistenceTest {
 
             override fun persistGroupPolicy(
                 viewOwningIdentity: HoldingIdentity,
-                groupPolicy: GroupPolicyProperties,
+                groupPolicy: LayeredPropertyMap,
             ) = safeCall {
                 membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
             }
@@ -377,12 +376,12 @@ class MembershipPersistenceTest {
     }
     @Test
     fun `persistGroupPolicy will increase the version every persistance`() {
-        val groupPolicy1 = object : LayeredPropertyMap by layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB")), GroupPolicyProperties {}
+        val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
         val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1)
         assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val version1 = (persisted1 as? MembershipPersistenceResult.Success<Int>)?.payload !!
 
-        val groupPolicy2 = object : LayeredPropertyMap by layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1")), GroupPolicyProperties {}
+        val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
         val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2)
         assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val version2 = (persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload

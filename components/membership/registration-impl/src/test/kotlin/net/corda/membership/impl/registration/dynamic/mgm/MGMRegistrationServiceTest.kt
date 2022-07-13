@@ -35,9 +35,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -246,7 +246,7 @@ class MGMRegistrationServiceTest {
     fun `registration persist the group properties`() {
         postConfigChangedEvent()
         registrationService.start()
-        val groupProperties = argumentCaptor<GroupPolicyProperties>()
+        val groupProperties = argumentCaptor<LayeredPropertyMap>()
         whenever(
             membershipPersistenceClient
                 .persistGroupPolicy(

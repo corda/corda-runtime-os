@@ -5,11 +5,11 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
-import net.corda.data.membership.db.request.command.PersistGroupPolicyRequest
+import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
-import net.corda.data.membership.db.response.query.PersistGroupPolicyResponse
+import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -23,8 +23,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -99,13 +99,13 @@ class MembershipPersistenceClientImpl(
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
-        groupPolicy: GroupPolicyProperties,
+        groupPolicy: LayeredPropertyMap,
     ): MembershipPersistenceResult<Int> {
         logger.info("Persisting group policy.")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
-            PersistGroupPolicyRequest(groupPolicy.toAvro())
+            PersistGroupPolicy(groupPolicy.toAvro())
         ).execute()
         return when (val response = result.payload) {
             is PersistGroupPolicyResponse -> MembershipPersistenceResult.Success(response.version)

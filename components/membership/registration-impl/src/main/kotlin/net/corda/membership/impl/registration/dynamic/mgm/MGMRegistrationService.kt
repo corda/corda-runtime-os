@@ -44,10 +44,8 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -222,10 +220,7 @@ class MGMRegistrationService @Activate constructor(
                 }.mapKeys {
                     it.key.removePrefix(GROUP_POLICY_PREFIX_WITH_DOT)
                 }
-                val groupPolicy = object :
-                    GroupPolicyProperties,
-                    LayeredPropertyMap by
-                    layeredPropertyMapFactory.createMap(groupPolicyMap){}
+                val groupPolicy = layeredPropertyMapFactory.createMap(groupPolicyMap)
                 val groupPolicyPersistenceResult = membershipPersistenceClient.persistGroupPolicy(
                     member,
                     groupPolicy,

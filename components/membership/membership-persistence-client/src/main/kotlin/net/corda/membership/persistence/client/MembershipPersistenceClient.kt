@@ -2,7 +2,7 @@ package net.corda.membership.persistence.client
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.v5.membership.GroupPolicyProperties
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
@@ -37,7 +37,7 @@ interface MembershipPersistenceClient : Lifecycle {
      */
     fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
-        groupPolicy: GroupPolicyProperties,
+        groupPolicy: LayeredPropertyMap,
     ): MembershipPersistenceResult<Int>
 
     /**

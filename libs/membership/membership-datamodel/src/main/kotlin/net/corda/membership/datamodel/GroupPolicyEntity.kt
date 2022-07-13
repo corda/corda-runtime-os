@@ -21,11 +21,11 @@ import javax.persistence.Table
 class GroupPolicyEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "schema_version", nullable = false, updatable = false)
+    @Column(name = "version", nullable = false, updatable = false)
     var version: Int? = null,
 
-    @Column(name = "effective_from", nullable = false, updatable = false)
-    val effectiveFrom: Instant,
+    @Column(name = "created_at", nullable = false, updatable = false)
+    val createdAt: Instant,
 
     @Column(name = "properties", nullable = false, updatable = false)
     val properties: ByteArray,
@@ -35,10 +35,10 @@ class GroupPolicyEntity(
         if (other === this) return true
         if (other == null) return false
         if (other !is GroupPolicyEntity) return false
-        return other.effectiveFrom == this.effectiveFrom && Arrays.equals(other.properties, this.properties)
+        return other.createdAt == this.createdAt && Arrays.equals(other.properties, this.properties)
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(effectiveFrom, ByteBuffer.wrap(properties))
+        return Objects.hash(createdAt, ByteBuffer.wrap(properties))
     }
 }

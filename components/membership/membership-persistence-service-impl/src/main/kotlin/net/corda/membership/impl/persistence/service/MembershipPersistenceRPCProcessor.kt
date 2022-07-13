@@ -3,7 +3,7 @@ package net.corda.membership.impl.persistence.service
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.command.PersistGroupPolicyRequest
+import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -56,7 +56,7 @@ internal class MembershipPersistenceRPCProcessor(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
         PersistMemberInfo::class.java to { PersistMemberInfoHandler(persistenceHandlerServices) },
         QueryMemberInfo::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
-        PersistGroupPolicyRequest::class.java to { PersistGroupPolicyHandler(persistenceHandlerServices) },
+        PersistGroupPolicy::class.java to { PersistGroupPolicyHandler(persistenceHandlerServices) },
         QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
         UpdateMemberAndRegistrationRequestToApproved::class.java to
             { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },

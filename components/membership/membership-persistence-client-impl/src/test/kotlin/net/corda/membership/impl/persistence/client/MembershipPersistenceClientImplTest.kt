@@ -7,13 +7,13 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
-import net.corda.data.membership.db.request.command.PersistGroupPolicyRequest
+import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
-import net.corda.data.membership.db.response.query.PersistGroupPolicyResponse
+import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.libs.configuration.SmartConfigFactory
@@ -35,8 +35,8 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.GroupPolicyProperties
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -406,7 +406,7 @@ class MembershipPersistenceClientImplTest {
 
     @Test
     fun `persistGroupPolicy return the correct version`() {
-        val groupPolicy = mock<GroupPolicyProperties>()
+        val groupPolicy = mock<LayeredPropertyMap>()
         postConfigChangedEvent()
         mockPersistenceResponse(
             PersistGroupPolicyResponse(103),
@@ -419,7 +419,7 @@ class MembershipPersistenceClientImplTest {
 
     @Test
     fun `persistGroupPolicy returns error in case of failure`() {
-        val groupPolicy = mock<GroupPolicyProperties>()
+        val groupPolicy = mock<LayeredPropertyMap>()
         postConfigChangedEvent()
         mockPersistenceResponse(
             PersistenceFailedResponse("Placeholder error"),
@@ -432,7 +432,7 @@ class MembershipPersistenceClientImplTest {
 
     @Test
     fun `persistGroupPolicy return failure for unexpected result`() {
-        val groupPolicy = mock<GroupPolicyProperties>()
+        val groupPolicy = mock<LayeredPropertyMap>()
         postConfigChangedEvent()
         mockPersistenceResponse(
             null,
@@ -445,7 +445,7 @@ class MembershipPersistenceClientImplTest {
     @Test
     fun `persistGroupPolicy send the correct data`() {
         val groupPolicyEntries = mapOf("a" to "b").entries
-        val groupPolicy = mock<GroupPolicyProperties> {
+        val groupPolicy = mock<LayeredPropertyMap> {
             on { entries } doReturn groupPolicyEntries
         }
         postConfigChangedEvent()
@@ -455,7 +455,7 @@ class MembershipPersistenceClientImplTest {
 
         membershipPersistenceClient.persistGroupPolicy(ourHoldingIdentity, groupPolicy)
 
-        val properties = (argument.firstValue.request as? PersistGroupPolicyRequest)?.properties?.items
+        val properties = (argument.firstValue.request as? PersistGroupPolicy)?.properties?.items
         assertThat(properties).containsExactly(
             KeyValuePair("a", "b")
         )
