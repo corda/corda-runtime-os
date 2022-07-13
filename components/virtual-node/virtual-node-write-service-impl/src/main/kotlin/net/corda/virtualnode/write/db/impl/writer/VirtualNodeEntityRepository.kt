@@ -11,8 +11,12 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+
+class VirtualNodeNotFoundException(holdingIdShortHash: String) :
+    Exception("Could not find a virtual node with Id of $holdingIdShortHash")
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(private val entityManagerFactory: EntityManagerFactory) {
@@ -37,7 +41,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val cpiMetadataEntity = entityManagerFactory.transaction {
             val foundCpi = it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
-                        "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
+                    "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
                 CpiMetadataEntity::class.java
             )
                 .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
@@ -127,12 +131,44 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val virtualNodeEntityKey = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
         val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey)
         if (foundVNode == null) {
-            entityManager.persist(VirtualNodeEntity(hie, cpiId.name, cpiId.version, signerSummaryHash))
+            entityManager.persist(
+                VirtualNodeEntity(
+                    hie,
+                    cpiId.name,
+                    cpiId.version,
+                    signerSummaryHash,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                )
+            )
         } else {
             log.debug { "vNode for key already exists: $virtualNodeEntityKey" }
         }
     }
 
+    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdShortHash: String, newState: String) {
+        entityManager.transaction {
+            val latestVirtualNodeInstance = it.createQuery(
+                "SELECT vnode_instance FROM VirtualNodeEntity vnode_instance " +
+                    "WHERE vnode_instance.holdingIdentity.holdingIdentityId LIKE :shortVNodeId " +
+                    "ORDER BY vnode_instance.entityVersion DESC ",
+                VirtualNodeEntity::class.java
+            )
+                .setParameter("shortVNodeId", "$holdingIdShortHash%")
+                .setMaxResults(1)
+                .resultList.singleOrNull() ?: throw VirtualNodeNotFoundException(holdingIdShortHash)
+            val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
+                update(
+                    latestVirtualNodeInstance.copy(
+                        virtualNodeState = newState,
+                        entityVersion = latestVirtualNodeInstance.entityVersion + 1
+                    )
+                )
+            }
+            it.merge(updatedVirtualNodeInstance)
+            it.persist(updatedVirtualNodeInstance)
+            it.flush()
+        }
+    }
 
     fun HoldingIdentity.toEntity(connections: VirtualNodeDbConnections?) = HoldingIdentityEntity(
         this.shortHash,

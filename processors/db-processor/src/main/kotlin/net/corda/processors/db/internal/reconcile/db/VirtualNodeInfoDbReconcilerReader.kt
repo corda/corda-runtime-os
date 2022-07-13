@@ -46,7 +46,8 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
                     vaultDdlConnectionId = entity.holdingIdentity.vaultDDLConnectionId,
                     cryptoDdlConnectionId = entity.holdingIdentity.cryptoDDLConnectionId,
                     version = entity.entityVersion,
-                    timestamp = entity.insertTimestamp.getOrNow()
+                    timestamp = entity.insertTimestamp.getOrNow(),
+                    state = entity.virtualNodeState,
                 )
             }
         }

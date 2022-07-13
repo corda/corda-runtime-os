@@ -5,6 +5,8 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
+import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -15,6 +17,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.HTTPVirtualNodeStateChangeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -33,7 +36,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
-
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
@@ -94,7 +96,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             VirtualNodeManagementRequest(
                 instant,
                 VirtualNodeCreateRequest(
-                    x500Name, cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor
+                    x500Name,cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor
                 )
             )
         }
@@ -112,7 +114,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     resolvedResponse.vaultDdlConnectionId,
                     resolvedResponse.vaultDmlConnectionId,
                     resolvedResponse.cryptoDdlConnectionId,
-                    resolvedResponse.cryptoDmlConnectionId
+                    resolvedResponse.cryptoDmlConnectionId,
+                    resolvedResponse.virtualNodeState
                 )
             }
             is VirtualNodeManagementResponseFailure -> {
@@ -130,6 +133,46 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
 
     override fun getAllVirtualNodes(): GetVirtualNodesResponse {
         return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll())
+    }
+
+    override fun updateVirtualNodeState(
+        virtualNodeShortId: String,
+        newState: String
+    ): HTTPVirtualNodeStateChangeResponse {
+        logger.info(virtualNodeShortId)
+        val instant = clock.instant()
+        // Validate newState
+
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val rpcRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeStateChangeRequest(
+                virtualNodeShortId,
+                newState,
+                actor
+            )
+        )
+        val resp = sendRequest(rpcRequest)
+        logger.info(resp.responseType.toString())
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeStateChangeResponse -> {
+                HTTPVirtualNodeStateChangeResponse(
+                    resolvedResponse.holdingIdentityShortHash,
+                    resolvedResponse.virtualNodeState
+                )
+            }
+            is VirtualNodeManagementResponseFailure -> {
+                val exception = resolvedResponse.exception
+                if (exception == null) {
+                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
+                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
+                }
+                logger.warn("Remote request to update virtual node responded with exception of type ${exception.errorType}: ${exception.errorMessage}")
+                throw InternalServerException(exception.errorMessage)
+            }
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
     }
 
     /** Validates the [x500Name]. */

@@ -7,6 +7,8 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
+import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
@@ -110,7 +112,7 @@ internal class VirtualNodeWriterProcessor(
             runDbMigrations(holdingId, vNodeDbs.values)
 
             val vaultDb = vNodeDbs[VAULT]
-            if ( null == vaultDb) {
+            if (null == vaultDb) {
                 handleException(respFuture, VirtualNodeWriteServiceException("Vault DB not configured"))
                 return
             } else {
@@ -129,6 +131,43 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
+    private fun changeVirtualNodeState(
+        instant: Instant,
+        stateChangeRequest: VirtualNodeStateChangeRequest,
+        respFuture: CompletableFuture<VirtualNodeManagementResponse>
+    ) {
+        val entityManager = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+
+        try {
+            virtualNodeEntityRepository.setVirtualNodeState(
+                entityManager,
+                stateChangeRequest.holdingIdentityShortHash,
+                stateChangeRequest.newState
+            )
+
+            val response = VirtualNodeManagementResponse(
+                instant,
+                VirtualNodeStateChangeResponse(
+                    stateChangeRequest.holdingIdentityShortHash,
+                    stateChangeRequest.newState
+                )
+            )
+            respFuture.complete(response)
+        } catch (e: Exception) {
+            respFuture.complete(
+                VirtualNodeManagementResponse(
+                    instant,
+                    VirtualNodeManagementResponseFailure(
+                        ExceptionEnvelope(
+                            e::class.java.name,
+                            e.message
+                        )
+                    )
+                )
+            )
+        }
+    }
+
     /**
      * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
      * the created virtual node is then published by the [vnodePublisher] to the `VIRTUAL_NODE_INFO_TOPIC` topic.
@@ -141,6 +180,7 @@ internal class VirtualNodeWriterProcessor(
     ) {
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -287,7 +327,8 @@ internal class VirtualNodeWriterProcessor(
                 vaultDmlConnectionId,
                 cryptoDdlConnectionId,
                 cryptoDmlConnectionId,
-                timestamp = clock.instant()
+                timestamp = clock.instant(),
+                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             )
                 .toAvro()
         }
@@ -356,7 +397,8 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.vaultDmlConnectionId.toString(),
                 dbConnections.cryptoDdlConnectionId?.toString(),
                 dbConnections.cryptoDmlConnectionId.toString(),
-                null
+                null,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE
             )
         )
         respFuture.complete(response)

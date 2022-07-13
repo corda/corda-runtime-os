@@ -28,11 +28,17 @@ data class VirtualNodeInfo(
     val cryptoDmlConnectionId: UUID,
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
+    /** Current state of the virtual node instance */
+    val state: String,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
     val timestamp: Instant,
-)
+) {
+    companion object {
+        const val DEFAULT_INITIAL_STATE = "ACTIVE"
+    }
+}
 
 
 typealias VirtualNodeInfoAvro = net.corda.data.virtualnode.VirtualNodeInfo
@@ -47,6 +53,7 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
             cryptoDmlConnectionId.toString(),
             hsmConnectionId?.let { hsmConnectionId.toString() },
+            state,
             version,
             timestamp
         )
@@ -62,6 +69,7 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
         UUID.fromString(cryptoDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
+        virtualNodeState,
         version,
         timestamp
     )

@@ -46,6 +46,9 @@ data class VirtualNodeEntity(
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
 
+    @Column(name = "state", nullable = false)
+    var virtualNodeState: String,
+
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null,
 
@@ -76,6 +79,11 @@ data class VirtualNodeEntity(
         result = 31 * result + cpiVersion.hashCode()
         result = 31 * result + cpiSignerSummaryHash.hashCode()
         return result
+    }
+
+    fun update(virtualNodeEntity: VirtualNodeEntity) {
+        virtualNodeState = virtualNodeEntity.virtualNodeState
+        entityVersion = virtualNodeEntity.entityVersion
     }
 }
 
