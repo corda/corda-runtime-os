@@ -15,8 +15,8 @@ import java.time.Instant
 class MemberInfoExtension {
     companion object {
         /** Key name for ledger keys property. */
-        const val LEDGER_KEYS = "corda.ledgerKeys"
-        const val LEDGER_KEYS_KEY = "corda.ledgerKeys.%s"
+        const val LEDGER_KEYS = "corda.ledger.keys"
+        const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s"
 
         /** Key name for ledger key hashes property. */
         const val LEDGER_KEY_HASHES = "corda.ledgerKeyHashes"
