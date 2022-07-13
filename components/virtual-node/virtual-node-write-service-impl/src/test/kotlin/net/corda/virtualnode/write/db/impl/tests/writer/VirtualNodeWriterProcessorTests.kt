@@ -17,6 +17,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -234,7 +235,9 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `runs empty CPI DB Migrations`() {
-        val changeLog = mock<CpkDbChangeLogEntity>()
+        val changeLog = mock<CpkDbChangeLogEntity> {
+            on { id } doReturn CpkDbChangeLogKey("alpha", "1", "0", "stuff.xml")
+        }
         Mockito.mockConstruction(VirtualNodeDbChangeLog::class.java).use { vndcl ->
             Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
                 val processor = VirtualNodeWriterProcessor(

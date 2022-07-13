@@ -66,10 +66,7 @@ class VirtualNodeDbChangeLogImplementationTest  {
         }
     }
     @Test
-    fun `Liquibase migration with included absolute filename`() = doMigration("<include file=\"myCoolCpk/migration/dogs-migration-v1.0.xml\" />")
-
-    @Test
-    fun `Liquibase migration with included relative filename`() = doMigration("<include file=\"dogs-migration-v1.0.xml\" relativeToChangelogFile=\"true\"/>")
+    fun `Liquibase migration with included absolute filename`() = doMigration("<include file=\"migration/dogs-migration-v1.0.xml\" />")
 
     @Test
     fun `Liquibase migration with include dot slash fails`() = doMigration("<include file=\"./dogs-migration-v1.0.xml\" />", "Cannot find changelog file")
