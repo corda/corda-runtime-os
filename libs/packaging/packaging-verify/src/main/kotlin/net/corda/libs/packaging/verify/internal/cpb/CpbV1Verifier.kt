@@ -19,7 +19,7 @@ import java.util.jar.Manifest
 /**
  * Verifies CPB format 1.0
  */
-internal class CpbV1Verifier(private val packageType: String, jarReader: JarReader): CpbVerifier {
+class CpbV1Verifier internal constructor(private val packageType: String, jarReader: JarReader): CpbVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
     private val cpkVerifiers: List<CpkV1Verifier>

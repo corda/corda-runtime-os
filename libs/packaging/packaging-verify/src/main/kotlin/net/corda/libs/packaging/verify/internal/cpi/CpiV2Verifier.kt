@@ -17,7 +17,7 @@ import java.util.jar.Manifest
 /**
  * Verifies CPI format 2.0
  */
-internal class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
+class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
     private val cpbVerifier: CpbV2Verifier

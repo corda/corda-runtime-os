@@ -16,7 +16,7 @@ import net.corda.libs.packaging.verify.internal.requireAttribute
 /**
  * Verifies Main Bundle from CPK format 1.0
  */
-internal class CpkV1MainBundle(jarReader: JarReader) {
+class CpkV1MainBundle(jarReader: JarReader) {
     private val name = jarReader.jarName
     internal val manifest = jarReader.manifest
     private val codeSigners = jarReader.codeSigners

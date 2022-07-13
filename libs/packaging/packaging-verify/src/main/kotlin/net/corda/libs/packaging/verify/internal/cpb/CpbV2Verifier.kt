@@ -17,7 +17,7 @@ import java.util.jar.Manifest
 /**
  * Verifies CPB format 2.0
  */
-internal class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
+class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
     private val cpkVerifiers: List<CpkV2Verifier>

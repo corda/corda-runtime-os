@@ -16,7 +16,7 @@ import java.util.jar.JarEntry
 /**
  * Verifies CPK format 1.0
  */
-internal class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
+class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
     val name = jarReader.jarName
     private val manifest = jarReader.manifest
     val codeSigners = jarReader.codeSigners

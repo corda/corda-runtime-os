@@ -12,7 +12,7 @@ import java.util.jar.Manifest
  * Stores JAR in memory, validates it and allows access to [Manifest] and [Entry]s.
  * Validation checks that JAR was not tampered and that signatures lead to [trustedCerts].
  */
-internal class JarReader private constructor(val jarName: String, jarBytes: ByteArray, val trustedCerts: Collection<X509Certificate>) {
+class JarReader(val jarName: String, jarBytes: ByteArray, val trustedCerts: Collection<X509Certificate>) {
     val manifest: Manifest
     val entries: List<Entry>
     val codeSigners: List<CodeSigner>

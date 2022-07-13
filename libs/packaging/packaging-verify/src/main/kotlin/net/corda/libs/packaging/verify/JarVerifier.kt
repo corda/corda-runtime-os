@@ -25,7 +25,7 @@ import java.util.jar.Manifest
  * @param inputStream Input stream for reading JAR
  * @param trustedCerts Trusted certificates
  */
-internal class JarVerifier(
+class JarVerifier(
     val jarName: String,
     private val inputStream: InputStream,
     private val trustedCerts: Collection<X509Certificate>

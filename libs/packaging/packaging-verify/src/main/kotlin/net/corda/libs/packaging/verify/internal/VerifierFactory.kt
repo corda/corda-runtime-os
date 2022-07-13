@@ -39,7 +39,7 @@ object VerifierFactory {
     }
 
     /** Creates CPK verifier for specified format */
-    private fun createCpkVerifier(format: String?, jarReader: JarReader): CpkVerifier {
+    fun createCpkVerifier(format: String?, jarReader: JarReader): CpkVerifier {
         return when (format) {
             FORMAT_1 -> CpkV1Verifier(jarReader)
             FORMAT_2 -> CpkV2Verifier(jarReader)
@@ -63,7 +63,7 @@ object VerifierFactory {
     }
 
     /** Creates CPB verifier for specified format */
-    private fun createCpbVerifier(format: String?, jarReader: JarReader): CpbVerifier {
+    fun createCpbVerifier(format: String?, jarReader: JarReader): CpbVerifier {
         return when (format) {
             null, FORMAT_1 -> CpbV1Verifier(jarReader)
             FORMAT_2 -> CpbV2Verifier(jarReader)
@@ -86,7 +86,7 @@ object VerifierFactory {
     }
 
     /** Creates CPI verifier for specified format */
-    private fun createCpiVerifier(format: String?, jarReader: JarReader): CpiVerifier {
+    fun createCpiVerifier(format: String?, jarReader: JarReader): CpiVerifier {
         return when (format) {
             null, FORMAT_1 -> CpiV1Verifier(jarReader)
             FORMAT_2 -> CpiV2Verifier(jarReader)

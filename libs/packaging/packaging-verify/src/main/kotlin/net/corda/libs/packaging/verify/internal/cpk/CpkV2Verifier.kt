@@ -13,7 +13,7 @@ import net.corda.libs.packaging.verify.internal.requireAttributeValueIn
 /**
  * Verifies CPK format 2.0
  */
-internal class CpkV2Verifier(jarReader: JarReader): CpkVerifier {
+class CpkV2Verifier(jarReader: JarReader): CpkVerifier {
     val name = jarReader.jarName
     private val manifest = jarReader.manifest
     val codeSigners = jarReader.codeSigners
