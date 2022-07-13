@@ -189,16 +189,23 @@ class MGMRegistrationService @Activate constructor(
                 val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.id)
                 val now = clock.instant().toString()
                 val mgmInfo = memberInfoFactory.create(
-                    memberContext = (context.filter { !keyIdList.contains(it.key) } + mapOf(
-                        GROUP_ID to member.groupId,
-                        PARTY_NAME to member.x500Name,
-                        PARTY_SESSION_KEY to sessionKey,
-                        ECDH_KEY to ecdhKey,
-                        // temporarily hardcoded
-                        PLATFORM_VERSION to PLATFORM_VERSION_CONST,
-                        SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
-                        SERIAL to SERIAL_CONST,
-                    )).toSortedMap(),
+                    memberContext = (
+                        context.filterKeys {
+                            !keyIdList.contains(it)
+                        }.filterKeys {
+                            !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
+                        } +
+                            mapOf(
+                                GROUP_ID to member.groupId,
+                                PARTY_NAME to member.x500Name,
+                                PARTY_SESSION_KEY to sessionKey,
+                                ECDH_KEY to ecdhKey,
+                                // temporarily hardcoded
+                                PLATFORM_VERSION to PLATFORM_VERSION_CONST,
+                                SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                                SERIAL to SERIAL_CONST,
+                            )
+                        ).toSortedMap(),
                     mgmContext = sortedMapOf(
                         CREATED_TIME to now,
                         MODIFIED_TIME to now,
@@ -295,7 +302,6 @@ class MGMRegistrationService @Activate constructor(
                     true
                 }
 
-
         private fun getPemKeyFromId(keyId: String, tenantId: String): String {
             return with(cryptoOpsClient) {
                 lookup(tenantId, listOf(keyId)).firstOrNull()?.let {
@@ -308,7 +314,7 @@ class MGMRegistrationService @Activate constructor(
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event $event.")
-        when(event) {
+        when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
