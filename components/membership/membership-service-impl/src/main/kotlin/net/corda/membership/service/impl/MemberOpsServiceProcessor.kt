@@ -6,7 +6,6 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
-import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.toMap
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 
 class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,

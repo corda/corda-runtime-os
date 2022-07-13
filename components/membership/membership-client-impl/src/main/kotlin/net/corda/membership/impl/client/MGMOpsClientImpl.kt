@@ -19,7 +19,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.dto.MGMGenerateGroupPolicyResponseDto
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
-import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
