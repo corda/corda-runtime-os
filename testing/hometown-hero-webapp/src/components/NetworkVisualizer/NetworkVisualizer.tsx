@@ -19,6 +19,7 @@ const NetworkVisualizer = () => {
 
     const [network, setNetwork] = useState<any | undefined>(undefined);
     const [graphData, setGraphData] = useState<any>(GRAPH_INITIAL_STATE);
+    const [isEnlarged, setIsEnlarged] = useState<boolean>(false);
 
     const cleanUpOldMessages = useCallback(() => {
         const filterOldMessages = (graphData: any) => {
@@ -143,11 +144,20 @@ const NetworkVisualizer = () => {
                 >
                     Add New Node
                 </Button> */}
+                <Button
+                    size={'small'}
+                    variant={'primary'}
+                    onClick={() => {
+                        setIsEnlarged((prev) => !prev);
+                    }}
+                >
+                    {isEnlarged ? 'Smaller' : 'Bigger'}
+                </Button>
                 <Button size={'small'} variant={'primary'} onClick={groupNodes}>
                     Group Nodes
                 </Button>
             </div>
-            <div className={`${style.networkVizWrapper} shadow-xl`}>
+            <div className={`${style.networkVizWrapper} ${isEnlarged ? style.enlarged : ''} shadow-xl`}>
                 <Graph
                     graph={{ nodes: graphData.nodes, edges: graphData.edges }}
                     options={GRAPH_OPTIONS}
