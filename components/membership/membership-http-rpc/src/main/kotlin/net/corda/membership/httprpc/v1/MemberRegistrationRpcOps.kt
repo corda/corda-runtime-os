@@ -22,13 +22,17 @@ interface MemberRegistrationRpcOps : RpcOps {
      * POST endpoint which starts the registration process for a member.
      *
      * @param memberRegistrationRequest Data necessary to include in order to initiate registration.
+     * @param holdingIdentityId The ID of the holding identity the member is using.
      *
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
     @HttpRpcPOST(
+        path = "{holdingIdentityId}",
         description = "Start registration process for a virtual node."
     )
     fun startRegistration(
+        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
+        holdingIdentityId: String,
         @HttpRpcRequestBodyParameter(
             description = "Data required to initialise the registration process."
         )
