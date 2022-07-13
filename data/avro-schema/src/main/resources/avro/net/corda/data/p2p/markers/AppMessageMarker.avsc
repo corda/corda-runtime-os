@@ -11,6 +11,7 @@
         "net.corda.p2p.markers.ApplicationProcessedMarker",
         "net.corda.p2p.markers.ApplicationRejectedStaleMarker",
         "net.corda.p2p.markers.GatewaySentMarker",
+        "net.corda.p2p.markers.LinkManagerProcessedMarker",
         "net.corda.p2p.markers.TtlExpiredMarker"
       ]
     },
