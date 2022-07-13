@@ -23,7 +23,7 @@ const ChatWrapper = () => {
                         handleSelectReplyParticipant={handleSelectReplyParticipant}
                     />
                 </Section>
-                <Section title={'Participants'}>
+                <Section title={'Chat to'}>
                     <ChatParticipants
                         selectedParticipants={selectedParticipants}
                         setSelectedParticipants={setSelectedParticipants}

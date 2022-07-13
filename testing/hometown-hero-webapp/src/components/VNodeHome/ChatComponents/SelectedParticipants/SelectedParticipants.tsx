@@ -33,7 +33,7 @@ const SelectedParticipants: React.FC<Props> = ({
                     }`}
                 </p>
             </div>
-            {clearButtonEnabled && (
+            {/* {clearButtonEnabled && (
                 <IconButton
                     className={style.clearButton}
                     icon={'Nuke'}
@@ -42,7 +42,7 @@ const SelectedParticipants: React.FC<Props> = ({
                     disabled={selectedParticipants.length === 0}
                     onClick={handleClearParticipants}
                 />
-            )}
+            )} */}
         </div>
     );
 };

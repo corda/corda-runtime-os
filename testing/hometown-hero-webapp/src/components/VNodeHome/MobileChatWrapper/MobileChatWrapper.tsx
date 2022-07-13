@@ -14,7 +14,7 @@ const MobileChatWrapper = () => {
     };
 
     const pageHeaderText = useMemo(() => {
-        return isParticipantsOpen ? 'Participants Select' : 'Chat Home';
+        return isParticipantsOpen ? 'Chat to' : 'Chat Home';
     }, [isParticipantsOpen]);
 
     return (

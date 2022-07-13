@@ -1,10 +1,10 @@
 .selectedParticipantsWrapper {
     display: flex;
-    margin-bottom: var(--m-2);
+    margin-bottom: var(--m-4);
 }
 
 .text {
-    margin: auto auto auto var(--m-2);
+    margin: 8px auto auto var(--m-2);
     font-size: var(--text-md);
     color: var(--color-blue);
 }

@@ -1,11 +1,10 @@
-import { Button, Checkbox, NotificationService } from '@r3/r3-tooling-design-system/exports';
-import { useCallback, useEffect, useState } from 'react';
+import { Button, Checkbox } from '@r3/r3-tooling-design-system/exports';
 
 import SelectedParticipants from '../SelectedParticipants/SelectedParticipants';
-import { TEMP_PARTICIPANTS } from '@/tempData/tempParticipants';
-import apiCall from '@/api/apiCall';
-import { axiosInstance } from '@/api/axiosConfig';
 import style from './chatParticipants.module.scss';
+import useAppDataContext from '@/contexts/appDataContext';
+import { useMemo } from 'react';
+import useUserContext from '@/contexts/userContext';
 
 type Props = {
     selectedParticipants: string[];
@@ -18,37 +17,26 @@ const ChatParticipants: React.FC<Props> = ({
     selectedParticipants,
     setSelectedParticipants,
 }) => {
-    const [networkParticipants, setNetworkParticipants] = useState<string[]>([]);
-
-    const fetchNetworkParticipants = useCallback(async () => {
-        // TODO: Adjust the api to spec
-        const response = await apiCall({ method: 'get', path: '/api/getParticipants', axiosInstance: axiosInstance });
-        if (response.error) {
-            NotificationService.notify(
-                `Failed to fetch network participants: Error: ${response.error}`,
-                'Error',
-                'danger'
-            );
-        } else {
-            // TODO: Set participants here from api data response
-        }
-        // TODO: Remove this temp data
-        setNetworkParticipants(TEMP_PARTICIPANTS);
-    }, []);
-
-    useEffect(() => {
-        fetchNetworkParticipants();
-
-        // TODO: set a polling interval to fetch participants if web socket implementation will not be available
-    }, [fetchNetworkParticipants]);
+    const { vNodes, refreshVNodes } = useAppDataContext();
+    const { vNode: myVNode } = useUserContext();
 
     const handleCheckboxClicked = (checkBoxChecked: boolean, participant: string) => {
         if (!checkBoxChecked) {
             setSelectedParticipants(selectedParticipants.filter((p) => p !== participant));
         } else {
-            setSelectedParticipants([...selectedParticipants, participant]);
+            //allows for multiple participant selection
+            //setSelectedParticipants([...selectedParticipants, participant]);
+            setSelectedParticipants([participant]);
         }
     };
+
+    const networkParticipants = useMemo(
+        () =>
+            vNodes
+                .map((node) => node.holdingIdentity.x500Name)
+                .filter((x500) => x500 !== myVNode?.holdingIdentity.x500Name),
+        [vNodes, myVNode]
+    );
 
     return (
         <div className={style.chatParticipants}>
