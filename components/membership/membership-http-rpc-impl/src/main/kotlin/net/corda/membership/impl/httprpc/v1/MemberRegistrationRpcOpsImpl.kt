@@ -29,7 +29,10 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
     }
 
     private interface InnerMemberRegistrationRpcOps {
-        fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress
+        fun startRegistration(
+            holdingIdentityId: String,
+            memberRegistrationRequest: MemberRegistrationRequest,
+        ): RegistrationRequestProgress
 
         fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress
     }
@@ -67,8 +70,11 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest) =
-        impl.startRegistration(memberRegistrationRequest)
+    override fun startRegistration(
+        holdingIdentityId: String,
+        memberRegistrationRequest: MemberRegistrationRequest
+    ) = impl.startRegistration(holdingIdentityId, memberRegistrationRequest)
+
 
     override fun checkRegistrationProgress(holdingIdentityId: String) =
         impl.checkRegistrationProgress(holdingIdentityId)
@@ -84,7 +90,10 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMemberRegistrationRpcOps {
-        override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest) =
+        override fun startRegistration(
+            holdingIdentityId: String,
+            memberRegistrationRequest: MemberRegistrationRequest,
+        ) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -96,8 +105,11 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerMemberRegistrationRpcOps {
-        override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
-            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto()).fromDto()
+        override fun startRegistration(
+            holdingIdentityId: String,
+            memberRegistrationRequest: MemberRegistrationRequest,
+        ): RegistrationRequestProgress {
+            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityId)).fromDto()
         }
 
         override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress {
