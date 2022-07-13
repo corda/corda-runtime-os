@@ -11,6 +11,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
@@ -49,7 +50,9 @@ class LinkManagerApp @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-) : Application {
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    ) : Application {
 
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -86,6 +89,7 @@ class LinkManagerApp @Activate constructor(
                 virtualNodeInfoReadService,
                 cpiInfoReadService,
                 cryptoOpsClient,
+                membershipGroupReaderProvider,
                 thirdPartyComponentsMode,
             ).also { linkmanager ->
                 linkmanager.start()

@@ -41,12 +41,14 @@ fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGrou
     }
     val hashToInfo = identities.values.associateBy {
         val publicKeyHash = messageDigest.hash(it.sessionPublicKey.encoded)
-        (publicKeyHash to it.holdingIdentity.groupId)
+        (publicKeyHash to it.holdingIdentity)
     }
     return object : LinkManagerMembershipGroupReader {
-        override fun getMemberInfo(holdingIdentity: HoldingIdentity) = identities[holdingIdentity]
+        override fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity):
+                LinkManagerMembershipGroupReader.MemberInfo? = identities[lookupIdentity]
 
-        override fun getMemberInfo(hash: ByteArray, groupId: String) = hashToInfo[hash to groupId]
+        override fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray)
+            = hashToInfo[publicKeyHashToLookup to requestingIdentity]
 
         override val dominoTile = mock<DominoTile>()
     }
