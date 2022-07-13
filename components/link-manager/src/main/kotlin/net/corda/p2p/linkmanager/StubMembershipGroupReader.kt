@@ -88,15 +88,12 @@ internal class StubMembershipGroupReader(
     private val publicHashToMemberInformation =
         ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerMembershipGroupReader.MemberInfo>()
 
-    override fun getMemberInfo(holdingIdentity: HoldingIdentity) = membersInformation[holdingIdentity]
+    //All Members have the same view of the members map in the StubMembershipGroupReader, so we ignore the requestingIdentity.
+    override fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity) =
+        membersInformation[lookupIdentity]
 
-    override fun getMemberInfo(hash: ByteArray, groupId: String) =
-        publicHashToMemberInformation[
-            GroupIdWithPublicKeyHash(
-                groupId,
-                ByteBuffer.wrap(hash)
-            )
-        ]
+    override fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray) =
+        publicHashToMemberInformation[GroupIdWithPublicKeyHash(requestingIdentity.groupId, ByteBuffer.wrap(publicKeyHashToLookup))]
 
     private fun MemberInfoEntry.toMemberInfo(): LinkManagerMembershipGroupReader.MemberInfo {
         val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)

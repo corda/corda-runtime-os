@@ -24,6 +24,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
@@ -134,8 +135,8 @@ class StartRegistrationHandlerTest {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success()
+            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
             on {
@@ -377,7 +378,7 @@ class StartRegistrationHandlerTest {
 
     private fun RegistrationHandlerResult.assertExpectedOutputStates(expectedResultClass: Class<*>) {
         with(outputStates.first()) {
-            assertThat(topic).isEqualTo(testTopic)
+            assertThat(topic).isEqualTo(Schemas.Membership.REGISTRATION_COMMAND_TOPIC)
             assertThat(key).isEqualTo(testTopicKey)
             assertThat(value).isInstanceOf(RegistrationCommand::class.java)
             assertThat((value as RegistrationCommand).command).isInstanceOf(expectedResultClass)

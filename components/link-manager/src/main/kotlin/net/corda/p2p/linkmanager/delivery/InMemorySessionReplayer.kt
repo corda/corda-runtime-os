@@ -87,7 +87,7 @@ internal class InMemorySessionReplayer(
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
-        val destinationMemberInfo = members.getMemberInfo(messageReplay.dest)
+        val destinationMemberInfo = members.getMemberInfo(messageReplay.source, messageReplay.dest)
         if (destinationMemberInfo == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
                 " with peer ${messageReplay.dest} which is not in the members map. The message was not replayed.")

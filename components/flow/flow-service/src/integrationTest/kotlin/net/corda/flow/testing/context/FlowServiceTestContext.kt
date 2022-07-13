@@ -22,7 +22,7 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure

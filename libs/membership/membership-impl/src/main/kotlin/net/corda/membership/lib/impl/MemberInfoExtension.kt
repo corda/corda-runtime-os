@@ -8,6 +8,7 @@ import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.HoldingIdentity
 import java.net.URL
 import java.time.Instant
 
@@ -102,6 +103,16 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.groupId: String
             get() = memberProvidedContext.parse(GROUP_ID)
+
+        /** Member holding identity. */
+        @JvmStatic
+        val MemberInfo.holdingIdentity: HoldingIdentity
+            get() = HoldingIdentity(groupId = groupId, x500Name = name.toString())
+
+        /** Member ID. */
+        @JvmStatic
+        val MemberInfo.id: String
+            get() = holdingIdentity.id
 
         /** List of P2P endpoints for member's node. */
         @JvmStatic

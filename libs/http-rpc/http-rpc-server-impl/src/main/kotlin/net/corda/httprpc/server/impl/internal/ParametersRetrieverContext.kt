@@ -1,18 +1,17 @@
 package net.corda.httprpc.server.impl.internal
 
-import io.javalin.http.Context
 import io.javalin.http.util.ContextUtil
-import io.javalin.plugin.json.jsonMapper
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.server.impl.context.ClientRequestContext
 import net.corda.v5.base.util.contextLogger
 
 /**
- * Internal Context that wrap Javalin's [Context].
+ * Internal Context that wrap Javalin's Context.
  *
  * Exposes only a minimal set of methods for parameters retrieval. Also treats all the query and path parameters keys
  * as case-insensitive.
  */
-internal class ParametersRetrieverContext(private val ctx: Context) {
+internal class ParametersRetrieverContext(private val ctx: ClientRequestContext) {
 
     private companion object {
        val logger = contextLogger()
@@ -25,19 +24,19 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
     init {
         // Moving all the parameters' keys to the lowercase.
         // Result will not be predictable if the same keys is used in the mixed case
-        val ctxPathParamMap = ctx.pathParamMap()
+        val ctxPathParamMap = ctx.pathParamMap
         pathParamsMap = ctxPathParamMap.mapKeys { it.key.lowercase() }
         if (pathParamsMap.size != ctxPathParamMap.size) {
             logger.warn("Some path parameters keys were dropped. " +
                     "Original map: $ctxPathParamMap, transformed map: $pathParamsMap")
         }
-        val ctxQueryParamMap = ctx.queryParamMap()
+        val ctxQueryParamMap = ctx.queryParams
         queryParamsMap = ctxQueryParamMap.mapKeys { it.key.lowercase() }
         if (queryParamsMap.size != ctxQueryParamMap.size) {
             logger.warn("Some query parameters keys were dropped. " +
                     "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap")
         }
-        val ctxFormParamMap = ctx.formParamMap()
+        val ctxFormParamMap = ctx.formParams
         formParamsMap = ctxFormParamMap.mapKeys { it.key.lowercase() }
         if (formParamsMap.size != ctxFormParamMap.size) {
             logger.warn("Some form parameter keys were dropped. " +
@@ -45,12 +44,12 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
         }
     }
 
-    fun body(): String = ctx.body()
+    fun body(): String = ctx.body
 
     fun <T> bodyAsClass(clazz: Class<T>): T = ctx.bodyAsClass(clazz)
 
     fun pathParam(key: String): String {
-        return ContextUtil.pathParamOrThrow(pathParamsMap, key.lowercase(), ctx.matchedPath())
+        return ContextUtil.pathParamOrThrow(pathParamsMap, key.lowercase(), ctx.matchedPath)
     }
 
     fun queryParams(key: String): List<String> = queryParamsMap[key.lowercase()] ?: emptyList()
@@ -66,6 +65,6 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
     }
 
     fun <T> fromJsonString(json: String, targetClass: Class<T>): T {
-        return ctx.jsonMapper().fromJsonString(json, targetClass)
+        return ctx.jsonMapper.fromJsonString(json, targetClass)
     }
 }

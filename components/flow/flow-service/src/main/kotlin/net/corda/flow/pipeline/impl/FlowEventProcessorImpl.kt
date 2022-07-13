@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException

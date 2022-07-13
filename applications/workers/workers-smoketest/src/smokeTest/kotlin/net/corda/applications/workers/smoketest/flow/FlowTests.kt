@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.UUID
 
 @Suppress("Unused")
 @Order(20)
@@ -47,7 +47,8 @@ class FlowTests {
             "net.cordapp.flowworker.development.flows.PersistenceFlow",
             "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
             "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.flows.TestFlow"
+            "net.cordapp.flowworker.development.flows.TestFlow",
+            "net.cordapp.flowworker.development.flows.BrokenProtocolFlow"
         )
 
         /*
@@ -289,7 +290,7 @@ class FlowTests {
     fun `Get runnable flows for a holdingId`() {
         val flows = getFlowClasses(bobHoldingId)
 
-        assertThat(flows.size).isEqualTo(5)
+        assertThat(flows.size).isEqualTo(expectedFlows.size)
         assertTrue(flows.containsAll(expectedFlows))
     }
 

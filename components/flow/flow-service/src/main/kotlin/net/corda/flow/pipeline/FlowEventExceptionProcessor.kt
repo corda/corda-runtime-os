@@ -1,11 +1,11 @@
 package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import java.util.concurrent.CancellationException
