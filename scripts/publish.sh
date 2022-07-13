@@ -9,20 +9,20 @@
 #then echo "daemon running"
 #else docker run -d --name buildkitd --privileged moby/buildkit:latest
 #fi
+#
+#kubectl apply -f .certs/buildkit-daemon-certs.yaml
+#kubectl create secret docker-registry docker-registry-cred \
+#  --docker-server "docker-js-temp.software.r3.com" \
+#  --docker-username $CORDA_ARTIFACTORY_USERNAME \
+#  --docker-password $CORDA_ARTIFACTORY_PASSWORD
+#kubectl apply -f ./kubernetes/deployment+service.rootless.yaml
+#kubectl scale --replicas=6 deployment/buildkitd
+#
+#kubectl wait --for=condition=Ready deployment/buildkitd
 
-kubectl apply -f .certs/buildkit-daemon-certs.yaml
-kubectl create secret docker-registry docker-registry-cred \
-  --docker-server "docker-js-temp.software.r3.com" \
-  --docker-username $CORDA_ARTIFACTORY_USERNAME \
-  --docker-password $CORDA_ARTIFACTORY_PASSWORD
-kubectl apply -f ./kubernetes/deployment+service.rootless.yaml
-kubectl scale --replicas=6 deployment/buildkitd
+#wait
 
-kubectl wait --for=condition=Ready deployment/buildkitd
-
-wait
-
-kubectl port-forward service/buildkitd 1234 &
+#kubectl port-forward service/buildkitd 1234 &
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
