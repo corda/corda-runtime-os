@@ -88,26 +88,44 @@ pipeline {
         }
  			
         //Start the java process in background
-        // stage('Start jar / run tests') {
-        //     steps {
-        //     // we need the DB credetals here also
-        //     environment {
-        //         JAVA_TOOL_OPTIONS = " see scren shot on jira "
-        //     }
-        //     //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
-        //         //somehow ensure this runs in background
-        //         sh "java -jar ${env.WORKSPACE}/applications.... <location to combined worker> <other paramaters>  >> workerLogs.txt 2>&1 &"
-        //         // execute smoke tests , we may need some paramaters specific to combined worker
-        //         ./gradlew smoketest -PcombinedWorkerHealthHttp=some value
-        //         // if we do this needs to be all in one stage
-        //         procno=$! #remember process number started in background
-        //         trap "kill -9 ${procno}" EXIT
-        //     }
-        // }
+        stage('Start jar / run tests') {
+            steps {
+            // we need the DB credetals here also
+            environment {
+                KUBECONFIG = credentials('e2e-tests-credentials')
+                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
+                VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
+                LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
+                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ddatabase.user=user -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster"
+                WORKING_DIRECTORY = "${env.WORKSPACE}"
+            }
+            //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
+                //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
+                sh "java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS}  >> workerLogs.txt 2>&1 & ./gradlew smoketest -PcombinedWorkerHealthHttp=some value"
+                // if we do this needs to be all in one stage
+                // procno=$! #remember process number started in background
+                // trap "kill -9 ${procno}" EXIT
+            }
+        }
     }
     post {
         always {
 	// remove Database see here https://github.com/corda/corda-shared-build-pipeline-steps/blob/5.0/vars/cordaPipeline.groovy#L487-L500
+            script {
+                    if (config.createPostgresDb) {
+                        withEnv([
+                                "PGHOST=${postgresHost}",
+                                "PGPORT=${postgresPort}",
+                                "DATABASE=${postgresDb}"
+                        ]) {
+                            withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                                    passwordVariable: 'PGPASSWORD',
+                                    usernameVariable: 'PGUSER')]) {
+                                sh 'dropdb -w "${DATABASE}" || true'
+                            }
+                        }
+                    }
+            }
             script{
                 writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
