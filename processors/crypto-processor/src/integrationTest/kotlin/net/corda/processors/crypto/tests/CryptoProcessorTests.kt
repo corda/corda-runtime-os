@@ -19,6 +19,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.merger.ConfigMerger
@@ -162,11 +163,12 @@ class CryptoProcessorTests {
             )
         )
 
-        private val messagingConfig = configMerger.getMessagingConfig(boostrapConfig)
+        private lateinit var messagingConfig: SmartConfig
 
         @JvmStatic
         @BeforeAll
         fun setup() {
+            messagingConfig = configMerger.getMessagingConfig(boostrapConfig)
             setupPrerequisites()
             setupDatabases()
             setupVirtualNodeInfo()
@@ -184,7 +186,7 @@ class CryptoProcessorTests {
         }
 
         private fun setupPrerequisites() {
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), boostrapConfig)
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
             publisher.publish(
                 listOf(

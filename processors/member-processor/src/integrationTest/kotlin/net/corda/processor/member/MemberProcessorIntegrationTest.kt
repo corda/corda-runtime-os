@@ -11,8 +11,10 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -45,7 +47,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySes
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
@@ -122,6 +123,9 @@ class MemberProcessorIntegrationTest {
         @InjectService(timeout = 5000L)
         lateinit var hsmRegistrationClient: HSMRegistrationClient
 
+        @InjectService(timeout = 5000)
+        lateinit var configMerger: ConfigMerger
+
         lateinit var publisher: Publisher
 
         private val invalidHoldingIdentity = HoldingIdentity("", groupId)
@@ -162,13 +166,14 @@ class MemberProcessorIntegrationTest {
             )
         )
 
-        private val messagingConfig = makeMessagingConfig(boostrapConfig)
+        private lateinit var messagingConfig: SmartConfig
 
         private lateinit var connectionIds: Map<String, UUID>
 
         @JvmStatic
         @BeforeAll
         fun setUp() {
+            messagingConfig = configMerger.getMessagingConfig(boostrapConfig)
             setupDatabases()
 
             // Set basic bootstrap config
