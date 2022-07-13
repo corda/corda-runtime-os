@@ -68,7 +68,7 @@ class MemberProcessorTestUtils {
 
         private const val BOOT_CONFIGURATION = """
         instanceId=1
-        bus.busType = DATABASE
+        bus.busType = INMEMORY
     """
 
         private const val KEY_SCHEME = "corda.key.scheme"
