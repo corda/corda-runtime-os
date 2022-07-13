@@ -42,15 +42,22 @@ object DbUtils {
         inMemoryDbName: String,
         dbUser:String? = null,
         dbPassword: String? = null,
-        schemaName: String? = null
+        schemaName: String? = null,
+        createSchema: Boolean = false
     ): EntityManagerConfiguration {
         val port = System.getProperty("postgresPort")
         return if (!port.isNullOrBlank()) {
-            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName)
+            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName, createSchema)
             DbEntityManagerConfiguration(ds, true, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
-            TestInMemoryEntityManagerConfiguration(inMemoryDbName)
+            TestInMemoryEntityManagerConfiguration(inMemoryDbName).also {
+                if(createSchema) {
+                    it.dataSource.connection.use { conn ->
+                        conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                    }
+                }
+            }
         }
     }
 
@@ -65,20 +72,28 @@ object DbUtils {
     fun createPostgresDataSource(
         dbUser:String? = null,
         dbPassword: String? = null,
-        schemaName: String? = null
+        schemaName: String? = null,
+        createSchema: Boolean = false
     ): CloseableDataSource {
         val port = System.getProperty("postgresPort")
         val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
         var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
-        if(!schemaName.isNullOrBlank()) {
-            jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
-        }
+        val factory = PostgresDataSourceFactory()
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
+        if(!schemaName.isNullOrBlank()) {
+            if (createSchema) {
+                logger.info("Creating schema: $schemaName".emphasise())
+                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.use { conn ->
+                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                }
+            }
+            jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
+        }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing
-        return PostgresDataSourceFactory().create(jdbcUrl, user, password, maximumPoolSize = 5)
+        return factory.create(jdbcUrl, user, password, maximumPoolSize = 5)
     }
 
     fun createConfig(

@@ -13,6 +13,7 @@ import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
+import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -25,7 +26,8 @@ import javax.sql.DataSource
 //@Component(service = [DbConnectionManager::class, FakeDbConnectionManager::class])
 class FakeDbConnectionManager(
     private val connections: List<Pair<UUID, String>>,
-    private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
+    private val schemaName: String,
+    private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl(),
 ): DbConnectionManager, DbConnectionOps, DataSourceFactory {
     private companion object {
         private val logger = contextLogger()
@@ -34,8 +36,10 @@ class FakeDbConnectionManager(
     private data class NamedDataSources(val id: UUID, val name: String, val dataSource: CloseableDataSource)
 
     private val dbSources: List<NamedDataSources> = connections.map {
-        val source = if (DbUtils.isInMemory) InMemoryDataSourceFactory().create("fake-db-manager-db")
-        else DbUtils.createPostgresDataSource()
+        val source = DbUtils.getEntityManagerConfiguration(
+            "fake-db-manager-db",
+            schemaName = "$schemaName${it.second.replace("-","")}",
+            createSchema = true).dataSource
         NamedDataSources(it.first, it.second, source)
     }
 
