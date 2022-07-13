@@ -117,7 +117,7 @@ pipeline {
 >>>>>>> 61d689123 (updated e2e combined worker jenkinsfile: typo #2)
                     procno=$!
                     trap "kill -9 ${procno}" EXIT
-                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
+                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:8888/
                 '''
 <<<<<<< HEAD
                     }
