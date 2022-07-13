@@ -9,7 +9,7 @@ const VNodeNetwork = () => {
         <PageContentWrapper>
             <PageHeader withBackButton>V-Node Network</PageHeader>
             <NetworkVisualizer />
-            <VisualizationWrapper width={600}>
+            <VisualizationWrapper width={600} isBlurred>
                 <VNodeNetworkViz />
             </VisualizationWrapper>
         </PageContentWrapper>

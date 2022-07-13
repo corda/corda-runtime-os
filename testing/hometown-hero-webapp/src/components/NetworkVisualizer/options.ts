@@ -39,14 +39,18 @@ export const GRAPH_OPTIONS: Options = {
 
 export const LOCATIONS: string[] = ['Ireland', 'UK', 'USA'];
 
+const DEFAULT_COLOR = '#000';
+
 export const LOCATION_COLORS: Map<string, string> = new Map([
-    ['Ireland', '#84DE6C'],
-    ['UK', '#839FF0'],
-    ['USA', '#F65D5D'],
+    ['IE', '#84DE6C'],
+    ['GB', '#839FF0'],
+    ['US', '#F65D5D'],
+    ['default', DEFAULT_COLOR],
 ]);
 
 export const LOCATION_GROUP_COORDS = new Map([
-    ['Ireland', { x: 800, y: 0 }],
-    ['UK', { x: 0, y: 800 }],
-    ['USA', { x: 800, y: -800 }],
+    ['IE', { x: 800, y: 0 }],
+    ['GB', { x: 0, y: 800 }],
+    ['US', { x: 800, y: -800 }],
+    ['default', { x: -800, y: 0 }],
 ]);

@@ -6,7 +6,6 @@ import { Route, Routes } from 'react-router';
 import Admin from './pages/Admin';
 import { AppDataContextProvider } from './contexts/appDataContext';
 import { BrowserRouter } from 'react-router-dom';
-import Footer from './components/Footer/Footer';
 import Home from './pages/Home';
 import LoadingModal from './components/LoadingModal/LoadingModal';
 import Login from './pages/Login';
@@ -19,7 +18,6 @@ import { useMobileMediaQuery } from './hooks/useMediaQueries';
 import { usePromiseTracker } from 'react-promise-tracker';
 
 function App() {
-    const isMobile = useMobileMediaQuery();
     const { promiseInProgress } = usePromiseTracker();
     return (
         <div className="App">
@@ -36,7 +34,6 @@ function App() {
                             <Route path={VNODE_NETWORK} element={<VNodeNetwork />} />
                             <Route path={CPI_UPLOAD} element={<Admin />} />
                         </Routes>
-                        {!isMobile && <Footer />}
                     </UserContextProvider>
                 </BrowserRouter>
             </AppDataContextProvider>

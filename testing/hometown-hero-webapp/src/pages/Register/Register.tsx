@@ -9,6 +9,7 @@ import PageHeader from '@/components/PageHeader/PageHeader';
 import RegisterViz from '@/components/Visualizations/RegisterViz';
 import { VirtualNode } from '@/models/virtualnode';
 import VisualizationWrapper from '@/components/Visualizations/VisualizationWrapper';
+import apiCall from '@/api/apiCall';
 import { trackPromise } from 'react-promise-tracker';
 import useAppDataContext from '@/contexts/appDataContext';
 import { useNavigate } from 'react-router-dom';
@@ -62,7 +63,15 @@ const Register = () => {
 
         const cpiFileChecksum = cpiList[0].fileChecksum;
 
-        const x500Name = `CN=${username}, O=${username} node, L=LDN, C=GB`;
+        const ipLocResponse = await apiCall({ method: 'get', path: 'https://ipapi.co/json/' });
+        let city = 'City';
+        let countryCode = 'Unknown';
+        if (!ipLocResponse.error) {
+            countryCode = ipLocResponse.data.country_code;
+            city = ipLocResponse.data.country_capital;
+        }
+
+        const x500Name = `O=${username} node, L=${city}, C=${countryCode}`;
 
         const vNodeCreated = await createVNode(x500Name, cpiFileChecksum);
         if (!vNodeCreated) return;
@@ -115,16 +124,12 @@ const Register = () => {
         const addedVirtualNodesPermission = await addPermissionToRole(virtualNodesListPermissionId, roleId);
         if (!addedVirtualNodesPermission) return;
 
-        NotificationService.notify(
-            `Successfully created permissions and added to new role for user!`,
-            'Success!',
-            'success'
-        );
+        NotificationService.notify(`Created permissions and added to new role for user!`, 'Success!', 'success');
 
         const addedRoleToUser = await addRoleToUser(username, roleId);
         if (!addedRoleToUser) return;
 
-        NotificationService.notify(`Successfully added new role to user!`, 'Success!', 'success');
+        NotificationService.notify(`Added new role to user!`, 'Success!', 'success');
 
         NotificationService.notify(`Registration complete!`, 'Success!', 'success');
 

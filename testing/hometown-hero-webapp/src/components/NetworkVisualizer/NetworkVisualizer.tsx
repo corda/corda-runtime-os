@@ -4,10 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@r3/r3-tooling-design-system/exports';
 import Graph from 'react-graph-vis';
 import style from './networkVisualizer.module.scss';
-
-function getRandomInt(max: number) {
-    return Math.floor(Math.random() * max);
-}
+import useAppDataContext from '@/contexts/appDataContext';
 
 const GRAPH_INITIAL_STATE = {
     counter: 0,
@@ -15,11 +12,11 @@ const GRAPH_INITIAL_STATE = {
     edges: [],
 };
 
-//https://ipapi.co/json/
-
 const REMOVE_MESSAGE_INTERVAL_MS = 2000;
 
 const NetworkVisualizer = () => {
+    const { vNodes } = useAppDataContext();
+
     const [network, setNetwork] = useState<any | undefined>(undefined);
     const [graphData, setGraphData] = useState<any>(GRAPH_INITIAL_STATE);
 
@@ -82,6 +79,36 @@ const NetworkVisualizer = () => {
         [graphData]
     );
 
+    useEffect(() => {
+        const newNodes: any[] = [];
+        vNodes.forEach(({ holdingIdentity }) => {
+            const x500Name = holdingIdentity.x500Name;
+            let location = 'default';
+            if (x500Name.includes('C=IE')) {
+                location = 'IE';
+            } else if (x500Name.includes('C=GB')) {
+                location = 'GB';
+            } else if (x500Name.includes('C=US')) {
+                location = 'US';
+            }
+            const locCoords = LOCATION_GROUP_COORDS.get(location);
+            const newNode = {
+                id: x500Name,
+                label: x500Name.split('node,')[0],
+                title: `${name} tooltip text`,
+                x: locCoords?.x ?? undefined,
+                y: locCoords?.y ?? undefined,
+                color: LOCATION_COLORS.get(location),
+                location: location,
+            };
+            newNodes.push(newNode);
+        });
+        const tempGraphData = { ...graphData };
+        tempGraphData.counter = tempGraphData.counter + 1;
+        tempGraphData.nodes = newNodes;
+        setGraphData(tempGraphData);
+    }, [vNodes]);
+
     const groupNodes = useCallback(() => {
         if (!network) return;
         graphData.nodes.forEach((node: any) => {
@@ -94,9 +121,8 @@ const NetworkVisualizer = () => {
 
     return (
         <div>
-            {/* Temp buttons to show functionality */}
             <div className="flex gap-6 mt-6 mb-6">
-                <Button
+                {/* <Button
                     size={'small'}
                     variant={'primary'}
                     onClick={() => {
@@ -116,7 +142,7 @@ const NetworkVisualizer = () => {
                     }}
                 >
                     Add New Node
-                </Button>
+                </Button> */}
                 <Button size={'small'} variant={'primary'} onClick={groupNodes}>
                     Group Nodes
                 </Button>

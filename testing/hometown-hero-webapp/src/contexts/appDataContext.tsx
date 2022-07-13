@@ -33,6 +33,7 @@ export const AppDataContextProvider: React.FC<Props> = ({ children }) => {
             method: 'get',
             path: '/api/v1/virtualnode',
             axiosInstance: adminAxiosInstance,
+            dontTrackRequest: true,
         });
         setVNodes(response.data.virtualNodes);
         return response.data.virtualNodes;
@@ -41,6 +42,14 @@ export const AppDataContextProvider: React.FC<Props> = ({ children }) => {
     useEffect(() => {
         refreshCpiList();
         refreshVNodes();
+
+        const interval = setInterval(() => {
+            refreshVNodes();
+        }, 2000);
+
+        return () => {
+            clearInterval(interval);
+        };
     }, []);
 
     return <Provider value={{ cpiList, vNodes, refreshCpiList, refreshVNodes }}>{children}</Provider>;
