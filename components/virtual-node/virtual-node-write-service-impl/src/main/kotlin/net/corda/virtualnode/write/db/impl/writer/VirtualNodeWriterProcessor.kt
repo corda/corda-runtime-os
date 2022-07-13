@@ -258,7 +258,6 @@ internal class VirtualNodeWriterProcessor(
             try {
                 vaultDb.runCpiMigrations(dbChange)
             } catch (e: Exception) {
-                logger.error("Error running virtual node DB migration for CPI liquibase migrations: ${e.message}", e)
                 throw VirtualNodeWriteServiceException(
                     "Error running virtual node DB migration for CPI liquibase migrations",
                     e
@@ -364,6 +363,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
         e: Exception,
     ): Boolean {
+        logger.error("Error while processing virtual node request: ${e.message}", e)
         val response = VirtualNodeManagementResponse(
             clock.instant(),
             VirtualNodeManagementResponseFailure(
