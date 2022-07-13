@@ -63,7 +63,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
          * exception and DLQ the flow
          */
         if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
-            process(
+            return@withEscalation process(
                 FlowFatalException(
                     "Max retry attempts '${maxRetryAttempts}' has been reached.",
                     context,

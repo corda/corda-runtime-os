@@ -258,6 +258,7 @@ internal class VirtualNodeWriterProcessor(
             try {
                 vaultDb.runCpiMigrations(dbChange)
             } catch (e: Exception) {
+                logger.error("Error running virtual node DB migration for CPI liquibase migrations: ${e.message}", e)
                 throw VirtualNodeWriteServiceException(
                     "Error running virtual node DB migration for CPI liquibase migrations",
                     e
