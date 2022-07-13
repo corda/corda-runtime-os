@@ -11,6 +11,7 @@ type UserContextProps = {
     username: string;
     password: string;
     vNode: VirtualNode | undefined;
+    setVNode: (vNode: VirtualNode | undefined) => void;
     login: (username: string, password: string) => Promise<boolean>;
     clearData: () => void;
     saveLoginDetails: (username: string, password: string, vNode?: VirtualNode) => void;
@@ -25,7 +26,7 @@ type ProviderProps = {
 };
 
 export const UserContextProvider: React.FC<ProviderProps> = ({ children }) => {
-    const [vNode, setVnode] = useSessionStorage<VirtualNode | undefined>('virtualNode', undefined);
+    const [vNode, setVNode] = useSessionStorage<VirtualNode | undefined>('virtualNode', undefined);
     const [holderShortId, setHolderShortId] = useSessionStorage<string>('holdershortid', '');
     const [username, setUsername] = useSessionStorage<string>('username', '');
     const [password, setPassword] = useSessionStorage<string>('password', '');
@@ -58,18 +59,18 @@ export const UserContextProvider: React.FC<ProviderProps> = ({ children }) => {
     const saveLoginDetails = (username: string, password: string, vNode?: VirtualNode) => {
         setUsername(username);
         setPassword(password);
-        setVnode(vNode);
+        setVNode(vNode);
     };
 
     const clearData = () => {
         setUsername('');
         setPassword('');
-        setVnode(undefined);
+        setVNode(undefined);
         setHolderShortId('');
     };
 
     return (
-        <Provider value={{ holderShortId, username, password, vNode, login, clearData, saveLoginDetails }}>
+        <Provider value={{ holderShortId, username, password, vNode, login, clearData, saveLoginDetails, setVNode }}>
             {children}
         </Provider>
     );
