@@ -61,8 +61,10 @@ interface VirtualNodeRPCOps : RpcOps {
         responseDescription = "The details of the updated virtual node."
     )
     fun updateVirtualNodeState(
-        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
+        @HttpRpcRequestBodyParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
+        @HttpRpcRequestBodyParameter(description = "The ID of the cpi used in the desired virtual node instance")
+        cpiId: String,
         @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
         newState: String
     ): HTTPVirtualNodeStateChangeResponse

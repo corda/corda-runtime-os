@@ -145,28 +145,27 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
     }
 
-    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdShortHash: String, newState: String) {
+    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdShortHash: String, cpiId: String, newState: String) {
         entityManager.transaction {
             val latestVirtualNodeInstance = it.createQuery(
                 "SELECT vnode_instance FROM VirtualNodeEntity vnode_instance " +
-                    "WHERE vnode_instance.holdingIdentity.holdingIdentityId LIKE :shortVNodeId " +
-                    "ORDER BY vnode_instance.entityVersion DESC ",
+                    "WHERE vnode_instance.holdingIdentity.holdingIdentityId = :shortVNodeId " +
+                    "AND vnode_instance.cpiId = :cpiId " +
+                    "ORDER BY vnode_instance.cpiVersion DESC ",
                 VirtualNodeEntity::class.java
             )
-                .setParameter("shortVNodeId", "$holdingIdShortHash%")
+                .setParameter("shortVNodeId", holdingIdShortHash)
+                .setParameter("shortVNodeId", cpiId)
                 .setMaxResults(1)
                 .resultList.singleOrNull() ?: throw VirtualNodeNotFoundException(holdingIdShortHash)
             val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
                 update(
                     latestVirtualNodeInstance.copy(
-                        virtualNodeState = newState,
-                        entityVersion = latestVirtualNodeInstance.entityVersion + 1
+                        virtualNodeState = newState
                     )
                 )
             }
             it.merge(updatedVirtualNodeInstance)
-            it.persist(updatedVirtualNodeInstance)
-            it.flush()
         }
     }
 
