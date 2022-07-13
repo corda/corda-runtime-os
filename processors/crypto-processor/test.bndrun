@@ -7,12 +7,13 @@
     sun.security.x509
 
 # Enable debugging.
-# -runjdb: 5055
+ -runjdb: 5055
 
 -runrequires: \
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='crypto-processor-tests',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
+    bnd.identity;id='net.corda.configuration-merger',\
     bnd.identity;id='net.corda.crypto-client-hsm-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
     bnd.identity;id='net.corda.crypto-db-persistence-impl',\
