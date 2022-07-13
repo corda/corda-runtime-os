@@ -10,9 +10,6 @@
 #else docker run -d --name buildkitd --privileged moby/buildkit:latest
 #fi
 
-export CORDA_ARTIFACTORY_USERNAME=jan.szkaradek@r3.com
-export CORDA_ARTIFACTORY_PASSWORD=AKCp8mYxymGWqjABN3pqfDc8Gdc4QsT1pp3nWgNwUCFs4xNchQyMdA71D29E9ucFdXod27WhH 
-
 kubectl apply -f .certs/buildkit-daemon-certs.yaml
 kubectl create secret docker-registry docker-registry-cred \
   --docker-server "docker-js-temp.software.r3.com" \
