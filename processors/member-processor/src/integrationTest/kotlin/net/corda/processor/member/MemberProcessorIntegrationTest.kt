@@ -52,7 +52,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawG
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
