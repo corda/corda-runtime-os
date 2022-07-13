@@ -3,6 +3,7 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.JavalinRouteProviderImpl
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
@@ -96,7 +97,8 @@ class HttpRpcServerTest {
         doReturn(true).whenever(configProvider).isDevModeEnabled()
 
         val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
-        val endpointsCount = resources.sumOf { it.endpoints.count() }
+        val endpointsCount =
+            resources.sumOf { resource -> resource.endpoints.filterNot { it.method == EndpointMethod.WS }.count() }
         val openApiJson = OpenApiInfoProvider(resources, configProvider).openApiString
         val openApi = Json.mapper().readValue(openApiJson, OpenAPI::class.java)
         val totalPathsCount = openApi.paths.count { it.value.get != null } + openApi.paths.count { it.value.post != null }

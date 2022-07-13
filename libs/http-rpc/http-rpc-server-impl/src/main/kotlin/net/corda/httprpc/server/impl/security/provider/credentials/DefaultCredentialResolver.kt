@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.security.provider.credentials
 
 import io.javalin.core.util.Header.AUTHORIZATION
-import io.javalin.http.Context
+import net.corda.httprpc.server.impl.context.ClientRequestContext
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import net.corda.v5.base.util.contextLogger
@@ -14,7 +14,7 @@ internal class DefaultCredentialResolver : CredentialResolver {
         private val log = contextLogger()
     }
 
-    override fun resolve(context: Context): AuthenticationCredentials? {
+    override fun resolve(context: ClientRequestContext): AuthenticationCredentials? {
         val authorization = context.header(AUTHORIZATION) ?: return null
 
         return when {
