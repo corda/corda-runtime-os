@@ -201,6 +201,8 @@ internal class SessionManagerImpl(
         )
     }
 
+
+
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
@@ -700,7 +702,8 @@ internal class SessionManagerImpl(
         @VisibleForTesting
         internal data class HeartbeatManagerConfig(
             val heartbeatPeriod: Duration,
-            val sessionTimeout: Duration
+            val sessionTimeout: Duration,
+            val sessionRefresh: Duration
         )
 
         @VisibleForTesting
@@ -774,7 +777,8 @@ internal class SessionManagerImpl(
             @Volatile
             var lastAckTimestamp: Long,
             @Volatile
-            var sendingHeartbeats: Boolean = false
+            var sendingHeartbeats: Boolean = false,
+            val sessionCreatedTimestamp: Long
         )
 
         fun stopTrackingAllSessions() {
@@ -799,6 +803,25 @@ internal class SessionManagerImpl(
                         TrackedSession(counterparties, timeStamp(), timeStamp())
                     }
                 }
+            }
+        }
+
+        fun sessionRefresh(counterparties: SessionCounterparties, sessionId: String) {
+            val sessionInfo = trackedSessions[sessionId] ?: return
+            val sessionAge = timeStamp() - sessionInfo.sessionCreatedTimestamp
+            if (sessionAge >= config.get().sessionRefresh.toMillis()) {
+                logger.info(
+                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=${counterparties.counterpartyId}) has " +
+                            "been refreshed so that session keys are rotated."
+                )
+                destroySession(counterparties, sessionId)
+                trackedSessions.remove(sessionId)
+            } else {
+                executorService.schedule(
+                    { sessionRefresh(counterparties, sessionId) },
+                    config.get().sessionRefresh.toMillis() - timeSinceLastAck,
+                    TimeUnit.MILLISECONDS
+                )
             }
         }
 
