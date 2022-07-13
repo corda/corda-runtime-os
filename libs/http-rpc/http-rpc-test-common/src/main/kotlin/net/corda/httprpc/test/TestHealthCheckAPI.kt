@@ -11,7 +11,9 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpRpcWS
 import net.corda.httprpc.annotations.RPCSinceVersion
+import net.corda.httprpc.ws.DuplexChannel
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.Date
@@ -109,4 +111,11 @@ interface TestHealthCheckAPI : RpcOps {
 
     @HttpRpcGET(path = "echoPath/{requestString}", description = "Echoes what has been supplied in the path")
     fun echoPath(@HttpRpcPathParameter(name = "requestString", description = "The name") requestString: String): String
+
+    @HttpRpcWS(path = "counterFeed/{start}", responseDescription = "Given number supplied produces a WebSocket feed incrementing it")
+    fun counterFeed(
+        channel: DuplexChannel,
+        @HttpRpcPathParameter start: Int,
+        @HttpRpcQueryParameter(required = false) range: Int?
+    )
 }

@@ -1,6 +1,10 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.ws.DuplexChannel
+import net.corda.lifecycle.Lifecycle
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -8,15 +12,34 @@ import java.util.Calendar
 import java.util.Calendar.DAY_OF_YEAR
 import java.util.GregorianCalendar
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI> {
+class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthCheckAPI>, Lifecycle {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     override val targetInterface: Class<TestHealthCheckAPI>
         get() = TestHealthCheckAPI::class.java
 
     override val protocolVersion: Int
         get() = 2
+
+    private val scheduler = Executors.newScheduledThreadPool(1)
+
+    override val isRunning: Boolean
+        get() = !scheduler.isShutdown
+
+    override fun start() {
+    }
+
+    override fun stop() {
+        scheduler.shutdown()
+    }
 
     override fun void() = "Sane"
 
@@ -85,5 +108,35 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
 
     override fun echoPath(requestString: String): String {
         return requestString
+    }
+
+    override fun counterFeed(channel: DuplexChannel, start: Int, range: Int?)  {
+
+        var counter = start
+        var scheduledFuture: ScheduledFuture<*>? = null
+
+        channel.onConnect = {
+            log.info("onConnect")
+            scheduledFuture = scheduler.scheduleAtFixedRate(
+                {
+                    log.debug { "Sending: $counter" }
+                    val future = channel.send("${counter++}")
+                    if (range != null) {
+                        if (counter >= start + range) {
+                            // Wait for sent confirmation then close the channel
+                            future.get()
+                            channel.close()
+                        }
+                    }
+                },
+                10,
+                10,
+                TimeUnit.MILLISECONDS
+            )
+        }
+        channel.onClose = { statusCode, reason ->
+            log.info("Reacting to close event : $statusCode - $reason")
+            scheduledFuture?.cancel(true)
+        }
     }
 }
