@@ -69,7 +69,8 @@ class RegistrationProcessor(
         ),
 
         ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(cordaAvroSerializationFactory),
-        VerifyMember::class.java to VerifyMemberHandler(cordaAvroSerializationFactory)
+        VerifyMember::class.java to VerifyMemberHandler(cordaAvroSerializationFactory),
+        ProcessMemberVerificationResponse::class.java to VerificationResponseHandler(cordaAvroSerializationFactory)
     )
 
     override fun onNext(

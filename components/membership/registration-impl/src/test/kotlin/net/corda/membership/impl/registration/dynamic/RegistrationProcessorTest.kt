@@ -80,7 +80,7 @@ class RegistrationProcessorTest {
 
         val verificationRequest = VerificationRequest(
             registrationId,
-            KeyValuePairList(listOf(KeyValuePair("key", "value")))
+            KeyValuePairList(emptyList<KeyValuePair>())
         )
 
         val verificationResponse = VerificationResponse(
@@ -90,6 +90,10 @@ class RegistrationProcessorTest {
 
         val verificationRequestCommand = RegistrationCommand(
             ProcessMemberVerificationRequest(holdingIdentity, mgmHoldingIdentity, verificationRequest)
+        )
+
+        val verifyMemberCommand = RegistrationCommand(
+            VerifyMember(holdingIdentity, mgmHoldingIdentity, registrationId)
         )
     }
 
@@ -101,8 +105,8 @@ class RegistrationProcessorTest {
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var verificationResponseSerializer: CordaAvroSerializer<VerificationResponse>
-    lateinit var verificationRequestSerializer: CordaAvroSerializer<VerificationRequest>
+    lateinit var verificationResponseSerializer: CordaAvroSerializer<Any>
+    lateinit var verificationRequestSerializer: CordaAvroSerializer<Any>
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
@@ -149,8 +153,7 @@ class RegistrationProcessorTest {
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-            on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationResponseSerializer
-            on { createAvroSerializer<VerificationRequest>(any()) } doReturn verificationRequestSerializer
+            on { createAvroSerializer<Any>(any()) }.thenReturn(verificationResponseSerializer, verificationRequestSerializer)
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
@@ -210,12 +213,12 @@ class RegistrationProcessorTest {
             .isNotNull
     }
 
-    /*@Test
+    @Test
     fun `verify member command - onNext can be called for command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, verifyMemberCommand))
         assertThat(result.updatedState).isNotNull
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
         assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
             .isNotNull
-    }*/
+    }
 }
