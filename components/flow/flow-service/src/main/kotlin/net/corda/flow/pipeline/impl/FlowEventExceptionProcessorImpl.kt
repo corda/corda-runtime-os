@@ -63,7 +63,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
          * exception and DLQ the flow
          */
         if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
-            return process(
+            process(
                 FlowFatalException(
                     "Max retry attempts '${maxRetryAttempts}' has been reached.",
                     context,
@@ -145,7 +145,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     }
 
     private fun withEscalation(handler: () -> StateAndEventProcessor.Response<Checkpoint>) : StateAndEventProcessor.Response<Checkpoint> {
-        try {
+        return try {
             handler()
         } catch(t: Throwable) {
             // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
