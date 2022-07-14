@@ -40,6 +40,7 @@ import net.corda.utilities.TempPathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
+import kotlin.reflect.KProperty0
 
 @Suppress("LongParameterList")
 internal class HttpRpcGatewayEventHandler(
@@ -48,7 +49,7 @@ internal class HttpRpcGatewayEventHandler(
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>,
+    private val dynamicRpcOpsProperty: KProperty0<List<PluggableRPCOps<out RpcOps>>>,
     private val tempPathProvider: PathProvider = TempPathProvider()
 ) : LifecycleEventHandler {
 
@@ -118,7 +119,7 @@ internal class HttpRpcGatewayEventHandler(
                 server = null
                 sslCertReadService?.stop()
                 sslCertReadService = null
-                dynamicRpcOps.filterIsInstance<Lifecycle>().forEach { it.stop() }
+                dynamicRpcOpsProperty.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
             }
         }
     }
@@ -164,14 +165,15 @@ internal class HttpRpcGatewayEventHandler(
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
 
         log.info("Starting HTTP RPC Server.")
+        val rpcOps = dynamicRpcOpsProperty.get()
         server = httpRpcServerFactory.createHttpRpcServer(
-            rpcOpsImpls = dynamicRpcOps.toList(),
+            rpcOpsImpls = rpcOps.toList(),
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
             httpRpcSettings = httpRpcSettings,
             multiPartDir = multiPartDir
         ).also { it.start() }
 
-        val numberOfRpcOps = dynamicRpcOps.filterIsInstance<Lifecycle>()
+        val numberOfRpcOps = rpcOps.filterIsInstance<Lifecycle>()
             .map { it.start() }
             .count()
         log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
