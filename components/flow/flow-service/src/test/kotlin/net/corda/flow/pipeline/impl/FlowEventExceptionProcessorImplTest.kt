@@ -202,4 +202,54 @@ class FlowEventExceptionProcessorImplTest {
         assertThat(result.responseEvents).isEmpty()
         assertThat(result.markForDLQ).isTrue
     }
+
+    @Test
+    fun `throwable triggered during transient exception processing does not escape the processor`() {
+        val throwable = RuntimeException()
+        whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
+        whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(throwable)
+
+        val transientError = FlowTransientException("error", context)
+        val transientResult = target.process(transientError)
+        assertEmptyDLQdResult(transientResult)
+    }
+
+    @Test
+    fun `throwable triggered during fatal exception processing does not escape the processor`() {
+        val throwable = RuntimeException()
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+            )
+        ).thenThrow(throwable)
+        val fatalError = FlowFatalException("error", context)
+        val fatalResult = target.process(fatalError)
+        assertEmptyDLQdResult(fatalResult)
+    }
+
+    @Test
+    fun `throwable triggered during platform exception processing does not escape the processor`() {
+        val throwable = RuntimeException()
+        whenever(flowCheckpoint.setPendingPlatformError(any(), any())).thenThrow(throwable)
+        val platformException = FlowPlatformException("error", context)
+        val platformResult = target.process(platformException)
+        assertEmptyDLQdResult(platformResult)
+    }
+
+    @Test
+    fun `throwable triggered during event exception processing does not escape the processor`() {
+        val throwable = RuntimeException()
+        whenever(flowEventContextConverter.convert(context)).thenThrow(throwable)
+        val eventError = FlowEventException("error", context)
+        val eventResult = target.process(eventError)
+        assertEmptyDLQdResult(eventResult)
+    }
+
+    private fun assertEmptyDLQdResult(result: StateAndEventProcessor.Response<Checkpoint>) {
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).isEmpty()
+        assertThat(result.markForDLQ).isTrue
+    }
 }
