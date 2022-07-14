@@ -46,9 +46,9 @@ class FlowEventProcessorImpl(
             return StateAndEventProcessor.Response(state, listOf())
         }
 
-        log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
-
         return try {
+            log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+
             val pipeline = flowEventPipelineFactory.create(state, flowEvent, config)
 
             flowEventContextConverter.convert(pipeline
@@ -69,8 +69,8 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e)
         } catch (e: FlowFatalException) {
             flowEventExceptionProcessor.process(e)
-        } catch (e: Exception) {
-            flowEventExceptionProcessor.process(e)
+        } catch (t: Throwable) {
+            flowEventExceptionProcessor.process(t)
         }
     }
 }
