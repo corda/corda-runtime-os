@@ -3,7 +3,7 @@ package net.corda.flow.fiber
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowStack
 import net.corda.serialization.checkpoint.CheckpointSerializer
@@ -27,11 +27,10 @@ class FlowFiberImplTest {
     val mockCheckpointSerializer = mock<CheckpointSerializer>()
     val mockFlowSandboxGroupContext = mock<FlowSandboxGroupContext>()
     val mockFlowFiberExecutionContext = mock<FlowFiberExecutionContext>()
-
-    val threadExecutor = ScheduledSingleThreadExecutor()
+    
     val fiberScheduler: FiberScheduler = FiberExecutorScheduler(
         "Same thread scheduler",
-        threadExecutor
+        ScheduledSingleThreadExecutor()
     )
 
     @BeforeAll
