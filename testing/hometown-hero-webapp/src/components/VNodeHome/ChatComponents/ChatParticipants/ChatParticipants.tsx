@@ -4,6 +4,7 @@ import SelectedParticipants from '../SelectedParticipants/SelectedParticipants';
 import style from './chatParticipants.module.scss';
 import useAppDataContext from '@/contexts/appDataContext';
 import { useMemo } from 'react';
+import useMessagesContext from '@/contexts/messagesContext';
 import useUserContext from '@/contexts/userContext';
 
 type Props = {
@@ -19,6 +20,7 @@ const ChatParticipants: React.FC<Props> = ({
 }) => {
     const { vNodes, refreshVNodes } = useAppDataContext();
     const { vNode: myVNode } = useUserContext();
+    const { getTotalIncomingMessagesForSender } = useMessagesContext();
 
     const handleCheckboxClicked = (checkBoxChecked: boolean, participant: string) => {
         if (!checkBoxChecked) {
@@ -34,7 +36,17 @@ const ChatParticipants: React.FC<Props> = ({
         () =>
             vNodes
                 .map((node) => node.holdingIdentity.x500Name)
-                .filter((x500) => x500 !== myVNode?.holdingIdentity.x500Name),
+                .filter((x500) => x500 !== myVNode?.holdingIdentity.x500Name)
+                .sort((a, b) => {
+                    const aMessages = getTotalIncomingMessagesForSender(a);
+                    const bMessages = getTotalIncomingMessagesForSender(b);
+
+                    if (aMessages > bMessages) return -1;
+
+                    if (aMessages < bMessages) return 1;
+
+                    return 0;
+                }),
         [vNodes, myVNode]
     );
 
@@ -67,6 +79,10 @@ const ChatParticipants: React.FC<Props> = ({
                                 }}
                             >
                                 {nP}
+                            </p>
+
+                            <p className="ml-auto mr-5 text-lg">
+                                <strong>{getTotalIncomingMessagesForSender(nP)}</strong>
                             </p>
                         </div>
                     );

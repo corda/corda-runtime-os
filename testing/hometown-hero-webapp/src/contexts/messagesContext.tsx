@@ -27,8 +27,9 @@ export type Message = {
 
 type MessagesContextProps = {
     userChatHistory: UsersChatHistory;
-    getChatHistoryForSender: (sender: string) => ChatHistory | undefined;
     addMessageToChatHistoryForSender: (sender: string, message: Message) => void;
+    getChatHistoryForSender: (sender: string) => ChatHistory | undefined;
+    getTotalIncomingMessagesForSender: (sender: string) => number;
 };
 
 const [useMessagesContext, Provider] = createCtx<MessagesContextProps>();
@@ -43,6 +44,14 @@ export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> =
 
     const getChatHistoryForSender = (sender: string): ChatHistory | undefined => {
         return userChatHistory.chatHistories.find((chatHistory) => chatHistory.sender === sender);
+    };
+
+    const getTotalIncomingMessagesForSender = (sender: string): number => {
+        const chatHistory = getChatHistoryForSender(sender);
+
+        if (!chatHistory) return 0;
+
+        return chatHistory.messages.filter((message) => message.sender === sender).length;
     };
 
     const addMessageToChatHistoryForSender = (sender: string, message: Message) => {
@@ -122,11 +131,18 @@ export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> =
         //fetchMessages();
         setInterval(() => {
             fetchMessages();
-        }, 3000);
+        }, 1000);
     }, [holderShortId]);
 
     return (
-        <Provider value={{ userChatHistory, addMessageToChatHistoryForSender, getChatHistoryForSender }}>
+        <Provider
+            value={{
+                userChatHistory,
+                addMessageToChatHistoryForSender,
+                getChatHistoryForSender,
+                getTotalIncomingMessagesForSender,
+            }}
+        >
             {children}
         </Provider>
     );
