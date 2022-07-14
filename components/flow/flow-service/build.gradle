@@ -79,7 +79,6 @@ dependencies {
     testImplementation project(":testing:flow:flow-utilities")
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-    testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
