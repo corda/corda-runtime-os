@@ -6,6 +6,8 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
+import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -53,13 +55,15 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -99,6 +103,12 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
+
+        @InjectService(timeout = 5000L)
+        lateinit var ephemeralEncryptor: EphemeralKeyPairEncryptor
+
+        @InjectService(timeout = 5000L)
+        lateinit var stableDecryptor: StableKeyPairDecryptor
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoFlowOpsTransformerFactory: CryptoFlowOpsTransformerFactory
@@ -357,6 +367,48 @@ class CryptoProcessorTests {
     }
 
     @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should generate a new key pair using alias then find it and use for ECIES`(
+        tenantId: String
+    ) {
+        val alias = UUID.randomUUID().toString()
+
+        val category = CryptoConsts.Categories.SESSION_INIT
+
+        val original = opsClient.generateKeyPair(
+            tenantId = tenantId,
+            category = category,
+            alias = alias,
+            scheme = X25519_CODE_NAME
+        )
+
+        `Should find existing public key by its id`(tenantId, alias, original, category, null)
+
+        `Should find existing public key by its alias`(tenantId, alias, original, category)
+
+        `Should be able to derive secret and encrypt`(tenantId, original)
+    }
+
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should generate a new a new fresh key pair then find it and use for ECIES`(
+        tenantId: String
+    ) {
+        val category = CryptoConsts.Categories.SESSION_INIT
+
+        val original = opsClient.freshKey(
+            tenantId = tenantId,
+            category = category,
+            scheme = X25519_CODE_NAME,
+            context = CryptoOpsClient.EMPTY_CONTEXT
+        )
+
+        `Should find existing public key by its id`(tenantId, null, original, category, null)
+
+        `Should be able to derive secret and encrypt`(tenantId, original)
+    }
+
+    @ParameterizedTest
     @MethodSource("testCategories")
     fun `Should generate a new key pair using alias then find it and use for signing`(
         category: String,
@@ -530,6 +582,28 @@ class CryptoProcessorTests {
                 clearData = data
             )
         }
+    }
+
+    private fun `Should be able to derive secret and encrypt`(tenantId: String, publicKey: PublicKey) {
+        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            schemeMetadata.secureRandom.nextBytes(this)
+        }
+        val plainText = "Hello World!".toByteArray()
+        val cipherText = ephemeralEncryptor.encrypt(
+            salt = salt,
+            otherPublicKey = publicKey,
+            plainText = plainText,
+            aad = null
+        )
+        val decryptedPlainTex = stableDecryptor.decrypt(
+            tenantId = tenantId,
+            salt = salt,
+            publicKey = publicKey,
+            otherPublicKey = cipherText.publicKey,
+            cipherText = cipherText.cipherText,
+            aad = null
+        )
+        assertArrayEquals(plainText, decryptedPlainTex)
     }
 
     private fun `Should be able to sign and verify by inferring signtaure spec`(

@@ -5,8 +5,8 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.ecdh.impl.EphemeralKeyPairEncryptorImpl
-import net.corda.crypto.ecdh.impl.StableKeyPairDecryptorImpl
+import net.corda.crypto.ecies.impl.EphemeralKeyPairEncryptorImpl
+import net.corda.crypto.ecies.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
@@ -1049,11 +1049,9 @@ class CryptoOperationsTests {
         val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
             schemeMetadata.secureRandom.nextBytes(this)
         }
-        val info = "Hello".toByteArray()
         val plainText = "Hello MGM!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
             salt = salt,
-            info = info,
             otherPublicKey = stableKeyPair.publicKey,
             plainText = plainText,
             aad = null
@@ -1061,7 +1059,6 @@ class CryptoOperationsTests {
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
             salt = salt,
-            info = info,
             publicKey = stableKeyPair.publicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,

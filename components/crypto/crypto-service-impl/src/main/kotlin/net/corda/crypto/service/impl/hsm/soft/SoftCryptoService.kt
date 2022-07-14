@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.ecdh.deriveDHSharedSecret
+import net.corda.crypto.ecies.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
 import net.corda.v5.base.util.contextLogger

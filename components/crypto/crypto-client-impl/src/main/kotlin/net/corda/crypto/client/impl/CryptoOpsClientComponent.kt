@@ -172,9 +172,7 @@ class CryptoOpsClientComponent @Activate constructor(
         publicKey: PublicKey,
         otherPublicKey: PublicKey,
         context: Map<String, String>
-    ): ByteArray {
-        TODO("Not yet implemented")
-    }
+    ): ByteArray = impl.ops.deriveSharedSecret(tenantId, publicKey, otherPublicKey, context)
 
     class Impl(
         publisherFactory: PublisherFactory,

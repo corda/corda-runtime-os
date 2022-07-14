@@ -8,6 +8,7 @@ import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -17,6 +18,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -35,6 +37,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
@@ -276,7 +279,24 @@ class CryptoOpsClientImpl(
         otherPublicKey: PublicKey,
         context: Map<String, String>
     ): ByteArray {
-        TODO("Not yet implemented")
+        logger.info(
+            "Sending '{}'(publicKey={},otherPublicKey={})",
+            DeriveSharedSecretCommand::class.java.simpleName,
+            publicKey.publicKeyId(),
+            otherPublicKey.publicKeyId()
+        )
+        val request = createRequest(
+            tenantId,
+            DeriveSharedSecretCommand(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(otherPublicKey)),
+                context.toWire()
+            )
+        )
+        return request.execute(
+            Duration.ofSeconds(20),
+            CryptoDerivedSharedSecret::class.java
+        )!!.secret.array()
     }
 
     fun lookup(

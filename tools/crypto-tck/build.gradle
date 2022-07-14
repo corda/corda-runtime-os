@@ -15,7 +15,7 @@ dependencies {
 
     api "net.corda:corda-cipher-suite"
 
-    api project(":components:crypto:crypto-service")
+    api project(":components:crypto:crypto-ecies")
     api project(':libs:crypto:cipher-suite-impl')
     api project(':libs:crypto:crypto-serialization-impl')
 

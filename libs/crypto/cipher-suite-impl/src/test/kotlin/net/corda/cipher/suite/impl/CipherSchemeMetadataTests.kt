@@ -19,6 +19,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
@@ -82,7 +83,8 @@ class CipherSchemeMetadataTests {
                 providerName = "SUN",
                 algorithmName = CompositeKey.KEY_ALGORITHM,
                 algSpec = null,
-                keySize = null
+                keySize = null,
+                capabilities = setOf(KeySchemeCapability.SIGN)
             )
             val digest = DigestServiceImpl(schemeMetadata, null)
             verifier = SignatureVerificationServiceImpl(schemeMetadata, digest)

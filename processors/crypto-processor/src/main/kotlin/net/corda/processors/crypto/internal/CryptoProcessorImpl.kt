@@ -6,6 +6,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.hsm.HSMStoreProvider
@@ -82,6 +83,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmRegistration: HSMRegistrationBusService,
     @Reference(service = HSMStoreProvider::class)
     private val hsmStoreProvider: HSMStoreProvider,
+    @Reference(service = StableKeyPairDecryptor::class)
+    private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -119,6 +122,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmConfiguration,
         ::hsmRegistration,
         ::hsmStoreProvider,
+        ::stableKeyPairDecryptor,
         ::dbConnectionManager,
         ::vnodeInfo
     )

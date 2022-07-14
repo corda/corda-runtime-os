@@ -278,10 +278,18 @@ class TestServicesFactory {
             return impl.sign(spec, data, context)
         }
 
-        override fun delete(alias: String, context: Map<String, String>): Boolean =
-            impl.delete(alias, context)
+        override fun delete(alias: String, context: Map<String, String>): Boolean {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            return impl.delete(alias, context)
+        }
 
-        override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray =
-            impl.deriveSharedSecret(spec, context)
+        override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            return impl.deriveSharedSecret(spec, context)
+        }
     }
 }
