@@ -89,30 +89,36 @@ pipeline {
  			
         //Start the java process in background
         stage('Start jar / run tests') {
-            // we need the DB credetals here also
-            environment {
-                KUBECONFIG = credentials('e2e-tests-credentials')
-                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
-                VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
-                LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE "
-                WORKING_DIRECTORY = "${env.WORKSPACE}"
-            }
-            steps {
+            withEnv([
+                        "PGHOST=${postgresHost}",
+                        "PGPORT=${postgresPort}",
+                        "DATABASE=${postgresDb}"
+                ]){
+                    environment {
+                        JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
+                        VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
+                        LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
+                        PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE "
+                        WORKING_DIRECTORY = "${env.WORKSPACE}"
+                    }
+                    steps {
 
-                withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                            passwordVariable: 'PGPASSWORD',
-                            usernameVariable: 'PGUSER')]){
-            //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
-                //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
-                sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS} -ddatabase.user=${PGUSER} -ddatabase.pass=${PGPASSWORD} -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster  >> workerLogs.txt 2>&1 &
-                    procno=$!
-                    trap "kill -9 ${procno}" EXIT
-                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
-                '''
+                        withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                                    passwordVariable: 'PGPASSWORD',
+                                    usernameVariable: 'PGUSER')]){
+                        //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
+                        //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
+                        sh '''
+                            nohup java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS} -ddatabase.user=${PGUSER} -ddatabase.pass=${PGPASSWORD} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE}  >> workerLogs.txt 2>&1 &
+                            procno=$!
+                            trap "kill -9 ${procno}" EXIT
+                            ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
+                        '''
+                        }
+                    }
                 }
-            }
+            // we need the DB credetals here also
+            
         }
     }
     post {
