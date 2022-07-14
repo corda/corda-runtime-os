@@ -99,7 +99,7 @@ class EntitiesInBundlesTest {
         private val catName = "Stray"
         private val cat = catCtor.newInstance(catId, catName, "Tabby", owner)
 
-        private val schemaName = "EntitiesInBundlesTest"
+        private val schemaName = "ebt${(1..1000000).random()}"
         private val dbConfig: EntityManagerConfiguration =
             getEntityManagerConfiguration("pets", schemaName = schemaName, createSchema = true)
 

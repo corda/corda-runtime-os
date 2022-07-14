@@ -87,6 +87,7 @@ object DbUtils {
                 logger.info("Creating schema: $schemaName".emphasise())
                 factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.use { conn ->
                     conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                    conn.commit()
                 }
             }
             jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
