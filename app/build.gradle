@@ -1,5 +1,5 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' 
+    id 'org.jetbrains.kotlin.jvm'
     id 'application'
     id 'corda.common-publishing'
 }
@@ -7,15 +7,17 @@ plugins {
 dependencies {
     implementation project(":api")
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$cordaKotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "org.pf4j:pf4j:${pf4jVersion}"
     implementation "org.apache.commons:commons-lang3:${commonsLangVersion}"
-    api "info.picocli:picocli:${picoCliVersion}"
     implementation "org.yaml:snakeyaml:${snakeyamlVersion}"
     implementation "com.github.kittinunf.fuel:fuel:${fuelVersion}"
     implementation "com.github.kittinunf.fuel:fuel-json:${fuelVersion}"
+
+    api "info.picocli:picocli:${picoCliVersion}"
 
     testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
@@ -35,8 +37,8 @@ application {
     mainClass = appMainClass
 }
 
-tasks.named("run"){
-    doFirst{
+tasks.named("run") {
+    doFirst {
         systemProperty "pf4j.pluginsDir", file(pluginsDir).absolutePath
     }
 }
@@ -81,7 +83,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         useDaemon = useDockerDaemon.toBoolean()
     }
     environment = Map.of(
-        "CORDA_CLI_HOME_DIR", "/opt/override/home"
+            "CORDA_CLI_HOME_DIR", "/opt/override/home"
     )
     setEntry = true
 }
@@ -93,44 +95,44 @@ artifacts {
 // required as fatJar artifact not handled by r3Publish
 publishing {
     publications {
-            configureEach {
-                pom {
-                    name = 'corda-cli'
-                    url = vcsUrl - '.git'
-                    scm {
-                        url = vcsUrl
-                    }
-                    
-                    if ((project.hasProperty("licenseName")) && (project.hasProperty("licenseUrl"))) {
-                        licenses {
-                            license {
-                                name = licenseName
-                                url = licenseUrl
-                                distribution = licenseUrl
-                            }
-                        }
-                    }
+        configureEach {
+            pom {
+                name = 'corda-cli'
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
 
-                    developers {
-                        developer {
-                            id = 'R3'
-                            name = 'R3'
-                            email = 'dev@corda.net'
+                if ((project.hasProperty("licenseName")) && (project.hasProperty("licenseUrl"))) {
+                    licenses {
+                        license {
+                            name = licenseName
+                            url = licenseUrl
+                            distribution = licenseUrl
                         }
                     }
                 }
-            }
 
-            mavenFatJar(MavenPublication) {
-                artifact fatJar
-                artifactId = "corda-cli"
-                version  = project.version
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
             }
+        }
 
-            mavenAppJar(MavenPublication) {
-                artifact jar
-                artifactId = "app"
-                version  = project.version
-            }
+        mavenFatJar(MavenPublication) {
+            artifact fatJar
+            artifactId = "corda-cli"
+            version = project.version
+        }
+
+        mavenAppJar(MavenPublication) {
+            artifact jar
+            artifactId = "app"
+            version = project.version
+        }
     }
 }
