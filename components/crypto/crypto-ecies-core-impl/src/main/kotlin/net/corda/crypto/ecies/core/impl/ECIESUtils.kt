@@ -1,6 +1,6 @@
 package net.corda.crypto.ecies.core.impl
 
-import net.corda.crypto.ecies.CryptoUnsafeKey
+import net.corda.crypto.ecies.CryptoUnsafeECIESKeyException
 import net.corda.crypto.ecies.EncryptedDataWithKey
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -53,7 +53,7 @@ fun publicKeyOnCurve(scheme: KeyScheme, publicKey: PublicKey) {
         else -> true
     }
     if(!result) {
-        throw CryptoUnsafeKey("The key pair is not safe, publicKey=${publicKey.publicKeyId()}:$scheme")
+        throw CryptoUnsafeECIESKeyException("The key pair is not safe, publicKey=${publicKey.publicKeyId()}:$scheme")
     }
 }
 
