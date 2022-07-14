@@ -85,7 +85,7 @@ class CombinedWorker @Activate constructor(
         )
 
 
-        logger.info("CONFIG = $config")
+        logger.quiet("CONFIG = ${config}")
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)
