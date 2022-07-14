@@ -40,7 +40,7 @@ import net.corda.utilities.TempPathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
-import kotlin.reflect.KProperty0
+import java.util.function.Supplier
 
 @Suppress("LongParameterList")
 internal class HttpRpcGatewayEventHandler(
@@ -49,7 +49,7 @@ internal class HttpRpcGatewayEventHandler(
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    private val dynamicRpcOpsProperty: KProperty0<List<PluggableRPCOps<out RpcOps>>>,
+    private val dynamicRpcOpsProperty: Supplier<List<PluggableRPCOps<out RpcOps>>>,
     private val tempPathProvider: PathProvider = TempPathProvider()
 ) : LifecycleEventHandler {
 
@@ -167,7 +167,7 @@ internal class HttpRpcGatewayEventHandler(
         log.info("Starting HTTP RPC Server.")
         val rpcOps = dynamicRpcOpsProperty.get()
         server = httpRpcServerFactory.createHttpRpcServer(
-            rpcOpsImpls = rpcOps.toList(),
+            rpcOpsImpls = rpcOps,
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
             httpRpcSettings = httpRpcSettings,
             multiPartDir = multiPartDir
