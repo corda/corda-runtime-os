@@ -58,6 +58,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -79,6 +80,8 @@ import javax.persistence.EntityManagerFactory
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MemberProcessorIntegrationTest {
     companion object {
+        private val log = contextLogger()
+
         const val CLIENT_ID = "member-processor-integration-test"
 
         @InjectService(timeout = 5000L)
@@ -174,13 +177,19 @@ class MemberProcessorIntegrationTest {
         @BeforeAll
         fun setUp() {
             messagingConfig = configMerger.getMessagingConfig(boostrapConfig)
+            log.info("Message config: ${messagingConfig.root().render()}")
             setupDatabases()
+            log.info("Databases Ready")
 
             // Set basic bootstrap config
             cryptoProcessor.start(boostrapConfig)
+            log.info("CryptoProcessor Started")
             memberProcessor.start(boostrapConfig)
+            log.info("MemberProcessor Started")
             membershipGroupReaderProvider.start()
+            log.info("MembershipGroupReaderProvider Started")
             hsmRegistrationClient.start()
+            log.info("HSMRegistrationClient Started")
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),
                 coordinatorFactory,
@@ -195,18 +204,21 @@ class MemberProcessorIntegrationTest {
 
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             publisher.publishMessagingConf(messagingConfig)
+            log.info("Message configuration published")
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,
                 aliceHoldingIdentity,
                 connectionIds.getValue(aliceVNodeDb.name)
             )
+            log.info("Raw Group Policy published to Alice")
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,
                 bobHoldingIdentity,
                 connectionIds.getValue(bobVNodeDb.name)
             )
+            log.info("Raw Group Policy published to Bob")
 
             // Wait for published content to be picked up by components.
             eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
