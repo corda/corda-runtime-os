@@ -84,6 +84,9 @@ class CombinedWorker @Activate constructor(
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
+
+        logger.info("CONFIG = $config")
+
         cryptoProcessor.start(config)
         dbProcessor.start(config)
         uniquenessProcessor.start()
