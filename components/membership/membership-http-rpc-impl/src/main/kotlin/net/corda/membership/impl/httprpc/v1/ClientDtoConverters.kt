@@ -29,9 +29,7 @@ fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
  */
 fun MGMGenerateGroupPolicyResponseDto.fromDto() = MGMGenerateGroupPolicyResponse(
     requestSent,
-    groupPolicyStatus,
-    memberInfoSubmitted.fromDto(),
-    mgmInfoSubmitted.fromDto()
+    generatedGroupPolicy
 )
 
 /**

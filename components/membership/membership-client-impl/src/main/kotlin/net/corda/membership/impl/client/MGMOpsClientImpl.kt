@@ -1,6 +1,5 @@
 package net.corda.membership.impl.client
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.*
@@ -61,8 +60,6 @@ class MGMOpsClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.ops.rpc"
 
         private val clock = UTCClock()
-
-        private val objectMapper = ObjectMapper()
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
@@ -172,7 +169,7 @@ class MGMOpsClientImpl @Activate constructor(
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("")
+            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("Could not find holding identity associated with member.")
 
             if(filteredMembers.isMgm) {
 
@@ -187,7 +184,7 @@ class MGMOpsClientImpl @Activate constructor(
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            return  MGMGenerateGroupPolicyResponseDto(Instant.now(),"FAILED", MemberInfoSubmittedDto(emptyMap()), MemberInfoSubmittedDto(emptyMap()))
+            return  MGMGenerateGroupPolicyResponseDto(Instant.now(),"The holding identity provided is not of an MGM")
 
         }
 
@@ -197,19 +194,7 @@ class MGMOpsClientImpl @Activate constructor(
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): MGMGenerateGroupPolicyResponseDto =
             MGMGenerateGroupPolicyResponseDto(
                 response.requestSent,
-                response.mgmProvidedContext.toString(),
-                MemberInfoSubmittedDto(
-                    mapOf(
-                        *response.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
-                    )
-                ),
-                MemberInfoSubmittedDto(
-                    mapOf(
-                        *response.mgmProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
-                    )
-                )
+                response.generatedGroupPolicy
             )
 
         @Suppress("UNCHECKED_CAST")
