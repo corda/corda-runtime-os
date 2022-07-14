@@ -3,7 +3,7 @@ package net.corda.db.messagebus.testkit
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.TestInMemoryEntityManagerConfiguration
+import net.corda.db.testkit.DbUtils
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.osgi.framework.BundleContext
@@ -29,8 +29,7 @@ object DBSetup: BeforeAllCallback {
     }
 
     private fun setupEntities() {
-//        val dbConfig = DbUtils.getEntityManagerConfiguration(DbSchema.DB_MESSAGE_BUS, dbk)
-        val dbConfig = TestInMemoryEntityManagerConfiguration(DbSchema.DB_MESSAGE_BUS)
+        val dbConfig = DbUtils.getEntityManagerConfiguration(DbSchema.DB_MESSAGE_BUS)
 
         val schemaClass = DbSchema::class.java
         val fullName = schemaClass.packageName + ".messagebus"
