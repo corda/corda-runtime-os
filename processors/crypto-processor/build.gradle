@@ -24,7 +24,6 @@ dependencies {
     implementation project(':components:crypto:crypto-client')
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':components:crypto:crypto-component-core-impl')
-    implementation project(':components:crypto:crypto-ecies')
     implementation project(":components:crypto:crypto-db-persistence-model")
     implementation project(':components:crypto:crypto-persistence')
     implementation project(':components:crypto:crypto-service')
@@ -42,6 +41,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:virtual-node-info")
 
+    integrationTestImplementation project(':components:crypto:crypto-ecies')
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
