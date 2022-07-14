@@ -3,25 +3,26 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.util.UUID
 
 class VerifyMemberHandler(
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val membershipPersistenceClient: MembershipPersistenceClient
 ) : RegistrationHandler<VerifyMember> {
 
     private companion object {
@@ -54,6 +55,11 @@ class VerifyMemberHandler(
         val authenticatedMessage = AuthenticatedMessage(
             authenticatedMessageHeader,
             ByteBuffer.wrap(requestSerializer.serialize(request))
+        )
+        membershipPersistenceClient.setRegistrationRequestStatus(
+            mgm.toCorda(),
+            registrationId,
+            RegistrationStatus.PENDING_MEMBER_VERIFICATION
         )
         return RegistrationHandlerResult(
             RegistrationState(registrationId, member),

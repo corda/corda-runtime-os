@@ -113,9 +113,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
         whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
-        updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
-
         clock.setTime(Instant.ofEpochMilli(500))
+        updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
 
         verify(registrationRequestEntity).status = RegistrationStatus.PENDING_AUTO_APPROVAL.name
         verify(registrationRequestEntity).lastModified = Instant.ofEpochMilli(500)
