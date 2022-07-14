@@ -27,6 +27,7 @@ object DbSchema {
     const val VNODE_CERTIFICATE_DB_TABLE = "vnode_certificate"
     const val VNODE_GROUP_REGISTRATION_TABLE = "vnode_registration_request"
     const val VNODE_MEMBER_INFO = "vnode_member_info"
+    const val VNODE_GROUP_POLICY = "vnode_group_policy"
     const val VNODE_MEMBER_SIGNATURE = "vnode_member_signature"
 
     const val CERTIFICATES_SCHEME = "CERTIFICATES"

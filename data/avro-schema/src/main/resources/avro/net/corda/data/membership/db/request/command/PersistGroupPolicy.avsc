@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "PersistGroupPolicy",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Persist new group policy version.",
+  "fields": [
+    {
+      "name": "properties",
+      "doc": "Group policy properties.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

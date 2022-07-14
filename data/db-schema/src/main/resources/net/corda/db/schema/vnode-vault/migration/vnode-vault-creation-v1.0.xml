@@ -72,6 +72,19 @@
         <addPrimaryKey columnNames="group_id, member_name"
                        constraintName="vnode_member_info_pkey"
                        tableName="vnode_member_info"/>
+
+        <createTable tableName="vnode_group_policy">
+            <column name="version" type="INT" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="properties" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
         <createTable tableName="vnode_member_signature">
             <column name="group_id" type="NVARCHAR(255)">
                 <constraints nullable="false"/>
