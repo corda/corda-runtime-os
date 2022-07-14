@@ -19,11 +19,9 @@ import java.lang.reflect.Constructor
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 
 class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,
@@ -53,7 +51,6 @@ class MemberOpsServiceProcessor(
 
         private val clock = UTCClock()
 
-        private val objectMapper = ObjectMapper()
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
@@ -154,17 +151,19 @@ class MemberOpsServiceProcessor(
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("")
+            val filteredMembers =
+                reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))
+                    ?: throw CordaRuntimeException("Could not find holding identity associated with ${request.holdingIdentityId}")
 
-            if(filteredMembers.isMgm) {
-                val memberProvidedContext =
-                    filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.") }
-                val mgmProvidedContext =
-                    filteredMembers.mgmProvidedContext.entries
-                return objectMapper.writeValueAsString(memberProvidedContext + mgmProvidedContext )
-            }
-//editing here
-            return ""
+            val memberProvidedContext =
+                filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.") }
+            val mgmProvidedContext =
+                filteredMembers.mgmProvidedContext.entries
+
+            return MGMGroupPolicyResponse(
+                context.requestTimestamp,
+                memberProvidedContext.toString() + mgmProvidedContext.toString()
+            )
         }
     }
 }

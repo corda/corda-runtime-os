@@ -194,7 +194,7 @@ class MGMOpsClientImpl @Activate constructor(
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): MGMGenerateGroupPolicyResponseDto =
             MGMGenerateGroupPolicyResponseDto(
                 response.requestSent,
-                response.generatedGroupPolicy
+                response.generatedGroupPolicy.toString()
             )
 
         @Suppress("UNCHECKED_CAST")
