@@ -12,6 +12,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.sql.Connection
 
 object DbUtils {
 
@@ -53,9 +54,7 @@ object DbUtils {
             logger.info("Using in-memory (HSQL) DB".emphasise())
             TestInMemoryEntityManagerConfiguration(inMemoryDbName).also {
                 if(createSchema) {
-                    it.dataSource.connection.use { conn ->
-                        conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
-                    }
+                    it.dataSource.connection.createSchema(schemaName)
                 }
             }
         }
@@ -85,10 +84,7 @@ object DbUtils {
         if(!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.use { conn ->
-                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
-                    conn.commit()
-                }
+                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
             jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
         }
@@ -134,5 +130,13 @@ object DbUtils {
         } else {
             value
         }
+    }
+}
+
+private fun Connection.createSchema(schemaName: String?) {
+    requireNotNull(schemaName)
+    this.use { conn ->
+        conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+        conn.commit()
     }
 }

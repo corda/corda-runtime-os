@@ -5,7 +5,6 @@ import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
-import net.corda.db.core.InMemoryDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfig
@@ -13,7 +12,6 @@ import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -27,7 +25,7 @@ import javax.sql.DataSource
 class FakeDbConnectionManager(
     private val connections: List<Pair<UUID, String>>,
     private val schemaName: String,
-    private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl(),
+    private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
 ): DbConnectionManager, DbConnectionOps, DataSourceFactory {
     private companion object {
         private val logger = contextLogger()
