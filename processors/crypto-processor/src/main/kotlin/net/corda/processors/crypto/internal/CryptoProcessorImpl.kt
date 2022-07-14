@@ -6,7 +6,6 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.hsm.HSMStoreProvider
