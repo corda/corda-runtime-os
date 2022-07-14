@@ -1,0 +1,52 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'net.corda:corda-base'
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":testing:flow:dummy-link-manager")
+    implementation project(":components:flow:flow-mapper-service")
+    implementation project(":components:flow:flow-service")
+    implementation project(":components:flow:flow-p2p-filter-service")
+    implementation project(":components:membership:membership-group-read")
+    implementation project(":components:virtual-node:cpi-info-read-service")
+    implementation project(":components:virtual-node:cpk-read-service")
+    implementation project(":components:virtual-node:sandbox-group-context-service")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(":osgi-framework-api")
+
+    runtimeOnly 'javax.persistence:javax.persistence-api'
+    runtimeOnly "net.corda:corda-avro-schema"
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":components:membership:membership-group-read-impl")
+    runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
+    runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
+    runtimeOnly project(":libs:application:application-impl")
+    runtimeOnly project(':libs:crypto:cipher-suite-impl')
+    runtimeOnly project(":libs:flows:flow-mapper-impl")
+    runtimeOnly project(":libs:flows:session-manager-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(":libs:sandbox-internal")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":libs:serialization:serialization-kryo")
+}
+
+description 'Flow Worker Processor'
