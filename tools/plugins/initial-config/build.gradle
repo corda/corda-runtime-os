@@ -8,7 +8,7 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    implementation "net.corda:corda-api:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation 'javax.persistence:javax.persistence-api'
 
