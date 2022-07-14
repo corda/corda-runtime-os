@@ -83,8 +83,6 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmRegistration: HSMRegistrationBusService,
     @Reference(service = HSMStoreProvider::class)
     private val hsmStoreProvider: HSMStoreProvider,
-    @Reference(service = StableKeyPairDecryptor::class)
-    private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -122,7 +120,6 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmConfiguration,
         ::hsmRegistration,
         ::hsmStoreProvider,
-        ::stableKeyPairDecryptor,
         ::dbConnectionManager,
         ::vnodeInfo
     )

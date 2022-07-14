@@ -280,13 +280,15 @@ class CryptoProcessorTests {
         private fun startDependencies() {
             hsmRegistrationClient.startAndWait()
             cryptoProcessor.startAndWait(boostrapConfig)
+            stableDecryptor.startAndWait()
             val tracker = DependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
                 lifecycleRegistry,
                 setOf(
                     LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
-                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+                    LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>()
                 )
             ).also { it.startAndWait() }
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
