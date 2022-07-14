@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.UUID
 
 @Suppress("Unused")
 @Order(20)
@@ -47,8 +47,10 @@ class FlowTests {
             "net.cordapp.flowworker.development.flows.PersistenceFlow",
             "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
             "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.flows.TestFlow"
+            "net.cordapp.flowworker.development.flows.TestFlow",
+            "net.cordapp.flowworker.development.flows.BrokenProtocolFlow"
         )
+
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
@@ -162,12 +164,13 @@ class FlowTests {
             .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
     }
 
-   /**
-    * This test is failing unexpectedly, a bug has been raised to investigate
-    * https://r3-cev.atlassian.net/browse/CORE-5372
-    */
-    @Test @Disabled
-    fun `Platform Error - user code receives platform errors`(){
+    /**
+     * This test is failing unexpectedly, a bug has been raised to investigate
+     * https://r3-cev.atlassian.net/browse/CORE-5372
+     */
+    @Test
+    @Disabled
+    fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
             data = mapOf("x500" to X500_SESSION_USER1)
@@ -184,7 +187,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Persistence - insert a record`(){
+    fun `Persistence - insert a record`() {
         val id = UUID.randomUUID()
         val requestBody = RpcSmokeTestInput().apply {
             command = "persist_insert"
@@ -202,7 +205,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Flow persistence`(){
+    fun `Flow persistence`() {
         val id = UUID.randomUUID()
 
         // Insert a dog
@@ -253,6 +256,19 @@ class FlowTests {
         flowResult = result.getRpcFlowResult()
         assertThat(flowResult.result).isEqualTo("found dog id='${id}' name='${newDogName}")
 
+        // find all dogs
+        requestBody = RpcSmokeTestInput().apply {
+            command = "persist_findall"
+        }
+
+        requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found one or more dogs")
+
         // delete a dog
         requestBody = RpcSmokeTestInput().apply {
             command = "persist_delete"
@@ -274,7 +290,7 @@ class FlowTests {
     fun `Get runnable flows for a holdingId`() {
         val flows = getFlowClasses(bobHoldingId)
 
-        assertThat(flows.size).isEqualTo(5)
+        assertThat(flows.size).isEqualTo(expectedFlows.size)
         assertTrue(flows.containsAll(expectedFlows))
     }
 

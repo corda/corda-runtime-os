@@ -422,6 +422,7 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
                 mock(),
+                mock(),
                 ThirdPartyComponentsMode.STUB
             )
 

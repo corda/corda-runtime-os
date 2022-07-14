@@ -19,6 +19,10 @@ class ClusterBuilder {
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
+    fun put(cmd: String, body: String) = client!!.put(cmd, body)
+
+    fun get(cmd: String) = client!!.get(cmd)
+
     private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.get(resourceName, groupId).use {

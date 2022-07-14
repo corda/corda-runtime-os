@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
@@ -28,10 +29,8 @@ class LinkManager(
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cpiInfoReadService: CpiInfoReadService,
     cryptoOpsClient: CryptoOpsClient,
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
     thirdPartyComponentsMode: ThirdPartyComponentsMode,
-    members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
-        lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration
-    ),
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
@@ -54,6 +53,11 @@ class LinkManager(
     private val linkManagerCryptoProcessor: CryptoProcessor = when(thirdPartyComponentsMode) {
         ThirdPartyComponentsMode.REAL -> DelegatingCryptoService(cryptoOpsClient)
         ThirdPartyComponentsMode.STUB -> StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
+    }
+
+    private val members: LinkManagerMembershipGroupReader = when(thirdPartyComponentsMode) {
+        ThirdPartyComponentsMode.REAL -> ForwardingMembershipGroupReader(membershipGroupReaderProvider, lifecycleCoordinatorFactory)
+        ThirdPartyComponentsMode.STUB -> StubMembershipGroupReader(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
     }
 
     private val commonComponents = CommonComponents(

@@ -8,14 +8,15 @@ import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.HoldingIdentity
 import java.net.URL
 import java.time.Instant
 
 class MemberInfoExtension {
     companion object {
         /** Key name for ledger keys property. */
-        const val LEDGER_KEYS = "corda.ledgerKeys"
-        const val LEDGER_KEYS_KEY = "corda.ledgerKeys.%s"
+        const val LEDGER_KEYS = "corda.ledger.keys"
+        const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s"
 
         /** Key name for ledger key hashes property. */
         const val LEDGER_KEY_HASHES = "corda.ledgerKeyHashes"
@@ -102,6 +103,16 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.groupId: String
             get() = memberProvidedContext.parse(GROUP_ID)
+
+        /** Member holding identity. */
+        @JvmStatic
+        val MemberInfo.holdingIdentity: HoldingIdentity
+            get() = HoldingIdentity(groupId = groupId, x500Name = name.toString())
+
+        /** Member ID. */
+        @JvmStatic
+        val MemberInfo.id: String
+            get() = holdingIdentity.id
 
         /** List of P2P endpoints for member's node. */
         @JvmStatic

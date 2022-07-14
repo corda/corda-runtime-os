@@ -71,9 +71,10 @@ sealed class KotlinClassImpl<T : Any> constructor(
     final override val superclasses: List<KotlinClass<*>>
         get() = klazz.superclasses.mapNotNull(kClassPool::get)
     final override val allSuperKotlinClasses: List<KotlinClassImpl<*>>
+        @Suppress("unchecked_cast")
         get() = klazz.allSuperclasses
                     .mapNotNullTo(mutableListOf(), kClassPool::get)
-                    .apply { sort() }
+                    .also { (it as MutableList<KotlinClassImpl<Any>>).sort() }
 
     final override fun compareTo(other: KotlinClassImpl<T>): Int {
         return when {

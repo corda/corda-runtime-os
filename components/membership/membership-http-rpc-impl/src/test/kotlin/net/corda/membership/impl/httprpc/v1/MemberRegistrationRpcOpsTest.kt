@@ -56,7 +56,6 @@ class MemberRegistrationRpcOpsTest {
     )
 
     private val registrationRequest = MemberRegistrationRequest(
-        HOLDING_IDENTITY_ID,
         ACTION,
         context = mock()
     )
@@ -73,8 +72,8 @@ class MemberRegistrationRpcOpsTest {
     fun `starting registration calls the client svc`() {
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")
-        memberRegistrationRpcOps.startRegistration(registrationRequest)
-        verify(memberOpsClient).startRegistration(eq(registrationRequest.toDto()))
+        memberRegistrationRpcOps.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
+        verify(memberOpsClient).startRegistration(eq(registrationRequest.toDto(HOLDING_IDENTITY_ID)))
         memberRegistrationRpcOps.deactivate("")
         memberRegistrationRpcOps.stop()
     }

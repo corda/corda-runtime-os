@@ -149,7 +149,7 @@ class MessageConverter {
             members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val destination = message.header.destination
-            val destMemberInfo = members.getMemberInfo(destination)
+            val destMemberInfo = members.getMemberInfo(message.header.source, destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
@@ -199,7 +199,7 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = members.getMemberInfo(destination)
+            val destMemberInfo = members.getMemberInfo(source, destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null

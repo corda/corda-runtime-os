@@ -12,6 +12,8 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
@@ -44,6 +46,13 @@ import javax.persistence.EntityManager
  *
  * @property vnodePublisher Used to publish to Kafka.
  * @property virtualNodeEntityRepository Used to retrieve and store virtual nodes and related entities.
+ * @property vnodeDbFactory Used to construct a mapping object which holds the multiple database connections we have.
+ * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
+ * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
+ *           than always simply the system wall clock time so that we can control everything in tests.
+ * @property an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
+ *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
+ *           returns a list of CpkDbChangeLogEntity.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class VirtualNodeWriterProcessor(
@@ -53,6 +62,7 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
+    private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -98,6 +108,14 @@ internal class VirtualNodeWriterProcessor(
             createSchemasAndUsers(holdingId, vNodeDbs.values)
 
             runDbMigrations(holdingId, vNodeDbs.values)
+
+            val vaultDb = vNodeDbs[VAULT]
+            if ( null == vaultDb) {
+                handleException(respFuture, VirtualNodeWriteServiceException("Vault DB not configured"))
+                return
+            } else {
+                runCpiMigrations(cpiMetadata, vaultDb)
+            }
 
             val dbConnections = persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
 
@@ -231,6 +249,23 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
+    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) {
+        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
+            val changelogs = getChangelogs(it, cpiMetadata.id)
+            logger.info("Found ${changelogs.size} changelogs for ${cpiMetadata.id.name}:${cpiMetadata.id.version}")
+            if (changelogs.isEmpty()) return
+            val dbChange = VirtualNodeDbChangeLog(changelogs)
+            try {
+                vaultDb.runCpiMigrations(dbChange)
+            } catch (e: Exception) {
+                throw VirtualNodeWriteServiceException(
+                    "Error running virtual node DB migration for CPI liquibase migrations",
+                    e
+                )
+            }
+        }
+    }
+
     private fun createVirtualNodeRecord(
         holdingIdentity: HoldingIdentity,
         cpiMetadata: CpiMetadataLite,
@@ -328,6 +363,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
         e: Exception,
     ): Boolean {
+        logger.error("Error while processing virtual node request: ${e.message}", e)
         val response = VirtualNodeManagementResponse(
             clock.instant(),
             VirtualNodeManagementResponseFailure(
