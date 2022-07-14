@@ -27,7 +27,7 @@ class FlowFiberImplTest {
     val mockCheckpointSerializer = mock<CheckpointSerializer>()
     val mockFlowSandboxGroupContext = mock<FlowSandboxGroupContext>()
     val mockFlowFiberExecutionContext = mock<FlowFiberExecutionContext>()
-    
+
     val fiberScheduler: FiberScheduler = FiberExecutorScheduler(
         "Same thread scheduler",
         ScheduledSingleThreadExecutor()
@@ -67,6 +67,7 @@ class FlowFiberImplTest {
 
         val flowFiber = FlowFiberImpl(UUID.randomUUID(), mockFlowLogic, fiberScheduler)
         flowFiber.setUncaughtExceptionHandler { _, _ ->
+            // This is never hit if the test passes, but the test would hang without it were the test to fail
             forceCancelOngoingRunUntilWithTestFailure()
         }
         val outcome = flowFiber.runUntilNotSuspended(mockFlowFiberExecutionContext, fiberScheduler)
