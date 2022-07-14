@@ -4,6 +4,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
@@ -21,10 +22,9 @@ import java.util.UUID
 
 class VerifyMemberHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory
-) : RegistrationHandler {
+) : RegistrationHandler<VerifyMember> {
 
     private companion object {
-        val logger = contextLogger()
         val clock = UTCClock()
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val TTL = 1000L
@@ -32,15 +32,12 @@ class VerifyMemberHandler(
 
     private val requestSerializer = cordaAvroSerializationFactory.createAvroSerializer<VerificationRequest> {  }
 
-    override fun invoke(command: Record<String, RegistrationCommand>): RegistrationHandlerResult {
-        logger.info("Handling request.")
-        val inputCommand = command.value?.command as? VerifyMember
-        require(inputCommand != null) {
-            "Incorrect handler used for command of type ${command.value!!.command::class.java}"
-        }
-        val mgm = inputCommand.source
-        val member = inputCommand.destination
-        val registrationId = inputCommand.registrationId
+    override val commandType = VerifyMember::class.java
+
+    override fun invoke(key: String, command: VerifyMember): RegistrationHandlerResult {
+        val mgm = command.source
+        val member = command.destination
+        val registrationId = command.registrationId
         val requestTimestamp = clock.instant()
         val authenticatedMessageHeader = AuthenticatedMessageHeader(
             member,

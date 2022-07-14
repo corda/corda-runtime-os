@@ -32,7 +32,7 @@ class MembershipP2PProcessor(
     private val messageProcessorFactories: Map<Class<*>, () -> MessageHandler> = mapOf(
         MembershipRegistrationRequest::class.java to { RegistrationRequestHandler(avroSchemaRegistry) },
         VerificationRequest::class.java to { VerificationRequestHandler(avroSchemaRegistry) },
-        VerificationResponse::class.java to { VerificationResponseHandler(avroSchemaRegistry) }
+        VerificationResponse::class.java to { VerificationResponseHandler(avroSchemaRegistry) },
     )
 
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
