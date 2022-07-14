@@ -43,7 +43,7 @@ class EntityManagerFactoryHolder @Activate constructor(
         if (emf == null) {
             logger.info("Creating emf for $jdbcUrl")
             emf = entityManagerFactoryFactory.create(
-                null,
+                jdbcUrl,
                 jdbcUsername,
                 jdbcPassword,
                 "DB Message Bus for $jdbcUrl",
