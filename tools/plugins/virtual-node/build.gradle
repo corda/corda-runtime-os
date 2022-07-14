@@ -12,7 +12,7 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
     implementation project(":libs:http-rpc:http-rpc")
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
