@@ -1,5 +1,7 @@
-package net.corda.crypto.ecies
+package net.corda.crypto.ecies.core.impl
 
+import net.corda.crypto.ecies.CryptoUnsafeKey
+import net.corda.crypto.ecies.EncryptedDataWithKey
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.publicKeyId
@@ -35,7 +37,8 @@ fun deriveDHSharedSecret(provider: Provider, privateKey: PrivateKey, otherPublic
 /**
  * Check if a point's coordinates are on the expected curve to avoid certain types of ECC attacks.
  * Point-at-infinity is not permitted as well.
- * @see <a href="https://safecurves.cr.yp.to/twist.html">Small subgroup and invalid-curve attacks</a> for a more descriptive explanation on such attacks.
+ * @see <a href="https://safecurves.cr.yp.to/twist.html">Small subgroup and invalid-curve attacks</a> for a more
+ * descriptive explanation on such attacks.
  * We should note that we are doing it out of an abundance of caution and specifically to proactively protect developers
  * against using these points as part of a DH key agreement or for use cases as yet unimagined.
  * This method currently applies to BouncyCastle's ECDSA (both R1 and K1 curves).
@@ -81,6 +84,7 @@ fun encryptWithEphemeralKeyPair(
     )
 }
 
+@Suppress("LongParameterList")
 fun decryptWithStableKeyPair(
     schemeMetadata: CipherSchemeMetadata,
     salt: ByteArray,

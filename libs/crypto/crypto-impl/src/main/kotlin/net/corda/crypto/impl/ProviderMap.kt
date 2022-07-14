@@ -59,6 +59,7 @@ class ProviderMap(
     /**
      * EdDSA key scheme using the X25519 twisted Edwards curve for ECDH.
      */
+    @Suppress("VariableNaming", "PropertyName")
     val X25519 = X25519KeySchemeInfo(cordaBouncyCastleProvider)
 
     /** ECDSA key scheme using the sm2p256v1 (Chinese SM2) curve. */

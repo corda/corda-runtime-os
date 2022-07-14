@@ -59,6 +59,7 @@ dependencies {
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":components:crypto:crypto-client-hsm-impl")
+    runtimeOnly project(":components:crypto:crypto-ecies-core-impl")
     runtimeOnly project(":components:crypto:crypto-ecies-impl")
     runtimeOnly project(":components:crypto:crypto-db-persistence-impl")
     runtimeOnly project(':components:crypto:crypto-service-impl')

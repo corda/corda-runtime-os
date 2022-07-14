@@ -4,6 +4,7 @@ import net.corda.lifecycle.Lifecycle
 import java.security.PublicKey
 
 interface StableKeyPairDecryptor : Lifecycle {
+    @Suppress("LongParameterList")
     fun decrypt(
         tenantId: String,
         salt: ByteArray,

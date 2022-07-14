@@ -1,7 +1,7 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.ecies.deriveDHSharedSecret
+import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService

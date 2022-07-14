@@ -3,7 +3,7 @@ package net.corda.crypto.ecies.impl
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.ecies.StableKeyPairDecryptor
-import net.corda.crypto.ecies.decryptWithStableKeyPair
+import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -29,6 +29,7 @@ class StableKeyPairDecryptorImpl @Activate constructor(
     )
 ), StableKeyPairDecryptor {
     interface Impl : AutoCloseable {
+        @Suppress("LongParameterList")
         fun decrypt(
             tenantId: String,
             salt: ByteArray,

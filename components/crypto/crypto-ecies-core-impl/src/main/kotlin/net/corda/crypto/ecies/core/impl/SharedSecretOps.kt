@@ -1,7 +1,13 @@
-package net.corda.crypto.ecies
+package net.corda.crypto.ecies.core.impl
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.crypto.ecies.AES_KEY_ALGORITHM
+import net.corda.crypto.ecies.AES_KEY_SIZE_BYTES
+import net.corda.crypto.ecies.AES_PROVIDER
+import net.corda.crypto.ecies.GCM_NONCE_LENGTH
+import net.corda.crypto.ecies.GCM_TAG_LENGTH
+import net.corda.crypto.ecies.GCM_TRANSFORMATION
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -30,6 +36,7 @@ object SharedSecretOps {
         }
     }
 
+    @Suppress("LongParameterList")
     fun encrypt(
         salt: ByteArray,
         publicKey: PublicKey,
@@ -55,6 +62,7 @@ object SharedSecretOps {
         }
     }
 
+    @Suppress("LongParameterList")
     fun decrypt(
         salt: ByteArray,
         publicKey: PublicKey,

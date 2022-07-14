@@ -3,8 +3,8 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
-import net.corda.crypto.ecies.decryptWithStableKeyPair
-import net.corda.crypto.ecies.encryptWithEphemeralKeyPair
+import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
+import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
 import net.corda.crypto.impl.decorators.requiresWrappingKey
 import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.impl.decorators.supportsSharedSecretDerivation

@@ -2,7 +2,7 @@ package net.corda.crypto.ecies.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.ecies.deriveDHSharedSecret
+import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
 import net.corda.crypto.ecies.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl

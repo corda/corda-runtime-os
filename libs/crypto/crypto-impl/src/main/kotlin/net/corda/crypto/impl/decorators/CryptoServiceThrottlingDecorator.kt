@@ -11,7 +11,6 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.failures.CryptoException
 import net.corda.v5.crypto.failures.CryptoThrottlingException
-import java.security.PublicKey
 import java.util.UUID
 
 class CryptoServiceThrottlingDecorator(
