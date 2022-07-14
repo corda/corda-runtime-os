@@ -62,6 +62,7 @@ class FlowFiberImplTest {
     fun `check throwing flow is handled safely`() {
         val mockFlowLogic = mock<FlowLogicAndArgs>()
         whenever(mockFlowLogic.invoke()).then {
+            @Suppress("TooGenericExceptionThrown")
             throw Throwable()
         }
 
