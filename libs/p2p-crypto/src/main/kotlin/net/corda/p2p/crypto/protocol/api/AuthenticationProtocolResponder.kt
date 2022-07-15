@@ -56,7 +56,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
-        require(ourMaxMessageSize > MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
+        require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
     private var step = Step.INIT
@@ -183,7 +183,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
             }
 
             initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize.apply {
-                if (this <= MIN_PACKET_SIZE) {
+                if (this < MIN_PACKET_SIZE) {
                     throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
                             "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
                 }
