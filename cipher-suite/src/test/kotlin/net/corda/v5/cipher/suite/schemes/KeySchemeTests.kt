@@ -17,7 +17,8 @@ class KeySchemeTests {
                 providerName = "provider",
                 algorithmName = "EC",
                 algSpec = null,
-                keySize = null
+                keySize = null,
+                capabilities = setOf(KeySchemeCapability.SIGN)
             )
         }
     }
@@ -31,7 +32,8 @@ class KeySchemeTests {
                 providerName = "provider",
                 algorithmName = "EC",
                 algSpec = null,
-                keySize = null
+                keySize = null,
+                capabilities = setOf(KeySchemeCapability.SIGN)
             )
         }
     }
@@ -45,7 +47,8 @@ class KeySchemeTests {
                 providerName = "  ",
                 algorithmName = "EC",
                 algSpec = null,
-                keySize = null
+                keySize = null,
+                capabilities = setOf(KeySchemeCapability.SIGN)
             )
         }
     }
@@ -59,7 +62,23 @@ class KeySchemeTests {
                 providerName = "provider",
                 algorithmName = "  ",
                 algSpec = null,
-                keySize = null
+                keySize = null,
+                capabilities = setOf(KeySchemeCapability.SIGN)
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when initializing with empty capabilities`() {
+        assertThrows<IllegalArgumentException> {
+            KeyScheme(
+                codeName = ECDSA_SECP256K1_CODE_NAME,
+                algorithmOIDs = listOf(AlgorithmIdentifier(X9ObjectIdentifiers.id_ecPublicKey, SECObjectIdentifiers.secp256k1)),
+                providerName = "provider",
+                algorithmName = "some-algorithm",
+                algSpec = null,
+                keySize = null,
+                capabilities = emptySet()
             )
         }
     }

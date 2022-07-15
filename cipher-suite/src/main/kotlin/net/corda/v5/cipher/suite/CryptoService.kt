@@ -118,4 +118,26 @@ interface CryptoService {
      * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
      */
     fun delete(alias: String, context: Map<String, String>): Boolean
+
+    /**
+     * Derive Diffie–Hellman key agreement shared secret by using the private key associated with [publicKey]
+     * and [otherPublicKey], note that the key schemes of the [publicKey] and [otherPublicKey] must be the same and
+     * the scheme must support the key agreement secret derivation.
+     *
+     * @param spec the operation parameters, see [SharedSecretAliasSpec] and [SharedSecretWrappedSpec]
+     * @param context the optional key/value operation context. The context will have at least one variable defined -
+     * 'tenantId'.
+     *
+     * @return the shared secret. Note that it's expected that the returned secret must be not post processed by
+     * applying further transformations (e.g. HKDF or any other) as that will be done by Corda itself.
+     *
+     * @throws IllegalArgumentException if the key is not found, the key scheme is not supported, the signature spec
+     * is not supported, the key schemes of the public keys are not matching or in general the input parameters are wrong
+     * @throws UnsupportedOperationException if the operation is not supported
+     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     */
+    fun deriveSharedSecret(
+        spec: SharedSecretSpec,
+        context: Map<String, String>
+    ): ByteArray
 }

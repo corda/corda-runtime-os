@@ -16,6 +16,7 @@ import java.security.spec.AlgorithmParameterSpec
  * rather than algSpec. eg. ECGenParameterSpec("secp256k1").
  * @property keySize the private key size (currently used for RSA only), it's used to initialize the key generator
  * if the [algSpec] is not specified, if [algSpec] and [keySize] are bth null then default initialization is used.
+ * @property capabilities defines the usage of the key, there must be at least one specified
  */
 data class KeyScheme(
     val codeName: String,
@@ -23,14 +24,18 @@ data class KeyScheme(
     val providerName: String,
     val algorithmName: String,
     val algSpec: AlgorithmParameterSpec?,
-    val keySize: Int?
+    val keySize: Int?,
+    val capabilities: Set<KeySchemeCapability>
 ) {
     init {
         require(codeName.isNotBlank()) { "The codeName must not be blank." }
         require(providerName.isNotBlank()) { "The providerName must not be blank." }
         require(algorithmName.isNotBlank()) { "The algorithmName must not be blank." }
         require(algorithmOIDs.isNotEmpty()) { "The algorithmOIDs must not be empty." }
+        require(capabilities.isNotEmpty()) { "There must be defined at least one capability." }
     }
+
+    fun canDo(capability: KeySchemeCapability): Boolean = capabilities.contains(capability)
 
     override fun toString(): String =
         "$codeName($providerName,$algorithmName)"

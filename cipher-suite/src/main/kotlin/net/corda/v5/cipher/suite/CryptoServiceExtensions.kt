@@ -14,5 +14,10 @@ enum class CryptoServiceExtensions {
     /**
      * The service supports the key deletion.
      */
-    DELETE_KEYS
+    DELETE_KEYS,
+
+    /**
+     * Specifies that the implementation supports Diffie–Hellman key agreement  for qualifying key schemes.
+     */
+    SHARED_SECRET_DERIVATION
 }

@@ -12,6 +12,7 @@
     {
       "name": "request",
       "type": [
+        "net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand",
         "net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand",
         "net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand",
         "net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand",
