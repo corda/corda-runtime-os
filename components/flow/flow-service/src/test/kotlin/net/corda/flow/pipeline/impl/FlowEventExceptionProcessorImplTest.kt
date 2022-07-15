@@ -73,7 +73,7 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `flow transient exception sets retry state and publishes a status update`() {
-        val error = FlowTransientException("error", context)
+        val error = FlowTransientException("error")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
@@ -94,7 +94,7 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `flow transient exception processed as fatal when retry limit reached`() {
-        val error = FlowTransientException("error", context)
+        val error = FlowTransientException("error")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(2)
@@ -116,7 +116,7 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `flow fatal exception marks flow for dlq and publishes status update`() {
-        val error = FlowFatalException("error", context)
+        val error = FlowFatalException("error")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
 
@@ -139,7 +139,7 @@ class FlowEventExceptionProcessorImplTest {
     @Test
     fun `flow platform exception marks sets pending exception and outputs wakeup`() {
         val flowId = "f1"
-        val error = FlowPlatformException("error", context)
+        val error = FlowPlatformException("error")
         val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
 
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
@@ -154,12 +154,12 @@ class FlowEventExceptionProcessorImplTest {
         })
 
         verify(flowCheckpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
-        verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message!!)
+        verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
     }
 
     @Test
     fun `flow flow exception outputs the transformed context as normal`() {
-        val error = FlowEventException("error", context)
+        val error = FlowEventException("error")
 
         val result = target.process(error)
 
@@ -168,7 +168,7 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `failure to create a status message does not prevent transient failure handling from succeeding`() {
-        val error = FlowTransientException("error", context)
+        val error = FlowTransientException("error")
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(IllegalStateException())
 
@@ -186,7 +186,7 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `failure to create a status message does not prevent fatal failure handling from succeeding`() {
-        val error = FlowFatalException("error", context)
+        val error = FlowFatalException("error")
 
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
@@ -209,7 +209,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(throwable)
 
-        val transientError = FlowTransientException("error", context)
+        val transientError = FlowTransientException("error")
         val transientResult = target.process(transientError)
         assertEmptyDLQdResult(transientResult)
     }
@@ -224,7 +224,7 @@ class FlowEventExceptionProcessorImplTest {
                 "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
             )
         ).thenThrow(throwable)
-        val fatalError = FlowFatalException("error", context)
+        val fatalError = FlowFatalException("error")
         val fatalResult = target.process(fatalError)
         assertEmptyDLQdResult(fatalResult)
     }
@@ -233,7 +233,7 @@ class FlowEventExceptionProcessorImplTest {
     fun `throwable triggered during platform exception processing does not escape the processor`() {
         val throwable = RuntimeException()
         whenever(flowCheckpoint.setPendingPlatformError(any(), any())).thenThrow(throwable)
-        val platformException = FlowPlatformException("error", context)
+        val platformException = FlowPlatformException("error")
         val platformResult = target.process(platformException)
         assertEmptyDLQdResult(platformResult)
     }
@@ -242,7 +242,7 @@ class FlowEventExceptionProcessorImplTest {
     fun `throwable triggered during event exception processing does not escape the processor`() {
         val throwable = RuntimeException()
         whenever(flowEventContextConverter.convert(context)).thenThrow(throwable)
-        val eventError = FlowEventException("error", context)
+        val eventError = FlowEventException("error")
         val eventResult = target.process(eventError)
         assertEmptyDLQdResult(eventResult)
     }

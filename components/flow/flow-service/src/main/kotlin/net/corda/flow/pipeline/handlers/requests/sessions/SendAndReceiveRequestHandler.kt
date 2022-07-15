@@ -39,7 +39,7 @@ class SendAndReceiveRequestHandler @Activate constructor(
             flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, context, e)
+            throw FlowFatalException(e.message, e)
         }
 
         return if (hasReceivedEvents) {
