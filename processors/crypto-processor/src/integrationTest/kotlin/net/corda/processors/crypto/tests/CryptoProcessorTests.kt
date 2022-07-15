@@ -1,6 +1,12 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.*
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -14,6 +20,7 @@ import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
@@ -76,12 +83,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -677,7 +678,8 @@ class CryptoProcessorTests {
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
-                data = data
+                data = data,
+                flowExternalEventContext = ExternalEventContext()
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",
@@ -721,7 +723,8 @@ class CryptoProcessorTests {
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
-                data = data
+                data = data,
+                flowExternalEventContext = ExternalEventContext()
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",

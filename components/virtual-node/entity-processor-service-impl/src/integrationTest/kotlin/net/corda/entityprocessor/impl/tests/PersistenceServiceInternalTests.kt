@@ -1,14 +1,16 @@
 package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.EntityResponseFailure
-import net.corda.data.persistence.EntityResponseSuccess
-import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
@@ -38,13 +40,13 @@ import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getCatClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getDogClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -85,9 +87,10 @@ import java.util.UUID
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceServiceInternalTests {
-    companion object {
+    private companion object {
         const val TOPIC = "pretend-topic"
-        private val logger = contextLogger()
+        val flowExternalEventContext = ExternalEventContext("request id", "flow id")
+        val logger = contextLogger()
     }
 
     @InjectService
@@ -99,6 +102,8 @@ class PersistenceServiceInternalTests {
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
     private lateinit var ctx: DbTestContext
 
@@ -117,6 +122,9 @@ class PersistenceServiceInternalTests {
             virtualNode = setup.fetchService(timeout = 10000)
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
+            externalEventResponseFactory = setup.fetchService(timeout = 10000)
+            deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
+                .createAvroDeserializer({}, EntityResponse::class.java)
         }
     }
 
@@ -160,10 +168,8 @@ class PersistenceServiceInternalTests {
         val dogId = UUID.randomUUID()
         logger.info("Persisting $dogId/rover")
 
-        val requestId = UUID.randomUUID().toString()
-
         val persistenceService =
-            PersistenceServiceInternal(entitySandboxService::getClass, requestId, UTCClock(), this::noOpPayloadCheck)
+            PersistenceServiceInternal(entitySandboxService::getClass, this::noOpPayloadCheck)
         val dog = sandbox.createDogInstance(dogId, "Rover", Instant.now(), "me")
         val payload = PersistEntity(sandbox.serialize(dog))
 
@@ -190,17 +196,17 @@ class PersistenceServiceInternalTests {
 
         val dog = sandbox.createDogInstance(UUID.randomUUID(), "Walter", Instant.now(), "me")
         val request = createRequest(virtualNodeInfo.holdingIdentity, PersistEntity(sandbox.serialize(dog)))
-        val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
-        val requestId = UUID.randomUUID().toString() // just needs to be something unique.
-        val records = listOf(Record(TOPIC, requestId, request))
+        val records = listOf(Record(TOPIC, request.flowExternalEventContext.flowId, request))
         val responses = processor.onNext(records)
 
         assertThat(responses.size).isEqualTo(1)
 
-        val flowEvent = responses.first().value  as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        assertThat(response.requestId).isEqualTo(requestId)
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.requestId).isEqualTo(request.flowExternalEventContext.requestId)
     }
 
     @Test
@@ -213,7 +219,8 @@ class PersistenceServiceInternalTests {
 
         val dbConnectionManager = FakeDbConnectionManager(
             listOf(animalDbConnection, calcDbConnection),
-            "PSIT2")
+            "PSIT2"
+        )
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -242,8 +249,13 @@ class PersistenceServiceInternalTests {
         val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
-        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro(), PersistEntity(sandboxOne.serialize(dog)))
-        val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val request = EntityRequest(
+            virtualNodeInfoTwo.holdingIdentity.toAvro(),
+            PersistEntity(sandboxOne.serialize(dog)),
+            flowExternalEventContext
+        )
+        val processor =
+            EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
 
@@ -254,18 +266,14 @@ class PersistenceServiceInternalTests {
 
         // It's a failure
         assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
-
-        val responseFailure = entityResponse.responseType as EntityResponseFailure
-
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.exceptionEnvelope).isNotNull
         // The failure is correctly categorised - serialization fails within the database path of the code.
         // It can never succeed on retry, therefore, it's fatal.
-        assertThat(responseFailure.errorType).isEqualTo(Error.FATAL)
-
+        assertThat(response.exceptionEnvelope.errorType).isEqualTo(ExternalEventResponseErrorType.PLATFORM_ERROR)
         // The failure also captures the exception name.
-        assertThat(responseFailure.exception.errorType).contains("NotSerializableException")
+        assertThat(response.exceptionEnvelope.exception.errorType).contains("NotSerializableException")
     }
 
     @Test
@@ -297,15 +305,15 @@ class PersistenceServiceInternalTests {
             Calendar.getInstance().get(Calendar.YEAR) - 1976
         )
         val catRequest = EntityRequest(
-            dogRequest.timestamp,
-            dogRequest.flowId,
             dogRequest.holdingIdentity,
-            PersistEntity(ctx.serialize(cat))
+            PersistEntity(ctx.serialize(cat)),
+            flowExternalEventContext
         )
 
         // Now send the two messages (both 'persist') to the message processor.  This is the point where we would
         // 'receive them' from the flow-worker via Kafka
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, dogRequest), Record(TOPIC, requestId, catRequest))
 
@@ -378,11 +386,9 @@ class PersistenceServiceInternalTests {
 
         // assert that Bella has been returned
 
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-        assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
-        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
-        val bytes = entityResponseSuccess.result as ByteBuffer
+        val flowEvent = responses.first().value as FlowEvent
+        val entityResponse = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())
+        val bytes = entityResponse?.result as ByteBuffer
         val responseEntity = ctx.deserialize(bytes)
         assertThat(responseEntity).isEqualTo(bellaTheDog)
 
@@ -450,7 +456,7 @@ class PersistenceServiceInternalTests {
         assertThat(responses.size).isEqualTo(1)
 
         val actual = ctx.findDog(dogId)
-        assertThat(actual).isNotNull
+        assertThat(actual).isNotNull()
     }
 
     @Test
@@ -476,37 +482,39 @@ class PersistenceServiceInternalTests {
     fun `find all exceeds kakfa packet size`() {
         persistDogs(ctx, 10)
 
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
+        val processor = EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory) {
             if (it.array().size > 50) throw KafkaMessageSizeException("Too large")
             it
         }
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME))
 
-        val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
+        val responses =
+            assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
         val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        val failure = response.responseType as EntityResponseFailure
-        assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.exceptionEnvelope.exception.errorType).contains("KafkaMessageSizeException")
     }
+
     @Test
     fun `find exceeds kakfa packet size`() {
         val dogId = UUID.randomUUID()
         val dog = ctx.sandbox.createDogInstance(dogId, "K9", Instant.now(), "Doctor Who")
         ctx.persist(dog)
 
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
+        val processor = EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory) {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindEntity(DOG_CLASS_NAME, ctx.serialize(dogId)))
+        val request =
+            createRequest(ctx.virtualNodeInfo.holdingIdentity, FindEntity(DOG_CLASS_NAME, ctx.serialize(dogId)))
 
-        val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
+        val responses =
+            assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
         val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        val failure = response.responseType as EntityResponseFailure
-        assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.exceptionEnvelope.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     @Test
@@ -523,18 +531,18 @@ class PersistenceServiceInternalTests {
             "Doctor Who Peter Davidson"
         )
 
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
+        val processor = EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory) {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, MergeEntity(ctx.serialize(modifiedDog)))
 
-        val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
+        val responses =
+            assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
         val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        val failure = response.responseType as EntityResponseFailure
-        assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.exceptionEnvelope.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     /** Cat class has composite key, so also check we find those ok */
@@ -671,7 +679,8 @@ class PersistenceServiceInternalTests {
         val schemaName = "PSIT$testId"
         val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
         val dbConnectionManager = FakeDbConnectionManager(
-            listOf(animalDbConnection), schemaName)
+            listOf(animalDbConnection), schemaName
+        )
 
         // set up sandbox
         val entitySandboxService =
@@ -722,11 +731,11 @@ class PersistenceServiceInternalTests {
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
             val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as EntityResponse
-            if (response.responseType is EntityResponseFailure) {
-                logger.error("$response.responseType")
+            val response = flowEvent.payload as ExternalEventResponse
+            if (response.exceptionEnvelope != null) {
+                logger.error("Incorrect error response: ${response.exceptionEnvelope}")
             }
-            assertThat(response.responseType).isInstanceOf(EntityResponseSuccess::class.java)
+            assertThat(response.exceptionEnvelope).isNull()
         }
         return records
     }
@@ -734,18 +743,17 @@ class PersistenceServiceInternalTests {
     private fun assertFailureResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
             val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as EntityResponse
-            if (response.responseType is EntityResponseSuccess) {
-                logger.error("$response.responseType")
+            val response = flowEvent.payload as ExternalEventResponse
+            if (response.exceptionEnvelope == null) {
+                logger.error("Incorrect successful response: ${response.exceptionEnvelope}")
             }
-            assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
+            assertThat(response.exceptionEnvelope).isNotNull()
         }
         return records
     }
 
     private fun assertThatResponseIsAList(entityResponse: EntityResponse): List<*> {
-        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
-        val bytes = entityResponseSuccess.result as ByteBuffer
+        val bytes = entityResponse.result as ByteBuffer
         val results = ctx.deserialize(bytes)
 
         // We have a list
@@ -756,22 +764,23 @@ class PersistenceServiceInternalTests {
 
     private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
         logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
-        return EntityRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
+        return EntityRequest(holdingId.toAvro(), entity, flowExternalEventContext)
     }
 
     /** Find all for class name and assert
      * @return the list of results (NOT the list of record/responses)
      * */
     private fun assertFindAll(className: String): List<*> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindAll(className))
 
         val responses =
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
         assertThat(responses.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val entityResponse = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())!!
 
         return assertThatResponseIsAList(entityResponse)
     }
@@ -812,7 +821,8 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      * */
     private fun assertDeleteEntity(bytes: ByteBuffer): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
         return assertSuccessResponses(
             processor.onNext(
@@ -832,7 +842,8 @@ class PersistenceServiceInternalTests {
      * */
     private fun assertDeleteEntityById(className: String, bytes: ByteBuffer): List<Record<*, *>> {
         val deleteByPrimaryKey = DeleteEntityById(className, bytes)
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
         val records = listOf(
             Record(
                 TOPIC,
@@ -847,7 +858,8 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      * */
     private fun assertFindEntity(className: String, bytes: ByteBuffer): ByteBuffer? {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
             processor.onNext(
@@ -865,17 +877,17 @@ class PersistenceServiceInternalTests {
         )
 
         val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        val success = response.responseType as EntityResponseSuccess
+        val response = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())!!
 
-        return success.result
+        return response.result
     }
 
     /** Persist an entity and do some asserting
      * @return the list of successful responses
      */
     private fun assertPersistEntity(bytes: ByteBuffer): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
         return assertSuccessResponses(
             processor.onNext(
@@ -894,7 +906,8 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      */
     private fun assertMergeEntity(bytes: ByteBuffer): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
         return assertSuccessResponses(
             processor.onNext(
                 listOf(

@@ -1,15 +1,11 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.*
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
-import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -24,10 +20,6 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.EntityResponseFailure
-import net.corda.data.persistence.EntityResponseSuccess
-import net.corda.data.persistence.Error
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
@@ -59,10 +51,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.time.Instant
-import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -86,10 +74,8 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private val testConfig = mutableMapOf<String, Any>(
-        FlowConfig.CRYPTO_MAX_RETRIES to 2,
-        FlowConfig.CRYPTO_MESSAGE_RESEND_WINDOW to 500000L,
-        FlowConfig.PERSISTENCE_MAX_RETRIES to 2,
-        FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW to 500000L,
+        FlowConfig.EXTERNAL_EVENT_MAX_RETRIES to 2,
+        FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
@@ -327,88 +313,6 @@ class FlowServiceTestContext @Activate constructor(
 
     override fun wakeupEventReceived(flowId: String): FlowIoRequestSetup {
         return addTestRun(createFlowEventRecord(flowId, Wakeup()))
-    }
-
-    override fun cryptoSignResponseReceived(
-        flowId: String,
-        requestId: String,
-        publicKey: PublicKey,
-        bytes: ByteArray,
-        requestingComponent: String,
-        requestingTimestamp: Instant,
-        responseTimestamp: Instant,
-        tenantId: String,
-        otherContext: KeyValuePairList,
-        exceptionEnvelope: ExceptionEnvelope?
-    ): FlowIoRequestSetup {
-        val context = CryptoResponseContext.newBuilder()
-            .setRequestingComponent("Flow Worker")
-            .setRequestTimestamp(requestingTimestamp)
-            .setRequestId(requestId)
-            .setResponseTimestamp(responseTimestamp)
-            .setTenantId(tenantId)
-            .setOther(otherContext)
-            .build()
-
-        context.other.items.add(
-            KeyValuePair(
-                CryptoFlowOpsTransformer.REQUEST_OP_KEY,
-                SignFlowCommand::class.java.simpleName
-            )
-        )
-
-        return addTestRun(
-            createFlowEventRecord(
-                flowId,
-                FlowOpsResponse(
-                    CryptoResponseContext.newBuilder()
-                        .setRequestingComponent("Flow Worker")
-                        .setRequestTimestamp(requestingTimestamp)
-                        .setRequestId(requestId)
-                        .setResponseTimestamp(responseTimestamp)
-                        .setTenantId(tenantId)
-                        .setOther(otherContext)
-                        .build(),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(publicKey.encoded),
-                        ByteBuffer.wrap(bytes),
-                        KeyValuePairList(mutableListOf())
-                    ),
-                    exceptionEnvelope
-                )
-            )
-        )
-    }
-
-    override fun entityResponseSuccessReceived(
-        flowId: String,
-        requestId: String,
-        byteBuffer: ByteBuffer?
-    ): FlowIoRequestSetup {
-        return addEntityResponseToTestRun(requestId, EntityResponseSuccess(byteBuffer), flowId)
-    }
-
-    override fun entityResponseErrorReceived(
-        flowId: String,
-        requestId: String,
-        errorType: Error,
-        exception: ExceptionEnvelope
-    ): FlowIoRequestSetup {
-        return addEntityResponseToTestRun(requestId, EntityResponseFailure(errorType, exception), flowId)
-    }
-
-    private fun addEntityResponseToTestRun(
-        requestId: String,
-        entityResponsePayload: Any,
-        flowId: String
-    ): FlowIoRequestSetup {
-        val entityResponse = EntityResponse.newBuilder()
-            .setRequestId(requestId)
-            .setTimestamp(Instant.now())
-            .setResponseType(entityResponsePayload)
-            .build()
-
-        return addTestRun(createFlowEventRecord(flowId, entityResponse))
     }
 
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {

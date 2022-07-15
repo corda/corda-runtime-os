@@ -36,6 +36,7 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(":libs:flows:flows")
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'

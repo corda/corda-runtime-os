@@ -20,8 +20,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-flow")
-    implementation project(":libs:flows:crypto-manager")
-    implementation project(':libs:flows:persistence-manager')
+    implementation project(':libs:flows:flows')
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
