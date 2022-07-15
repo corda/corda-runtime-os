@@ -8,7 +8,7 @@ plugins {
 CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension, project.name)
 
 configurations {
-    cliPluginConfig {
+    cliPluginContents {
         shouldResolveConsistentlyWith runtimeClasspath
         extendsFrom runtimeClasspath
         canBeConsumed = false
@@ -17,6 +17,7 @@ configurations {
         exclude group: 'net.corda.kotlin'
         exclude group: 'org.jetbrains.kotlin'
         exclude group: 'org.slf4j'
+        exclude group: 'com.fasterxml.jackson.module', module: 'jackson-module-kotlin'
     }
 }
 
@@ -33,9 +34,9 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
     archiveBaseName = "${cliPlugin.cliPluginId.get()}-cli-plugin"
     from sourceSets.main.output
 
-    dependsOn configurations.cliPluginConfig
+    dependsOn configurations.cliPluginContents
     from {
-        configurations.cliPluginConfig.collect { zipTree(it) }
+        configurations.cliPluginContents.collect { zipTree(it) }
     } {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
