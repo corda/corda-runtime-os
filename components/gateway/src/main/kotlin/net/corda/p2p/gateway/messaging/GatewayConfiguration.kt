@@ -52,9 +52,9 @@ data class ConnectionConfiguration(
     val initialReconnectionDelay: Duration = Duration.ofSeconds(1),
 
     /**
-     * The maximal duration to wait for reconnection.
+     * The maximum duration to wait for reconnection.
      */
-    val maximalReconnectionDelay: Duration = Duration.ofSeconds(10),
+    val maxReconnectionDelay: Duration = Duration.ofSeconds(10),
 )
 
 internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
@@ -73,11 +73,11 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
 private fun Config.toConnectionConfig(): ConnectionConfiguration {
     return ConnectionConfiguration(
         maxClientConnections = this.getLong("maxClientConnections"),
-        acquireTimeout = this.getDuration("acquireTimeout"),
-        connectionIdleTimeout = this.getDuration("connectionIdleTimeout"),
-        responseTimeout = this.getDuration("responseTimeout"),
-        retryDelay = this.getDuration("retryDelay"),
-        initialReconnectionDelay = this.getDuration("initialReconnectionDelay"),
-        maximalReconnectionDelay = this.getDuration("maximalReconnectionDelay"),
+        acquireTimeout = Duration.ofSeconds(this.getLong("acquireTimeout")),
+        connectionIdleTimeout = Duration.ofSeconds(this.getLong("connectionIdleTimeout")),
+        responseTimeout =  Duration.ofMillis(this.getLong("responseTimeout")),
+        retryDelay = Duration.ofMillis(this.getLong("retryDelay")),
+        initialReconnectionDelay = Duration.ofSeconds(this.getLong("initialReconnectionDelay")),
+        maxReconnectionDelay = Duration.ofSeconds(this.getLong("maxReconnectionDelay")),
     )
 }

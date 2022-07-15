@@ -8,6 +8,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.util.concurrent.Callable
@@ -128,11 +129,7 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
         )
 
         return listOf(
-            configuration.toConfigurationRecord(
-                LinkManagerConfiguration.PACKAGE_NAME,
-                LinkManagerConfiguration.COMPONENT_NAME,
-                topic
-            )
+            configuration.toConfigurationRecord(ConfigKeys.P2P_LINK_MANAGER_CONFIG, topic)
         )
     }
 }

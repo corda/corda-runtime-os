@@ -13,8 +13,8 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.virtualnode.toCorda
 
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
