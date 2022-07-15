@@ -14,10 +14,10 @@ import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.Member
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
