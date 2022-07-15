@@ -45,9 +45,9 @@ dependencies {
     integrationTestImplementation project(':components:membership:membership-persistence-client')
     integrationTestImplementation project(':libs:configuration:configuration-datamodel')
     integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:layered-property-map')
     integrationTestImplementation project(':libs:messaging:topic-admin')
     integrationTestImplementation project(':testing:message-patterns')
-    integrationTestImplementation project(':libs:layered-property-map:layered-property-map-test-converter')
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
