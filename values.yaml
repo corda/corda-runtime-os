@@ -19,7 +19,7 @@ kafka:
   bootstrapServers: prereqs-kafka:9092
   replicas: 1
   tls:
-    enabled: false
+    enabled: true
     truststore:
       secretRef:
         name: prereqs-kafka-0-tls
