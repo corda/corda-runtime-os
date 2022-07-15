@@ -1,14 +1,11 @@
 package net.corda.flow.fiber
 
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.time.Instant
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
+import java.nio.ByteBuffer
+import java.time.Instant
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
@@ -95,22 +92,6 @@ interface FlowIORequest<out R> {
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
      */
-    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) : FlowIORequest<Unit>
-
-    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) : FlowIORequest<ByteBuffer?>
-
-    data class FindAll(val requestId: String, val className: String) : FlowIORequest<ByteBuffer?>
-
-    data class Merge(val requestId: String, val obj: ByteArray) : FlowIORequest<ByteBuffer?>
-
-    data class Persist(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
-
-    data class Delete(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
-
-    data class SignBytes(
-        val requestId: String,
-        val bytes: ByteArray,
-        val publicKey: PublicKey,
-        val signatureSpec: SignatureSpec
-    ) : FlowIORequest<DigitalSignature.WithKey>
+    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) :
+        FlowIORequest<Unit>
 }
