@@ -19,10 +19,8 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
-import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -41,6 +39,7 @@ import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
+import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
 import net.corda.processors.crypto.tests.infra.startAndWait
@@ -127,9 +126,6 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000)
         lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
 
-        @InjectService(timeout = 5000)
-        lateinit var configMerger: ConfigMerger
-
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
@@ -163,12 +159,11 @@ class CryptoProcessorTests {
             )
         )
 
-        private lateinit var messagingConfig: SmartConfig
+        private val messagingConfig = makeMessagingConfig(boostrapConfig)
 
         @JvmStatic
         @BeforeAll
         fun setup() {
-            messagingConfig = configMerger.getMessagingConfig(boostrapConfig)
             setupPrerequisites()
             setupDatabases()
             setupVirtualNodeInfo()
@@ -186,6 +181,9 @@ class CryptoProcessorTests {
         }
 
         private fun setupPrerequisites() {
+            // Creating this publisher first will ensure we're forcing the in-memory message bus.
+            // Otherwise we may attempt to use the database for the test and that can cause conflicts
+            // when the tests are run in parallel.
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
             publisher.publish(
