@@ -73,7 +73,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
@@ -181,9 +181,9 @@ class CryptoProcessorTests {
         }
 
         private fun setupPrerequisites() {
-            // Creating this publisher first will ensure we're forcing the in-memory message bus.
-            // Otherwise we may attempt to use the database for the test and that can cause conflicts
-            // when the tests are run in parallel.
+            // Creating this publisher first (using the messagingConfig) will ensure we're forcing
+            // the in-memory message bus. Otherwise we may attempt to use a real database for the test
+            // and that can cause message bus conflicts when the tests are run in parallel.
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
             publisher.publish(
