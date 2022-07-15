@@ -80,6 +80,13 @@ tasks.register('e2eTest', Test) {
     outputs.upToDateWhen { false }
 }
 tasks.named('e2eTest') {
-    final String hostsFilePath = new File(project.sourceSets["e2eTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
-    jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
+    var namespace = System.getenv("NAMESPACE") ?: "corda"
+    var host = "prereqs-kafka-0.prereqs-kafka-headless.${namespace}.svc.cluster.local"
+    var hostsFile = File.createTempFile("hosts", "files")
+    doFirst {
+        hostsFile.write("127.0.0.1 $host\n")
+    }
+    environment("KAFKA-HOST-NAME", host)
+    jvmArgs "-Djdk.net.hosts.file=${hostsFile.absolutePath}"
+
 }

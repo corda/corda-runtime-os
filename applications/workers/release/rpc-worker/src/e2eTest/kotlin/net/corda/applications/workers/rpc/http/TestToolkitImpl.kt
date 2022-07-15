@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class TestToolkitImpl(
     private val testCaseClass: Class<Any>,
     private val baseAddress: String,
-    kafkaServer: String,
 ) : TestToolkit {
 
     private val counter = AtomicInteger()
@@ -53,7 +52,7 @@ class TestToolkitImpl(
         )
     }
 
-    private val kafkaToolKit = KafkaTestToolKit(kafkaServer)
+    private val kafkaToolKit = KafkaTestToolKit()
 
     override fun publishRecordsToKafka(records: Collection<Record<*, *>>) {
         if (records.isNotEmpty()) {
