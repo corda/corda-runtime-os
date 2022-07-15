@@ -89,7 +89,6 @@ dependencyResolutionManagement {
             maven {
                 url = "$artifactoryContextUrl/corda-dependencies"
             }
-
             maven {
                 url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
                 credentials {
