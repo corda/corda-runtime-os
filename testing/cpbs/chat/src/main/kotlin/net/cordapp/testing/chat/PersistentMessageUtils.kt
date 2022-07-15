@@ -11,16 +11,13 @@ import java.util.UUID
 const val MAX_NUMBER_STORED_MESSAGES = 3
 
 @Suspendable
-fun storeMessage(
+fun storeIncomingMessage(
     persistenceService: PersistenceService,
     sender: String,
     message: String
 ) {
     val existingMessages = persistenceService.findAll<IncomingChatMessage>()
-    val numberMessagesToRemove = max(0, (existingMessages.size + 1) - MAX_NUMBER_STORED_MESSAGES)
-    repeat(numberMessagesToRemove) {
-        persistenceService.remove(existingMessages[it])
-    }
+    trimMessages(existingMessages, persistenceService)
     persistenceService.persist(
         IncomingChatMessage(
             id = newUuid(persistenceService),
@@ -32,13 +29,36 @@ fun storeMessage(
 }
 
 @Suspendable
-fun readAllMessages(persistenceService: PersistenceService): ReceivedChatMessages =
-    persistenceService.findAll<IncomingChatMessage>().let {
-        ReceivedChatMessages(it)
-    }
+fun storeOutgoingMessage(
+    persistenceService: PersistenceService,
+    recipient: String,
+    message: String
+) {
+    val existingMessages = persistenceService.findAll<OutgoingChatMessage>()
+    trimMessages(existingMessages, persistenceService)
+    persistenceService.persist(
+        OutgoingChatMessage(
+            id = newUuid(persistenceService),
+            recipient = recipient,
+            message = message,
+            timestamp = unixTimestamp()
+        )
+    )
+}
 
 @Suspendable
-fun newUuid(persistenceService: PersistenceService): UUID {
+fun readAllMessages(persistenceService: PersistenceService): Messages {
+    val receivedMessages = persistenceService.findAll<IncomingChatMessage>().let {
+        ReceivedChatMessages(it)
+    }
+    val sentMessages = persistenceService.findAll<OutgoingChatMessage>().let {
+        SentChatMessages(it)
+    }
+    return Messages(sentChatMessages = sentMessages, receivedChatMessages = receivedMessages)
+}
+
+@Suspendable
+private fun newUuid(persistenceService: PersistenceService): UUID {
     var uuidCandidate: UUID
     var retryCount = 0
     do {
@@ -49,4 +69,15 @@ fun newUuid(persistenceService: PersistenceService): UUID {
     return uuidCandidate
 }
 
-fun unixTimestamp() = Instant.now().epochSecond.toString()
+private fun unixTimestamp() = Instant.now().epochSecond.toString()
+
+@Suspendable
+private fun trimMessages(
+    existingMessages: List<*>,
+    persistenceService: PersistenceService
+) {
+    val numberMessagesToRemove = max(0, (existingMessages.size + 1) - MAX_NUMBER_STORED_MESSAGES)
+    repeat(numberMessagesToRemove) {
+        persistenceService.remove(existingMessages[it] as Any)
+    }
+}

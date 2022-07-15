@@ -29,6 +29,7 @@ class ChatFlowCollaborationTests {
         createMockService<FlowMessaging>()
         createMockService<FlowEngine>().withVirtualNodeName(FROM_X500_NAME)
         createMockService<JsonMarshallingService>()
+        createMockService<PersistenceService>()
     }
 
     val outgoingChatFlow = outgoingFlowMockHelper.createFlow<ChatOutgoingFlow>()

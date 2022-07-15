@@ -37,7 +37,8 @@ public class ChatFlowCollaborationTestsJava {
             new InjectableMockServices()
                     .createMockService(FlowMessaging.class)
                     .createMockService(JsonMarshallingService.class)
-                    .createMockService(FlowEngine.class));
+                    .createMockService(FlowEngine.class)
+                    .createMockService(PersistenceService.class));
     static final FlowMockHelper incomingFlowMockHelper = FlowMockHelper.fromInjectableServices(
             new InjectableMockServices()
                     .createMockService(FlowEngine.class)

@@ -43,6 +43,9 @@ class ChatOutgoingFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
@@ -54,6 +57,12 @@ class ChatOutgoingFlow : RPCStartableFlow {
 
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(inputs.recipientX500Name))
         session.send(MessageContainer(inputs.message))
+
+        storeOutgoingMessage(
+            persistenceService = persistenceService,
+            recipient = inputs.recipientX500Name,
+            message = inputs.message
+        )
 
         log.info("Sent message from ${flowEngine.virtualNodeName} to ${inputs.recipientX500Name}")
         return ""
@@ -85,7 +94,7 @@ class ChatIncomingFlow : ResponderFlow {
         val sender = session.counterparty.toString()
         val message = session.receive<MessageContainer>().unwrap { it.message }
 
-        storeMessage(persistenceService, sender, message)
+        storeIncomingMessage(persistenceService, sender, message)
 
         log.info("Added incoming message from ${sender} to message store")
     }
@@ -128,7 +137,10 @@ class ChatReaderFlow : RPCStartableFlow {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
 
         val messages = readAllMessages(persistenceService).also {
-            log.info("Returning ${it.messages.size} messages")
+            log.info(
+                "Returning ${it.receivedChatMessages.messages.size} received messages and" +
+                        "${it.sentChatMessages.messages.size} sent messages"
+            )
         }
         return jsonMarshallingService.format(messages)
     }
