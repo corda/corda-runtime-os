@@ -32,8 +32,7 @@ interface DbChange {
      * This could, for example, fetch Change Log entries from Kafka, File System, DB etc.
      *
      * @param path to the ChangeLog file
-     * @param relativeTo to the location to look at, if relative
      * @return [InputStream] representing the Change Log file.
      */
-    fun fetch(path: String, relativeTo: String?=null): InputStream
+    fun fetch(path: String): InputStream
 }

@@ -29,9 +29,27 @@ class ClassloaderChangeLogTest {
     fun `when changeLogList return all master and fetched`() {
         val cl = ClassloaderChangeLog(changelogFiles)
 
-        cl.fetch("classloader://foo/migration/test/fred.txt", null)
-        cl.fetch("migration/bar.txt", null)
-        cl.fetch("test/foo.txt", null)
+        cl.fetch("classloader://foo/migration/test/fred.txt")
+        cl.fetch("migration/bar.txt")
+        cl.fetch("test/foo.txt")
+
+        assertThat(cl.changeLogFileList).containsExactlyInAnyOrder(
+            "migration/bar.txt",
+            "test/foo.txt",
+            "classloader://foo/migration/test/fred.txt"
+        )
+    }
+
+
+    @Test
+    fun `when changeLogList return all master and fetched without duplicates`() {
+        val cl = ClassloaderChangeLog(changelogFiles)
+
+        cl.fetch("classloader://foo/migration/test/fred.txt")
+        cl.fetch("migration/bar.txt")
+        cl.fetch("test/foo.txt")
+        cl.fetch("migration/bar.txt")
+        cl.fetch("test/foo.txt")
 
         assertThat(cl.changeLogFileList).containsExactlyInAnyOrder(
             "migration/bar.txt",
@@ -41,26 +59,75 @@ class ClassloaderChangeLogTest {
     }
 
     @Test
-    fun `when fetch full name return resources as stream`() {
+    fun `when changeLogList called early return only master`() {
         val cl = ClassloaderChangeLog(changelogFiles)
 
-        assertThat(cl.fetch("classloader://foo/migration/test/fred.txt", null).bufferedReader().use { it.readText() })
+        cl.fetch("classloader://foo/migration/test/fred.txt")
+
+        assertThat(cl.changeLogFileList).containsExactlyInAnyOrder(
+            "classloader://foo/migration/test/fred.txt"
+        )
+    }
+
+    @Test
+    fun `when fetch full name with classloader return resources as stream`() {
+        val cl = ClassloaderChangeLog(changelogFiles)
+
+        assertThat(cl.fetch("classloader://foo/migration/test/fred.txt").bufferedReader().use { it.readText() })
+            .isEqualTo("freddy")
+    }
+
+
+    @Test
+    fun `when fetch full name with classloader with single slash return resources as stream`() {
+        // liquibase internally normalizes paths down to have single slashes replacing runs of
+        // multiple slashes, e.g. when using an include with a relative reference.
+        // So we have to support that format.
+        val cl = ClassloaderChangeLog(changelogFiles)
+
+        assertThat(cl.fetch("classloader:/foo/migration/test/fred.txt").bufferedReader().use { it.readText() })
             .isEqualTo("freddy")
     }
 
     @Test
-    fun `when fetch relative path return resources as stream`() {
+    fun `when fetch full name and classloader prefix but unknown name throws not illegal argument`() {
         val cl = ClassloaderChangeLog(changelogFiles)
 
-        assertThat(cl.fetch("migration/test/fred.txt", null).bufferedReader().use { it.readText() })
+        assertThrows<IllegalArgumentException> {
+            cl.fetch("classloader://bar/migration/test/fred.txt")
+        }
+    }
+
+    @Test
+    fun `when fetch path without classloader prefix return resources as stream`() {
+        val cl = ClassloaderChangeLog(changelogFiles)
+
+        assertThat(cl.fetch("migration/test/fred.txt").bufferedReader().use { it.readText() })
             .isEqualTo("freddy")
+    }
+
+    @Test
+    fun `when fetch path on class loader that does not exist throws not found exception`() {
+        val cl = ClassloaderChangeLog(changelogFiles)
+        assertThrows<FileNotFoundException> {
+            cl.fetch("migration/test/bar.txt").bufferedReader().use { it.readText() }
+        }
+    }
+
+    @Test
+    fun `on fetch return resources as stream`() {
+        val cl = ClassloaderChangeLog(changelogFiles)
+
+        assertThrows<FileNotFoundException> {
+            cl.fetch("classloader://foo/migration/test/bob.txt")
+        }
     }
 
     @Test
     fun `when fetch invalid throw not found`() {
         val cl = ClassloaderChangeLog(changelogFiles)
         assertThrows<FileNotFoundException> {
-            cl.fetch("does-not-exist/test/fred.txt", null)
+            cl.fetch("does-not-exist/test/fred.txt")
         }
     }
 
@@ -68,7 +135,7 @@ class ClassloaderChangeLogTest {
     fun `when fetch with classloader null resource throw`() {
         val cl = ClassloaderChangeLog(changelogFiles)
         assertThrows<IllegalArgumentException> {
-            cl.fetch("classloader://foo", null)
+            cl.fetch("classloader://foo")
         }
     }
 
@@ -76,7 +143,7 @@ class ClassloaderChangeLogTest {
     fun `when fetch with classloader empty resource throw`() {
         val cl = ClassloaderChangeLog(changelogFiles)
         assertThrows<IllegalArgumentException> {
-            cl.fetch("classloader://foo/", null)
+            cl.fetch("classloader://foo/")
         }
     }
 
@@ -84,7 +151,7 @@ class ClassloaderChangeLogTest {
     fun `when fetch with invalid classloader throw`() {
         val cl = ClassloaderChangeLog(changelogFiles)
         assertThrows<IllegalArgumentException> {
-            cl.fetch("classloader://invalid/migration/test/fred.txt", null)
+            cl.fetch("classloader://invalid/migration/test/fred.txt")
         }
     }
 }
