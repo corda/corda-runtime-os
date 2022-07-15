@@ -56,12 +56,23 @@ class ClusterBuilder {
     private fun vNodeBody(cpiHash: String, x500Name: String) =
         """{ "request": { "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"} }"""
 
+    private fun registerMemberBody(holdingId: String) =
+        """{ "memberRegistrationRequest": { "action": "requestJoin", "holdingIdentityId": "$holdingId", "context": { "corda.key.scheme" : 
+            |"CORDA6R1" } } }""".trimMargin()
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         client!!.post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
 
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
+
+    /**
+     * Register a member to the network
+     */
+    fun registerMember(holdingId: String) =
+        client!!.post("/api/v1/membership", registerMemberBody(holdingId))
+
 
     fun addSoftHsmToVNode(holdingIdHash: String, category: String) =
         client!!.post("/api/v1/$holdingIdHash/hsm/soft?category=$category", body = "")
