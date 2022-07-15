@@ -144,7 +144,7 @@ const Register = () => {
 
     return (
         <PageContentWrapper>
-            <div className="flex">
+            <div className="flex flex-column flex-wrap">
                 <div
                     style={{ opacity: !newVNode ? 1 : 0.4 }}
                     onClick={() => {
@@ -194,7 +194,7 @@ const Register = () => {
                     </FormContentWrapper>
                 </div>
                 {newVNode && (
-                    <div className="ml-24">
+                    <div className="sm:ml-24 md:ml-2 lg:ml-2">
                         <PageHeader>Your own VNode!</PageHeader>
                         <div
                             className="shadow-2xl ml-4 mt-8 p-12"

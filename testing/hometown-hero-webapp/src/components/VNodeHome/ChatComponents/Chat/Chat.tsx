@@ -1,5 +1,5 @@
 import { IconButton, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import Message from '../Message/Message';
 import { Message as MessageType } from '@/models/Message';
@@ -43,6 +43,10 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     }, [messages]);
 
     const handleUserTyping = (e: any) => {
+        const messageText = e.target.value;
+        if (messageText.length > 200) {
+            return;
+        }
         setMessageValue(e.target.value);
     };
 
@@ -85,7 +89,7 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
             {isChatDisabled && (
                 <div className="p-6">
                     <p className={style.warningText}>{'You have no messages...yet!'}</p>
-                    <p className={style.warningText}>{`Please select a participant(s) to send a message to!    ${
+                    <p className={style.warningText}>{`Please select a participant to send a message to!    ${
                         !isMobile ? ' -->' : ''
                     }`}</p>
                 </div>
@@ -127,7 +131,9 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                         className={`${handleOpenParticipantsModal ? 'w-4/6' : 'w-5/6'}`}
                         label={
                             selectedParticipants.length === 0
-                                ? `${isMobile ? '<-' : ''} Select participant(s)`
+                                ? `${isMobile ? '<-' : ''} Select a participant :)`
+                                : messageValue.length === 200
+                                ? 'Max 200 chars :('
                                 : 'Your message'
                         }
                         value={messageValue}
