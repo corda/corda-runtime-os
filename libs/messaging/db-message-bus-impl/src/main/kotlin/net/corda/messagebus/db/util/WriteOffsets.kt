@@ -3,6 +3,7 @@ package net.corda.messagebus.db.util
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.v5.base.util.contextLogger
+import java.lang.management.ManagementFactory
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -22,7 +23,7 @@ class WriteOffsets(
         return latestOffsets.compute(topicPartition) { _: CordaTopicPartition, offset: Long? ->
             offset?.plus(1) ?: 0L
         }.also {
-            log.info("Returning offset ($topicPartition, $it) from $this")
+            log.info("Returning offset ($topicPartition, $it) from $this, ${ManagementFactory.getRuntimeMXBean().name}")
         } ?: throw CordaMessageAPIFatalException("Next offset should never be null.")
     }
 }
