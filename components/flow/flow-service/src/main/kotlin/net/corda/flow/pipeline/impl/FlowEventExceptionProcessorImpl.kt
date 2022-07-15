@@ -46,8 +46,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         maxRetryAttempts = config.getInt(PROCESSING_MAX_RETRY_ATTEMPTS)
     }
 
-    override fun process(exception: Exception): StateAndEventProcessor.Response<Checkpoint> {
-        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", exception)
+    override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
+        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
         return StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = listOf(),
@@ -55,7 +55,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    override fun process(exception: FlowTransientException): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(exception: FlowTransientException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         val context = exception.getFlowContext()
         val flowCheckpoint = context.checkpoint
 
@@ -63,7 +63,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
          * exception and DLQ the flow
          */
         if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
-            return process(
+            return@withEscalation process(
                 FlowFatalException(
                     "Max retry attempts '${maxRetryAttempts}' has been reached.",
                     context,
@@ -86,10 +86,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         flowCheckpoint.rollback()
         flowCheckpoint.markForRetry(context.inputEvent, exception)
 
-        return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
+        flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
     }
 
-    override fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
         log.error(msg, exception)
         val records = createStatusRecord(exception.getFlowContext().checkpoint.flowId) {
@@ -100,7 +100,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
 
-        return StateAndEventProcessor.Response(
+        StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = records,
             markForDLQ = true
@@ -123,12 +123,12 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         log.warn("A non critical error was reported while processing the event.", exception)
-        return flowEventContextConverter.convert(exception.getFlowContext())
+        flowEventContextConverter.convert(exception.getFlowContext())
     }
 
-    override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         val context = exception.getFlowContext()
         val checkpoint = context.checkpoint
 
@@ -141,7 +141,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
 
         val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-        return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+        flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+    }
+
+    private fun withEscalation(handler: () -> StateAndEventProcessor.Response<Checkpoint>) : StateAndEventProcessor.Response<Checkpoint> {
+        return try {
+            handler()
+        } catch(t: Throwable) {
+            // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
+            process(t)
+        }
     }
 
     private fun FlowProcessingException.getFlowContext(): FlowEventContext<*> {

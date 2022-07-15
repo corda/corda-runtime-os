@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -17,7 +18,6 @@ import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.impl.infra.generateKeyPair
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
@@ -118,6 +118,61 @@ class SigningServiceGeneralTests {
                 },
                 signatureSpec = SignatureSpec("NONE"),
                 data = ByteArray(2),
+                context = emptyMap()
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw original exception failing derivation`() {
+        val exception = RuntimeException("")
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+        }
+        val signingService = SigningServiceImpl(
+            store = store,
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata
+        )
+        val thrown = assertThrows(exception::class.java) {
+            signingService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                context = emptyMap()
+            )
+        }
+        assertSame(exception, thrown)
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when key is not found for deriving`() {
+        val actions = mock<SigningKeyStoreActions> {
+            on { find(any<PublicKey>()) } doReturn null
+        }
+        val store = mock<SigningKeyStore> {
+            on { act(any()) } doReturn actions
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+        }
+        val signingService = SigningServiceImpl(
+            store = store,
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            signingService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
                 context = emptyMap()
             )
         }

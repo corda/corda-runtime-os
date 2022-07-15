@@ -7,12 +7,12 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
+import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.common.KafkaException
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -40,14 +40,16 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
     override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
         val configResolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = configResolver.resolve(messageBusConfig, producerConfig)
-        return try {
-            val producer = createKafkaProducer(kafkaProperties)
-            CordaKafkaProducerImpl(resolvedConfig, producer)
-        } catch (ex: KafkaException) {
-            val message = "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}."
-            log.error(message, ex)
-            throw CordaMessageAPIFatalException(message, ex)
-        }
+
+        return executeKafkaActionWithRetry(
+            action = {
+                val producer = createKafkaProducer(kafkaProperties)
+                CordaKafkaProducerImpl(resolvedConfig, producer)
+            },
+            errorMessage = { "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
+                    "with configuration: $messageBusConfig" },
+            log = log
+        )
     }
 
     private fun createKafkaProducer(kafkaProperties: Properties): KafkaProducer<Any, Any> {

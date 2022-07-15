@@ -363,6 +363,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
         e: Exception,
     ): Boolean {
+        logger.error("Error while processing virtual node request: ${e.message}", e)
         val response = VirtualNodeManagementResponse(
             clock.instant(),
             VirtualNodeManagementResponseFailure(
