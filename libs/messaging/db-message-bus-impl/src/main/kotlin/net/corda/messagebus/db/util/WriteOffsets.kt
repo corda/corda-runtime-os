@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Utility class for keeping track of the current offsets, stored by [CordaTopicPartition].
  */
 class WriteOffsets(
-    dbAccess: DBAccess,
+    dbAccess: DBAccess
 ) {
     private val latestOffsets = ConcurrentHashMap(dbAccess.getMaxOffsetsPerTopicPartition())
 

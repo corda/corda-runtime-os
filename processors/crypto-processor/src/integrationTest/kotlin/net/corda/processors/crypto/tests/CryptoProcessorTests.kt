@@ -73,7 +73,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
