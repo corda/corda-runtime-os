@@ -3,10 +3,6 @@ package net.corda.libs.configuration.schema.p2p
 class LinkManagerConfiguration {
 
     companion object {
-        const val PACKAGE_NAME = "corda.p2p"
-        const val COMPONENT_NAME = "linkManager"
-        const val CONFIG_KEY = "$PACKAGE_NAME.$COMPONENT_NAME"
-
         const val MAX_MESSAGE_SIZE_KEY = "maxMessageSize"
         const val MESSAGE_REPLAY_PERIOD_KEY = "messageReplayPeriod"
         const val BASE_REPLAY_PERIOD_KEY = "baseReplayPeriod"
