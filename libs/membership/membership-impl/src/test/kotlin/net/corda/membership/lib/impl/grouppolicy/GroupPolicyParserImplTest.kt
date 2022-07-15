@@ -8,11 +8,11 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.certificate
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ledgerKeyHashes
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.lib.MemberInfoExtension.Companion.certificate
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.PublicKeyConverter

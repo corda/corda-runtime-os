@@ -5,8 +5,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 
