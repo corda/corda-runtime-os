@@ -6,8 +6,8 @@ global:
 
 kafka:
   auth:
-    enabled: true
     clientProtocol: sasl_tls
+    externalClientProtocol: plaintext
   externalAccess:
     enabled: true
     service:

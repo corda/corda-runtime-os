@@ -116,7 +116,7 @@ pipeline {
 
                 sh '''
                     # Forward ports for testing
-                    nohup kubectl port-forward -n ${NAMESPACE} prereqs-kafka-0 9094 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} service/prereqs-kafka-0-external 9094 > forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
@@ -125,7 +125,8 @@ pipeline {
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
+                    ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
+                    ./gradlew cleanSmokeTest smokeTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
             }
             post {
@@ -133,9 +134,10 @@ pipeline {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > prereqs-logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
-                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt, prereqs-logs.txt', allowEmptyArchive: true
                     sh 'rm -f forward.txt logs.txt describe.txt'
                 }
             }
