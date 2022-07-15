@@ -4,45 +4,49 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.persistence.find
 import net.corda.v5.application.persistence.findAll
 import net.corda.v5.base.annotations.Suspendable
+import java.lang.Integer.max
+import java.time.Instant
+import java.util.UUID
+
+const val MAX_NUMBER_STORED_MESSAGES = 3
 
 @Suspendable
-fun add(
-    persistenceService: PersistenceService,
-    incomingMessage: IncomingChatMessage
-) {
-    // Persist the message - only the last message from each sender can be stored due to the current limitations of
-    // the persistence api
-    // TODO race condition: if multiple incoming messages are processed concurrently, even if this method doesn't
-    //  fail, what happens is undefined
-    persistenceService.find<IncomingChatMessage>(incomingMessage.sender)?.let {
-        // There's already a record from this sender, overwrite the last message stored
-        // TODO race condition: if readAndClear is called now for this sender, this will fail
-        persistenceService.merge(incomingMessage)
-    } ?: run {
-        // TODO race condition: if another incoming message from this sender is processed here, this will fail
-        persistenceService.persist(incomingMessage)
-    }
-}
-
-@Suspendable
-fun readAndClear(
+fun storeMessage(
     persistenceService: PersistenceService,
     sender: String,
-): ReceivedChatMessages {
-    // Find the last message from this sender
-    // TODO race condition: if readAndClear is called concurrently, each invocation could return the same message
-    return ReceivedChatMessages(persistenceService.find<IncomingChatMessage>(sender)?.let { message ->
-        // TODO race condition: the message being removed may no longer exist if readAndClear was called concurrently
-        persistenceService.remove(message)
-        listOf(message)
-    } ?: emptyList())
+    message: String
+) {
+    val existingMessages = persistenceService.findAll<IncomingChatMessage>()
+    val numberMessagesToRemove = max(0, (existingMessages.size + 1) - MAX_NUMBER_STORED_MESSAGES)
+    repeat(numberMessagesToRemove) {
+        persistenceService.remove(existingMessages[it])
+    }
+    persistenceService.persist(
+        IncomingChatMessage(
+            id = newUuid(persistenceService),
+            sender = sender,
+            message = message,
+            timestamp = unixTimestamp()
+        )
+    )
 }
 
 @Suspendable
-fun readAllAndClear(persistenceService: PersistenceService): ReceivedChatMessages {
-    // TODO race condition: the message being removed may no longer exist if readAndClear was called concurrently
-    return persistenceService.findAll<IncomingChatMessage>()
-        .onEach { message -> persistenceService.remove(message) }.let {
-            ReceivedChatMessages(it)
-        }
+fun readAllMessages(persistenceService: PersistenceService): ReceivedChatMessages =
+    persistenceService.findAll<IncomingChatMessage>().let {
+        ReceivedChatMessages(it)
+    }
+
+@Suspendable
+fun newUuid(persistenceService: PersistenceService): UUID {
+    var uuidCandidate: UUID
+    var retryCount = 0
+    do {
+        class UUIDGenerationFailure : Exception("Could not generate unique Id for message")
+        if (++retryCount > 10) throw UUIDGenerationFailure()
+        uuidCandidate = UUID.randomUUID()
+    } while (persistenceService.find<IncomingChatMessage>(uuidCandidate) != null)
+    return uuidCandidate
 }
+
+fun unixTimestamp() = Instant.now().epochSecond.toString()

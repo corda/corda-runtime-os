@@ -85,36 +85,24 @@ class ChatIncomingFlow : ResponderFlow {
         val sender = session.counterparty.toString()
         val message = session.receive<MessageContainer>().unwrap { it.message }
 
-        add(persistenceService, IncomingChatMessage(sender, message))
+        storeMessage(persistenceService, sender, message)
 
         log.info("Added incoming message from ${sender} to message store")
     }
 }
 
 /**
- * Returns the last unread message(s) for the virtual node member in which the Flow is started. If a "fromName" is
- * supplied it will return the last unread message which originated at the supplied member. If an empty object {} is
- * passed or fromName is empty, all last unread messages from all originating members will be returned.
- * Read messages are removed from the store thus it becomes the responsibility of the caller to keep track of them after
- * this point.
- * JSON argument should look something like:
- * ```json
- * {
- *   "fromName": "CN=Alice, O=R3, L=London, C=GB"
- * }
- * ```
- * or for all messages:
- * ```json
- * {}
- * ```
- *
- * The output will look something like:
+ * Returns all messages, the output will look something like:
  * ```json
  * {
  *   "messages": [
  *     {
  *       "senderX500Name": "CN=Bob, O=R3, L=London, C=GB",
  *       "message": "Hello from Bob"
+ *     },
+ *     {
+ *       "senderX500Name": "CN=Alice, O=R3, L=London, C=GB",
+ *       "message": "Hello from Alice"
  *     }
  *   ]
  * }
@@ -139,18 +127,9 @@ class ChatReaderFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
 
-        val inputs = requestBody.getRequestBodyAs<ChatReaderFlowParameter>(jsonMarshallingService)
-
-        val messages = if (inputs.fromName == null || inputs.fromName.isEmpty()) {
-            readAllAndClear(persistenceService).also {
-                log.info("Returning ${it.messages.size} unread messages from all senders")
-            }
-        } else {
-            readAndClear(persistenceService, inputs.fromName).also {
-                log.info("Returning ${it.messages.size} unread messages from ${inputs.fromName}")
-            }
+        val messages = readAllMessages(persistenceService).also {
+            log.info("Returning ${it.messages.size} messages")
         }
-
         return jsonMarshallingService.format(messages)
     }
 }
