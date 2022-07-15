@@ -179,6 +179,18 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
     }
 
+    override fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 

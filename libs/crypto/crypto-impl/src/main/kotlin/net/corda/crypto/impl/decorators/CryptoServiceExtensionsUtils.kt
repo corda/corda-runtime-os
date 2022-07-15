@@ -8,3 +8,6 @@ val CryptoService.requiresWrappingKey: Boolean get() =
 
 val CryptoService.supportsKeyDelete: Boolean get() =
     extensions.contains(CryptoServiceExtensions.DELETE_KEYS)
+
+val CryptoService.supportsSharedSecretDerivation: Boolean get() =
+    extensions.contains(CryptoServiceExtensions.SHARED_SECRET_DERIVATION)

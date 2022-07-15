@@ -1,24 +1,7 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.assertj.core.api.Assertions.assertThat
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.time.Instant
-
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): KeyPair {
-    val scheme = schemeMetadata.findKeyScheme(schemeName)
-    val keyPairGenerator = KeyPairGenerator.getInstance(
-        scheme.algorithmName,
-        schemeMetadata.providers.getValue(scheme.providerName)
-    )
-    if (scheme.algSpec != null) {
-        keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
-    } else if (scheme.keySize != null) {
-        keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
-    }
-    return keyPairGenerator.generateKeyPair()
-}
 
 fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
     assertThat(actual.toEpochMilli())
