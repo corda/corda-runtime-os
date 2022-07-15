@@ -24,6 +24,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.Random
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -51,6 +52,8 @@ class VirtualNodeRpcTest {
 
         private val aliceHoldingId: String = getHoldingIdShortHash(X500_ALICE, GROUP_ID)
     }
+
+    val random = Random()
 
     /**
      * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.
@@ -232,6 +235,31 @@ class VirtualNodeRpcTest {
             }
 
             assertThat(nodes).contains(X500_ALICE)
+        }
+    }
+
+    @Test
+    @Order(61)
+    fun `set virtual node state`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val states = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["id"].textValue() to it["state"].textValue()
+            }
+
+            val randomPair = states.elementAt(random.nextInt(states.size))
+
+            updateVirtualNodeState(randomPair.first, "UPDATED")
+
+            assertWithRetry {
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                        it.toJson()["virtualNodes"].single{ virtualNode ->
+                            virtualNode["holdingIdentity"]["id"].textValue() == randomPair.first
+                        }["state"].textValue() == "UPDATED"
+                }
+            }
         }
     }
 

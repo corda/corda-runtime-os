@@ -142,7 +142,6 @@ internal class VirtualNodeWriterProcessor(
             virtualNodeEntityRepository.setVirtualNodeState(
                 entityManager,
                 stateChangeRequest.holdingIdentityShortHash,
-                stateChangeRequest.cpiId,
                 stateChangeRequest.newState
             )
 

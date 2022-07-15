@@ -137,7 +137,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
 
     override fun updateVirtualNodeState(
         virtualNodeShortId: String,
-        cpiId: String,
         newState: String
     ): HTTPVirtualNodeStateChangeResponse {
         logger.info(virtualNodeShortId)
@@ -150,7 +149,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             VirtualNodeStateChangeRequest(
                 virtualNodeShortId,
                 newState,
-                cpiId,
                 actor
             )
         )

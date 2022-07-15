@@ -55,7 +55,6 @@ interface VirtualNodeRPCOps : RpcOps {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcPUT(
-        path = "{virtualNodeShortId}",
         title = "Update virtual node state",
         description = "Updates the state of a new virtual node.",
         responseDescription = "The details of the updated virtual node."
@@ -63,8 +62,6 @@ interface VirtualNodeRPCOps : RpcOps {
     fun updateVirtualNodeState(
         @HttpRpcRequestBodyParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @HttpRpcRequestBodyParameter(description = "The ID of the cpi used in the desired virtual node instance")
-        cpiId: String,
         @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
         newState: String
     ): HTTPVirtualNodeStateChangeResponse
