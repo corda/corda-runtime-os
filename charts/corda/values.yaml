@@ -314,3 +314,7 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-gateway worker containers
       limits: {}
+    # p2p-gateway worker worker service configuration
+    service:
+      # -- The Gateway HTTP port
+      port: 8080

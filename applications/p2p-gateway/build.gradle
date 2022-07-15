@@ -38,4 +38,6 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-client-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
+
+    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
