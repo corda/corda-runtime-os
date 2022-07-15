@@ -131,7 +131,6 @@
                       "type" : "string",
                       "description" : "A file to upload.",
                       "format" : "binary",
-                      "nullable" : false,
                       "example" : "No example available for this type"
                     }
                   }
@@ -972,7 +971,6 @@
             "nullable" : true,
             "items" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             }
           }
@@ -1089,7 +1087,6 @@
                   "nullable" : false,
                   "items" : {
                     "type" : "string",
-                    "nullable" : false,
                     "example" : "string"
                   }
                 }
@@ -2417,11 +2414,10 @@
             "nullable" : true,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "CpiIdentifier_1" : {
-        "required" : [ "name", "signerSummaryHash", "version" ],
+        "required" : [ "name", "version" ],
         "type" : "object",
         "properties" : {
           "name" : {
@@ -2437,8 +2433,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "CpiIdentifier_2" : {
         "required" : [ "cpiName", "cpiVersion" ],
@@ -2459,8 +2454,7 @@
             "nullable" : true,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "CpiMetadata" : {
         "required" : [ "cpks", "fileChecksum", "id", "timestamp" ],
@@ -2493,8 +2487,7 @@
             "nullable" : false,
             "example" : "2022-06-24T10:15:30Z"
           }
-        },
-        "nullable" : false
+        }
       },
       "CpkIdentifier" : {
         "required" : [ "name", "version" ],
@@ -2515,8 +2508,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "CpkMetadata" : {
         "required" : [ "dependencies", "hash", "id", "libraries", "mainBundle", "timestamp", "type" ],
@@ -2544,7 +2536,6 @@
             "nullable" : false,
             "items" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             }
           },
@@ -2564,8 +2555,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "CreatePermissionRequest" : {
         "required" : [ "createPermissionType" ],
@@ -2602,8 +2592,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the permission to be created",
-        "nullable" : false
+        "description" : "Details of the permission to be created"
       },
       "CreateRoleRequest" : {
         "required" : [ "createRoleType" ],
@@ -2630,8 +2619,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the role to be created",
-        "nullable" : false
+        "description" : "Details of the role to be created"
       },
       "CreateUserRequest" : {
         "required" : [ "createUserType" ],
@@ -2679,8 +2667,7 @@
             "example" : "2022-06-24T10:15:30Z"
           }
         },
-        "description" : "Details of the user to be created",
-        "nullable" : false
+        "description" : "Details of the user to be created"
       },
       "CreatevirtualnodeRequest" : {
         "required" : [ "request" ],
@@ -2705,7 +2692,6 @@
             "type" : "object",
             "additionalProperties" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             },
             "description" : "Context Map. For example: `signatureSpec` to signature spec (SHA512withECDSA, SHA384withRSA...)",
@@ -2718,7 +2704,6 @@
             "nullable" : true,
             "items" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             }
           },
@@ -2792,8 +2777,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the virtual node to be created",
-        "nullable" : false
+        "description" : "Details of the virtual node to be created"
       },
       "HTTPCreateVirtualNodeResponse" : {
         "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
@@ -2842,8 +2826,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPFlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
@@ -2859,11 +2842,10 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : true
+        }
       },
       "HTTPFlowStatusResponse" : {
-        "required" : [ "flowError", "flowStatus", "holdingShortId", "timestamp" ],
+        "required" : [ "flowStatus", "holdingShortId", "timestamp" ],
         "type" : "object",
         "properties" : {
           "clientRequestId" : {
@@ -2900,8 +2882,7 @@
             "nullable" : false,
             "example" : "2022-06-24T10:15:30Z"
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPFlowStatusResponses" : {
         "required" : [ "httpFlowStatusResponses" ],
@@ -2915,8 +2896,7 @@
               "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
             }
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPGetCPIsResponse" : {
         "required" : [ "cpis" ],
@@ -2930,8 +2910,7 @@
               "$ref" : "#/components/schemas/CpiMetadata"
             }
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPGetConfigResponse" : {
         "required" : [ "configWithDefaults", "schemaVersion", "section", "sourceConfig", "version" ],
@@ -2961,8 +2940,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPGetVirtualNodesResponse" : {
         "required" : [ "virtualNodes" ],
@@ -2976,8 +2954,7 @@
               "$ref" : "#/components/schemas/VirtualNodeInfo"
             }
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPStartFlowRequest" : {
         "required" : [ "clientRequestId", "flowClassName", "requestData" ],
@@ -2999,8 +2976,7 @@
             "example" : "string"
           }
         },
-        "description" : "Information required to start a flow for this holdingId",
-        "nullable" : false
+        "description" : "Information required to start a flow for this holdingId"
       },
       "HTTPStartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
@@ -3012,12 +2988,10 @@
             "nullable" : false,
             "items" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             }
           }
-        },
-        "nullable" : false
+        }
       },
       "HTTPUpdateConfigRequest" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
@@ -3043,8 +3017,7 @@
             "example" : 0
           }
         },
-        "description" : "Details of the updated configuration",
-        "nullable" : false
+        "description" : "Details of the updated configuration"
       },
       "HTTPUpdateConfigResponse" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
@@ -3069,8 +3042,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : false
+        }
       },
       "HoldingIdentity" : {
         "required" : [ "groupId", "hash", "id", "x500Name" ],
@@ -3096,8 +3068,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "HsmInfo" : {
         "required" : [ "attemptTimeout", "createdAt", "id", "masterKeyPolicy", "maxAttempts", "serviceName", "supportedSchemes" ],
@@ -3151,7 +3122,6 @@
             "nullable" : false,
             "items" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             }
           },
@@ -3160,8 +3130,7 @@
             "nullable" : true,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
@@ -3198,8 +3167,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "MasterKeyPolicy" : {
         "required" : [ "type" ],
@@ -3210,8 +3178,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "MemberInfoSubmitted" : {
         "required" : [ "data" ],
@@ -3221,14 +3188,12 @@
             "type" : "object",
             "additionalProperties" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             },
             "nullable" : false,
             "example" : "No example available for this type"
           }
-        },
-        "nullable" : false
+        }
       },
       "MemberRegistrationRequest" : {
         "required" : [ "action", "context" ],
@@ -3243,15 +3208,13 @@
             "type" : "object",
             "additionalProperties" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             },
             "nullable" : false,
             "example" : "No example available for this type"
           }
         },
-        "description" : "Data required to initialise the registration process.",
-        "nullable" : false
+        "description" : "Data required to initialise the registration process."
       },
       "PermissionAssociationResponseType" : {
         "required" : [ "createdTimestamp", "id" ],
@@ -3268,8 +3231,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "PermissionResponseType" : {
         "required" : [ "id", "permissionString", "permissionType", "updateTimestamp", "version" ],
@@ -3312,8 +3274,7 @@
             "nullable" : true,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "PermissionSummaryResponseType" : {
         "required" : [ "id", "permissionString", "permissionType" ],
@@ -3344,8 +3305,7 @@
             "nullable" : true,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "PropertyResponseType" : {
         "required" : [ "key", "lastChangedTimestamp", "value" ],
@@ -3367,8 +3327,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "RegistrationRequestProgress" : {
         "required" : [ "memberInfoSubmitted", "registrationStatus" ],
@@ -3388,8 +3347,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "RemovePermissionRequest" : {
         "required" : [ "permissionId", "roleId" ],
@@ -3444,8 +3402,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "RoleResponseType" : {
         "required" : [ "id", "permissions", "roleName", "updateTimestamp", "version" ],
@@ -3486,8 +3443,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : false
+        }
       },
       "RpcMemberInfo" : {
         "required" : [ "memberContext", "mgmContext" ],
@@ -3497,7 +3453,6 @@
             "type" : "object",
             "additionalProperties" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             },
             "nullable" : false,
@@ -3507,14 +3462,12 @@
             "type" : "object",
             "additionalProperties" : {
               "type" : "string",
-              "nullable" : false,
               "example" : "string"
             },
             "nullable" : false,
             "example" : "No example available for this type"
           }
-        },
-        "nullable" : false
+        }
       },
       "RpcMemberInfoList" : {
         "required" : [ "members" ],
@@ -3528,8 +3481,7 @@
               "$ref" : "#/components/schemas/RpcMemberInfo"
             }
           }
-        },
-        "nullable" : false
+        }
       },
       "SecureHash" : {
         "required" : [ "algorithm", "bytes", "offset", "size" ],
@@ -3558,8 +3510,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : true
+        }
       },
       "SetupHostedIdentitiesRequest" : {
         "required" : [ "certificateChainAlias" ],
@@ -3620,8 +3571,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "UpdateclusterconfigurationRequest" : {
         "required" : [ "request" ],
@@ -3642,8 +3592,7 @@
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       },
       "UserPermissionSummaryResponseType" : {
         "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
@@ -3673,8 +3622,7 @@
               "$ref" : "#/components/schemas/PermissionSummaryResponseType"
             }
           }
-        },
-        "nullable" : false
+        }
       },
       "UserResponseType" : {
         "required" : [ "enabled", "fullName", "id", "loginName", "properties", "roleAssociations", "ssoAuth", "updateTimestamp", "version" ],
@@ -3744,8 +3692,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : false
+        }
       },
       "Version" : {
         "required" : [ "major", "minor" ],
@@ -3763,8 +3710,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : false
+        }
       },
       "VirtualNodeInfo" : {
         "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "timestamp", "vaultDmlConnectionId", "version" ],
@@ -3818,8 +3764,7 @@
             "nullable" : false,
             "example" : 0
           }
-        },
-        "nullable" : false
+        }
       }
     },
     "securitySchemes" : {
