@@ -113,7 +113,7 @@ class FlowEventProcessorImplTest {
         val error = FlowTransientException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -125,7 +125,7 @@ class FlowEventProcessorImplTest {
         val error = FlowEventException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -137,7 +137,7 @@ class FlowEventProcessorImplTest {
         val error = FlowPlatformException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -149,7 +149,7 @@ class FlowEventProcessorImplTest {
         val error = FlowFatalException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 

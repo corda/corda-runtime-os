@@ -80,7 +80,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
@@ -102,12 +102,12 @@ class FlowEventExceptionProcessorImplTest {
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+                "Max retry attempts '2' has been reached."
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
@@ -124,12 +124,12 @@ class FlowEventExceptionProcessorImplTest {
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+                error.message
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
@@ -145,7 +145,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
@@ -161,7 +161,7 @@ class FlowEventExceptionProcessorImplTest {
     fun `flow flow exception outputs the transformed context as normal`() {
         val error = FlowEventException("error")
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
     }
@@ -172,7 +172,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(IllegalStateException())
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
@@ -192,11 +192,11 @@ class FlowEventExceptionProcessorImplTest {
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+                error.message
             )
         ).thenThrow(IllegalStateException())
 
-        val result = target.process(error)
+        val result = target.process(error, context)
 
         assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).isEmpty()
@@ -210,22 +210,22 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(throwable)
 
         val transientError = FlowTransientException("error")
-        val transientResult = target.process(transientError)
+        val transientResult = target.process(transientError, context)
         assertEmptyDLQdResult(transientResult)
     }
 
     @Test
     fun `throwable triggered during fatal exception processing does not escape the processor`() {
         val throwable = RuntimeException()
+        val fatalError = FlowFatalException("error")
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+                fatalError.message
             )
         ).thenThrow(throwable)
-        val fatalError = FlowFatalException("error")
-        val fatalResult = target.process(fatalError)
+        val fatalResult = target.process(fatalError, context)
         assertEmptyDLQdResult(fatalResult)
     }
 
@@ -234,7 +234,7 @@ class FlowEventExceptionProcessorImplTest {
         val throwable = RuntimeException()
         whenever(flowCheckpoint.setPendingPlatformError(any(), any())).thenThrow(throwable)
         val platformException = FlowPlatformException("error")
-        val platformResult = target.process(platformException)
+        val platformResult = target.process(platformException, context)
         assertEmptyDLQdResult(platformResult)
     }
 
@@ -243,7 +243,7 @@ class FlowEventExceptionProcessorImplTest {
         val throwable = RuntimeException()
         whenever(flowEventContextConverter.convert(context)).thenThrow(throwable)
         val eventError = FlowEventException("error")
-        val eventResult = target.process(eventError)
+        val eventResult = target.process(eventError, context)
         assertEmptyDLQdResult(eventResult)
     }
 
