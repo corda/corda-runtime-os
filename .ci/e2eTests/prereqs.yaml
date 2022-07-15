@@ -7,14 +7,6 @@ global:
 kafka:
   auth:
     clientProtocol: sasl_tls
-    externalClientProtocol: plaintext
-  externalAccess:
-    enabled: true
-    service:
-      loadBalancerNames:
-        - prereqs-kafka-0
-        - prereqs-kafka-1
-        - prereqs-kafka-2
   replicaCount: 3
   resources:
     requests:
