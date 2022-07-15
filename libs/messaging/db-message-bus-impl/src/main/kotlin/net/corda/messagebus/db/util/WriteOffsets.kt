@@ -22,7 +22,7 @@ class WriteOffsets(
         return latestOffsets.compute(topicPartition) { _: CordaTopicPartition, offset: Long? ->
             offset?.plus(1) ?: 0L
         }.also {
-            log.info("Returning offset ($topicPartition, $it")
+            log.info("Returning offset ($topicPartition, $it) from $this")
         } ?: throw CordaMessageAPIFatalException("Next offset should never be null.")
     }
 }
