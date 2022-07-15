@@ -126,7 +126,7 @@ pipeline {
                     trap "kill -9 ${procno}" EXIT
 
                     export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                    export KAFKA_TRUSTSTORE=$(mktempp)
+                    export KAFKA_TRUSTSTORE=$(mktemp)
                     kubectl get secret prereqs-kafka-0-tls -o go-template='{{ index .data "ca.crt" }}' | base64 -D > $KAFKA_TRUSTSTORE
 
                     ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
