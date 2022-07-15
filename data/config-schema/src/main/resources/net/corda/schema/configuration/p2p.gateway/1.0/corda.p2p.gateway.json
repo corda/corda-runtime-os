@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/p2p/1.0/corda.p2p.gateway.json",
+  "title": "Corda P2P Gateway Configuration Schema",
+  "description": "Configuration schema for the P2P gateway.",
+  "type": "object",
+  "properties": {
+    "hostAddress": {
+      "description": "The host name or IP address where the HTTP server will bind.",
+      "type": "string",
+      "format": "hostname",
+      "default": "0.0.0.0"
+    },
+    "hostPort": {
+      "description": "The HTTP port.",
+      "type": "integer",
+      "default": 8080,
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "sslConfig": {
+      "description": "Used for one-way TLS between Gateways.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "revocationCheck": {
+          "type": "object",
+          "default": {},
+          "description": "How to check for revocation of the server certificate.",
+          "properties": {
+            "mode": {
+            "oneOf": [
+              {"const": "SOFT_FAIL", "title": "The revocation check will succeed if the revocation status cannot be determined under certain circumstances. See java.security.cert.PKIXRevocationChecker.Option.SOFT_FAIL java doc for more details."},
+              {"const": "HARD_FAIL", "title": "Opposite of SOFT_FAIL - i.e. most rigorous check. Among other things, this check requires that CRL checking URL is available on every level of certificate chain."},
+              {"const": "OFF", "title": "Switch CRL check off."}
+            ],
+            "default": "SOFT_FAIL"
+           }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "connectionConfig": {
+      "description": "Controls the TCP connection pool to peer gateways.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "maxClientConnections": {
+          "description": "Maximum size of the connection pool.",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "acquireTimeout": {
+          "description": "Time (in seconds) after which a connection request will fail.",
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 3000
+        },
+        "connectionIdleTimeout": {
+          "description": "Time (in seconds) after which an inactive connection in the pool will be released (closed).",
+          "type": "integer",
+          "default": 60,
+          "minimum": 1,
+          "maximum": 3000
+        },
+        "responseTimeout": {
+          "description": "Time (in milli seconds) after which a message delivery is considered failed.",
+          "type": "integer",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 10000
+        },
+        "retryDelay": {
+          "description": "Time (in milli seconds) after which a message is retried, when previously failed.",
+          "type": "integer",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 10000
+        },
+        "initialReconnectionDelay": {
+          "description": "The initial time (in seconds) to wait before trying to reconnect.",
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 3000
+        },
+        "maxReconnectionDelay": {
+          "description": "The maximum time (in seconds) to delay before trying to reconnect.",
+          "type": "integer",
+          "default": 16,
+          "minimum": 1,
+          "maximum": 3000
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
