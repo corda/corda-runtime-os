@@ -49,7 +49,7 @@ internal class HttpRpcGatewayEventHandler(
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    private val dynamicRpcOpsProperty: Supplier<List<PluggableRPCOps<out RpcOps>>>,
+    private val dynamicRpcOpsProvider: Supplier<List<PluggableRPCOps<out RpcOps>>>,
     private val tempPathProvider: PathProvider = TempPathProvider()
 ) : LifecycleEventHandler {
 
@@ -119,7 +119,7 @@ internal class HttpRpcGatewayEventHandler(
                 server = null
                 sslCertReadService?.stop()
                 sslCertReadService = null
-                dynamicRpcOpsProperty.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
+                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
             }
         }
     }
@@ -165,7 +165,7 @@ internal class HttpRpcGatewayEventHandler(
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
 
         log.info("Starting HTTP RPC Server.")
-        val rpcOps = dynamicRpcOpsProperty.get()
+        val rpcOps = dynamicRpcOpsProvider.get()
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = rpcOps,
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
