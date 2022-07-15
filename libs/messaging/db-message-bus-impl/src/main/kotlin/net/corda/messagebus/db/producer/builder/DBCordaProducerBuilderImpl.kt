@@ -5,14 +5,12 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.db.configuration.MessageBusConfigResolver
-import net.corda.messagebus.db.configuration.ResolvedProducerConfig
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
 import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
 import net.corda.messagebus.db.util.WriteOffsets
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,16 +30,11 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     private var writeOffsets: WriteOffsets? = null
 
     @Synchronized
-    fun getWriteOffsets(resolvedConfig: ResolvedProducerConfig): WriteOffsets {
-        if (writeOffsets == null) {
-            val emf = entityManagerFactoryHolder.getEmf(
-                resolvedConfig.jdbcUrl,
-                resolvedConfig.jdbcUser,
-                resolvedConfig.jdbcPass
-            )
-            writeOffsets = WriteOffsets(DBAccess(emf))
+    fun getWriteOffsets(dbAccess: DBAccess): WriteOffsets {
+        return writeOffsets ?: run {
+            writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
+            writeOffsets!!
         }
-        return writeOffsets ?: throw CordaMessageAPIFatalException("Write Offsets member should never be null.")
     }
 
     override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
@@ -53,18 +46,19 @@ class DBCordaProducerBuilderImpl @Activate constructor(
             resolvedConfig.jdbcUser,
             resolvedConfig.jdbcPass
         )
+        val dbAccess = DBAccess(emf)
 
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                DBAccess(emf),
-                getWriteOffsets(resolvedConfig)
+                dbAccess,
+                getWriteOffsets(dbAccess)
             )
         } else {
             CordaAtomicDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                DBAccess(emf),
-                getWriteOffsets(resolvedConfig)
+                dbAccess,
+                getWriteOffsets(dbAccess)
             )
         }
     }
