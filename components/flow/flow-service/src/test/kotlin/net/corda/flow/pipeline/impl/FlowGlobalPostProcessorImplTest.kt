@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.crypto.manager.CryptoManager
 import java.util.stream.Stream
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
@@ -9,7 +8,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
-import net.corda.flow.persistence.manager.PersistenceManager
+import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -38,7 +37,7 @@ class FlowGlobalPostProcessorImplTest {
         @JvmStatic
         fun sessionStatuses(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(SessionStateType.CLOSED, SessionStateType.CONFIRMED, ),
+                Arguments.of(SessionStateType.CLOSED, SessionStateType.CONFIRMED),
                 Arguments.of(SessionStateType.ERROR, SessionStateType.CONFIRMED),
                 Arguments.of(SessionStateType.CLOSED, SessionStateType.ERROR),
             )
@@ -71,16 +70,14 @@ class FlowGlobalPostProcessorImplTest {
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
     private val sessionManager = mock<SessionManager>()
-    private val cryptoManager = mock<CryptoManager>()
-    private val persistenceManager = mock<PersistenceManager>()
+    private val externalEventManager = mock<ExternalEventManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
-        cryptoManager,
+        externalEventManager,
         sessionManager,
-        persistenceManager,
         flowMessageFactory,
         flowRecordFactory
     )
@@ -108,11 +105,21 @@ class FlowGlobalPostProcessorImplTest {
             )
         ).thenReturn(sessionState2 to listOf(sessionEvent3))
 
-        whenever(flowRecordFactory.createFlowMapperEventRecord(sessionEvent1.sessionId, sessionEvent1)).thenReturn(sessionRecord1)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(sessionEvent2.sessionId, sessionEvent2)).thenReturn(sessionRecord2)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(sessionEvent3.sessionId, sessionEvent3)).thenReturn(sessionRecord3)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_1), any<ScheduleCleanup>())).thenReturn(scheduleCleanupRecord1)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_2), any<ScheduleCleanup>())).thenReturn(scheduleCleanupRecord2)
+        whenever(flowRecordFactory.createFlowMapperEventRecord(sessionEvent1.sessionId, sessionEvent1)).thenReturn(
+            sessionRecord1
+        )
+        whenever(flowRecordFactory.createFlowMapperEventRecord(sessionEvent2.sessionId, sessionEvent2)).thenReturn(
+            sessionRecord2
+        )
+        whenever(flowRecordFactory.createFlowMapperEventRecord(sessionEvent3.sessionId, sessionEvent3)).thenReturn(
+            sessionRecord3
+        )
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_1), any<ScheduleCleanup>())).thenReturn(
+            scheduleCleanupRecord1
+        )
+        whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_2), any<ScheduleCleanup>())).thenReturn(
+            scheduleCleanupRecord2
+        )
     }
 
     @Test

@@ -7,10 +7,10 @@ import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.EntityResponseFailure
-import net.corda.data.persistence.Error
 import net.corda.data.persistence.PersistEntity
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
@@ -24,13 +24,13 @@ import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.Resources
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDogInstance
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -66,6 +66,7 @@ class PersistenceExceptionTests {
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
 
     @BeforeAll
     fun setup(
@@ -82,6 +83,7 @@ class PersistenceExceptionTests {
             virtualNode = setup.fetchService(timeout = 5000)
             cpiInfoReadService = setup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
+            externalEventResponseFactory = setup.fetchService(timeout = 5000)
         }
     }
 
@@ -106,22 +108,20 @@ class PersistenceExceptionTests {
                 BasicMocks.componentContext()
             )
 
-        val processor = EntityMessageProcessor(brokenEntitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(brokenEntitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
-
-        val responseFailure = entityResponse.responseType as EntityResponseFailure
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(responseFailure.errorType).isEqualTo(Error.NOT_READY)
-
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
         // The failure also captures the exception name.
-        assertThat(responseFailure.exception.errorType).contains("NotReadyException")
+        assertThat(response.error.exception.errorType).isEqualTo("NotReadyException")
     }
 
     @Test
@@ -145,31 +145,28 @@ class PersistenceExceptionTests {
                 BasicMocks.componentContext()
             )
 
-        val processor = EntityMessageProcessor(brokenEntitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(brokenEntitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-
-        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
-
-        val responseFailure = entityResponse.responseType as EntityResponseFailure
-
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(responseFailure.errorType).isEqualTo(Error.VIRTUAL_NODE)
-
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
         // The failure also captures the exception name.
-        assertThat(responseFailure.exception.errorType).contains("VirtualNodeException")
+        assertThat(response.error.exception.errorType).isEqualTo("VirtualNodeException")
     }
 
     @Test
     fun `exception raised when sent a missing command`() {
         val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
-        val badRequest = EntityRequest(Instant.now(), oldRequest.flowId, oldRequest.holdingIdentity, unknownCommand)
+        val badRequest =
+            EntityRequest(oldRequest.holdingIdentity, unknownCommand, ExternalEventContext("request id", "flow id"))
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -180,25 +177,22 @@ class PersistenceExceptionTests {
                 BasicMocks.componentContext()
             )
 
-        val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor =
+            EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
-
-        val responseFailure = entityResponse.responseType as EntityResponseFailure
-
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(responseFailure.errorType).isEqualTo(Error.FATAL)
-
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL_ERROR)
         // The failure also captures the exception name.
-        assertThat(responseFailure.exception.errorType).contains("CordaRuntimeException")
+        assertThat(response.error.exception.errorType).isEqualTo("CordaRuntimeException")
     }
-    
+
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     /**
@@ -209,7 +203,8 @@ class PersistenceExceptionTests {
         val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
         val dbConnectionManager = FakeDbConnectionManager(
             listOf(animalDbConnection),
-            "PersistenceExceptionTests")
+            "PersistenceExceptionTests"
+        )
 
         // We need a 'working' service to set up the test
         val entitySandboxService =
@@ -228,7 +223,11 @@ class PersistenceExceptionTests {
         val serialisedDog = sandboxOne.getSerializer().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
-        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro(), PersistEntity(ByteBuffer.wrap(serialisedDog)))
+        val request = EntityRequest(
+            virtualNodeInfoOne.holdingIdentity.toAvro(),
+            PersistEntity(ByteBuffer.wrap(serialisedDog)),
+            ExternalEventContext("request id", "flow id")
+        )
         return Pair(dbConnectionManager, request)
     }
 }

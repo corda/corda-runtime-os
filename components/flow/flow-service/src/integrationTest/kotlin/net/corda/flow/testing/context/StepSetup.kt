@@ -1,14 +1,8 @@
 package net.corda.flow.testing.context
 
-import net.corda.data.KeyValuePairList
-import java.nio.ByteBuffer
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.persistence.Error
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import java.security.PublicKey
-import java.time.Instant
 
 interface StepSetup {
 
@@ -84,30 +78,4 @@ interface StepSetup {
     ): FlowIoRequestSetup
 
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
-
-    fun entityResponseSuccessReceived(
-        flowId: String,
-        requestId: String,
-        byteBuffer: ByteBuffer?,
-    ): FlowIoRequestSetup
-
-    fun entityResponseErrorReceived(
-        flowId: String,
-        requestId: String,
-        errorType: Error,
-        exception: ExceptionEnvelope
-    ): FlowIoRequestSetup
-
-    fun cryptoSignResponseReceived(
-        flowId: String,
-        requestId: String,
-        publicKey: PublicKey,
-        bytes: ByteArray,
-        requestingComponent: String = "Flow Worker",
-        requestingTimestamp: Instant = Instant.now(),
-        responseTimestamp: Instant = Instant.now(),
-        tenantId: String = "tenant",
-        otherContext: KeyValuePairList = KeyValuePairList(mutableListOf()),
-        exceptionEnvelope: ExceptionEnvelope? = null
-    ): FlowIoRequestSetup
 }

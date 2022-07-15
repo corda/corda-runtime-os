@@ -31,6 +31,7 @@
     bnd.identity;id='net.corda.crypto-softhsm-impl',\
     bnd.identity;id='net.corda.db-connection-manager-impl',\
     bnd.identity;id='net.corda.db-orm-impl',\
+    bnd.identity;id='net.corda.external-events-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\

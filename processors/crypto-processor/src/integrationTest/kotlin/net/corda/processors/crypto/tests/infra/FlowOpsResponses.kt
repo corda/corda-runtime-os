@@ -12,11 +12,19 @@ import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.v5.base.util.contextLogger
 
 class FlowOpsResponses(
     messagingConfig: SmartConfig,
-    subscriptionFactory: SubscriptionFactory
+    subscriptionFactory: SubscriptionFactory,
+    private val deserializer: CordaAvroDeserializer<FlowOpsResponse>
 ) : DurableProcessor<String, FlowEvent>, AutoCloseable {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     private val subscription: Subscription<String, FlowEvent> =
         subscriptionFactory.createDurableSubscription(
@@ -37,7 +45,12 @@ class FlowOpsResponses(
 
     override fun onNext(events: List<Record<String, FlowEvent>>): List<Record<*, *>> {
         events.forEach {
-            receivedEvents[it.key] = (it.value as FlowEvent).payload as FlowOpsResponse
+            log.info("Received response of $it")
+            val response = ((it.value as FlowEvent).payload as ExternalEventResponse)
+            log.info("Response contains external event response of $response")
+            val flowOpsResponse = deserializer.deserialize(response.payload.array())
+            log.info("Response contains flow ops response of $flowOpsResponse")
+            receivedEvents[it.key] = flowOpsResponse
         }
         return emptyList()
     }

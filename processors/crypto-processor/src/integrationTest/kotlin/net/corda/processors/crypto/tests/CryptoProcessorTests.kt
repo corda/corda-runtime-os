@@ -1,6 +1,12 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.*
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -11,9 +17,12 @@ import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
@@ -76,12 +85,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -137,6 +140,9 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
+
+        @InjectService(timeout = 5000L)
+        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
         private lateinit var publisher: Publisher
 
@@ -211,8 +217,15 @@ class CryptoProcessorTests {
                     )
                 )
             )
-            flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
-            transformer = cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
+            flowOpsResponses = FlowOpsResponses(
+                messagingConfig,
+                subscriptionFactory,
+                cordaAvroSerializationFactory.createAvroDeserializer({}, FlowOpsResponse::class.java)
+            )
+            transformer = cryptoFlowOpsTransformerFactory.create(
+                requestingComponent = "test",
+                responseTopic = RESPONSE_TOPIC
+            )
         }
 
         private fun setupDatabases() {
@@ -672,12 +685,14 @@ class CryptoProcessorTests {
         schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
+            val requestId = UUID.randomUUID().toString()
             val event = transformer.createSign(
-                requestId = UUID.randomUUID().toString(),
+                requestId = requestId,
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
-                data = data
+                data = data,
+                flowExternalEventContext = ExternalEventContext(requestId, key)
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",
@@ -716,12 +731,14 @@ class CryptoProcessorTests {
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
             val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
+            val requestId = UUID.randomUUID().toString()
             val event = transformer.createSign(
-                requestId = UUID.randomUUID().toString(),
+                requestId = requestId,
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
-                data = data
+                data = data,
+                flowExternalEventContext = ExternalEventContext(requestId, key)
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",
