@@ -7,6 +7,7 @@ import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
+import net.corda.sandboxgroupcontext.CORDA_SYSTEM_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
@@ -51,7 +52,8 @@ class SandboxGroupContextServiceImpl(
     var cache: SandboxGroupContextCache
 ) : SandboxGroupContextService {
     private companion object {
-        private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER))"
+        private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER)(!$CORDA_SYSTEM_FILTER))"
+        private const val SYSTEM_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER)$CORDA_SYSTEM_FILTER)"
 
         private val logger = loggerFor<SandboxGroupContextServiceImpl>()
 
@@ -125,7 +127,7 @@ class SandboxGroupContextServiceImpl(
 
     private fun registerCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): List<AutoCloseable>? {
         val bundleContext = bundles.firstOrNull()?.bundleContext ?: return null
-        return fetchCommonServices(vnc, bundles).mapNotNull { requirement ->
+        return (fetchCommonServices(vnc, bundles) + fetchSystemServices(vnc)).mapNotNull { requirement ->
             registerCommonServiceFor(requirement.first, requirement.second, bundleContext)
         }
     }
@@ -159,6 +161,31 @@ class SandboxGroupContextServiceImpl(
                     }
             } catch (e: Exception) {
                 logger.warn("Failed to identify injectable services from $serviceRef", e)
+                null
+            }
+        }
+    }
+
+    private fun fetchSystemServices(vnc: VirtualNodeContext): List<ServiceDefinition> {
+        val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SYSTEM_FACTORY_FILTER$filter)" } ?: SYSTEM_FACTORY_FILTER
+        val serviceMarkerTypeName = vnc.serviceMarkerType.name
+        return bundleContext.getServiceReferences(vnc.serviceMarkerType, serviceFilter).mapNotNull { serviceRef ->
+            try {
+                @Suppress("unchecked_cast")
+                (serviceRef.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray())
+                    .filterNot(serviceMarkerTypeName::equals)
+                    .mapNotNullTo(ArrayList(), singleton(serviceRef.bundle)::loadCommonService)
+                    .takeIf(List<*>::isNotEmpty)
+                    ?.let { injectables ->
+                        // Every service object must implement the service
+                        // marker type and at least one other type too.
+                        injectables += vnc.serviceMarkerType
+                        bundleContext.getServiceObjects(serviceRef)?.let { serviceObj ->
+                            serviceObj to injectables
+                        }
+                    }
+            } catch (e: Exception) {
+                logger.warn("Failed to identify injectable system services from $serviceRef", e)
                 null
             }
         }
