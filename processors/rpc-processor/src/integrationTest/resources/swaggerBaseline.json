@@ -679,35 +679,6 @@
         }
       }
     },
-    "/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "HsmRpcOps" ],
-        "description" : "",
-        "operationId" : "get_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/hello/getprotocolversion" : {
       "get" : {
         "tags" : [ "Hello RPC Ops" ],
@@ -801,6 +772,180 @@
                   "items" : {
                     "$ref" : "#/components/schemas/HsmInfo"
                   }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/hsm/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "HsmRpcOps" ],
+        "description" : "",
+        "operationId" : "get_hsm_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/hsm/soft/{tenantid}/{category}" : {
+      "post" : {
+        "tags" : [ "HsmRpcOps" ],
+        "description" : "Assign soft HSM",
+        "operationId" : "post_hsm_soft__tenantid___category_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "'p2p', 'rpc-api' or holding identity ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "'p2p', 'rpc-api' or holding identity ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "path",
+          "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HsmInfo"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/hsm/{tenantid}/{category}" : {
+      "get" : {
+        "tags" : [ "HsmRpcOps" ],
+        "description" : "Get list of assigned HSMs.",
+        "operationId" : "get_hsm__tenantid___category_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "'p2p', 'rpc-api' or holding identity ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "'p2p', 'rpc-api' or holding identity ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "path",
+          "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "nullable" : true,
+                  "allOf" : [ {
+                    "$ref" : "#/components/schemas/HsmInfo"
+                  } ]
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "HsmRpcOps" ],
+        "description" : "Assign HSM.",
+        "operationId" : "post_hsm__tenantid___category_",
+        "parameters" : [ {
+          "name" : "tenantid",
+          "in" : "path",
+          "description" : "'p2p', 'rpc-api' or holding identity ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "'p2p', 'rpc-api' or holding identity ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "category",
+          "in" : "path",
+          "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HsmInfo"
                 }
               }
             }
@@ -2196,151 +2341,6 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/{tenantid}/hsm" : {
-      "get" : {
-        "tags" : [ "HsmRpcOps" ],
-        "description" : "Get list of assigned HSMs.",
-        "operationId" : "get__tenantid__hsm",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "category",
-          "in" : "query",
-          "description" : "Category",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Category",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "nullable" : true,
-                  "allOf" : [ {
-                    "$ref" : "#/components/schemas/HsmInfo"
-                  } ]
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      },
-      "post" : {
-        "tags" : [ "HsmRpcOps" ],
-        "description" : "Assign HSM.",
-        "operationId" : "post__tenantid__hsm",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "category",
-          "in" : "query",
-          "description" : "Category",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Category",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/{tenantid}/hsm/soft" : {
-      "post" : {
-        "tags" : [ "HsmRpcOps" ],
-        "description" : "Assign soft HSM",
-        "operationId" : "post__tenantid__hsm_soft",
-        "parameters" : [ {
-          "name" : "tenantid",
-          "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "category",
-          "in" : "query",
-          "description" : "Category",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Category",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
                 }
               }
             }
