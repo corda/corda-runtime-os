@@ -163,6 +163,9 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
+    {{- if ( get .Values.workers .worker ).profiling.enabled }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+    {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
     {{- end -}}

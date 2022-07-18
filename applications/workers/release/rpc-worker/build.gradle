@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description 'RPC Worker'
@@ -56,7 +57,7 @@ dependencies {
     e2eTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     e2eTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
 
 tasks.register('e2eTest', Test) {

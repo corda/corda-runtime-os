@@ -1,0 +1,13 @@
+pluginManagement {
+    plugins {
+        id 'com.jfrog.artifactory' version artifactoryPluginVersion
+    }
+}
+
+rootProject.name = 'yourkit-profiler'
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
