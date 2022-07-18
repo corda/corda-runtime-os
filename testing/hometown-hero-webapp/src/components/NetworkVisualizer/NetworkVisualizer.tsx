@@ -144,18 +144,20 @@ const NetworkVisualizer = () => {
                 >
                     Add New Node
                 </Button> */}
-                <Button
-                    size={'small'}
-                    variant={'primary'}
-                    onClick={() => {
-                        setIsEnlarged((prev) => !prev);
-                    }}
-                >
-                    {isEnlarged ? 'Smaller' : 'Bigger'}
-                </Button>
-                <Button size={'small'} variant={'primary'} onClick={groupNodes}>
-                    Group Nodes
-                </Button>
+                <div className="flex gap-6 ml-4">
+                    <Button
+                        size={'small'}
+                        variant={'primary'}
+                        onClick={() => {
+                            setIsEnlarged((prev) => !prev);
+                        }}
+                    >
+                        {isEnlarged ? 'Smaller' : 'Bigger'}
+                    </Button>
+                    <Button size={'small'} variant={'primary'} onClick={groupNodes}>
+                        Group Nodes
+                    </Button>
+                </div>
             </div>
             <div className={`${style.networkVizWrapper} ${isEnlarged ? style.enlarged : ''} shadow-xl`}>
                 <Graph

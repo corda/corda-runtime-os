@@ -94,7 +94,7 @@ export const createRole = async (): Promise<string | undefined> => {
         NotificationService.notify(`Failed to create new role: Error: ${response.error}`, 'Error', 'danger');
         return undefined;
     } else {
-        NotificationService.notify(`Successfully created new role for user!`, 'Success!', 'success');
+        //NotificationService.notify(`Successfully created new role for user!`, 'Success!', 'success');
     }
 
     return response.data.id;
@@ -140,7 +140,7 @@ export const addRoleToUser = async (loginName: string, roleId: string): Promise<
         );
         return false;
     } else {
-        NotificationService.notify(`Successfully added role to new user!`, 'Success!', 'success');
+        //NotificationService.notify(`Successfully added role to new user!`, 'Success!', 'success');
     }
 
     return true;

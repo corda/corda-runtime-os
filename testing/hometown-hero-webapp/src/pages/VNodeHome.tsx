@@ -4,10 +4,22 @@ import MobileChatWrapper from '@/components/VNodeHome/MobileChatWrapper/MobileCh
 import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
 import VNodeHomeViz from '@/components/Visualizations/VNodeHomeViz';
 import VisualizationWrapper from '@/components/Visualizations/VisualizationWrapper';
+import useAppDataContext from '@/contexts/appDataContext';
+import { useEffect } from 'react';
 import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
+import useUserContext from '@/contexts/userContext';
 
 const VNodeHome = () => {
     const isMobile = useMobileMediaQuery();
+    const { vNodes } = useAppDataContext();
+    const { vNode, setVNode, holderShortId } = useUserContext();
+
+    useEffect(() => {
+        if (vNode) return;
+        const myVNode = vNodes.find((vNode) => vNode.holdingIdentity.id === holderShortId);
+        setVNode(myVNode);
+    }, [vNode]);
+
     return (
         <MessagesContextProvider>
             <PageContentWrapper footerEnabled={isMobile ? false : true}>

@@ -18,15 +18,13 @@ const SelectedParticipants: React.FC<Props> = ({
         <div className={style.selectedParticipantsWrapper}>
             <div className="flex">
                 <IconCustom
-                    className={`w-6 ${clearButtonEnabled ? 'mt-3' : 'mt-1'} ${
-                        emptyParticipants ? style.error : style.blue
-                    }`}
+                    className={`w-6 h-10 ${emptyParticipants ? style.error : style.blue} pt-1`}
                     icon={'Account'}
                 />
                 <p className={`${style.text} ${emptyParticipants ? style.error : style.blue}`}>
-                    {`Selected: ${
+                    {`${
                         emptyParticipants
-                            ? 'Please select at least one!'
+                            ? 'Please select a participant!'
                             : selectedParticipants.length === 1
                             ? selectedParticipants[0]
                             : selectedParticipants.length

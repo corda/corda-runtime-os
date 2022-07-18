@@ -1,17 +1,8 @@
 import style from './nodeDetails.module.scss';
-import useAppDataContext from '@/contexts/appDataContext';
-import { useEffect } from 'react';
 import useUserContext from '@/contexts/userContext';
 
 const NodeDetails = () => {
-    const { vNodes } = useAppDataContext();
-    const { vNode, setVNode, holderShortId } = useUserContext();
-
-    useEffect(() => {
-        if (vNode) return;
-        const myVNode = vNodes.find((vNode) => vNode.holdingIdentity.id === holderShortId);
-        setVNode(myVNode);
-    }, [vNode]);
+    const { vNode } = useUserContext();
 
     if (!vNode) {
         return <></>;

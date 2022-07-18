@@ -30,7 +30,7 @@ const MobileChatWrapper = () => {
                 />
             ) : (
                 <>
-                    <div className="ml-4">
+                    <div className="ml-4 mb-4">
                         <SelectedParticipants
                             selectedParticipants={selectedParticipants}
                             handleClearParticipants={() => {
