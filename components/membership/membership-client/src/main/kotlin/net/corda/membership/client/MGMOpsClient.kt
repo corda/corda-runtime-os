@@ -4,13 +4,12 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.membership.client.dto.MGMGenerateGroupPolicyResponseDto
 
 /**
- * The member ops client to perform group operations.
+ * The MGM ops client to perform group operations.
  */
 interface MGMOpsClient : Lifecycle {
 
     /**
-     * Checks the latest known status of registration based on a member's own local data and without
-     * outwards communication.
+     * Generates the Group Policy file to be used to register a new member to the MGM
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
      * @return [MGMGenerateGroupPolicyResponseDto] Generated Group Policy Response.
