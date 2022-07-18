@@ -203,6 +203,7 @@ class CreateCpiTest {
 
 
     @Test
+    @Suppress("MaxLineLength")
     fun testNoOptionError() {
 
         val errText = captureStdErr { CommandLine(app).execute("") }

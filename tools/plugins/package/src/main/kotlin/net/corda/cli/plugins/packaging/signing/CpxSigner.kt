@@ -17,6 +17,7 @@ internal object CpxSigner {
     /**
      * Signs Cpx jar files.
      */
+    @Suppress("LongParameterList")
     fun sign(
         unsignedInputCpx: Path,
         signedOutputCpx: Path,

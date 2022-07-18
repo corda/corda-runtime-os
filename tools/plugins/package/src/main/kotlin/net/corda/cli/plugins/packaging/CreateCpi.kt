@@ -36,10 +36,17 @@ class CreateCpi : Runnable {
     @Option(names = ["--cpb", "-c"], required = true, description = ["CPB file to convert into CPI"])
     lateinit var cpbFileName: String
 
-    @Option(names = ["--group-policy", "-g"], required = true, description = ["Group policy to include in CPI", "Use \"-\" to read group policy from standard input"])
+    @Option(
+        names = ["--group-policy", "-g"],
+        required = true,
+        description = ["Group policy to include in CPI", "Use \"-\" to read group policy from standard input"]
+    )
     lateinit var groupPolicyFileName: String
 
-    @Option(names = ["--file", "-f"], description = ["Output file", "If omitted, the CPB filename with .cpi as a filename extension is used"])
+    @Option(
+        names = ["--file", "-f"],
+        description = ["Output file", "If omitted, the CPB filename with .cpi as a filename extension is used"]
+    )
     var outputFileName: String? = null
 
     @Option(names = ["--keystore", "-s"], required = true, description = ["Keystore holding signing keys"])
