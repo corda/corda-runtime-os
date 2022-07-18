@@ -97,11 +97,9 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(charlieHoldingId, requestBody)
         startRpcFlow(davidHoldingId, requestBody)
         startRpcFlow(davidHoldingId, requestBody)
 
-        awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
         awaitMultipleRpcFlowFinished(davidHoldingId, 2)
     }
 
