@@ -98,11 +98,10 @@ class FlowTests {
         }
 
         startRpcFlow(charlieHoldingId, requestBody)
-        startRpcFlow(davidHoldingId, requestBody)
-        startRpcFlow(davidHoldingId, requestBody)
+        startRpcFlow(charlieHoldingId, requestBody)
+        startRpcFlow(charlieHoldingId, requestBody)
 
-        awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
-        awaitMultipleRpcFlowFinished(davidHoldingId, 2)
+        awaitMultipleRpcFlowFinished(charlieHoldingId, 3)
     }
 
     @Test
