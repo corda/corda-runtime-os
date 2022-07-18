@@ -1,20 +1,39 @@
 package net.cordapp.testing.chat
 
-/**
- * A container of chat messages. Used for JSON encoding.
- */
-data class Messages(val receivedChatMessages: ReceivedChatMessages, val sentChatMessages: SentChatMessages)
+data class Chat(val counterparty: String, var messages: List<Message>)
 
-/**
- * A container of received chat messages. Used for JSON encoding.
- */
-data class ReceivedChatMessages(
-    val messages: List<IncomingChatMessage>
-)
+data class Message(val id: String, val direction: String, val content: String, val timestamp: String)
 
-/**
- * A container of sent chat messages. Used for JSON encoding.
- */
-data class SentChatMessages(
-    val messages: List<OutgoingChatMessage>
-)
+fun chats(incomingMessages: List<IncomingChatMessage>, outgoingMessages: List<OutgoingChatMessage>): List<Chat> {
+    // Group incoming messages by sender
+    // For each sender, create a chat, and map the messages into the chat message list
+    var chats = incomingMessages.groupBy { it.sender }.entries.map {
+        Chat(counterparty = it.key, messages = it.value.map {
+            Message(
+                id = it.id.toString(), direction = "incoming", content = it.message, timestamp = it.timestamp
+            )
+        })
+    }
+
+    // Group outgoing messages by recipient
+    outgoingMessages.groupBy { it.recipient }.entries.forEach { outgoingMessageGroup ->
+        // Map outgoing messages into the output format
+        val messages = outgoingMessageGroup.value.map {
+            Message(
+                id = it.id.toString(), direction = "outgoing", content = it.message, timestamp = it.timestamp
+            )
+        }
+
+        // Check if we have a chat already for this member, and if so add the list of outgoing messages and sort
+        chats.find { it.counterparty == outgoingMessageGroup.key }?.let {
+            it.messages = (it.messages + messages).sortedBy { it.timestamp }
+        } ?: run {
+            // Otherwise create a new chat and add the sorted message list
+            chats += Chat(
+                counterparty = outgoingMessageGroup.key,
+                messages = messages.sortedBy { it.timestamp })
+        }
+    }
+
+    return chats
+}

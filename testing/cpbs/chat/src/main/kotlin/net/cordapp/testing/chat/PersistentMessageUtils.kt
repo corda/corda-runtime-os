@@ -47,14 +47,10 @@ fun storeOutgoingMessage(
 }
 
 @Suspendable
-fun readAllMessages(persistenceService: PersistenceService): Messages {
-    val receivedMessages = persistenceService.findAll<IncomingChatMessage>().let {
-        ReceivedChatMessages(it)
-    }
-    val sentMessages = persistenceService.findAll<OutgoingChatMessage>().let {
-        SentChatMessages(it)
-    }
-    return Messages(sentChatMessages = sentMessages, receivedChatMessages = receivedMessages)
+fun readAllMessages(persistenceService: PersistenceService): List<Chat> {
+    val incomingMessages = persistenceService.findAll<IncomingChatMessage>()
+    val outgoingMessages = persistenceService.findAll<OutgoingChatMessage>()
+    return chats(incomingMessages = incomingMessages, outgoingMessages = outgoingMessages)
 }
 
 @Suspendable

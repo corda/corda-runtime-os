@@ -137,10 +137,7 @@ class ChatReaderFlow : RPCStartableFlow {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
 
         val messages = readAllMessages(persistenceService).also {
-            log.info(
-                "Returning ${it.receivedChatMessages.messages.size} received messages and" +
-                        "${it.sentChatMessages.messages.size} sent messages"
-            )
+            log.info("Returning ${it.size} chats")
         }
         return jsonMarshallingService.format(messages)
     }
