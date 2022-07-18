@@ -137,7 +137,6 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
         verify(checkpoint).serializedFiber = expectedFiber
-//        assertThat(state.output).isSameAs(flowResult)
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with flow completion result")
@@ -155,7 +154,6 @@ class FlowEventPipelineImplTest {
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, waitingForWakeup.value)
         verify(checkpoint).serializedFiber = expectedFiber
-//        assertThat(state.output).isSameAs(flowResult)
     }
 
     @Test

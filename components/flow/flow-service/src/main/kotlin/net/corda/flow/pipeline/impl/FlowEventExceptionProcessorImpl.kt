@@ -57,8 +57,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(
         exception: FlowTransientException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> =
-        withEscalation {
+    ): StateAndEventProcessor.Response<Checkpoint> {
+        return withEscalation {
             val flowCheckpoint = context.checkpoint
 
             /** If we have reached the maximum number of retries then we escalate this to a fatal
@@ -89,6 +89,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
         }
+    }
 
     override fun process(
         exception: FlowFatalException,
@@ -140,21 +141,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(
         exception: FlowPlatformException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> =
-        withEscalation {
+    ): StateAndEventProcessor.Response<Checkpoint> {
+        return withEscalation {
             val checkpoint = context.checkpoint
-
-            /**
-             * the exception message can't be null, we can remove the !! as
-             * part of this ticket:
-             * https://r3-cev.atlassian.net/browse/CORE-5170
-             */
             checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message)
             checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
 
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
         }
+    }
 
     private fun withEscalation(handler: () -> StateAndEventProcessor.Response<Checkpoint>): StateAndEventProcessor.Response<Checkpoint> {
         return try {
