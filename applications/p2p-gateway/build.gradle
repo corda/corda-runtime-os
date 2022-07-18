@@ -40,5 +40,5 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
 
-    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
