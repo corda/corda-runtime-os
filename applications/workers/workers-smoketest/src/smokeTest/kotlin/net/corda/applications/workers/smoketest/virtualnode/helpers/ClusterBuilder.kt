@@ -44,7 +44,7 @@ class ClusterBuilder {
     fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) = put(
-        "/api/v1/virtualnode",
+        "/api/v1/maintenance/virtualnode",
         vNodeUpdateBody(holdingIdHash, newState)
     )
 

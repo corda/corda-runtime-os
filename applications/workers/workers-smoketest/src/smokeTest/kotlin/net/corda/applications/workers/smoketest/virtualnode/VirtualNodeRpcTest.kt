@@ -248,8 +248,10 @@ class VirtualNodeRpcTest {
             }
 
             val randomPair = states.elementAt(random.nextInt(states.size))
+            val oldState = randomPair.second
+            val newState = oldState.reversed()
 
-            updateVirtualNodeState(randomPair.first, randomPair.second.reversed())
+            updateVirtualNodeState(randomPair.first, newState)
 
             assertWithRetry {
                 command { vNodeList() }
@@ -257,11 +259,13 @@ class VirtualNodeRpcTest {
                     it.code == 200 &&
                         it.toJson()["virtualNodes"].single { virtualNode ->
                             virtualNode["holdingIdentity"]["id"].textValue() == randomPair.first
-                        }["state"].textValue() == randomPair.second.reversed()
+                        }["state"].textValue() == newState
                 }
+                interval(Duration.ofSeconds(2))
+                timeout(Duration.ofSeconds(60))
             }
 
-            updateVirtualNodeState(randomPair.first, randomPair.second)
+            updateVirtualNodeState(randomPair.first, oldState)
 
             assertWithRetry {
                 command { vNodeList() }
@@ -269,8 +273,10 @@ class VirtualNodeRpcTest {
                     it.code == 200 &&
                         it.toJson()["virtualNodes"].single { virtualNode ->
                             virtualNode["holdingIdentity"]["id"].textValue() == randomPair.first
-                        }["state"].textValue() == randomPair.second
+                        }["state"].textValue() == oldState
                 }
+                interval(Duration.ofSeconds(2))
+                timeout(Duration.ofSeconds(60))
             }
         }
     }

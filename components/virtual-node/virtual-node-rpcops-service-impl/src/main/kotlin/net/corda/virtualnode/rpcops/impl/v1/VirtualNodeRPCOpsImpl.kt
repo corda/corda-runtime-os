@@ -135,46 +135,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll())
     }
 
-    override fun updateVirtualNodeState(
-        virtualNodeShortId: String,
-        newState: String
-    ): HTTPVirtualNodeStateChangeResponse {
-        logger.info(virtualNodeShortId)
-        val instant = clock.instant()
-        // Validate newState
-
-        val actor = CURRENT_RPC_CONTEXT.get().principal
-        val rpcRequest = VirtualNodeManagementRequest(
-            instant,
-            VirtualNodeStateChangeRequest(
-                virtualNodeShortId,
-                newState,
-                actor
-            )
-        )
-        val resp = sendRequest(rpcRequest)
-        logger.info(resp.responseType.toString())
-
-        return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeStateChangeResponse -> {
-                HTTPVirtualNodeStateChangeResponse(
-                    resolvedResponse.holdingIdentityShortHash,
-                    resolvedResponse.virtualNodeState
-                )
-            }
-            is VirtualNodeManagementResponseFailure -> {
-                val exception = resolvedResponse.exception
-                if (exception == null) {
-                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
-                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
-                }
-                logger.warn("Remote request to update virtual node responded with exception of type ${exception.errorType}: ${exception.errorMessage}")
-                throw InternalServerException(exception.errorMessage)
-            }
-            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
-        }
-    }
-
     /** Validates the [x500Name]. */
     private fun validateX500Name(x500Name: String) = try {
         MemberX500Name.parse(x500Name)
