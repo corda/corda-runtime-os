@@ -1,9 +1,9 @@
 # Package Plugin
 
-Plugin for working with CPI files.
+This is a plug-in for [Corda CLI plug-in host](https://github.com/corda/corda-cli-plugin-host) for working with CPB and CPI files.
 
 ```shell
-# These commands assume you are in the script folder to have access to ./corda-cli.sh
+# These commands assume you have access to ./corda-cli.sh
 cd script
 
 # Generate two self-signed signing keys to show how we select one key among multiple
