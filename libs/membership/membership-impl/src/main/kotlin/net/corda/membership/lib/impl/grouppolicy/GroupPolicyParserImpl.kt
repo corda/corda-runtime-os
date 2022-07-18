@@ -9,11 +9,11 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.CREATED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo

@@ -11,7 +11,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.jvm' apply false
     id 'org.jetbrains.kotlin.plugin.allopen' apply false
     id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
@@ -137,18 +137,30 @@ allprojects {
         //needed for C5 binaries
         maven {
             url = "$artifactoryContextUrl/corda-os-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
             credentials {
                 username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
                 password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
 
-        // needed for plugin-host dependencies
         maven {
-            url = "$artifactoryContextUrl/engineering-tools-maven-unstable-local"
+            url = "$artifactoryContextUrl/engineering-tools-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
             credentials {
                 username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
                 password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+            content {
+                // YourKit Java Profiler agent artifact.
+                // To publish agent locally:
+                //   $ cd profiler
+                //   $ ../gradlew publishToMavenLocal
+                includeGroup 'com.yourkit.corda'
             }
         }
 
@@ -346,8 +358,6 @@ subprojects {
     task allDependencies(type: DependencyReportTask) {}
 
     configurations {
-        // configuration used by DeployableContainerBuilder to add dependencies to Docker images
-        image { transitive = false }
         all {
             resolutionStrategy {
                 // FORCE Gradle to use latest dynamic versions.
@@ -371,43 +381,6 @@ subprojects {
             "javax.persistence.MappedSuperclass"
         )
     }
-
-    // apply docker publishing to workers and select testing applications
-    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'app-simulator', 'configuration-publisher']
-    if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
-
-        tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-            // Bit of a hack to ensure we always get a flat list of tasks
-            def sourceTasks = (List<Task>)[project.tasks.named("appJar").get()].flatten()
-            dependsOn(sourceTasks)
-            it.sourceTasks = sourceTasks
-            it.useShortName = true
-            if (project.hasProperty('jibRemotePublish')) {
-                remotePublish = jibRemotePublish.toBoolean()
-            }
-
-            if (project.hasProperty('isReleaseCandidate')) {
-                releaseCandidate = isReleaseCandidate.toBoolean()
-            }
-
-            if (project.hasProperty('isNightly')) {
-                nightlyBuild = isNightly.toBoolean()
-            }
-
-            if (project.hasProperty('isPreTest')) {
-                preTest = isPreTest.toBoolean()
-            }
-
-            if (project.hasProperty('baseImage')) {
-                baseImageName = baseImage
-            }
-
-            if(project.hasProperty('useDockerDaemon')){
-                useDaemon = useDockerDaemon.toBoolean()
-            }
-        }
-
-    }
 }
 
 // report updatable dependencies: gradle dependencyUpdates
@@ -416,6 +389,7 @@ def isNonStable = { String version ->
     def regex = /^[0-9,.v-]+(-r)?$/
     return !stableKeyword && !(version ==~ regex)
 }
+
 tasks.named("dependencyUpdates").configure {
     rejectVersionIf {
         isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
