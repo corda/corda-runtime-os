@@ -145,7 +145,7 @@ fun registerMember(holdingIdentityId: String) {
         }.toJson()
 
         val registrationStatus = membershipJson["registrationStatus"].textValue()
-        Assertions.assertThat(registrationStatus).isNotNull.isNotEmpty
+        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
     }
 }
 

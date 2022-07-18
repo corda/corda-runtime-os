@@ -62,14 +62,14 @@ class FlowTests {
             val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
             val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
 
-            registerMember(bobActualHoldingId)
-            registerMember(charlieActualHoldingId)
-
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
             assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
+
+            registerMember(bobHoldingId)
+            registerMember(charlieHoldingId)
 
             addSoftHsmFor(bobHoldingId, "LEDGER")
         }
