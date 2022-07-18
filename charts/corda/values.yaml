@@ -320,7 +320,7 @@ workers:
       tag: ""
     # -- p2p-gateway worker replica count
     replicaCount: 1
-    # -- Use stub membership and crypto components
+    # -- Use stub crypto processor
     useStubs: false
     # p2p-gateway worker debug configuration
     debug:
