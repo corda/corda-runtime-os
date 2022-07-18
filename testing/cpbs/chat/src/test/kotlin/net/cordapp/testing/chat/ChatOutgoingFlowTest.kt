@@ -3,6 +3,7 @@ package net.cordapp.testing.chat
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.cordapp.testing.chatframework.FlowMockHelper
 import net.cordapp.testing.chatframework.createFlow
@@ -17,6 +18,7 @@ class ChatOutgoingFlowTest {
         createMockService<FlowMessaging>()
         createMockService<FlowEngine>()
         createMockService<JsonMarshallingService>()
+        createMockService<PersistenceService>()
     }
 
     val flow = flowMockHelper.createFlow<ChatOutgoingFlow>()
@@ -31,7 +33,7 @@ class ChatOutgoingFlowTest {
         assertThrows<IllegalArgumentException> {
             flow.call(
                 flowMockHelper.rpcRequestGenerator(
-                    OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME)
+                    ChatOutgoingFlowParameter(recipientX500Name = RECIPIENT_X500_NAME)
                 )
             )
         }
@@ -42,7 +44,7 @@ class ChatOutgoingFlowTest {
         assertThrows<IllegalArgumentException> {
             flow.call(
                 flowMockHelper.rpcRequestGenerator(
-                    OutgoingChatMessage(message = MESSAGE)
+                    ChatOutgoingFlowParameter(message = MESSAGE)
                 )
             )
         }
@@ -54,7 +56,7 @@ class ChatOutgoingFlowTest {
 
         flow.call(
             flowMockHelper.rpcRequestGenerator(
-                OutgoingChatMessage(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
+                ChatOutgoingFlowParameter(recipientX500Name = RECIPIENT_X500_NAME, message = MESSAGE)
             )
         )
 

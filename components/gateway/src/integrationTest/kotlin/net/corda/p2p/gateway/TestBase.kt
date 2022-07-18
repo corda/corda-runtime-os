@@ -55,6 +55,7 @@ import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys
 
 open class TestBase {
     companion object {
@@ -154,10 +155,11 @@ open class TestBase {
         }
 
         private fun Publisher.publishGatewayConfig(config: Config) {
+            val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
-                "p2p.gateway",
-                Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
+                ConfigKeys.P2P_GATEWAY_CONFIG,
+                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 
@@ -172,7 +174,7 @@ open class TestBase {
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
                 .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
-                .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
+                .withValue("connectionConfig.maxReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
                 .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig).use { publisher ->
                     publisher.publishGatewayConfig(publishConfig)

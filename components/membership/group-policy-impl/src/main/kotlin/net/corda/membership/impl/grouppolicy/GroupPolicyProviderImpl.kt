@@ -10,9 +10,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -39,7 +40,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerGroupPolicyProvider : AutoCloseable {
-        fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
+        fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy?
     }
 
     companion object {
@@ -127,7 +128,16 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
-        ) = groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
+        ) = try {
+            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
+        } catch (e: BadGroupPolicyException) {
+            logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
+            null
+        } catch (e: Throwable) {
+            logger.error("Unexpected exception occurred when retrieving group policy file for " +
+                    "holding identity [$holdingIdentity].", e)
+            null
+        }
 
         override fun close() {
             virtualNodeInfoCallbackHandle.close()
@@ -154,15 +164,20 @@ class GroupPolicyProviderImpl @Activate constructor(
             virtualNodeInfo: VirtualNodeInfo? = null,
         ): GroupPolicy {
             val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
-            if(vNodeInfo == null) {
+            if (vNodeInfo == null) {
                 logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
             }
             val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-            if(metadata == null) {
-                logger.warn("Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
-                        "identifier [${vNodeInfo?.cpiIdentifier.toString()}]")
+            if (metadata == null) {
+                logger.warn(
+                    "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
+                            "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
+                )
             }
-            return groupPolicyParser.parse(metadata?.groupPolicy)
+            return groupPolicyParser.parse(
+                holdingIdentity,
+                metadata?.groupPolicy
+            )
         }
 
         /**
@@ -178,7 +193,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         try {
                             parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                         } catch (e: Exception) {
-                            logger.warn(
+                            logger.error(
                                 "Failure to parse group policy after change in virtual node info. " +
                                         "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
                                         "Caught exception: ", e

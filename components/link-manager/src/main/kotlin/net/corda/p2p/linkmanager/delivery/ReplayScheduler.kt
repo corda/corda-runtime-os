@@ -15,6 +15,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
@@ -126,7 +127,7 @@ internal class ReplayScheduler<M>(
     }
 
     inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(configReadService,
-        LinkManagerConfiguration.CONFIG_KEY,
+        ConfigKeys.P2P_LINK_MANAGER_CONFIG,
         ::fromConfig) {
         override fun applyNewConfiguration(
             newConfiguration: ReplaySchedulerConfig,

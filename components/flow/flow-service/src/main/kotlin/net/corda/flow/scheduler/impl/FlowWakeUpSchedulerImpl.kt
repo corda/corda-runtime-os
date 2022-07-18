@@ -1,7 +1,7 @@
 package net.corda.flow.scheduler.impl
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.libs.configuration.SmartConfig
@@ -63,7 +63,7 @@ class FlowWakeUpSchedulerImpl constructor(
             val id = it.flowId
             val scheduledWakeUp = scheduledExecutorService.schedule(
                 { publishWakeUp(id) },
-                it.maxFlowSleepDuration.toLong(),
+                it.pipelineState.maxFlowSleepDuration.toLong(),
                 TimeUnit.MILLISECONDS
             )
 

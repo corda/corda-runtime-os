@@ -1,6 +1,6 @@
 package net.corda.flow.application.services
 
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name

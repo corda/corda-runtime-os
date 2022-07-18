@@ -60,6 +60,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
+    implementation project(":components:membership:membership-group-read")
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
@@ -88,6 +89,7 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
+    integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
     testRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"

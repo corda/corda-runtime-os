@@ -150,7 +150,8 @@ class FlowFilterServiceIntegrationTest {
     }
 
     private fun setupConfig(publisher: Publisher) {
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG,
+            Configuration(messagingConf, messagingConf, 0, schemaVersion))))
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }

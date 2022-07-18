@@ -41,6 +41,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:virtual-node-info")
 
+    integrationTestImplementation project(':components:crypto:crypto-ecies')
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
@@ -72,6 +73,8 @@ dependencies {
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(":components:crypto:crypto-ecies-core-impl")
+    integrationTestRuntimeOnly project(":components:crypto:crypto-ecies-impl")
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

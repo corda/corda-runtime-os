@@ -8,6 +8,7 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
+import net.corda.crypto.service.impl.hsm.soft.deriveSharedSecret
 import net.corda.crypto.service.impl.hsm.soft.generateKeyPair
 import net.corda.crypto.service.impl.hsm.soft.getSupportedSchemes
 import net.corda.crypto.service.impl.hsm.soft.sign
@@ -25,7 +26,7 @@ import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
-open class SigningServiceImpl(
+class SigningServiceImpl(
     private val store: SigningKeyStore,
     private val cryptoServiceFactory: CryptoServiceFactory,
     override val schemeMetadata: CipherSchemeMetadata
@@ -160,7 +161,7 @@ open class SigningServiceImpl(
         val record = store.act(tenantId) {
             getKeyRecord(tenantId, it, publicKey)
         }
-        logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
+        logger.debug { "sign(tenant=$tenantId, publicKey=${record.second.id})"  }
         val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(
             tenantId = tenantId,
@@ -173,6 +174,30 @@ open class SigningServiceImpl(
             bytes = signedBytes,
             context = context
         )
+    }
+
+    override fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray {
+        val record = store.act(tenantId) {
+            getKeyRecord(tenantId, it, publicKey)
+        }
+        logger.info(
+            "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
+            tenantId,
+            record.second.id,
+            otherPublicKey.publicKeyId()
+        )
+        val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
+        val cryptoService = cryptoServiceFactory.getInstance(
+            tenantId = tenantId,
+            category = record.second.category,
+            associationId = record.second.associationId
+        )
+        return cryptoService.deriveSharedSecret(record.second, scheme, otherPublicKey, context)
     }
 
     @Suppress("LongParameterList")

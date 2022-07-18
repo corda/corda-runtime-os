@@ -19,6 +19,10 @@ class ClusterBuilder {
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
+    fun put(cmd: String, body: String) = client!!.put(cmd, body)
+
+    fun get(cmd: String) = client!!.get(cmd)
+
     private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.get(resourceName, groupId).use {
@@ -59,6 +63,22 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
+    fun addSoftHsmToVNode(holdingIdHash: String, category: String) =
+        client!!.post("/api/v1/hsm/soft/$holdingIdHash/$category", body = "")
+
+    fun createKey(holdingIdHash: String, alias: String, category: String, scheme: String) =
+        client!!.post(
+            "/api/v1/keys/$holdingIdHash",
+            body = """{
+                    "alias": "$alias",
+                    "hsmCategory": "$category",
+                    "scheme": "$scheme"
+                }""".trimIndent()
+        )
+
+    fun getKey(holdingIdHash: String, keyId: String) =
+        client!!.get("/api/v1/keys/$holdingIdHash/$keyId")
+
     /** Get status of a flow */
     fun flowStatus(holdingIdHash: String, clientRequestId: String) =
         client!!.get("/api/v1/flow/$holdingIdHash/$clientRequestId")
@@ -66,6 +86,10 @@ class ClusterBuilder {
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdHash: String) =
         client!!.get("/api/v1/flow/$holdingIdHash")
+
+    /** Get status of multiple flows */
+    fun runnableFlowClasses(holdingIdHash: String) =
+        client!!.get("/api/v1/flowclass/$holdingIdHash")
 
     /** Start a flow */
     fun flowStart(

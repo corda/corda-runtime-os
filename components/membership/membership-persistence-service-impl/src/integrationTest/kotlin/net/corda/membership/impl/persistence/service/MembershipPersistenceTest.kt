@@ -9,6 +9,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -18,6 +19,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -32,21 +34,25 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
-import net.corda.membership.impl.toSortedMap
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -60,6 +66,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -134,6 +141,9 @@ class MembershipPersistenceTest {
         lateinit var membershipPersistenceClient: MembershipPersistenceClient
 
         @InjectService(timeout = 5000)
+        lateinit var membershipQueryClient: MembershipQueryClient
+
+        @InjectService(timeout = 5000)
         lateinit var configurationReadService: ConfigurationReadService
 
         @InjectService(timeout = 5000)
@@ -148,6 +158,9 @@ class MembershipPersistenceTest {
         @InjectService(timeout = 5000)
         lateinit var virtualNodeReadService: TestVirtualNodeInfoReadService
 
+        @InjectService(timeout = 5000)
+        lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
+
         /**
          * Wrapper class which allows the client to wait until the underlying DB message bus has been set up correctly with partitions required.
          * Without this the client often tries to send RPC requests before the service has set up the kafka topics required
@@ -161,12 +174,28 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfos)
             }
 
+            override fun persistGroupPolicy(
+                viewOwningIdentity: HoldingIdentity,
+                groupPolicy: LayeredPropertyMap,
+            ) = safeCall {
+                membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
+            }
 
             override fun persistRegistrationRequest(
                 viewOwningIdentity: HoldingIdentity,
                 registrationRequest: RegistrationRequest
             ) = safeCall {
                 membershipPersistenceClient.persistRegistrationRequest(viewOwningIdentity, registrationRequest)
+            }
+
+            override fun setMemberAndRegistrationRequestAsApproved(
+                viewOwningIdentity: HoldingIdentity,
+                approvedMember: HoldingIdentity,
+                registrationRequestId: String,
+            ) = safeCall {
+                membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
+                    viewOwningIdentity, approvedMember, registrationRequestId
+                )
             }
 
             fun <T> safeCall(func: () -> T): T {
@@ -180,7 +209,6 @@ class MembershipPersistenceTest {
             override val isRunning get() = membershipPersistenceClient.isRunning
             override fun start() = membershipPersistenceClient.start()
             override fun stop() = membershipPersistenceClient.stop()
-
         }
 
         private val clock = TestClock(Instant.ofEpochSecond(0))
@@ -203,7 +231,6 @@ class MembershipPersistenceTest {
         private lateinit var vnodeEmf: EntityManagerFactory
         private lateinit var cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList>
         private lateinit var cordaAvroDeserializer: CordaAvroDeserializer<KeyValuePairList>
-
 
         @JvmStatic
         @BeforeAll
@@ -289,7 +316,7 @@ class MembershipPersistenceTest {
                     Record(
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(messagingConf, 0, schemaVersion)
+                        Configuration(messagingConf, messagingConf, 0, schemaVersion)
                     )
                 )
             )
@@ -313,6 +340,7 @@ class MembershipPersistenceTest {
         val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
+                RegistrationStatus.NEW,
                 registrationId,
                 registeringHoldingIdentity,
                 ByteBuffer.wrap(
@@ -345,6 +373,19 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
+    }
+    @Test
+    fun `persistGroupPolicy will increase the version every persistance`() {
+        val groupPolicy1 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB"))
+        val persisted1 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy1)
+        assertThat(persisted1).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val version1 = (persisted1 as? MembershipPersistenceResult.Success<Int>)?.payload !!
+
+        val groupPolicy2 = layeredPropertyMapFactory.createMap(mapOf("aa" to "BBB1"))
+        val persisted2 = membershipPersistenceClientWrapper.persistGroupPolicy(viewOwningHoldingIdentity, groupPolicy2)
+        assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val version2 = (persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload
+        assertThat(version2).isEqualTo(version1 + 1)
     }
 
     @Test
@@ -383,7 +424,8 @@ class MembershipPersistenceTest {
 
         val persistedEntity = vnodeEmf.use {
             it.find(
-                MemberInfoEntity::class.java, MemberInfoEntityPrimaryKey(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(
                     groupId, memberx500Name.toString()
                 )
             )
@@ -410,9 +452,149 @@ class MembershipPersistenceTest {
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
 
+    @Test
+    fun `setMemberAndRegistrationRequestAsApproved update the member and registration request`() {
+        // 1. Persist a member
+        val endpointUrl = "http://localhost:8080"
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(String.format(URL_KEY, "0"), endpointUrl),
+                KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                KeyValuePair(GROUP_ID, groupId),
+                KeyValuePair(PARTY_NAME, registeringX500Name.toString()),
+                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(SERIAL, "1"),
+                KeyValuePair(SOFTWARE_VERSION, "5.0.0")
+            )
+        )
+        val mgmContext = KeyValuePairList(
+            listOf(
+                KeyValuePair(STATUS, MEMBER_STATUS_PENDING)
+            )
+        )
+
+        val memberPersistentResult = membershipPersistenceClientWrapper.persistMemberInfo(
+            viewOwningHoldingIdentity,
+            listOf(
+                memberInfoFactory.create(
+                    memberContext.toSortedMap(),
+                    mgmContext.toSortedMap()
+                )
+            )
+        )
+
+        assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val memberEntity = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(
+                    groupId, registeringX500Name.toString()
+                )
+            )
+        }
+        assertThat(memberEntity.status).isEqualTo(MEMBER_STATUS_PENDING)
+
+        // 2. Persist a request
+        val registrationId = randomUUID().toString()
+        val requestPersistentResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
+            viewOwningHoldingIdentity,
+            RegistrationRequest(
+                RegistrationStatus.NEW,
+                registrationId,
+                registeringHoldingIdentity,
+                ByteBuffer.wrap(
+                    cordaAvroSerializer.serialize(
+                        KeyValuePairList(
+                            listOf(
+                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                            )
+                        )
+                    )
+                ),
+                ByteBuffer.wrap(byteArrayOf()),
+                ByteBuffer.wrap(byteArrayOf())
+            )
+        )
+
+        assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val requestEntity = vnodeEmf.use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(requestEntity.status).isEqualTo(RegistrationStatus.NEW.toString())
+
+        val approveResult = membershipPersistenceClientWrapper.setMemberAndRegistrationRequestAsApproved(
+            viewOwningHoldingIdentity,
+            registeringHoldingIdentity,
+            registrationId,
+        ).getOrThrow()
+
+        assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        assertThat(approveResult.groupId).isEqualTo(groupId)
+        assertThat(approveResult.name.toString()).isEqualTo(registeringHoldingIdentity.x500Name)
+        val newMemberEntity = vnodeEmf.use {
+            it.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(
+                    groupId, registeringX500Name.toString()
+                )
+            )
+        }
+        assertThat(newMemberEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
+        val newRequestEntity = vnodeEmf.use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(newRequestEntity.status).isEqualTo(RegistrationStatus.APPROVED.toString())
+    }
+
+    @Test
+    fun `queryMembersSignatures returns the member signatures`() {
+        membershipQueryClient.start()
+        eventually {
+            assertThat(membershipPersistenceClient.isRunning).isTrue
+        }
+
+        val signatures = (1..5).associate { index ->
+            val registrationId = randomUUID().toString()
+            val holdingId = HoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
+            val publicKey = ByteBuffer.wrap("pk-$index".toByteArray())
+            val signature = ByteBuffer.wrap("signature-$index".toByteArray())
+            val context = KeyValuePairList(
+                listOf(
+                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                )
+            )
+            membershipPersistenceClientWrapper.persistRegistrationRequest(
+                viewOwningHoldingIdentity,
+                RegistrationRequest(
+                    RegistrationStatus.NEW,
+                    registrationId,
+                    holdingId,
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            context
+                        )
+                    ),
+                    publicKey,
+                    signature,
+                )
+            ).getOrThrow()
+            val cryptoSignatureWithKey = CryptoSignatureWithKey(
+                publicKey, signature, KeyValuePairList(emptyList())
+            )
+            holdingId to cryptoSignatureWithKey
+        }
+
+        val results = membershipQueryClient.queryMembersSignatures(
+            viewOwningHoldingIdentity,
+            signatures.keys
+        ).getOrThrow()
+
+        assertThat(results).containsAllEntriesOf(signatures)
+    }
+
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
         cordaAvroDeserializer.deserialize(this)
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
-
 }

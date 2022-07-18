@@ -22,6 +22,8 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-component-core-impl")
+    implementation project(":components:crypto:crypto-ecies")
+    implementation project(":components:crypto:crypto-ecies-core-impl")
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:crypto:crypto-service")
     implementation project(":libs:configuration:configuration-core")
@@ -30,10 +32,10 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":components:crypto:crypto-component-test-utils")
+    testImplementation project(":components:crypto:crypto-ecies-core-impl")
+    testImplementation project(":components:crypto:crypto-ecies-impl")
 
     testImplementation project(":components:crypto:crypto-db-persistence-model")
     testImplementation project(":libs:layered-property-map")
@@ -41,4 +43,6 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":testing:test-utilities")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

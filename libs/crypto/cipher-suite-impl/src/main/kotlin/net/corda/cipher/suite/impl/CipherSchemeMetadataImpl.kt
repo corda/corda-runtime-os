@@ -95,6 +95,7 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         providerMap.ECDSA_SECP256K1.scheme,
         providerMap.ECDSA_SECP256R1.scheme,
         providerMap.EDDSA_ED25519.scheme,
+        providerMap.X25519.scheme,
         providerMap.SPHINCS256.scheme,
         providerMap.SM2.scheme,
         providerMap.GOST3410_GOST3411.scheme,

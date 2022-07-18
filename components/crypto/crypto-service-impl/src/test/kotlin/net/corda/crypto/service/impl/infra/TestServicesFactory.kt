@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
+import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.signing.SigningCachedKey
@@ -17,7 +18,6 @@ import net.corda.crypto.service.impl.hsm.soft.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
@@ -26,6 +26,7 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
@@ -55,7 +56,7 @@ class TestServicesFactory {
 
     val softHSMSupportedSchemas = SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.key.codeName }
 
-    val coordinatorFactory: LifecycleCoordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+    val coordinatorFactory: TestLifecycleCoordinatorFactoryImpl = TestLifecycleCoordinatorFactoryImpl()
 
     val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
@@ -65,7 +66,7 @@ class TestServicesFactory {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
-    val signingCacheProvider: TestSigningKeyStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val signingKeyStoreProvider: TestSigningKeyStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestSigningKeyStoreProvider(coordinatorFactory).also {
             it.start()
             eventually {
@@ -74,7 +75,7 @@ class TestServicesFactory {
         }
     }
 
-    val softCacheProvider: TestSoftCryptoKeyStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val softCryptoKeyStoreProvider: TestSoftCryptoKeyStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestSoftCryptoKeyStoreProvider(coordinatorFactory).also {
             it.start()
             eventually {
@@ -123,7 +124,7 @@ class TestServicesFactory {
             coordinatorFactory,
             schemeMetadata,
             digest,
-            softCacheProvider
+            softCryptoKeyStoreProvider
         ).also {
             it.start()
             eventually {
@@ -137,11 +138,11 @@ class TestServicesFactory {
     }
 
     private val signingCache: TestSigningKeyStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        signingCacheProvider.getInstance() as TestSigningKeyStore
+        signingKeyStoreProvider.getInstance() as TestSigningKeyStore
     }
 
     val softCache: TestSoftCryptoKeyStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        softCacheProvider.getInstance() as TestSoftCryptoKeyStore
+        softCryptoKeyStoreProvider.getInstance() as TestSoftCryptoKeyStore
     }
 
     val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -191,9 +192,7 @@ class TestServicesFactory {
             }
         }
 
-    fun createSigningService(
-        effectiveWrappingKeyAlias: String = wrappingKeyAlias
-    ) =
+    fun createSigningService(effectiveWrappingKeyAlias: String = wrappingKeyAlias) =
         SigningServiceImpl(
             store = signingCache,
             cryptoServiceFactory = object : CryptoServiceFactory {
@@ -279,7 +278,18 @@ class TestServicesFactory {
             return impl.sign(spec, data, context)
         }
 
-        override fun delete(alias: String, context: Map<String, String>): Boolean =
-            impl.delete(alias, context)
+        override fun delete(alias: String, context: Map<String, String>): Boolean {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            return impl.delete(alias, context)
+        }
+
+        override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            return impl.deriveSharedSecret(spec, context)
+        }
     }
 }

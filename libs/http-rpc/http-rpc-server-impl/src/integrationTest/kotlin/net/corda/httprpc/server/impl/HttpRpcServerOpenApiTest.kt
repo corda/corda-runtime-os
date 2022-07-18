@@ -24,6 +24,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import net.corda.httprpc.test.NullabilityRPCOpsImpl
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
@@ -32,12 +33,12 @@ import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
-        val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+        private val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl()),
+                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl(), NullabilityRPCOpsImpl()),
                 securityManager,
                 httpRpcSettings,
                 multipartDir,
@@ -170,6 +171,43 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertTrue(schema.nullable, "The schema should have the nullable property")
             assertEquals("string", schema.type)
         }
+
+        with(openAPI.paths["/nullability/posttakesnullablereturnsnullable"]) {
+            assertNotNull(this)
+            val post = this.post
+            assertNotNull(post)
+            val postReqBody = post.requestBody
+            assertTrue(postReqBody.required)
+            val requestBodyJson = post.requestBody.content["application/json"]
+            assertNotNull(requestBodyJson)
+            val ref = requestBodyJson.schema.`$ref`
+            assertThat(ref).isEqualTo("#/components/schemas/PostTakesNullableReturnsNullableRequest")
+            val successResponse = post.responses["200"]
+            assertNotNull(successResponse)
+            val content = successResponse.content["application/json"]
+            assertNotNull(content)
+            val schema = content.schema
+            assertTrue(schema.nullable, "The schema should have the nullable property")
+        }
+
+        with(openAPI.components.schemas["PostTakesNullableReturnsNullableRequest"]) {
+            assertNotNull(this)
+            assertThat(this.nullable).isTrue
+            val someInfo = this.properties["someInfo"]
+            assertNotNull(someInfo)
+            assertThat(someInfo.`$ref`).isEqualTo("#/components/schemas/SomeInfo")
+        }
+
+        with(openAPI.components.schemas["SomeInfo"]) {
+            assertNotNull(this)
+            assertNull(this.nullable)
+            val idProperty = this.properties["id"]
+            assertNotNull(idProperty)
+            assertThat(idProperty.nullable).isFalse
+            val numberProperty = this.properties["number"]
+            assertNotNull(numberProperty)
+            assertThat(numberProperty.nullable).isFalse
+        }
     }
 
     @Test
@@ -297,10 +335,10 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals(1, multipartFormData.schema.properties.size)
             val files = multipartFormData.schema.properties["files"]
             assertNotNull(files)
+            assertFalse(files.nullable)
             assertTrue(files is ArraySchema)
             assertEquals("string", files.items.type)
             assertEquals("binary", files.items.format)
-            assertFalse(files.items.nullable)
         }
 
         with(openAPI.paths["/fileupload/uploadwithqueryparam"]) {
@@ -392,8 +430,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             "nullable" : false,
             "example" : "string"
           }
-        },
-        "nullable" : false
+        }
       }""".trimIndent()
 
     private val finiteDurableReturnResultSchemaWithCalendarDayRef =  """"FiniteDurableReturnResult_of_CalendarDay" : {
@@ -422,7 +459,6 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
                   "${"$"}ref" : "#/components/schemas/CalendarDay"
                 }
               },
-              "nullable" : false,
               "example" : "No example available for this type"
             }
           }""".trimIndent()

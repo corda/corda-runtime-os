@@ -13,7 +13,14 @@ interface LinkManagerMembershipGroupReader : LifecycleWithDominoTile {
         val endPoint: EndPoint,
     )
 
-    fun getMemberInfo(holdingIdentity: HoldingIdentity): MemberInfo?
+    /**
+     * Lookup [lookupIdentity]'s MemberInfo inside [requestingIdentity]'s view of the Membership Group.
+     */
+    fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity): MemberInfo?
 
-    fun getMemberInfo(hash: ByteArray, groupId: String): MemberInfo?
+    /**
+     * Lookup a MemberInfo by the SHA-256 of the session public key ([publicKeyHashToLookup]) inside
+     * [requestingIdentity]'s view of the Membership Group.
+     */
+    fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray): MemberInfo?
 }

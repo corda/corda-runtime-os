@@ -62,4 +62,5 @@ dependencies {
 
     integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
+    integrationTestImplementation project(':libs:http-rpc:http-rpc-stubs-impl')
 }

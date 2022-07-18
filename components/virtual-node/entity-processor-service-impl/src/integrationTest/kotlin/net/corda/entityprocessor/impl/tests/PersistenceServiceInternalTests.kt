@@ -209,7 +209,10 @@ class PersistenceServiceInternalTests {
 
         val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
         val calcDbConnection = Pair(virtualNodeInfoTwo.vaultDmlConnectionId, "calc-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection, calcDbConnection))
+
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection, calcDbConnection),
+            "PSIT2")
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -221,6 +224,18 @@ class PersistenceServiceInternalTests {
             )
 
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
+
+        // migrate DB schema
+        val dogClass = sandboxOne.sandboxGroup.getDogClass()
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    dogClass.packageName, listOf("migration/db.changelog-master.xml"),
+                    classLoader = dogClass.classLoader
+                ),
+            )
+        )
+        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
@@ -569,8 +584,11 @@ class PersistenceServiceInternalTests {
     private fun createDbTestContext(): DbTestContext {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
 
-        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection))
+        val testId = (0..1000000).random() // keeping this shorter than UUID.
+        val schemaName = "PSIT$testId"
+        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection), schemaName)
 
         // set up sandbox
         val entitySandboxService =

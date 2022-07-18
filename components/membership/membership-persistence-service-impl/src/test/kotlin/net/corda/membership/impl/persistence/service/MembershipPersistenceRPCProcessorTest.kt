@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service
 
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -12,7 +13,7 @@ import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
-import net.corda.data.membership.db.response.query.QueryFailedResponse
+import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -80,7 +81,10 @@ class MembershipPersistenceRPCProcessorTest {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
     }
@@ -118,7 +122,7 @@ class MembershipPersistenceRPCProcessorTest {
             it.assertThat(responseFuture).isCompleted
             with(responseFuture.get()) {
                 it.assertThat(payload).isNotNull
-                it.assertThat(payload).isInstanceOf(QueryFailedResponse::class.java)
+                it.assertThat(payload).isInstanceOf(PersistenceFailedResponse::class.java)
 
                 with(context) {
                     it.assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

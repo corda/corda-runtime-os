@@ -3,7 +3,7 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException

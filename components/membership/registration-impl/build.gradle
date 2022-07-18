@@ -1,13 +1,15 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
-description 'Registration service implemenations'
+description 'Registration service implementations'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
@@ -26,6 +28,7 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:utilities")
+    implementation project(':libs:chunking:chunking-core')
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
@@ -40,7 +43,21 @@ dependencies {
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
+
+    integrationTestImplementation project(':testing:db-message-bus-testkit')
+
+    integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
+    integrationTestRuntimeOnly project(':components:crypto:crypto-client-impl')
+    integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 }

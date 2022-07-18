@@ -6,18 +6,13 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.configuration.ResolvedProducerConfig
-import net.corda.messagebus.db.datamodel.CommittedPositionEntry
-import net.corda.messagebus.db.datamodel.TopicEntry
-import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.persistence.create
+import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
 import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,8 +25,8 @@ import org.osgi.service.component.annotations.Reference
 class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    @Reference(service = EntityManagerFactoryHolder::class)
+    private val entityManagerFactoryHolder: EntityManagerFactoryHolder,
 ) : CordaProducerBuilder {
 
     private var writeOffsets: WriteOffsets? = null
@@ -39,21 +34,12 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Synchronized
     fun getWriteOffsets(resolvedConfig: ResolvedProducerConfig): WriteOffsets {
         if (writeOffsets == null) {
-            writeOffsets = WriteOffsets(
-                DBAccess(
-                    entityManagerFactoryFactory.create(
-                        resolvedConfig,
-                        "Write offsets for producers",
-                        listOf(
-                            TopicRecordEntry::class.java,
-                            CommittedPositionEntry::class.java,
-                            TopicEntry::class.java,
-                            TransactionRecordEntry::class.java,
-                        ),
-                    )
-                )
-
+            val emf = entityManagerFactoryHolder.getEmf(
+                resolvedConfig.jdbcUrl,
+                resolvedConfig.jdbcUser,
+                resolvedConfig.jdbcPass
             )
+            writeOffsets = WriteOffsets(DBAccess(emf))
         }
         return writeOffsets ?: throw CordaMessageAPIFatalException("Write Offsets member should never be null.")
     }
@@ -62,29 +48,22 @@ class DBCordaProducerBuilderImpl @Activate constructor(
         val isTransactional = producerConfig.transactional
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val resolvedConfig = resolver.resolve(messageBusConfig, producerConfig)
-
-        val dbAccess = DBAccess(
-            entityManagerFactoryFactory.create(
-                resolvedConfig,
-                "DB Producer for ${producerConfig.clientId}",
-                listOf(
-                    TopicRecordEntry::class.java,
-                    CommittedPositionEntry::class.java,
-                    TopicEntry::class.java,
-                    TransactionRecordEntry::class.java,
-                )
-            )
+        val emf = entityManagerFactoryHolder.getEmf(
+            resolvedConfig.jdbcUrl,
+            resolvedConfig.jdbcUser,
+            resolvedConfig.jdbcPass
         )
+
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                dbAccess,
+                DBAccess(emf),
                 getWriteOffsets(resolvedConfig)
             )
         } else {
             CordaAtomicDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                dbAccess,
+                DBAccess(emf),
                 getWriteOffsets(resolvedConfig)
             )
         }

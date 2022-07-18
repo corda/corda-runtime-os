@@ -12,23 +12,22 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
-import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
-import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
-import net.corda.membership.lib.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
@@ -39,6 +38,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -51,8 +51,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.security.PublicKey
 
 @Suppress("LongParameterList")
@@ -120,18 +118,14 @@ class StaticMemberRegistrationService @Activate constructor(
         try {
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
+                ?: throw CordaRuntimeException("Could not find group policy for member: [$member]")
             val membershipUpdates = lifecycleHandler.publisher.publish(parseMemberTemplate(member, groupPolicy, keyScheme))
             membershipUpdates.forEach { it.get() }
             val hostedIdentityUpdates =
                 lifecycleHandler.publisher.publish(listOf(createHostedIdentity(member, groupPolicy)))
             hostedIdentityUpdates.forEach { it.get() }
         } catch (e: Exception) {
-            StringWriter().use { sw ->
-                PrintWriter(sw).use { pw ->
-                    e.printStackTrace(pw)
-                    logger.warn("Registration failed. Reason: $sw")
-                }
-            }
+            logger.warn("Registration failed. Reason:", e)
             return MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
                 "Registration failed. Reason: ${e.message}"
@@ -154,7 +148,9 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val groupId = groupPolicy.groupId
 
-        val staticMemberList = groupPolicy.staticMembers
+        val staticMemberMaps = groupPolicy.protocolParameters.staticNetworkMembers
+            ?: throw IllegalArgumentException("Could not find static member list in group policy file.")
+        val staticMemberList = staticMemberMaps.map { StaticMember(it) }
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
