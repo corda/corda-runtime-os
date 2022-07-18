@@ -25,7 +25,6 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-serialization"
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api"
