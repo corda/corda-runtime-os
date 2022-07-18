@@ -41,7 +41,7 @@ object CpiLoader {
 
     private fun addGroupPolicy(zipOutputStream: ZipOutputStream, groupId: String) {
         zipOutputStream.putNextEntry(ZipEntry("META-INF/GroupPolicy.json"))
-        """{"groupId":"$groupId"}\n""".byteInputStream().use { it.copyTo(zipOutputStream) }
+        """{"groupId":"$groupId", "fileFormatVersion": 1}\n""".byteInputStream().use { it.copyTo(zipOutputStream) }
         zipOutputStream.closeEntry()
     }
 }

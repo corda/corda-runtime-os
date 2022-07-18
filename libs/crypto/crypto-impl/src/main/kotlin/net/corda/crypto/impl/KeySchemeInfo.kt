@@ -9,6 +9,7 @@ import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.X25519_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider
@@ -65,6 +66,11 @@ class EDDSAKeySchemeInfo(
         DigestAlgorithmName("NONE") to SignatureSpec.EDDSA_ED25519
     )
 )
+
+class X25519KeySchemeInfo(
+    provider: Provider
+) : KeySchemeInfo(
+    provider, X25519_TEMPLATE, emptyMap())
 
 class SM2KeySchemeInfo(
     provider: Provider

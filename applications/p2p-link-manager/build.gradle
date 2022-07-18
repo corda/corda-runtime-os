@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description 'P2P Link Manager Application'
@@ -53,5 +54,5 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":components:configuration:configuration-read-service")
 
-    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

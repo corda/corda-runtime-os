@@ -2,6 +2,7 @@ package net.corda.membership.lib.impl
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.membership.lib.validateKeyOrder
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals

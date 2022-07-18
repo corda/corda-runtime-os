@@ -7,6 +7,7 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
@@ -527,6 +528,7 @@ class CryptoServiceDecoratorTests {
         assertFalse(actual.isRecoverable)
         assertSame(expected, actual.cause)
     }
+
     @ParameterizedTest
     @MethodSource("recoverableExceptions")
     fun `Should throw original recoverable exceptions wrapped in CryptoException when executing delete`(e: Throwable) {
@@ -538,6 +540,66 @@ class CryptoServiceDecoratorTests {
         ).thenAnswer { throw e }
         val actual = assertThrows(CryptoException::class.java) {
             decorator.delete(alias, context)
+        }
+        assertFalse(actual.isRecoverable)
+        assertSame(e, actual.cause)
+    }
+
+    @Test
+    fun `Should execute deriveSharedSecret`() {
+        val decorator = createDecorator()
+        val context = emptyMap<String, String>()
+        val spec = mock<SharedSecretSpec>()
+        decorator.deriveSharedSecret(spec, context)
+        Mockito.verify(cryptoService, times(1)).deriveSharedSecret(spec, context)
+    }
+
+    @ParameterizedTest
+    @MethodSource("mostCommonUnrecoverableExceptions")
+    fun `Should throw same non recoverable exception when executing deriveSharedSecret`(expected: Throwable) {
+        val decorator = createDecorator()
+        val spec = mock<SharedSecretSpec>()
+        val context = emptyMap<String, String>()
+        whenever(
+            cryptoService.deriveSharedSecret(spec, context)
+        ).thenAnswer { throw expected }
+        val actual = assertThrows(expected::class.java) {
+            decorator.deriveSharedSecret(spec, context)
+        }
+        assertSame(expected, actual)
+    }
+
+    @ParameterizedTest
+    @MethodSource("mostCommonCheckedExceptions")
+    fun `Should throw checked exception wrapped in CryptoException when executing deriveSharedSecret`(
+        expected: Throwable
+    ) {
+        val decorator = createDecorator()
+        val spec = mock<SharedSecretSpec>()
+        val context = emptyMap<String, String>()
+        whenever(
+            cryptoService.deriveSharedSecret(spec, context)
+        ).thenAnswer { throw expected }
+        val actual = assertThrows(CryptoException::class.java) {
+            decorator.deriveSharedSecret(spec, context)
+        }
+        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual.cause)
+    }
+
+    @ParameterizedTest
+    @MethodSource("recoverableExceptions")
+    fun `Should throw original recoverable exceptions wrapped in CryptoException when executing deriveSharedSecret`(
+        e: Throwable
+    ) {
+        val decorator = createDecorator()
+        val spec = mock<SharedSecretSpec>()
+        val context = emptyMap<String, String>()
+        whenever(
+            cryptoService.deriveSharedSecret(spec, context)
+        ).thenAnswer { throw e }
+        val actual = assertThrows(CryptoException::class.java) {
+            decorator.deriveSharedSecret(spec, context)
         }
         assertFalse(actual.isRecoverable)
         assertSame(e, actual.cause)
