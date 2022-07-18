@@ -2,6 +2,9 @@ package net.cordapp.testing.chat
 
 data class Chat(val counterparty: String, var messages: List<Message>)
 
+const val DIRECTION_INCOMING = "incoming"
+const val DIRECTION_OUTGOING = "outgoing"
+
 data class Message(val id: String, val direction: String, val content: String, val timestamp: String)
 
 fun chats(incomingMessages: List<IncomingChatMessage>, outgoingMessages: List<OutgoingChatMessage>): List<Chat> {
@@ -10,7 +13,7 @@ fun chats(incomingMessages: List<IncomingChatMessage>, outgoingMessages: List<Ou
     var chats = incomingMessages.groupBy { it.sender }.entries.map {
         Chat(counterparty = it.key, messages = it.value.map {
             Message(
-                id = it.id.toString(), direction = "incoming", content = it.message, timestamp = it.timestamp
+                id = it.id.toString(), direction = DIRECTION_INCOMING, content = it.message, timestamp = it.timestamp
             )
         })
     }
@@ -20,7 +23,7 @@ fun chats(incomingMessages: List<IncomingChatMessage>, outgoingMessages: List<Ou
         // Map outgoing messages into the output format
         val messages = outgoingMessageGroup.value.map {
             Message(
-                id = it.id.toString(), direction = "outgoing", content = it.message, timestamp = it.timestamp
+                id = it.id.toString(), direction = DIRECTION_OUTGOING, content = it.message, timestamp = it.timestamp
             )
         }
 
