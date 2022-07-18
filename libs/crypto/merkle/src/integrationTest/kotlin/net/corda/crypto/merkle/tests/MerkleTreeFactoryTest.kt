@@ -37,11 +37,6 @@ class MerkleTreeFactoryTest {
 
     @Test
     fun `can inject and use the service`() {
-        // val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-        // digestService = DigestServiceImpl(schemeMetadata, null)
-        // val secureRandom = schemeMetadata.secureRandom
-        // nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
-
         val leafData = (0 until 8).map { it.toByteArray() }
         val merkleTreeDirect = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
         val merkleTreeFromService = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
