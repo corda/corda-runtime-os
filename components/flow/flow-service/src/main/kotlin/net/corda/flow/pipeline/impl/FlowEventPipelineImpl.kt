@@ -27,6 +27,7 @@ import java.nio.ByteBuffer
  * @param context The [FlowEventContext] that should be modified by the pipeline steps.
  * @param output The [FlowIORequest] that is output by a flow's fiber when it suspends.
  */
+@Suppress("LongParameterList")
 class FlowEventPipelineImpl(
     private val flowEventHandlers: Map<Class<*>, FlowEventHandler<out Any>>,
     private val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,

@@ -54,7 +54,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    override fun process(exception: FlowTransientException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> =
+    override fun process(
+        exception: FlowTransientException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> =
         withEscalation {
             val flowCheckpoint = context.checkpoint
 
@@ -87,7 +90,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
         }
 
-    override fun process(exception: FlowFatalException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+    override fun process(
+        exception: FlowFatalException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
         log.error(msg, exception)
         val records = createStatusRecord(context.checkpoint.flowId) {
@@ -131,7 +137,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         flowEventContextConverter.convert(context)
     }
 
-    override fun process(exception: FlowPlatformException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> =
+    override fun process(
+        exception: FlowPlatformException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> =
         withEscalation {
             val checkpoint = context.checkpoint
 
