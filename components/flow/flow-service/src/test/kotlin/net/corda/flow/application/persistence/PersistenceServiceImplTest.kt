@@ -22,7 +22,6 @@ import org.mockito.kotlin.whenever
 
 class PersistenceServiceImplTest {
 
-
     private lateinit var flowFiberService: FlowFiberService
     private lateinit var flowFiber: FlowFiber
     private lateinit var executionContext: FlowFiberExecutionContext
@@ -95,7 +94,6 @@ class PersistenceServiceImplTest {
         verify(serializationService, times(1)).serialize<TestObject>(any())
         verify(flowFiber, times(1)).suspend(any<FlowIORequest.Delete>())
     }
-
 
     @Test
     fun `Test find executes successfully`() {
