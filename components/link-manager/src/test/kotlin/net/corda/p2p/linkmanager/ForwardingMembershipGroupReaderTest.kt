@@ -4,7 +4,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
-import net.corda.membership.lib.impl.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm

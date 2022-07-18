@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging
 
 import com.typesafe.config.Config
 import net.corda.v5.base.util.hours
-import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -43,12 +42,12 @@ class GatewayConfigurationTest {
     fun `toGatewayConfiguration return correct configuration without default connectionConfig`() {
         val connectionConfiguration = mock<Config> {
             on { getLong("maxClientConnections") } doReturn 100
-            on { getDuration("acquireTimeout") } doReturn 5.minutes
-            on { getDuration("connectionIdleTimeout") } doReturn 10.hours
-            on { getDuration("responseTimeout") } doReturn 20.seconds
-            on { getDuration("retryDelay") } doReturn 21.minutes
-            on { getDuration("maximalReconnectionDelay") } doReturn 15.minutes
-            on { getDuration("initialReconnectionDelay") } doReturn 11.millis
+            on { getLong("acquireTimeout") } doReturn 300
+            on { getLong("connectionIdleTimeout") } doReturn 36000
+            on { getLong("responseTimeout") } doReturn 20000
+            on { getLong("retryDelay") } doReturn 21 * 60000
+            on { getLong("maxReconnectionDelay") } doReturn 900
+            on { getLong("initialReconnectionDelay") } doReturn 1
         }
         val sslConfig = mock<Config> {
             on { getEnum(RevocationConfigMode::class.java, "revocationCheck.mode") } doReturn RevocationConfigMode.HARD_FAIL
@@ -74,8 +73,8 @@ class GatewayConfigurationTest {
                     connectionIdleTimeout = 10.hours,
                     responseTimeout = 20.seconds,
                     retryDelay = 21.minutes,
-                    initialReconnectionDelay = 11.millis,
-                    maximalReconnectionDelay = 15.minutes,
+                    initialReconnectionDelay = 1.seconds,
+                    maxReconnectionDelay = 15.minutes,
                 ),
                 sslConfig = SslConfiguration(
                     revocationCheck =

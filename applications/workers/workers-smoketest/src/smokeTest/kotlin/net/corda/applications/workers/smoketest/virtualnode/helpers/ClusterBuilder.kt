@@ -75,7 +75,7 @@ class ClusterBuilder {
 
 
     fun addSoftHsmToVNode(holdingIdHash: String, category: String) =
-        client!!.post("/api/v1/$holdingIdHash/hsm/soft?category=$category", body = "")
+        client!!.post("/api/v1/hsm/soft/$holdingIdHash/$category", body = "")
 
     fun createKey(holdingIdHash: String, alias: String, category: String, scheme: String) =
         client!!.post(

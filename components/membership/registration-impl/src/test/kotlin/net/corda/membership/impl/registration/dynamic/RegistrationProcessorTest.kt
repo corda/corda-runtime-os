@@ -15,9 +15,9 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ENDPOINTS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
