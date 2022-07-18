@@ -302,6 +302,8 @@ workers:
       tag: ""
     # -- p2p-gateway worker replica count
     replicaCount: 1
+    # -- Use stub membership and crypto components
+    useStubs: false
     # p2p-gateway worker debug configuration
     debug:
       # -- run p2p-gateway worker with debug enabled
