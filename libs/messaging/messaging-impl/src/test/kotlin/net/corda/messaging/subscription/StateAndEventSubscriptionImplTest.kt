@@ -7,6 +7,7 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -419,7 +421,6 @@ class StateAndEventSubscriptionImplTest {
             }
         }.whenever(eventConsumer).poll(any())
 
-        //null response from waitForFunctionToFinish indicates slow function exceeded timeout
         doAnswer {
             CompletableFuture.completedFuture(StateAndEventProcessor.Response(
                 null,
@@ -459,7 +460,9 @@ class StateAndEventSubscriptionImplTest {
         )
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).sendRecords(any())
+        verify(producer, times(1)).sendRecords(argThat { list: List<CordaProducerRecord<*, *>> ->
+            list.contains(CordaProducerRecord("Topic", "Key", "Value"))
+        })
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
     }
