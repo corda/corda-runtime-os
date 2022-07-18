@@ -28,8 +28,14 @@ fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
  * Convert internal DTO [MGMGenerateGroupPolicyResponseDto] to [MGMGenerateGroupPolicyResponse] from the HTTP API.
  */
 fun MGMGenerateGroupPolicyResponseDto.fromDto() = MGMGenerateGroupPolicyResponse(
-    requestSent,
-    generatedGroupPolicy
+    fileFormatVersion,
+    groupId,
+    registrationProtocol,
+    synchronisationProtocol,
+    protocolParameters,
+    p2pParameters,
+    mgmInfo,
+    cipherSuite
 )
 
 /**

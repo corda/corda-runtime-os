@@ -1,5 +1,6 @@
 package net.corda.membership.service.impl
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.*
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
@@ -22,6 +23,10 @@ import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.sessionKeyHash
+import net.corda.membership.lib.impl.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.registration.GroupPolicyGenerationException
 
 class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,
@@ -147,7 +152,7 @@ class MemberOpsServiceProcessor(
         override fun handle(context: MembershipRpcRequestContext, request: MGMGroupPolicyRequest): Any {
 
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
-                ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
+                ?: throw GroupPolicyGenerationException("Could not find holding identity associated with ${request.holdingIdentityId}")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
@@ -155,14 +160,51 @@ class MemberOpsServiceProcessor(
                 reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))
                     ?: throw CordaRuntimeException("Could not find holding identity associated with ${request.holdingIdentityId}")
 
-            val memberProvidedContext =
-                filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.") }
-            val mgmProvidedContext =
-                filteredMembers.mgmProvidedContext.entries
+            val registrationProtocol =
+                filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.protocol.registration")  }[0].value.toString()
+
+            val synchronisationProtocol =
+                filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.protocol.synchronisation") }[0].value.toString()
 
             return MGMGroupPolicyResponse(
-                context.requestTimestamp,
-                memberProvidedContext.toString() + mgmProvidedContext.toString()
+                1,
+                filteredMembers.groupId,
+                registrationProtocol,
+                synchronisationProtocol,
+                KeyValuePairList(listOf(
+                    KeyValuePair("sessionKeyPolicy", "Combined")
+                )),
+                KeyValuePairList(listOf(
+                    KeyValuePair("sessionTrustRoots", filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.truststore.session") }[0].value.toString()),
+                    KeyValuePair("tlsTrustRoots", filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.truststore.tls") }[0].value.toString()),
+                    KeyValuePair("sessionPki", filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.pki.session") }[0].value.toString()),
+                    KeyValuePair("tlsPki", filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.pki.tls") }[0].value.toString()),
+                    KeyValuePair("tlsVersion", "1.3"),
+                    KeyValuePair("protocolMode", filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.group.protocol.p2p.mode") }[0].value.toString())
+                )),
+                KeyValuePairList(listOf(
+                    KeyValuePair("corda.name", filteredMembers.name.toString()),
+                    KeyValuePair("corda.session.key",filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.session.key") }[0].value.toString()),
+                    KeyValuePair("corda.session.certificate.0", "corda.session.certificate.0"),
+                    KeyValuePair("corda.session.certificate.1", "corda.session.certificate.1"),
+                    KeyValuePair("corda.session.certificate.2", "corda.session.certificate.2"),
+                    KeyValuePair("corda.ecdh.key", filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.ecdh.key") }[0].value.toString()),
+                    KeyValuePair("corda.endpoints.0.connectionUrl",filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.endpoints.0.connectionURL") }[0].value.toString()),
+                    KeyValuePair("corda.endpoints.0.protocolVersion",filteredMembers.memberProvidedContext.entries.filter { it.key.startsWith("corda.endpoints.0.protocolVersion") }[0].value.toString()),
+                    KeyValuePair("corda.endpoints.1.connectionUrl","corda.endpoints.1.connectionUrl"),
+                    KeyValuePair("corda.endpoints.1.protocolVersion","corda.endpoints.1.protocolVersion"),
+                    KeyValuePair("corda.platformVersion",filteredMembers.platformVersion.toString()),
+                    KeyValuePair("corda.softwareVersion",filteredMembers.softwareVersion),
+                    KeyValuePair("corda.serial",filteredMembers.serial.toString())
+                    )),
+                KeyValuePairList(listOf(
+                    KeyValuePair("corda.provider", "default"),
+                    KeyValuePair("corda.signature.provider", "default"),
+                    KeyValuePair("corda.signature.default", "ECDSA_SECP256K1_SHA256"),
+                    KeyValuePair("corda.signature.FRESH_KEYS", "ECDSA_SECP256K1_SHA256"),
+                    KeyValuePair("corda.digest.default", "SHA256"),
+                    KeyValuePair("corda.cryptoservice.provider", "default")
+                ))
             )
         }
     }

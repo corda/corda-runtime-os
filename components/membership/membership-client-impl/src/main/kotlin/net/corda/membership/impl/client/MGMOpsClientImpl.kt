@@ -184,7 +184,16 @@ class MGMOpsClientImpl @Activate constructor(
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            return  MGMGenerateGroupPolicyResponseDto(Instant.now(),"The holding identity provided is not of an MGM")
+            return  MGMGenerateGroupPolicyResponseDto(
+                1,
+                "Failed",
+                "Failed",
+                "Failed",
+                emptyMap(),
+                emptyMap(),
+                emptyMap(),
+                emptyMap(),
+            )
 
         }
 
@@ -193,8 +202,22 @@ class MGMOpsClientImpl @Activate constructor(
         @Suppress("SpreadOperator")
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): MGMGenerateGroupPolicyResponseDto =
             MGMGenerateGroupPolicyResponseDto(
-                response.requestSent,
-                response.generatedGroupPolicy
+                response.fileFormatVersion,
+                response.groupId.toString(),
+                response.registrationProtocol,
+                response.synchronisationProtocol,
+                mapOf<String,String>(
+                    *response.protocolParameters.items.map { it.key to it.value }.toTypedArray()
+                ),
+                mapOf<String,String>(
+                    *response.p2pParameters.items.map { it.key to it.value }.toTypedArray()
+                ),
+                mapOf<String,String>(
+                    *response.mgmInfo.items.map { it.key to it.value }.toTypedArray()
+                ),
+                mapOf<String,String>(
+                    *response.cipherSuite.items.map { it.key to it.value }.toTypedArray()
+                )
             )
 
         @Suppress("UNCHECKED_CAST")
@@ -218,7 +241,7 @@ class MGMOpsClientImpl @Activate constructor(
                 return response.response as RESPONSE
             } catch (e: Exception) {
                 throw CordaRuntimeException(
-                    "Failed to send request and receive response for membership RPC operation. " + e.message, e
+                    "Failed to send request and receive response for MGM RPC operation. " + e.message, e
                 )
             }
         }
