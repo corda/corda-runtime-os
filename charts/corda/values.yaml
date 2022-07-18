@@ -328,6 +328,9 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the p2p-gateway worker until the debugger is attached
       suspend: false
+    profiling:
+      # -- run p2p-gateway worker with profiling enabled
+      enabled: false
     # resource limits and requests configuration for the p2p-gateway worker containers.
     resources:
       # -- the CPU/memory resource requests for the p2p-gateway worker containers
