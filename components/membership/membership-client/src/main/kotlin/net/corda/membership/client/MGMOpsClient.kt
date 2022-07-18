@@ -13,8 +13,7 @@ interface MGMOpsClient : Lifecycle {
      * outwards communication.
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
-     * @return [MGMGenerateGroupPolicyResponseDto] to indicate the last known status of the registration request based on
-     * local member data.
+     * @return [MGMGenerateGroupPolicyResponseDto] Generated Group Policy Response.
      */
     fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponseDto
 }

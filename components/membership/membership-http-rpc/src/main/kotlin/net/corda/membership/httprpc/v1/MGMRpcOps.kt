@@ -20,7 +20,7 @@ interface MGMRpcOps : RpcOps {
      * GET endpoint to fetch the requested group policy string
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
-     * @return [MGMGenerateGroupPolicyResponse] to indicate the last known status of the registration request based on
+     * @return [MGMGenerateGroupPolicyResponse] MGM Generated Group Policy JSON.
      *  local member data.
      */
     @HttpRpcGET(
