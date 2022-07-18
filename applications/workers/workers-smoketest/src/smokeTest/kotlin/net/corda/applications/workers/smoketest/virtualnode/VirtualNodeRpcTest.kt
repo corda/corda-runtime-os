@@ -249,15 +249,27 @@ class VirtualNodeRpcTest {
 
             val randomPair = states.elementAt(random.nextInt(states.size))
 
-            updateVirtualNodeState(randomPair.first, "UPDATED")
+            updateVirtualNodeState(randomPair.first, randomPair.second.reversed())
 
             assertWithRetry {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single{ virtualNode ->
+                        it.toJson()["virtualNodes"].single { virtualNode ->
                             virtualNode["holdingIdentity"]["id"].textValue() == randomPair.first
-                        }["state"].textValue() == "UPDATED"
+                        }["state"].textValue() == randomPair.second.reversed()
+                }
+            }
+
+            updateVirtualNodeState(randomPair.first, randomPair.second)
+
+            assertWithRetry {
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                        it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["id"].textValue() == randomPair.first
+                        }["state"].textValue() == randomPair.second
                 }
             }
         }
