@@ -1,7 +1,11 @@
 plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
-    id 'corda.common-publishing'
+    id 'corda.cli-plugin-packager'
 }
+
+group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -14,6 +18,14 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
 }
 
-test {
-    useJUnitPlatform()
+cliPlugin {
+    cliPluginClass = 'net.corda.cli.plugins.packaging.PackagePluginWrapper'
+    cliPluginDescription = 'Plugin for CPB and CPI operations.'
+}
+
+tasks.named("installDist") {
+    dependsOn cliPlugin
+    def homePath = System.properties['user.home']
+    from cliPlugin
+    into "$homePath/.corda/cli/plugins"
 }
