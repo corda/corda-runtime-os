@@ -25,7 +25,7 @@ interface KeysRpcOps : RpcOps {
     @HttpRpcGET(
         path = "{tenantId}/schemes/{hsmCategory}",
         description = "Get list of schemes for the cluster.",
-        responseDescription = "List of scheme names."
+        responseDescription = "The list of schemes codes which are supported by the associated HSM integration."
     )
     fun listSchemes(
         @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
@@ -170,7 +170,7 @@ interface KeysRpcOps : RpcOps {
     fun generateKeyPem(
         @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The Key ID.")
+        @HttpRpcPathParameter(description = "The Key ID. Or an error code if not found.")
         keyId: String,
     ): String
 }
