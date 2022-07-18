@@ -8,7 +8,9 @@ import java.lang.Integer.max
 import java.time.Instant
 import java.util.UUID
 
-const val MAX_NUMBER_STORED_MESSAGES = 3
+// The total table sizes should not exceed 1Mb or it will exceed the limit on the findAll return message
+const val MAX_NUMBER_STORED_MESSAGES = 100
+const val MAX_SIZE_STORED_MESSAGE = 200
 
 @Suspendable
 fun storeIncomingMessage(
@@ -22,7 +24,7 @@ fun storeIncomingMessage(
         IncomingChatMessage(
             id = newUuid(persistenceService),
             sender = sender,
-            message = message,
+            message = message.take(MAX_SIZE_STORED_MESSAGE),
             timestamp = unixTimestamp()
         )
     )
@@ -40,7 +42,7 @@ fun storeOutgoingMessage(
         OutgoingChatMessage(
             id = newUuid(persistenceService),
             recipient = recipient,
-            message = message,
+            message = message.take(MAX_SIZE_STORED_MESSAGE),
             timestamp = unixTimestamp()
         )
     )
