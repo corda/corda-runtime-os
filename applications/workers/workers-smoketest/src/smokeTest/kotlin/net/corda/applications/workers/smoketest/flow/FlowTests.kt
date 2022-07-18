@@ -8,7 +8,6 @@ import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
-import net.corda.applications.workers.smoketest.addSoftHsmFor
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
@@ -70,8 +69,6 @@ class FlowTests {
 
             registerMember(bobHoldingId)
             registerMember(charlieHoldingId)
-
-            addSoftHsmFor(bobHoldingId, "LEDGER")
         }
     }
 
