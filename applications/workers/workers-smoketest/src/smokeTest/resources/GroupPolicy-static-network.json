@@ -24,6 +24,12 @@
           "memberStatus" : "ACTIVE",
           "endpointUrl-1" : "http://localhost:1080",
           "endpointProtocol-1" : 1
+        },
+        {
+          "name" : "CN=David, OU=Application, O=R3, L=Dublin, C=IE",
+          "memberStatus" : "ACTIVE",
+          "endpointUrl-1" : "http://localhost:1080",
+          "endpointProtocol-1" : 1
         }
       ]
     }
