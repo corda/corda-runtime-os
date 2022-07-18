@@ -72,6 +72,8 @@ class ChatOutgoingFlow : RPCStartableFlow {
 /**
  * Incoming message flow, instantiated for receiving chat messages by Corda as part of the declared chat protocol.
  * Messages are placed in the message store. To read outstanding messages, poll the ChatReaderFlow.
+ * Messages are limited in size when stored, and there is a limit to the number of messages that can be stored at the
+ * same time. When the limit is reached older messages are removed.
  */
 @InitiatedBy(protocol = "chatProtocol")
 class ChatIncomingFlow : ResponderFlow {
@@ -103,19 +105,33 @@ class ChatIncomingFlow : ResponderFlow {
 /**
  * Returns all messages, the output will look something like:
  * ```json
- * {
- *   "messages": [
- *     {
- *       "senderX500Name": "CN=Bob, O=R3, L=London, C=GB",
- *       "message": "Hello from Bob"
- *     },
- *     {
- *       "senderX500Name": "CN=Alice, O=R3, L=London, C=GB",
- *       "message": "Hello from Alice"
- *     }
- *   ]
- * }
+ * [
+ *   {
+ *     "counterparty": "CN=Alice, O=R3, L=London, C=GB",
+ *     "messages": [
+ *       {
+ *         "id": "4c6ce4a8-cb5a-41b9-8476-d1310b298d19",
+ *         "direction": "incoming",
+ *         "content": "Hello Bob",
+ *         "timestamp": "1658137194"
+ *       },
+ *       {
+ *         "id": "a0b15c2a-fae3-44c4-a7ff-5dbad90a23b3",
+ *         "direction": "incoming",
+ *         "content": "How are you?",
+ *         "timestamp": "1658137263"
+ *       },
+ *       {
+ *         "id": "dda15e36-b69e-43ee-b17a-d0105505a232",
+ *         "direction": "outgoing",
+ *         "content": "I'm fine thinks Alice!",
+ *         "timestamp": "1658137304"
+ *       }
+ *     ]
+ *   }
+ * ]
  * ```
+ * Messages are returned in time order, with outgoing and incoming messages interleaved in the same array.
  */
 class ChatReaderFlow : RPCStartableFlow {
 
