@@ -996,11 +996,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1151,11 +1151,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1201,11 +1201,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1255,11 +1255,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
