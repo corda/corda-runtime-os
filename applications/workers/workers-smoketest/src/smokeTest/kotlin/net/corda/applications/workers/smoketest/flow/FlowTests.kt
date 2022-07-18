@@ -188,6 +188,13 @@ class FlowTests {
     }
 
     @Test
+    fun `Pipeline error results in flow marked as failed`() {
+        val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+    }
+
+    @Test
     fun `Persistence - insert a record`() {
         val id = UUID.randomUUID()
         val requestBody = RpcSmokeTestInput().apply {
