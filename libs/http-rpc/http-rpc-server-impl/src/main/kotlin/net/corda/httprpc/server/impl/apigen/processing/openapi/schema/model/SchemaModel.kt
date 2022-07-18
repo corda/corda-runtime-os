@@ -11,7 +11,8 @@ open class SchemaModel(
     var description: String? = null
     var example: Any? = null
     var required: Boolean = true
-    var nullable: Boolean = false
+    // defaults to null so we can avoid setting in object schema
+    var nullable: Boolean? = null
 }
 
 interface SchemaModelFieldsHelper {
@@ -34,8 +35,7 @@ open class SchemaMapModel(
 open class SchemaObjectModel(
     val properties: Map<String, SchemaModel> = emptyMap()
 ) : SchemaModel(type = DataType.OBJECT), SchemaModelFieldsHelper {
-    override fun getRequiredFields() =
-        this.properties.filter { it.value.required && !it.value.nullable }.keys.toList().sorted()
+    override fun getRequiredFields() = this.properties.filter { it.value.isRequiredField() }.keys.toList().sorted()
 }
 
 open class SchemaPairModel(
@@ -59,6 +59,8 @@ open class SchemaRefObjectModel(
 open class SchemaMultiRefObjectModel(
     val properties: Map<String, SchemaModel> = emptyMap(), ref: String
 ) : SchemaRefObjectModel(ref) {
-    override fun getRequiredFields() =
-        this.properties.filter { it.value.required && !it.value.nullable }.keys.toList().sorted()
+    override fun getRequiredFields() = this.properties.filter { it.value.isRequiredField() }.keys.toList().sorted()
 }
+
+private fun SchemaModel.isRequiredField() = required && notNullableOrNull()
+private fun SchemaModel.notNullableOrNull() = (nullable == null || nullable == false)
