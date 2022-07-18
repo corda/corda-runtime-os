@@ -2,10 +2,16 @@ package net.corda.crypto.merkle
 
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProviderName
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProviderOption
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -21,29 +27,29 @@ class MerkleTreeFactoryImpl @Activate constructor(
         MerkleTreeImpl(leaves, digestProvider)
 
     override fun createHashDigestProvider(
-        merkleTreeHashDigestProviderName: MerkleTreeHashDigestProviderName,
+        merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
-        options: Map<MerkleTreeHashDigestProviderOption, Any>,
+        options: Map<String, Any>,
     ): MerkleTreeHashDigestProvider {
         when (merkleTreeHashDigestProviderName) {
-            MerkleTreeHashDigestProviderName.DEFAULT ->
+            HASH_DIGEST_PROVIDER_DEFAULT_NAME ->
                 return DefaultHashDigestProvider(digestAlgorithmName, digestService)
-            MerkleTreeHashDigestProviderName.NONCE_VERIFY ->
+            HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME ->
                 return NonceHashDigestProvider.Verify(digestAlgorithmName, digestService)
-            MerkleTreeHashDigestProviderName.NONCE_SIZE_ONLY_VERIFY ->
+            HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME ->
                 return NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithmName, digestService)
-            MerkleTreeHashDigestProviderName.TWEAKABLE -> {
-                require(options.containsKey(MerkleTreeHashDigestProviderOption.LEAF_PREFIX)){"TweakableHashDigestProvider needs a leafPrefix option"}
-                require(options.containsKey(MerkleTreeHashDigestProviderOption.NODE_PRFIX)){"TweakableHashDigestProvider needs a nodePrefix option"}
-                val leafPrefix = options[MerkleTreeHashDigestProviderOption.LEAF_PREFIX]
-                val nodePrefix = options[MerkleTreeHashDigestProviderOption.NODE_PRFIX]
+            HASH_DIGEST_PROVIDER_TWEAKABLE_NAME -> {
+                require(options.containsKey(HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION)){"TweakableHashDigestProvider needs a leafPrefix option"}
+                require(options.containsKey(HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION)){"TweakableHashDigestProvider needs a nodePrefix option"}
+                val leafPrefix = options[HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION]
+                val nodePrefix = options[HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION]
                 require(leafPrefix is ByteArray){"TweakableHashDigestProvider needs a ByteArray leafPrefix option"}
                 require(nodePrefix is ByteArray){"TweakableHashDigestProvider needs a ByteArray nodePrefix option"}
                 return TweakableHashDigestProvider(digestAlgorithmName, digestService, leafPrefix, nodePrefix)
             }
-            MerkleTreeHashDigestProviderName.NONCE -> {
-                require(options.containsKey(MerkleTreeHashDigestProviderOption.ENTROPY)){"NonceHashDigestProvider needs an entropy option"}
-                val entropy = options[MerkleTreeHashDigestProviderOption.ENTROPY]
+            HASH_DIGEST_PROVIDER_NONCE_NAME -> {
+                require(options.containsKey(HASH_DIGEST_PROVIDER_ENTROPY_OPTION)){"NonceHashDigestProvider needs an entropy option"}
+                val entropy = options[HASH_DIGEST_PROVIDER_ENTROPY_OPTION]
                 require(entropy is ByteArray){"NonceHashDigestProvider needs a ByteArray entropy option"}
                 return NonceHashDigestProvider(digestAlgorithmName, digestService, entropy)
             }
