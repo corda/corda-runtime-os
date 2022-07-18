@@ -13,6 +13,20 @@ keytool -genkey -alias "signing key 2" -keystore signingkeys.pfx -storepass "key
 # To trust freetsa.org, download their CA cert and import into keystore
 keytool -import -alias "freetsa" -keystore signingkeys.pfx -storepass "keystore password" -file ~/Downloads/cacert.pem
 
+# Build a CPB
+./corda-cli.sh package create-cpb \
+    mycpk0.cpk mycpk1.cpk \
+    --cpb-name manifest-attribute-cpb-name \
+    --cpb-version manifest-attribute-cpb-version \
+    --file output.cpb \
+    --keystore signingkeys.pfx \
+    --storepass "keystore password" \
+    --key "signing key 1" \
+    --tsa https://freetsa.org/tsr
+
+# Check CPB jarsigner signatures
+jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify output.cpb
+
 # Build a group policy file
 ./corda-cli.sh mgm groupPolicy > TestGroupPolicy.json
 
@@ -36,7 +50,7 @@ keytool -import -alias "freetsa" -keystore signingkeys.pfx -storepass "keystore 
     --key "signing key 1" \
     --tsa https://freetsa.org/tsr
  
-# Check jarsigner signatures
+# Check CPI jarsigner signatures
 jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify output.cpi
 
 # Verify a CPI

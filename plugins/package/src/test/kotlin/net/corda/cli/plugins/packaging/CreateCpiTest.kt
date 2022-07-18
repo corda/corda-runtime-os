@@ -8,8 +8,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -20,6 +18,7 @@ import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
 
 class CreateCpiTest {
 
@@ -225,26 +224,8 @@ Creates a CPI from a CPB and GroupPolicy.json file.
   -p, --password, --storepass=<keyStorePass>
                             Keystore password
   -s, --keystore=<keyStoreFileName>
-                            Keystore holding siging keys
+                            Keystore holding signing keys
   -t, --tsa=<tsaUrl>        Time Stamping Authority (TSA) URL
 """, errText)
-    }
-
-    private fun captureStdErr(target: () -> Unit): String {
-        val original = System.err
-        var outText = ""
-        try {
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            System.setErr(PrintStream(byteArrayOutputStream))
-
-            target()
-
-            outText = byteArrayOutputStream.toString().replace(System.lineSeparator(), "\n")
-
-        } finally {
-            System.setErr(original)
-            System.err.write(outText.toByteArray())
-        }
-        return outText
     }
 }

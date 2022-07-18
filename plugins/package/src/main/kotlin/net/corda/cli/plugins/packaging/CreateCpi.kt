@@ -1,33 +1,21 @@
 package net.corda.cli.plugins.packaging
 
-import jdk.security.jarsigner.JarSigner
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.nio.file.StandardOpenOption.READ
 import java.nio.file.StandardOpenOption.WRITE
-import java.security.KeyStore
-import java.security.KeyStore.PrivateKeyEntry
-import java.security.cert.Certificate
-import java.security.cert.CertificateFactory
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
-import java.util.zip.ZipFile
+import net.corda.cli.plugins.packaging.signing.CpxSigner
 
 /**
  * Filename of group policy within jar file
  */
 private const val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
-
-/**
- * Type of CertificateFactory to use. "X.509" is a required type for Java implementations.
- */
-private const val STANDARD_CERT_FACTORY_TYPE = "X.509"
 
 /**
  * Name of signature within jar file
@@ -54,7 +42,7 @@ class CreateCpi : Runnable {
     @Option(names = ["--file", "-f"], description = ["Output file", "If omitted, the CPB filename with .cpi as a filename extension is used"])
     var outputFileName: String? = null
 
-    @Option(names = ["--keystore", "-s"], required = true, description = ["Keystore holding siging keys"])
+    @Option(names = ["--keystore", "-s"], required = true, description = ["Keystore holding signing keys"])
     lateinit var keyStoreFileName: String
 
     @Option(names = ["--storepass", "--password", "-p"], required = true, description = ["Keystore password"])
@@ -105,7 +93,7 @@ class CreateCpi : Runnable {
         else
             GroupPolicySource.File(checkFileExists(groupPolicyFileName))
 
-        buildAndSignCpiJar(cpbPath, outputFilePath, groupPolicy)
+        buildAndSignCpi(cpbPath, outputFilePath, groupPolicy)
     }
 
     /**
@@ -131,14 +119,17 @@ class CreateCpi : Runnable {
      *
      * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
-    private fun buildAndSignCpiJar(cpbPath: Path, outputFilePath: Path, groupPolicy: GroupPolicySource) {
+    private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: GroupPolicySource) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             // Build unsigned CPI jar
-            buildUnsignedCpiJar(cpbPath, unsignedCpi, groupPolicy)
+            buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
 
             // Sign CPI jar
-            signJar(unsignedCpi, outputFilePath)
+            val privateKeyEntry = CpxSigner.getPrivateKeyEntry(keyStoreFileName, keyStorePass, keyAlias)
+            val privateKey = privateKeyEntry.privateKey
+            val certPath = CpxSigner.buildCertPath(privateKeyEntry.certificateChain.asList())
+            CpxSigner.sign(unsignedCpi, outputFilePath, privateKey, certPath, SIGNER_NAME, tsaUrl)
         } finally {
             // Delete temp file
             Files.deleteIfExists(unsignedCpi)
@@ -150,7 +141,7 @@ class CreateCpi : Runnable {
      *
      * Copies CPB into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpiJar(cpbPath: Path, unsignedCpi: Path, groupPolicy: GroupPolicySource) {
+    private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: GroupPolicySource) {
         JarInputStream(Files.newInputStream(cpbPath, READ)).use { cpbJar ->
             JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), cpbJar.manifest).use { cpiJar ->
 
@@ -192,52 +183,4 @@ class CreateCpi : Runnable {
         }
         cpiJar.closeEntry()
     }
-
-    /**
-     * Signs jar file
-     */
-    private fun signJar(unsignedInputCpi: Path, signedOutputCpi: Path) {
-
-        val keyEntry = getPrivateKeyEntry(keyStoreFileName, keyStorePass, keyAlias)
-        val certPath = buildCertPath(keyEntry.certificateChain.asList())
-
-        ZipFile(unsignedInputCpi.toFile()).use { unsignedCpi ->
-            Files.newOutputStream(signedOutputCpi, WRITE, CREATE_NEW).use { signedCpi ->
-
-                // Create JarSigner
-                val builder = JarSigner.Builder(keyEntry.privateKey, certPath)
-                    .signerName(SIGNER_NAME)
-
-                // Use timestamp server if provided
-                tsaUrl?.let { builder.tsa(URI(it)) }
-
-                // Sign CPI
-                builder
-                    .build()
-                    .sign(unsignedCpi, signedCpi)
-            }
-        }
-    }
-
-    /**
-     * Reads PrivateKeyEntry from key store
-     */
-    private fun getPrivateKeyEntry(keyStoreFileName: String, keyStorePass: String, keyAlias: String): PrivateKeyEntry {
-        val passwordCharArray = keyStorePass.toCharArray()
-        val keyStore = KeyStore.getInstance(File(keyStoreFileName), passwordCharArray)
-        val keyEntry = keyStore.getEntry(keyAlias, KeyStore.PasswordProtection(passwordCharArray))
-
-        when (keyEntry) {
-            is PrivateKeyEntry -> return keyEntry
-            else -> error("Alias \"${keyAlias}\" is not a private key")
-        }
-    }
-
-    /**
-     * Builds CertPath from certificate chain
-     */
-    private fun buildCertPath(certificateChain: List<Certificate>) =
-        CertificateFactory
-            .getInstance(STANDARD_CERT_FACTORY_TYPE)
-            .generateCertPath(certificateChain)
 }
