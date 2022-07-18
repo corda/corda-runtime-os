@@ -11,12 +11,12 @@ import javax.persistence.Id
  */
 @CordaSerializable
 @Entity
-data class IncomingChatMessage(
+data class OutgoingChatMessage(
     @Id
     @Column
     val id: UUID,
     @Column
-    val sender: String,
+    val recipient: String,
     @Column
     val message: String,
     @Column
