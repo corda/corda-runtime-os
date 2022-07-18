@@ -1,0 +1,19 @@
+plugins {
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.common-publishing'
+}
+
+dependencies {
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+
+    implementation "org.pf4j:pf4j:${pf4jVersion}"
+    kapt "org.pf4j:pf4j:${pf4jVersion}"
+
+    testImplementation "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+}
+
+test {
+    useJUnitPlatform()
+}
