@@ -11,10 +11,14 @@ import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.SharedSecretAliasSpec
+import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
+import java.security.PublicKey
 
 fun CryptoServiceRef.getSupportedSchemes(): List<String> =
     instance.supportedSchemes.map { it.key.codeName }
@@ -79,9 +83,11 @@ fun CryptoServiceRef.sign(
             "The encoding version is missing."
         }
         SigningWrappedSpec(
-            keyMaterial = record.keyMaterial!!,
-            masterKeyAlias = record.masterKeyAlias,
-            encodingVersion = record.encodingVersion!!,
+            keyMaterialSpec = KeyMaterialSpec(
+                keyMaterial = record.keyMaterial!!,
+                masterKeyAlias = record.masterKeyAlias,
+                encodingVersion = record.encodingVersion!!
+            ),
             keyScheme = scheme,
             signatureSpec = signatureSpec
         )
@@ -97,6 +103,45 @@ fun CryptoServiceRef.sign(
     }
     return instance.sign(
         spec, data, context + mapOf(
+            CRYPTO_TENANT_ID to tenantId
+        )
+    )
+}
+
+fun CryptoServiceRef.deriveSharedSecret(
+    record: SigningCachedKey,
+    scheme: KeyScheme,
+    otherPublicKey: PublicKey,
+    context: Map<String, String>
+): ByteArray {
+    val spec = if (record.keyMaterial != null) {
+        require(record.keyMaterial!!.isNotEmpty()) {
+            "The key material is empty."
+        }
+        require(record.encodingVersion != null) {
+            "The encoding version is missing."
+        }
+        SharedSecretWrappedSpec(
+            keyMaterialSpec = KeyMaterialSpec(
+                keyMaterial = record.keyMaterial!!,
+                masterKeyAlias = record.masterKeyAlias,
+                encodingVersion = record.encodingVersion!!
+            ),
+            keyScheme = scheme,
+            otherPublicKey = otherPublicKey
+        )
+    } else {
+        require(!record.hsmAlias.isNullOrBlank()) {
+            "The hsm assigned alias is missing."
+        }
+        SharedSecretAliasSpec(
+            hsmAlias = record.hsmAlias!!,
+            keyScheme = scheme,
+            otherPublicKey = otherPublicKey
+        )
+    }
+    return instance.deriveSharedSecret(
+        spec, context + mapOf(
             CRYPTO_TENANT_ID to tenantId
         )
     )

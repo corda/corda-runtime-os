@@ -15,9 +15,9 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ENDPOINTS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -148,8 +148,8 @@ class RegistrationProcessorTest {
             on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationSerializer
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
-            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success()
+            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
+            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
         }
         membershipQueryClient = mock {
             on {
@@ -157,7 +157,7 @@ class RegistrationProcessorTest {
                     eq(mgmHoldingIdentity.toCorda()),
                     any()
                 )
-            } doReturn MembershipQueryResult.Success<Collection<MemberInfo>>()
+            } doReturn MembershipQueryResult.Success(emptyList())
         }
 
         processor = RegistrationProcessor(
@@ -166,7 +166,10 @@ class RegistrationProcessorTest {
             membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
-            membershipQueryClient
+            membershipQueryClient,
+            mock(),
+            mock(),
+            mock(),
         )
     }
 

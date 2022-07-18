@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,20 +17,20 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.CREATED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.ECDH_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -70,6 +71,8 @@ class MGMRegistrationService @Activate constructor(
     val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
     val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -82,17 +85,19 @@ class MGMRegistrationService @Activate constructor(
         val logger: Logger = contextLogger()
         const val errorMessageTemplate = "No %s was provided."
 
+        const val GROUP_POLICY_PREFIX = "corda.group"
+        const val GROUP_POLICY_PREFIX_WITH_DOT = "$GROUP_POLICY_PREFIX."
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
         const val ECDH_KEY_ID = "$ECDH_KEY.id"
-        const val REGISTRATION_PROTOCOL = "corda.group.protocol.registration"
-        const val SYNCHRONISATION_PROTOCOL = "corda.group.protocol.synchronisation"
-        const val P2P_MODE = "corda.group.protocol.p2p.mode"
-        const val SESSION_KEY_POLICY = "corda.group.key.session.policy"
-        const val PKI_SESSION = "corda.group.pki.session"
-        const val PKI_TLS = "corda.group.pki.tls"
-        const val TRUSTSTORE_SESSION = "corda.group.truststore.session.%s"
-        const val TRUSTSTORE_TLS = "corda.group.truststore.tls.%s"
+        const val REGISTRATION_PROTOCOL = "$GROUP_POLICY_PREFIX.protocol.registration"
+        const val SYNCHRONISATION_PROTOCOL = "$GROUP_POLICY_PREFIX.protocol.synchronisation"
+        const val P2P_MODE = "$GROUP_POLICY_PREFIX.protocol.p2p.mode"
+        const val SESSION_KEY_POLICY = "$GROUP_POLICY_PREFIX.key.session.policy"
+        const val PKI_SESSION = "$GROUP_POLICY_PREFIX.pki.session"
+        const val PKI_TLS = "$GROUP_POLICY_PREFIX.pki.tls"
+        const val TRUSTSTORE_SESSION = "$GROUP_POLICY_PREFIX.truststore.session.%s"
+        const val TRUSTSTORE_TLS = "$GROUP_POLICY_PREFIX.truststore.tls.%s"
         const val PLATFORM_VERSION_CONST = "5000"
         const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
@@ -184,16 +189,23 @@ class MGMRegistrationService @Activate constructor(
                 val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.id)
                 val now = clock.instant().toString()
                 val mgmInfo = memberInfoFactory.create(
-                    memberContext = (context.filter { !keyIdList.contains(it.key) } + mapOf(
-                        GROUP_ID to member.groupId,
-                        PARTY_NAME to member.x500Name,
-                        PARTY_SESSION_KEY to sessionKey,
-                        ECDH_KEY to ecdhKey,
-                        // temporarily hardcoded
-                        PLATFORM_VERSION to PLATFORM_VERSION_CONST,
-                        SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
-                        SERIAL to SERIAL_CONST,
-                    )).toSortedMap(),
+                    memberContext = (
+                        context.filterKeys {
+                            !keyIdList.contains(it)
+                        }.filterKeys {
+                            !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
+                        } +
+                            mapOf(
+                                GROUP_ID to member.groupId,
+                                PARTY_NAME to member.x500Name,
+                                PARTY_SESSION_KEY to sessionKey,
+                                ECDH_KEY to ecdhKey,
+                                // temporarily hardcoded
+                                PLATFORM_VERSION to PLATFORM_VERSION_CONST,
+                                SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                                SERIAL to SERIAL_CONST,
+                            )
+                        ).toSortedMap(),
                     mgmContext = sortedMapOf(
                         CREATED_TIME to now,
                         MODIFIED_TIME to now,
@@ -207,6 +219,23 @@ class MGMRegistrationService @Activate constructor(
                     return MembershipRequestRegistrationResult(
                         MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
                         "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
+                    )
+                }
+
+                val groupPolicyMap = context.filterKeys {
+                    it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
+                }.mapKeys {
+                    it.key.removePrefix(GROUP_POLICY_PREFIX_WITH_DOT)
+                }
+                val groupPolicy = layeredPropertyMapFactory.createMap(groupPolicyMap)
+                val groupPolicyPersistenceResult = membershipPersistenceClient.persistGroupPolicy(
+                    member,
+                    groupPolicy,
+                )
+                if (groupPolicyPersistenceResult is MembershipPersistenceResult.Failure) {
+                    return MembershipRequestRegistrationResult(
+                        MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                        "Registration failed, persistence error. Reason: ${groupPolicyPersistenceResult.errorMsg}"
                     )
                 }
 
@@ -273,7 +302,6 @@ class MGMRegistrationService @Activate constructor(
                     true
                 }
 
-
         private fun getPemKeyFromId(keyId: String, tenantId: String): String {
             return with(cryptoOpsClient) {
                 lookup(tenantId, listOf(keyId)).firstOrNull()?.let {
@@ -286,7 +314,7 @@ class MGMRegistrationService @Activate constructor(
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event $event.")
-        when(event) {
+        when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)

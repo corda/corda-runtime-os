@@ -207,7 +207,9 @@ class PersistenceExceptionTests {
     private fun setupExceptionHandlingTests(): Pair<FakeDbConnectionManager, EntityRequest> {
         val virtualNodeInfoOne = virtualNode.load(Resources.EXTENDABLE_CPB)
         val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection))
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection),
+            "PersistenceExceptionTests")
 
         // We need a 'working' service to set up the test
         val entitySandboxService =

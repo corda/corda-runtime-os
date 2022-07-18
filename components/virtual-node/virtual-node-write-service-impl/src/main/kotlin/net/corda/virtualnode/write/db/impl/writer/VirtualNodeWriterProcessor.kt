@@ -16,7 +16,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -249,22 +249,27 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) {
+    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) =
+        // we could potentially do one transaction per CPK; it seems more useful to blow up the
+        // who migration if any CPK fails though, so that they can be iterative developed and repeated
         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
             val changelogs = getChangelogs(it, cpiMetadata.id)
-            logger.info("Found ${changelogs.size} changelogs for ${cpiMetadata.id.name}:${cpiMetadata.id.version}")
-            if (changelogs.isEmpty()) return
-            val dbChange = VirtualNodeDbChangeLog(changelogs)
-            try {
-                vaultDb.runCpiMigrations(dbChange)
-            } catch (e: Exception) {
-                throw VirtualNodeWriteServiceException(
-                    "Error running virtual node DB migration for CPI liquibase migrations",
-                    e
-                )
+            changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
+                val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
+                logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
+                val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
+                try {
+                    vaultDb.runCpiMigrations(dbChange)
+                } catch (e: Exception) {
+                    logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
+                    throw VirtualNodeWriteServiceException(
+                        "Error running virtual node DB migration for CPI liquibase migrations",
+                        e
+                    )
+                }
+                logger.info("Completed ${cpkChangelogs.size} migrations for $cpkName")
             }
         }
-    }
 
     private fun createVirtualNodeRecord(
         holdingIdentity: HoldingIdentity,
@@ -363,6 +368,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
         e: Exception,
     ): Boolean {
+        logger.error("Error while processing virtual node request: ${e.message}", e)
         val response = VirtualNodeManagementResponse(
             clock.instant(),
             VirtualNodeManagementResponseFailure(

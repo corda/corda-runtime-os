@@ -4,6 +4,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
@@ -11,14 +12,14 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.impl.toSortedMap
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -26,6 +27,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -43,7 +45,7 @@ class StartRegistrationHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-) : RegistrationHandler {
+) : RegistrationHandler<StartRegistration> {
 
     private companion object {
         val logger = contextLogger()
@@ -54,12 +56,11 @@ class StartRegistrationHandler(
             logger.error("Deserialization of registration request KeyValuePairList failed.")
         }, KeyValuePairList::class.java)
 
-    override fun invoke(command: Record<String, RegistrationCommand>): RegistrationHandlerResult {
+    override val commandType = StartRegistration::class.java
+
+    override fun invoke(key: String, command: StartRegistration): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
-            with(command.value?.command as? StartRegistration) {
-                require(this != null) {
-                    "Incorrect handler used for command of type ${command.value!!.command::class.java}"
-                }
+            with(command) {
                 Triple(
                     toRegistrationRequest(),
                     destination.toCorda(),
@@ -93,7 +94,7 @@ class StartRegistrationHandler(
                 )
                 validateRegistrationRequest(
                     existingMemberInfo is MembershipQueryResult.Success
-                            && existingMemberInfo.payload.isNullOrEmpty()
+                            && existingMemberInfo.payload.isEmpty()
                 ) { "Member Info already exists for applying member" }
 
                 // The group ID matches the group ID of the MGM
@@ -127,7 +128,7 @@ class StartRegistrationHandler(
 
         return RegistrationHandlerResult(
             RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro()),
-            listOf(Record(command.topic, command.key, outputCommand))
+            listOf(Record(REGISTRATION_COMMAND_TOPIC, key, outputCommand))
         )
     }
 
@@ -176,6 +177,7 @@ class StartRegistrationHandler(
     }
 
     private fun StartRegistration.toRegistrationRequest(): RegistrationRequest = RegistrationRequest(
+        RegistrationStatus.NEW,
         memberRegistrationRequest.registrationId,
         source.toCorda(),
         memberRegistrationRequest.memberContext,

@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -46,9 +46,9 @@ class FlowEventProcessorImpl(
             return StateAndEventProcessor.Response(state, listOf())
         }
 
-        log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
-
         return try {
+            log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+
             val pipeline = flowEventPipelineFactory.create(state, flowEvent, config)
 
             flowEventContextConverter.convert(pipeline
@@ -69,8 +69,8 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e)
         } catch (e: FlowFatalException) {
             flowEventExceptionProcessor.process(e)
-        } catch (e: Exception) {
-            flowEventExceptionProcessor.process(e)
+        } catch (t: Throwable) {
+            flowEventExceptionProcessor.process(t)
         }
     }
 }

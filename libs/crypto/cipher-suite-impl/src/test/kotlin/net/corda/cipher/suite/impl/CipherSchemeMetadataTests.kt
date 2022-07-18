@@ -19,6 +19,8 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
+import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
@@ -68,7 +70,8 @@ class CipherSchemeMetadataTests {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var unknownScheme: KeyScheme
         private lateinit var verifier: SignatureVerificationService
-        private lateinit var testParams: List<Arguments>
+        private lateinit var signingTestParams: List<Arguments>
+        private lateinit var derivingTestParams: List<Arguments>
 
         @JvmStatic
         @BeforeAll
@@ -82,12 +85,13 @@ class CipherSchemeMetadataTests {
                 providerName = "SUN",
                 algorithmName = CompositeKey.KEY_ALGORITHM,
                 algSpec = null,
-                keySize = null
+                keySize = null,
+                capabilities = setOf(KeySchemeCapability.SIGN)
             )
             val digest = DigestServiceImpl(schemeMetadata, null)
             verifier = SignatureVerificationServiceImpl(schemeMetadata, digest)
-            testParams = schemeMetadata.schemes.filter {
-                it.codeName != COMPOSITE_KEY_CODE_NAME
+            signingTestParams = schemeMetadata.schemes.filter {
+                it.codeName != COMPOSITE_KEY_CODE_NAME && it.canDo(KeySchemeCapability.SIGN)
             }.map {
                 Arguments.of(
                     generateKeyPair(schemeMetadata, it.codeName),
@@ -95,10 +99,20 @@ class CipherSchemeMetadataTests {
                     generateKeyPair(schemeMetadata, it.codeName)
                 )
             }
+            derivingTestParams = schemeMetadata.schemes.filter {
+                it.codeName != COMPOSITE_KEY_CODE_NAME && it.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)
+            }.map {
+                Arguments.of(
+                    generateKeyPair(schemeMetadata, it.codeName)
+                )
+            }
         }
 
         @JvmStatic
-        fun keyPairs(): List<Arguments> = testParams
+        fun signingKeyPairs(): List<Arguments> = signingTestParams
+
+        @JvmStatic
+        fun derivingKeyPairs(): List<Arguments> = derivingTestParams
 
         @JvmStatic
         fun schemes(): List<KeyScheme> = schemeMetadata.schemes
@@ -158,11 +172,12 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should contain predefined list of signature schemes`() {
-        assertEquals(8, schemeMetadata.schemes.size)
+        assertEquals(9, schemeMetadata.schemes.size)
         assertTrue(schemeMetadata.schemes.any { it.codeName == RSA_CODE_NAME })
         assertTrue(schemeMetadata.schemes.any { it.codeName == ECDSA_SECP256K1_CODE_NAME })
         assertTrue(schemeMetadata.schemes.any { it.codeName == ECDSA_SECP256R1_CODE_NAME })
         assertTrue(schemeMetadata.schemes.any { it.codeName == EDDSA_ED25519_CODE_NAME })
+        assertTrue(schemeMetadata.schemes.any { it.codeName == X25519_CODE_NAME })
         assertTrue(schemeMetadata.schemes.any { it.codeName == SM2_CODE_NAME })
         assertTrue(schemeMetadata.schemes.any { it.codeName == GOST3410_GOST3411_CODE_NAME })
         assertTrue(schemeMetadata.schemes.any { it.codeName == SPHINCS256_CODE_NAME })
@@ -210,7 +225,7 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    fun `Should find schemes for all supported signing algorithms`(
+    fun `Should find schemes for all supported algorithms`(
         scheme: KeyScheme
     ) {
         assumeTrue(scheme.algorithmOIDs.isNotEmpty())
@@ -287,7 +302,7 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should be able to infer RSA signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == RSA_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-256", "SHA-384", "SHA-512").forEach {
@@ -302,7 +317,7 @@ class CipherSchemeMetadataTests {
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to infer ECDSA SECP256R1 signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == ECDSA_SECP256R1_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-256", "SHA-384", "SHA-512").forEach {
@@ -317,7 +332,7 @@ class CipherSchemeMetadataTests {
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to infer ECDSA SECP256K1 signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == ECDSA_SECP256K1_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-256", "SHA-384", "SHA-512").forEach {
@@ -331,7 +346,7 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should be able to infer EDDSA signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == EDDSA_ED25519_CODE_NAME
         }.get()[0] as KeyPair
         listOf("NONE").forEach {
@@ -345,7 +360,7 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should be able to infer SM2 signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == SM2_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SM3", "SHA-256").forEach {
@@ -359,7 +374,7 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should be able to infer SPHINCS256 signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == SPHINCS256_CODE_NAME
         }.get()[0] as KeyPair
         listOf("SHA-512").forEach {
@@ -373,7 +388,7 @@ class CipherSchemeMetadataTests {
 
     @Test
     fun `Should be able to infer GOST3410 signature spec for all supported digests and use it to sign and verify`() {
-        val keyPair = testParams.first {
+        val keyPair = signingTestParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == GOST3410_GOST3411_CODE_NAME
         }.get()[0] as KeyPair
         listOf("GOST3411").forEach {
@@ -502,8 +517,8 @@ class CipherSchemeMetadataTests {
     }
 
     @ParameterizedTest
-    @MethodSource("keyPairs")
-    fun `Should convert public key to PEM and back and still to able to use for verification for all supported schemes`(
+    @MethodSource("signingKeyPairs")
+    fun `Should convert signing public key to PEM and back and still to able to use for verification for all supported schemes`(
         keyPair: KeyPair
     ) {
         val encodedPublicKey = schemeMetadata.encodeAsString(keyPair.public)
@@ -528,9 +543,9 @@ class CipherSchemeMetadataTests {
     }
 
     @ParameterizedTest
-    @MethodSource("keyPairs")
+    @MethodSource("signingKeyPairs")
     @Suppress("MaxLineLength")
-    fun `Should convert public key to byte array and back and and still to able to use for verification for all supported schemes`(
+    fun `Should convert signing public key to byte array and back and and still to able to use for verification for all supported schemes`(
         keyPair: KeyPair
     ) {
         val encodedPublicKey = schemeMetadata.encodeAsByteArray(keyPair.public)
@@ -550,7 +565,29 @@ class CipherSchemeMetadataTests {
     }
 
     @ParameterizedTest
-    @MethodSource("keyPairs")
+    @MethodSource("derivingKeyPairs")
+    fun `Should convert deriving public key to PEM and back`(
+        keyPair: KeyPair
+    ) {
+        val encodedPublicKey = schemeMetadata.encodeAsString(keyPair.public)
+        assert(encodedPublicKey.startsWith("-----BEGIN PUBLIC KEY-----")) { encodedPublicKey }
+        assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
+        val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
+        assertEquals(decodedPublicKey, keyPair.public)
+    }
+
+    @ParameterizedTest
+    @MethodSource("derivingKeyPairs")
+    fun `Should convert deriving public key to byte array and back`(
+        keyPair: KeyPair
+    ) {
+        val encodedPublicKey = schemeMetadata.encodeAsByteArray(keyPair.public)
+        val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
+        assertEquals(decodedPublicKey, keyPair.public)
+    }
+
+    @ParameterizedTest
+    @MethodSource("signingKeyPairs")
     fun `Should round trip encode CompositeKey to byte array with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -570,7 +607,7 @@ class CipherSchemeMetadataTests {
     }
 
     @ParameterizedTest
-    @MethodSource("keyPairs")
+    @MethodSource("signingKeyPairs")
     fun `Should round trip encode CompositeKey to PEM with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -590,7 +627,7 @@ class CipherSchemeMetadataTests {
     }
 
     @ParameterizedTest
-    @MethodSource("keyPairs")
+    @MethodSource("signingKeyPairs")
     fun `Should round trip encode CompositeKey with weighting to byte array with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -615,7 +652,7 @@ class CipherSchemeMetadataTests {
     }
 
     @ParameterizedTest
-    @MethodSource("keyPairs")
+    @MethodSource("signingKeyPairs")
     fun `Should round trip encode CompositeKey with weighting to PEM with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -641,8 +678,8 @@ class CipherSchemeMetadataTests {
 
     @Suppress("TooGenericExceptionThrown")
     @ParameterizedTest
-    @MethodSource("keyPairs")
-    fun `Test save to keystore with keys for all supported schemes`(
+    @MethodSource("signingKeyPairs")
+    fun `Test save to keystore with signing keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
         keyPair3: KeyPair

@@ -21,6 +21,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -31,6 +32,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -866,6 +868,31 @@ class CryptoOpsClientComponentTests {
         assertNull(command.signatureSpec.params)
         assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should derive shared secret`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val otherKeyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val secret = UUID.randomUUID().toString().toByteArray()
+        setupCompletedResponse {
+            CryptoDerivedSharedSecret(ByteBuffer.wrap(secret))
+        }
+        val result = sender.act {
+            component.deriveSharedSecret(knownTenantId, keyPair.public, otherKeyPair.public, knownOperationContext)
+        }
+        assertNotNull(result.value)
+        assertArrayEquals(secret, result.value)
+        val command = assertOperationType<DeriveSharedSecretCommand>()
+        assertNotNull(command)
+        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
+        assertArrayEquals(schemeMetadata.encodeAsByteArray(otherKeyPair.public), command.otherPublicKey.array())
         assertOperationContext(command.context)
         assertRequestContext(result)
     }

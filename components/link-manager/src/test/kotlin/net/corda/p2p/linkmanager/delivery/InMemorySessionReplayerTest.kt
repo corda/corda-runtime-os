@@ -205,7 +205,8 @@ class InMemorySessionReplayerTest {
     @Test
     fun `The replaySchedular callback logs a warning when the responder is not in the network map`() {
         val members = mock<LinkManagerMembershipGroupReader> {
-            on { getMemberInfo(COUNTER_PARTY) } doReturnConsecutively listOf(null, groupsAndMembers.first.getMemberInfo(COUNTER_PARTY))
+            on { getMemberInfo(US, COUNTER_PARTY) } doReturnConsecutively
+                listOf(null, groupsAndMembers.first.getMemberInfo(US, COUNTER_PARTY))
             val mockDominoTile = mock<ComplexDominoTile> {
                 whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
             }

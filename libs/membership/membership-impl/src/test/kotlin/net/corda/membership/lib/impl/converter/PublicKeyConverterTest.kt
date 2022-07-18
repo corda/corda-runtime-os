@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.converter
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.impl.MemberContextImpl
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -38,20 +39,20 @@ class PublicKeyConverterTest {
     @Test
     fun `converting public key should work for single element`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKey" to LEDGER_KEY),
+            sortedMapOf(MemberInfoExtension.LEDGER_KEYS to LEDGER_KEY),
             converters
         )
-        val result = memberContext.parse<PublicKey>("corda.ledgerKey")
+        val result = memberContext.parse<PublicKey>(MemberInfoExtension.LEDGER_KEYS)
         assertEquals(ledgerKey, result)
     }
 
     @Test
     fun `converting list of public key should work`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeys.0" to LEDGER_KEY),
+            sortedMapOf(String.format(MemberInfoExtension.LEDGER_KEYS_KEY, 0) to LEDGER_KEY),
             converters
         )
-        val result = memberContext.parseList<PublicKey>("corda.ledgerKeys")
+        val result = memberContext.parseList<PublicKey>(MemberInfoExtension.LEDGER_KEYS)
         assertEquals(1, result.size)
         assertEquals(ledgerKey, result[0])
     }
@@ -60,31 +61,31 @@ class PublicKeyConverterTest {
     fun `converting PublicKey fails when the keys is null`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                "corda.ledgerKey" to null
+                MemberInfoExtension.LEDGER_KEYS to null
             ),
             converters
         )
-        assertFailsWith<ValueNotFoundException> { memberContext.parse<PublicKey>("corda.ledgerKey") }
+        assertFailsWith<ValueNotFoundException> { memberContext.parse<PublicKey>(MemberInfoExtension.LEDGER_KEYS) }
     }
 
     @Test
     fun `converting list of PublicKeys fails when the keys is null`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeys.0" to null),
+            sortedMapOf(String.format(MemberInfoExtension.LEDGER_KEYS_KEY, 0) to null),
             converters
         )
         assertFailsWith<ValueNotFoundException> {
-            memberContext.parseList<PublicKey>("corda.ledgerKeys")
+            memberContext.parseList<PublicKey>(MemberInfoExtension.LEDGER_KEYS)
         }
     }
 
     @Test
     fun `converting to nullable PublicKey works`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKey" to null),
+            sortedMapOf(MemberInfoExtension.LEDGER_KEYS to null),
             converters
         )
-        val result = memberContext.parseOrNull<PublicKey>("corda.ledgerKey")
+        val result = memberContext.parseOrNull<PublicKey>(MemberInfoExtension.LEDGER_KEYS)
         assertNull(result)
     }
 }

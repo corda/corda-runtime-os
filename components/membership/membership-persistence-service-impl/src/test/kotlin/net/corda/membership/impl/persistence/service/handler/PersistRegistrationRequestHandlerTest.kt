@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.MembershipRequestContext
@@ -10,6 +11,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -29,6 +31,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
@@ -57,7 +60,6 @@ class PersistRegistrationRequestHandlerTest {
         timestamp = clock.instant()
     )
 
-
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
@@ -73,7 +75,12 @@ class PersistRegistrationRequestHandlerTest {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on { serialize(any()) } doReturn byteArrayOf(1, 3, 4)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+    }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
     }
@@ -113,9 +120,11 @@ class PersistRegistrationRequestHandlerTest {
         )
     )
 
-
     @Test
     fun `invoke with registration request`() {
+        val mergedEntities = argumentCaptor<Any>()
+        whenever(entityManager.merge(mergedEntities.capture())).doReturn(null)
+
         val result = persistRegistrationRequestHandler.invoke(
             getMemberRequestContext(),
             getPersistRegistrationRequest()
@@ -131,16 +140,23 @@ class PersistRegistrationRequestHandlerTest {
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(memberInfoFactory, never()).create(any())
-        with(argumentCaptor<Any>()) {
-            verify(entityManager).merge(capture())
-            assertThat(firstValue).isInstanceOf(RegistrationRequestEntity::class.java)
-            val entity = firstValue as RegistrationRequestEntity
+        with(mergedEntities.firstValue) {
+            assertThat(this).isInstanceOf(RegistrationRequestEntity::class.java)
+            val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
             assertThat(entity.holdingIdentityId).isEqualTo(ourHoldingIdentity.id)
             assertThat(entity.status).isEqualTo(RegistrationStatus.NEW.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
         }
+        with(mergedEntities.secondValue) {
+            assertThat(this).isInstanceOf(MemberSignatureEntity::class.java)
+            val entity = this as MemberSignatureEntity
+            assertThat(entity.groupId).isEqualTo(ourHoldingIdentity.groupId)
+            assertThat(entity.memberX500Name).isEqualTo(ourHoldingIdentity.x500Name)
+            assertThat(entity.publicKey).isEqualTo("123".toByteArray())
+            assertThat(entity.content).isEqualTo("456".toByteArray())
+            assertThat(entity.context).isEqualTo(byteArrayOf(1, 3, 4))
+        }
     }
-
 }

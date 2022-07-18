@@ -19,7 +19,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.PublicKeyConverter
@@ -35,6 +35,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
@@ -140,6 +141,7 @@ class MGMRegistrationServiceTest {
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
+        on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -149,6 +151,7 @@ class MGMRegistrationServiceTest {
         keyEncodingService,
         memberInfoFactory,
         membershipPersistenceClient,
+        layeredPropertyMapFactory,
     )
 
     private val properties = mapOf(
@@ -220,7 +223,9 @@ class MGMRegistrationServiceTest {
         postConfigChangedEvent()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+
         val result = registrationService.register(mgm, properties)
+
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMgmInfoList = capturedPublishedList.firstValue
         assertSoftly {
@@ -234,6 +239,37 @@ class MGMRegistrationServiceTest {
             val mgmPublished = memberInfoFactory.create(persistentMemberPublished)
             it.assertThat(mgmPublished.name.toString()).isEqualTo(mgmName.toString())
         }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration persist the group properties`() {
+        postConfigChangedEvent()
+        registrationService.start()
+        val groupProperties = argumentCaptor<LayeredPropertyMap>()
+        whenever(
+            membershipPersistenceClient
+                .persistGroupPolicy(
+                    eq(mgm),
+                    groupProperties.capture(),
+                )
+        ).thenReturn(MembershipPersistenceResult.Success(3))
+
+        registrationService.register(mgm, properties)
+
+        assertThat(groupProperties.firstValue.entries)
+            .containsExactlyInAnyOrderElementsOf(
+                mapOf(
+                    "protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                    "protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+                    "protocol.p2p.mode" to "AUTHENTICATED_ENCRYPTION",
+                    "key.session.policy" to "Combined",
+                    "pki.session" to "Standard",
+                    "pki.tls" to "C5",
+                    "truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    "truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                ).entries
+            )
         registrationService.stop()
     }
 

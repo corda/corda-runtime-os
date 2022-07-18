@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.factory
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.libs.configuration.SmartConfig
 

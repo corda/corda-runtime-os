@@ -15,6 +15,7 @@ import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
@@ -156,5 +157,19 @@ class CryptoServiceDecorator(
         }
     } catch (e: Throwable) {
         throw CryptoException("Calling delete failed (alias=$alias)", e)
+    }
+
+    override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray = try {
+        withTimeout.executeWithRetry {
+            cryptoService.deriveSharedSecret(spec, context)
+        }
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling deriveSharedSecret failed (spec=$spec)", e)
+        } else {
+            throw e
+        }
+    } catch (e: Throwable) {
+        throw CryptoException("Calling deriveSharedSecret failed (spec=$spec)", e)
     }
 }

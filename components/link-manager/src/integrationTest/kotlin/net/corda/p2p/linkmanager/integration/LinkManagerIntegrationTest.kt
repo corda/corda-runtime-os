@@ -20,6 +20,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -30,6 +31,7 @@ import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -65,6 +67,9 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var cryptoOpsClient: CryptoOpsClient
+
+        @InjectService(timeout = 4000)
+        lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     }
 
     private val replayPeriod = 2000
@@ -97,7 +102,7 @@ class LinkManagerIntegrationTest {
         val configSource = config.root().render(ConfigRenderOptions.concise())
         this.publish(listOf(Record(
             Schemas.Config.CONFIG_TOPIC,
-            "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
+            ConfigKeys.P2P_LINK_MANAGER_CONFIG,
             Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
         ))).forEach { it.get() }
     }
@@ -131,6 +136,7 @@ class LinkManagerIntegrationTest {
             Mockito.mock(VirtualNodeInfoReadService::class.java),
             Mockito.mock(CpiInfoReadService::class.java),
             cryptoOpsClient,
+            membershipGroupReaderProvider,
             ThirdPartyComponentsMode.STUB
         )
 
