@@ -39,8 +39,8 @@
         "messageResendWindow": {
           "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",
           "type": "integer",
-          "minimum": 100,
-          "default": 5000
+          "minimum": 1000,
+          "default": 120000
         },
         "heartbeatTimeout": {
           "description": "Length of time to wait when no message has been received from a counterparty before causing the session to error, in milliseconds",
@@ -52,7 +52,7 @@
           "description": "TTL set on on messages passed to the P2P layer to be sent to a counterparty.",
           "type": "integer",
           "minimum": 10000,
-          "default": 60000
+          "default": 240000
         }
       }
     },
