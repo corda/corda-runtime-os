@@ -6,11 +6,11 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.CPIWhiteList
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name

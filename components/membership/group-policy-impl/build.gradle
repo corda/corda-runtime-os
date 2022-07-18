@@ -14,7 +14,6 @@ dependencies {
     implementation "net.corda:corda-base"
 
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-impl")
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation project(":components:membership:group-policy")

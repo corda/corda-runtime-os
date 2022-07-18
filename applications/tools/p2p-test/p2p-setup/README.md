@@ -236,7 +236,7 @@ The file should look like the following:
       "responseTimeout": 1000,
       "retryDelay": 1000,
       "initialReconnectionDelay": 1000,
-      "maximalReconnectionDelay": 16000
+      "maxReconnectionDelay": 16000
     }
   },
   "groupsToAdd": [

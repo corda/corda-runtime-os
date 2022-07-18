@@ -4,6 +4,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.toSortedMap
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import org.osgi.service.component.annotations.Activate

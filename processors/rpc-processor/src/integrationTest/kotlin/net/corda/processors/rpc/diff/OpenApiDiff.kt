@@ -102,35 +102,12 @@ private fun Map<String, Schema<Any>>.diff(baseline: Map<String, Schema<Any>>): L
     entries.forEach { entry ->
         val baselineValue: Schema<Any>? = baseline[entry.key]
         if (baselineValue == null) {
-            differences.add("Schema absent in baseline: Current schema: ${entry.key}")
+            differences.add("Schema absent in baseline: Current schema at ${entry.key} is ${entry.value}.")
         } else {
-            differences += entry.value.diff(baselineValue, entry.key)
+            if (entry.value != baselineValue) {
+                differences.add("Schema different for ${entry.key}. Current schema: ${entry.value}. Baseline: $baselineValue")
+            }
         }
     }
-    return differences
-}
-
-private fun Schema<Any>.diff(baseline: Schema<Any>, key: String): List<String> {
-
-    val differences = mutableListOf<String>()
-    // We cannot use `equals()` as currently there is a bug in the way we produce `nullable` value for schema
-    if (required != baseline.required) {
-        differences.add("Schema differences for: $key. Current 'required': $required, baseline: ${baseline.required}")
-    }
-
-    if (type != baseline.type) {
-        differences.add("Schema differences for: $key. Current 'type': $type, baseline: ${baseline.type}")
-    }
-
-    if (properties != baseline.properties) {
-        differences.add("Schema differences for: $key. Current 'properties': $properties, baseline: ${baseline.properties}")
-    }
-
-    /* Caused by the problem captured in CORE-5335, uncomment once fixed.
-    if (nullable != baseline.nullable) {
-        differences.add("Schema differences for: $key. Current 'nullable': $nullable, baseline: ${baseline.nullable}")
-    }
-     */
-
     return differences
 }

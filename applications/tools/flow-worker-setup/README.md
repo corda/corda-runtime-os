@@ -64,7 +64,7 @@ To publish the configuration required by the `LinkManager` which is used by the 
       "responseTimeout": 1000,
       "retryDelay": 1000,
       "initialReconnectionDelay": 1000,
-      "maximalReconnectionDelay": 16000
+      "maxReconnectionDelay": 16000
     }
   },
   "groupsToAdd": [

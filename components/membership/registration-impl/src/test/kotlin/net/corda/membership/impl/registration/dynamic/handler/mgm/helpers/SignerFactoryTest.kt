@@ -1,7 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.membership.lib.impl.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
