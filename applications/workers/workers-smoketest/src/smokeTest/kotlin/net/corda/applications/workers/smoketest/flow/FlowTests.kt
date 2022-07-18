@@ -48,7 +48,8 @@ class FlowTests {
             "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
             "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
             "net.cordapp.flowworker.development.flows.TestFlow",
-            "net.cordapp.flowworker.development.flows.BrokenProtocolFlow"
+            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
         )
 
         /*
