@@ -71,7 +71,7 @@ kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
   bootstrapServers: ""
   # -- Kafka topic partitions
-  partitions: 3
+  partitions: 10
   # -- Kafka topic replicas
   replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
@@ -309,3 +309,37 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-link-manager worker containers
       limits: {}
+
+  # P2P Gateway worker configuration
+  p2pGateway:
+    # p2p-gateway worker image configuration
+    image:
+      # -- p2p-gateway worker image registry, defaults to image.registry
+      registry: ""
+      # -- p2p-gateway worker image repository
+      repository: "corda-os-p2p-gateway"
+      # -- p2p-gateway worker image tag, defaults to image.tag
+      tag: ""
+    # -- p2p-gateway worker replica count
+    replicaCount: 1
+    # -- Use stub crypto processor
+    useStubs: false
+    # p2p-gateway worker debug configuration
+    debug:
+      # -- run p2p-gateway worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the p2p-gateway worker until the debugger is attached
+      suspend: false
+    profiling:
+      # -- run p2p-gateway worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the p2p-gateway worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the p2p-gateway worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the p2p-gateway worker containers
+      limits: {}
+    # p2p-gateway worker worker service configuration
+    service:
+      # -- The Gateway HTTP port
+      port: 8080

@@ -1,0 +1,79 @@
+{{- $_ := set . "worker" "p2pGateway" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.workerName" . }}
+  labels:
+    {{- include "corda.workerLabels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "corda.workerSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.workers.p2pGateway.service.port }}
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "corda.workerName" . }}
+  labels:
+    {{- include "corda.workerLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.workers.p2pGateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "corda.workerSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "corda.workerSelectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: "app.kubernetes.io/component"
+                      operator: In
+                      values:
+                        - p2pGateway
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: {{ include "corda.workerName" . }}
+        image: {{ include "corda.workerImage" . }}
+        imagePullPolicy:  {{ .Values.imagePullPolicy }}
+        securityContext:
+         allowPrivilegeEscalation: false
+        {{- include "corda.workerResources" . | nindent 8 }}
+        env:
+        {{- include "corda.workerEnv" . | nindent 10 }}
+        args:
+        {{- include "corda.workerKafkaArgs" . | nindent 10 }}
+        {{- if not .Values.workers.p2pGateway.useStubs}}
+          - "--without-stubs"
+        {{- end }}
+        volumeMounts:
+        {{- include "corda.workerVolumeMounts" . | nindent 10 }}
+        # Add health port when porting gateway to common worker framework CORE-4424
+        ports:
+          - name: http
+            containerPort: {{ .Values.workers.p2pGateway.service.port }}
+        {{- if .Values.workers.p2pGateway.debug.enabled }}
+          - name: debug
+            containerPort: 5005
+        {{- end }}
+      volumes:
+      {{- include "corda.workerVolumes" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
