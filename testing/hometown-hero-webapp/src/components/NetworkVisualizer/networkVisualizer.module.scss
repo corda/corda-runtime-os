@@ -1,0 +1,26 @@
+@import '@/commonStyles/breakpoints.module.scss';
+
+.networkVizWrapper {
+    width: 900px;
+    height: 500px;
+    border: 1px solid rgba(0, 0, 0, 0.082);
+    border-radius: var(--rounded-xl);
+    background-color: white;
+    z-index: 1000;
+
+    @include tablet-down {
+        width: 600px;
+        height: 400px;
+    }
+
+    @include phone-only {
+        width: 90%;
+        height: 400px;
+        margin: auto;
+    }
+}
+
+.enlarged {
+    width: 90%;
+    height: 88%;
+}
