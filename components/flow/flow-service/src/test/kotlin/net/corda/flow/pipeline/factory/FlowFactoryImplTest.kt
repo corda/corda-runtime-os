@@ -10,6 +10,7 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCStartedFlow
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -76,6 +78,45 @@ class FlowFactoryImplTest {
         val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RPCStartedFlow
         assertTrue(result.logic is ExampleFlow1)
         assertEquals("result", result.invoke())
+    }
+
+    @Test
+    fun `create initiated flow throws flow fatal exception on error`() {
+        val flowStartContext = FlowStartContext().apply {
+            statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
+            initiatedBy = BOB_X500_HOLDING_IDENTITY
+            flowClassName = className
+            startArgs = args
+        }
+
+        whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
+        whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
+            .thenThrow(IllegalStateException())
+
+        assertThrows<FlowFatalException> {
+            flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)
+        }
+    }
+
+    @Test
+    fun `create flow throws flow fatal exception on error`() {
+        val startArgs = "args"
+        val flowStartContext = FlowStartContext().apply {
+            statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
+            initiatedBy = BOB_X500_HOLDING_IDENTITY
+            flowClassName = className
+        }
+        val flowStartEvent = StartFlow(). apply {
+            startContext = flowStartContext
+            flowStartArgs= startArgs
+        }
+
+        whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
+            .thenThrow(IllegalStateException())
+
+        assertThrows<FlowFatalException> {
+            flowFactory.createFlow(flowStartEvent, sandboxGroupContext)
+        }
     }
 
     class ExampleFlow1 : RPCStartableFlow {

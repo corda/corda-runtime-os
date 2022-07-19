@@ -81,7 +81,6 @@ class SessionEventHandler @Activate constructor(
             // will get the right failure eventually, so this is fine for now.
             throw FlowTransientException(
                 "Failed to create the flow sandbox: ${e.message}",
-                context,
                 e
             )
         }
@@ -108,8 +107,7 @@ class SessionEventHandler @Activate constructor(
         )
         throw FlowEventException(
             "Received a ${context.inputEventPayload.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
-                    "does not exist",
-            context
+                    "does not exist"
         )
     }
 }

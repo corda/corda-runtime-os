@@ -32,7 +32,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             getSessionsToClose(context.checkpoint, request)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, context, e)
+            throw FlowFatalException(e.message, e)
         }
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
@@ -56,7 +56,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, context, e)
+            throw FlowFatalException(e.message, e)
         }
 
         return if (hasNoSessionsOrAllClosed) {

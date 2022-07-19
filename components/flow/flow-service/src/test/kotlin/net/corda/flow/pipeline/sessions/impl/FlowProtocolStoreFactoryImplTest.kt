@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
@@ -54,7 +54,7 @@ class FlowProtocolStoreFactoryImplTest {
             )
         )
         val sandboxGroup = makeMockSandboxGroup()
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowFatalException> {
             FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
         }
     }
