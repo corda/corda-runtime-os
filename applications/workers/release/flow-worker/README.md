@@ -15,10 +15,14 @@ You have built a CPB with the flow you want to use for running the flow worker:
 ```shell
 ./gradlew testing:cpbs:flow-worker-dev:build
 ```
-2) At the time of writing we need to manually add a policy file, this step should be replaced with build tool in future
-versions. 
-In the same directory as your built CBP add a file called ```GroupPolicy.json``` (the name is case-sensitive)
-in the file put the following json ```{  "groupId": "placeholder" }```
+2) Generate a GroupPolicy file for the CPB. This can be done using the corda-cli. 
+More information about GroupPolicy files can be found at https://github.com/corda/corda-runtime-os/wiki/Group-Policy.
+Example command to generate a GroupPolicy:
+```shell
+./gradlew build
+./build/generatedScripts/corda-cli.sh mgm groupPolicy --name="CN=Alice, OU=Application, O=R3, L=London, C=GB" --name="CN=Bob, OU=Application, O=R3, L=London, C=GB" --endpoint-protocol=1 --endpoint="http://localhost:1080" >> GroupPolicy.json
+```  
+In the same directory as your built CBP add the file called ```GroupPolicy.json``` (the name is case-sensitive)
 
 
 3) Add the policy file to the CBP
@@ -70,18 +74,19 @@ This should yield are result similar to this
 ```json
 {
    "status":"OK",
-   "checksum":"A893413A9921"
+   "checksum":"B669663F74EA"
 }
 ```
 3) Create a virtual node using the checksum returned from the step above
 ```shell
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "A893413A9921", "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB"  } }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice"  } }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob"  } }' https://localhost:8888/api/v1/virtualnode
 ```
 
-This should yield a result similar to this:
+This should yield a result similar to this for first request:
 ```json
 {
-  "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB",
+  "x500Name": "C=GB, L=London, O=Alice",
   "cpiId": {
     "cpiName": "flow-worker-dev",
     "cpiVersion": "5.0.0.0-SNAPSHOT",
@@ -89,13 +94,20 @@ This should yield a result similar to this:
   },
   "cpiFileChecksum": "36241F2D1E16F158E2CB8559627A6D481D3F358FF5250A2DDF933CF2D454C10E",
   "mgmGroupId": "placeholder",
-  "holdingIdHash": "F30413C5C7E2",
+  "holdingIdHash": "3B8DECDDD6E2",
   "vaultDdlConnectionId": "d1b8e8a9-c8f1-43dc-ae1d-0f7b9864e07f",
   "vaultDmlConnectionId": "73c26a59-8a65-4169-8582-a184c443dd03",
   "cryptoDdlConnectionId": "ff8b9da4-6643-4951-b8cc-e12e3c90c190",
   "cryptoDmlConnectionId": "fe559d69-e200-45ea-a9a4-b5aafe6ff2d1"
 }
 ```
+4) Register the members to the network
+
+```shell
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/44D0F817B592
+```
+
 ### Running the Flow Worker
 The flow worker can be run from the command line using:
 ```shell
@@ -115,8 +127,15 @@ or it can be run/debugged direct from intelliJ:
 
 1) Start the flow:
 ```shell
-curl --insecure -u admin:admin -X PUT -d '{ "requestBody": "{\"inputValue\":\"hello\", \"memberInfoLookup\":\"CN=Bob, O=Bob Corp, L=LDN, 
-C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1/net.cordapp.flowworker.development.flows.TestFlow
+curl --insecure -u admin:admin -X 'POST' \
+  'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
+  -d '{
+  "httpStartFlow": {
+    "clientRequestId": "request1",
+    "flowClassName": "net.cordapp.flowworker.development.flows.MessagingFlow",
+    "requestData": "{\"counterparty\": \"C=GB, L=London, O=Bob\"}"
+  }
+}'
 ```
 The holding ID is taken from the output of the 'create virtual node' step
 
