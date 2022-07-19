@@ -31,24 +31,33 @@ zip [CPB file path]  -j ~/GroupPolicy.json
 ```
 (zip will need to be installed on WSL 'sudo apt-get install zip')
 
-### Start Docker Compose
-We only need to run the minimum set of components we need for the flow worker. for dev/debug you can optionally omit
-the flow-worker container and run the flow worker jar directly from the IDE.
+### Deploy Workers
+Follow the helm charts under the /charts directory to deploy the workers. 
 
-1) cd into the deploy directory containing the docker compose file
- ```shell
-cd applications\workers\release\deploy
-```
+Example run:
 
-2) start the containers
 ```shell
-docker-compose up corda-cluster-db rpc-worker init-kafka kafka zookeeper db-worker
+kubectl delete ns corda
+kubectl config get-contexts
+kubectl config use-context docker-desktop
+kubectl create namespace corda
+kubectl config set-context --current --namespace=corda
+
+helm install prereqs -n corda `
+  oci://corda-os-docker.software.r3.com/helm-charts/corda-prereqs `
+  --set kafka.replicaCount=1,kafka.zookeeper.replicaCount=1 `
+  --render-subchart-notes `
+  --timeout 10m `
+  --wait
+
+helm upgrade --install corda -n corda `
+  oci://corda-os-docker.software.r3.com/helm-charts/corda `
+  --version ^0.1.0-beta `
+  --values values.yaml `
+  --wait
+
+kubectl port-forward --namespace corda deployment/corda-rpc-worker 8888
 ```
-
-Currently, all the containers will start quite quickly, but you must check the kafka-init task has completed before you 
-attempt to use them. this can take quite a few minutes. Either monitor the container using the docker desktop/ docker cli, 
-or the wait for logs to stop moving in the console window used to run the docker-compose command above. 
-
 
 ### Uploading the CBP and creating the Virtual Node
 
@@ -57,6 +66,7 @@ instructions below are for using curl.
 1) upload the CPI (CPB file created in previous steps, assuming you're running the command from the same directory as the CBP file.)
 ```shell
 curl --insecure -u admin:admin  -s -F upload=@./flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v1/cpi/
+
 ```
 
 This should yield a result similar to this:
@@ -107,21 +117,6 @@ This should yield a result similar to this for first request:
 curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
 curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/44D0F817B592
 ```
-
-### Running the Flow Worker
-The flow worker can be run from the command line using:
-```shell
-java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 -mkafka.common.bootstrap.servers=localhost:9093 
-```
-
-or it can be run/debugged direct from intelliJ:
-1) Create a run/build configuration of type Jar Application
-2) Set the field with the following values
-   1) Path to Jar: Set to the flow worker jar in `applications\workers\release\flow-worker\build\bin\`
-   2) VM options: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008'
-   3) Program arguments: '--instanceId=1 -mkafka.common.bootstrap.servers=localhost:9093'
-   4) Leaver everything else as-is
-3) Add the following gradle task in the Before Launch section 'applications.workers.release.flow-worker.main:appJar'
 
 ### Calling the flow and testing for a result
 
