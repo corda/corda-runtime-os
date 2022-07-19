@@ -1266,11 +1266,11 @@
         }, {
           "name" : "keyid",
           "in" : "path",
-          "description" : "The Key ID.",
+          "description" : "The Key ID. Or an error code if not found.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The Key ID.",
+            "description" : "The Key ID. Or an error code if not found.",
             "nullable" : false,
             "example" : "string"
           }
