@@ -23,7 +23,7 @@ internal class VerificationRequestHandler(
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
     private companion object {
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val TTL = 1000L
+        const val TTL = 300000L
     }
 
     private val responseSerializer = cordaAvroSerializationFactory.createAvroSerializer<VerificationResponse> {  }

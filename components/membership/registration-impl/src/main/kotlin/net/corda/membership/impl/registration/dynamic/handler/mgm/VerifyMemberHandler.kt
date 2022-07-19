@@ -29,7 +29,7 @@ class VerifyMemberHandler(
 
     private companion object {
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val TTL = 1000L
+        const val TTL = 300000L
     }
 
     private val requestSerializer = cordaAvroSerializationFactory.createAvroSerializer<VerificationRequest> {  }
