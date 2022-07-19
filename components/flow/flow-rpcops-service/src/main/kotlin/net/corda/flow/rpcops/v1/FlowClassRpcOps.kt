@@ -1,6 +1,6 @@
 package net.corda.flow.rpcops.v1
 
-import net.corda.flow.rpcops.v1.types.response.HTTPStartableFlowsResponse
+import net.corda.flow.rpcops.v1.types.response.StartableFlowsResponse
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPathParameter
@@ -23,5 +23,5 @@ interface FlowClassRpcOps : RpcOps {
     fun getStartableFlows(
         @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
         holderShortId: String
-    ): HTTPStartableFlowsResponse
+    ): StartableFlowsResponse
 }

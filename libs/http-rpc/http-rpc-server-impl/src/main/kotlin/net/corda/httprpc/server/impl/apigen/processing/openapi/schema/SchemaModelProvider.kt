@@ -106,41 +106,47 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
 
     override fun toSchemaModel(param: EndpointParameter): SchemaModel {
         log.debug { """To schema model from endpointParameter: "$param".""" }
-        val parameterizedClass = ParameterizedClass(param.classType, param.parameterizedTypes)
-        return schemaModelContextHolder.getSchema(parameterizedClass)?.let {
-            SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!)
-        }?.also {
-            it.required = param.required
-            it.nullable = param.nullable
-            log.debug { """Schema for class: "${param.classType}" found in context. To schema model from endpointParameter completed.""" }
-        } ?: getBuilderFor(param.classType).build(param.classType, param.parameterizedTypes).applyMetaInfo(param)
+        val parameterizedClass = ParameterizedClass(param.classType, param.parameterizedTypes, param.nullable)
             .apply {
-                if (this !is SchemaObjectModel) this.example = param.classType.toExample()
+                required = param.required
+                name = param.name
+                description = param.description
             }
-            .let {
-                returnOrRegisterAndReturnRef(it, parameterizedClass)
-            }.also {
-                log.debug { """To schema model from endpointParameter: "$param" completed.""" }
-            }
+        return getExistingSchemaRefOrNull(parameterizedClass)
+            ?: buildAndRegisterNewSchema(parameterizedClass)
     }
 
     override fun toSchemaModel(parameterizedClass: ParameterizedClass): SchemaModel {
         log.debug { """To schema model for class: "$parameterizedClass".""" }
+        return getExistingSchemaRefOrNull(parameterizedClass)
+            ?: buildAndRegisterNewSchema(parameterizedClass)
+    }
+
+    private fun buildAndRegisterNewSchema(parameterizedClass: ParameterizedClass): SchemaModel {
+        return getBuilderFor(parameterizedClass.clazz)
+            .build(parameterizedClass.clazz, parameterizedClass.parameterizedClassList)
+            .apply {
+                if (this !is SchemaObjectModel) this.example = parameterizedClass.clazz.toExample()
+                if(!parameterizedClass.name.isNullOrBlank()) name = parameterizedClass.name
+                if(!parameterizedClass.description.isNullOrBlank()) description = parameterizedClass.description
+            }.let {
+                returnOrRegisterAndReturnRef(it, parameterizedClass)
+            }.also {
+                // apply nullable and required to the returned model. It won't be a SchemaObjectModel.
+                it.required = parameterizedClass.required
+                it.nullable = parameterizedClass.nullable
+                log.debug { """To schema model for class: "$parameterizedClass" completed.""" }
+            }
+    }
+
+    private fun getExistingSchemaRefOrNull(parameterizedClass: ParameterizedClass) : SchemaRefObjectModel? {
         return schemaModelContextHolder.getSchema(parameterizedClass)?.let {
             SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!)
         }?.also {
+            // we set required and nullable on a reference to an object in the schema
+            it.required = parameterizedClass.required
             it.nullable = parameterizedClass.nullable
             log.debug { """Schema for class: "$parameterizedClass" found in context. To schema model completed.""" }
-        } ?: getBuilderFor(parameterizedClass.clazz).build(
-            parameterizedClass.clazz,
-            parameterizedClass.parameterizedClassList
-        ).apply {
-            this.nullable = parameterizedClass.nullable
-            if (this !is SchemaObjectModel) this.example = parameterizedClass.clazz.toExample()
-        }.let {
-            returnOrRegisterAndReturnRef(it, parameterizedClass)
-        }.also {
-            log.debug { """To schema model for class: "$parameterizedClass" completed.""" }
         }
     }
 
@@ -164,12 +170,5 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
             log.trace { """Return or register and return ref for class: "${parameterizedClass.clazz}", 
                 |model: "$model", returned model: "$it" completed.""".trimMargin() }
         }
-    }
-
-    private fun SchemaModel.applyMetaInfo(param: EndpointParameter) = this.apply {
-        this.name = param.name
-        if(param.description.isNotBlank()) this.description = param.description
-        this.required = param.required
-        this.nullable = param.nullable
     }
 }
