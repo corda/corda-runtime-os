@@ -2,7 +2,6 @@ package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.cpi.upload.endpoints.v1.CpiUploadRPCOpsImpl.Companion.logger
 import net.corda.data.chunking.PropertyKeys
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -55,10 +54,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
         publisherFactory: PublisherFactory
     ) : this(coordinatorFactory, configReadService, cpiUploadRPCOpsService, publisherFactory, UTCClock())
 
-    private var rpcSender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
-
     companion object {
-        // The configuration used for the RPC sender.
+        /** The configuration used for the RPC sender. */
         private val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
@@ -77,6 +74,11 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
 
     override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java
 
+    // Factory generated instance of the RPCSender, represents a pubsub of <RequestType, ResponseType>.
+    //  Set/updated from VirtualNodeMaintenanceRPCOpsHandler as a result of lifecycle events.
+    private var rpcSender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
+    // Request timeout for kafka operations.
+    //  All are set from VirtualNodeMaintenanceRPCOpsHandler.
     private var requestTimeout: Duration? = null
 
     override val isRunning get() = coordinator.isRunning
@@ -118,15 +120,19 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
         return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId)
     }
 
+    // Lookup and update the virtual node for the given virtual node short ID.
+    //  This will update the last instance of said virtual node, sorted by CPI version
+    @Suppress("ForbiddenComment")
     override fun updateVirtualNodeState(
         virtualNodeShortId: String,
         newState: String
     ): HTTPVirtualNodeStateChangeResponse {
-        logger.info(virtualNodeShortId)
         val instant = clock.instant()
-        // Validate newState
-
+        // Lookup actor to keep track of which RPC user triggered an update
         val actor = CURRENT_RPC_CONTEXT.get().principal
+        logger.debug("Received request to update state for $virtualNodeShortId to $newState by $actor at $instant")
+        // TODO: Validate newState
+        // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
             VirtualNodeStateChangeRequest(
@@ -135,8 +141,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
                 actor
             )
         )
-        val resp = sendRequest(rpcRequest)
-        logger.info(resp.responseType.toString())
+        // Actually send request and await response message on bus
+        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+        logger.debug("Received response to update for $virtualNodeShortId to $newState by $actor")
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
@@ -159,12 +166,13 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
     }
 
     /**
-     * Sends the [request] to the configuration management topic on Kafka.
+     * Sends the [request] to the configuration management topic on bus.
      *
      * @throws VirtualNodeRPCOpsServiceException If the updated configuration could not be published.
      */
     @Suppress("ThrowsCount")
-    private fun sendRequest(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
+    private fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
+        // Ensure rpcSender is set up.
         val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCMaintenanceOpsServiceException(
             "Configuration update request could not be sent as no RPC sender has been created."
         )
@@ -172,6 +180,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
             "Configuration update request could not be sent as the request timeout has not been set."
         )
         return try {
+            // Attempt to put request on the bus.
+            //  Auto fail if timeout window exceeded
             nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
         } catch (e: Exception) {
             throw VirtualNodeRPCMaintenanceOpsServiceException("Could not complete virtual node creation request.", e)

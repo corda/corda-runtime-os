@@ -131,13 +131,16 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
+    // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
     private fun changeVirtualNodeState(
         instant: Instant,
         stateChangeRequest: VirtualNodeStateChangeRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
+        // Get instance of entity manager to work against the DB
         val entityManager = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
 
+        // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
             virtualNodeEntityRepository.setVirtualNodeState(
                 entityManager,

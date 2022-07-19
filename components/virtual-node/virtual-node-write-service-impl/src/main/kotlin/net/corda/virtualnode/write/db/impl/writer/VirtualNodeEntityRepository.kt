@@ -147,6 +147,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
 
     internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdShortHash: String, newState: String) {
         entityManager.transaction {
+            // Lookup virtual node and grab the latest one based on the cpi Version.
             val latestVirtualNodeInstance = it.createQuery(
                 "SELECT vnode_instance FROM VirtualNodeEntity vnode_instance " +
                     "WHERE vnode_instance.holdingIdentity.holdingIdentityId = :shortVNodeId " +
