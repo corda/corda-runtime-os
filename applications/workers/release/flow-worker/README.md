@@ -32,7 +32,7 @@ zip [CPB file path]  -j ~/GroupPolicy.json
 (zip will need to be installed on WSL 'sudo apt-get install zip')
 
 ### Deploy Workers
-Follow the helm charts under the /charts directory to deploy the workers. 
+Follow the helm charts under the /charts directory to deploy the workers, postgres and kafka. 
 
 Example run:
 
