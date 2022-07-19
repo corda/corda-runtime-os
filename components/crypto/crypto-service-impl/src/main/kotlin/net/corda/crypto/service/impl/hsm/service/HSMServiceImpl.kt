@@ -17,8 +17,8 @@ import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMStat
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
-import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
+import net.corda.crypto.service.softhsm.SoftCryptoServiceConfig
+import net.corda.crypto.service.impl.softhsm.SoftCryptoService
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy

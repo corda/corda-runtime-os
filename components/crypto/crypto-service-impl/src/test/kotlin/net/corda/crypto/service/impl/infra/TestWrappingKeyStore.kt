@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
+import net.corda.crypto.persistence.wrapping.WrappingKeyStore
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.core.aes.WrappingKey
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 class TestSoftCryptoKeyStoreProvider(
     coordinatorFactory: LifecycleCoordinatorFactory
 ) : SoftCryptoKeyStoreProvider {
-    private val instance = TestSoftCryptoKeyStore()
+    private val instance = TestWrappingKeyStore()
 
     val coordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<SoftCryptoKeyStoreProvider>()
@@ -30,7 +30,7 @@ class TestSoftCryptoKeyStoreProvider(
         coordinator.stop()
     }
 
-    override fun getInstance(): SoftCryptoKeyStore {
+    override fun getInstance(): WrappingKeyStore {
         check(isRunning) {
             "The provider is in invalid state."
         }
@@ -38,7 +38,7 @@ class TestSoftCryptoKeyStoreProvider(
     }
 }
 
-class TestSoftCryptoKeyStore : SoftCryptoKeyStore {
+class TestWrappingKeyStore : WrappingKeyStore {
     val keys = ConcurrentHashMap<String, WrappingKey>()
     override fun act(): SoftCryptoKeyStoreActions = TestSoftCryptoKeyStoreActions(keys)
     override fun close() = Unit

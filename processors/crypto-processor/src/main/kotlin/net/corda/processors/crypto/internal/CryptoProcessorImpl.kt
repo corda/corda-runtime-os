@@ -18,7 +18,7 @@ import net.corda.crypto.service.HSMConfigurationBusService
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.SoftCryptoServiceProvider
+import net.corda.crypto.service.softhsm.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager

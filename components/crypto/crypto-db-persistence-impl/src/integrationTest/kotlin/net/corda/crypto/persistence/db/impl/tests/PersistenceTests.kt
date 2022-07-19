@@ -22,8 +22,8 @@ import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.impl.hsm.HSMStoreImpl
-import net.corda.crypto.persistence.db.impl.signing.SigningKeyStoreImpl
-import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyStoreImpl
+import net.corda.crypto.persistence.db.impl.SigningKeyStoreImpl
+import net.corda.crypto.persistence.db.impl.WrappingKeyStoreImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
@@ -371,7 +371,7 @@ class PersistenceTests {
         entityManagerFactory = cryptoEmf
     )
 
-    private fun createSoftCryptoKeyCacheImpl() = SoftCryptoKeyStoreImpl(
+    private fun createSoftCryptoKeyCacheImpl() = WrappingKeyStoreImpl(
         config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).softPersistence(),
         entityManagerFactory = cryptoEmf,
         masterKey = WrappingKey.generateWrappingKey(schemeMetadata)

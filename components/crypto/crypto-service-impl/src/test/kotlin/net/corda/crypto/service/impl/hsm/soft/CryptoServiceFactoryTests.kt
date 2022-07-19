@@ -1,8 +1,9 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.service.SoftCryptoServiceConfig
+import net.corda.crypto.service.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy

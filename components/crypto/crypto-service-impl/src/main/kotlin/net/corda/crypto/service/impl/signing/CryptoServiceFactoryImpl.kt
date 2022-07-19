@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.hsm.soft
+package net.corda.crypto.service.impl.signing
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -15,9 +15,7 @@ import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CryptoService
@@ -33,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Component(service = [CryptoServiceFactory::class])
 class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMService::class)
@@ -54,18 +52,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
                     it.lifecycleName
                 }
     ),
-    configKeys = setOf(
-        MESSAGING_CONFIG,
-        BOOT_CONFIG,
-        CRYPTO_CONFIG
-    )
+    configKeys = setOf(CRYPTO_CONFIG)
 ), CryptoServiceFactory {
     companion object {
         private val logger = contextLogger()
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        coordinatorFactory,
         event,
         hsmRegistrar,
         cryptoServiceProviders
@@ -81,11 +74,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
         impl.getInstance(tenantId, category, associationId)
 
     class Impl(
-        coordinatorFactory: LifecycleCoordinatorFactory,
         event: ConfigChangedEvent,
         private val hsmRegistrar: HSMService,
         cryptoServiceProviders: List<CryptoServiceProvider<*>>
-    ) : AbstractImpl {
+    ) : DownstreamAlwaysUpAbstractImpl() {
         private val cryptoServiceProvidersMap: Map<String, CryptoServiceProvider<*>> =
             cryptoServiceProviders.associateBy { it.name }
 
@@ -166,17 +158,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 associationId = association.id,
                 instance = getInstance(association.config.info, association.config.serviceConfig)
             )
-        }
-
-        private val _downstream = DependenciesTracker.AlwaysUp(
-            coordinatorFactory,
-            this
-        ).also { it.start() }
-
-        override val downstream: DependenciesTracker = _downstream
-
-        override fun close() {
-            _downstream.close()
         }
     }
 }

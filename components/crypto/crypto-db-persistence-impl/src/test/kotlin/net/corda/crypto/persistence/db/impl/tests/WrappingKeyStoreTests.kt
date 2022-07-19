@@ -1,7 +1,6 @@
-package net.corda.crypto.persistence.db.impl.tests.soft
+package net.corda.crypto.persistence.db.impl.tests
 
-import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyStoreProviderImpl
-import net.corda.crypto.persistence.db.impl.tests.infra.TestConfigurationReadService
+import net.corda.crypto.persistence.db.impl.WrappingKeyStoreImpl
 import net.corda.crypto.persistence.db.impl.tests.infra.TestDbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -19,23 +18,15 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertSame
 
-class SoftCryptoKeyStoreProviderTests {
-    private lateinit var configurationReadService: TestConfigurationReadService
+class WrappingKeyStoreTests {
     private lateinit var dbConnectionManager: TestDbConnectionManager
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var component: SoftCryptoKeyStoreProviderImpl
+    private lateinit var component: WrappingKeyStoreImpl
 
     @BeforeEach
     fun setup() {
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        configurationReadService = TestConfigurationReadService(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertTrue(it.isRunning)
-            }
-        }
         dbConnectionManager = TestDbConnectionManager(coordinatorFactory).also {
             it.start()
             eventually {
@@ -45,69 +36,60 @@ class SoftCryptoKeyStoreProviderTests {
         whenever(dbConnectionManager._mock.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)).doReturn(
             mock()
         )
-        component = SoftCryptoKeyStoreProviderImpl(
+        component = WrappingKeyStoreImpl(
             coordinatorFactory,
-            configurationReadService,
-            dbConnectionManager,
-            mock()
+            dbConnectionManager
         )
     }
 
     @Test
     fun `Should create ActiveImpl only after the component is up`() {
         assertFalse(component.isRunning)
-        assertThrows<IllegalStateException> { component.impl.getInstance() }
+        assertThrows<IllegalStateException> { component.impl }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.getInstance())
+        assertNotNull(component.impl)
     }
 
     @Test
-    fun `Should use InactiveImpl when component is stopped`() {
+    fun `Should not use ActiveImpl when component is stopped`() {
         assertFalse(component.isRunning)
-        assertThrows<IllegalStateException> { component.impl.getInstance() }
+        assertThrows<IllegalStateException> { component.impl }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.getInstance())
+        assertNotNull(component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertThrows<IllegalStateException> { component.impl.getInstance() }
+        assertThrows<IllegalStateException> { component.impl }
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertThrows<IllegalStateException> { component.impl.getInstance() }
+        assertThrows<IllegalStateException> { component.impl }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val instance11 = component.impl.getInstance()
-        val instance12 = component.impl.getInstance()
-        assertNotNull(instance11)
-        assertSame(instance11, instance12)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        dbConnectionManager.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        dbConnectionManager.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val instance21 = component.impl.getInstance()
-        val instance22 = component.impl.getInstance()
-        assertNotNull(instance21)
-        assertSame(instance21, instance22)
+        assertNotNull(component.impl)
     }
 }
 

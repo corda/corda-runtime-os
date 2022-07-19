@@ -1,9 +1,10 @@
-package net.corda.crypto.service.impl.hsm.soft
+package net.corda.crypto.service.impl.softhsm
 
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
-import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
+import net.corda.crypto.service.softhsm.SoftKeyMap
+import net.corda.crypto.service.softhsm.SoftWrappingKeyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -13,7 +14,6 @@ import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.KeyMaterialSpec
 import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningSpec
@@ -37,7 +37,8 @@ import java.security.Provider
 import javax.crypto.Cipher
 
 open class SoftCryptoService(
-    private val store: SoftCryptoKeyStore,
+    private val keyMap: SoftKeyMap,
+    private val wrappingKeyMap: SoftWrappingKeyMap,
     private val schemeMetadata: CipherSchemeMetadata,
     private val digestService: DigestService
 ) : CryptoService {
@@ -122,19 +123,17 @@ open class SoftCryptoService(
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
         val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
-        store.act {
-            if (it.findWrappingKey(masterKeyAlias) != null) {
-                if (failIfExists) {
-                    throw IllegalStateException("There is an existing key with the alias: $masterKeyAlias")
-                } else {
-                    logger.info(
-                        "Wrapping with alias '$masterKeyAlias' already exists, " +
-                                "continue as normal as failIfExists is false"
-                    )
-                }
+        if (wrappingKeyMap.exists(masterKeyAlias)) {
+            if (failIfExists) {
+                throw IllegalStateException("There is an existing key with the alias: $masterKeyAlias")
             } else {
-                it.saveWrappingKey(masterKeyAlias, wrappingKey, failIfExists)
+                logger.info(
+                    "Wrapping with alias '$masterKeyAlias' already exists, " +
+                            "continue as normal as failIfExists is false"
+                )
             }
+        } else {
+            wrappingKeyMap.putWrappingKey(masterKeyAlias, wrappingKey)
         }
     }
 
@@ -157,13 +156,14 @@ open class SoftCryptoService(
         }
         logger.info("deriveSharedSecret(spec={})", spec)
         val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
-        return deriveDHSharedSecret(provider, getPrivateKey(spec.keyMaterialSpec), spec.otherPublicKey)
+        return deriveDHSharedSecret(
+            provider,
+            keyMap.getPrivateKey(spec.publicKey, spec.keyMaterialSpec),
+            spec.otherPublicKey
+        )
     }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
-        require(!spec.masterKeyAlias.isNullOrBlank()) {
-            "The masterKeyAlias is not specified"
-        }
         require(supportedSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
@@ -173,8 +173,6 @@ open class SoftCryptoService(
             spec.masterKeyAlias,
             spec.keyScheme.codeName
         )
-        val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
-            ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
         val keyPairGenerator = KeyPairGenerator.getInstance(
             spec.keyScheme.algorithmName,
             providerFor(spec.keyScheme)
@@ -185,10 +183,11 @@ open class SoftCryptoService(
             keyPairGenerator.initialize(spec.keyScheme.keySize!!, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
+        val privateKeyMaterial = keyMap.wrapPrivateKey(keyPair, spec.masterKeyAlias)
         return GeneratedWrappedKey(
             publicKey = keyPair.public,
-            keyMaterial = wrappingKey.wrap(keyPair.private),
-            encodingVersion = 1
+            keyMaterial = privateKeyMaterial.keyMaterial,
+            encodingVersion = privateKeyMaterial.encodingVersion
         )
     }
 
@@ -206,16 +205,7 @@ open class SoftCryptoService(
             "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
         logger.debug { "sign(spec=$spec)" }
-        return sign(spec, getPrivateKey(spec.keyMaterialSpec), data)
-    }
-
-    private fun getPrivateKey(spec: KeyMaterialSpec): PrivateKey {
-        require(!spec.masterKeyAlias.isNullOrBlank()) {
-            "The masterKeyAlias is not specified"
-        }
-        val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
-            ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
-        return wrappingKey.unwrap(spec.keyMaterial)
+        return sign(spec, keyMap.getPrivateKey(spec.publicKey, spec.keyMaterialSpec), data)
     }
 
     private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {

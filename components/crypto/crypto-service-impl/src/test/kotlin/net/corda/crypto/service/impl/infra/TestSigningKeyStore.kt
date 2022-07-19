@@ -3,7 +3,6 @@ package net.corda.crypto.service.impl.infra
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyStore
-import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
 import net.corda.crypto.persistence.signing.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
@@ -57,8 +56,8 @@ class TestSigningKeyStoreProvider(
 }
 
 class TestSigningKeyStore : SigningKeyStore {
-    private val actions = ConcurrentHashMap<String, SigningKeyStoreActions>()
-    override fun act(tenantId: String): SigningKeyStoreActions =
+    private val actions = ConcurrentHashMap<String, SigningKeyStore>()
+    override fun act(tenantId: String): SigningKeyStore =
         actions.computeIfAbsent(tenantId) { TestSigningKeyStoreActions(tenantId) }
 
     override fun close() = Unit
@@ -66,7 +65,7 @@ class TestSigningKeyStore : SigningKeyStore {
 
 class TestSigningKeyStoreActions(
     private val tenantId: String
-) : SigningKeyStoreActions {
+) : SigningKeyStore {
     private val keys = ConcurrentHashMap<String, SigningCachedKey>()
 
     override fun save(context: SigningKeySaveContext) {

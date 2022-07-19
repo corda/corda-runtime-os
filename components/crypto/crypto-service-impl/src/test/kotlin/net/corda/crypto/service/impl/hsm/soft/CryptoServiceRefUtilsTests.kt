@@ -8,6 +8,11 @@ import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
+import net.corda.crypto.service.impl.signing.deriveSharedSecret
+import net.corda.crypto.service.impl.signing.generateKeyPair
+import net.corda.crypto.service.impl.signing.getSupportedSchemes
+import net.corda.crypto.service.impl.signing.sign
+import net.corda.crypto.service.impl.signing.toSaveKeyContext
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

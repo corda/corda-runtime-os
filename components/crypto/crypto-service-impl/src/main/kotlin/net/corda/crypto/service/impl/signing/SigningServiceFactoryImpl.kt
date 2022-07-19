@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.component.impl.AbstractComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
@@ -25,46 +26,43 @@ class SigningServiceFactoryImpl @Activate constructor(
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory
 ) : AbstractComponent<SigningServiceFactoryImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
-        LifecycleCoordinatorName.forComponent<CryptoServiceFactory>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
+            LifecycleCoordinatorName.forComponent<CryptoServiceFactory>()
+        )
     )
 ), SigningServiceFactory {
     companion object {
         private val logger = contextLogger()
     }
 
-    interface Impl : AutoCloseable {
-        fun getInstance(): SigningService
-        override fun close() = Unit
-    }
-
-    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, storeProvider, cryptoServiceFactory)
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, storeProvider, cryptoServiceFactory)
 
     override fun getInstance(): SigningService =
         impl.getInstance()
 
-    internal class InactiveImpl : Impl {
-        override fun getInstance(): SigningService =
-            throw IllegalStateException("The component is in invalid state.")
-    }
-
-    internal class ActiveImpl(
+    class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val storeProvider: SigningKeyStoreProvider,
         private val cryptoServiceFactory: CryptoServiceFactory
-    ) : Impl {
+    ) : AbstractImpl {
         private val lock = Any()
 
         @Volatile
         private var signingService: SigningService? = null
 
-        override fun getInstance(): SigningService {
+        override fun onRegistrationStatusChange(upstreamIsUp: Boolean) {
+            if(!upstreamIsUp) {
+                synchronized(lock) {
+                    signingService = null
+                }
+            }
+        }
+
+        fun getInstance(): SigningService {
             logger.debug { "Getting the signing service." }
             return if (signingService != null) {
                 signingService!!

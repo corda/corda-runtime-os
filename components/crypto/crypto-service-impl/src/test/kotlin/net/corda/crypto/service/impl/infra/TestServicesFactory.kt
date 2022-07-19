@@ -10,11 +10,11 @@ import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.service.SoftCryptoServiceProvider
+import net.corda.crypto.service.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
-import net.corda.crypto.service.impl.hsm.soft.CryptoServiceFactoryImpl
+import net.corda.crypto.service.impl.softhsm.SoftCryptoService
+import net.corda.crypto.service.impl.softhsm.SoftCryptoServiceProviderImpl
+import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -141,8 +141,8 @@ class TestServicesFactory {
         signingKeyStoreProvider.getInstance() as TestSigningKeyStore
     }
 
-    val softCache: TestSoftCryptoKeyStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        softCryptoKeyStoreProvider.getInstance() as TestSoftCryptoKeyStore
+    val softCache: TestWrappingKeyStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        softCryptoKeyStoreProvider.getInstance() as TestWrappingKeyStore
     }
 
     val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {

@@ -5,6 +5,7 @@ import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.service.impl.softhsm.SoftCryptoService
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

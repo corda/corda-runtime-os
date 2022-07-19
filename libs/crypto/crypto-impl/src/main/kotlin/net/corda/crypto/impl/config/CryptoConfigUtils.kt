@@ -2,7 +2,6 @@ package net.corda.crypto.impl.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.util.UUID
 import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.aes.AesEncryptor
 import net.corda.crypto.core.aes.AesKey
@@ -12,6 +11,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.failures.CryptoException
+import java.util.UUID
 
 /*
 {
@@ -23,6 +23,51 @@ import net.corda.v5.crypto.failures.CryptoException
             }
         }
     },
+    "cryptoConnectionFactory: {
+        "connectionsExpireAfterAccessMins": 5,
+        "connectionNumberLimit": 3
+    },
+    "softHSM": {
+        "maxAttempts": 3,
+        "attemptTimeoutMills": 20000,
+        "salt": "<plain-text-value>",
+        "passphrase": {
+            "configSecret": {
+                "encryptedSecret": "<encrypted-value>"
+            }
+        },
+        "keyMap": {
+            "name": "CACHING",
+            "cache": {
+                "expireAfterAccessMins": 60,
+                "maximumSize": 1000
+            }
+        },
+        "wrappingKeyMap": {
+            "name": "CACHING",
+            "cache": {
+                "expireAfterAccessMins": 60,
+                "maximumSize": 1000
+            }
+        },
+        "wrapping": {
+            "name": "DEFAULT",
+            "hsm": {
+                "name": ".."
+                "config": {
+                }
+            }
+        }
+    },
+    "signingService": {
+        "cache": {
+            "expireAfterAccessMins": 60,
+            "maximumSize": 1000
+        }
+    },
+
+
+
     "softPersistence": {
         "expireAfterAccessMins": 240,
         "maximumSize": 1000,
@@ -39,9 +84,7 @@ import net.corda.v5.crypto.failures.CryptoException
         "keysExpireAfterAccessMins": 90,
         "keyNumberLimit": 20,
         "vnodesExpireAfterAccessMins": 120,
-        "vnodeNumberLimit": 100,
-        "connectionsExpireAfterAccessMins": 15,
-        "connectionNumberLimit": 2
+        "vnodeNumberLimit": 100
     },
     "hsmPersistence": {
         "expireAfterAccessMins": 240,
@@ -71,8 +114,13 @@ import net.corda.v5.crypto.failures.CryptoException
 }
  */
 
-private const val ROOT_KEY_PASSPHRASE = "rootKey.passphrase"
 private const val ROOT_KEY_SALT = "rootKey.salt"
+private const val ROOT_KEY_PASSPHRASE = "rootKey.passphrase"
+private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
+private const val SOFT_HSM_OBJ = "softHSM"
+private const val SIGNING_SERVICE_OBJ = "signingService"
+
+
 private const val SOFT_PERSISTENCE_OBJ = "softPersistence"
 private const val SIGNING_PERSISTENCE_OBJ = "signingPersistence"
 private const val HSM_PERSISTENCE_OBJ = "hsmPersistence"
@@ -113,32 +161,32 @@ fun SmartConfig.addDefaultBootCryptoConfig(
     fallbackCryptoRootKey: KeyCredentials,
     fallbackSoftKey: KeyCredentials
 ): SmartConfig {
-    val cryptoLibrary = if(hasPath(BOOT_CRYPTO)) {
+    val cryptoLibrary = if (hasPath(BOOT_CRYPTO)) {
         getConfig(BOOT_CRYPTO)
     } else {
         null
     }
-    val cryptoRootKeyPassphrase = if(cryptoLibrary?.hasPath(ROOT_KEY_PASSPHRASE) == true) {
+    val cryptoRootKeyPassphrase = if (cryptoLibrary?.hasPath(ROOT_KEY_PASSPHRASE) == true) {
         cryptoLibrary.getString(ROOT_KEY_PASSPHRASE)
     } else {
         fallbackCryptoRootKey.passphrase
     }
-    val cryptoRootKeySalt = if(cryptoLibrary?.hasPath(ROOT_KEY_SALT) == true) {
+    val cryptoRootKeySalt = if (cryptoLibrary?.hasPath(ROOT_KEY_SALT) == true) {
         cryptoLibrary.getString(ROOT_KEY_SALT)
     } else {
         fallbackCryptoRootKey.salt
     }
-    val softPersistenceConfig = if(cryptoLibrary?.hasPath(SOFT_PERSISTENCE_OBJ) == true) {
+    val softPersistenceConfig = if (cryptoLibrary?.hasPath(SOFT_PERSISTENCE_OBJ) == true) {
         cryptoLibrary.getConfig(SOFT_PERSISTENCE_OBJ)
     } else {
         null
     }
-    val softKeyPassphrase = if(softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::passphrase.name) == true) {
+    val softKeyPassphrase = if (softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::passphrase.name) == true) {
         softPersistenceConfig.getString(CryptoSoftPersistenceConfig::passphrase.name)
     } else {
         fallbackSoftKey.passphrase
     }
-    val softKeySoft = if(softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::salt.name) == true) {
+    val softKeySoft = if (softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::salt.name) == true) {
         softPersistenceConfig.getString(CryptoSoftPersistenceConfig::salt.name)
     } else {
         fallbackSoftKey.salt
@@ -168,6 +216,56 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                 )
             )
             .withValue(
+                CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
+                    mapOf(
+                        CryptoConnectionsFactoryConfig::connectionsExpireAfterAccessMins.name to "5",
+                        CryptoConnectionsFactoryConfig::connectionNumberLimit.name to "3"
+                    )
+                )
+            )
+            .withValue(
+                SOFT_HSM_OBJ, ConfigValueFactory.fromMap(
+                    mapOf(
+                        CryptoSoftHSMConfig::maxAttempts.name to "3",
+                        CryptoSoftHSMConfig::attemptTimeoutMills.name to "20000",
+                        CryptoSoftHSMConfig::salt.name to softKey.salt,
+                        CryptoSoftHSMConfig::passphrase.name to ConfigValueFactory.fromMap(
+                            makeSecret(softKey.passphrase).root().unwrapped()
+                        ),
+                        CryptoSoftHSMConfig::keyMap.name to mapOf(
+                            CryptoSoftHSMConfig.Map::name.name to KEY_MAP_CACHING_NAME,
+                            CryptoSoftHSMConfig.Map::cache.name to mapOf(
+                                CryptoSoftHSMConfig.Cache::expireAfterAccessMins.name to "60",
+                                CryptoSoftHSMConfig.Cache::maximumSize.name to "1000"
+                            )
+                        ),
+                        CryptoSoftHSMConfig::wrappingKeyMap.name to mapOf(
+                            CryptoSoftHSMConfig.Map::name.name to KEY_MAP_CACHING_NAME,
+                            CryptoSoftHSMConfig.Map::cache.name to mapOf(
+                                CryptoSoftHSMConfig.Cache::expireAfterAccessMins.name to "60",
+                                CryptoSoftHSMConfig.Cache::maximumSize.name to "100"
+                            )
+                        ),
+                        CryptoSoftHSMConfig::wrapping.name to mapOf(
+                            CryptoSoftHSMConfig.Wrapping::name.name to WRAPPING_DEFAULT_NAME,
+                            CryptoSoftHSMConfig.Wrapping::hsm.name to emptyMap<String, String>()
+                        )
+                    )
+                )
+            )
+            .withValue(
+                SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
+                    mapOf(
+                        CryptoSigningServiceConfig::cache.name to mapOf(
+                            CryptoSigningServiceConfig.Cache::expireAfterAccessMins.name to "60",
+                            CryptoSigningServiceConfig.Cache::maximumSize.name to "1000"
+                        )
+                    )
+                )
+            )
+
+
+            .withValue(
                 SOFT_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         CryptoSoftPersistenceConfig::expireAfterAccessMins.name to "240",
@@ -187,12 +285,11 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                         CryptoSigningPersistenceConfig::keysExpireAfterAccessMins.name to "90",
                         CryptoSigningPersistenceConfig::keyNumberLimit.name to "20",
                         CryptoSigningPersistenceConfig::vnodesExpireAfterAccessMins.name to "120",
-                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100",
-                        CryptoSigningPersistenceConfig::connectionsExpireAfterAccessMins.name to "15",
-                        CryptoSigningPersistenceConfig::connectionNumberLimit.name to "2"
+                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100"
                     )
                 )
-            ).withValue(
+            )
+            .withValue(
                 HSM_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         CryptoHSMPersistenceConfig::expireAfterAccessMins.name to "240",
@@ -200,7 +297,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                         CryptoHSMPersistenceConfig::downstreamMaxAttempts.name to "3",
                     )
                 )
-            ).withValue(
+            )
+            .withValue(
                 BUS_PROCESSORS_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         OPS_BUS_PROCESSOR_OBJ to mapOf(
@@ -242,6 +340,28 @@ fun SmartConfig.rootEncryptor(): Encryptor =
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get Encryptor.", e)
     }
+
+fun SmartConfig.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
+    try {
+        CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get $CRYPTO_CONNECTION_FACTORY_OBJ.", e)
+    }
+
+fun SmartConfig.softHSM(): CryptoSoftHSMConfig =
+    try {
+        CryptoSoftHSMConfig(getConfig(SOFT_HSM_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get $SOFT_HSM_OBJ.", e)
+    }
+
+fun SmartConfig.signingService(): CryptoSigningServiceConfig =
+    try {
+        CryptoSigningServiceConfig(getConfig(SIGNING_SERVICE_OBJ))
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
+    }
+
 
 fun SmartConfig.softPersistence(): CryptoSoftPersistenceConfig =
     try {

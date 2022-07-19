@@ -14,7 +14,6 @@ import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningKeyStore
-import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
@@ -74,7 +73,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original exception failing signing`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+            on { act<SigningKeyStore>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -93,17 +92,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
     }
 
     @Test
     fun `Should throw IllegalArgumentException when key is not found for signing`() {
-        val actions = mock<SigningKeyStoreActions> {
+        val actions = mock<SigningKeyStore> {
             on { find(any<PublicKey>()) } doReturn null
         }
         val store = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -127,7 +126,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original exception failing derivation`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+            on { act<SigningKeyStore>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -147,17 +146,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
     }
 
     @Test
     fun `Should throw IllegalArgumentException when key is not found for deriving`() {
-        val actions = mock<SigningKeyStoreActions> {
+        val actions = mock<SigningKeyStore> {
             on { find(any<PublicKey>()) } doReturn null
         }
         val store = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -196,12 +195,12 @@ class SigningServiceGeneralTests {
             timestamp = Instant.now(),
             status = SigningKeyStatus.NORMAL
         )
-        val actions = mock<SigningKeyStoreActions> {
+        val actions = mock<SigningKeyStore> {
             on { find(any<String>()) } doReturn existingKey
         }
         val store = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -233,7 +232,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original when failing key generation with alias`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+            on { act<SigningKeyStore>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -261,14 +260,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(2)).act<SigningKeyStoreActions>(any(), any())
+        Mockito.verify(store, times(2)).act<SigningKeyStore>(any(), any())
     }
 
     @Test
     fun `Should throw original exception when failing fresh key generation`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+            on { act<SigningKeyStore>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -283,14 +282,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
     }
 
     @Test
     fun `Should throw original exception when failing fresh key generation with external id`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+            on { act<SigningKeyStore>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -306,7 +305,7 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
     }
 
     @Test
@@ -321,10 +320,10 @@ class SigningServiceGeneralTests {
         val masterKeyAlias: String = UUID.randomUUID().toString()
         val createdAfter: Instant = Instant.now().plusSeconds(-5)
         val createdBefore: Instant = Instant.now()
-        val actions = mock<SigningKeyStoreActions>()
+        val actions = mock<SigningKeyStore>()
         val store = mock<SigningKeyStore> {
             on { act(tenantId) } doReturn actions
-            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -362,10 +361,10 @@ class SigningServiceGeneralTests {
             val skip = 17
             val take = 21
             val tenantId: String = UUID.randomUUID().toString()
-            val actions = mock<SigningKeyStoreActions>()
+            val actions = mock<SigningKeyStore>()
             val store = mock<SigningKeyStore> {
                 on { act(tenantId) } doReturn actions
-                on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+                on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
             }
             val signingService = SigningServiceImpl(
                 store = store,
@@ -400,10 +399,10 @@ class SigningServiceGeneralTests {
         )
         val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
-        val actions = mock<SigningKeyStoreActions>()
+        val actions = mock<SigningKeyStore>()
         val store = mock<SigningKeyStore> {
             on { act(tenantId) } doReturn actions
-            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
         }
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(

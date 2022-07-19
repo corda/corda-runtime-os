@@ -1,7 +1,8 @@
 package net.corda.crypto.service.impl.hsm.soft
 
-import net.corda.crypto.service.SoftCryptoServiceConfig
+import net.corda.crypto.service.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.softhsm.SoftCryptoServiceProviderImpl
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertInstanceOf

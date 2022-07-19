@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.hsm.soft
+package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.persistence.signing.SigningKeySaveContext
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
@@ -19,6 +19,8 @@ import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
+
+data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningCachedKey)
 
 fun CryptoServiceRef.getSupportedSchemes(): List<String> =
     instance.supportedSchemes.map { it.key.codeName }
@@ -69,73 +71,73 @@ fun CryptoServiceRef.toSaveKeyContext(
     }
 
 fun CryptoServiceRef.sign(
-    record: SigningCachedKey,
+    record: OwnedKeyRecord,
     scheme: KeyScheme,
     signatureSpec: SignatureSpec,
     data: ByteArray,
     context: Map<String, String>
 ): ByteArray {
-    val spec = if (record.keyMaterial != null) {
-        require(record.keyMaterial!!.isNotEmpty()) {
+    val spec = if (record.data.keyMaterial != null) {
+        require(record.data.keyMaterial!!.isNotEmpty()) {
             "The key material is empty."
         }
-        require(record.encodingVersion != null) {
+        require(record.data.encodingVersion != null) {
             "The encoding version is missing."
         }
         SigningWrappedSpec(
+            publicKey = record.publicKey,
             keyMaterialSpec = KeyMaterialSpec(
-                keyMaterial = record.keyMaterial!!,
-                masterKeyAlias = record.masterKeyAlias,
-                encodingVersion = record.encodingVersion!!
+                keyMaterial = record.data.keyMaterial!!,
+                masterKeyAlias = record.data.masterKeyAlias,
+                encodingVersion = record.data.encodingVersion!!
             ),
             keyScheme = scheme,
             signatureSpec = signatureSpec
         )
     } else {
-        require(!record.hsmAlias.isNullOrBlank()) {
+        require(!record.data.hsmAlias.isNullOrBlank()) {
             "The hsm assigned alias is missing."
         }
         SigningAliasSpec(
-            hsmAlias = record.hsmAlias!!,
+            publicKey = record.publicKey,
+            hsmAlias = record.data.hsmAlias!!,
             keyScheme = scheme,
             signatureSpec = signatureSpec
         )
     }
-    return instance.sign(
-        spec, data, context + mapOf(
-            CRYPTO_TENANT_ID to tenantId
-        )
-    )
+    return instance.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
 }
 
 fun CryptoServiceRef.deriveSharedSecret(
-    record: SigningCachedKey,
+    record: OwnedKeyRecord,
     scheme: KeyScheme,
     otherPublicKey: PublicKey,
     context: Map<String, String>
 ): ByteArray {
-    val spec = if (record.keyMaterial != null) {
-        require(record.keyMaterial!!.isNotEmpty()) {
+    val spec = if (record.data.keyMaterial != null) {
+        require(record.data.keyMaterial!!.isNotEmpty()) {
             "The key material is empty."
         }
-        require(record.encodingVersion != null) {
+        require(record.data.encodingVersion != null) {
             "The encoding version is missing."
         }
         SharedSecretWrappedSpec(
+            publicKey = record.publicKey,
             keyMaterialSpec = KeyMaterialSpec(
-                keyMaterial = record.keyMaterial!!,
-                masterKeyAlias = record.masterKeyAlias,
-                encodingVersion = record.encodingVersion!!
+                keyMaterial = record.data.keyMaterial!!,
+                masterKeyAlias = record.data.masterKeyAlias,
+                encodingVersion = record.data.encodingVersion!!
             ),
             keyScheme = scheme,
             otherPublicKey = otherPublicKey
         )
     } else {
-        require(!record.hsmAlias.isNullOrBlank()) {
+        require(!record.data.hsmAlias.isNullOrBlank()) {
             "The hsm assigned alias is missing."
         }
         SharedSecretAliasSpec(
-            hsmAlias = record.hsmAlias!!,
+            publicKey = record.publicKey,
+            hsmAlias = record.data.hsmAlias!!,
             keyScheme = scheme,
             otherPublicKey = otherPublicKey
         )

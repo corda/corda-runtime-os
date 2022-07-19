@@ -3,16 +3,10 @@ package net.corda.crypto.service.impl.signing
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeyStore
-import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.impl.hsm.soft.deriveSharedSecret
-import net.corda.crypto.service.impl.hsm.soft.generateKeyPair
-import net.corda.crypto.service.impl.hsm.soft.getSupportedSchemes
-import net.corda.crypto.service.impl.hsm.soft.sign
-import net.corda.crypto.service.impl.hsm.soft.toSaveKeyContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
@@ -50,24 +44,18 @@ class SigningServiceImpl(
         logger.debug {
             "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
         }
-        return store.act(tenantId) {
-            it.lookup(
-                skip,
-                take,
-                orderBy.toSigningKeyOrderBy(),
-                filter
-            ).map { key -> key.toSigningKeyInfo() }
-        }
+        return store.lookup(
+            tenantId,
+            skip,
+            take,
+            orderBy.toSigningKeyOrderBy(),
+            filter
+        ).map { key -> key.toSigningKeyInfo() }
     }
 
     override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
         logger.debug { "lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
-        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
-            "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
-        }
-        return store.act(tenantId) {
-            it.lookup(ids).map { key -> key.toSigningKeyInfo() }
-        }
+        return store.lookup(tenantId, ids).map { key -> key.toSigningKeyInfo() }
     }
 
     override fun createWrappingKey(
@@ -158,19 +146,17 @@ class SigningServiceImpl(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey {
-        val record = store.act(tenantId) {
-            getKeyRecord(tenantId, it, publicKey)
-        }
-        logger.debug { "sign(tenant=$tenantId, publicKey=${record.second.id})"  }
-        val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
+        val record = getOwnedKeyRecord(tenantId, publicKey)
+        logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
+        val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(
             tenantId = tenantId,
-            category = record.second.category,
-            associationId = record.second.associationId
+            category = record.data.category,
+            associationId = record.data.associationId
         )
-        val signedBytes = cryptoService.sign(record.second, scheme, signatureSpec, data, context)
+        val signedBytes = cryptoService.sign(record, scheme, signatureSpec, data, context)
         return DigitalSignature.WithKey(
-            by = record.first,
+            by = record.publicKey,
             bytes = signedBytes,
             context = context
         )
@@ -182,22 +168,20 @@ class SigningServiceImpl(
         otherPublicKey: PublicKey,
         context: Map<String, String>
     ): ByteArray {
-        val record = store.act(tenantId) {
-            getKeyRecord(tenantId, it, publicKey)
-        }
+        val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.info(
             "deriveSharedSecret(tenant={}, publicKey={}, otherPublicKey={})",
             tenantId,
-            record.second.id,
+            record.data.id,
             otherPublicKey.publicKeyId()
         )
-        val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
+        val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val cryptoService = cryptoServiceFactory.getInstance(
             tenantId = tenantId,
-            category = record.second.category,
-            associationId = record.second.associationId
+            category = record.data.category,
+            associationId = record.data.associationId
         )
-        return cryptoService.deriveSharedSecret(record.second, scheme, otherPublicKey, context)
+        return cryptoService.deriveSharedSecret(record, scheme, otherPublicKey, context)
     }
 
     @Suppress("LongParameterList")
@@ -211,42 +195,40 @@ class SigningServiceImpl(
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
         val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
-        store.act(tenantId) {
-            if (alias != null && it.find(alias) != null) {
-                throw IllegalStateException(
-                    "The key with alias $alias already exist for tenant $tenantId"
-                )
-            }
+        if (alias != null && store.find(tenantId, alias) != null) {
+            throw IllegalStateException("The key with alias $alias already exist for tenant $tenantId")
         }
         val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
-        store.act(tenantId) {
-            it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
-        }
+        store.save(tenantId, cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
         return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
     }
 
-    private fun getKeyRecord(
-        tenantId: String,
-        storeActions: SigningKeyStoreActions,
-        publicKey: PublicKey
-    ): Pair<PublicKey, SigningCachedKey> =
+    private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
-            var result: Pair<PublicKey, SigningCachedKey>? = null
-            publicKey.leafKeys.firstOrNull {
-                val r = storeActions.find(it)
-                if (r != null) {
-                    result = it to r
-                    true
-                } else {
-                    false
+            val leafKeysIdsChunks = publicKey.leafKeys.map {
+                it.publicKeyId() to it
+            }.chunked(KEY_LOOKUP_INPUT_ITEMS_LIMIT)
+            for (chunk in leafKeysIdsChunks) {
+                val found = store.lookup(tenantId, chunk.map { it.first })
+                if (found.isNotEmpty()) {
+                    for (key in chunk) {
+                        val first = found.firstOrNull { it.id == key.first }
+                        if (first != null) {
+                            return OwnedKeyRecord(key.second, first)
+                        }
+                    }
                 }
             }
-            result
+            throw IllegalArgumentException(
+                "The tenant $tenantId doesn't own any public key in '${publicKey.publicKeyId()}' composite key."
+            )
         } else {
-            storeActions.find(publicKey)?.let { publicKey to it }
-        } ?: throw IllegalArgumentException(
-            "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
-        )
+            return store.find(tenantId, publicKey)?.let { OwnedKeyRecord(publicKey, it) }
+                ?: throw IllegalArgumentException(
+                    "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
+                )
+        }
+    }
 
     private fun KeyOrderBy.toSigningKeyOrderBy(): SigningKeyOrderBy =
         SigningKeyOrderBy.valueOf(name)
