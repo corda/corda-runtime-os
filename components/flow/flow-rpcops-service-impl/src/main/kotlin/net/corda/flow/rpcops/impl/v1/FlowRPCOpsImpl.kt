@@ -61,22 +61,22 @@ class FlowRPCOpsImpl @Activate constructor(
     @Suppress("SpreadOperator")
     override fun startFlow(
         holderShortId: String,
-        httpStartFlow: StartFlowParameters
+        startFlow: StartFlowParameters
     ): FlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
         val vNode = getVirtualNode(holderShortId)
-        val clientRequestId = httpStartFlow.clientRequestId
+        val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
         if (flowStatus != null) {
             throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
         }
 
-        val flowClassName = httpStartFlow.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, httpStartFlow.requestData)
+        val flowClassName = startFlow.flowClassName
+        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, startFlow.requestData)
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(

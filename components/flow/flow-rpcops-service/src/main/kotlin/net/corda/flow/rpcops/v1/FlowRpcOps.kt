@@ -36,7 +36,7 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
         holderShortId: String,
         @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
-        httpStartFlow: StartFlowParameters
+        startFlow: StartFlowParameters
     ): FlowStatusResponse
 
     @HttpRpcGET(
