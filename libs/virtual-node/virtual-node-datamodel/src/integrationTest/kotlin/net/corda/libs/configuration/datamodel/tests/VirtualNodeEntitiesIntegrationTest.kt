@@ -96,7 +96,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val holdingIdentityEntity = entityManagerFactory.createEntityManager()
             .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityShortHash) }
 
-        val virtualNode = VirtualNodeEntity(entity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(entity, name, version, hash, "")
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
@@ -123,7 +123,7 @@ class VirtualNodeEntitiesIntegrationTest {
 
         // Now persist the virtual node but use the merge operation because we've
         // already persisted the holding identity (i.e. REST end-point - "create holding identity")
-        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash, "")
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
             em.merge(virtualNode)
@@ -167,7 +167,7 @@ class VirtualNodeEntitiesIntegrationTest {
     private fun newVNode(name: String, version: String, hash: String) {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
         val holdingIdentity = newHoldingIdentityEntity(Generator.randomHoldingIdentityShortHash())
-        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash, "")
 
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentity) }
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }

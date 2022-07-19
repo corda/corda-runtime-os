@@ -45,6 +45,7 @@ class FlowRPCOpsImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
+            "",
             0,
             Instant.now()
         )

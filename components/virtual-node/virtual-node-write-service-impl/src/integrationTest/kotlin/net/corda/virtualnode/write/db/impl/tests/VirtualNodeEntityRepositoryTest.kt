@@ -344,7 +344,7 @@ internal class VirtualNodeEntityRepositoryTest {
             )
         }
         val virtualNodeEntity =
-            VirtualNodeEntity(holdingIdentityEntity, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+            VirtualNodeEntity(holdingIdentityEntity, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString(), "")
 
         entityManagerFactory.transaction {
             it.persist(cpiMetadataEntity)

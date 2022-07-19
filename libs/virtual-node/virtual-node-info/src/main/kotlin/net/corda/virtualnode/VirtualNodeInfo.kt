@@ -29,7 +29,7 @@ data class VirtualNodeInfo(
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
     /** Current state of the virtual node instance */
-    val state: String,
+    val state: String = DEFAULT_INITIAL_STATE,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */
