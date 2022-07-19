@@ -1,5 +1,6 @@
 package net.corda.membership.persistence.client
 
+import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -70,4 +71,20 @@ interface MembershipPersistenceClient : Lifecycle {
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
     ): MembershipPersistenceResult<MemberInfo>
+
+    /**
+     * Set the status of an existing registration request.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param registrationId The ID of the registration request.
+     * @param registrationRequestStatus The new status of the registration request.
+     *
+     * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
+     */
+    fun setRegistrationRequestStatus(
+        viewOwningIdentity: HoldingIdentity,
+        registrationId: String,
+        registrationRequestStatus: RegistrationStatus
+    ): MembershipPersistenceResult<Unit>
 }
