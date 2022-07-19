@@ -1,4 +1,4 @@
-package net.corda.libs.packaging
+package net.corda.libs.packaging.verify
 
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import java.io.ByteArrayInputStream
@@ -44,5 +44,11 @@ class JarReader(val jarName: String, jarBytes: ByteArray, val trustedCerts: Coll
             }
         }
         entries = jarEntries
+    }
+}
+
+private fun InputStream.readAllBytesAndClose(): ByteArray {
+    return this.use {
+        it.readAllBytes()
     }
 }

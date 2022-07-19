@@ -1,7 +1,8 @@
-package net.corda.libs.packaging
+package net.corda.libs.packaging.verify
 
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
+import net.corda.libs.packaging.signerInfo
 import java.io.InputStream
 import java.security.CodeSigner
 import java.security.cert.X509Certificate

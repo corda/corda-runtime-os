@@ -5,7 +5,7 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
@@ -135,7 +135,7 @@ class StaticNetworkTest {
             val proxy = client.start().proxy
             membersNames.associateWith {
                 proxy.createVirtualNode(
-                    HTTPCreateVirtualNodeRequest(
+                    CreateVirtualNodeParameters(
                         x500Name = it,
                         cpiFileChecksum = checksum,
                         vaultDdlConnection = null,

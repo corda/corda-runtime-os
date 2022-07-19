@@ -6,7 +6,7 @@ package net.corda.flow.rpcops.v1.types.response
  * @param type The type of error.
  * @param message The details of the error and its cause.
  */
-data class HTTPFlowStateErrorResponse(
+data class FlowStateErrorResponse(
     val type: String,
     val message: String
 )

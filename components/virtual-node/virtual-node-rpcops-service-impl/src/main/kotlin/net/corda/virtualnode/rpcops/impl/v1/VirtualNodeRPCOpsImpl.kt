@@ -12,9 +12,9 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPGetVirtualNodesResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -85,7 +85,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun createVirtualNode(request: HTTPCreateVirtualNodeRequest): HTTPCreateVirtualNodeResponse {
+    override fun createVirtualNode(request: CreateVirtualNodeParameters): CreateVirtualNodeResponse {
         val instant = clock.instant()
         validateX500Name(request.x500Name)
 
@@ -103,7 +103,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeCreateResponse -> {
-                HTTPCreateVirtualNodeResponse(
+                CreateVirtualNodeResponse(
                     resolvedResponse.x500Name,
                     CpiIdentifier.fromAvro(resolvedResponse.cpiIdentifier),
                     resolvedResponse.cpiFileChecksum,
@@ -128,8 +128,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         }
     }
 
-    override fun getAllVirtualNodes(): HTTPGetVirtualNodesResponse {
-        return HTTPGetVirtualNodesResponse(virtualNodeInfoReadService.getAll())
+    override fun getAllVirtualNodes(): GetVirtualNodesResponse {
+        return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll())
     }
 
     /** Validates the [x500Name]. */

@@ -237,7 +237,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPUpdateConfigResponse"
+                  "$ref" : "#/components/schemas/UpdateConfigResponse"
                 }
               }
             }
@@ -303,7 +303,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPGetConfigResponse"
+                  "$ref" : "#/components/schemas/GetConfigResponse"
                 }
               }
             }
@@ -329,7 +329,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPGetCPIsResponse"
+                  "$ref" : "#/components/schemas/GetCPIsResponse"
                 }
               }
             }
@@ -505,7 +505,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPFlowStatusResponses"
+                  "$ref" : "#/components/schemas/FlowStatusResponses"
                 }
               }
             }
@@ -551,7 +551,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
+                  "$ref" : "#/components/schemas/FlowStatusResponse"
                 }
               }
             }
@@ -599,7 +599,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
+                  "$ref" : "#/components/schemas/FlowStatusResponse"
                 }
               }
             }
@@ -665,7 +665,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPStartableFlowsResponse"
+                  "$ref" : "#/components/schemas/StartableFlowsResponse"
                 }
               }
             }
@@ -996,11 +996,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1151,11 +1151,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1201,11 +1201,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1255,22 +1255,22 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "keyid",
           "in" : "path",
-          "description" : "The Key ID.",
+          "description" : "The Key ID. Or an error code if not found.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The Key ID.",
+            "description" : "The Key ID. Or an error code if not found.",
             "nullable" : false,
             "example" : "string"
           }
@@ -2276,7 +2276,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPGetVirtualNodesResponse"
+                  "$ref" : "#/components/schemas/GetVirtualNodesResponse"
                 }
               }
             }
@@ -2311,7 +2311,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HTTPCreateVirtualNodeResponse"
+                  "$ref" : "#/components/schemas/CreateVirtualNodeResponse"
                 }
               }
             }
@@ -2669,15 +2669,171 @@
         },
         "description" : "Details of the user to be created"
       },
+      "CreateVirtualNodeParameters" : {
+        "required" : [ "cpiFileChecksum", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cryptoDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Details of the virtual node to be created"
+      },
+      "CreateVirtualNodeResponse" : {
+        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cpiId" : {
+            "$ref" : "#/components/schemas/CpiIdentifier_2"
+          },
+          "cryptoDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingIdHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "mgmGroupId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "vaultDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "CreatevirtualnodeRequest" : {
         "required" : [ "request" ],
         "properties" : {
           "request" : {
-            "$ref" : "#/components/schemas/HTTPCreateVirtualNodeRequest"
+            "$ref" : "#/components/schemas/CreateVirtualNodeParameters"
           }
         },
         "description" : "CreatevirtualnodeRequest",
         "nullable" : false
+      },
+      "FlowStateErrorResponse" : {
+        "required" : [ "message", "type" ],
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "FlowStatusResponse" : {
+        "required" : [ "flowStatus", "holdingShortId", "timestamp" ],
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowError" : {
+            "$ref" : "#/components/schemas/FlowStateErrorResponse"
+          },
+          "flowId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowResult" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "flowStatus" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "holdingShortId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          }
+        }
+      },
+      "FlowStatusResponses" : {
+        "required" : [ "flowStatusResponses" ],
+        "type" : "object",
+        "properties" : {
+          "flowStatusResponses" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/FlowStatusResponse"
+            }
+          }
+        }
       },
       "GenerateCsrRequest" : {
         "required" : [ "certificateRole", "x500name" ],
@@ -2742,163 +2898,7 @@
         "description" : "GenerateKeyPairRequest",
         "nullable" : false
       },
-      "HTTPCreateVirtualNodeRequest" : {
-        "required" : [ "cpiFileChecksum", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cryptoDdlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cryptoDmlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDdlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDmlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "Details of the virtual node to be created"
-      },
-      "HTTPCreateVirtualNodeResponse" : {
-        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cpiId" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_2"
-          },
-          "cryptoDdlConnectionId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cryptoDmlConnectionId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "holdingIdHash" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "mgmGroupId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "vaultDdlConnectionId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDmlConnectionId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "HTTPFlowStateErrorResponse" : {
-        "required" : [ "message", "type" ],
-        "type" : "object",
-        "properties" : {
-          "message" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "type" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "HTTPFlowStatusResponse" : {
-        "required" : [ "flowStatus", "holdingShortId", "timestamp" ],
-        "type" : "object",
-        "properties" : {
-          "clientRequestId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "flowError" : {
-            "$ref" : "#/components/schemas/HTTPFlowStateErrorResponse"
-          },
-          "flowId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "flowResult" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "flowStatus" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "holdingShortId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          }
-        }
-      },
-      "HTTPFlowStatusResponses" : {
-        "required" : [ "httpFlowStatusResponses" ],
-        "type" : "object",
-        "properties" : {
-          "httpFlowStatusResponses" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/HTTPFlowStatusResponse"
-            }
-          }
-        }
-      },
-      "HTTPGetCPIsResponse" : {
+      "GetCPIsResponse" : {
         "required" : [ "cpis" ],
         "type" : "object",
         "properties" : {
@@ -2912,7 +2912,7 @@
           }
         }
       },
-      "HTTPGetConfigResponse" : {
+      "GetConfigResponse" : {
         "required" : [ "configWithDefaults", "schemaVersion", "section", "sourceConfig", "version" ],
         "type" : "object",
         "properties" : {
@@ -2942,7 +2942,7 @@
           }
         }
       },
-      "HTTPGetVirtualNodesResponse" : {
+      "GetVirtualNodesResponse" : {
         "required" : [ "virtualNodes" ],
         "type" : "object",
         "properties" : {
@@ -2953,94 +2953,6 @@
             "items" : {
               "$ref" : "#/components/schemas/VirtualNodeInfo"
             }
-          }
-        }
-      },
-      "HTTPStartFlowRequest" : {
-        "required" : [ "clientRequestId", "flowClassName", "requestData" ],
-        "type" : "object",
-        "properties" : {
-          "clientRequestId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "flowClassName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "requestData" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "Information required to start a flow for this holdingId"
-      },
-      "HTTPStartableFlowsResponse" : {
-        "required" : [ "flowClassNames" ],
-        "type" : "object",
-        "properties" : {
-          "flowClassNames" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "string",
-              "example" : "string"
-            }
-          }
-        }
-      },
-      "HTTPUpdateConfigRequest" : {
-        "required" : [ "config", "schemaVersion", "section", "version" ],
-        "type" : "object",
-        "properties" : {
-          "config" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
-          },
-          "section" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        },
-        "description" : "Details of the updated configuration"
-      },
-      "HTTPUpdateConfigResponse" : {
-        "required" : [ "config", "schemaVersion", "section", "version" ],
-        "type" : "object",
-        "properties" : {
-          "config" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
-          },
-          "section" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
           }
         }
       },
@@ -3537,11 +3449,33 @@
         "description" : "SetupHostedIdentitiesRequest",
         "nullable" : false
       },
-      "StartFlowRequest" : {
-        "required" : [ "httpStartFlow" ],
+      "StartFlowParameters" : {
+        "required" : [ "clientRequestId", "flowClassName", "requestData" ],
+        "type" : "object",
         "properties" : {
-          "httpStartFlow" : {
-            "$ref" : "#/components/schemas/HTTPStartFlowRequest"
+          "clientRequestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "flowClassName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestData" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "Information required to start a flow for this holdingId"
+      },
+      "StartFlowRequest" : {
+        "required" : [ "startFlow" ],
+        "properties" : {
+          "startFlow" : {
+            "$ref" : "#/components/schemas/StartFlowParameters"
           }
         },
         "description" : "StartFlowRequest",
@@ -3556,6 +3490,21 @@
         },
         "description" : "StartRegistrationRequest",
         "nullable" : false
+      },
+      "StartableFlowsResponse" : {
+        "required" : [ "flowClassNames" ],
+        "type" : "object",
+        "properties" : {
+          "flowClassNames" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        }
       },
       "Status" : {
         "required" : [ "checksum", "status" ],
@@ -3573,11 +3522,62 @@
           }
         }
       },
+      "UpdateConfigParameters" : {
+        "required" : [ "config", "schemaVersion", "section", "version" ],
+        "type" : "object",
+        "properties" : {
+          "config" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/Version"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        },
+        "description" : "Details of the updated configuration"
+      },
+      "UpdateConfigResponse" : {
+        "required" : [ "config", "schemaVersion", "section", "version" ],
+        "type" : "object",
+        "properties" : {
+          "config" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "schemaVersion" : {
+            "$ref" : "#/components/schemas/Version"
+          },
+          "section" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
       "UpdateclusterconfigurationRequest" : {
         "required" : [ "request" ],
         "properties" : {
           "request" : {
-            "$ref" : "#/components/schemas/HTTPUpdateConfigRequest"
+            "$ref" : "#/components/schemas/UpdateConfigParameters"
           }
         },
         "description" : "UpdateclusterconfigurationRequest",

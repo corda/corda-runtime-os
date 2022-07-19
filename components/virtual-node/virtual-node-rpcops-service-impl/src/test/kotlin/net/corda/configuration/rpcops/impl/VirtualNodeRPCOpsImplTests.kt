@@ -14,8 +14,8 @@ import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
@@ -68,7 +68,7 @@ class VirtualNodeRPCOpsImplTests {
         whenever(instant()).thenReturn(Instant.EPOCH)
     }
 
-    private val httpCreateVNRequest = HTTPCreateVirtualNodeRequest(holdingId.x500Name, "hash", null, null, null, null)
+    private val httpCreateVNRequest = CreateVirtualNodeParameters(holdingId.x500Name, "hash", null, null, null, null)
     private val vnCreateSuccessfulResponse = VirtualNodeCreateResponse(
         httpCreateVNRequest.x500Name,
         cpiIdAvro,
@@ -135,7 +135,7 @@ class VirtualNodeRPCOpsImplTests {
     @Test
     fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
         val successResponse =
-            HTTPCreateVirtualNodeResponse(
+            CreateVirtualNodeResponse(
                 holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdHash,
                 vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId
             )
@@ -152,7 +152,7 @@ class VirtualNodeRPCOpsImplTests {
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
         val badX500 = "invalid"
-        val badX500Req = HTTPCreateVirtualNodeRequest(badX500, "hash", null, null, null, null)
+        val badX500Req = CreateVirtualNodeParameters(badX500, "hash", null, null, null, null)
 
         vnodeRPCOps.createAndStartRpcSender(mock())
         vnodeRPCOps.setTimeout(rpcRequestTimeoutDuration)

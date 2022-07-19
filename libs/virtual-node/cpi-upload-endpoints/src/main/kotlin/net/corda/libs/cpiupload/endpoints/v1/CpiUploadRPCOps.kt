@@ -53,5 +53,5 @@ interface CpiUploadRPCOps : RpcOps {
         description = "List all CPIs uploaded to the cluster.",
         responseDescription = "List details of the all CPIs uploaded to the cluster."
     )
-    fun getAllCpis(): HTTPGetCPIsResponse
+    fun getAllCpis(): GetCPIsResponse
 }
