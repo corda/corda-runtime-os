@@ -292,6 +292,8 @@ workers:
       tag: ""
     # -- p2p-link-manager worker replica count
     replicaCount: 1
+    # -- Use stubbed crypto processor, membership group reader and group policy provider
+    useStubs: false
     # p2p-link-manager worker debug configuration
     debug:
       # -- run p2p-link-manager worker with debug enabled
