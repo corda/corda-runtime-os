@@ -67,6 +67,7 @@ dependencies {
     e2eTestImplementation project(':components:membership:membership-http-rpc')
     e2eTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     e2eTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    e2eTestImplementation "org.apache.commons:commons-text:$commonsTextVersion"
     e2eTestImplementation "net.corda:corda-avro-schema"
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestImplementation 'net.corda:corda-cipher-suite'
