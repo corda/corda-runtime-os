@@ -13,13 +13,14 @@ import java.sql.DriverManager
 import java.time.Instant
 import java.util.UUID
 
+
 // TODO This class bootstraps database, duplicating functionality available via CLI
 // As it duplicates some classes from tools/plugins/initial-config/src/main/kotlin/net/corda/cli/plugin/, it requires
 // refactoring, but first we need an input from the DevX team, whether this is the right approach or developers should
 // use CLI instead
 
-class PostgresDbSetup: DbSetup {
-    
+class PostgresDbSetup : DbSetup {
+
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
         private const val DB_HOST = "localhost"
@@ -44,8 +45,22 @@ class PostgresDbSetup: DbSetup {
         )
     }
 
+    override fun initializeJdbc(driverName: String) {
+        // Throws class not found if the driver isn't loaded, so perhaps don't need this method to return boolean.
+        if (DriverManager.drivers().count() == 0L) {
+            throw IllegalArgumentException("No drivers for JDBC classes are loaded, have you specified -ddatabase.driver.filepath ?")
+        }
+
+        if (! DriverManager.drivers().anyMatch { it.javaClass.canonicalName == driverName }) {
+            throw IllegalArgumentException("No drivers for $driverName are loaded, have you specified -ddatabase.driver.filepath ?")
+        }
+
+        // Try and initialize this driver
+        Class.forName(driverName)
+    }
+
     override fun run() {
-        Class.forName(DB_DRIVER)
+        initializeJdbc(DB_DRIVER)
 
         if (!dbInitialised()) {
             initDb()
@@ -62,12 +77,13 @@ class PostgresDbSetup: DbSetup {
             .getConnection(DB_SUPERUSER_URL)
             .use { connection ->
                 connection.createStatement().executeQuery(
-                    "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
-                .use {
-                    if (it.next()) {
-                        return it.getBoolean(1)
+                    "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');"
+                )
+                    .use {
+                        if (it.next()) {
+                            return it.getBoolean(1)
+                        }
                     }
-                }
             }
         return false
     }
@@ -84,7 +100,8 @@ class PostgresDbSetup: DbSetup {
                         ALTER ROLE "$DB_ADMIN" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
                         ALTER DATABASE "$DB_NAME" OWNER TO "$DB_ADMIN";
                         ALTER SCHEMA public OWNER TO "$DB_ADMIN";
-                    """.trimIndent())
+                    """.trimIndent()
+                )
             }
     }
 
@@ -121,7 +138,7 @@ class PostgresDbSetup: DbSetup {
             }
     }
 
-    private fun initConfiguration(connectionName: String, username: String, password :String, jdbcUrl:String) {
+    private fun initConfiguration(connectionName: String, username: String, password: String, jdbcUrl: String) {
         val secretsService = EncryptionSecretsServiceImpl(SECRETS_PASSWORD, SECRETS_SALT)
 
         val dbConnectionConfig = DbConnectionConfig(
@@ -168,7 +185,12 @@ class PostgresDbSetup: DbSetup {
             }
     }
 
-    private fun createDbConfig(jdbcUrl: String, username: String, password: String, secretsService: SecretsCreateService): String {
+    private fun createDbConfig(
+        jdbcUrl: String,
+        username: String,
+        password: String,
+        secretsService: SecretsCreateService
+    ): String {
         return "{\"database\":{" +
                 "\"jdbc\":" +
                 "{\"url\":\"$jdbcUrl\"}," +
