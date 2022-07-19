@@ -16,6 +16,11 @@
       "name": "registeringMember",
       "doc": "Holding identity of the registering member as provided during P2P communication. Used to verify the registration request.",
       "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "mgm",
+      "doc": "Holding identity of the MGM.",
+      "type": "net.corda.data.identity.HoldingIdentity"
     }
   ]
 }

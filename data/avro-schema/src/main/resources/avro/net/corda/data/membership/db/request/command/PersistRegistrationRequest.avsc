@@ -15,6 +15,7 @@
           "PENDING_MEMBER_VERIFICATION",
           "PENDING_APPROVAL_FLOW",
           "PENDING_MANUAL_APPROVAL",
+          "PENDING_AUTO_APPROVAL",
           "DECLINED",
           "APPROVED"
         ]

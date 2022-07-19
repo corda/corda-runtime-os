@@ -4,5 +4,10 @@
   "namespace": "net.corda.data.membership.command.registration.mgm",
   "doc": "Command issued when a member responds to the member verification request send to the member by the MGM during registration.",
   "fields": [
+    {
+      "name": "verificationResponse",
+      "doc" : "Response from a member to verify its data supplied in the registration request.",
+      "type": "net.corda.data.membership.p2p.VerificationResponse"
+    }
   ]
 }
