@@ -9,7 +9,15 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
+    // removes jacksons large libs from plugins
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+
+    // removes the kafka clients large size from any plugins requiring it (topic config etc)
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "org.pf4j:pf4j:${pf4jVersion}"
     implementation "org.apache.commons:commons-lang3:${commonsLangVersion}"
