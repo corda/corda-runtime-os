@@ -10,6 +10,6 @@ import net.corda.v5.base.versioning.Version
  * @property config Updated configuration in JSON or HOCON format.
  * @property schemaVersion Schema version of the configuration.
  */
-data class HTTPUpdateConfigRequest(
+data class UpdateConfigParameters(
     val section: String, val version: Int, val config: String, val schemaVersion: Version
 )

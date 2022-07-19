@@ -3,7 +3,7 @@ package net.corda.flow.rpcops.impl.v1
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.v1.FlowClassRpcOps
-import net.corda.flow.rpcops.v1.types.response.HTTPStartableFlowsResponse
+import net.corda.flow.rpcops.v1.types.response.StartableFlowsResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -69,7 +69,7 @@ class FlowClassRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun getStartableFlows(holderShortId: String): HTTPStartableFlowsResponse {
+    override fun getStartableFlows(holderShortId: String): StartableFlowsResponse {
         val vNode = getVirtualNode(holderShortId)
         val cpiMeta = getCPIMeta(vNode, holderShortId)
         return getFlowClassesFromCPI(cpiMeta)
@@ -84,11 +84,11 @@ class FlowClassRPCOpsImpl @Activate constructor(
             ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holderShortId}'")
     }
 
-    private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): HTTPStartableFlowsResponse {
+    private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): StartableFlowsResponse {
         val flowClasses = cpiMeta.cpksMetadata.flatMap {
             it.cordappManifest.rpcStartableFlows
         }
-        return HTTPStartableFlowsResponse(flowClasses)
+        return StartableFlowsResponse(flowClasses)
     }
 
     private fun getVirtualNode(shortId: String): VirtualNodeInfo {

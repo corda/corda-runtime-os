@@ -1,8 +1,8 @@
 package net.corda.flow.rpcops.v1
 
-import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
+import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
@@ -36,8 +36,8 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
         holderShortId: String,
         @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
-        httpStartFlow: HTTPStartFlowRequest
-    ): HTTPFlowStatusResponse
+        startFlow: StartFlowParameters
+    ): FlowStatusResponse
 
     @HttpRpcGET(
         path = "{holderShortId}/{clientRequestId}",
@@ -50,7 +50,7 @@ interface FlowRpcOps : RpcOps {
         holderShortId: String,
         @HttpRpcPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
-    ) : HTTPFlowStatusResponse
+    ): FlowStatusResponse
 
     @HttpRpcGET(
         path = "{holderShortId}",
@@ -61,5 +61,5 @@ interface FlowRpcOps : RpcOps {
     fun getMultipleFlowStatus(
         @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
         holderShortId: String
-    ): HTTPFlowStatusResponses
+    ): FlowStatusResponses
 }
