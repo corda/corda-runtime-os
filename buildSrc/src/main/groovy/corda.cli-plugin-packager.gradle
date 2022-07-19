@@ -17,7 +17,12 @@ configurations {
         exclude group: 'net.corda.kotlin'
         exclude group: 'org.jetbrains.kotlin'
         exclude group: 'org.slf4j'
-        exclude group: 'com.fasterxml.jackson.module', module: 'jackson-module-kotlin'
+        exclude group: 'com.fasterxml.jackson.module'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.databind'
+        exclude group: 'com.fasterxml.jackson.annotation'
+        exclude group: 'org.apache.servicemix.bundles'
     }
 }
 
