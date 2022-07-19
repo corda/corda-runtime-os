@@ -164,7 +164,15 @@ class AppSimulator @Activate constructor(
         clients: Int,
         instanceId: String,
     ) {
-        val receiver = Receiver(subscriptionFactory, configMerger, receiveTopic, APP_RECEIVED_MESSAGES_TOPIC, bootConfig, clients, instanceId)
+        val receiver = Receiver(
+            subscriptionFactory,
+            configMerger,
+            receiveTopic,
+            APP_RECEIVED_MESSAGES_TOPIC,
+            bootConfig,
+            clients,
+            instanceId
+        )
         receiver.start()
         resources.add(receiver)
     }

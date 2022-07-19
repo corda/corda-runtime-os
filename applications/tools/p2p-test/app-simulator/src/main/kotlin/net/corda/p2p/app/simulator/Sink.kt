@@ -18,6 +18,7 @@ import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
 
+@Suppress("LongParameterList")
 class Sink(private val subscriptionFactory: SubscriptionFactory,
            private val configMerger: ConfigMerger,
            private val dbParams: DBParams,
