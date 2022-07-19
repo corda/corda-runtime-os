@@ -8,8 +8,10 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
+import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -162,6 +164,22 @@ class MembershipPersistenceClientImpl(
             )
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(payload.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected result: $payload")
+        }
+    }
+
+    override fun setRegistrationRequestStatus(
+        viewOwningIdentity: HoldingIdentity,
+        registrationId: String,
+        registrationRequestStatus: RegistrationStatus
+    ): MembershipPersistenceResult<Unit> {
+        logger.info("Updating the status of a registration request with ID $registrationId.")
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus)
+        ).execute()
+        return when (val failedResponse = result.payload as? PersistenceFailedResponse) {
+            null -> MembershipPersistenceResult.success()
+            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
     }
 }

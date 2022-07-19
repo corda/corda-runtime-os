@@ -65,7 +65,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
                 }
                 else -> {
                     log.error("Received unexpected response from the db worker")
-                    throw FlowFatalException("Received unexpected response from the db worker", context)
+                    throw FlowFatalException("Received unexpected response from the db worker")
                 }
             }
         } else {

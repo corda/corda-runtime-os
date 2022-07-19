@@ -82,11 +82,11 @@ class FlowSandboxServiceImpl @Activate constructor(
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
 
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}}'" }
+        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}'" }
 
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
-        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}}'" }
+        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
 
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,

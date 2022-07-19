@@ -14,7 +14,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.impl.FlowProtocol
@@ -147,7 +147,7 @@ class SessionEventHandlerTest {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
-        assertThrows<FlowProcessingException> { sessionEventHandler.preProcess(inputContext) }
+        assertThrows<FlowFatalException> { sessionEventHandler.preProcess(inputContext) }
     }
 
     @ParameterizedTest(name = "Receiving a {0} payload when a checkpoint does not exist throws an exception")

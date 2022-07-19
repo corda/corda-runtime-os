@@ -109,11 +109,11 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Flow eransient exception is handled`() {
-        val error = FlowTransientException("", updatedContext)
+    fun `Flow transient exception is handled`() {
+        val error = FlowTransientException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -122,10 +122,10 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Flow event exception is handled`() {
-        val error = FlowEventException("", updatedContext)
+        val error = FlowEventException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -134,10 +134,10 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Flow platform exception is handled`() {
-        val error = FlowPlatformException("", updatedContext)
+        val error = FlowPlatformException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -146,10 +146,10 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Flow fatal exception is handled`() {
-        val error = FlowFatalException("", updatedContext)
+        val error = FlowFatalException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 

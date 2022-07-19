@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sandbox.impl
 
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
@@ -26,23 +26,23 @@ class FlowSandboxGroupContextImpl(
         @Suppress("ThrowsCount")
         fun fromContext(sandboxGroupContext: SandboxGroupContext): FlowSandboxGroupContext {
             val dependencyInjector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(DEPENDENCY_INJECTOR)
-                ?: throw FlowProcessingException(
+                ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with a dependency injector for " +
                             "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}"
                 )
             val checkpointSerializer = sandboxGroupContext.getObjectByKey<CheckpointSerializer>(CHECKPOINT_SERIALIZER)
-                ?: throw FlowProcessingException(
+                ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with a checkpoint serializer for " +
                             "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}",
                 )
             val amqpSerializer =
                 sandboxGroupContext.getObjectByKey<SerializationService>(AMQP_P2P_SERIALIZATION_SERVICE)
-                    ?: throw FlowProcessingException(
+                    ?: throw FlowFatalException(
                         "The flow sandbox has not been initialized with an AMQP serializer for " +
                                 "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}"
                     )
             val protocolStore = sandboxGroupContext.getObjectByKey<FlowProtocolStore>(FLOW_PROTOCOL_STORE)
-                ?: throw FlowProcessingException(
+                ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with a protocol store for " +
                             "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}"
                 )

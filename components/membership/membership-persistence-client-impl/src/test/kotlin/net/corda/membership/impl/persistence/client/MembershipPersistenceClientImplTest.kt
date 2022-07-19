@@ -461,6 +461,18 @@ class MembershipPersistenceClientImplTest {
         )
     }
 
+    @Test
+    fun `update registration request status is as expected`() {
+        postConfigChangedEvent()
+        mockPersistenceResponse()
+        val result = membershipPersistenceClient.setRegistrationRequestStatus(
+            ourHoldingIdentity,
+            registrationId,
+            RegistrationStatus.DECLINED
+        )
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+    }
+
     @Nested
     inner class SetMemberAndRegistrationRequestAsApprovedTests {
         @Test

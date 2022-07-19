@@ -11,6 +11,7 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -20,11 +21,14 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.time.Instant
 
 class VerificationRequestHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
+
+        val clock = TestClock(Instant.ofEpochSecond(0))
     }
 
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
@@ -36,18 +40,19 @@ class VerificationRequestHandlerTest {
     )
 
     private val response: KArgumentCaptor<VerificationResponse> = argumentCaptor()
-    private val requestSerializer: CordaAvroSerializer<VerificationResponse> = mock {
+    private val responseSerializer: CordaAvroSerializer<VerificationResponse> = mock {
         on { serialize(response.capture()) } doReturn "RESPONSE".toByteArray()
     }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<VerificationResponse>(any()) } doReturn requestSerializer
+        on { createAvroSerializer<VerificationResponse>(any()) } doReturn responseSerializer
     }
 
-    private val verificationRequestHandler = VerificationRequestHandler(cordaAvroSerializationFactory)
+    private val verificationRequestHandler = VerificationRequestHandler(clock, cordaAvroSerializationFactory)
 
     @Test
     fun `handler returns response message`() {
         val result = verificationRequestHandler.invoke(
+            null,
             Record(
                 "dummyTopic",
                 member.toString(),
@@ -57,6 +62,7 @@ class VerificationRequestHandlerTest {
             )
         )
         assertThat(result.outputStates).hasSize(1)
+        assertThat(result.updatedState).isNull()
         val appMessage = result.outputStates.first().value as AppMessage
         with(appMessage.message as AuthenticatedMessage) {
             assertThat(this.header.source).isEqualTo(member)
