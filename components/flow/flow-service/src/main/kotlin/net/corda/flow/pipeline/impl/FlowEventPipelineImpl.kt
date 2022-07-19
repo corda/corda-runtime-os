@@ -15,6 +15,8 @@ import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -74,7 +76,7 @@ class FlowEventPipelineImpl(
         return this
     }
 
-    override fun runOrContinue(): FlowEventPipelineImpl {
+    override fun runOrContinue(timeoutMilliseconds: Long): FlowEventPipelineImpl {
         val waitingFor = context.checkpoint.waitingFor?.value
             ?: throw FlowFatalException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
@@ -84,7 +86,7 @@ class FlowEventPipelineImpl(
 
         return when (val outcome = handler.runOrContinue(context, waitingFor)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
-                updateContextFromFlowExecution(outcome)
+                updateContextFromFlowExecution(outcome, timeoutMilliseconds)
             }
             is FlowContinuation.Continue -> this
         }
@@ -138,16 +140,24 @@ class FlowEventPipelineImpl(
             ?: throw FlowFatalException("${request::class.qualifiedName} does not have an associated flow request handler")
     }
 
-    private fun updateContextFromFlowExecution(outcome: FlowContinuation): FlowEventPipelineImpl {
+    private fun updateContextFromFlowExecution(
+        outcome: FlowContinuation,
+        timeoutMilliseconds: Long
+    ): FlowEventPipelineImpl {
         val flowResultFuture = flowRunner.runFlow(
             context,
             outcome
         )
 
-        /*
-        Need to think about a timeout for the get(), what do we do if a flow does not complete?
-        */
-        when (val flowResult = flowResultFuture.get()) {
+        val flowResult = try {
+            flowResultFuture.future.get(timeoutMilliseconds, TimeUnit.MILLISECONDS)
+        } catch (e: TimeoutException) {
+            log.error("Flow execution timeout, Flow marked as failed, interrupt attempted")
+            // Attempt to interrupt the failed flow so it doesn't block the executor
+            flowResultFuture.interruptable.attemptInterrupt()
+            FlowIORequest.FlowFailed(e)
+        }
+        when (flowResult) {
             is FlowIORequest.FlowFinished -> {
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 output = flowResult
