@@ -3472,9 +3472,9 @@
         "description" : "Information required to start a flow for this holdingId"
       },
       "StartFlowRequest" : {
-        "required" : [ "httpStartFlow" ],
+        "required" : [ "startFlow" ],
         "properties" : {
-          "httpStartFlow" : {
+          "startFlow" : {
             "$ref" : "#/components/schemas/StartFlowParameters"
           }
         },
