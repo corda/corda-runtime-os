@@ -69,19 +69,19 @@ class FlowClassRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun getStartableFlows(holderShortId: String): StartableFlowsResponse {
-        val vNode = getVirtualNode(holderShortId)
-        val cpiMeta = getCPIMeta(vNode, holderShortId)
+    override fun getStartableFlows(holdingIdentityShortHash: String): StartableFlowsResponse {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val cpiMeta = getCPIMeta(vNode, holdingIdentityShortHash)
         return getFlowClassesFromCPI(cpiMeta)
     }
 
     private fun getCPIMeta(
         vNode: VirtualNodeInfo,
-        holderShortId: String
+        holdingIdentityShortHash: String
     ): CpiMetadata {
         val vNodeCPIIdentifier = vNode.cpiIdentifier
         return cpiInfoReadService.get(CpiIdentifier.fromAvro(vNodeCPIIdentifier))
-            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holderShortId}'")
+            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holdingIdentityShortHash}'")
     }
 
     private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): StartableFlowsResponse {
@@ -92,7 +92,7 @@ class FlowClassRPCOpsImpl @Activate constructor(
     }
 
     private fun getVirtualNode(shortId: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getById(shortId)?.toAvro()
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortId)?.toAvro()
             ?: throw ResourceNotFoundException("Failed to find a Virtual Node for ID='${shortId}'")
     }
 }

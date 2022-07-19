@@ -62,7 +62,7 @@ internal class VirtualNodeInfoMap {
     /** Get a [VirtualNodeInfo] by [HoldingIdentity], `null` if not found. */
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoByHoldingIdentity[holdingIdentity]
 
-    /** Get a [VirtualNodeInfo] by short hash ([net.corda.virtualnode.HoldingIdentity.id]), `null` if not found */
+    /** Get a [VirtualNodeInfo] by short hash ([net.corda.virtualnode.HoldingIdentity.shortHash]), `null` if not found */
     fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoById[id]
 
     /** Remove the [VirtualNodeInfo] for a given key, specifically from the 'by id' map, in this method. */

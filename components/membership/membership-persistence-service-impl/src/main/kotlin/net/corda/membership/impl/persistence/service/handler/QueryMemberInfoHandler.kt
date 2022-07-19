@@ -31,7 +31,7 @@ internal class QueryMemberInfoHandler(
         } else {
             logger.info("Querying for ${request.queryIdentities.size} MemberInfo(s).")
             MemberInfoQueryResponse(
-                transaction(context.holdingIdentity.toCorda().id) { em ->
+                transaction(context.holdingIdentity.toCorda().shortHash) { em ->
                     request.queryIdentities.mapNotNull { holdingIdentity ->
                         em.find(
                             MemberInfoEntity::class.java,

@@ -85,7 +85,7 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName.toString(), GROUP_NAME)
-    private val memberId = member.id
+    private val memberId = member.shortHash
     private val sessionKey: PublicKey = mock {
         on { encoded } doReturn SESSION_KEY.toByteArray()
     }

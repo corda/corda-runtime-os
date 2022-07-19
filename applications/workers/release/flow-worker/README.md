@@ -104,7 +104,7 @@ This should yield a result similar to this for first request:
   },
   "cpiFileChecksum": "36241F2D1E16F158E2CB8559627A6D481D3F358FF5250A2DDF933CF2D454C10E",
   "mgmGroupId": "placeholder",
-  "holdingIdHash": "3B8DECDDD6E2",
+  "holdingIdShortHash": "3B8DECDDD6E2",
   "vaultDdlConnectionId": "d1b8e8a9-c8f1-43dc-ae1d-0f7b9864e07f",
   "vaultDmlConnectionId": "73c26a59-8a65-4169-8582-a184c443dd03",
   "cryptoDdlConnectionId": "ff8b9da4-6643-4951-b8cc-e12e3c90c190",
@@ -138,5 +138,3 @@ The holding ID is taken from the output of the 'create virtual node' step
 ```shell
 curl --insecure -u admin:admin https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1
 ```
-
-

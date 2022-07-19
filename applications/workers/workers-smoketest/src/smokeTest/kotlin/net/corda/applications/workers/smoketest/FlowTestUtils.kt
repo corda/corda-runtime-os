@@ -128,7 +128,7 @@ fun createVirtualNodeFor(x500: String): String {
             failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
-        val holdingId = vNodeJson["holdingIdHash"].textValue()
+        val holdingId = vNodeJson["holdingIdentityShortHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
     }

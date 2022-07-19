@@ -99,7 +99,7 @@ class QueryMemberInfoHandlerTest {
         on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValueDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
 
     private val services = PersistenceHandlerServices(
@@ -139,7 +139,7 @@ class QueryMemberInfoHandlerTest {
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
-        verify(virtualNodeInfoReadService, never()).getById(any())
+        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(dbConnectionManager, never()).createEntityManagerFactory(any(), any())
         verify(jpaEntitiesRegistry, never()).get(any())
         verify(entityManagerFactory, never()).createEntityManager()
@@ -188,8 +188,8 @@ class QueryMemberInfoHandlerTest {
             assertThat(secondValue).isEqualTo(mgmContextBytes)
         }
         with(argumentCaptor<String>()) {
-            verify(virtualNodeInfoReadService).getById(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verify(jpaEntitiesRegistry).get(any())
@@ -219,8 +219,8 @@ class QueryMemberInfoHandlerTest {
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
         with(argumentCaptor<String>()) {
-            verify(virtualNodeInfoReadService).getById(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verify(jpaEntitiesRegistry).get(any())

@@ -154,7 +154,7 @@ class StaticMemberRegistrationService @Activate constructor(
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.id
+        val memberId = registeringMember.shortHash
 
         assignSoftHsm(memberId)
 
@@ -193,7 +193,7 @@ class StaticMemberRegistrationService @Activate constructor(
             records.add(
                 Record(
                     MEMBER_LIST_TOPIC,
-                    "${owningMemberHoldingIdentity.id}-$memberId",
+                    "${owningMemberHoldingIdentity.shortHash}-$memberId",
                     PersistentMemberInfo(
                         owningMemberHoldingIdentity.toAvro(),
                         memberInfo.memberProvidedContext.toAvro(),
@@ -214,7 +214,7 @@ class StaticMemberRegistrationService @Activate constructor(
         groupPolicy: GroupPolicy
     ): Record<String, HostedIdentityEntry> {
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.id
+        val memberId = registeringMember.shortHash
         val groupId = groupPolicy.groupId
 
         /**
@@ -231,7 +231,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.id,
+            registeringMember.shortHash,
             hostedIdentity
 
         )

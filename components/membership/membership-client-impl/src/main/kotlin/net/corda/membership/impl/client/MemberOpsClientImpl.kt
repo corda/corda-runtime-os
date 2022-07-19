@@ -62,7 +62,7 @@ class MemberOpsClientImpl @Activate constructor(
     private interface InnerMemberOpsClient : AutoCloseable {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
-        fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgressDto
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto
     }
 
     private var impl: InnerMemberOpsClient = InactiveImpl
@@ -93,8 +93,8 @@ class MemberOpsClientImpl @Activate constructor(
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
         impl.startRegistration(memberRegistrationRequest)
 
-    override fun checkRegistrationProgress(holdingIdentityId: String) =
-        impl.checkRegistrationProgress(holdingIdentityId)
+    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+        impl.checkRegistrationProgress(holdingIdentityShortHash)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -158,7 +158,7 @@ class MemberOpsClientImpl @Activate constructor(
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
             throw IllegalStateException(ERROR_MSG)
 
-        override fun checkRegistrationProgress(holdingIdentityId: String) =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun close() = Unit
@@ -175,7 +175,7 @@ class MemberOpsClientImpl @Activate constructor(
                     clock.instant()
                 ),
                 RegistrationRpcRequest(
-                    memberRegistrationRequest.holdingIdentityId,
+                    memberRegistrationRequest.holdingIdentityShortHash,
                     RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
                     memberRegistrationRequest.context.toWire()
                 )
@@ -184,13 +184,13 @@ class MemberOpsClientImpl @Activate constructor(
             return registrationResponse(request.sendRequest())
         }
 
-        override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgressDto {
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto {
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
                     clock.instant()
                 ),
-                RegistrationStatusRpcRequest(holdingIdentityId)
+                RegistrationStatusRpcRequest(holdingIdentityShortHash)
             )
 
             return registrationResponse(request.sendRequest())

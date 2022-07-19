@@ -143,7 +143,7 @@ class StaticNetworkTest {
                         cryptoDdlConnection = null,
                         cryptoDmlConnection = null,
                     )
-                ).holdingIdHash
+                ).holdingIdentityShortHash
             }
         }
     }

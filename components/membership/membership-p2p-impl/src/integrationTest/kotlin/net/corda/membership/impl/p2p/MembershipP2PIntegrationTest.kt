@@ -256,7 +256,7 @@ class MembershipP2PIntegrationTest {
         assertThat(result?.second).isNotNull
         with(result!!.second) {
             assertThat(topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-            assertThat(key).isEqualTo(sourceHoldingIdentity.id)
+            assertThat(key).isEqualTo(sourceHoldingIdentity.shortHash)
             assertThat(value)
                 .isNotNull
                 .isInstanceOf(RegistrationCommand::class.java)

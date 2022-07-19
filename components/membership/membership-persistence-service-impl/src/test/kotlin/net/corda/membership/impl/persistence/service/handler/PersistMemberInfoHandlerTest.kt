@@ -96,7 +96,7 @@ class PersistMemberInfoHandlerTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValueSerializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
 
     private val services = PersistenceHandlerServices(
@@ -140,7 +140,7 @@ class PersistMemberInfoHandlerTest {
 
         assertThat(result).isInstanceOf(Unit::class.java)
         verify(memberInfoFactory, never()).create(any())
-        verify(virtualNodeInfoReadService, never()).getById(any())
+        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(dbConnectionManager, never()).createEntityManagerFactory(any(), any())
         verify(jpaEntitiesRegistry, never()).get(any())
     }
@@ -155,8 +155,8 @@ class PersistMemberInfoHandlerTest {
 
         assertThat(result).isInstanceOf(Unit::class.java)
         with(argumentCaptor<String>()) {
-            verify(virtualNodeInfoReadService).getById(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verify(entityManagerFactory).createEntityManager()

@@ -194,13 +194,13 @@ class DynamicMemberRegistrationService @Activate constructor(
         ): MembershipRequestRegistrationResult {
             try {
                 val registrationId = UUID.randomUUID().toString()
-                val memberContext = buildMemberContext(context, registrationId, member.id)
+                val memberContext = buildMemberContext(context, registrationId, member.shortHash)
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
                     keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value)
                 val memberSignature = cryptoOpsClient.sign(
-                    member.id,
+                    member.shortHash,
                     publicKey,
                     SignatureSpec(memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value),
                     serializedMemberContext
@@ -228,7 +228,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(registrationRequestSerializer.serialize(message)),
                     // holding identity ID is used as topic key to be able to ensure serial processing of registration
                     // for the same member.
-                    member.id
+                    member.shortHash
                 )
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {

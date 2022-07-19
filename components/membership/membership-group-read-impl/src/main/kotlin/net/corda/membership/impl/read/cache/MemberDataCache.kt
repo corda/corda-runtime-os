@@ -44,10 +44,10 @@ interface MemberDataCache<T> {
 
         private val cache = ConcurrentHashMap<String, T>()
 
-        override fun get(holdingIdentity: HoldingIdentity): T? = cache[holdingIdentity.id]
+        override fun get(holdingIdentity: HoldingIdentity): T? = cache[holdingIdentity.shortHash]
 
         override fun put(holdingIdentity: HoldingIdentity, data: T) {
-            cache[holdingIdentity.id] = data
+            cache[holdingIdentity.shortHash] = data
         }
 
         override fun clear() {

@@ -25,7 +25,7 @@ class RegistrationRequestEntity(
      * The holding identity ID of the registering member.
      */
     @Column(name = "holding_identity_id", nullable = false, updatable = false)
-    val holdingIdentityId: String,
+    val holdingIdentityShortHash: String,
 
     /**
      * The last status of the registration request.
