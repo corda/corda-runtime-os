@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
  * @param lifecycleEventHandler The user event handler for lifecycle events.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,

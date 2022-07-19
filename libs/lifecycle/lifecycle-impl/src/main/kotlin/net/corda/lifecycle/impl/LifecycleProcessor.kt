@@ -61,6 +61,7 @@ internal class LifecycleProcessor(
     /**
      * Process an individual event.
      */
+    @Suppress("ComplexMethod")
     private fun processEvent(
         event: LifecycleEvent,
         coordinator: LifecycleCoordinatorInternal,
