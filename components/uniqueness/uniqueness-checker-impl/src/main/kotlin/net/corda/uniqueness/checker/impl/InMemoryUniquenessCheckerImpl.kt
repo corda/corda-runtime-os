@@ -16,7 +16,7 @@ import java.time.Instant
  * An in-memory implementation of the uniqueness checker component, which does not persist any data,
  * and therefore loses any history of previous requests when a class instance is destroyed.
  *
- * Intended for testing purposes only - DO NOT USE ON A REAL SYSTEM
+ * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
 @Component(service = [UniquenessChecker::class])
 class InMemoryUniquenessCheckerImpl(

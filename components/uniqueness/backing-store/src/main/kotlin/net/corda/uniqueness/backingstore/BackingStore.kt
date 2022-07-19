@@ -1,15 +1,14 @@
 package net.corda.uniqueness.backingstore
 
-import net.corda.data.uniqueness.UniquenessCheckRequest
-import net.corda.uniqueness.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.datamodel.UniquenessCheckInternalTransactionDetails
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.contracts.StateRef
+import net.corda.uniqueness.backingstore.BackingStore.Session
+import net.corda.uniqueness.datamodel.*
 
 /**
- * Provides an interface to the backing database responsible for storing data used by notary
- * services.
+ * Abstracts the retrieval and persistence of data required by uniqueness checker implementations.
+ * Data supplied to and returned by the backing store use a suite of `UniquenessCheckInternal`
+ * classes, which are agnostic to both the external messaging API used by uniqueness checker
+ * implementations and any underlying database schema / data structures used by backing store
+ * implementations.
  *
  * A number of functional operations are provided by the backing store. These can be categorised
  * as transactional or non-transactional, which is generally determined by whether operations are
@@ -39,7 +38,6 @@ import net.corda.v5.ledger.contracts.StateRef
  * }
  * ```
  */
-@Suppress("ForbiddenComment")
 interface BackingStore {
 
     /**
@@ -73,33 +71,26 @@ interface BackingStore {
         /**
          * Executes a transaction within the scope of the specified code block. The [TransactionOps]
          * interface will be injected into the code block, which may perform one or more operations
-         * using the interface. All operations performed that result in writes to the backing store
-         * will be performed atomically.
+         * using the interface. Once the specified code block has been executed, any changes to
+         * the data persisted data are committed atomically.
          */
         fun executeTransaction(block: (Session, TransactionOps) -> Unit)
 
         /**
-         * For the given list of state refs, returns a list of committed state objects for states
-         * that have been previously committed (spent).
+         * For the given list of state references, returns a map of state details for states that
+         * have been previously committed, keyed by their state reference.
          */
-        fun getCommittedStates(states: Collection<StateRef>): List<UniquenessCheckInternalStateDetails>
+        fun getStateDetails(
+            states: Collection<UniquenessCheckInternalStateRef>
+        ): Map<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>
 
         /**
-         * For the given list of transaction id's, returns a list of those ids which have been
-         * previously committed.
+         * For the given list of transaction id's, returns a map of transaction details for
+         * transactions that have been previously committed, keyed by their transaction id.
          */
-        fun getCommittedTransactions(txIds: Collection<SecureHash>): List<UniquenessCheckInternalTransactionDetails>
-
-        /**
-         * For the given list of transaction id's, returns a list of those ids which have been
-         * previously rejected.
-         */
-        fun getRejectedTransactions(txIds: Collection<SecureHash>): List<UniquenessCheckInternalTransactionDetails>
-
-        /**
-         * Returns whether a transaction with the specified hash has previously been committed.
-         */
-        fun isPreviouslyNotarised(txId: SecureHash): Boolean
+        fun getTransactionDetails(
+            txIds: Collection<UniquenessCheckInternalTxHash>
+        ): Map<UniquenessCheckInternalTxHash, UniquenessCheckInternalTransactionDetails>
 
         /**
          * Provides the set of operations that may be performed within the context of a transaction.
@@ -108,24 +99,26 @@ interface BackingStore {
         interface TransactionOps {
 
             /**
-             * This function will update the given state records in the backing store and set the
-             * consuming transaction to the given transaction.
+             * Instructs the backing store to record new state records which are marked as
+             * unconsumed.
              */
-            fun consumeStates(consumingTxIdsAndStateRefs: Pair<SecureHash, List<StateRef>>)
+            fun createUnconsumedStates(stateRefs: Collection<UniquenessCheckInternalStateRef>)
 
             /**
-             * This function will create new state records in the backing store.
-             * These state records will be *unconsumed* and the issuer will be the given
-             * transaction.
+             * Instructs the backing store to mark previously unconsumed states as consumed by
+             * the specified transaction id.
              */
-            fun createUnconsumedStates(issueTxIdAndStateRefs: Pair<SecureHash, List<StateRef>>)
+            fun consumeStates(
+                consumingTxId: UniquenessCheckInternalTxHash,
+                stateRefs: Collection<UniquenessCheckInternalStateRef>
+            )
 
             /**
-             * This function will commit the transactions from the given requests to the backing store.
-             * The logic of how it is committed will depend on the result.
+             * Instructs the backing store to commit the details of the specified transactions.
              */
             fun commitTransactions(
-                transactionResults: List<Pair<UniquenessCheckRequest, UniquenessCheckInternalResult>>
+                transactionDetails: Collection<Pair<
+                        UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
             )
         }
     }

@@ -8,8 +8,6 @@ description 'Uniqueness library'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
-    api "net.corda:corda-ledger"
-
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-avro-schema"

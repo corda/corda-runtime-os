@@ -11,5 +11,7 @@ dependencies {
     api project(':libs:lifecycle:lifecycle')
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-avro-schema"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":components:uniqueness:backing-store")
 }

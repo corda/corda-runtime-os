@@ -15,6 +15,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":components:uniqueness:uniqueness-checker")
+    implementation project(":components:uniqueness:backing-store")
+    implementation project(":components:uniqueness:backing-store-impl")
+    implementation project(":libs:uniqueness")
     implementation project(":libs:utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
@@ -22,5 +25,5 @@ dependencies {
 
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
-    testImplementation project(":testing:uniqueness")
+    testImplementation project(":testing:uniqueness-testkit")
 }

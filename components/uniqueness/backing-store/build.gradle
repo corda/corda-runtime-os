@@ -8,9 +8,6 @@ description 'Backing store component internal API'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
-    api "net.corda:corda-crypto"
-    api "net.corda:corda-ledger"
-
     api project(':libs:lifecycle:lifecycle')
     api project(':libs:uniqueness')
 
