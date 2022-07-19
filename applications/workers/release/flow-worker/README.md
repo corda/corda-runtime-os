@@ -125,7 +125,7 @@ curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "r
 curl --insecure -u admin:admin -X 'POST' \
   'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
   -d '{
-  "httpStartFlow": {
+  "startFlow": {
     "clientRequestId": "request1",
     "flowClassName": "net.cordapp.flowworker.development.flows.MessagingFlow",
     "requestData": "{\"counterparty\": \"C=GB, L=London, O=Bob\"}"
