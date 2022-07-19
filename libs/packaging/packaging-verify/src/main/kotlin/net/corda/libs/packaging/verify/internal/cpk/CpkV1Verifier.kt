@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.verify.internal.cpk
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
