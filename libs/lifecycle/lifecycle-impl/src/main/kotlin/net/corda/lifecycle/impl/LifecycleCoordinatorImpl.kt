@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -44,6 +45,7 @@ class LifecycleCoordinatorImpl(
     batchSize: Int,
     private val registry: LifecycleRegistryCoordinatorAccess,
     private val scheduler: LifecycleCoordinatorScheduler,
+    closeableResources: CloseableResources?,
     lifecycleEventHandler: LifecycleEventHandler,
 ) : LifecycleCoordinatorInternal {
 
@@ -59,7 +61,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifecycleEventHandler)
+    private val processor = LifecycleProcessor(name, lifecycleState, registry, closeableResources, lifecycleEventHandler)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
