@@ -11,6 +11,7 @@ import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
+import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
@@ -22,8 +23,13 @@ import java.util.zip.ZipEntry
 class StaticNetworkTest {
     private val testToolkit by TestToolkitProperty()
     private val json = ObjectMapper()
-    private fun createCertificate() = StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!.readText()
-    private val groupId = testToolkit.uniqueName
+    private fun createCertificate() = StringEscapeUtils.escapeJson(
+        StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!
+            .readText()
+            .replace("\r", "")
+            .replace("\n", System.lineSeparator())
+    )
+    private val groupId = "102012c6-1b53-49b3-8915-b7d7cc0ba8d9"
 
     private fun createGroupPolicyJson(
         memberNames: Collection<String>,
@@ -31,8 +37,10 @@ class StaticNetworkTest {
         val groupPolicy = mapOf(
             "fileFormatVersion" to 1,
             "groupId" to groupId,
-            "registrationProtocol" to "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
-            "synchronisationProtocol" to "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
+            "registrationProtocol"
+                    to "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
+            "synchronisationProtocol"
+                    to "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
             "protocolParameters" to mapOf(
                 "sessionKeyPolicy" to "Combined",
                 "staticNetwork" to mapOf(
@@ -72,7 +80,6 @@ class StaticNetworkTest {
 
         return ByteArrayOutputStream().use { outputStream ->
             json.writeValue(outputStream, groupPolicy)
-
             outputStream.toByteArray()
         }
     }

@@ -16,7 +16,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -31,6 +30,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -43,8 +45,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -72,7 +76,9 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = MembershipPersistenceClient::class)
     val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    @Reference(service = MembershipSchemaValidatorFactory::class)
+    val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -184,7 +190,28 @@ class MGMRegistrationService @Activate constructor(
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
             try {
+                membershipSchemaValidatorFactory
+                    .createValidator()
+                    .validateRegistrationContext(
+                        RegistrationContextSchema.Mgm,
+                        Version(1, 0),
+                        context
+                    )
+            } catch (ex: MembershipSchemaValidationException) {
+                return MembershipRequestRegistrationResult(
+                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                    "Onboarding MGM failed. The registration context is invalid: " + ex.message
+                )
+            }
+            try {
                 validateContext(context)
+            } catch (ex: IllegalArgumentException) {
+                return MembershipRequestRegistrationResult(
+                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                    "Onboarding MGM failed. The registration context is invalid: " + ex.message
+                )
+            }
+            try {
                 val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash)
                 val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash)
                 val now = clock.instant().toString()

@@ -4,13 +4,14 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
 import net.corda.chunking.db.ChunkWriteException
-import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -31,6 +32,7 @@ import javax.persistence.EntityManagerFactory
 class ChunkDbWriterFactoryImpl(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val tempPathProvider: PathProvider
 ) : ChunkDbWriterFactory {
 
@@ -39,8 +41,10 @@ class ChunkDbWriterFactoryImpl(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory
-    ) : this(subscriptionFactory, publisherFactory, TempPathProvider())
+        publisherFactory: PublisherFactory,
+        @Reference(service = MembershipSchemaValidatorFactory::class)
+        membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory
+    ) : this(subscriptionFactory, publisherFactory, membershipSchemaValidatorFactory, TempPathProvider())
 
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
@@ -100,11 +104,13 @@ class ChunkDbWriterFactoryImpl(
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
+        val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,
             cpiPersistence,
             cpiInfoWriteService,
+            membershipSchemaValidator,
             cpiCacheDir,
             cpiPartsDir,
             UTCClock()
@@ -112,7 +118,10 @@ class ChunkDbWriterFactoryImpl(
         val processor = ChunkWriteToDbProcessor(statusPublisher, chunkPersistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
-            Pair(publisher, subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null))
+            Pair(
+                publisher,
+                subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null)
+            )
         } catch (e: Exception) {
             // If a failure happens such that the subscription could not be created, the publisher we've just created
             // needs to be deleted.

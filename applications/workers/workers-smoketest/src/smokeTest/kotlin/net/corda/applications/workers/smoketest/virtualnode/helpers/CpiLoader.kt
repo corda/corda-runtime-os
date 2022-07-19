@@ -1,5 +1,10 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import net.corda.applications.workers.smoketest.X500_ALICE
+import net.corda.applications.workers.smoketest.X500_BOB
+import net.corda.applications.workers.smoketest.X500_CHARLIE
+import net.corda.applications.workers.smoketest.X500_DAVID
+import net.corda.applications.workers.smoketest.virtualnode.helpers.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
 import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -8,7 +13,6 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 object CpiLoader {
-    private const val groupIdPlaceholder = "group-id-placeholder"
     private fun getInputStream(resourceName: String): InputStream {
         return this::class.java.getResource(resourceName)?.openStream()
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
@@ -40,13 +44,22 @@ object CpiLoader {
         return bytes.inputStream()
     }
 
-    private fun addGroupPolicy(zipOutputStream: ZipOutputStream, groupId: String) {
-        val staticNetworkPolicy = javaClass.classLoader.getResourceAsStream("GroupPolicy-static-network.json")
-            .reader().use { it.readText() }
-            .replace(groupIdPlaceholder, groupId)
-
+    private fun addGroupPolicy(
+        zipOutputStream: ZipOutputStream,
+        groupId: String,
+        staticMemberNames: List<String> = listOf(
+            X500_ALICE,
+            X500_BOB,
+            X500_CHARLIE,
+            X500_DAVID
+        )
+    ) {
         zipOutputStream.putNextEntry(ZipEntry("META-INF/GroupPolicy.json"))
-        staticNetworkPolicy.byteInputStream().use { it.copyTo(zipOutputStream) }
+        val groupPolicy = getDefaultStaticNetworkGroupPolicy(
+            groupId,
+            staticMemberNames
+        )
+        groupPolicy.byteInputStream().use { it.copyTo(zipOutputStream) }
         zipOutputStream.closeEntry()
     }
 }

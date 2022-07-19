@@ -19,6 +19,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -179,6 +181,10 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val membershipSchemaValidator: MembershipSchemaValidator = mock()
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
+        on { createValidator() } doReturn membershipSchemaValidator
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -187,6 +193,7 @@ class DynamicMemberRegistrationServiceTest {
         keyEncodingService,
         serializationFactory,
         membershipGroupReaderProvider,
+        membershipSchemaValidatorFactory
     )
 
     private val context = mapOf(
@@ -309,7 +316,8 @@ class DynamicMemberRegistrationServiceTest {
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
-                .isEqualTo("Registration failed. Reason: Provided ledger key IDs are incorrectly numbered.")
+                .isEqualTo("Registration failed. " +
+                        "The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
         }
         registrationService.stop()
     }
