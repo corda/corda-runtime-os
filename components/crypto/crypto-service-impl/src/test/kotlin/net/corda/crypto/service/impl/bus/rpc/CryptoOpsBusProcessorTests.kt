@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.bus.rpc
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.aes.KeyCredentials
@@ -13,6 +14,7 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -25,6 +27,7 @@ import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -44,6 +47,7 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -491,6 +495,46 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoNoContentValue::class.java)
         assertThat(factory.softCache.keys).containsKey(masterKeyAlias)
+    }
+
+    @Test
+    fun `Should derive shared secret key`() {
+        setup()
+        val context1 = createRequestContext()
+        val operationContext = listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!"),
+            KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+        )
+        val otherKeyPair = generateKeyPair(schemeMetadata, X25519_CODE_NAME)
+        val publicKey = signingService.generateKeyPair(
+            tenantId,
+            CryptoConsts.Categories.SESSION_INIT,
+            "ecd-key",
+            schemeMetadata.findKeyScheme(X25519_CODE_NAME)
+        )
+        val future1 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                DeriveSharedSecretCommand(
+                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(otherKeyPair.public)),
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future1
+        )
+        val result1 = future1.get()
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(3, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertResponseContext(context1, result1.context)
+        assertThat(result1.response).isInstanceOf(CryptoDerivedSharedSecret::class.java)
+        assertThat((result1.response as CryptoDerivedSharedSecret).secret.array()).isNotEmpty
     }
 
     @Test

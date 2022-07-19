@@ -64,7 +64,7 @@ class ClusterBuilder {
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
     fun addSoftHsmToVNode(holdingIdHash: String, category: String) =
-        client!!.post("/api/v1/$holdingIdHash/hsm/soft?category=$category", body = "")
+        client!!.post("/api/v1/hsm/soft/$holdingIdHash/$category", body = "")
 
     fun createKey(holdingIdHash: String, alias: String, category: String, scheme: String) =
         client!!.post(
@@ -102,7 +102,7 @@ class ClusterBuilder {
     }
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
-        """{ "httpStartFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
+        """{ "startFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
             |"$requestData"} }""".trimMargin()
 
 }

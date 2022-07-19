@@ -22,7 +22,7 @@ internal class VerificationRequestHandler(
         header: AuthenticatedMessageHeader,
         payload: ByteBuffer
     ): Record<String, RegistrationCommand> {
-        logger.info("Received verification request. Sending it to RegistrationManagementService to process.")
+        logger.info("Received verification request from ${header.source}. Sending it to RegistrationManagementService to process.")
         return Record(
             REGISTRATION_COMMAND_TOPIC,
             header.destination.toCorda().id,

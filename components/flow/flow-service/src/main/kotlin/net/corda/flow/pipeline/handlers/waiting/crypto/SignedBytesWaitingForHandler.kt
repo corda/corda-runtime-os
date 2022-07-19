@@ -72,11 +72,11 @@ class SignedBytesWaitingForHandler @Activate constructor(
             }
             "PLATFORM_ERROR" -> {
                 log.error("$errorMessage. Exception: $exceptionEnvelope")
-                throw FlowFatalException(errorMessage, context)
+                throw FlowFatalException(errorMessage)
             }
             else -> {
                 log.error("Unexpected error type returned from the crypto worker: ${exceptionEnvelope.errorType}")
-                throw FlowFatalException(errorMessage, context)
+                throw FlowFatalException(errorMessage)
             }
         }.also {
             cryptoState.response = null

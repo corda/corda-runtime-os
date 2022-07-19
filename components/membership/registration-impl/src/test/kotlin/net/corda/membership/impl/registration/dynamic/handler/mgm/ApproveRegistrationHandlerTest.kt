@@ -8,17 +8,20 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
+import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.Signer
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
-import net.corda.membership.lib.impl.MemberInfoExtension
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -55,11 +58,8 @@ class ApproveRegistrationHandlerTest {
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
     private val registrationId = "registrationID"
-    private val command = ApproveRegistration(
-        owner.toAvro(),
-        member.toAvro(),
-        registrationId,
-    )
+    private val command = ApproveRegistration()
+    private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
     private val key = "key"
     private val memberInfo = mockMemberInfo(member)
     private val inactiveMember = mockMemberInfo(
@@ -160,7 +160,7 @@ class ApproveRegistrationHandlerTest {
     @Test
     fun `invoke return member record`() {
 
-        val reply = handler.invoke(key, command)
+        val reply = handler.invoke(state, key, command)
 
         val memberRecords = reply.outputStates.filter {
             it.topic == MEMBER_LIST_TOPIC
@@ -204,7 +204,7 @@ class ApproveRegistrationHandlerTest {
             )
         ).doReturn(allMemberPackage)
 
-        val reply = handler.invoke(key, command)
+        val reply = handler.invoke(state, key, command)
 
         assertThat(reply.outputStates).contains(allMemberPackage)
     }
@@ -234,14 +234,14 @@ class ApproveRegistrationHandlerTest {
             record
         }
 
-        val reply = handler.invoke(key, command)
+        val reply = handler.invoke(state, key, command)
 
         assertThat(reply.outputStates).containsAll(membersRecord)
     }
 
     @Test
     fun `invoke update the member and request state`() {
-        handler.invoke(key, command)
+        handler.invoke(state, key, command)
 
         verify(membershipPersistenceClient).setMemberAndRegistrationRequestAsApproved(
             viewOwningIdentity = owner,
@@ -255,7 +255,14 @@ class ApproveRegistrationHandlerTest {
         whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(allActiveMembers - mgm))
 
         assertThrows<ApproveRegistrationHandler.FailToFindMgm> {
-            handler.invoke(key, command)
+            handler.invoke(state, key, command)
+        }
+    }
+
+    @Test
+    fun `exception is thrown when RegistrationState is null`() {
+        assertThrows<MissingRegistrationStateException> {
+            handler.invoke(null, key, command)
         }
     }
 

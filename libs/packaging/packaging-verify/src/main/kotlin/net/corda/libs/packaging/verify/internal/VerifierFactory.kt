@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.verify.internal
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE

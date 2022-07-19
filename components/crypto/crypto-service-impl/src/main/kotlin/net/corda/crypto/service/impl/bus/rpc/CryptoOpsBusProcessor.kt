@@ -11,6 +11,7 @@ import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.WireProcessor
+import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -21,6 +22,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -44,6 +46,7 @@ class CryptoOpsBusProcessor(
     companion object {
         private val logger: Logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
+            DeriveSharedSecretCommand::class.java to DeriveSharedSecretCommandHandler::class.java,
             GenerateFreshKeyRpcCommand::class.java to GenerateFreshKeyRpcCommandHandler::class.java,
             GenerateKeyPairCommand::class.java to GenerateKeyPairCommandHandler::class.java,
             GenerateWrappingKeyRpcCommand::class.java to GenerateWrappingKeyRpcCommandHandler::class.java,
@@ -153,6 +156,20 @@ class CryptoOpsBusProcessor(
                     )
                 }
             )
+        }
+    }
+
+    private class DeriveSharedSecretCommandHandler(
+        private val signingService: SigningService
+    ) : Handler<DeriveSharedSecretCommand> {
+        override fun handle(context: CryptoRequestContext, request: DeriveSharedSecretCommand): Any {
+            val sharedSecret = signingService.deriveSharedSecret(
+                tenantId = context.tenantId,
+                publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array()),
+                otherPublicKey = signingService.schemeMetadata.decodePublicKey(request.otherPublicKey.array()),
+                context = request.context.items.toMap()
+            )
+            return CryptoDerivedSharedSecret(ByteBuffer.wrap(sharedSecret))
         }
     }
 

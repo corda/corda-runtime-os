@@ -1,0 +1,53 @@
+plugins {
+    id 'corda.common-app'
+}
+
+configurations {
+    dockerImage {
+        canBeConsumed = false
+        transitive = false
+    }
+
+    profilerAgent {
+        canBeConsumed = false
+        visible = false
+    }
+}
+
+if (enableProfiling.toBoolean()) {
+    dependencies {
+        // Unzip the Java profiler into the Docker image.
+        profilerAgent "com.yourkit.corda:yourkit-agent-linux-x86-64:$profilerVersion@zip"
+        dockerImage provider { zipTree(configurations.profilerAgent.singleFile) }
+    }
+}
+
+tasks.register('publishOSGiImage', DeployableContainerBuilder) {
+    it.sourceFiles.setFrom(tasks.named('appJar', Jar))
+    it.extraSourceFiles.setFrom(configurations.dockerImage)
+    it.useShortName = true
+
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+
+    if (project.hasProperty('isReleaseCandidate')) {
+        releaseCandidate = isReleaseCandidate.toBoolean()
+    }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
+
+    if (project.hasProperty('baseImage')) {
+        baseImageName = baseImage
+    }
+
+    if (project.hasProperty('useDockerDaemon')) {
+        useDaemon = useDockerDaemon.toBoolean()
+    }
+}

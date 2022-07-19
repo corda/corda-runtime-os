@@ -167,6 +167,13 @@ class CryptoOpsClientComponent @Activate constructor(
         context: Map<String, String>
     ) = impl.ops.createWrappingKey(configId, failIfExists, masterKeyAlias, context)
 
+    override fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray = impl.ops.deriveSharedSecret(tenantId, publicKey, otherPublicKey, context)
+
     class Impl(
         publisherFactory: PublisherFactory,
         schemeMetadata: CipherSchemeMetadata,

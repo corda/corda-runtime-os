@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description 'Gateway Application'
@@ -38,4 +39,6 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-client-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
+
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

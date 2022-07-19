@@ -18,9 +18,9 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock

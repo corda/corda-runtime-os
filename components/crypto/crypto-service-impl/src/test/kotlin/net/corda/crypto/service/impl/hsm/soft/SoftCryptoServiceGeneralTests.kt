@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
 import net.corda.crypto.core.aes.WrappingKey
@@ -8,9 +9,12 @@ import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.crypto.X25519_CODE_NAME
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -153,9 +157,11 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<IllegalArgumentException> {
             service.sign(
                 SigningWrappedSpec(
-                    keyMaterial = ByteArray(2),
-                    masterKeyAlias = null,
-                    encodingVersion = 1,
+                    keyMaterialSpec = KeyMaterialSpec(
+                        keyMaterial = ByteArray(2),
+                        masterKeyAlias = null,
+                        encodingVersion = 1
+                    ),
                     keyScheme = scheme,
                     signatureSpec = signatureSpec
                 ),
@@ -178,13 +184,15 @@ class SoftCryptoServiceGeneralTests {
             service.sign(
                 mock(),
                 ByteArray(2),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
             )
         }
     }
 
     @Test
-    fun `Should throw IllegalStateException when signing and masterKeyAlias is not exists yet`() {
+    fun `Should throw IllegalStateException when signing and masterKeyAlias does not exist yet`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
@@ -195,13 +203,88 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<IllegalStateException> {
             service.sign(
                 SigningWrappedSpec(
-                    keyMaterial = ByteArray(2),
-                    masterKeyAlias = UUID.randomUUID().toString(),
-                    encodingVersion = 1,
+                    keyMaterialSpec = KeyMaterialSpec(
+                        keyMaterial = ByteArray(2),
+                        masterKeyAlias = UUID.randomUUID().toString(),
+                        encodingVersion = 1
+                    ),
                     keyScheme = scheme,
                     signatureSpec = signatureSpec
                 ),
                 ByteArray(2),
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when deriving key and masterKeyAlias is null`() {
+        val service = SoftCryptoService(
+            mock(),
+            schemeMetadata,
+            mock()
+        )
+        val scheme = service.supportedSchemes.keys.first { it.codeName == X25519_CODE_NAME }
+        val keyPair = generateKeyPair(schemeMetadata, scheme.codeName)
+        val otherPublicKey = generateKeyPair(schemeMetadata, scheme.codeName).public
+        assertThrows<IllegalArgumentException> {
+            service.deriveSharedSecret(
+                SharedSecretWrappedSpec(
+                    keyMaterialSpec = KeyMaterialSpec(
+                        keyMaterial = keyPair.private.encoded,
+                        masterKeyAlias = null,
+                        encodingVersion = 1
+                    ),
+                    keyScheme = scheme,
+                    otherPublicKey = otherPublicKey
+                ),
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when deriving key and spec is not SharedSecretWrappedSpec`() {
+        val service = SoftCryptoService(
+            mock(),
+            schemeMetadata,
+            mock()
+        )
+        assertThrows<IllegalArgumentException> {
+            service.deriveSharedSecret(
+                mock(),
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when deriving key and masterKeyAlias does not exist yet`() {
+        val service = SoftCryptoService(
+            mock(),
+            schemeMetadata,
+            mock()
+        )
+        val scheme = service.supportedSchemes.keys.first { it.codeName == X25519_CODE_NAME }
+        val keyPair = generateKeyPair(schemeMetadata, scheme.codeName)
+        val otherPublicKey = generateKeyPair(schemeMetadata, scheme.codeName).public
+        assertThrows<IllegalStateException> {
+            service.deriveSharedSecret(
+                SharedSecretWrappedSpec(
+                    keyMaterialSpec = KeyMaterialSpec(
+                        keyMaterial = keyPair.private.encoded,
+                        masterKeyAlias = UUID.randomUUID().toString(),
+                        encodingVersion = 1
+                    ),
+                    keyScheme = scheme,
+                    otherPublicKey = otherPublicKey
+                ),
                 mapOf(
                     CRYPTO_TENANT_ID to UUID.randomUUID().toString()
                 )

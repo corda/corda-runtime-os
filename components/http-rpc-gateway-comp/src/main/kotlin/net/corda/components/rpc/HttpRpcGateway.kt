@@ -1,6 +1,7 @@
 package net.corda.components.rpc
 
 import net.corda.components.rbac.RBACSecurityManagerService
+import net.corda.components.rpc.HttpRpcGateway.Companion.INTERNAL_PLUGGABLE_RPC_OPS
 import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
@@ -13,6 +14,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -20,7 +22,16 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
-@Component(service = [HttpRpcGateway::class])
+@Component(
+    service = [HttpRpcGateway::class],
+    reference = [
+        Reference(
+            name = INTERNAL_PLUGGABLE_RPC_OPS,
+            service = PluggableRPCOps::class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC
+        )
+    ])
 class HttpRpcGateway @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -33,19 +44,22 @@ class HttpRpcGateway @Activate constructor(
     @Reference(service = SslCertReadServiceFactory::class)
     sslCertReadServiceFactory: SslCertReadServiceFactory,
     @Reference(service = PermissionManagementService::class)
-    permissionManagementService: PermissionManagementService
+    permissionManagementService: PermissionManagementService,
+    private val componentContext: ComponentContext
 ) : Lifecycle {
 
-    private companion object {
-        val log = contextLogger()
+     companion object {
+        private val log = contextLogger()
+        internal const val INTERNAL_PLUGGABLE_RPC_OPS = "internalPluggableRpcOps"
+
+         private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
+             @Suppress("unchecked_cast")
+             return (locateServices(refName) as? Array<T>)?.toList() ?: emptyList()
+         }
     }
 
-    @Reference(
-        service = PluggableRPCOps::class,
-        cardinality = ReferenceCardinality.MULTIPLE,
-        policy = ReferencePolicy.DYNAMIC
-    )
-    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>> = mutableListOf()
+    private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>
+        get() = componentContext.fetchServices(INTERNAL_PLUGGABLE_RPC_OPS)
 
     private val handler = HttpRpcGatewayEventHandler(
         permissionManagementService,
@@ -53,7 +67,7 @@ class HttpRpcGateway @Activate constructor(
         httpRpcServerFactory,
         rbacSecurityManagerService,
         sslCertReadServiceFactory,
-        this.dynamicRpcOps
+        ::dynamicRpcOps
     )
 
     private var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(handler)

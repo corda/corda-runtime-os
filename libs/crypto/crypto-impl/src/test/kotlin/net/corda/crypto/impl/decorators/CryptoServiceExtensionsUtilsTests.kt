@@ -46,4 +46,23 @@ class CryptoServiceExtensionsUtilsTests {
         }
         assertFalse(service.supportsKeyDelete)
     }
+
+    @Test
+    fun `supportsSharedSecretDerivation should return true if extensions contain SHARED_SECRET_DERIVATION`() {
+        val service = mock<CryptoService> {
+            on { extensions } doReturn listOf(
+                CryptoServiceExtensions.DELETE_KEYS,
+                CryptoServiceExtensions.SHARED_SECRET_DERIVATION
+            )
+        }
+        assertTrue(service.supportsSharedSecretDerivation)
+    }
+
+    @Test
+    fun `supportsSharedSecretDerivation should return false if extensions do not contain SHARED_SECRET_DERIVATION`() {
+        val service = mock<CryptoService> {
+            on { extensions } doReturn listOf(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
+        }
+        assertFalse(service.supportsSharedSecretDerivation)
+    }
 }

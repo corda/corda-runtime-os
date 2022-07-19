@@ -12,14 +12,14 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.impl.toSortedMap
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -58,7 +58,7 @@ class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
-    override fun invoke(key: String, command: StartRegistration): RegistrationHandlerResult {
+    override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
                 Triple(
@@ -127,7 +127,7 @@ class StartRegistrationHandler(
         )
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro()),
+            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro()),
             listOf(Record(REGISTRATION_COMMAND_TOPIC, key, outputCommand))
         )
     }

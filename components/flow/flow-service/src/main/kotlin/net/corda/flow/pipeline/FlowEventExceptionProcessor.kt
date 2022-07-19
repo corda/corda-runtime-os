@@ -8,7 +8,6 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import java.util.concurrent.CancellationException
 
 /**
  * The [FlowEventExceptionProcessor] is responsible for handling any exceptions thrown while processing a [FlowEvent]
@@ -23,44 +22,61 @@ interface FlowEventExceptionProcessor {
     fun configure(config: SmartConfig)
 
     /**
-     * Processes an [Exception] and updates the [FlowEventContext]
+     * Processes a [Throwable] and provides the pipeline response.
      *
-     * @param exception The [Exception] throw during processing
+     * This handling is the fallback if all other error processing fails. As a result, it is essential that no errors
+     * are thrown from this function.
      *
-     * @return the updated [FlowEventContext]
-     * @throws [CancellationException] if the event should be moved to the DLQ
+     * @param throwable The [Throwable] thrown during processing.
+     *
+     * @return The updated response.
      */
-    fun process(exception: Exception): StateAndEventProcessor.Response<Checkpoint>
+    fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint>
 
     /**
-     * Processes an [FlowTransientException] and updates the [FlowEventContext]
+     * Processes a [FlowTransientException] and provides the pipeline response.
      *
-     * @param exception The [Exception] throw during processing
+     * Used to handle event retries.
      *
-     * @return the updated [FlowEventContext]
-     * @throws [CancellationException] if the event should be moved to the DLQ
+     * @param exception The [FlowTransientException] thrown during processing
+     * @param context The [FlowEventContext] at the point of failure.
+     *
+     * @return The updated response.
      */
-    fun process(exception: FlowTransientException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowTransientException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
     /**
-     * Processes an [FlowFatalException] and updates the [FlowEventContext]
+     * Processes a [FlowFatalException] and provides the pipeline response.
      *
-     * @param exception The [Exception] throw during processing
+     * Used when a flow has failed due to errors in the pipeline code. User code failures should be handled via normal
+     * pipeline processing.
      *
-     * @return the updated [FlowEventContext]
-     * @throws [CancellationException] if the event should be moved to the DLQ
+     * @param exception The [FlowFatalException] thrown during processing.
+     *
+     * @return The updated response.
      */
-    fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowFatalException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
     /**
-     * Processes an [FlowEventException] and updates the [FlowEventContext]
+     * Processes a [FlowEventException] and provides the pipeline response.
      *
-     * @param exception The [Exception] throw during processing
+     * Invoked if an event should be discarded, for example a spurious wakeup or a session event for a failed session.
      *
-     * @return the updated [FlowEventContext]
-     * @throws [CancellationException] if the event should be moved to the DLQ
+     * @param exception The [FlowEventException] thrown during processing
+     *
+     * @return The updated response.
      */
-    fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowEventException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
-    fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint>
+    /**
+     * Processes a [FlowPlatformException] and provides the pipeline response.
+     *
+     * Invoked when a platform exception is encountered after the flow has run, which needs to be communicated back to
+     * the user code.
+     *
+     * @param exception The [FlowPlatformException] thrown during processing
+     *
+     * @return The updated response.
+     */
+    fun process(exception: FlowPlatformException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 }
