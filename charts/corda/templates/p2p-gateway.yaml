@@ -1,4 +1,19 @@
-{{- $_ := set . "worker" "p2pLinkManager" }}
+{{- $_ := set . "worker" "p2pGateway" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.workerName" . }}
+  labels:
+    {{- include "corda.workerLabels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "corda.workerSelectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.workers.p2pGateway.service.port }}
+      targetPort: http
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +21,7 @@ metadata:
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.workers.p2pLinkManager.replicaCount }}
+  replicas: {{ .Values.workers.p2pGateway.replicaCount }}
   selector:
     matchLabels:
       {{- include "corda.workerSelectorLabels" . | nindent 6 }}
@@ -30,7 +45,7 @@ spec:
                     - key: "app.kubernetes.io/component"
                       operator: In
                       values:
-                        - p2pLinkManager
+                        - p2pGateway
                 topologyKey: "kubernetes.io/hostname"
       containers:
       - name: {{ include "corda.workerName" . }}
@@ -43,14 +58,16 @@ spec:
         {{- include "corda.workerEnv" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
-        {{- if not .Values.workers.p2pLinkManager.useStubs}}
+        {{- if not .Values.workers.p2pGateway.useStubs}}
           - "--without-stubs"
         {{- end }}
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
-        # Add health port when porting Link Manager to common worker framework CORE-4424
-        {{- if .Values.workers.p2pLinkManager.debug.enabled }}
+        # Add health port when porting gateway to common worker framework CORE-4424
         ports:
+          - name: http
+            containerPort: {{ .Values.workers.p2pGateway.service.port }}
+        {{- if .Values.workers.p2pGateway.debug.enabled }}
           - name: debug
             containerPort: 5005
         {{- end }}
