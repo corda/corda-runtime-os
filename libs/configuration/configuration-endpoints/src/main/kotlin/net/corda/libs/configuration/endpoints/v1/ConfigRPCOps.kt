@@ -6,9 +6,9 @@ import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.libs.configuration.endpoints.v1.types.HTTPGetConfigResponse
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 
 /** RPC operations for cluster configuration management. */
 @HttpRpcResource(
@@ -31,8 +31,8 @@ interface ConfigRPCOps : RpcOps {
     )
     fun updateConfig(
         @HttpRpcRequestBodyParameter(description = "Details of the updated configuration")
-        request: HTTPUpdateConfigRequest
-    ): HTTPUpdateConfigResponse
+        request: UpdateConfigParameters
+    ): UpdateConfigResponse
 
     @HttpRpcGET(
         path = "{section}",
@@ -44,5 +44,5 @@ interface ConfigRPCOps : RpcOps {
     fun get(
         @HttpRpcPathParameter(description = "Section name for the configuration.")
         section: String
-    ): HTTPGetConfigResponse
+    ): GetConfigResponse
 }

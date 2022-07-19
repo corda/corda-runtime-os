@@ -7,9 +7,9 @@ import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
+import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -61,8 +61,8 @@ class FlowRPCOpsImpl @Activate constructor(
     @Suppress("SpreadOperator")
     override fun startFlow(
         holderShortId: String,
-        httpStartFlow: HTTPStartFlowRequest
-    ): HTTPFlowStatusResponse {
+        httpStartFlow: StartFlowParameters
+    ): FlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
@@ -95,7 +95,7 @@ class FlowRPCOpsImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(status)
     }
 
-    override fun getFlowStatus(holderShortId: String, clientRequestId: String): HTTPFlowStatusResponse {
+    override fun getFlowStatus(holderShortId: String, clientRequestId: String): FlowStatusResponse {
         val vNode = getVirtualNode(holderShortId)
 
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
@@ -107,10 +107,10 @@ class FlowRPCOpsImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    override fun getMultipleFlowStatus(holderShortId: String): HTTPFlowStatusResponses {
+    override fun getMultipleFlowStatus(holderShortId: String): FlowStatusResponses {
         val vNode = getVirtualNode(holderShortId)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-        return HTTPFlowStatusResponses(httpFlowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
 
     override fun start() = Unit

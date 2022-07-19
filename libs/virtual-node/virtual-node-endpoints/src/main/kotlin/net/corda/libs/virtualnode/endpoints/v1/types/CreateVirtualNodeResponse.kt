@@ -15,7 +15,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  * @param cryptoDdlConnectionId The ID of the connection for DDL operations in virtual node's crypto database.
  * @param cryptoDmlConnectionId The ID of the connection for DML operations in virtual node's crypto database.
  */
-data class HTTPCreateVirtualNodeResponse(
+data class CreateVirtualNodeResponse(
     val x500Name: String,
     val cpiId: CpiIdentifier,
     val cpiFileChecksum: String?,

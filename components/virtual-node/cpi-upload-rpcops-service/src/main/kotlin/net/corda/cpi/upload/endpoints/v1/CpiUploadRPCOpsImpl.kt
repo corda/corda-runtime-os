@@ -7,7 +7,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.cpiupload.endpoints.v1.HTTPGetCPIsResponse
+import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -69,11 +69,11 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         return CpiUploadRPCOps.Status(status.message, checksum)
     }
 
-    override fun getAllCpis(): HTTPGetCPIsResponse {
+    override fun getAllCpis(): GetCPIsResponse {
         logger.info("Get all CPIs request")
         requireRunning()
         val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
-        return HTTPGetCPIsResponse(cpis)
+        return GetCPIsResponse(cpis)
     }
 
     /**

@@ -15,9 +15,9 @@ import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.configuration.endpoints.v1.types.HTTPGetConfigResponse
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -53,7 +53,7 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val req = HTTPUpdateConfigRequest("section", 999, "a=b", Version(888, 0))
+    private val req = UpdateConfigParameters("section", 999, "a=b", Version(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
         ConfigurationManagementResponse(
             true, null, req.section, req.config, ConfigurationSchemaVersion(
@@ -61,7 +61,7 @@ class ConfigRPCOpsImplTests {
             ), req.version
         )
     }
-    private val successResponse = HTTPUpdateConfigResponse(
+    private val successResponse = UpdateConfigResponse(
         req.section, req.config, Version(
             req.schemaVersion.major,
             req.schemaVersion.minor
@@ -278,7 +278,7 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
 
-        assertThat(HTTPGetConfigResponse(
+        assertThat(GetConfigResponse(
             configSection,
             config.source,
             config.value,

@@ -15,12 +15,12 @@ import java.time.Instant
  * otherwise null
  * @param timestamp The timestamp of when the status was last updated (in UTC)
  */
-data class HTTPFlowStatusResponse(
+data class FlowStatusResponse(
     val holdingShortId: String,
     val clientRequestId: String?,
     val flowId: String?,
     val flowStatus: String,
     val flowResult: String?,
-    val flowError: HTTPFlowStateErrorResponse?,
+    val flowError: FlowStateErrorResponse?,
     val timestamp: Instant
 )
