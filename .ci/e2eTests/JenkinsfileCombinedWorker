@@ -106,12 +106,19 @@ pipeline {
             //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 sh '''
+<<<<<<< HEAD
                     nohup java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS} -ddatabase.user=${PGUSER} -ddatabase.pass=${PGPASSWORD} -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster  >> workerLogs.txt 2>&1 &
+=======
+                    nohup java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS}  >> workerLogs.txt 2>&1 &
+>>>>>>> 61d689123 (updated e2e combined worker jenkinsfile: typo #2)
                     procno=$!
                     trap "kill -9 ${procno}" EXIT
                     ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
                 '''
+<<<<<<< HEAD
                 }
+=======
+>>>>>>> 61d689123 (updated e2e combined worker jenkinsfile: typo #2)
             }
         }
     }
