@@ -39,18 +39,30 @@ class MerkleTreeFactoryImpl @Activate constructor(
             HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME ->
                 return NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithmName, digestService)
             HASH_DIGEST_PROVIDER_TWEAKABLE_NAME -> {
-                require(options.containsKey(HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION)){"TweakableHashDigestProvider needs a leafPrefix option"}
-                require(options.containsKey(HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION)){"TweakableHashDigestProvider needs a nodePrefix option"}
+                require(options.containsKey(HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION)){
+                    "TweakableHashDigestProvider needs a $HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION option"
+                }
+                require(options.containsKey(HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION)){
+                    "TweakableHashDigestProvider needs a $HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION option"
+                }
                 val leafPrefix = options[HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION]
                 val nodePrefix = options[HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION]
-                require(leafPrefix is ByteArray){"TweakableHashDigestProvider needs a ByteArray leafPrefix option"}
-                require(nodePrefix is ByteArray){"TweakableHashDigestProvider needs a ByteArray nodePrefix option"}
+                require(leafPrefix is ByteArray){
+                    "TweakableHashDigestProvider needs a ByteArray $HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION option"
+                }
+                require(nodePrefix is ByteArray){
+                    "TweakableHashDigestProvider needs a ByteArray $HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION option"
+                }
                 return TweakableHashDigestProvider(digestAlgorithmName, digestService, leafPrefix, nodePrefix)
             }
             HASH_DIGEST_PROVIDER_NONCE_NAME -> {
-                require(options.containsKey(HASH_DIGEST_PROVIDER_ENTROPY_OPTION)){"NonceHashDigestProvider needs an entropy option"}
+                require(options.containsKey(HASH_DIGEST_PROVIDER_ENTROPY_OPTION)){
+                    "NonceHashDigestProvider needs an $HASH_DIGEST_PROVIDER_ENTROPY_OPTION option"
+                }
                 val entropy = options[HASH_DIGEST_PROVIDER_ENTROPY_OPTION]
-                require(entropy is ByteArray){"NonceHashDigestProvider needs a ByteArray entropy option"}
+                require(entropy is ByteArray){
+                    "NonceHashDigestProvider needs a ByteArray $HASH_DIGEST_PROVIDER_ENTROPY_OPTION option"
+                }
                 return NonceHashDigestProvider(digestAlgorithmName, digestService, entropy)
             }
             else ->
