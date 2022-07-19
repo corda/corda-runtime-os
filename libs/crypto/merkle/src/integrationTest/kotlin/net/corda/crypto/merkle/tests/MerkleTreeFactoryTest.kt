@@ -1,15 +1,12 @@
 package net.corda.crypto.merkle.tests
 
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.core.toByteArray
-import net.corda.crypto.merkle.MerkleTreeImpl
-import net.corda.crypto.merkle.NonceHashDigestProvider
-import org.junit.jupiter.api.Assertions.assertEquals
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
+import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -24,23 +21,24 @@ class MerkleTreeFactoryTest {
     lateinit var merkleTreeFactory: MerkleTreeFactory
 
     private val digestAlgorithm = DigestAlgorithmName.SHA2_256D
-    private lateinit var digestService: DigestService
-    private lateinit var nonceHashDigestProvider: NonceHashDigestProvider
+    private lateinit var nonceHashDigestProvider: MerkleTreeHashDigestProvider
 
     @BeforeAll
     fun setup() {
-        val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-        digestService = DigestServiceImpl(schemeMetadata, null)
-        val secureRandom = schemeMetadata.secureRandom
-        nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
+        nonceHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
+            HASH_DIGEST_PROVIDER_NONCE_NAME,
+            digestAlgorithm,
+            mapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to 123.toByteArray())
+        )
     }
 
     @Test
     fun `can inject and use the service`() {
         val leafData = (0 until 8).map { it.toByteArray() }
-        val merkleTreeDirect = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
-        val merkleTreeFromService = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
+        val merkleTree = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
 
-        assertEquals(merkleTreeDirect.root, merkleTreeFromService.root)
+        val merkleProof = merkleTree.createAuditProof(listOf(1,3,5))
+
+        assertTrue(merkleProof.verify(merkleTree.root, nonceHashDigestProvider))
     }
 }
