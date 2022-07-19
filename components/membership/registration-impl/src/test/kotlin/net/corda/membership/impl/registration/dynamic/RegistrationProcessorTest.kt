@@ -92,9 +92,9 @@ class RegistrationProcessorTest {
             ProcessMemberVerificationRequest(holdingIdentity, mgmHoldingIdentity, verificationRequest)
         )
 
-        val verifyMemberCommand = RegistrationCommand(
-            VerifyMember(holdingIdentity, mgmHoldingIdentity, registrationId)
-        )
+        val verifyMemberCommand = RegistrationCommand(VerifyMember())
+
+        val state = RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity)
     }
 
     // Class under test
@@ -185,7 +185,7 @@ class RegistrationProcessorTest {
     fun `Bad command - onNext called returns no follow on records and an unchanged state`() {
         listOf(
             null,
-            RegistrationState(registrationId, holdingIdentity)
+            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity)
         ).forEach { state ->
             with(processor.onNext(state, Record(testTopic, testTopicKey, RegistrationCommand(Any())))) {
                 assertThat(updatedState).isEqualTo(state)
@@ -207,7 +207,7 @@ class RegistrationProcessorTest {
     @Test
     fun `process member verification request command - onNext can be called for command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, verificationRequestCommand))
-        assertThat(result.updatedState).isNotNull
+        assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
         assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
             .isNotNull
@@ -215,10 +215,17 @@ class RegistrationProcessorTest {
 
     @Test
     fun `verify member command - onNext can be called for command`() {
-        val result = processor.onNext(null, Record(testTopic, testTopicKey, verifyMemberCommand))
+        val result = processor.onNext(state, Record(testTopic, testTopicKey, verifyMemberCommand))
         assertThat(result.updatedState).isNotNull
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
         assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
             .isNotNull
+    }
+
+    @Test
+    fun `missing RegistrationState results in empty response`() {
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, verifyMemberCommand))
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).isEmpty()
     }
 }

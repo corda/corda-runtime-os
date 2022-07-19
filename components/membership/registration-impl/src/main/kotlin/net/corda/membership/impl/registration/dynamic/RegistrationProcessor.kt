@@ -10,11 +10,12 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
-import net.corda.membership.impl.registration.dynamic.mgm.handler.ApproveRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
@@ -68,48 +69,53 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
         ),
 
-        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(cordaAvroSerializationFactory),
-        VerifyMember::class.java to VerifyMemberHandler(cordaAvroSerializationFactory, membershipPersistenceClient),
+        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(clock, cordaAvroSerializationFactory),
+        VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient),
         ProcessMemberVerificationResponse::class.java to VerificationResponseHandler(membershipPersistenceClient)
     )
 
+    @Suppress("ComplexMethod")
     override fun onNext(
         state: RegistrationState?,
         event: Record<String, RegistrationCommand>
     ): StateAndEventProcessor.Response<RegistrationState> {
         logger.info("Processing registration command.")
-        val result = when (val command = event.value?.command) {
-            is StartRegistration -> {
-                logger.info("Received start registration command.")
-                handlers[StartRegistration::class.java]?.invoke(event)
+        val result = try {
+            when (val command = event.value?.command) {
+                is StartRegistration -> {
+                    logger.info("Received start registration command.")
+                    handlers[StartRegistration::class.java]?.invoke(state, event)
+                }
+                is VerifyMember -> {
+                    logger.info("Received verify member during registration command.")
+                    handlers[VerifyMember::class.java]?.invoke(state, event)
+                }
+                is ProcessMemberVerificationResponse -> {
+                    logger.info("Received process member verification response during registration command.")
+                    handlers[ProcessMemberVerificationResponse::class.java]?.invoke(state, event)
+                }
+                is ApproveRegistration -> {
+                    logger.info("Received approve registration command.")
+                    handlers[ApproveRegistration::class.java]?.invoke(state, event)
+                }
+                is DeclineRegistration -> {
+                    logger.info("Received decline registration command.")
+                    logger.warn("Unimplemented command.")
+                    logger.warn("Declining registration because: ${command.reason}")
+                    null
+                }
+                is ProcessMemberVerificationRequest -> {
+                    logger.info("Received process member verification request during registration command.")
+                    handlers[ProcessMemberVerificationRequest::class.java]?.invoke(state, event)
+                }
+                else -> {
+                    logger.warn("Unhandled registration command received.")
+                    createEmptyResult(state)
+                }
             }
-            is VerifyMember -> {
-                logger.info("Received verify member during registration command.")
-                handlers[VerifyMember::class.java]?.invoke(event)
-            }
-            is ProcessMemberVerificationResponse -> {
-                logger.info("Received process member verification response during registration command.")
-                logger.warn("Unimplemented command.")
-                null
-            }
-            is ApproveRegistration -> {
-                logger.info("Received approve registration command.")
-                handlers[ApproveRegistration::class.java]?.invoke(event)
-            }
-            is DeclineRegistration -> {
-                logger.info("Received decline registration command.")
-                logger.warn("Unimplemented command.")
-                logger.warn("Declining registration because: ${command.reason}")
-                null
-            }
-            is ProcessMemberVerificationRequest -> {
-                logger.info("Received process member verification request during registration command.")
-                handlers[ProcessMemberVerificationRequest::class.java]?.invoke(event)
-            }
-            else -> {
-                logger.warn("Unhandled registration command received.")
-                createEmptyResult(state)
-            }
+        } catch(e: MissingRegistrationStateException) {
+            logger.error("RegistrationState was null during dynamic registration.")
+            createEmptyResult()
         }
         return StateAndEventProcessor.Response(
             result?.updatedState,

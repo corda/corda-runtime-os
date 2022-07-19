@@ -28,8 +28,6 @@ internal class VerificationResponseHandler(
             header.source.toCorda().id,
             RegistrationCommand(
                 ProcessMemberVerificationResponse(
-                    header.destination,
-                    header.source,
                     avroSchemaRegistry.deserialize(payload)
                 )
             )

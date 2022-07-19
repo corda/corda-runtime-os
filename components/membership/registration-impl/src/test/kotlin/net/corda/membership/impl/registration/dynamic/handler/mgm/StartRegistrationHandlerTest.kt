@@ -159,7 +159,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `invoke returns follow on records and an unchanged state`() {
-        with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
@@ -168,10 +168,7 @@ class StartRegistrationHandlerTest {
             assertRegistrationStarted()
 
             val registrationCommand = this.outputStates.first().value as RegistrationCommand
-            val verifyMemberCommand = registrationCommand.command as VerifyMember
-            assertThat(verifyMemberCommand.destination).isEqualTo(holdingIdentity)
-            assertThat(verifyMemberCommand.source).isEqualTo(mgmHoldingIdentity)
-            assertThat(verifyMemberCommand.registrationId).isEqualTo(registrationId)
+            assertThat(registrationCommand.command).isInstanceOf(VerifyMember::class.java)
         }
         verifyServices(
             persistRegistrationRequest = true,
@@ -189,7 +186,7 @@ class StartRegistrationHandlerTest {
         whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
             .doReturn(MembershipPersistenceResult.Failure("error"))
 
-        with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
@@ -207,7 +204,7 @@ class StartRegistrationHandlerTest {
     fun `declined if target MGM info cannot be found`() {
         whenever(membershipGroupReader.lookup(eq(mgmX500Name))) doReturn null
 
-        with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
@@ -230,7 +227,7 @@ class StartRegistrationHandlerTest {
         }
         whenever(mgmMemberInfo.mgmProvidedContext).thenReturn(newMgmContext)
 
-        with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
@@ -250,6 +247,7 @@ class StartRegistrationHandlerTest {
     fun `declined if member context is empty`() {
         with(
             handler.invoke(
+                null,
                 Record(
                     testTopic, testTopicKey, getStartRegistrationCommand(
                         holdingIdentity,
@@ -281,6 +279,7 @@ class StartRegistrationHandlerTest {
         val badHoldingIdentity = HoldingIdentity(MemberX500Name.parse("O=BadName,L=London,C=GB").toString(), groupId)
         with(
             handler.invoke(
+                null,
                 Record(
                     testTopic, testTopicKey, getStartRegistrationCommand(
                         badHoldingIdentity,
@@ -312,7 +311,7 @@ class StartRegistrationHandlerTest {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
             .doReturn(MembershipQueryResult.Success<Collection<MemberInfo>>(listOf(mock())))
         with(
-            handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))
+            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -334,7 +333,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member info has no endpoints`() {
         whenever(memberInfo.endpoints).thenReturn(emptyList())
-        with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
@@ -357,7 +356,7 @@ class StartRegistrationHandlerTest {
         whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
             MembershipPersistenceResult.Failure("error")
         )
-        with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)

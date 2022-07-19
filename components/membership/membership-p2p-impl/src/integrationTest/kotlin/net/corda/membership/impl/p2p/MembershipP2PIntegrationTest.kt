@@ -409,8 +409,6 @@ class MembershipP2PIntegrationTest {
             assertThat(this.value).isInstanceOf(RegistrationCommand::class.java)
             assertThat(this.value?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
             with(this.value?.command as ProcessMemberVerificationResponse) {
-                assertThat(this.source).isEqualTo(source)
-                assertThat(this.destination).isEqualTo(destination)
                 assertThat(this.verificationResponse).isEqualTo(verificationResponse)
             }
         }

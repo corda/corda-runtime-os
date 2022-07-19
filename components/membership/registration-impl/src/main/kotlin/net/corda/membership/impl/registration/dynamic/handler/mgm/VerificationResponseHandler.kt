@@ -5,6 +5,7 @@ import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -17,22 +18,23 @@ class VerificationResponseHandler(
 ) : RegistrationHandler<ProcessMemberVerificationResponse> {
     override val commandType = ProcessMemberVerificationResponse::class.java
 
-    override fun invoke(key: String, command: ProcessMemberVerificationResponse): RegistrationHandlerResult {
-        val registrationId = command.verificationResponse.registrationId
-        val mgm = command.destination
-        val member = command.source
+    override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationResponse): RegistrationHandlerResult {
+        if(state == null) throw MissingRegistrationStateException
+        val registrationId = state.registrationId
+        val mgm = state.mgm
+        val member = state.registeringMember
         membershipPersistenceClient.setRegistrationRequestStatus(
             mgm.toCorda(),
             registrationId,
             RegistrationStatus.PENDING_AUTO_APPROVAL
         )
         return RegistrationHandlerResult(
-            RegistrationState(registrationId, member),
+            RegistrationState(registrationId, member, mgm),
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
                     member,
-                    RegistrationCommand(ApproveRegistration(mgm, member, registrationId))
+                    RegistrationCommand(ApproveRegistration())
                 )
             )
         )

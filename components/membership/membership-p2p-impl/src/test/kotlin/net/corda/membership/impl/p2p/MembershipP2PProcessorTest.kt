@@ -198,8 +198,6 @@ class MembershipP2PProcessorTest {
         assertThat(result.first().key).isEqualTo(member.toCorda().id)
         val response = command?.command as ProcessMemberVerificationResponse
         assertThat(response.verificationResponse).isEqualTo(verificationResponse)
-        assertThat(response.destination).isEqualTo(mgm)
-        assertThat(response.source).isEqualTo(member)
     }
 
     @Test

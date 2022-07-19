@@ -634,7 +634,6 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityId).isEqualTo(registeringHoldingIdentity.id)
-        println("statuska: " + persistedEntity.status)
         assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(

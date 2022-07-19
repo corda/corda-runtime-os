@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler
+package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
@@ -8,6 +8,7 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
@@ -60,59 +61,61 @@ internal class ApproveRegistrationHandler(
 ) : RegistrationHandler<ApproveRegistration> {
 
     override val commandType = ApproveRegistration::class.java
-    override fun invoke(key: String, command: ApproveRegistration): RegistrationHandlerResult {
+    override fun invoke(state: RegistrationState?, key: String, command: ApproveRegistration): RegistrationHandlerResult {
+        if(state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
-        val approvedBy = command.approvedBy.toCorda()
-        val approvedMember = command.approvedMember.toCorda()
+        val approvedBy = state.mgm
+        val approvedMember = state.registeringMember
+        val registrationId = state.registrationId
         val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
-            viewOwningIdentity = approvedBy,
-            approvedMember = approvedMember,
-            registrationRequestId = command.registrationId,
+            viewOwningIdentity = approvedBy.toCorda(),
+            approvedMember = approvedMember.toCorda(),
+            registrationRequestId = registrationId,
         )
         val memberInfo = persistState.getOrThrow()
 
-        val allMembers = getAllMembers(approvedBy).filter {
+        val allMembers = getAllMembers(approvedBy.toCorda()).filter {
             it.status == MEMBER_STATUS_ACTIVE
         }
         val membershipPackageFactory = createMembershipPackageFactory(
-            command.approvedBy.toCorda(),
+            approvedBy.toCorda(),
             allMembers,
         )
 
         // Push member to member list kafka topic
         val persistentMemberInfo = PersistentMemberInfo.newBuilder()
             .setMemberContext(memberInfo.memberProvidedContext.toAvro())
-            .setViewOwningMember(command.approvedBy)
+            .setViewOwningMember(approvedBy)
             .setMgmContext(memberInfo.mgmProvidedContext.toAvro())
             .build()
         val memberRecord = Record(
             topic = MEMBER_LIST_TOPIC,
-            key = "${approvedBy.id}-${approvedMember.id}",
+            key = "${approvedBy.toCorda().id}-${approvedMember.toCorda().id}",
             value = persistentMemberInfo,
         )
 
         // Send all approved members from the same group to the newly approved member over P2P
         val allMembersPackage = membershipPackageFactory.invoke(allMembers)
         val allMembersToNewMember = p2pRecordsFactory.createAuthenticatedMessageRecord(
-            source = command.approvedBy,
-            destination = command.approvedMember,
+            source = approvedBy,
+            destination = approvedMember,
             content = allMembersPackage,
         )
 
         // Send the newly approved member to all other members in the same group over P2P
         val memberPackage = membershipPackageFactory.invoke(listOf(memberInfo))
         val memberToAllMembers = allMembers.filter {
-            it.holdingIdentity != command.approvedMember.toCorda()
+            it.holdingIdentity != approvedMember.toCorda()
         }.map { memberToSendUpdateTo ->
             p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = command.approvedBy,
+                source = approvedBy,
                 destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                 content = memberPackage,
             )
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(command.registrationId, command.approvedMember),
+            RegistrationState(registrationId, approvedMember, approvedBy),
             memberToAllMembers + memberRecord + allMembersToNewMember
         )
     }

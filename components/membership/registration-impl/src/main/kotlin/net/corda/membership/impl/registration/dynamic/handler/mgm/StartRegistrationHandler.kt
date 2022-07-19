@@ -58,7 +58,7 @@ class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
-    override fun invoke(key: String, command: StartRegistration): RegistrationHandlerResult {
+    override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
                 Triple(
@@ -116,7 +116,7 @@ class StartRegistrationHandler(
                 }
 
                 logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-                VerifyMember(pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro(), registrationRequest.registrationId)
+                VerifyMember()
             } catch (ex: InvalidRegistrationRequestException) {
                 logger.warn("Declined registration.", ex)
                 DeclineRegistration(ex.originalMessage)
@@ -127,7 +127,7 @@ class StartRegistrationHandler(
         )
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro()),
+            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro()),
             listOf(Record(REGISTRATION_COMMAND_TOPIC, key, outputCommand))
         )
     }

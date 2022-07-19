@@ -6,16 +6,20 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
+import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -23,19 +27,25 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.time.Instant
 
 class VerifyMemberHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
+        const val TOPIC = "dummyTopic"
+
+        val clock = TestClock(Instant.ofEpochSecond(0))
     }
 
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
-    private val command = VerifyMember(
+    private val command = VerifyMember()
+
+    val state = RegistrationState(
+        REGISTRATION_ID,
         member,
-        mgm,
-        REGISTRATION_ID
+        mgm
     )
 
     private val request: KArgumentCaptor<VerificationRequest> = argumentCaptor()
@@ -56,11 +66,11 @@ class VerifyMemberHandlerTest {
         } doReturn MembershipPersistenceResult.success()
     }
 
-    private val verifyMemberHandler = VerifyMemberHandler(cordaAvroSerializationFactory, membershipPersistenceClient)
+    private val verifyMemberHandler = VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient)
 
     @Test
     fun `handler returns request message`() {
-        val result = verifyMemberHandler.invoke(Record("dummyTopic", member.toString(), RegistrationCommand(command)))
+        val result = verifyMemberHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
             mgm.toCorda(),
@@ -78,8 +88,12 @@ class VerifyMemberHandlerTest {
             assertThat(this.header.traceId).isNull()
             assertThat(this.header.subsystem).isEqualTo("membership")
         }
-        with(request.firstValue) {
-            assertThat(this.registrationId).isEqualTo(REGISTRATION_ID)
+    }
+
+    @Test
+    fun `exception is thrown when RegistrationState is null`() {
+        assertThrows<MissingRegistrationStateException> {
+            verifyMemberHandler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         }
     }
 }
