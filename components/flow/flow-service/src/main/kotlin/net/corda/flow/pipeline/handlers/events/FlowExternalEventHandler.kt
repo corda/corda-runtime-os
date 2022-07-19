@@ -28,7 +28,6 @@ import org.osgi.service.component.annotations.Reference
 import java.time.Instant
 import java.util.UUID
 
-// To be honest, I think we can generate the [requestId] in the request handler instead of the request itself.
 // Do not serialize the [eventToSend] as it is only needed when leaving the fiber and executed in the request handler
 data class ExternalEventRequest(
     val requestId: String = UUID.randomUUID().toString(),
@@ -39,7 +38,11 @@ data class ExternalEventRequest(
         fun createRecord(requestId: String): EventRecord
     }
 
-    data class EventRecord(val topic: String, val payload: SpecificRecord)
+    // Can't decide whether to just use [Record] directly at this point
+    // We need to be able to specify a key if the external event processors want to shard by their own key
+    data class EventRecord(val topic: String, val key: Any?, val payload: SpecificRecord) {
+        constructor(topic: String, payload: SpecificRecord) : this(topic, null, payload)
+    }
 
     data class Response(val lastEvent: Any?, val data: ByteArray?) {
 
@@ -147,9 +150,9 @@ class ExternalEventRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: ExternalEventRequest): FlowEventContext<Any> {
         val eventRecord = request.eventToSend.createRecord(request.requestId)
         context.checkpoint.externalEventState = externalEventManager.processEventToSend(
+            context.checkpoint.flowId,
             request.requestId,
-            eventRecord.topic,
-            eventRecord.payload,
+            eventRecord,
             Instant.now()
         )
         return context
@@ -158,7 +161,12 @@ class ExternalEventRequestHandler @Activate constructor(
 
 interface ExternalEventManager {
 
-    fun processEventToSend(requestId: String, topic: String, payload: SpecificRecord, instant: Instant): ExternalEventState
+    fun processEventToSend(
+        flowId: String,
+        requestId: String,
+        eventRecord: ExternalEventRequest.EventRecord,
+        instant: Instant
+    ): ExternalEventState
 
     fun processEventReceived(externalEventState: ExternalEventState, externalEventResponse: ExternalEventResponse): ExternalEventState
 
@@ -169,7 +177,7 @@ interface ExternalEventManager {
         externalEventState: ExternalEventState,
         instant: Instant,
         config: SmartConfig
-    ): Pair<ExternalEventState, Record<String, ExternalEvent>?>
+    ): Pair<ExternalEventState, Record<*, ExternalEvent>?>
 }
 
 @Component(service = [ExternalEventManager::class])
@@ -181,16 +189,18 @@ class ExternalEventManagerImpl : ExternalEventManager {
     }
 
     override fun processEventToSend(
+        flowId: String,
         requestId: String,
-        topic: String,
-        payload: SpecificRecord,
+        eventRecord: ExternalEventRequest.EventRecord,
         instant: Instant
     ): ExternalEventState {
-        logger.debug { "Processing external event response of type ${payload.javaClass.name} with id $requestId" }
+        logger.debug { "Processing external event response of type ${eventRecord.payload.javaClass.name} with id $requestId" }
         val event = ExternalEvent.newBuilder()
             .setRequestId(requestId)
-            .setTopic(topic)
-            .setPayload(payload)
+            .setFlowId(flowId)
+            .setTopic(eventRecord.topic)
+            .setKey(eventRecord.key ?: flowId)
+            .setPayload(eventRecord.payload)
             .setTimestamp(instant)
             .build()
         return ExternalEventState.newBuilder()
@@ -261,14 +271,15 @@ class ExternalEventManagerImpl : ExternalEventManager {
         externalEventState: ExternalEventState,
         instant: Instant,
         config: SmartConfig
-    ): Pair<ExternalEventState, Record<String, ExternalEvent>?> {
+    ): Pair<ExternalEventState, Record<*, ExternalEvent>?> {
         return if (isWaitingForResponse(externalEventState) && isSendWindowValid(externalEventState, instant)) {
-            // log into this logging, have a "sending" and "resending" log line
-            logger.debug { "Resending external event request which was last sent at ${externalEventState.eventToSend.timestamp}" }
+            val eventToSend = externalEventState.eventToSend
+            // Have a "sending" and "resending" log line
+            logger.debug { "Resending external event request which was last sent at ${eventToSend.timestamp}" }
             // need to handle crypto or persistence config - just have external event config that covers all
+            eventToSend.timestamp = instant
             externalEventState.sendTimestamp = instant.plusMillis(config.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
-            externalEventState.eventToSend.timestamp = instant
-            externalEventState to Record(externalEventState.eventToSend.topic, flowId, externalEventState.eventToSend)
+            externalEventState to Record(eventToSend.topic, eventToSend.key, eventToSend)
         } else {
             externalEventState to null
         }

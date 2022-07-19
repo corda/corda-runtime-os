@@ -2,7 +2,6 @@ package net.corda.flow.application.crypto
 
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
-import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.handlers.events.ExternalEventRequest
 import net.corda.schema.Schemas
@@ -17,7 +16,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
-import java.util.UUID
 
 @Component(service = [SigningService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class SigningServiceImpl @Activate constructor(

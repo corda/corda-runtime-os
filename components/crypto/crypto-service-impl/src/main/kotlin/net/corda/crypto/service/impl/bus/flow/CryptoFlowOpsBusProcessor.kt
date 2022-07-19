@@ -59,6 +59,10 @@ class CryptoFlowOpsBusProcessor(
 
     // need to convert the error responses into the external event error handling
     private fun onNext(event: Record<String, ExternalEvent>): Record<*, *>? {
+        if (event.value == null) {
+            // We received a [null] external event therefore we do not know the flow id to respond to.
+            return null
+        }
         val externalEvent = event.value!!
         val request = externalEvent.payload
         if (request == null) {
@@ -69,9 +73,9 @@ class CryptoFlowOpsBusProcessor(
             // maybe don't need the flow id on the event itself? as the requests are keyed by flow id anyway, so we just pull the flow id off the key
             return Record(
                 FLOW_EVENT_TOPIC,
-                event.key,
+                externalEvent.flowId,
                 FlowEvent(
-                    event.key,
+                    externalEvent.flowId,
                     ExternalEventResponse.newBuilder()
                         .setRequestId(externalEvent.requestId)
                         .setChunkNumber(null)
@@ -96,9 +100,9 @@ class CryptoFlowOpsBusProcessor(
             )
             return Record(
                 FLOW_EVENT_TOPIC,
-                event.key,
+                externalEvent.flowId,
                 FlowEvent(
-                    event.key,
+                    externalEvent.flowId,
                     ExternalEventResponse.newBuilder()
                         .setRequestId(externalEvent.requestId)
                         .setChunkNumber(null)
@@ -131,9 +135,9 @@ class CryptoFlowOpsBusProcessor(
                 )
                 return Record(
                     FLOW_EVENT_TOPIC,
-                    event.key,
+                    externalEvent.flowId,
                     FlowEvent(
-                        event.key,
+                        externalEvent.flowId,
                         ExternalEventResponse.newBuilder()
                             .setRequestId(externalEvent.requestId)
                             .setChunkNumber(null)
@@ -153,9 +157,9 @@ class CryptoFlowOpsBusProcessor(
             }
             val result = Record(
                 FLOW_EVENT_TOPIC,
-                event.key,
+                externalEvent.flowId,
                 FlowEvent(
-                    event.key,
+                    externalEvent.flowId,
                     ExternalEventResponse.newBuilder()
                         .setRequestId(externalEvent.requestId)
                         .setChunkNumber(null)
@@ -174,9 +178,9 @@ class CryptoFlowOpsBusProcessor(
             logger.error(message, e)
             return Record(
                 FLOW_EVENT_TOPIC,
-                event.key,
+                externalEvent.flowId,
                 FlowEvent(
-                    event.key,
+                    externalEvent.flowId,
                     ExternalEventResponse.newBuilder()
                         .setRequestId(externalEvent.requestId)
                         .setChunkNumber(null)

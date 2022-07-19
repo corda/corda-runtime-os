@@ -68,22 +68,32 @@ class EntityMessageProcessor(
 
     override fun onNext(events: List<Record<String, ExternalEvent>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
-        val responses = mutableListOf<Record<String, FlowEvent>>()
-        events.forEach { event ->
-            val response = try {
-                when (val payload = event.value?.payload) {
-                    is EntityRequest -> processRequest(event.value!!.requestId, payload)
-                    null -> throw IllegalArgumentException("Unexpected null request for event with the key ${event.key}")
-                    else -> throw IllegalArgumentException("Unexpected ${payload::class.java.name} request for event with the key ${event.key} and content $payload")
+        return events.mapNotNull { event ->
+            val externalEvent = event.value
+            if (externalEvent == null) {
+                // We received a [null] external event therefore we do not know the flow id to respond to.
+                return@mapNotNull null
+            } else {
+                val response = try {
+                    when (val payload = externalEvent.payload) {
+                        is EntityRequest -> {
+                            processRequest(event.value!!.requestId, payload)
+                        }
+                        null -> throw IllegalArgumentException(
+                            "Unexpected null request for event with the key ${event.key}, request id ${externalEvent.requestId}"
+                        )
+                        else -> throw IllegalArgumentException(
+                            "Unexpected ${payload::class.java.name} request for event with the key ${event.key}, request id " +
+                                    "${externalEvent.requestId} and content $payload"
+                        )
+                    }
+                } catch (e: Exception) {
+                    // If we're catching at this point, it's an unrecoverable error.
+                    errorResponse(event.key, e, ExternalEventResponseErrorType.FATAL_ERROR)
                 }
-            } catch (e: Exception) {
-                // If we're catching at this point, it's an unrecoverable error.
-                errorResponse(event.key, e, ExternalEventResponseErrorType.FATAL_ERROR)
+                Record(Schemas.Flow.FLOW_EVENT_TOPIC, externalEvent.flowId, FlowEvent(externalEvent.flowId, response))
             }
-            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, event.key, FlowEvent(event.key, response)))
         }
-
-        return responses
     }
 
     private fun processRequest(requestId: String, request: EntityRequest): ExternalEventResponse {
