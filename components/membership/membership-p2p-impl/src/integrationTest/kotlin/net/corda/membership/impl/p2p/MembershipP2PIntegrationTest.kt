@@ -312,7 +312,7 @@ class MembershipP2PIntegrationTest {
         val messageHeader = AuthenticatedMessageHeader(
             destination,
             source,
-            requestTimestamp.plusMillis(1000L).toEpochMilli(),
+            requestTimestamp.plusMillis(300000L).toEpochMilli(),
             registrationId,
             null,
             MEMBERSHIP_P2P_SUBSYSTEM
@@ -376,7 +376,7 @@ class MembershipP2PIntegrationTest {
         val messageHeader = AuthenticatedMessageHeader(
             destination,
             source,
-            requestTimestamp.plusMillis(1000L).toEpochMilli(),
+            requestTimestamp.plusMillis(300000L).toEpochMilli(),
             registrationId,
             null,
             MEMBERSHIP_P2P_SUBSYSTEM

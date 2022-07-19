@@ -235,7 +235,7 @@ class MembershipP2PProcessorTest {
                 AuthenticatedMessageHeader(
                     destination,
                     source,
-                    clock.instant().plusMillis(1000L).toEpochMilli(),
+                    clock.instant().plusMillis(300000L).toEpochMilli(),
                     "mid",
                     null,
                     MEMBERSHIP_P2P_SUBSYSTEM
