@@ -5,8 +5,6 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
-import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -17,7 +15,6 @@ import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPVirtualNodeStateChangeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -96,7 +93,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             VirtualNodeManagementRequest(
                 instant,
                 VirtualNodeCreateRequest(
-                    x500Name,cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor
+                    x500Name, cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor
                 )
             )
         }

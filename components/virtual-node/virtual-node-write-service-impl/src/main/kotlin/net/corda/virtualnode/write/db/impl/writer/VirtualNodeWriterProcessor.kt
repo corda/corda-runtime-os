@@ -140,6 +140,7 @@ internal class VirtualNodeWriterProcessor(
         // Get instance of entity manager to work against the DB
         val entityManager = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
 
+        println("GLLOE")
         // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
             virtualNodeEntityRepository.setVirtualNodeState(
@@ -401,7 +402,7 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.cryptoDdlConnectionId?.toString(),
                 dbConnections.cryptoDmlConnectionId.toString(),
                 null,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
         )
         respFuture.complete(response)

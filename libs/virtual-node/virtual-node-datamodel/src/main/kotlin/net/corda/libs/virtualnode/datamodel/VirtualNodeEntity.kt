@@ -81,9 +81,8 @@ data class VirtualNodeEntity(
         return result
     }
 
-    fun update(virtualNodeEntity: VirtualNodeEntity) {
-        virtualNodeState = virtualNodeEntity.virtualNodeState
-        entityVersion = virtualNodeEntity.entityVersion
+    fun update(newState: String) {
+        virtualNodeState = newState
     }
 }
 

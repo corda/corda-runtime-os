@@ -15,7 +15,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -126,7 +126,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
     override fun updateVirtualNodeState(
         virtualNodeShortId: String,
         newState: String
-    ): net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse {
+    ): ChangeVirtualNodeStateResponse {
         val instant = clock.instant()
         // Lookup actor to keep track of which RPC user triggered an update
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -147,7 +147,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
-                net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse(
+                ChangeVirtualNodeStateResponse(
                     resolvedResponse.holdingIdentityShortHash,
                     resolvedResponse.virtualNodeState
                 )
@@ -158,6 +158,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
                     logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                     throw InternalServerException("Request was unsuccessful but no exception was provided.")
                 }
+                @Suppress("MaxLineLength")
                 logger.warn("Remote request to update virtual node responded with exception of type ${exception.errorType}: ${exception.errorMessage}")
                 throw InternalServerException(exception.errorMessage)
             }

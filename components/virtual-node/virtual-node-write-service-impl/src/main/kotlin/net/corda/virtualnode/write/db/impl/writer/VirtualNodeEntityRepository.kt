@@ -137,7 +137,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                     cpiId.name,
                     cpiId.version,
                     signerSummaryHash,
-                    VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
                 )
             )
         } else {
@@ -158,12 +158,9 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 .setMaxResults(1)
                 .resultList.singleOrNull() ?: throw VirtualNodeNotFoundException(holdingIdShortHash)
             val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
-                update(
-                    latestVirtualNodeInstance.copy(
-                        virtualNodeState = newState
-                    )
-                )
+                update(newState)
             }
+            println(updatedVirtualNodeInstance)
             it.merge(updatedVirtualNodeInstance)
         }
     }
