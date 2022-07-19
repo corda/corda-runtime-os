@@ -15,7 +15,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.HTTPVirtualNodeStateChangeResponse
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -126,7 +126,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
     override fun updateVirtualNodeState(
         virtualNodeShortId: String,
         newState: String
-    ): HTTPVirtualNodeStateChangeResponse {
+    ): net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse {
         val instant = clock.instant()
         // Lookup actor to keep track of which RPC user triggered an update
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -147,7 +147,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
-                HTTPVirtualNodeStateChangeResponse(
+                net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse(
                     resolvedResponse.holdingIdentityShortHash,
                     resolvedResponse.virtualNodeState
                 )

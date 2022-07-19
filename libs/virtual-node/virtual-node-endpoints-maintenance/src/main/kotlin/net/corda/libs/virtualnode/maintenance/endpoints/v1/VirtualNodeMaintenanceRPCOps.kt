@@ -7,7 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.HTTPVirtualNodeStateChangeResponse
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.VirtualNodeStateChangeResponse
 
 /**
  * Maintenance RPC operations for virtual node management.
@@ -53,5 +53,5 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         virtualNodeShortId: String,
         @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
         newState: String
-    ): HTTPVirtualNodeStateChangeResponse
+    ): VirtualNodeStateChangeResponse
 }
