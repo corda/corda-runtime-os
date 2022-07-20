@@ -89,6 +89,8 @@ class FlowMapperServiceIntegrationTest {
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
             flowMapperService.start()
+            // Test config updates don't break FlowMapperService
+            setupConfig(publisher)
         }
     }
 
