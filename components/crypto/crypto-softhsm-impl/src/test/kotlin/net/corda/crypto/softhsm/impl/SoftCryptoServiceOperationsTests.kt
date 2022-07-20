@@ -59,7 +59,7 @@ import kotlin.test.assertTrue
  * of permutations when especially running tests for customized signature specs (over 70) it makes sense
  * trying to generate keys once and run all related tests
  */
-class CryptoOperationsTests {
+class SoftCryptoServiceOperationsTests {
     companion object {
         private val zeroBytes = ByteArray(100)
         private val UNSUPPORTED_KEY_SCHEME = COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
