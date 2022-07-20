@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
+import java.security.SecureRandom
 
 class MerkleTreeFactoryImplTest {
     companion object {
@@ -28,13 +29,14 @@ class MerkleTreeFactoryImplTest {
         private lateinit var digestService: DigestService
         private lateinit var nonceHashDigestProvider: NonceHashDigestProvider
         private lateinit var merkleTreeFactory: MerkleTreeFactory
+        private lateinit var secureRandom: SecureRandom
 
         @BeforeAll
         @JvmStatic
         fun setup() {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
-            val secureRandom = schemeMetadata.secureRandom
+            secureRandom = schemeMetadata.secureRandom
 
             nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
 
@@ -52,22 +54,35 @@ class MerkleTreeFactoryImplTest {
     }
 
     @Test
-    fun createHashDigestProvider() {
+    fun createDefaultHashDigestProvider() {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_DEFAULT_NAME,
-                digestAlgorithm) is DefaultHashDigestProvider
+                digestAlgorithm
+            ) is DefaultHashDigestProvider
         )
+    }
+
+    @Test
+    fun createNonceVerifyHashDigestProvider() {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME,
                 digestAlgorithm) is NonceHashDigestProvider.Verify
         )
+    }
+
+    @Test
+    fun createNonceSizeOnlyVerifyHashDigestProvider() {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
                 digestAlgorithm) is NonceHashDigestProvider.SizeOnlyVerify
         )
+    }
+
+    @Test
+    fun createTweakableHashDigestProvider() {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
@@ -76,13 +91,6 @@ class MerkleTreeFactoryImplTest {
                     HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray())
             ) is TweakableHashDigestProvider
         )
-        assertTrue(
-            merkleTreeFactory.createHashDigestProvider(
-                HASH_DIGEST_PROVIDER_NONCE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to 123.toByteArray())
-            ) is NonceHashDigestProvider
-        )
-
         assertThrows(IllegalArgumentException::class.java) {
             merkleTreeFactory.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
                 digestAlgorithm
@@ -117,25 +125,61 @@ class MerkleTreeFactoryImplTest {
                     HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to "1")
             )
         }
+    }
+
+    @Test
+    fun createNonceHashDigestProvider() {
+        val entropy = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH)
+        secureRandom.nextBytes(entropy)
+        assertTrue(
+            merkleTreeFactory.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_NONCE_NAME,
+                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to entropy)
+            ) is NonceHashDigestProvider
+        )
 
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeFactory.createHashDigestProvider(HASH_DIGEST_PROVIDER_NONCE_NAME,
+            merkleTreeFactory.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_NONCE_NAME,
                 digestAlgorithm
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeFactory.createHashDigestProvider(HASH_DIGEST_PROVIDER_NONCE_NAME,
+            merkleTreeFactory.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_NONCE_NAME,
                 digestAlgorithm, hashMapOf()
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeFactory.createHashDigestProvider(HASH_DIGEST_PROVIDER_NONCE_NAME,
+            merkleTreeFactory.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_NONCE_NAME,
                 digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to 1)
             )
         }
 
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeFactory.createHashDigestProvider("NotexistingProvider",
+            val tooShortEntropy = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH - 1)
+            secureRandom.nextBytes(tooShortEntropy)
+            merkleTreeFactory.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_NONCE_NAME,
+                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to tooShortEntropy)
+            )
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            val tooLongEntropy = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH + 1)
+            secureRandom.nextBytes(tooLongEntropy)
+            merkleTreeFactory.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_NONCE_NAME,
+                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to tooLongEntropy)
+            )
+        }
+    }
+
+    @Test
+    fun failToCreateNonExistingHashDigestProvider() {
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTreeFactory.createHashDigestProvider("NonExistingProvider",
                 digestAlgorithm
             )
         }

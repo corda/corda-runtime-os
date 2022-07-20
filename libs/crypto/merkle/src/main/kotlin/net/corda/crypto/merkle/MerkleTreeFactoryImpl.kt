@@ -63,6 +63,10 @@ class MerkleTreeFactoryImpl @Activate constructor(
                 require(entropy is ByteArray){
                     "NonceHashDigestProvider needs a ByteArray $HASH_DIGEST_PROVIDER_ENTROPY_OPTION option"
                 }
+                require(entropy.size == NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH){
+                    "NonceHashDigestProvider needs a ${NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH} long " +
+                    "ByteArray $HASH_DIGEST_PROVIDER_ENTROPY_OPTION option"
+                }
                 return NonceHashDigestProvider(digestAlgorithmName, digestService, entropy)
             }
             else ->
