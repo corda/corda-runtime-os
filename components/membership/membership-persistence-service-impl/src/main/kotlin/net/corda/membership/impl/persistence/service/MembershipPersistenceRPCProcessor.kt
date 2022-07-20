@@ -8,6 +8,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
+import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
@@ -19,6 +20,7 @@ import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHa
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandler
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
+import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
@@ -63,6 +65,7 @@ internal class MembershipPersistenceRPCProcessor(
         UpdateMemberAndRegistrationRequestToApproved::class.java to
             { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },
         UpdateRegistrationRequestStatus::class.java to { UpdateRegistrationRequestStatusHandler(persistenceHandlerServices) },
+        QueryGroupPolicy::class.java to { QueryGroupPolicyHandler(persistenceHandlerServices) },
     )
 
     override fun onNext(

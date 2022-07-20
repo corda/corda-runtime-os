@@ -14,6 +14,7 @@ import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -94,6 +95,7 @@ class MembershipQueryClientImplTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { create(any()) } doReturn ourMemberInfo
     }
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock {}
 
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
@@ -129,7 +131,7 @@ class MembershipQueryClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipQueryClient = MembershipQueryClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock
+            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock, layeredPropertyMapFactory
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())
