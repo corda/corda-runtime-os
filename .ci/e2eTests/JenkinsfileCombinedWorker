@@ -27,10 +27,13 @@ pipeline {
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
+        POSTGRES_CREDENTIALS = credentials('e2e-postgresql-credentials')
         BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
         BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_DEV_POSTGRES_USER="${env.POSTGRES_CREDENTIALS_USR}"
+        CORDA_DEV_POSTGRES_PASSWORD="${env.POSTGRES_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("e2e-tests-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
@@ -94,7 +97,7 @@ pipeline {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
                 LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt "
+                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 -spassphrase=password -ssalt=salt -ddatabase.user=user -ddatabase.pass=password"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {
@@ -104,27 +107,17 @@ pipeline {
                         "PGPORT=${postgresPort}",
                         "DATABASE=${postgresDb}"
                 ]){
-                withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                            passwordVariable: 'PGPASSWORD',
-                            usernameVariable: 'PGUSER')]){
                 //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
                 sh '''
-                
-                    export CORDA_DEV_POSTGRES_USER = ${PGUSER}
-                    export CORDA_DEV_POSTGRES_PASSWORD = ${PGPASSWORD}
-
-                '''
-
-                sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE}  >> workerLogs.txt 2>&1 &
+                    nohup java ${LOG4J_PARAMETERS}x -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE} >> workerLogs.txt 2>&1 &
                     procno=$!
                     trap "kill -9 ${procno}" EXIT
                 '''
 
                 sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
-                    }
+    
                 }
             }
             // we need the DB credetals here also
