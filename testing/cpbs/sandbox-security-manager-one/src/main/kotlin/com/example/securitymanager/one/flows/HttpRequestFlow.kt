@@ -12,7 +12,7 @@ class HttpRequestFlow
 @Activate constructor() : SubFlow<Int> {
 
     override fun call(): Int  {
-        var url = URL("http://example.com")
+        val url = URL("http://example.com")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
         connection.connectTimeout = 3000

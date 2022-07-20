@@ -1,0 +1,4 @@
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
+(org.osgi.framework.ServicePermission "net.corda.v5.application.flows.FlowEngine" "get")
+} "deny access to FlowEngine"
