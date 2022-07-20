@@ -214,9 +214,7 @@ private fun ApiResponse.withResponseBodyFrom(
         } else this
 
         endpoint.responseBody.description.let {
-            if (it.isNotBlank()) {
-                response.description = it
-            }
+            response.description = it.ifBlank { "Success." }
         }
         log.trace { "ApiResponse with ResponseBody from Endpoint: \"$endpoint\" completed." }
         return response
