@@ -1,10 +1,6 @@
 package net.corda.flow.p2p.filter.integration
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
@@ -18,6 +14,9 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -34,6 +33,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,6 +41,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -67,6 +71,9 @@ class FlowFilterServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowSessionFilterService: FlowP2PFilterService
 
+    @InjectService(timeout = 4000)
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+
     private val bootConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
@@ -92,6 +99,12 @@ class FlowFilterServiceIntegrationTest {
 
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
+
+        // Test config updates don't break FlowMapperService
+        lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<FlowP2PFilterService>()) { _, _ -> }.use {
+            eventually { it.status == LifecycleStatus.UP }
+        }
+        publishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
@@ -150,11 +163,22 @@ class FlowFilterServiceIntegrationTest {
     }
 
     private fun setupConfig(publisher: Publisher) {
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG,
-            Configuration(messagingConf, messagingConf, 0, schemaVersion))))
+        publishConfig(publisher)
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }
+
+    private fun publishConfig(publisher: Publisher) {
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC, MESSAGING_CONFIG,
+                    Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                )
+            )
+        )
+    }
+
 
     private val messagingConf = """
             componentVersion="5.1"
