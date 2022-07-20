@@ -109,12 +109,21 @@ pipeline {
                             usernameVariable: 'PGUSER')]){
                 //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
+                
                 sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.user=${PGUSER} -ddatabase.pass=${PGPASSWORD} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE}  >> workerLogs.txt 2>&1 &
+                
+                    export CORDA_DEV_POSTGRES_USER = ${PGUSER}
+                    export CORDA_DEV_POSTGRES_PASSWORD = ${PGPASSWORD}
+
+                '''
+
+                sh '''
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE}  >> workerLogs.txt 2>&1 &
                     procno=$!
                     trap "kill -9 ${procno}" EXIT
-                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
                 '''
+
+                sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
                     }
                 }
             }
