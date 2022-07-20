@@ -72,7 +72,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -233,7 +233,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The updated cluster configuration for the specified section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -259,7 +259,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -299,7 +299,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The Configuration for the given section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -325,7 +325,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "List details of the all CPIs uploaded to the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The request Id calculated for a CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -395,7 +395,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -461,7 +461,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -501,7 +501,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The status of the flow.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -547,7 +547,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The initial status of the flow, if the flow already exists the status of the existing flow will be returned.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -595,7 +595,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The status of the flow.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -621,7 +621,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -661,7 +661,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The class names of all flows that can be run",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -687,7 +687,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -793,7 +793,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -967,7 +967,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1122,7 +1122,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "A map from a tenant key ID to its metadata.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1173,7 +1173,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The ID of the newly generated key pair.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1223,7 +1223,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The list of schemes codes which are supported by the associated HSM integration.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1277,7 +1277,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The public key in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1325,7 +1325,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The request Id calculated for a CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1351,7 +1351,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1380,7 +1380,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1512,7 +1512,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1624,7 +1624,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1731,7 +1731,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1900,7 +1900,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2003,7 +2003,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2169,7 +2169,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2272,7 +2272,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "List details of the all virtual nodes in the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2307,7 +2307,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The details of the created virtual node.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2333,7 +2333,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {

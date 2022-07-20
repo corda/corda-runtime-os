@@ -9,10 +9,17 @@ import java.lang.reflect.Method
  *
  * Note: These are also exempt from sanity checks in HttpRpcClientProxyHandler.invoke(...).
  */
-private val staticExposedGetMethods: Set<String> = listOf("getProtocolVersion").map { it.lowercase() }.toSet()
+private val staticExposedGetMethods: Map<String, String> =
+    mapOf("getProtocolVersion" to "Integer value specifying the version of the endpoint.")
+        .mapKeys { it.key.lowercase() }
 
 fun Method.isStaticallyExposedGet(): Boolean {
-    return staticExposedGetMethods.contains(name.lowercase())
+    return staticExposedGetMethods.keys.contains(name.lowercase())
 }
+
+val Method.responseDescription: String
+    get() {
+        return staticExposedGetMethods[name.lowercase()] ?: ""
+    }
 
 fun Class<*>.isDuplexChannel(): Boolean = (this == DuplexChannel::class.java)
