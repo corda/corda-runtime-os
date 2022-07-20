@@ -1,7 +1,5 @@
 package net.corda.flow.fiber
 
-import net.corda.flow.pipeline.runner.FlowRunner
-
 /**
  * [Interruptable] instances can be asked to interrupt their normal flow, usually when executing concurrently in some
  * other context, e.g. a different thread. It is not guaranteed execution can always be interrupted.

@@ -5,16 +5,13 @@ import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import java.util.UUID
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 
 @Component
 @Suppress("Unused")

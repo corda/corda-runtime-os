@@ -3,9 +3,7 @@ package net.corda.flow.pipeline.runner
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import java.util.concurrent.Future
 
 /**
  * [FlowRunner] starts or resumes [FlowFiber]s.

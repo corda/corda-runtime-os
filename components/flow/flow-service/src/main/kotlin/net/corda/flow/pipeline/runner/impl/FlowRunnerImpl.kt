@@ -6,7 +6,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
@@ -18,7 +17,6 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.Future
 
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
