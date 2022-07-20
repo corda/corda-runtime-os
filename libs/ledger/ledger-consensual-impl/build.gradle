@@ -9,12 +9,16 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    // TODO: review dependencies
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-consensual"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
+    implementation project(":libs:ledger:ledger-common-impl")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
