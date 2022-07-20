@@ -2457,7 +2457,7 @@
         }
       },
       "CpiMetadata" : {
-        "required" : [ "cpks", "fileChecksum", "id", "timestamp" ],
+        "required" : [ "cpks", "cpiFileChecksum", "id", "timestamp" ],
         "type" : "object",
         "properties" : {
           "cpks" : {
@@ -2468,7 +2468,7 @@
               "$ref" : "#/components/schemas/CpkMetadata"
             }
           },
-          "fileChecksum" : {
+          "cpiFileChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3447,10 +3447,10 @@
         }
       },
       "Status" : {
-        "required" : [ "checksum", "status" ],
+        "required" : [ "cpiFileChecksum", "status" ],
         "type" : "object",
         "properties" : {
-          "checksum" : {
+          "cpiFileChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"

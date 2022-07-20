@@ -82,7 +82,7 @@ class VirtualNodeRpcTest {
                 }
             }.toJson()
 
-            val cpiHash = json["checksum"].textValue()
+            val cpiHash = json["cpiFileChecksum"].textValue()
             assertThat(cpiHash).isNotNull.isNotEmpty
 
             // Capture the cpiHash from the cpi status upload
@@ -353,7 +353,7 @@ class VirtualNodeRpcTest {
     fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
         val cpis = cpiList().toJson()["cpis"]
         val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        return truncateLongHash(cpiJson["fileChecksum"].textValue())
+        return truncateLongHash(cpiJson["cpiFileChecksum"].textValue())
     }
 
     private fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
