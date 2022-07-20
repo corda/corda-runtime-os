@@ -10,5 +10,8 @@ import javax.persistence.EntityManagerFactory
  */
 interface PermissionStorageWriterProcessorFactory {
 
-    fun create(entityManagerFactory: EntityManagerFactory, readerSupplier: Supplier<PermissionStorageReader?>): PermissionStorageWriterProcessor
+    fun create(
+        entityManagerFactory: EntityManagerFactory,
+        readerSupplier: Supplier<PermissionStorageReader?>
+    ): PermissionStorageWriterProcessor
 }
