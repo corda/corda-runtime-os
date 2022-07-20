@@ -53,6 +53,12 @@ class TweakableHashDigestProvider(
         require(!leafPrefix.contentEquals(nodePrefix)) {
             "Hash prefix for nodes must be different to that for leaves"
         }
+        require(leafPrefix.size > 0) {
+            "Leaf prefix cannot be empty"
+        }
+        require(nodePrefix.size > 0) {
+            "Node prefix cannot be empty"
+        }
     }
 
     override fun leafNonce(index: Int): ByteArray? = null
