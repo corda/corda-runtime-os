@@ -43,7 +43,7 @@ class SendRequestHandler @Activate constructor(
             }
         } catch (e: FlowSessionStateException) {
             log.info("Failed to send session data for for session", e)
-            throw FlowPlatformException(e.message, context, e)
+            throw FlowPlatformException(e.message, e)
         }
 
         val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())

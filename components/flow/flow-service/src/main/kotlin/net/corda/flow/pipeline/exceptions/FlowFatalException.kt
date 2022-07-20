@@ -1,11 +1,11 @@
 package net.corda.flow.pipeline.exceptions
 
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
  * The [FlowFatalException] is thrown for an unrecoverable error, this exception signals the flow can't continue
  * and should be moved to the DLQ
  */
-class FlowFatalException(message: String, flowEventContext: FlowEventContext<*>, cause: Throwable? = null) :
-    FlowProcessingException(message, flowEventContext, cause)
+class FlowFatalException(override val message: String, cause: Throwable? = null) :
+    CordaRuntimeException(message, cause)
 

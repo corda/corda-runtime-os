@@ -118,7 +118,7 @@ To build the Docker image, run:
 ### Running the JAR
 To run the JAR, use:
 ```
-java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator*.jar --kafka-servers broker1:9093 --simulator-config ~/Desktop/simulator.conf
+java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator*.jar --simulator-config ~/Desktop/simulator.conf
 ```
 
 The simulator configuration file can differ depending on the mode, as explained above.
@@ -127,15 +127,28 @@ Below is a list of command line arguments you can use:
 ```bash
   -h, --help   Display help and exit
   -i, --instance-id=<instanceId>
-               The instance ID. Defaults to the value of the env. variable INSTANCE_ID or a random number, if that hasn't been set.
-  -k, --kafka-servers=<kafkaServers>
-               A comma-separated list of addresses of Kafka brokers. Default to localhost:9092
+               The instance ID. Defaults to the value of the env. variable
+                 INSTANCE_ID or a random number, if that hasn't been set.
+  -m, --messagingParams=<String=String>
+               Messaging parameters for the simulator.
       --receive-topic=<receiveTopic>
-               Topic to receive messages from. Defaults to p2p.in, if not specified.
+               Topic to receive messages from. Defaults to p2p.in, if not
+                 specified.
       --send-topic=<sendTopic>
-               Topic to send the messages to. Defaults to p2p.out, if not specified.
+               Topic to send the messages to. Defaults to p2p.out, if not
+                 specified.
       --simulator-config=<simulatorConfig>
-               File containing configuration parameters for simulator. Default to config.conf
+               File containing configuration parameters for simulator. Default
+                 to config.conf
+```
+By default, the simulator will try and connect to a Kafka broker on localhost:9092.
+To override this use option `-m`. For example, to connect to a Kafka Broker on `kafka-broker:1000`:
+```bash
+java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator*.jar -mbootstrap.servers=kafka-broker:1000
+```
+These -m options are passed into the Kafka client. For example to use TLS to connect to the Kafka broker the following -m options can be used:
+```bash
+java -jar ./applications/p2p-link-manager/build/bin/corda-p2p-link-manager*.jar -msecurity.protocol=SSL -mssl.truststore.location=/certs/ca.crt -mssl.truststore.type=PEM
 ```
 
 ### Running the Docker image
@@ -150,7 +163,7 @@ docker run \
 
 Below is a list of environment variables you can use:
 * `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
-* `INSTANCE_ID` - The Link Manager instance ID (default to random number)
+* `INSTANCE_ID` - The simulator instance ID (default to random number)
 
 ## Database metadata
 

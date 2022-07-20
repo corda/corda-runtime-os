@@ -198,6 +198,16 @@ class MembershipPersistenceTest {
                 )
             }
 
+            override fun setRegistrationRequestStatus(
+                viewOwningIdentity: HoldingIdentity,
+                registrationId: String,
+                registrationRequestStatus: RegistrationStatus
+            ) = safeCall {
+                membershipPersistenceClient.setRegistrationRequestStatus(
+                    viewOwningIdentity, registrationId, registrationRequestStatus
+                )
+            }
+
             fun <T> safeCall(func: () -> T): T {
                 return eventually {
                     assertDoesNotThrow {
@@ -591,6 +601,56 @@ class MembershipPersistenceTest {
         ).getOrThrow()
 
         assertThat(results).containsAllEntriesOf(signatures)
+    }
+
+    @Test
+    fun `setRegistrationRequestStatus updates the registration request status`() {
+        val registrationId = randomUUID().toString()
+        val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
+            viewOwningHoldingIdentity,
+            RegistrationRequest(
+                RegistrationStatus.NEW,
+                registrationId,
+                registeringHoldingIdentity,
+                ByteBuffer.wrap(
+                    cordaAvroSerializer.serialize(
+                        KeyValuePairList(
+                            listOf(
+                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                            )
+                        )
+                    )
+                ),
+                ByteBuffer.wrap(byteArrayOf()),
+                ByteBuffer.wrap(byteArrayOf())
+            )
+        )
+
+        assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
+        assertThat(persistedEntity.holdingIdentityId).isEqualTo(registeringHoldingIdentity.id)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
+
+        val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
+            viewOwningHoldingIdentity,
+            registrationId,
+            RegistrationStatus.PENDING_AUTO_APPROVAL
+        )
+
+        assertThat(updateRegRequestStatusResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val updatedEntity = vnodeEmf.use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(updatedEntity).isNotNull
+        assertThat(updatedEntity.registrationId).isEqualTo(registrationId)
+        assertThat(updatedEntity.holdingIdentityId).isEqualTo(registeringHoldingIdentity.id)
+        assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =

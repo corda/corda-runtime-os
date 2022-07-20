@@ -7,10 +7,12 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.generateMockCordaConsumerRecordList
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -397,6 +400,69 @@ class StateAndEventSubscriptionImplTest {
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).sendRecords(any())
+        verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
+        verify(producer, times(1)).commitTransaction()
+    }
+
+    @Test
+    fun `state and event subscription response marked for DLQ is correctly placed there and output records published`() {
+        val (builder, producer, stateAndEventConsumer) = setupMocks(0)
+        val records = mutableListOf<CordaConsumerRecord<String, String>>()
+        records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
+        val outputRecord = Record("Topic", "Key", "Value")
+
+        var callCount = 0
+        val eventConsumer = stateAndEventConsumer.eventConsumer
+        doAnswer {
+            if (callCount++ == 0) {
+                records
+            } else {
+                mutableListOf()
+            }
+        }.whenever(eventConsumer).poll(any())
+
+        doAnswer {
+            CompletableFuture.completedFuture(StateAndEventProcessor.Response(
+                null,
+                listOf(outputRecord),
+                true
+            ))
+        }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
+
+        val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
+            config,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+
+        /**
+         * wait for a second poll to be called before we complete
+         * as we need to be sure the first poll has completed processing
+         * before we go to the asserts
+         */
+        while (subscription.isRunning && callCount <= 1) {
+            Thread.sleep(10)
+        }
+        subscription.stop()
+
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+        verify(builder, times(1)).createProducer(any())
+        verify(producer, times(1)).beginTransaction()
+        verify(producer, times(1)).sendRecords(argThat { list: List<CordaProducerRecord<*, *>> ->
+            list.contains(CordaProducerRecord("Topic", "Key", "Value"))
+        })
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
     }

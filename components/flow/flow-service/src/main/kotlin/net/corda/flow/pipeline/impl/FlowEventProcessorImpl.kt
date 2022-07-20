@@ -46,11 +46,15 @@ class FlowEventProcessorImpl(
             return StateAndEventProcessor.Response(state, listOf())
         }
 
-        return try {
+        val pipeline = try {
             log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+            flowEventPipelineFactory.create(state, flowEvent, config)
+        } catch (t: Throwable) {
+            // Without a pipeline there's a limit to what can be processed.
+            return flowEventExceptionProcessor.process(t)
+        }
 
-            val pipeline = flowEventPipelineFactory.create(state, flowEvent, config)
-
+        return try {
             flowEventContextConverter.convert(pipeline
                 .eventPreProcessing()
                 .runOrContinue()
@@ -60,15 +64,14 @@ class FlowEventProcessorImpl(
                 .globalPostProcessing()
                 .context
             )
-
         } catch (e: FlowTransientException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowEventException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowPlatformException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowFatalException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
         }
