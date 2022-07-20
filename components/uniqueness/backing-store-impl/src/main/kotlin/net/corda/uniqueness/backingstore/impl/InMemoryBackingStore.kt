@@ -9,6 +9,8 @@ package net.corda.uniqueness.backingstore.impl
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.*
 
+@Suppress("ForbiddenComment")
+// TODO: Move to testkit once we have the real implementation
 open class InMemoryBackingStore : BackingStore {
 
     // Data persisted across different transactions

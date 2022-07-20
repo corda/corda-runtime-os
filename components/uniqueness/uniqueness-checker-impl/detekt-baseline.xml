@@ -4,7 +4,7 @@
   <CurrentIssues>
     <ID>ForbiddenComment:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests$// TODO: Make tests parameterised so we can also test the in memory implementation</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:293</ID>
-    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:153</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:153</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1307</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1308</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:50</ID>
@@ -16,15 +16,15 @@
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:3</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:4</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:8</ID>
-    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:3</ID>
-    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:4</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:3</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:4</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:20</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:26</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:6</ID>
     <ID>SpacingAroundColon:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:49</ID>
     <ID>SpacingAroundCurly:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:125</ID>
     <ID>SpacingAroundParens:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:147</ID>
-    <ID>StringTemplate:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:130</ID>
+    <ID>StringTemplate:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:130</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1101</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1104</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1107</ID>
@@ -60,9 +60,9 @@
     <ID>Wrapping:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:315</ID>
     <ID>Wrapping:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:80</ID>
     <ID>Wrapping:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:82</ID>
-    <ID>Wrapping:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:116</ID>
-    <ID>Wrapping:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:152</ID>
-    <ID>Wrapping:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:153</ID>
+    <ID>Wrapping:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:116</ID>
+    <ID>Wrapping:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:152</ID>
+    <ID>Wrapping:net.corda.uniqueness.checker.impl.fake.InMemoryUniquenessCheckerImpl.kt:153</ID>
     <ID>Wrapping:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:122</ID>
     <ID>Wrapping:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:123</ID>
     <ID>Wrapping:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1355</ID>

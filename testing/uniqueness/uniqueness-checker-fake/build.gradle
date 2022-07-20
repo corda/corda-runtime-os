@@ -3,11 +3,12 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Uniqueness checker component implementation'
+description 'Uniqueness checker component fake testing implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation 'net.corda:corda-base'
@@ -15,15 +16,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":components:uniqueness:uniqueness-checker")
-    implementation project(":components:uniqueness:backing-store")
-    implementation project(":components:uniqueness:backing-store-impl")
     implementation project(":libs:uniqueness")
     implementation project(":libs:utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    testImplementation project(":testing:crypto-testkit")
-    testImplementation project(":testing:test-utilities")
-    testImplementation project(":testing:uniqueness:uniqueness-utilities")
 }
