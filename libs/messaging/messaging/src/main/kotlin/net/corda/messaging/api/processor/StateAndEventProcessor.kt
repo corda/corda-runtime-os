@@ -47,9 +47,6 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      *
      * @param state the current state (if any) for the [event] key.  If no state exists then [null].
      * @param event the event which triggered this update.
-     * @param timeoutMilliseconds the maximum amount of time this event processing is expected to take. This is an
-     * indication to the implementation should it need to implement its own timeout handling, not a hard limit. There
-     * are no consequences to exceeding it.
      * @return a [Response] which contains the updated state and any subsequent events, both of which will
      * be published.
      *
@@ -58,7 +55,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      * NOTE: The returned events will be published and the processed events will be consumed atomically as a
      * single transaction.
      */
-    fun onNext(state: S?, event: Record<K, E>, timeoutMilliseconds: Long): Response<S>
+    fun onNext(state: S?, event: Record<K, E>): Response<S>
 
     /**
      * [keyClass], [stateValueClass] and [eventValueClass] to easily get the class types the processor operates upon.

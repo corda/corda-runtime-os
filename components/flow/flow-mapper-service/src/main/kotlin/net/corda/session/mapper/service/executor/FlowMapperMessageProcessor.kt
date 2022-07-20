@@ -25,8 +25,7 @@ class FlowMapperMessageProcessor(
 
     override fun onNext(
         state: FlowMapperState?,
-        event: Record<String, FlowMapperEvent>,
-        timeoutMilliseconds: Long
+        event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
         val key = event.key
         logger.debug { "Received event: key: $key event: ${event.value}" }

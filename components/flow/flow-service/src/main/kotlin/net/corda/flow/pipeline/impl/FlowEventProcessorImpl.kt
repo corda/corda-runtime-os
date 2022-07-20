@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
 import net.corda.v5.base.util.contextLogger
 
 class FlowEventProcessorImpl(
@@ -37,8 +38,7 @@ class FlowEventProcessorImpl(
 
     override fun onNext(
         state: Checkpoint?,
-        event: Record<String, FlowEvent>,
-        timeoutMilliseconds: Long
+        event: Record<String, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
 
@@ -59,7 +59,7 @@ class FlowEventProcessorImpl(
             flowEventContextConverter.convert(
                 pipeline
                     .eventPreProcessing()
-                    .runOrContinue(timeoutMilliseconds)
+                    .runOrContinue(config.getInt(PROCESSING_MAX_FLOW_EXECUTION_DURATION).toLong())
                     .setCheckpointSuspendedOn()
                     .setWaitingFor()
                     .requestPostProcessing()
