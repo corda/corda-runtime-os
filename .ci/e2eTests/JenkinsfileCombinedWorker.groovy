@@ -46,42 +46,6 @@ pipeline {
     }
     stages {
 		  //stage create DB - see shared pipline
-<<<<<<< HEAD
-        stage('Create DBs') {
-            environment {
-                KUBECONFIG = credentials('e2e-tests-credentials')
-            }
-            steps {
-                // port forwarding from K8s
-                withEnv(["PGPORT=${postgresPort}"]) {
-                    sh 'nohup kubectl port-forward --namespace postgres svc/postgres-postgresql "${PGPORT}":"${PGPORT}" > forward.txt 2>&1 &'
-                }
-                // create new DB
-                withEnv([
-                        "PGHOST=${postgresHost}",
-                        "PGPORT=${postgresPort}",
-                        "DATABASE=${postgresDb}"
-                ]) {
-                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                            passwordVariable: 'PGPASSWORD',
-                            usernameVariable: 'PGUSER')]) {
-                        script {
-                            try {
-                                sh 'psql --quiet --tuples-only -c \'select \''
-                            } catch (error) {
-                                echo "${error.getMessage()}\nPort forwarding Postgres has not been set up yet, retrying"
-                                retry(5) {
-                                    sleep(time: 5, unit: "SECONDS")
-                                    sh 'psql --quiet --tuples-only -c \'select \''
-                                }
-                            }
-                            sh 'createdb -w "${DATABASE}"'
-                        }
-                    }
-                }
-            }
-        }
-=======
         // stage('Create DBs') {
         //     environment {
         //         KUBECONFIG = credentials('e2e-tests-credentials')
@@ -116,7 +80,6 @@ pipeline {
         //         }
         //     }
         // }
->>>>>>> 93ef18777 (added jenkinsfile template for testing combined worker)
     /// Build the Jar
         stage('Build  Jar') {
             steps {
@@ -125,41 +88,6 @@ pipeline {
         }
  			
         //Start the java process in background
-<<<<<<< HEAD
-        stage('Start jar / run tests') {
-            
-            environment {
-                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
-                VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
-                LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE "
-                WORKING_DIRECTORY = "${env.WORKSPACE}"
-            }
-            steps {
-        
-                withEnv([
-                        "PGHOST=${postgresHost}",
-                        "PGPORT=${postgresPort}",
-                        "DATABASE=${postgresDb}"
-                ]){
-                withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                            passwordVariable: 'PGPASSWORD',
-                            usernameVariable: 'PGUSER')]){
-                //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
-                //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
-                sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${JAR_PATH} ${VM_PARAMETERS} ${PROGRAM_PARAMETERS} -ddatabase.user=${PGUSER} -ddatabase.pass=${PGPASSWORD} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE}  >> workerLogs.txt 2>&1 &
-                    procno=$!
-                    trap "kill -9 ${procno}" EXIT
-                    ./gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/
-                '''
-                    }
-                }
-            }
-            // we need the DB credetals here also
-            
-        }
-=======
         // stage('Start jar / run tests') {
         //     steps {
         //     // we need the DB credetals here also
@@ -176,35 +104,13 @@ pipeline {
         //         trap "kill -9 ${procno}" EXIT
         //     }
         // }
->>>>>>> 93ef18777 (added jenkinsfile template for testing combined worker)
     }
     post {
         always {
 	// remove Database see here https://github.com/corda/corda-shared-build-pipeline-steps/blob/5.0/vars/cordaPipeline.groovy#L487-L500
-<<<<<<< HEAD
-            script {
-                    if (config.createPostgresDb) {
-                        withEnv([
-                                "PGHOST=${postgresHost}",
-                                "PGPORT=${postgresPort}",
-                                "DATABASE=${postgresDb}"
-                        ]) {
-                            withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                                    passwordVariable: 'PGPASSWORD',
-                                    usernameVariable: 'PGUSER')]) {
-                                sh 'dropdb -w "${DATABASE}" || true'
-                            }
-                        }
-                    }
-            }
-            script{
-                writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
-                //archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
-=======
             script{
                 writeFile file: "workerLogs.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
->>>>>>> 93ef18777 (added jenkinsfile template for testing combined worker)
             }
         }
     }
