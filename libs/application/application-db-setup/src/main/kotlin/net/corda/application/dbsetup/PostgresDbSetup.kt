@@ -26,9 +26,8 @@ class PostgresDbSetup: DbSetup {
         private const val DB_PORT = "5432"
         private const val DB_NAME = "cordacluster"
         private const val DB_URL = "jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME"
-        private const val DB_SUPERUSER = "postgres"
-        private const val DB_SUPERUSER_PASSWORD = "password"
-        private const val DB_SUPERUSER_URL = "$DB_URL?user=$DB_SUPERUSER&password=$DB_SUPERUSER_PASSWORD"
+        private const val DB_SUPERUSER_DEFAULT = "postgres"
+        private const val DB_SUPERUSER_PASSWORD_DEFAULT = "password"
         private const val DB_ADMIN = "user"
         private const val DB_ADMIN_PASSWORD = "password"
         private const val DB_ADMIN_URL = "$DB_URL?user=$DB_ADMIN&password=$DB_ADMIN_PASSWORD"
@@ -44,8 +43,18 @@ class PostgresDbSetup: DbSetup {
         )
     }
 
+
+    private val dbSuperUserUrl by lazy {
+        val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: DB_SUPERUSER_DEFAULT
+        val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: DB_SUPERUSER_PASSWORD_DEFAULT
+
+        "$DB_URL?user=$superUser&password=$superUserPassword"
+    }
+
     override fun run() {
         Class.forName(DB_DRIVER)
+
+
 
         if (!dbInitialised()) {
             initDb()
@@ -59,7 +68,7 @@ class PostgresDbSetup: DbSetup {
 
     private fun dbInitialised(): Boolean {
         DriverManager
-            .getConnection(DB_SUPERUSER_URL)
+            .getConnection(dbSuperUserUrl)
             .use { connection ->
                 connection.createStatement().executeQuery(
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
@@ -74,7 +83,7 @@ class PostgresDbSetup: DbSetup {
 
     private fun initDb() {
         DriverManager
-            .getConnection(DB_SUPERUSER_URL)
+            .getConnection(dbSuperUserUrl)
             .use { connection ->
                 connection.createStatement().execute(
                     // NOTE: this is different to the cli as this is set up to be using the official postgres image
