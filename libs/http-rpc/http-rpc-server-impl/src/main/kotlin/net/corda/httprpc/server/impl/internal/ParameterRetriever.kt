@@ -2,7 +2,6 @@ package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import java.io.InputStream
-import java.lang.IllegalArgumentException
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.exception.MissingParameterException
@@ -147,7 +146,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
                 val uploadedFiles = ctx.uploadedFiles(parameter.name)
 
                 if (uploadedFiles.isEmpty())
-                    throw IllegalArgumentException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
+                    throw MissingParameterException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
 
                 if (Collection::class.java.isAssignableFrom(parameter.classType))
                     return uploadedFiles
