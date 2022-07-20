@@ -1,5 +1,6 @@
 package net.corda.p2p.app.topic.dump
 
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -14,9 +15,11 @@ internal class Application @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger
 ) : Application {
-    private val topicDumper = TopicDumper(subscriptionFactory)
+    private val topicDumper = TopicDumper(subscriptionFactory, configMerger)
     override fun startup(args: Array<String>) {
         val command = CommandLine(topicDumper)
         @Suppress("SpreadOperator")
