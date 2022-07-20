@@ -4,7 +4,6 @@ import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.MGMOpsClient
-import net.corda.membership.client.dto.MGMGenerateGroupPolicyResponseDto
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -33,16 +32,7 @@ class MGMRpcOpsTest {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
-    private val mgmGenerateGroupPolicyResponseDto = MGMGenerateGroupPolicyResponseDto(
-        1,
-        "groupId",
-        "registrationProtocol",
-        "synchronisationProtocol",
-        emptyMap(),
-        emptyMap(),
-        emptyMap(),
-        emptyMap()
-    )
+    private val mgmGenerateGroupPolicyResponseDto = "grouppolicy"
 
     private val mgmOpsClient: MGMOpsClient = mock {
         on { generateGroupPolicy(any()) } doReturn mgmGenerateGroupPolicyResponseDto

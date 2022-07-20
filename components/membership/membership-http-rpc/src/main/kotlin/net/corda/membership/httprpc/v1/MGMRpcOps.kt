@@ -4,8 +4,6 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.membership.httprpc.v1.types.response.MGMGenerateGroupPolicyResponse
-import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 
 /**
  * MGM RPC operations within a group.
@@ -20,7 +18,7 @@ interface MGMRpcOps : RpcOps {
      * GET endpoint to fetch the requested group policy string
      *
      * @param holdingIdentityId The ID of the holding identity to be checked.
-     * @return [MGMGenerateGroupPolicyResponse] MGM Generated Group Policy JSON.
+     * @return [String] MGM Generated Group Policy JSON.
      *  local member data.
      */
     @HttpRpcGET(
@@ -30,5 +28,5 @@ interface MGMRpcOps : RpcOps {
     fun generateGroupPolicy(
         @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String
-    ): MGMGenerateGroupPolicyResponse
+    ): String
 }

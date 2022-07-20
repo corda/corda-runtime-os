@@ -7,9 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.MGMOpsClient
-import net.corda.membership.client.dto.MGMGenerateGroupPolicyResponseDto
 import net.corda.membership.httprpc.v1.MGMRpcOps
-import net.corda.membership.httprpc.v1.types.response.MGMGenerateGroupPolicyResponse
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -29,7 +27,7 @@ class MGMRpcOpsImpl @Activate constructor(
     }
 
     private interface InnerMGMRpcOps {
-        fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponse
+        fun generateGroupPolicy(holdingIdentityId: String): String
     }
 
     private val className = this::class.java.simpleName
@@ -86,8 +84,8 @@ class MGMRpcOpsImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerMGMRpcOps {
-        override fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponse {
-            return mgmOpsClient.generateGroupPolicy(holdingIdentityId).fromDto()
+        override fun generateGroupPolicy(holdingIdentityId: String): String {
+            return mgmOpsClient.generateGroupPolicy(holdingIdentityId)
         }
     }
 }

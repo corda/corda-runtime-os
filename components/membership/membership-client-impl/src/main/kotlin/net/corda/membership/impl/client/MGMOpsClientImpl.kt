@@ -2,9 +2,13 @@ package net.corda.membership.impl.client
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.rpc.request.*
+import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
+import net.corda.data.membership.rpc.request.MembershipRpcRequest
+import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
+import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,9 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MGMOpsClient
-import net.corda.membership.client.dto.MGMGenerateGroupPolicyResponseDto
-import net.corda.membership.client.dto.MemberInfoSubmittedDto
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -35,7 +37,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Instant
 import java.util.*
 
 @Component(service = [MGMOpsClient::class])
@@ -56,14 +57,14 @@ class MGMOpsClientImpl @Activate constructor(
         private val logger: Logger = contextLogger()
         const val ERROR_MSG = "Service is in an incorrect state for calling."
 
-        const val CLIENT_ID = "membership.ops.rpc"
-        const val GROUP_NAME = "membership.ops.rpc"
+        const val CLIENT_ID = "mgm-ops-client"
+        const val GROUP_NAME = "mgm-ops-client"
 
         private val clock = UTCClock()
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
-        fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponseDto
+        fun generateGroupPolicy(holdingIdentityId: String): String
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -100,7 +101,9 @@ class MGMOpsClientImpl @Activate constructor(
                 componentHandle?.close()
                 componentHandle = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
                     )
                 )
             }
@@ -162,14 +165,14 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityId: String): MGMGenerateGroupPolicyResponseDto {
+        override fun generateGroupPolicy(holdingIdentityId: String): String {
 
             val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
-                ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
+                ?: throw ResourceNotFoundException ("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException("Could not find holding identity associated with member.")
+            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw ResourceNotFoundException ("Could not find holding identity associated with member.")
 
             if(filteredMembers.isMgm) {
 
@@ -184,41 +187,15 @@ class MGMOpsClientImpl @Activate constructor(
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            return  MGMGenerateGroupPolicyResponseDto(
-                1,
-                "Failed",
-                "Failed",
-                "Failed",
-                emptyMap(),
-                emptyMap(),
-                emptyMap(),
-                emptyMap(),
-            )
+            else throw BadRequestException("Holding identity does not represent an MGM virtual node.")
 
         }
 
         override fun close() = rpcSender.close()
 
         @Suppress("SpreadOperator")
-        private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): MGMGenerateGroupPolicyResponseDto =
-            MGMGenerateGroupPolicyResponseDto(
-                response.fileFormatVersion,
-                response.groupId.toString(),
-                response.registrationProtocol,
-                response.synchronisationProtocol,
-                mapOf<String,String>(
-                    *response.protocolParameters.items.map { it.key to it.value }.toTypedArray()
-                ),
-                mapOf<String,String>(
-                    *response.p2pParameters.items.map { it.key to it.value }.toTypedArray()
-                ),
-                mapOf<String,String>(
-                    *response.mgmInfo.items.map { it.key to it.value }.toTypedArray()
-                ),
-                mapOf<String,String>(
-                    *response.cipherSuite.items.map { it.key to it.value }.toTypedArray()
-                )
-            )
+        private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =
+            response.groupPolicy.toString()
 
         @Suppress("UNCHECKED_CAST")
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
