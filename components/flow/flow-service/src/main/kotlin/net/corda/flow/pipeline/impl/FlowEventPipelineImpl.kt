@@ -153,7 +153,10 @@ class FlowEventPipelineImpl(
             flowResultFuture.future.get(timeoutMilliseconds, TimeUnit.MILLISECONDS)
         } catch (e: TimeoutException) {
             log.error("Flow execution timeout, Flow marked as failed, interrupt attempted")
-            // Attempt to interrupt the failed flow so it doesn't block the executor
+            // This works in extremely limited circumstances. The Flow which experienced a timeout will continue to
+            // show the status RUNNING. Flows started in the waiting period will end up stuck in the START_REQUESTED
+            // state. The biggest benefit to this timeout is the error logging and the fact that waiting here
+            // indefinitely is blocking the FlowWorker for all Flows indefinitely too. See CORE-5820.
             flowResultFuture.interruptable.attemptInterrupt()
             FlowIORequest.FlowFailed(e)
         }

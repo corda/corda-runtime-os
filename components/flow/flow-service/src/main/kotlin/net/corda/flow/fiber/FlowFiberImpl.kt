@@ -55,17 +55,17 @@ class FlowFiberImpl(
         // the flow event pipeline. Note that this is executed in a Quasar concurrent executor thread and Throwables are
         // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
         // of critical error handling for free, only undefined behaviour.
-//        try {
-        runFlow()
-//        } catch (t: Throwable) {
-//            log.error("FlowFiber failed due to internal Throwable being thrown", t)
-//            failTopLevelSubFlow(t)
-//        }
+        try {
+            runFlow()
+        } catch (t: Throwable) {
+            log.error("FlowFiber failed due to internal Throwable being thrown", t)
+            failTopLevelSubFlow(t)
+        }
 
-//        if (!flowCompletion.isDone) {
-//            log.error("runFlow failed to complete normally, forcing a failure")
-//            failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
-//        }
+        if (!flowCompletion.isDone) {
+            log.error("runFlow failed to complete normally, forcing a failure")
+            failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
+        }
     }
 
     @Suspendable
@@ -77,7 +77,7 @@ class FlowFiberImpl(
         val outcomeOfFlow = try {
             log.info("Flow starting.")
             FlowIORequest.FlowFinished(flowLogic.invoke())
-        } catch (t: Exception) {
+        } catch (t: Throwable) {
             log.error("Flow failed", t)
             FlowIORequest.FlowFailed(t)
         }
@@ -143,7 +143,7 @@ class FlowFiberImpl(
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem))
         }
-        failTopLevelSubFlow(throwable)
+        flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
     }
 
     @Suppress("ThrowsCount")
@@ -193,6 +193,7 @@ class FlowFiberImpl(
     }
 
     override fun attemptInterrupt() {
+        // Contract of Interruptable is that this method should be thread safe, do not call anything here that isn't
         interrupt()
     }
 }
