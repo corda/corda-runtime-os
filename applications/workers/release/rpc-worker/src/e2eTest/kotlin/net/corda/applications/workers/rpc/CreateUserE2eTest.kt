@@ -13,9 +13,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.v5.base.util.seconds
 
 @SkipWhenRpcEndpointUnavailable
 class CreateUserE2eTest {
@@ -61,53 +58,6 @@ class CreateUserE2eTest {
             assertThatThrownBy { proxy.createUser(createUserType.copy(fullName = "Alice")) }
                 .isInstanceOf(RequestErrorException::class.java)
                 .hasMessageContaining("User '${userName.lowercase()}' already exists.")
-        }
-    }
-
-    @Test
-    fun testUserCreatePostConfigUpdate() {
-        testToolkit.httpClientFor(ConfigRPCOps::class.java).use { configClient ->
-            val proxy = configClient.start().proxy
-            val initialConfig = proxy.get("corda.messaging")
-            val updatedConfig = proxy.updateConfig(
-                UpdateConfigParameters(
-                    initialConfig.section,
-                    initialConfig.version,
-                    initialConfig.sourceConfig,
-                    initialConfig.schemaVersion
-                )
-            )
-            // Check that change to config been successfully applied
-            eventually(duration = 30.seconds) {
-                assertDoesNotThrow {
-                    with(proxy.get(updatedConfig.section)) {
-                        assertSoftly {
-                            it.assertThat(version).isEqualTo(initialConfig.version + 1)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Check that the user can be created
-        testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
-            val proxy = client.start().proxy
-
-            val passwordExpirySet = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
-            val userName = testToolkit.uniqueName
-            val password = testToolkit.uniqueName
-            val createUserType = CreateUserType(userName, userName, true, password, passwordExpirySet, null)
-            val userResponseType = eventually(duration = 30.seconds) {
-                assertDoesNotThrow {
-                    proxy.createUser(createUserType)
-                }
-            }
-            with(userResponseType) {
-                assertSoftly {
-                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
-                }
-            }
         }
     }
 }
