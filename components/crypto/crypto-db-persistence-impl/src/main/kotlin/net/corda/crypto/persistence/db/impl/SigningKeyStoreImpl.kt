@@ -273,8 +273,8 @@ class SigningKeyStoreImpl @Activate constructor(
         private fun entityManagerFactory(tenantId: String) = connectionsFactory.getEntityManagerFactory(tenantId)
 
         private fun createCache(): Cache<CacheKey, SigningCachedKey> = Caffeine.newBuilder()
-            .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-            .maximumSize(config.cache.maximumSize)
+            .expireAfterAccess(config.keyCache.expireAfterAccessMins, TimeUnit.MINUTES)
+            .maximumSize(config.keyCache.maximumSize)
             .build()
     }
 }

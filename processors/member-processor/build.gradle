@@ -62,7 +62,6 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-db-schema'
 
     integrationTestImplementation project(":components:crypto:crypto-db-persistence-model")
-    integrationTestImplementation project(':components:crypto:crypto-service')
     integrationTestImplementation project(":components:db:db-connection-manager")
     integrationTestImplementation project(":libs:configuration:configuration-datamodel")
     integrationTestImplementation project(":libs:crypto:crypto-core")

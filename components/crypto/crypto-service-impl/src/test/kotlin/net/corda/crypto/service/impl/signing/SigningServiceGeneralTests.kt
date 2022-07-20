@@ -418,7 +418,7 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             store = store,
             cryptoServiceFactory = mock {
-                on { this.getInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
+                on { this.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },
             schemeMetadata = schemeMetadata
         )

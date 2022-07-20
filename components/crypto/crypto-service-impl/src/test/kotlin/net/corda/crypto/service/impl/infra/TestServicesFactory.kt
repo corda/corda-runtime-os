@@ -196,7 +196,7 @@ class TestServicesFactory {
         SigningServiceImpl(
             store = signingCache,
             cryptoServiceFactory = object : CryptoServiceFactory {
-                override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
+                override fun getServiceRef(tenantId: String, category: String): CryptoServiceRef {
                     check(isRunning) {
                         "The provider is in invalid state."
                     }

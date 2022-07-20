@@ -26,6 +26,8 @@ dependencies {
     testImplementation project(":components:crypto:crypto-component-test-utils")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":testing:test-utilities")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
 

@@ -31,7 +31,7 @@ class SigningServiceImpl(
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
-        return cryptoServiceFactory.getInstance(tenantId = tenantId, category = category).getSupportedSchemes()
+        return cryptoServiceFactory.getServiceRef(tenantId = tenantId, category = category).getSupportedSchemes()
     }
 
     override fun lookup(
@@ -149,10 +149,9 @@ class SigningServiceImpl(
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(
+        val cryptoService = cryptoServiceFactory.getServiceRef(
             tenantId = tenantId,
-            category = record.data.category,
-            associationId = record.data.associationId
+            category = record.data.category
         )
         val signedBytes = cryptoService.sign(record, scheme, signatureSpec, data, context)
         return DigitalSignature.WithKey(
@@ -176,10 +175,9 @@ class SigningServiceImpl(
             otherPublicKey.publicKeyId()
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(
+        val cryptoService = cryptoServiceFactory.getServiceRef(
             tenantId = tenantId,
-            category = record.data.category,
-            associationId = record.data.associationId
+            category = record.data.category
         )
         return cryptoService.deriveSharedSecret(record, scheme, otherPublicKey, context)
     }
@@ -194,7 +192,7 @@ class SigningServiceImpl(
         context: Map<String, String>
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-        val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
+        val cryptoService = cryptoServiceFactory.getServiceRef(tenantId = tenantId, category = category)
         if (alias != null && store.find(tenantId, alias) != null) {
             throw IllegalStateException("The key with alias $alias already exist for tenant $tenantId")
         }

@@ -15,7 +15,7 @@ import java.util.UUID
 
 /*
 {
-  "rootKey": {
+    "rootKey": {
         "salt": "<plain-text-value>",
         "passphrase": {
             "configSecret": {
@@ -27,42 +27,14 @@ import java.util.UUID
         "connectionsExpireAfterAccessMins": 5,
         "connectionNumberLimit": 3
     },
-    "softHSM": {
-        "maxAttempts": 3,
-        "attemptTimeoutMills": 20000,
-        "salt": "<plain-text-value>",
-        "passphrase": {
-            "configSecret": {
-                "encryptedSecret": "<encrypted-value>"
-            }
-        },
-        "keyMap": {
-            "name": "CACHING",
-            "cache": {
-                "expireAfterAccessMins": 60,
-                "maximumSize": 1000
-            }
-        },
-        "wrappingKeyMap": {
-            "name": "CACHING",
-            "cache": {
-                "expireAfterAccessMins": 60,
-                "maximumSize": 1000
-            }
-        },
-        "wrapping": {
-            "name": "DEFAULT",
-            "hsm": {
-                "name": ".."
-                "config": {
-                }
-            }
-        }
-    },
     "signingService": {
-        "cache": {
+        "keyCache": {
             "expireAfterAccessMins": 60,
             "maximumSize": 1000
+        },
+        "cryptoRefsCache: {
+            "expireAfterAccessMins": 240,
+            "maximumSize": 10000
         }
     },
 
@@ -117,9 +89,7 @@ import java.util.UUID
 private const val ROOT_KEY_SALT = "rootKey.salt"
 private const val ROOT_KEY_PASSPHRASE = "rootKey.passphrase"
 private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
-private const val SOFT_HSM_OBJ = "softHSM"
 private const val SIGNING_SERVICE_OBJ = "signingService"
-
 
 private const val SOFT_PERSISTENCE_OBJ = "softPersistence"
 private const val SIGNING_PERSISTENCE_OBJ = "signingPersistence"
@@ -224,41 +194,15 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                 )
             )
             .withValue(
-                SOFT_HSM_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoSoftHSMConfig::maxAttempts.name to "3",
-                        CryptoSoftHSMConfig::attemptTimeoutMills.name to "20000",
-                        CryptoSoftHSMConfig::salt.name to softKey.salt,
-                        CryptoSoftHSMConfig::passphrase.name to ConfigValueFactory.fromMap(
-                            makeSecret(softKey.passphrase).root().unwrapped()
-                        ),
-                        CryptoSoftHSMConfig::keyMap.name to mapOf(
-                            CryptoSoftHSMConfig.Map::name.name to KEY_MAP_CACHING_NAME,
-                            CryptoSoftHSMConfig.Map::cache.name to mapOf(
-                                CryptoSoftHSMConfig.Cache::expireAfterAccessMins.name to "60",
-                                CryptoSoftHSMConfig.Cache::maximumSize.name to "1000"
-                            )
-                        ),
-                        CryptoSoftHSMConfig::wrappingKeyMap.name to mapOf(
-                            CryptoSoftHSMConfig.Map::name.name to KEY_MAP_CACHING_NAME,
-                            CryptoSoftHSMConfig.Map::cache.name to mapOf(
-                                CryptoSoftHSMConfig.Cache::expireAfterAccessMins.name to "60",
-                                CryptoSoftHSMConfig.Cache::maximumSize.name to "100"
-                            )
-                        ),
-                        CryptoSoftHSMConfig::wrapping.name to mapOf(
-                            CryptoSoftHSMConfig.Wrapping::name.name to WRAPPING_DEFAULT_NAME,
-                            CryptoSoftHSMConfig.Wrapping::hsm.name to emptyMap<String, String>()
-                        )
-                    )
-                )
-            )
-            .withValue(
                 SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        CryptoSigningServiceConfig::cache.name to mapOf(
+                        CryptoSigningServiceConfig::keyCache.name to mapOf(
                             CryptoSigningServiceConfig.Cache::expireAfterAccessMins.name to "60",
                             CryptoSigningServiceConfig.Cache::maximumSize.name to "1000"
+                        ),
+                        CryptoSigningServiceConfig::cryptoRefsCache.name to mapOf(
+                            CryptoSigningServiceConfig.Cache::expireAfterAccessMins.name to "240",
+                            CryptoSigningServiceConfig.Cache::maximumSize.name to "10000"
                         )
                     )
                 )
@@ -346,13 +290,6 @@ fun SmartConfig.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
         CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $CRYPTO_CONNECTION_FACTORY_OBJ.", e)
-    }
-
-fun SmartConfig.softHSM(): CryptoSoftHSMConfig =
-    try {
-        CryptoSoftHSMConfig(getConfig(SOFT_HSM_OBJ))
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $SOFT_HSM_OBJ.", e)
     }
 
 fun SmartConfig.signingService(): CryptoSigningServiceConfig =

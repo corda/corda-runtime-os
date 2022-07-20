@@ -11,6 +11,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -25,6 +26,8 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
+
+    private val activationFailureCounter = AtomicInteger(0)
 
     @Volatile
     private var _impl: IMPL? = null
@@ -63,20 +66,31 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
             is RegistrationStatusChangeEvent -> {
                 if (upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     if(_impl != null) {
-                        coordinator.updateStatus(if(upstream.isUp) LifecycleStatus.UP else LifecycleStatus.DOWN)
+                        val status = if(upstream.isUp) LifecycleStatus.UP else LifecycleStatus.DOWN
+                        logger.info("RegistrationStatusChangeEvent - setting as {}.", status)
+                        coordinator.updateStatus(status)
                         _impl?.onRegistrationStatusChange(upstream.isUp)
                     } else {
                         if (upstream.isUp) {
                             doActivate(coordinator)
                         } else {
+                            logger.info("RegistrationStatusChangeEvent - setting as DOWN.")
                             coordinator.updateStatus(LifecycleStatus.DOWN)
                         }
                     }
-                    doActivate(coordinator)
                 }
             }
             is TryAgainCreateActiveImpl -> {
-                doActivate(coordinator)
+                if(_impl == null) {
+                    doActivate(coordinator)
+                } else {
+                    if(upstream.isUp) {
+                        logger.info("TryAgainCreateActiveImpl - setting as UP.")
+                        coordinator.updateStatus(LifecycleStatus.UP)
+                    } else {
+                        logger.info("TryAgainCreateActiveImpl - skipping as stale as _impl already created.")
+                    }
+                }
             }
         }
     }
@@ -88,15 +102,19 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     }
 
     private fun doActivate(coordinator: LifecycleCoordinator) {
-        if (_impl == null) {
-            logger.info("Creating active implementation")
-            try {
-                _impl = createActiveImpl()
-            } catch (e: Throwable) {
-                logger.error("Failed to create active implementation, will try again...")
+        logger.info("Creating active implementation")
+        try {
+            _impl = createActiveImpl()
+            activationFailureCounter.set(0)
+        } catch (e: Throwable) {
+            if(activationFailureCounter.incrementAndGet() <= 5) {
+                logger.warn("Failed activate..., will try again", e)
                 coordinator.postEvent(TryAgainCreateActiveImpl())
-                return
+            } else {
+                logger.error("Failed activate, giving up", e)
+                coordinator.updateStatus(LifecycleStatus.ERROR)
             }
+            return
         }
         coordinator.updateStatus(LifecycleStatus.UP)
     }

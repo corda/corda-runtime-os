@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
+import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
@@ -21,8 +21,8 @@ class SigningServiceFactoryImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = SigningKeyStoreProvider::class)
-    private val storeProvider: SigningKeyStoreProvider,
+    @Reference(service = SigningKeyStore::class)
+    private val store: SigningKeyStore,
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory
 ) : AbstractComponent<SigningServiceFactoryImpl.Impl>(
@@ -30,7 +30,7 @@ class SigningServiceFactoryImpl @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
     upstream = DependenciesTracker.Default(
         setOf(
-            LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
+            LifecycleCoordinatorName.forComponent<SigningKeyStore>(),
             LifecycleCoordinatorName.forComponent<CryptoServiceFactory>()
         )
     )
@@ -39,14 +39,14 @@ class SigningServiceFactoryImpl @Activate constructor(
         private val logger = contextLogger()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, storeProvider, cryptoServiceFactory)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, store, cryptoServiceFactory)
 
     override fun getInstance(): SigningService =
         impl.getInstance()
 
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
-        private val storeProvider: SigningKeyStoreProvider,
+        private val store: SigningKeyStore,
         private val cryptoServiceFactory: CryptoServiceFactory
     ) : AbstractImpl {
         private val lock = Any()
@@ -73,7 +73,7 @@ class SigningServiceFactoryImpl @Activate constructor(
                     } else {
                         logger.info("Creating the signing service.")
                         signingService = SigningServiceImpl(
-                            store = storeProvider.getInstance(),
+                            store = store,
                             cryptoServiceFactory = cryptoServiceFactory,
                             schemeMetadata = schemeMetadata
                         )

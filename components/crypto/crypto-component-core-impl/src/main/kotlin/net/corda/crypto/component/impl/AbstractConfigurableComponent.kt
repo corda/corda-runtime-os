@@ -13,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("LongParameterList")
 abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponent.AbstractImpl>(
@@ -42,6 +43,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             "The upstream dependencies must contain $configReaderName"
         }
     }
+
+    private val activationFailureCounter = AtomicInteger(0)
 
     @Volatile
     private var configHandle: AutoCloseable? = null
@@ -87,7 +90,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     onUpstreamRegistrationStatusChange(coordinator)
                 } else if(downstream?.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
-                    onDownstreamRegistrationStatusChange()
+                    onDownstreamRegistrationStatusChange(coordinator)
                 }
             }
             is ConfigChangedEvent -> {
@@ -109,11 +112,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onUpstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        if (upstream.isUp && downstream?.isUp == true) {
-            setUp()
-        } else {
-            setDown()
-        }
+        logger.info("onUpstreamRegistrationStatusChange(upstream={}, downstream={}).", upstream.isUp, downstream?.isUp)
+        updateStatus(coordinator)
         configHandle?.close()
         configHandle = if (upstream.isUp) {
             logger.info("Registering for configuration updates.")
@@ -124,24 +124,28 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         _impl?.onUpstreamRegistrationStatusChange(upstream.isUp, downstream?.isUp)
     }
 
-    private fun onDownstreamRegistrationStatusChange() {
-        if (upstream.isUp && downstream?.isUp == true) {
-            setUp()
-        } else {
-            setDown()
-        }
+    private fun onDownstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
+        logger.info("onDownstreamRegistrationStatusChange(upstream={}, downstream={}).", upstream.isUp, downstream?.isUp)
+        updateStatus(coordinator)
         _impl?.onDownstreamRegistrationStatusChange(upstream.isUp, downstream?.isUp)
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         doActivation(event, coordinator)
+        updateStatus(coordinator)
     }
 
     private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         if(_impl != null || !upstream.isUp) {
+            logger.info(
+                "onTryAgainCreateActiveImpl skipping as stale (upstream={}, _impl={}).",
+                upstream.isUp,
+                _impl
+            )
             return
         }
         doActivation(event, coordinator)
+        updateStatus(coordinator)
     }
 
     private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
@@ -151,24 +155,40 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             _impl?.close()
             _impl = createActiveImpl(event)
             downstream?.follow(coordinator)
+            activationFailureCounter.set(0)
             logger.debug("Activated {}", myName)
         } catch (e: Throwable) {
-            logger.error("Failed activate...", e)
-            coordinator.postEvent(TryAgainCreateActiveImpl(event))
+            if(activationFailureCounter.incrementAndGet() <= 5) {
+                logger.warn("Failed activate..., will try again", e)
+                coordinator.postEvent(TryAgainCreateActiveImpl(event))
+            } else {
+                logger.error("Failed activate, giving up", e)
+                coordinator.updateStatus(LifecycleStatus.ERROR)
+            }
         }
     }
 
-    private fun setUp() {
-        if(lifecycleCoordinator.status != LifecycleStatus.UP) {
+    private fun updateStatus(coordinator: LifecycleCoordinator) {
+        if (upstream.isUp && downstream?.isUp == true && _impl != null) {
+            setUp(coordinator)
+        } else {
+            if(coordinator.status != LifecycleStatus.ERROR) {
+                setDown(coordinator)
+            }
+        }
+    }
+
+    private fun setUp(coordinator: LifecycleCoordinator) {
+        if(coordinator.status != LifecycleStatus.UP) {
             logger.info("Setting the status of {} UP", myName)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+            coordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 
-    private fun setDown() {
-        if(lifecycleCoordinator.status != LifecycleStatus.DOWN) {
+    private fun setDown(coordinator: LifecycleCoordinator) {
+        if(coordinator.status != LifecycleStatus.DOWN) {
             logger.info("Setting the status of {} DOWN", myName)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            coordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 

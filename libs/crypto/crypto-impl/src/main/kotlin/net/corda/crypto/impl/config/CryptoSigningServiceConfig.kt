@@ -22,10 +22,17 @@ class CryptoSigningServiceConfig(internal val config: SmartConfig) : SmartConfig
             }
     }
 
-    val cache: Cache
+    val keyCache: Cache
         get() = try {
-            Cache(config.getConfig(this::cache.name))
+            Cache(config.getConfig(this::keyCache.name))
         } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::cache.name}", e)
+            throw IllegalStateException("Failed to get ${this::keyCache.name}", e)
+        }
+
+    val cryptoRefsCache: Cache
+        get() = try {
+            Cache(config.getConfig(this::keyCache.name))
+        } catch (e: Throwable) {
+            throw IllegalStateException("Failed to get ${this::keyCache.name}", e)
         }
 }
