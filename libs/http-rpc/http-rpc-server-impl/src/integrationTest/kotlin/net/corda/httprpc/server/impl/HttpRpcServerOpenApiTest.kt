@@ -77,7 +77,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
 
         val mediaType = requestBody.content["application/json"]
         assertNotNull(mediaType)
-        assertEquals("#/components/schemas/DaysOfTheYearRequest", mediaType.schema.`$ref`)
+        assertEquals("#/components/schemas/DaysOfTheYearWrapperRequest", mediaType.schema.`$ref`)
 
         val responseOk = path.post.responses["200"]
         assertNotNull(responseOk)
@@ -117,14 +117,14 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             val postParams = post.parameters
             assertTrue(postParams.isEmpty())
             assertEquals(
-                "#/components/schemas/CreateRequest",
+                "#/components/schemas/CreationParams",
                 post.requestBody.content["application/json"]?.schema?.`$ref`
             )
 
             val putParams = put.parameters
             assertTrue(putParams.isEmpty())
             assertEquals(
-                "#/components/schemas/UpdateRequest",
+                "#/components/schemas/UpdateParams",
                 put.requestBody.content["application/json"]?.schema?.`$ref`
             )
 
@@ -181,21 +181,13 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             val requestBodyJson = post.requestBody.content["application/json"]
             assertNotNull(requestBodyJson)
             val ref = requestBodyJson.schema.`$ref`
-            assertThat(ref).isEqualTo("#/components/schemas/PostTakesNullableReturnsNullableRequest")
+            assertThat(ref).isEqualTo("#/components/schemas/SomeInfo")
             val successResponse = post.responses["200"]
             assertNotNull(successResponse)
             val content = successResponse.content["application/json"]
             assertNotNull(content)
             val schema = content.schema
             assertTrue(schema.nullable, "The schema should have the nullable property")
-        }
-
-        with(openAPI.components.schemas["PostTakesNullableReturnsNullableRequest"]) {
-            assertNotNull(this)
-            assertThat(this.nullable).isTrue
-            val someInfo = this.properties["someInfo"]
-            assertNotNull(someInfo)
-            assertThat(someInfo.`$ref`).isEqualTo("#/components/schemas/SomeInfo")
         }
 
         with(openAPI.components.schemas["SomeInfo"]) {
