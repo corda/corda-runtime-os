@@ -133,21 +133,20 @@ pipeline {
                         touch pod_logs.txt
                         for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> pod_logs.txt; done
                     '''     
-                    // if (config.createPostgresDb) {
-                    //     withEnv([
-                    //             "PGHOST=${postgresHost}",
-                    //             "PGPORT=${postgresPort}",
-                    //             "DATABASE=${postgresDb}"
-                    //     ]) {
-                    //         withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                    //                 passwordVariable: 'PGPASSWORD',
-                    //                 usernameVariable: 'PGUSER')]) {
+                    withEnv([
+                            "PGHOST=${postgresHost}",
+                            "PGPORT=${postgresPort}",
+                            "DATABASE=${postgresDb}"
+                    ]) {
+                        withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                                passwordVariable: 'PGPASSWORD',
+                                usernameVariable: 'PGUSER')]) {
 
-                    //             sh 'dropdb -w "${DATABASE}" || true'
-                    //         }
-                            
-                    //     }
-                    // }
+                            sh 'dropdb -w "${DATABASE}" || true'
+                        }
+                        
+                    }
+                    
                 writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
                 //archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
