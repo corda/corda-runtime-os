@@ -24,6 +24,7 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.PublicKeyConverter
 import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -37,11 +38,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
@@ -51,6 +54,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -363,6 +367,25 @@ class MGMRegistrationServiceTest {
             it.assertThat(result.message)
                 .isEqualTo("Onboarding MGM failed. " +
                         "The registration context is invalid: Provided TLS trust stores are incorrectly numbered.")
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails if the registration context doesn't match the schema`() {
+        postConfigChangedEvent()
+        val err = "ERROR-MESSAGE"
+        whenever(membershipSchemaValidator.validateRegistrationContext(
+            eq(MembershipSchema.RegistrationContextSchema.Mgm),
+            any(),
+            any()
+        )).doThrow(MembershipSchemaValidationException(err))
+
+        registrationService.start()
+        val result = registrationService.register(mgm, properties)
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).contains(err)
         }
         registrationService.stop()
     }

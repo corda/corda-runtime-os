@@ -19,6 +19,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.read.MembershipGroupReader
@@ -33,6 +34,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
@@ -43,14 +45,17 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -318,6 +323,25 @@ class DynamicMemberRegistrationServiceTest {
             it.assertThat(result.message)
                 .isEqualTo("Registration failed. " +
                         "The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails if the registration context doesn't match the schema`() {
+        postConfigChangedEvent()
+        val err = "ERROR-MESSAGE"
+        whenever(membershipSchemaValidator.validateRegistrationContext(
+            eq(MembershipSchema.RegistrationContextSchema.DynamicMember),
+            any(),
+            any()
+        )).doThrow(MembershipSchemaValidationException(err))
+
+        registrationService.start()
+        val result = registrationService.register(member, context)
+        SoftAssertions.assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).contains(err)
         }
         registrationService.stop()
     }
