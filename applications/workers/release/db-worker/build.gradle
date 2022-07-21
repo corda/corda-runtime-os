@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description 'DB Worker'
@@ -41,5 +42,5 @@ dependencies {
         exclude group: 'org.osgi'
     }
 
-    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

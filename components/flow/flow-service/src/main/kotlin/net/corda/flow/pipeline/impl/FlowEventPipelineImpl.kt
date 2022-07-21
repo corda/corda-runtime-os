@@ -7,7 +7,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
@@ -27,19 +27,25 @@ import java.nio.ByteBuffer
  * @param context The [FlowEventContext] that should be modified by the pipeline steps.
  * @param output The [FlowIORequest] that is output by a flow's fiber when it suspends.
  */
-data class FlowEventPipelineImpl(
-    val flowEventHandlers: Map<Class<*>, FlowEventHandler<out Any>>,
-    val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,
-    val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
-    val flowRunner: FlowRunner,
-    val flowGlobalPostProcessor: FlowGlobalPostProcessor,
-    override val context: FlowEventContext<Any>,
-    val output: FlowIORequest<*>? = null
+@Suppress("LongParameterList")
+class FlowEventPipelineImpl(
+    private val flowEventHandlers: Map<Class<*>, FlowEventHandler<out Any>>,
+    private val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,
+    private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
+    private val flowRunner: FlowRunner,
+    private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
+    context: FlowEventContext<Any>,
+    private var output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
 
     private companion object {
         val log = contextLogger()
     }
+
+    override var context: FlowEventContext<Any> = context
+        private set(value) {
+            field = value
+        }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
         log.info("Preprocessing of ${context.inputEventPayload::class.qualifiedName}...")
@@ -63,13 +69,14 @@ data class FlowEventPipelineImpl(
         }
 
         val handler = getFlowEventHandler(updatedContext.inputEvent)
+        context = handler.preProcess(updatedContext)
 
-        return copy(context = handler.preProcess(updatedContext))
+        return this
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
         val waitingFor = context.checkpoint.waitingFor?.value
-            ?: throw FlowProcessingException("Flow [${context.checkpoint.flowId}] waiting for is null")
+            ?: throw FlowFatalException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
         val handler = getFlowWaitingForHandler(waitingFor)
 
@@ -100,33 +107,35 @@ data class FlowEventPipelineImpl(
     }
 
     override fun requestPostProcessing(): FlowEventPipelineImpl {
-        return output?.let {
+        output?.let {
             log.info("Postprocessing of $output")
-            copy(context = getFlowRequestHandler(it).postProcess(context, it))
-        } ?: this
+            context = getFlowRequestHandler(it).postProcess(context, it)
+        }
+        return this
     }
 
     override fun globalPostProcessing(): FlowEventPipelineImpl {
-        return copy(context = flowGlobalPostProcessor.postProcess(context))
+        context = flowGlobalPostProcessor.postProcess(context)
+        return this
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
         return flowEventHandlers[event.payload::class.java]
             ?.let { uncheckedCast(it) }
-            ?: throw FlowProcessingException("${event.payload::class.java.name} does not have an associated flow event handler")
+            ?: throw FlowFatalException("${event.payload::class.java.name} does not have an associated flow event handler")
     }
 
     private fun getFlowWaitingForHandler(waitingFor: Any): FlowWaitingForHandler<Any> {
         // This [uncheckedCast] is required to pass the [waitingFor] into the returned [FlowWaitingForHandler] further in the pipeline.
         return uncheckedCast(flowWaitingForHandlers[waitingFor::class.java])
-            ?: throw FlowProcessingException("${waitingFor::class.qualifiedName} does not have an associated flow status handler")
+            ?: throw FlowFatalException("${waitingFor::class.qualifiedName} does not have an associated flow status handler")
     }
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
         // This [uncheckedCast] is required to remove the [out] from the [FlowRequestHandler] that is extracted from the map.
         // The [out] cannot be kept as it leaks onto the [FlowRequestHandler] interface eventually leading to code that cannot compile.
         return uncheckedCast(flowRequestHandlers[request::class.java])
-            ?: throw FlowProcessingException("${request::class.qualifiedName} does not have an associated flow request handler")
+            ?: throw FlowFatalException("${request::class.qualifiedName} does not have an associated flow request handler")
     }
 
     private fun updateContextFromFlowExecution(outcome: FlowContinuation): FlowEventPipelineImpl {
@@ -138,19 +147,20 @@ data class FlowEventPipelineImpl(
         /*
         Need to think about a timeout for the get(), what do we do if a flow does not complete?
         */
-        return when (val flowResult = flowResultFuture.get()) {
+        when (val flowResult = flowResultFuture.get()) {
             is FlowIORequest.FlowFinished -> {
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
-                copy(output = flowResult)
+                output = flowResult
             }
             is FlowIORequest.FlowSuspended<*> -> {
                 context.checkpoint.serializedFiber = flowResult.fiber
-                copy(output = flowResult.output)
+                output = flowResult.output
             }
             is FlowIORequest.FlowFailed -> {
-                copy(output = flowResult)
+                output = flowResult
             }
-            else -> throw FlowProcessingException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
+            else -> throw FlowFatalException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
         }
+        return this
     }
 }

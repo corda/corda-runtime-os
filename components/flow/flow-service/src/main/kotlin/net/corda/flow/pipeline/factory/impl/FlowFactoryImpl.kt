@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCRequestDataImpl
 import net.corda.flow.fiber.RPCStartedFlow
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -28,35 +29,45 @@ class FlowFactoryImpl  @Activate constructor(
 ): FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        val flowClass: Class<RPCStartableFlow> =
-            uncheckedCast(
-                sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
-                    startFlowEvent.startContext.flowClassName,
-                    RPCStartableFlow::class.java
+        return try {
+            val flowClass: Class<RPCStartableFlow> =
+                uncheckedCast(
+                    sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
+                        startFlowEvent.startContext.flowClassName,
+                        RPCStartableFlow::class.java
+                    )
                 )
-            )
-        val logic = flowClass.getDeclaredConstructor().newInstance()
-        val args = RPCRequestDataImpl(flowFiberService)
+            val logic = flowClass.getDeclaredConstructor().newInstance()
+            val args = RPCRequestDataImpl(flowFiberService)
 
-        return RPCStartedFlow(logic, args)
+            RPCStartedFlow(logic, args)
+        } catch (e: Exception) {
+            throw FlowFatalException("Could not create ${startFlowEvent.startContext.flowClassName} for " +
+                    "virtual node ${startFlowEvent.startContext.identity}: ${e.message}", e)
+        }
     }
 
     override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        val flowClass: Class<ResponderFlow> = uncheckedCast(
-            sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
-                flowStartContext.flowClassName,
-                ResponderFlow::class.java
+        return try {
+            val flowClass: Class<ResponderFlow> = uncheckedCast(
+                sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
+                    flowStartContext.flowClassName,
+                    ResponderFlow::class.java
+                )
             )
-        )
 
-        val flowSession = flowSessionFactory.create(
-            flowStartContext.statusKey.id, // The ID on a start context is the session ID
-            MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
-            initiated = true
-        )
-        val logic = flowClass.getDeclaredConstructor().newInstance()
+            val flowSession = flowSessionFactory.create(
+                flowStartContext.statusKey.id, // The ID on a start context is the session ID
+                MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
+                initiated = true
+            )
+            val logic = flowClass.getDeclaredConstructor().newInstance()
 
-        return InitiatedFlow(logic, flowSession)
+            InitiatedFlow(logic, flowSession)
+        } catch (e: Exception) {
+            throw FlowFatalException("Could not create initiated flow ${flowStartContext.flowClassName} for " +
+                    "virtual node ${flowStartContext.identity}: ${e.message}", e)
+        }
     }
 }
 

@@ -24,8 +24,7 @@ class WakeupEventHandler : FlowEventHandler<Wakeup> {
                         "The event will be discarded."
             )
             throw FlowEventException(
-                "Received a ${Wakeup::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist" ,
-                context
+                "Received a ${Wakeup::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist"
             )
         }
     }

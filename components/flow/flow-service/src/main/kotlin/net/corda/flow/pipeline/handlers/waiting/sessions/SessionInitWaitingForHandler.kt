@@ -25,14 +25,12 @@ class SessionInitWaitingForHandler @Activate constructor(
         val sessionState = checkpoint.getSessionState(waitingFor.sessionId)
             ?: throw FlowFatalException(
                 "Session: ${waitingFor.sessionId} doesn't exist even though it should be created by session event pre-processing",
-                context
             )
 
         val eventToAcknowledgeProcessingOf = sessionManager.getNextReceivedEvent(sessionState)
             ?: throw FlowFatalException(
                 "Session: ${waitingFor.sessionId} has no event to acknowledge even though it should be received by session event " +
                         "pre-processing",
-                context
             )
 
         sessionManager.acknowledgeReceivedEvent(sessionState, eventToAcknowledgeProcessingOf.sequenceNum)

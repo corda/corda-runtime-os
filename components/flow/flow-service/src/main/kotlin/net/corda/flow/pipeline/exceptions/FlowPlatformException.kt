@@ -1,9 +1,9 @@
 package net.corda.flow.pipeline.exceptions
 
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
  * The [FlowPlatformException] is thrown for errors that need to be reported back to user code.
  */
-class FlowPlatformException(message: String, flowEventContext: FlowEventContext<*>, cause: Throwable? = null) :
-    FlowProcessingException(message, flowEventContext, cause)
+class FlowPlatformException(override val message: String, cause: Throwable? = null) :
+    CordaRuntimeException(message, cause)

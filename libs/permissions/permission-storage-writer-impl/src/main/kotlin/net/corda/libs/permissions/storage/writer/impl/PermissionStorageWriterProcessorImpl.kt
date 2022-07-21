@@ -17,9 +17,10 @@ import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWrite
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.v5.base.util.contextLogger
+import java.util.function.Supplier
 
 class PermissionStorageWriterProcessorImpl(
-    private val permissionStorageReader: PermissionStorageReader,
+    private val permissionStorageReaderSupplier: Supplier<PermissionStorageReader?>,
     private val userWriter: UserWriter,
     private val roleWriter: RoleWriter,
     private val permissionWriter: PermissionWriter
@@ -32,6 +33,7 @@ class PermissionStorageWriterProcessorImpl(
     @Suppress("ComplexMethod")
     override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
         try {
+            val permissionStorageReader = requireNotNull(permissionStorageReaderSupplier.get())
             val response = when (val permissionRequest = request.request) {
                 is CreateUserRequest -> {
                     val avroUser = userWriter.createUser(permissionRequest, request.requestUserId)

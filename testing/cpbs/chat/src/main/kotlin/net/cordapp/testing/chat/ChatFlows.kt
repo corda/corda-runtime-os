@@ -43,6 +43,9 @@ class ChatOutgoingFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
@@ -55,6 +58,12 @@ class ChatOutgoingFlow : RPCStartableFlow {
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(inputs.recipientX500Name))
         session.send(MessageContainer(inputs.message))
 
+        storeOutgoingMessage(
+            persistenceService = persistenceService,
+            recipient = inputs.recipientX500Name,
+            message = inputs.message
+        )
+
         log.info("Sent message from ${flowEngine.virtualNodeName} to ${inputs.recipientX500Name}")
         return ""
     }
@@ -63,6 +72,8 @@ class ChatOutgoingFlow : RPCStartableFlow {
 /**
  * Incoming message flow, instantiated for receiving chat messages by Corda as part of the declared chat protocol.
  * Messages are placed in the message store. To read outstanding messages, poll the ChatReaderFlow.
+ * Messages are limited in size when stored, and there is a limit to the number of messages that can be stored at the
+ * same time. When the limit is reached older messages are removed.
  */
 @InitiatedBy(protocol = "chatProtocol")
 class ChatIncomingFlow : ResponderFlow {
@@ -85,40 +96,42 @@ class ChatIncomingFlow : ResponderFlow {
         val sender = session.counterparty.toString()
         val message = session.receive<MessageContainer>().unwrap { it.message }
 
-        add(persistenceService, IncomingChatMessage(sender, message))
+        storeIncomingMessage(persistenceService, sender, message)
 
         log.info("Added incoming message from ${sender} to message store")
     }
 }
 
 /**
- * Returns the last unread message(s) for the virtual node member in which the Flow is started. If a "fromName" is
- * supplied it will return the last unread message which originated at the supplied member. If an empty object {} is
- * passed or fromName is empty, all last unread messages from all originating members will be returned.
- * Read messages are removed from the store thus it becomes the responsibility of the caller to keep track of them after
- * this point.
- * JSON argument should look something like:
+ * Returns all messages, the output will look something like:
  * ```json
- * {
- *   "fromName": "CN=Alice, O=R3, L=London, C=GB"
- * }
+ * [
+ *   {
+ *     "counterparty": "CN=Alice, O=R3, L=London, C=GB",
+ *     "messages": [
+ *       {
+ *         "id": "4c6ce4a8-cb5a-41b9-8476-d1310b298d19",
+ *         "direction": "incoming",
+ *         "content": "Hello Bob",
+ *         "timestamp": "1658137194"
+ *       },
+ *       {
+ *         "id": "a0b15c2a-fae3-44c4-a7ff-5dbad90a23b3",
+ *         "direction": "incoming",
+ *         "content": "How are you?",
+ *         "timestamp": "1658137263"
+ *       },
+ *       {
+ *         "id": "dda15e36-b69e-43ee-b17a-d0105505a232",
+ *         "direction": "outgoing",
+ *         "content": "I'm fine thinks Alice!",
+ *         "timestamp": "1658137304"
+ *       }
+ *     ]
+ *   }
+ * ]
  * ```
- * or for all messages:
- * ```json
- * {}
- * ```
- *
- * The output will look something like:
- * ```json
- * {
- *   "messages": [
- *     {
- *       "senderX500Name": "CN=Bob, O=R3, L=London, C=GB",
- *       "message": "Hello from Bob"
- *     }
- *   ]
- * }
- * ```
+ * Messages are returned in time order, with outgoing and incoming messages interleaved in the same array.
  */
 class ChatReaderFlow : RPCStartableFlow {
 
@@ -139,18 +152,9 @@ class ChatReaderFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
 
-        val inputs = requestBody.getRequestBodyAs<ChatReaderFlowParameter>(jsonMarshallingService)
-
-        val messages = if (inputs.fromName == null || inputs.fromName.isEmpty()) {
-            readAllAndClear(persistenceService).also {
-                log.info("Returning ${it.messages.size} unread messages from all senders")
-            }
-        } else {
-            readAndClear(persistenceService, inputs.fromName).also {
-                log.info("Returning ${it.messages.size} unread messages from ${inputs.fromName}")
-            }
+        val messages = readAllMessages(persistenceService).also {
+            log.info("Returning ${it.size} chats")
         }
-
         return jsonMarshallingService.format(messages)
     }
 }

@@ -58,7 +58,7 @@ class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
-    override fun invoke(key: String, command: StartRegistration): RegistrationHandlerResult {
+    override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
                 Triple(
@@ -127,7 +127,7 @@ class StartRegistrationHandler(
         )
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro()),
+            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro()),
             listOf(Record(REGISTRATION_COMMAND_TOPIC, key, outputCommand))
         )
     }

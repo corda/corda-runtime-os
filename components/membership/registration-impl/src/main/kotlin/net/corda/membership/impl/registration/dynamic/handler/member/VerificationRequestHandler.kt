@@ -13,24 +13,24 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
-import net.corda.utilities.time.UTCClock
+import net.corda.utilities.time.Clock
 import java.nio.ByteBuffer
 import java.util.UUID
 
 internal class VerificationRequestHandler(
+    private val clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
     private companion object {
-        val clock = UTCClock()
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val TTL = 1000L
+        const val TTL = 300000L
     }
 
     private val responseSerializer = cordaAvroSerializationFactory.createAvroSerializer<VerificationResponse> {  }
 
     override val commandType = ProcessMemberVerificationRequest::class.java
 
-    override fun invoke(key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
+    override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
         val responseTimestamp = clock.instant()
         val mgm = command.source
         val member = command.destination
@@ -55,7 +55,7 @@ internal class VerificationRequestHandler(
             )
         )
         return RegistrationHandlerResult(
-            RegistrationState(command.verificationRequest.registrationId, command.destination),
+            null,
             listOf(
                 Record(
                     P2P_OUT_TOPIC,

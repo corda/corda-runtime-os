@@ -144,7 +144,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 flowStatus(
                     state = FlowStates.FAILED,
                     errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
-                    errorMessage = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+                    errorMessage = "Max retry attempts '1' has been reached."
                 )
             }
         }

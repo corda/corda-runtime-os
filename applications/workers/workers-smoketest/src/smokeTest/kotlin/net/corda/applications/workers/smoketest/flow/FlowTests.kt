@@ -46,7 +46,8 @@ class FlowTests {
             "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
             "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
             "net.cordapp.flowworker.development.flows.TestFlow",
-            "net.cordapp.flowworker.development.flows.BrokenProtocolFlow"
+            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
         )
 
         /*
@@ -178,6 +179,13 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
         assertThat(flowResult.result).isEqualTo("type")
+    }
+
+    @Test
+    fun `Pipeline error results in flow marked as failed`() {
+        val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
     }
 
     @Test

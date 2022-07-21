@@ -16,7 +16,8 @@ import kotlin.concurrent.read
 import kotlin.concurrent.thread
 import kotlin.concurrent.write
 import net.corda.data.identity.HoldingIdentity
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -24,19 +25,17 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
+             private val configMerger: ConfigMerger,
              private val dbParams: DBParams?,
              private val loadGenParams: LoadGenerationParams,
              private val sendTopic: String,
-             private val kafkaServers: String,
+             private val bootConfig: SmartConfig,
              private val clients: Int,
              private val instanceId: String,
              private val clock: Clock
@@ -68,12 +67,10 @@ class Sender(private val publisherFactory: PublisherFactory,
                     null
                 }
                 var messagesSent = 0
-                val messagingConfig = SmartConfigImpl.empty()
-                    .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(kafkaServers))
-                    .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
-                    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                val configWithInstanceId = bootConfig
                     .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                     .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
+                val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), messagingConfig)
                 publisher.use {
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {

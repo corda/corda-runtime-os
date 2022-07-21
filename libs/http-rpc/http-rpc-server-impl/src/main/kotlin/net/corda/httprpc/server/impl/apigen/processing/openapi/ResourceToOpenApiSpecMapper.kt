@@ -172,7 +172,7 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
             ApiResponses()
                 .addApiResponse(
                     HttpStatus.OK_200.toString(),
-                    ApiResponse().description("Success.").withResponseBodyFrom(this, schemaModelProvider)
+                    ApiResponse().withResponseBodyFrom(this, schemaModelProvider)
                 )
                 .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized."))
                 .addApiResponse(HttpStatus.FORBIDDEN_403.toString(), ApiResponse().description("Forbidden."))
@@ -212,6 +212,10 @@ private fun ApiResponse.withResponseBodyFrom(
                 )
             )
         } else this
+
+        endpoint.responseBody.description.let {
+            response.description = it.ifBlank { "Success." }
+        }
         log.trace { "ApiResponse with ResponseBody from Endpoint: \"$endpoint\" completed." }
         return response
     } catch (e: Exception) {

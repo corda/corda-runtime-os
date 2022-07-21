@@ -27,11 +27,13 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Pr
 
 val R3_COM_CERT = ClassLoader.getSystemResource("r3Com.pem")
     .readText()
-    .replace(System.getProperty("line.separator"), "\n")
+    .replace("\r", "")
+    .replace("\n", System.lineSeparator())
 
 val UNPARSEABLE_CERT = ClassLoader.getSystemResource("invalidCert.pem")
     .readText()
-    .replace(System.getProperty("line.separator"), "\n")
+    .replace("\r", "")
+    .replace("\n", System.lineSeparator())
 
 const val TEST_FILE_FORMAT_VERSION = 1
 const val TEST_GROUP_ID = "13822f7f-0d2c-450b-8f6f-93c3b8ce9602"
