@@ -1,13 +1,14 @@
 package net.corda.session.mapper.service.executor
 
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.data.flow.FlowKey
 
 /**
  * The [FlowMapperMessageProcessor] receives states and events that are keyed by strings. These strings can be either:
@@ -16,7 +17,8 @@ import net.corda.data.flow.FlowKey
  * - Session ids representing sessions.
  */
 class FlowMapperMessageProcessor(
-    private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory
+    private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory,
+    private val flowConfig: SmartConfig
 ) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
 
     companion object {
@@ -30,7 +32,7 @@ class FlowMapperMessageProcessor(
         val key = event.key
         logger.debug { "Received event: key: $key event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
-        val executor = flowMapperEventExecutorFactory.create(key, value, state)
+        val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
         val result = executor.execute()
 
         return StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)

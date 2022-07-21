@@ -20,7 +20,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -65,7 +64,7 @@ class FlowP2PFilterService @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        setOf(MESSAGING_CONFIG)
                     )
                 } else {
                     configHandle?.close()

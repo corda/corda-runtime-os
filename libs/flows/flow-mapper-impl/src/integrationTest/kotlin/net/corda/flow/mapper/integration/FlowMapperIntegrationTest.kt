@@ -1,5 +1,8 @@
 package net.corda.flow.mapper.integration
 
+import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -16,10 +19,12 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
@@ -28,13 +33,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @ExtendWith(ServiceExtension::class)
 class FlowMapperIntegrationTest {
 
     private val identity = HoldingIdentity("x500", "grp1")
+    private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val startRPCFlow = StartFlow(
         FlowStartContext(
             FlowKey("a", identity),
@@ -216,7 +220,7 @@ class FlowMapperIntegrationTest {
         state: FlowMapperState?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
-        val executor = executorFactory.create(event.key, event.value!!, state)
+        val executor = executorFactory.create(event.key, event.value!!, state, flowConfig)
         val result = executor.execute()
         return StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
     }

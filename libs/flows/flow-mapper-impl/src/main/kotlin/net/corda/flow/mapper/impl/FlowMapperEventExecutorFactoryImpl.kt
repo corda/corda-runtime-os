@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl
 
+import java.time.Instant
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
@@ -16,11 +17,11 @@ import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.flow.mapper.impl.executor.generateAppMessage
+import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowMapperEventExecutorFactory::class])
 class FlowMapperEventExecutorFactoryImpl @Activate constructor(
@@ -28,17 +29,22 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : FlowMapperEventExecutorFactory {
 
-    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> {  }
+    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
-    override fun create(eventKey: String, flowMapperEvent: FlowMapperEvent, state: FlowMapperState?, instant: Instant):
-            FlowMapperEventExecutor {
+    override fun create(
+        eventKey: String,
+        flowMapperEvent: FlowMapperEvent,
+        state: FlowMapperState?,
+        flowConfig: SmartConfig,
+        instant: Instant
+    ): FlowMapperEventExecutor {
         return when (val sessionEvent = flowMapperEvent.payload) {
             is SessionEvent -> {
                 val eventPayload = sessionEvent.payload
                 if (eventPayload is SessionInit) {
-                    SessionInitExecutor(eventKey, sessionEvent, eventPayload, state, sessionEventSerializer)
+                    SessionInitExecutor(eventKey, sessionEvent, eventPayload, state, sessionEventSerializer, flowConfig)
                 } else {
-                    SessionEventExecutor(eventKey, sessionEvent, state, instant, sessionEventSerializer, ::generateAppMessage)
+                    SessionEventExecutor(eventKey, sessionEvent, state, instant, sessionEventSerializer, ::generateAppMessage, flowConfig)
                 }
             }
             is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, sessionEvent, state)
@@ -46,7 +52,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, sessionEvent, state)
 
             else -> throw NotImplementedError(
-                "The event type '${sessionEvent.javaClass.name}' is not supported.")
+                "The event type '${sessionEvent.javaClass.name}' is not supported."
+            )
         }
     }
 }

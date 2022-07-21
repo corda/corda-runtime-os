@@ -12,8 +12,6 @@ import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
-const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
-const val X500_SESSION_USER2 = "CN=SU2, OU=Application, O=R3, L=London, C=GB"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -133,6 +131,21 @@ fun createVirtualNodeFor(x500: String): String {
         val holdingId = vNodeJson["holdingIdHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
+    }
+}
+
+fun registerMember(holdingIdentityId: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val membershipJson = assertWithRetry {
+            command { registerMember(holdingIdentityId) }
+            condition { it.code == 200 }
+            failMessage("Failed to register the member to the network '$holdingIdentityId'")
+        }.toJson()
+
+        val registrationStatus = membershipJson["registrationStatus"].textValue()
+        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
     }
 }
 

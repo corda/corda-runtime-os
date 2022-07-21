@@ -15,10 +15,14 @@ You have built a CPB with the flow you want to use for running the flow worker:
 ```shell
 ./gradlew testing:cpbs:flow-worker-dev:build
 ```
-2) At the time of writing we need to manually add a policy file, this step should be replaced with build tool in future
-versions. 
-In the same directory as your built CBP add a file called ```GroupPolicy.json``` (the name is case-sensitive)
-in the file put the following json ```{  "groupId": "placeholder" }```
+2) Generate a GroupPolicy file for the CPB. This can be done using the corda-cli.  https://github.com/corda/corda-cli-plugin-host/tree/release/version-1.0.0/plugins/package
+More information about GroupPolicy files can be found at https://github.com/corda/corda-runtime-os/wiki/Group-Policy.
+Example command to generate a GroupPolicy:
+```shell
+./gradlew build
+./build/generatedScripts/corda-cli.sh mgm groupPolicy --name="CN=Alice, OU=Application, O=R3, L=London, C=GB" --name="CN=Bob, OU=Application, O=R3, L=London, C=GB" --endpoint-protocol=1 --endpoint="http://localhost:1080" >> GroupPolicy.json
+```  
+In the same directory as your built CBP add the file called ```GroupPolicy.json``` (the name is case-sensitive)
 
 
 3) Add the policy file to the CBP
@@ -27,24 +31,33 @@ zip [CPB file path]  -j ~/GroupPolicy.json
 ```
 (zip will need to be installed on WSL 'sudo apt-get install zip')
 
-### Start Docker Compose
-We only need to run the minimum set of components we need for the flow worker. for dev/debug you can optionally omit
-the flow-worker container and run the flow worker jar directly from the IDE.
+### Deploy Workers
+Follow the helm charts under the /charts directory to deploy the workers, postgres and kafka. 
 
-1) cd into the deploy directory containing the docker compose file
- ```shell
-cd applications\workers\release\deploy
-```
+Example run:
 
-2) start the containers
 ```shell
-docker-compose up corda-cluster-db rpc-worker init-kafka kafka zookeeper db-worker
+kubectl delete ns corda
+kubectl config get-contexts
+kubectl config use-context docker-desktop
+kubectl create namespace corda
+kubectl config set-context --current --namespace=corda
+
+helm install prereqs -n corda `
+  oci://corda-os-docker.software.r3.com/helm-charts/corda-prereqs `
+  --set kafka.replicaCount=1,kafka.zookeeper.replicaCount=1 `
+  --render-subchart-notes `
+  --timeout 10m `
+  --wait
+
+helm upgrade --install corda -n corda `
+  oci://corda-os-docker.software.r3.com/helm-charts/corda `
+  --version ^0.1.0-beta `
+  --values values.yaml `
+  --wait
+
+kubectl port-forward --namespace corda deployment/corda-rpc-worker 8888
 ```
-
-Currently, all the containers will start quite quickly, but you must check the kafka-init task has completed before you 
-attempt to use them. this can take quite a few minutes. Either monitor the container using the docker desktop/ docker cli, 
-or the wait for logs to stop moving in the console window used to run the docker-compose command above. 
-
 
 ### Uploading the CBP and creating the Virtual Node
 
@@ -53,6 +66,7 @@ instructions below are for using curl.
 1) upload the CPI (CPB file created in previous steps, assuming you're running the command from the same directory as the CBP file.)
 ```shell
 curl --insecure -u admin:admin  -s -F upload=@./flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v1/cpi/
+
 ```
 
 This should yield a result similar to this:
@@ -70,18 +84,19 @@ This should yield are result similar to this
 ```json
 {
    "status":"OK",
-   "checksum":"A893413A9921"
+   "checksum":"B669663F74EA"
 }
 ```
 3) Create a virtual node using the checksum returned from the step above
 ```shell
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "A893413A9921", "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB"  } }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice"  } }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob"  } }' https://localhost:8888/api/v1/virtualnode
 ```
 
-This should yield a result similar to this:
+This should yield a result similar to this for first request:
 ```json
 {
-  "x500Name": "CN=Testing, OU=Application, O=R3, L=London, C=GB",
+  "x500Name": "C=GB, L=London, O=Alice",
   "cpiId": {
     "cpiName": "flow-worker-dev",
     "cpiVersion": "5.0.0.0-SNAPSHOT",
@@ -89,34 +104,33 @@ This should yield a result similar to this:
   },
   "cpiFileChecksum": "36241F2D1E16F158E2CB8559627A6D481D3F358FF5250A2DDF933CF2D454C10E",
   "mgmGroupId": "placeholder",
-  "holdingIdHash": "F30413C5C7E2",
+  "holdingIdHash": "3B8DECDDD6E2",
   "vaultDdlConnectionId": "d1b8e8a9-c8f1-43dc-ae1d-0f7b9864e07f",
   "vaultDmlConnectionId": "73c26a59-8a65-4169-8582-a184c443dd03",
   "cryptoDdlConnectionId": "ff8b9da4-6643-4951-b8cc-e12e3c90c190",
   "cryptoDmlConnectionId": "fe559d69-e200-45ea-a9a4-b5aafe6ff2d1"
 }
 ```
-### Running the Flow Worker
-The flow worker can be run from the command line using:
-```shell
-java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 -mkafka.common.bootstrap.servers=localhost:9093 
-```
+4) Register the members to the network
 
-or it can be run/debugged direct from intelliJ:
-1) Create a run/build configuration of type Jar Application
-2) Set the field with the following values
-   1) Path to Jar: Set to the flow worker jar in `applications\workers\release\flow-worker\build\bin\`
-   2) VM options: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008'
-   3) Program arguments: '--instanceId=1 -mkafka.common.bootstrap.servers=localhost:9093'
-   4) Leaver everything else as-is
-3) Add the following gradle task in the Before Launch section 'applications.workers.release.flow-worker.main:appJar'
+```shell
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
+curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/44D0F817B592
+```
 
 ### Calling the flow and testing for a result
 
 1) Start the flow:
 ```shell
-curl --insecure -u admin:admin -X PUT -d '{ "requestBody": "{\"inputValue\":\"hello\", \"memberInfoLookup\":\"CN=Bob, O=Bob Corp, L=LDN, 
-C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1/net.cordapp.flowworker.development.flows.TestFlow
+curl --insecure -u admin:admin -X 'POST' \
+  'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
+  -d '{
+  "startFlow": {
+    "clientRequestId": "request1",
+    "flowClassName": "net.cordapp.flowworker.development.flows.MessagingFlow",
+    "requestData": "{\"counterparty\": \"C=GB, L=London, O=Bob\"}"
+  }
+}'
 ```
 The holding ID is taken from the output of the 'create virtual node' step
 
