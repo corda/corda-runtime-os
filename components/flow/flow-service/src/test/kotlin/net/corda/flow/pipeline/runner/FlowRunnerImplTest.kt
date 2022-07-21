@@ -96,7 +96,7 @@ class FlowRunnerImplTest {
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)
         whenever(
             flowFiberFactory.createAndStartFlowFiber(
-                flowFiberExecutionContext,
+                eq(flowFiberExecutionContext),
                 eq(FLOW_ID_1),
                 eq(logicAndArgs)
             )
@@ -133,7 +133,7 @@ class FlowRunnerImplTest {
         whenever(flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)).thenReturn(logicAndArgs)
         whenever(
             flowFiberFactory.createAndStartFlowFiber(
-                flowFiberExecutionContext,
+                eq(flowFiberExecutionContext),
                 eq(FLOW_ID_1),
                 eq(logicAndArgs)
             )

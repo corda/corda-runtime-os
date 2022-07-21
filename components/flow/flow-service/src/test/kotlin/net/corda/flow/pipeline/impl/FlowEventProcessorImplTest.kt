@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.flow.EMPTY_SMART_CONFIG
+import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -72,7 +72,7 @@ class FlowEventProcessorImplTest {
         flowEventPipelineFactory,
         flowEventExceptionProcessor,
         flowEventContextConverter,
-        EMPTY_SMART_CONFIG
+        MINIMUM_SMART_CONFIG
     )
 
     @Test
