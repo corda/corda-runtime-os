@@ -15,8 +15,6 @@ import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -33,7 +31,6 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -101,10 +98,7 @@ class FlowFilterServiceIntegrationTest {
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
         // Test config updates don't break FlowMapperService
-        lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<FlowP2PFilterService>()) { _, _ -> }.use {
-            eventually { it.status == LifecycleStatus.UP }
-        }
-        publishConfig(publisher)
+        republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
@@ -177,6 +171,17 @@ class FlowFilterServiceIntegrationTest {
                 )
             )
         )
+    }
+
+    private fun republishConfig(publisher: Publisher) {
+        // Wait for the initial config to be available
+        val configLatch = CountDownLatch(1)
+        configService.registerForUpdates { _, _ ->
+            configLatch.countDown()
+        }
+        configLatch.await()
+
+        publishConfig(publisher)
     }
 
 
