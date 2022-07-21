@@ -26,10 +26,13 @@ import net.corda.orm.utils.transaction
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
@@ -84,7 +87,7 @@ internal class VirtualNodeWriterProcessor(
         }
 
         try {
-            val cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(create.cpiFileChecksum)
+            val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByChecksum(create.cpiFileChecksum)
             if (cpiMetadata == null) {
                 handleException(
                     respFuture,
@@ -137,17 +140,58 @@ internal class VirtualNodeWriterProcessor(
         stateChangeRequest: VirtualNodeStateChangeRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-        // Get instance of entity manager to work against the DB
-        val entityManager = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
 
-        println("GLLOE")
         // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
-            virtualNodeEntityRepository.setVirtualNodeState(
-                entityManager,
+            val updatedVirtualNodeEntity = virtualNodeEntityRepository.setVirtualNodeState(
+                dbConnectionManager.getClusterEntityManagerFactory().createEntityManager(),
                 stateChangeRequest.holdingIdentityShortHash,
                 stateChangeRequest.newState
             )
+
+            val virtualNodeInfo = with(updatedVirtualNodeEntity) {
+                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(this.cpiName, this.cpiVersion)
+                    ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityId)
+                val holdingIdentity = HoldingIdentity(
+                    this.holdingIdentity.x500Name,
+                    this.holdingIdentity.mgmGroupId
+                )
+                val cpiIdentifier = CpiIdentifier(
+                    cpiMetadata.id.name,
+                    cpiMetadata.id.version,
+                    cpiMetadata.id.signerSummaryHash
+                )
+                VirtualNodeInfo(
+                    holdingIdentity,
+                    cpiIdentifier,
+                    this.holdingIdentity.vaultDDLConnectionId,
+                    this.holdingIdentity.vaultDMLConnectionId!!,
+                    this.holdingIdentity.cryptoDDLConnectionId,
+                    this.holdingIdentity.cryptoDMLConnectionId!!,
+                    this.holdingIdentity.hsmConnectionId,
+                    VirtualNodeState.valueOf(this.virtualNodeState),
+                    this.entityVersion,
+                    this.insertTimestamp!!
+                )
+            }.toAvro()
+
+            val virtualNodeRecord = Record(
+                VIRTUAL_NODE_INFO_TOPIC,
+                virtualNodeInfo.holdingIdentity,
+                virtualNodeInfo
+            )
+
+            try {
+                // TODO - CORE-3319 - Strategy for DB and Kafka retries.
+                val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
+
+                // TODO - CORE-3730 - Define timeout policy.
+                future.get()
+            } catch (e: Exception) {
+                throw VirtualNodeWriteServiceException(
+                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
+                )
+            }
 
             val response = VirtualNodeManagementResponse(
                 instant,
@@ -427,3 +471,6 @@ internal class VirtualNodeWriterProcessor(
         return respFuture.complete(response)
     }
 }
+
+class CpiNotFoundException(holdingIdentityShortId: String) :
+    CordaRuntimeException("No corresponding meta data found for cpi for $holdingIdentityShortId")

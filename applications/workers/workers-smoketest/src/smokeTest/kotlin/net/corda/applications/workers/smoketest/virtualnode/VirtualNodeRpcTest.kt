@@ -249,9 +249,9 @@ class VirtualNodeRpcTest {
 
             val vnode = states.last()
             val oldState = vnode.second
-            val newState = oldState.reversed()
+            val newState = "IN_MAINTENANCE"
 
-            updateVirtualNodeState(vnode.first, "IN_MAINTENANCE")
+            updateVirtualNodeState(vnode.first, newState)
 
             assertWithRetry {
                 command { vNodeList() }

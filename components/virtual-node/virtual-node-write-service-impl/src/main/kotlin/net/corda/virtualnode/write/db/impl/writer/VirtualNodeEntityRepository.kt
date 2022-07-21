@@ -5,7 +5,10 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
+import net.corda.libs.virtualnode.datamodel.findVirtualNode
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -27,7 +30,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadata(cpiFileChecksum: String): CpiMetadataLite? {
+    internal fun getCPIMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null
@@ -48,6 +51,30 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 .resultList
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
+
+        val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
+            if (it == "") null else SecureHash.create(it)
+        }
+        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
+        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+    }
+
+    /** Reads CPI metadata from the database. */
+    internal fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
+        val cpiMetadataEntity = entityManagerFactory.use {
+            it.transaction {
+                it.createQuery(
+                    "SELECT cpi FROM CpiMetadataEntity cpi " +
+                            "WHERE cpi.name = :cpiName "+
+                            "AND cpi.version = :cpiVersion ",
+                    CpiMetadataEntity::class.java
+                )
+                    .setParameter("cpiName", name)
+                    .setParameter("cpiVersion", version)
+                    .singleResult
+            }
+        }
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
             if (it == "") null else SecureHash.create(it)
@@ -145,23 +172,17 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
     }
 
-    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdShortHash: String, newState: String) {
-        entityManager.transaction {
-            // Lookup virtual node and grab the latest one based on the cpi Version.
-            val latestVirtualNodeInstance = it.createQuery(
-                "SELECT vnode_instance FROM VirtualNodeEntity vnode_instance " +
-                    "WHERE vnode_instance.holdingIdentity.holdingIdentityId = :shortVNodeId " +
-                    "ORDER BY vnode_instance.cpiVersion DESC ",
-                VirtualNodeEntity::class.java
-            )
-                .setParameter("shortVNodeId", holdingIdShortHash)
-                .setMaxResults(1)
-                .resultList.singleOrNull() ?: throw VirtualNodeNotFoundException(holdingIdShortHash)
-            val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
-                update(newState)
+    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdShortHash: String, newState: String): VirtualNodeEntity {
+        entityManager.use {
+            it.transaction {
+                // Lookup virtual node and grab the latest one based on the cpi Version.
+                val latestVirtualNodeInstance = it.findVirtualNode(holdingIdShortHash)
+                    ?: throw VirtualNodeNotFoundException(holdingIdShortHash)
+                val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
+                    update(newState)
+                }
+                return it.merge(updatedVirtualNodeInstance)
             }
-            println(updatedVirtualNodeInstance)
-            it.merge(updatedVirtualNodeInstance)
         }
     }
 

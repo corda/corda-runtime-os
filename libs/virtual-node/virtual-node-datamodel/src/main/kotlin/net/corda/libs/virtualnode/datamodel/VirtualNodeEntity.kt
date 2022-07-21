@@ -109,3 +109,23 @@ fun EntityManager.findAllVirtualNodes(): Stream<VirtualNodeEntity> {
 
     return createQuery(query).resultStream
 }
+
+fun EntityManager.findVirtualNode(holdIdShortHash: String): VirtualNodeEntity? {
+    val queryBuilder = with(criteriaBuilder!!) {
+        val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!
+        val root = queryBuilder.from(VirtualNodeEntity::class.java)
+        root.fetch<Any, Any>("holdingIdentity")
+        queryBuilder.where(
+            equal(
+                root.get<HoldingIdentityEntity>("holdingIdentity").get<String>("holdingIdentityId"),
+                parameter(String::class.java, "shortId")
+            )
+        ).orderBy(desc(root.get<String>("cpiVersion")))
+        queryBuilder
+    }
+
+    return createQuery(queryBuilder)
+        .setParameter("shortId", holdIdShortHash)
+        .setMaxResults(1)
+        .singleResult
+}
