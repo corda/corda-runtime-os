@@ -43,7 +43,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
         request: UpdateMemberAndRegistrationRequestToApproved,
     ): UpdateMemberAndRegistrationRequestResponse {
         logger.info("Update member and registration request to approve.")
-        return transaction(context.holdingIdentity.toCorda().id) { em ->
+        return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
             val member = em.find(
                 MemberInfoEntity::class.java,

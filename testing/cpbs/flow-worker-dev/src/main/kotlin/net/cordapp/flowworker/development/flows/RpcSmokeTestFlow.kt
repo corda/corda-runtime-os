@@ -118,7 +118,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     @Suppress("UNUSED_PARAMETER")
     @Suspendable
     private fun persistenceFindAllDogs(input: RpcSmokeTestInput): String {
-        val dogs = persistenceService.findAll(Dog::class.java)
+        val dogs = persistenceService.findAll(Dog::class.java).execute()
         return if (dogs.isEmpty()) {
             "no dog found"
         } else {

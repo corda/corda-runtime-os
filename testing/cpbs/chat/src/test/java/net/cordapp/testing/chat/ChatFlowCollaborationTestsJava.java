@@ -11,6 +11,7 @@ import net.cordapp.testing.chatframework.FlowMockHelper;
 import net.cordapp.testing.chatframework.FlowMockMessageLink;
 import net.cordapp.testing.chatframework.InjectableMockServices;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.stubbing.Answer;
@@ -58,6 +59,7 @@ public class ChatFlowCollaborationTestsJava {
     }
 
     @Test
+    @Disabled("Disabled due to FlowMockHelper needing additional support for the PersistenceService.")
     void FlowSendsMessage() {
         FlowMockMessageLink messageLink = new FlowMockMessageLink(outgoingFlowMockHelper, incomingFlowMockHelper);
 

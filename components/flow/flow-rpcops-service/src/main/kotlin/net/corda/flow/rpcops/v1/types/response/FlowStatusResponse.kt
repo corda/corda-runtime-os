@@ -5,7 +5,7 @@ import java.time.Instant
 /**
  * The status of a flow.
  *
- * @param holdingShortId The short form hash of the Holding Identity
+ * @param holdingIdentityShortHash The short form hash of the Holding Identity
  * @param clientRequestId The unique ID supplied by the client when the flow was created.
  * @param flowId The internal unique ID for the flow.
  * @param flowStatus The current state of the executing flow.
@@ -16,7 +16,7 @@ import java.time.Instant
  * @param timestamp The timestamp of when the status was last updated (in UTC)
  */
 data class FlowStatusResponse(
-    val holdingShortId: String,
+    val holdingIdentityShortHash: String,
     val clientRequestId: String?,
     val flowId: String?,
     val flowStatus: String,

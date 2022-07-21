@@ -15,13 +15,13 @@ import net.corda.httprpc.annotations.HttpRpcResource
 interface FlowClassRpcOps : RpcOps {
 
     @HttpRpcGET(
-        path = "{holderShortId}",
+        path = "{holdingIdentityShortHash}",
         title = "Get Startable Flows",
         description = "Get all the flows that are startable for this holding identity.",
         responseDescription = "The class names of all flows that can be run"
     )
     fun getStartableFlows(
-        @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
-        holderShortId: String
+        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        holdingIdentityShortHash: String
     ): StartableFlowsResponse
 }

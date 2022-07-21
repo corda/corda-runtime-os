@@ -148,7 +148,7 @@ class CryptoProcessorTests {
             UUID.randomUUID().toString()
         )
 
-        private val vnodeId: String = vnodeIdentity.id
+        private val vnodeId: String = vnodeIdentity.shortHash
 
         private val clusterDb = TestDbInfo.createConfig()
 

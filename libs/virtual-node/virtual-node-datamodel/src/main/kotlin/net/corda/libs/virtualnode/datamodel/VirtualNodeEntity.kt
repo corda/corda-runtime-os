@@ -21,7 +21,7 @@ import javax.persistence.Version
 /**
  * The entity for a virtual node instance in the cluster database.
  *
- * @param holdingIdentityId The short 12-character hash of the virtual node's holding identity.
+ * @param holdingIdentity The virtual node's holding identity.
  * @param cpiName The name of the CPI the virtual node is created for.
  * @param cpiVersion The version of the CPI the virtual node is created for.
  * @param cpiSignerSummaryHash The signer summary hash of the CPI the virtual node is created for.

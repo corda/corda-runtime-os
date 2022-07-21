@@ -81,9 +81,9 @@ class StaticMemberRegistrationServiceTest {
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
     private val eric = HoldingIdentity(ericName.toString(), DUMMY_GROUP_ID)
 
-    private val aliceId = alice.id
-    private val bobId = bob.id
-    private val charlieId = charlie.id
+    private val aliceId = alice.shortHash
+    private val bobId = bob.shortHash
+    private val charlieId = charlie.shortHash
 
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
@@ -243,7 +243,7 @@ class StaticMemberRegistrationServiceTest {
 
         val publishedHostedIdentity = hostedIdentityList.first()
 
-        assertEquals(alice.id, publishedHostedIdentity.key)
+        assertEquals(alice.shortHash, publishedHostedIdentity.key)
         assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
         val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
         assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)

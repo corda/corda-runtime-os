@@ -25,7 +25,7 @@ internal class VerificationRequestHandler(
         logger.info("Received verification request from ${header.source}. Sending it to RegistrationManagementService to process.")
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            header.destination.toCorda().id,
+            header.destination.toCorda().shortHash,
             RegistrationCommand(
                 ProcessMemberVerificationRequest(
                     header.destination,

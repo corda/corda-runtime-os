@@ -41,7 +41,7 @@ class PersistGroupPolicyHandlerTest {
         on { vaultDmlConnectionId } doReturn connectionId
     }
     private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getById(any()) } doReturn nodeInfo
+        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val registry = mock<JpaEntitiesRegistry> {

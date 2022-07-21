@@ -11,7 +11,7 @@ import javax.persistence.Table
 /**
  * The entity for a holding identity in the cluster database.
  *
- * @param holdingIdentityId The short 12-character hash of the holding identity.
+ * @param holdingIdentityShortHash The short 12-character hash of the holding identity.
  * @param holdingIdentityFullHash The full hash of the holding identity.
  * @param x500Name The X.500 name of the holding identity.
  * @param mgmGroupId The MGM group of the holding identity.
@@ -26,7 +26,7 @@ import javax.persistence.Table
 data class HoldingIdentityEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false)
-    val holdingIdentityId: String,
+    val holdingIdentityShortHash: String,
     @Column(name = "holding_identity_full_hash", nullable = false)
     var holdingIdentityFullHash: String,
     @Column(name = "x500_name", nullable = false)

@@ -31,6 +31,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "net.corda:corda-serialization"
 
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

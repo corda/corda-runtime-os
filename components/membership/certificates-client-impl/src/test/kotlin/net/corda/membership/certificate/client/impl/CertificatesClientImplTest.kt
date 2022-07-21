@@ -141,10 +141,10 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.setupLocallyHostedIdentity("holdingIdentityId", "Alias", "tlsTenantId", "sessionAlias")
+            client.setupLocallyHostedIdentity("holdingIdentityShortHash", "Alias", "tlsTenantId", "sessionAlias")
 
             verify(mockHostedIdentityEntryFactory.constructed().first()).createIdentityRecord(
-                "holdingIdentityId", "Alias", "tlsTenantId", "sessionAlias"
+                "holdingIdentityShortHash", "Alias", "tlsTenantId", "sessionAlias"
             )
         }
 
@@ -174,7 +174,7 @@ class CertificatesClientImplTest {
         fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
             assertThrows<IllegalStateException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityId",
+                    "holdingIdentityShortHash",
                     "Alias",
                     "tlsTenantId",
                     "sessionAlias"
@@ -193,7 +193,7 @@ class CertificatesClientImplTest {
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityId",
+                    "holdingIdentityShortHash",
                     "Alias",
                     "tlsTenantId",
                     "sessionAlias"
@@ -212,7 +212,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityId",
+                "holdingIdentityShortHash",
                 "Alias",
                 "tlsTenantId",
                 "sessionAlias"

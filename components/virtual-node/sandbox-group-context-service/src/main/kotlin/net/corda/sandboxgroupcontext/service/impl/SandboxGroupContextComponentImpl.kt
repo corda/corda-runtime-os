@@ -129,7 +129,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     @Deactivate
     override fun close() {
-        stop()
         coordinator.close()
         sandboxGroupContextService?.close()
         cpkReadService.close()

@@ -195,7 +195,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         } catch (e: Exception) {
                             logger.error(
                                 "Failure to parse group policy after change in virtual node info. " +
-                                        "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
+                                        "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
                                         "Caught exception: ", e
                             )
                             logger.warn(
