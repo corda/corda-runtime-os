@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -63,6 +64,7 @@ class ForwardingGroupPolicyProviderTest {
     private val realGroupPolicyProvider = mock<GroupPolicyProvider>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
+    private val membershipQueryClient = mock<MembershipQueryClient>()
 
     @AfterEach
     fun cleanUp() {
@@ -90,14 +92,15 @@ class ForwardingGroupPolicyProviderTest {
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
             LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
         )
-        assertThat(managedChildren).hasSize(3)
+        assertThat(managedChildren).hasSize(4)
         assertThat(managedChildren).containsExactlyInAnyOrder(
             NamedLifecycle(realGroupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
             NamedLifecycle(
                 virtualNodeInfoReadService,
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
             ),
-            NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>())
+            NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
+            NamedLifecycle(membershipQueryClient, LifecycleCoordinatorName.forComponent<MembershipQueryClient>())
         )
     }
 
@@ -170,7 +173,7 @@ class ForwardingGroupPolicyProviderTest {
     private fun createForwardingGroupPolicyProvider(mode: ThirdPartyComponentsMode): ForwardingGroupPolicyProvider {
         return ForwardingGroupPolicyProvider(
             mock(), mock(), mock(),
-            realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, mode
+            realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, mode, membershipQueryClient
         )
     }
 

@@ -26,7 +26,7 @@ internal class QueryGroupPolicyHandler(
         request: QueryGroupPolicy
     ): GroupPolicyQueryResponse {
         logger.info("Searching for group policy for identity ${context.holdingIdentity}.")
-        return transaction(context.holdingIdentity.toCorda().id) { em ->
+        return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val result = em.createQuery(
                 "SELECT * FROM ${GroupPolicyEntity::class.java.simpleName} ORDER BY version DESC LIMIT 1",
                 GroupPolicyEntity::class.java
