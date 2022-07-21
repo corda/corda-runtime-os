@@ -165,7 +165,7 @@ class MGMOpsClientImpl @Activate constructor(
     ) : InnerMGMOpsClient {
         override fun generateGroupPolicy(holdingIdentityId: String): String {
 
-            val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityId)?.holdingIdentity
                 ?: throw CordaRuntimeException ("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
