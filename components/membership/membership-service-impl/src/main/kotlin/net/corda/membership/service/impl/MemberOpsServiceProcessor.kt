@@ -154,7 +154,7 @@ class MemberOpsServiceProcessor(
     ) : RpcHandler<MGMGroupPolicyRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: MGMGroupPolicyRequest): Any {
 
-            val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(request.holdingIdentityId)?.holdingIdentity
                 ?: throw GroupPolicyGenerationException("Could not find holding identity associated with ${request.holdingIdentityId}")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
