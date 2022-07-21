@@ -1,9 +1,9 @@
 import { Button, Checkbox } from '@r3/r3-tooling-design-system/exports';
+import { memo, useMemo } from 'react';
 
 import SelectedParticipants from '../SelectedParticipants/SelectedParticipants';
 import style from './chatParticipants.module.scss';
 import useAppDataContext from '@/contexts/appDataContext';
-import { useMemo } from 'react';
 import useMessagesContext from '@/contexts/messagesContext';
 import useUserContext from '@/contexts/userContext';
 
@@ -20,7 +20,7 @@ const ChatParticipants: React.FC<Props> = ({
 }) => {
     const { vNodes, refreshVNodes } = useAppDataContext();
     const { vNode: myVNode } = useUserContext();
-    const { getTotalIncomingMessagesForSender } = useMessagesContext();
+    const { getTotalMessagesForCounterparty } = useMessagesContext();
 
     const handleCheckboxClicked = (checkBoxChecked: boolean, participant: string) => {
         if (!checkBoxChecked) {
@@ -38,8 +38,8 @@ const ChatParticipants: React.FC<Props> = ({
                 .map((node) => node.holdingIdentity.x500Name)
                 .filter((x500) => x500 !== myVNode?.holdingIdentity.x500Name)
                 .sort((a, b) => {
-                    const aMessages = getTotalIncomingMessagesForSender(a);
-                    const bMessages = getTotalIncomingMessagesForSender(b);
+                    const aMessages = getTotalMessagesForCounterparty(a);
+                    const bMessages = getTotalMessagesForCounterparty(b);
 
                     if (aMessages > bMessages) return -1;
 
@@ -82,7 +82,7 @@ const ChatParticipants: React.FC<Props> = ({
                             </p>
 
                             <p className="ml-auto mr-5 text-lg">
-                                <strong>{getTotalIncomingMessagesForSender(nP)}</strong>
+                                <strong>{getTotalMessagesForCounterparty(nP)}</strong>
                             </p>
                         </div>
                     );
@@ -103,4 +103,4 @@ const ChatParticipants: React.FC<Props> = ({
     );
 };
 
-export default ChatParticipants;
+export default memo(ChatParticipants);

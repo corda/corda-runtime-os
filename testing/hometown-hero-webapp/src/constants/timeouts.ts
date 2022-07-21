@@ -1,0 +1,7 @@
+export const MESSAGE_SEND_FLOW_POLLING_DELETE_TIMEOUT = 10000;
+export const FETCH_MESSAGE_FLOW_POLLING_DELETE_TIMEOUT = 5000;
+
+//how often we call the flow to request all messages
+export const FETCH_MESSAGE_FLOW_POLLING_INTERVAL = 1000;
+
+export const FETCH_SEND_MESSAGE_FLOW_STATUS_POLLING_INTERVAL = 1000;

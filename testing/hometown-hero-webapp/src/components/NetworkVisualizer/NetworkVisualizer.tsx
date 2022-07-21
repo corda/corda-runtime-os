@@ -5,6 +5,7 @@ import { Button } from '@r3/r3-tooling-design-system/exports';
 import Graph from 'react-graph-vis';
 import style from './networkVisualizer.module.scss';
 import useAppDataContext from '@/contexts/appDataContext';
+import useGetMessageLogs from '@/hooks/useGetMessageLogs';
 
 const GRAPH_INITIAL_STATE = {
     counter: 0,
@@ -13,9 +14,11 @@ const GRAPH_INITIAL_STATE = {
 };
 
 const REMOVE_MESSAGE_INTERVAL_MS = 2000;
+const MESSAGE_MAX_AGE = 5000;
 
 const NetworkVisualizer = () => {
     const { vNodes } = useAppDataContext();
+    const { messageLogs, fetchMessageLogs } = useGetMessageLogs();
 
     const [network, setNetwork] = useState<any | undefined>(undefined);
     const [graphData, setGraphData] = useState<any>(GRAPH_INITIAL_STATE);
@@ -28,7 +31,7 @@ const NetworkVisualizer = () => {
             newGraphData.edges = newGraphData.edges.filter((edge: any) => {
                 const difference = now - new Date(edge.timestamp).getTime();
                 const secondsDifference = Math.floor(difference);
-                if (secondsDifference >= REMOVE_MESSAGE_INTERVAL_MS) {
+                if (secondsDifference >= MESSAGE_MAX_AGE) {
                     return false;
                 }
                 return true;
@@ -39,11 +42,19 @@ const NetworkVisualizer = () => {
     }, []);
 
     useEffect(() => {
+        fetchMessageLogs();
+
         const interval = setInterval(() => {
             cleanUpOldMessages();
         }, REMOVE_MESSAGE_INTERVAL_MS);
+
+        const fetchInterval = setInterval(() => {
+            fetchMessageLogs();
+        }, 2000);
+
         return () => {
             clearInterval(interval);
+            clearInterval(fetchInterval);
         };
     }, [cleanUpOldMessages]);
 
@@ -60,25 +71,27 @@ const NetworkVisualizer = () => {
         [graphData]
     );
 
-    const addNode = useCallback(
-        (name: string, location: string) => {
-            const locCoords = LOCATION_GROUP_COORDS.get(location);
-            const newNode = {
-                id: graphData.nodes.length + 2,
-                label: name + ' ' + (graphData.nodes.length + 1),
-                title: `${name} tooltip text`,
-                x: locCoords?.x ?? undefined,
-                y: locCoords?.y ?? undefined,
-                color: LOCATION_COLORS.get(location),
-                location: location,
-            };
-            const tempGraphData = { ...graphData };
-            tempGraphData.counter = tempGraphData.counter + 1;
-            tempGraphData.nodes = [...tempGraphData.nodes, newNode];
-            setGraphData(tempGraphData);
-        },
-        [graphData]
-    );
+    useEffect(() => {
+        if (messageLogs.length === 0) return;
+        //Here we need to update the messages
+        const newGraphData = { ...graphData };
+
+        messageLogs.forEach((messageLog) => {
+            const now = Date.now();
+            const difference = now - new Date(messageLog.timestamp).getTime();
+            const secondsDifference = Math.floor(difference);
+            if (secondsDifference >= MESSAGE_MAX_AGE) {
+                return;
+            }
+            newGraphData.edges = [
+                ...newGraphData.edges,
+                { from: messageLog.sender, to: messageLog.receiver, arrows: 'to', dashes: true, timestamp: Date.now() },
+            ];
+        });
+
+        newGraphData.counter = newGraphData.counter + 1;
+        setGraphData(newGraphData);
+    }, [messageLogs]);
 
     useEffect(() => {
         const newNodes: any[] = [];
@@ -123,27 +136,6 @@ const NetworkVisualizer = () => {
     return (
         <div>
             <div className="flex gap-6 mt-6 mb-6">
-                {/* <Button
-                    size={'small'}
-                    variant={'primary'}
-                    onClick={() => {
-                        addMessage(getRandomInt(graphData.nodes.length - 1), getRandomInt(graphData.nodes.length - 1));
-                    }}
-                >
-                    Add Message
-                </Button>
-                <Button
-                    size={'small'}
-                    variant={'primary'}
-                    onClick={() => {
-                        addNode(
-                            `O=${'Node' + (graphData.nodes.length + 1)}`,
-                            LOCATIONS[getRandomInt(LOCATIONS.length)]
-                        );
-                    }}
-                >
-                    Add New Node
-                </Button> */}
                 <div className="flex gap-6 ml-4">
                     <Button
                         size={'small'}

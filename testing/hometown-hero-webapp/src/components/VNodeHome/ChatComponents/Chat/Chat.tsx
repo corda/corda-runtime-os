@@ -1,13 +1,21 @@
+import {
+    FETCH_SEND_MESSAGE_FLOW_STATUS_POLLING_INTERVAL,
+    MESSAGE_SEND_FLOW_POLLING_DELETE_TIMEOUT,
+} from '@/constants/timeouts';
 import { IconButton, NotificationService, TextInput } from '@r3/r3-tooling-design-system/exports';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 
+import { Id } from '@/models/cpi';
 import Message from '../Message/Message';
 import { Message as MessageType } from '@/models/Message';
+import Messages from '../Messages/Messages';
 import { handleFlow } from '@/utils/flowHelpers';
 import style from './chat.module.scss';
 import useMessagesContext from '@/contexts/messagesContext';
 import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
 import useUserContext from '@/contexts/userContext';
+
+export type MessagePair = { direction: 'outgoing' | 'incoming' | 'outgoing_pending'; content: string };
 
 type Props = {
     selectedParticipants: string[];
@@ -18,29 +26,23 @@ type Props = {
 const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyParticipant, selectedParticipants }) => {
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [messageValue, setMessageValue] = useState<string>('');
+    const [messagesInProgress, setMessagesInProgress] = useState<Map<string, string>>(new Map());
 
-    const { getChatHistoryForSender, addMessageToChatHistoryForSender, userChatHistory } = useMessagesContext();
+    const { getChatHistoryForCounterparty, chatHistories } = useMessagesContext();
     const { vNode, holderShortId, username, password } = useUserContext();
-
-    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (selectedParticipants.length === 0) {
             setMessages([]);
             return;
         }
-        const chatHistory = getChatHistoryForSender(selectedParticipants[0]);
+        const chatHistory = getChatHistoryForCounterparty(selectedParticipants[0]);
         if (!chatHistory) {
             setMessages([]);
             return;
         }
-        setMessages(chatHistory.messages.map((message) => ({ x500name: message.sender, message: message.message })));
-    }, [getChatHistoryForSender, selectedParticipants, JSON.stringify(userChatHistory)]);
-
-    useEffect(() => {
-        if (!messagesEndRef.current) return;
-        messagesEndRef.current.scrollIntoView();
-    }, [messages]);
+        setMessages(chatHistory.messages);
+    }, [getChatHistoryForCounterparty, JSON.stringify(selectedParticipants), JSON.stringify(chatHistories)]);
 
     const handleUserTyping = (e: any) => {
         const messageText = e.target.value;
@@ -50,39 +52,76 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
         setMessageValue(e.target.value);
     };
 
+    const removePendingMessageWithRequestId = (clientRequestId: string) => {
+        setMessagesInProgress((prev) => {
+            const tempMessagesInProgress = new Map(prev);
+            if (tempMessagesInProgress.has(clientRequestId)) tempMessagesInProgress.delete(clientRequestId);
+            return tempMessagesInProgress;
+        });
+    };
+
     const handleMessageSubmit = async () => {
-        if (selectedParticipants.length === 0 || !vNode) return;
+        if (selectedParticipants.length === 0 || !vNode || messageValue.length === 0) return;
         const sender = selectedParticipants[0];
         const clientRequestId = 'sendMessage' + Date.now();
+        const messageContent = messageValue;
+        setMessageValue('');
+
+        setMessagesInProgress((prev) => {
+            const tempMessagesInProgress = new Map(prev);
+            tempMessagesInProgress.set(clientRequestId, messageContent);
+            return tempMessagesInProgress;
+        });
+
         const pollingInterval = await handleFlow({
             flowType: 'net.cordapp.testing.chat.ChatOutgoingFlow',
             holderShortId: holderShortId,
             clientRequestId: clientRequestId,
+            pollIntervalMs: FETCH_SEND_MESSAGE_FLOW_STATUS_POLLING_INTERVAL,
             payload: JSON.stringify({
                 recipientX500Name: sender,
-                message: messageValue,
+                message: messageContent,
             }),
             auth: { username, password },
             onStartFailure: (errorText) => {
                 NotificationService.notify(`Failed to start ChatOutgoingFlow ${errorText}`, 'Error', 'danger');
+                removePendingMessageWithRequestId(clientRequestId);
+                clearInterval(pollingInterval);
             },
             onStatusSuccess: (flowStatus) => {
-                addMessageToChatHistoryForSender(sender, {
-                    sender: vNode.holdingIdentity.x500Name,
-                    message: messageValue,
-                });
-                NotificationService.notify(`ChatOutgoingFlow finished, message delivered!`, 'Success', 'success');
+                // NotificationService.notify(`ChatOutgoingFlow finished, message delivered!`, 'Success', 'success');
+                removePendingMessageWithRequestId(clientRequestId);
+                clearInterval(pollingInterval);
             },
             onStatusFailure: (errorText) => {
                 NotificationService.notify(`ChatOutgoingFlow failed, error: ${errorText}`, 'Error', 'danger');
+                removePendingMessageWithRequestId(clientRequestId);
+                clearInterval(pollingInterval);
             },
         });
-        setMessageValue('');
+        // setTimeout(() => {
+        //     clearInterval(pollingInterval);
+        //     removeMessageWithRequestId(clientRequestId);
+        // }, MESSAGE_SEND_FLOW_POLLING_DELETE_TIMEOUT);
     };
 
     const isChatDisabled = messages.length === 0 && selectedParticipants.length === 0;
 
     const isMobile = useMobileMediaQuery();
+
+    const allMessages: Map<string, MessagePair> = useMemo(() => {
+        const allMessages = new Map<string, MessagePair>();
+
+        messages.forEach((message) => {
+            allMessages.set(message.id, { direction: message.direction, content: message.content });
+        });
+
+        messagesInProgress.forEach((value, key) => {
+            allMessages.set(key, { direction: 'outgoing_pending', content: value });
+        });
+
+        return allMessages;
+    }, [messages, messagesInProgress]);
 
     return (
         <div className={style.chat}>
@@ -96,22 +135,7 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
             )}
 
             <div className={style.chatContent}>
-                {!isChatDisabled && (
-                    <div className={style.messagesList}>
-                        {messages.map((message, index) => {
-                            const isMyMessage = message.x500name === vNode?.holdingIdentity.x500Name;
-                            return (
-                                <Message
-                                    key={index}
-                                    message={message}
-                                    isMyMessage={isMyMessage}
-                                    selectReplyParticipant={handleSelectReplyParticipant}
-                                />
-                            );
-                        })}
-                        <div ref={messagesEndRef} />
-                    </div>
-                )}
+                {!isChatDisabled && <Messages counterParty={selectedParticipants[0]} messages={allMessages} />}
 
                 {/* TODO: Add bottom margin at keyboard height px value on mobile */}
                 <div className={`${style.inputCenter} ${isMobile ? 'shadow-xl' : ''}`}>
@@ -138,6 +162,11 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
                         }
                         value={messageValue}
                         onChange={handleUserTyping}
+                        onKeyPress={(event: any) => {
+                            if (event.key === 'Enter') {
+                                handleMessageSubmit();
+                            }
+                        }}
                     />
                     <IconButton
                         className={style.inputCenterButton}
@@ -153,4 +182,4 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     );
 };
 
-export default Chat;
+export default memo(Chat);

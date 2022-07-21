@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { ADMIN_AUTH_CONFIG } from '@/constants/authAdmin';
 import { Cpi } from '@/models/cpi';
 import { VirtualNode } from '@/models/virtualnode';
-import adminAxiosInstance from '@/api/adminAxios';
 import apiCall from '@/api/apiCall';
 import createCtx from './createCtx';
 
@@ -24,20 +24,25 @@ export const AppDataContextProvider: React.FC<Props> = ({ children }) => {
     const [cpiList, setCpiList] = useState<Cpi[]>([]);
     const [vNodes, setVNodes] = useState<VirtualNode[]>([]);
 
-    const refreshCpiList = async () => {
-        const response = await apiCall({ method: 'get', path: '/api/v1/cpi', axiosInstance: adminAxiosInstance });
+    const refreshCpiList = useCallback(async () => {
+        const response = await apiCall({
+            method: 'get',
+            path: '/api/v1/cpi',
+            auth: ADMIN_AUTH_CONFIG,
+        });
         setCpiList(response.data.cpis);
-    };
-    const refreshVNodes = async () => {
+    }, []);
+
+    const refreshVNodes = useCallback(async () => {
         const response = await apiCall({
             method: 'get',
             path: '/api/v1/virtualnode',
-            axiosInstance: adminAxiosInstance,
             dontTrackRequest: true,
+            auth: ADMIN_AUTH_CONFIG,
         });
         setVNodes(response.data.virtualNodes);
         return response.data.virtualNodes;
-    };
+    }, []);
 
     useEffect(() => {
         refreshCpiList();
