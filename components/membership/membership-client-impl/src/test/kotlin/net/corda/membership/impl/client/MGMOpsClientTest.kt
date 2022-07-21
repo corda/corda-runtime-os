@@ -6,14 +6,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -115,17 +112,7 @@ class MGMOpsClientTest {
             *convertEndpoints().toTypedArray(),
             MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
             MemberInfoExtension.PLATFORM_VERSION to "10",
-            MemberInfoExtension.SERIAL to "1",
-            "corda.group.protocol.registration" to "corda.group.protocol.registration",
-            "corda.group.protocol.synchronisation" to "corda.group.protocol.synchronisation",
-            "corda.group.truststore.session" to "corda.group.truststore.session",
-            "corda.group.pki.session" to "corda.group.pki.session",
-            "corda.group.pki.tls" to "corda.group.pki.tls",
-            "corda.group.protocol.p2p.mode" to "corda.group.protocol.p2p.mode",
-            "corda.session.key" to "corda.session.key",
-            "corda.ecdh.key" to "corda.ecdh.key",
-            "corda.endpoints.0.connectionURL" to "corda.endpoints.0.connectionURL",
-            "corda.endpoints.0.protocolVersion" to "1"
+            MemberInfoExtension.SERIAL to "1"
         ),
         sortedMapOf(
             MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,

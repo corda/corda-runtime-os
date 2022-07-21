@@ -31,6 +31,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [MemberOpsService::class])
+@Suppress("LongParameterList")
 class MemberOpsServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,

@@ -27,10 +27,7 @@ import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
-import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
-import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
-import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.registration.GroupPolicyGenerationException
 
 class MemberOpsServiceProcessor(
@@ -150,6 +147,7 @@ class MemberOpsServiceProcessor(
         }
     }
 
+    @Suppress("MaxLineLength")
     private class MGMGroupPolicyRequestHandler(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         private val membershipGroupReaderProvider: MembershipGroupReaderProvider

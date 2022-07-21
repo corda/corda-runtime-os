@@ -170,7 +170,9 @@ class MGMOpsClientImpl @Activate constructor(
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException ("Could not find holding identity associated with member.")
+            val filteredMembers =
+                reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))
+                    ?:throw CordaRuntimeException ("Could not find holding identity associated with member.")
 
             if(filteredMembers.isMgm) {
 
