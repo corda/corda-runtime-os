@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.MembershipPackage
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -43,10 +43,10 @@ import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.AppMessage
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -79,7 +79,7 @@ class SynchronisationProxyImplTest {
     private val configHandle: AutoCloseable = mock()
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
-    private val subscription: Subscription<String, AppMessage> = mock()
+    private val subscription: Subscription<String, MembershipPackage> = mock()
 
     private var coordinatorIsRunning = false
     private var coordinatorStatus: KArgumentCaptor<LifecycleStatus> = argumentCaptor()
@@ -109,7 +109,7 @@ class SynchronisationProxyImplTest {
         on {
             createDurableSubscription(
                 any(),
-                any<DurableProcessor<String, AppMessage>>(),
+                any<DurableProcessor<String, MembershipPackage>>(),
                 any(),
                 eq(null)
             )
@@ -118,7 +118,11 @@ class SynchronisationProxyImplTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(any()) } doReturn mock()
     }
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
+    private val participantName = MemberX500Name("Participant", "London", "GB")
+    private val participant = HoldingIdentity(participantName.toString(), DUMMY_GROUP_ID)
+    private val membershipPackage: MembershipPackage = mock {
+        on { viewOwningMember } doReturn participant.toAvro()
+    }
     private lateinit var synchronisationProxy: SynchronisationProxy
 
     private fun createHoldingIdentity() = HoldingIdentity("O=Alice, L=London, C=GB", DUMMY_GROUP_ID)
@@ -164,7 +168,6 @@ class SynchronisationProxyImplTest {
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             configReadService,
-            virtualNodeInfoReadService,
             groupPolicyProvider,
             syncProtocols
         )
@@ -207,18 +210,19 @@ class SynchronisationProxyImplTest {
     @Test
     fun `Proxy selects correct synchronisation protocol`() {
         postConfigChangedEvent()
+        postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         synchronisationProxy.start()
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(SyncProtocol1::class.java.name), identity1)
         val ex1 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processMembershipUpdates(identity1, mock())
+            synchronisationProxy.processMembershipUpdates(membershipPackage)
         }
         assertThat(ex1.message).isEqualTo("SyncProtocol1 called")
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(SyncProtocol2::class.java.name), identity2)
         val ex2 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processMembershipUpdates(identity2, mock())
+            synchronisationProxy.processMembershipUpdates(membershipPackage)
         }
         assertThat(ex2.message).isEqualTo("SyncProtocol2 called")
     }
@@ -226,11 +230,12 @@ class SynchronisationProxyImplTest {
     @Test
     fun `Proxy throws exception for invalid synchronisation protocol config`() {
         postConfigChangedEvent()
+        postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         synchronisationProxy.start()
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
         assertFailsWith<SynchronisationProtocolSelectionException> {
-            synchronisationProxy.processMembershipUpdates(identity, mock())
+            synchronisationProxy.processMembershipUpdates(membershipPackage)
         }
     }
 
@@ -251,7 +256,7 @@ class SynchronisationProxyImplTest {
         doReturn(false).whenever(coordinator).isRunning
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(SyncProtocol1::class.java.name), identity)
-        assertFailsWith<IllegalStateException> { synchronisationProxy.processMembershipUpdates(identity, mock()) }
+        assertFailsWith<IllegalStateException> { synchronisationProxy.processMembershipUpdates(mock()) }
     }
 
     @Test
@@ -260,7 +265,7 @@ class SynchronisationProxyImplTest {
         doReturn(LifecycleStatus.ERROR).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(SyncProtocol1::class.java.name), identity)
-        assertFailsWith<IllegalStateException> { synchronisationProxy.processMembershipUpdates(identity, mock()) }
+        assertFailsWith<IllegalStateException> { synchronisationProxy.processMembershipUpdates(mock()) }
     }
 
     @Test
@@ -271,7 +276,6 @@ class SynchronisationProxyImplTest {
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 syncProtocol1.lifecycleCoordinatorName,
                 syncProtocol2.lifecycleCoordinatorName,
             )
@@ -292,7 +296,6 @@ class SynchronisationProxyImplTest {
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 syncProtocol1.lifecycleCoordinatorName,
                 syncProtocol2.lifecycleCoordinatorName,
             )
@@ -329,25 +332,26 @@ class SynchronisationProxyImplTest {
 
     @Test
     fun `Registration changed event UP sets coordinator status UP`() {
+        postConfigChangedEvent()
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
 
         assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
     }
 
     class SyncProtocol1 : AbstractSyncProtocol() {
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
             throw SynchronisationException("SyncProtocol1 called")
     }
 
     class SyncProtocol2 : AbstractSyncProtocol() {
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
             throw SynchronisationException("SyncProtocol2 called")
     }
 
     abstract class AbstractSyncProtocol : MemberSynchronisationService {
         var started = 0
 
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
             throw SynchronisationException("AbstractSyncProtocol called")
 
         override val isRunning = true

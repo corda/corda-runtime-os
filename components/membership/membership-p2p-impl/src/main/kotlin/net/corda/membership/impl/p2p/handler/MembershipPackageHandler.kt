@@ -1,6 +1,6 @@
 package net.corda.membership.impl.p2p.handler
 
-import net.corda.data.membership.MembershipPackage
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC

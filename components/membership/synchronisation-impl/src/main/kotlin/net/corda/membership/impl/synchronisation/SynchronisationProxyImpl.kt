@@ -2,7 +2,7 @@ package net.corda.membership.impl.synchronisation
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.MembershipPackage
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,7 +18,6 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.exceptions.SynchronisationProtocolSelectionException
 import net.corda.membership.synchronisation.MemberSynchronisationService
-import net.corda.membership.synchronisation.SynchronisationException
 import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -28,8 +27,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -45,8 +43,6 @@ class SynchronisationProxyImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(
@@ -61,7 +57,7 @@ class SynchronisationProxyImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationProxy {
-        fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage)
+        fun processMembershipUpdates(membershipPackage: MembershipPackage)
     }
 
     private companion object {
@@ -86,15 +82,14 @@ class SynchronisationProxyImpl @Activate constructor(
     private val dependencies = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
-        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
     ) + synchronisationServices.map { it.lifecycleCoordinatorName }
 
     private var subscription: Subscription<String, MembershipPackage>? = null
 
     private var impl: InnerSynchronisationProxy = InactiveImpl
 
-    override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
-        impl.processMembershipUpdates(member, membershipPackage)
+    override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        impl.processMembershipUpdates(membershipPackage)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -187,23 +182,26 @@ class SynchronisationProxyImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerSynchronisationProxy {
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
             throw IllegalStateException("SynchronisationProxy currently inactive.")
 
     }
 
     private inner class ActiveImpl: InnerSynchronisationProxy {
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) {
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) {
+            val viewOwningMember = membershipPackage.viewOwningMember.toCorda()
             val protocol = try {
-                groupPolicyProvider.getGroupPolicy(member)?.synchronisationProtocol
+                groupPolicyProvider.getGroupPolicy(viewOwningMember)?.synchronisationProtocol
             } catch (e: BadGroupPolicyException) {
                 val err =
                     "Failed to select correct synchronisation protocol due to problems retrieving the group policy."
                 logger.error(err, e)
                 throw SynchronisationProtocolSelectionException(err, e)
-            } ?: throw SynchronisationProtocolSelectionException("Could not find group policy file for holding identity: [$member]")
+            } ?: throw SynchronisationProtocolSelectionException(
+                "Could not find group policy file for holding identity: [${viewOwningMember.id}]"
+            )
 
-            getSynchronisationService(protocol).processMembershipUpdates(member, membershipPackage)
+            getSynchronisationService(protocol).processMembershipUpdates(membershipPackage)
         }
 
         private fun getSynchronisationService(protocol: String): MemberSynchronisationService {
@@ -223,9 +221,7 @@ class SynchronisationProxyImpl @Activate constructor(
         override fun onNext(events: List<Record<String, MembershipPackage>>): List<Record<*, *>> {
             events.forEach { record ->
                 if (record.value != null) {
-                    val holdingIdentity = virtualNodeInfoReadService.getById(record.key)?.holdingIdentity
-                        ?: throw SynchronisationException("Could not find holding identity associated with ${record.key}.")
-                    processMembershipUpdates(holdingIdentity, record.value!!)
+                    processMembershipUpdates(record.value!!)
                 }
             }
             return emptyList()

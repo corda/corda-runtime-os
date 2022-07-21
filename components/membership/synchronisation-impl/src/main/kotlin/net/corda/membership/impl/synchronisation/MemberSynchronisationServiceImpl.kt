@@ -5,8 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.MembershipPackage
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,7 +17,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.synchronisation.MemberSynchronisationService
@@ -29,8 +28,8 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -53,7 +52,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationService : AutoCloseable {
-        fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage)
+        fun processMembershipUpdates(membershipPackage: MembershipPackage)
     }
 
     private companion object {
@@ -82,8 +81,8 @@ class MemberSynchronisationServiceImpl @Activate constructor(
 
     private var impl: InnerSynchronisationService = InactiveImpl
 
-    override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
-        impl.processMembershipUpdates(member, membershipPackage)
+    override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        impl.processMembershipUpdates(membershipPackage)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -110,7 +109,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerSynchronisationService {
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
         override fun close() = Unit
@@ -123,27 +122,29 @@ class MemberSynchronisationServiceImpl @Activate constructor(
                 logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
             }, KeyValuePairList::class.java)
 
-        override fun processMembershipUpdates(member: HoldingIdentity, membershipPackage: MembershipPackage) {
+        override fun processMembershipUpdates(membershipPackage: MembershipPackage) {
+            val viewOwningMember = membershipPackage.viewOwningMember.toCorda()
             try {
                 val records = membershipPackage.memberships.memberships.map { update ->
                     // TODO - CORE-5811 - verify signatures in signed member infos.
                     val persistentMemberInfo = PersistentMemberInfo(
-                        member.toAvro(),
+                        viewOwningMember.toAvro(),
                         deserializer.deserialize(update.memberContext.array()),
                         deserializer.deserialize(update.mgmContext.array())
                     )
                     val identity = memberInfoFactory.create(persistentMemberInfo).id
                     Record(
                         MEMBER_LIST_TOPIC,
-                        "${member.id}-$identity",
+                        "${viewOwningMember.id}-$identity",
                         persistentMemberInfo
                     )
                 }
                 publisher.publish(records).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
-                logger.warn("Failed to process membership updates received by ${member.x500Name}.", e)
+                logger.warn("Failed to process membership updates received by ${viewOwningMember.x500Name}.", e)
                 // TODO - CORE-5813 - trigger sync protocol.
-                logger.warn("Cannot recover from failure to process membership updates. ${member.x500Name} cannot initiate sync protocol with MGM as this is not implemented.")
+                logger.warn("Cannot recover from failure to process membership updates. ${viewOwningMember.x500Name}" +
+                        " cannot initiate sync protocol with MGM as this is not implemented.")
             }
         }
 

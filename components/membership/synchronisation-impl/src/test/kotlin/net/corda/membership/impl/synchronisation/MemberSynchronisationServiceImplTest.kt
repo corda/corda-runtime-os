@@ -7,10 +7,10 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.MembershipPackage
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.data.membership.SignedMemberships
+import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -36,6 +36,7 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
@@ -137,6 +138,7 @@ class MemberSynchronisationServiceImplTest {
         on { memberships } doReturn listOf(signedMemberInfo)
     }
     private val membershipPackage: MembershipPackage = mock {
+        on { viewOwningMember } doReturn member.toAvro()
         on { memberships } doReturn signedMemberships
     }
     private val synchronisationService = MemberSynchronisationServiceImpl(
@@ -200,7 +202,7 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        synchronisationService.processMembershipUpdates(member, membershipPackage)
+        synchronisationService.processMembershipUpdates(membershipPackage)
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMemberList = capturedPublishedList.firstValue
         SoftAssertions.assertSoftly {
@@ -218,7 +220,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `processing of membership updates fails when coordinator is not running`() {
-        val ex1 = assertFailsWith<IllegalStateException>{ synchronisationService.processMembershipUpdates(mock(), mock()) }
+        val ex1 = assertFailsWith<IllegalStateException>{ synchronisationService.processMembershipUpdates(mock()) }
         assertThat(ex1.message).isEqualTo("MemberSynchronisationService is currently inactive.")
     }
 
