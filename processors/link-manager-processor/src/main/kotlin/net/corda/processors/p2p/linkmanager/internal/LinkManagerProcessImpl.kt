@@ -1,5 +1,6 @@
 package net.corda.processors.p2p.linkmanager.internal
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -21,6 +22,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.ThirdPartyComponentsMode
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
+import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -63,10 +65,10 @@ class LinkManagerProcessImpl @Activate constructor(
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessImpl>(::eventHandler)
 
-    override fun start(bootConfig: SmartConfig) {
+    override fun start(bootConfig: SmartConfig, useStubComponents: Boolean) {
         log.info("Link manager processor starting.")
         lifecycleCoordinator.start()
-        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
+        lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig, useStubComponents))
     }
 
     override fun stop() {
@@ -88,6 +90,12 @@ class LinkManagerProcessImpl @Activate constructor(
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
+                val thirdPartyComponentMode = if (event.useStubComponents) {
+                    ThirdPartyComponentsMode.STUB
+                } else {
+                    ThirdPartyComponentsMode.REAL
+                }
+
                 val linkManager = LinkManager(
                     subscriptionFactory,
                     publisherFactory,
@@ -100,7 +108,7 @@ class LinkManagerProcessImpl @Activate constructor(
                     cryptoOpsClient,
                     membershipGroupReaderProvider,
                     //This will be removed once integration with MGM/crypto has been completed.
-                    ThirdPartyComponentsMode.STUB
+                    thirdPartyComponentMode
                 )
 
                 this.linkManager = linkManager
@@ -123,6 +131,16 @@ class LinkManagerProcessImpl @Activate constructor(
             }
         }
     }
+
+    private fun getMessagingConfig(bootConfig: SmartConfig): SmartConfig {
+        return configMerger.getMessagingConfig(bootConfig).withValue(
+            // The default value of poll timeout is quite high (6 seconds), so setting it to something lower.
+            // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
+            // leading to slow syncing upon startup. See: https://r3-cev.atlassian.net/browse/CORE-3163
+            POLL_TIMEOUT,
+            ConfigValueFactory.fromAnyRef(100)
+        )
+    }
 }
 
-data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
+data class BootConfigEvent(val config: SmartConfig, val useStubComponents: Boolean) : LifecycleEvent
