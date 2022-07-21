@@ -6,6 +6,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.util.UUID
@@ -49,7 +50,8 @@ interface GroupPolicyParser {
      */
     fun parse(
         holdingIdentity: HoldingIdentity,
-        groupPolicy: String?
+        groupPolicy: String?,
+        properties: LayeredPropertyMap
     ): GroupPolicy
 
     /**

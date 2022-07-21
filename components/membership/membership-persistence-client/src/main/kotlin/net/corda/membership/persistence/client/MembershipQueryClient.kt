@@ -2,7 +2,6 @@ package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
@@ -65,6 +64,7 @@ interface MembershipQueryClient : Lifecycle {
      * @param viewOwningIdentity The holding identity whose view is being requested.
      *
      * @return a query result with the latest version of group policy if the query executed successfully.
+     * Returns an empty [LayeredPropertyMap] if there was no group policy persisted.
      */
     fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap>
 }

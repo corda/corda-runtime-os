@@ -2,6 +2,7 @@ package net.corda.membership.lib.impl.grouppolicy
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -15,6 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -25,7 +27,9 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParserImpl @Activate constructor(
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory
+    val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : GroupPolicyParser {
     companion object {
         private val logger = contextLogger()
@@ -38,8 +42,8 @@ class GroupPolicyParserImpl @Activate constructor(
     private val clock = UTCClock()
 
     private val mgmVersions = mapOf(
-        1 to { holdingIdentity: HoldingIdentity, root: JsonNode ->
-            net.corda.membership.lib.impl.grouppolicy.v1.MGMGroupPolicyImpl(holdingIdentity, root)
+        1 to { holdingIdentity: HoldingIdentity, root: JsonNode, properties: LayeredPropertyMap ->
+            net.corda.membership.lib.impl.grouppolicy.v1.MGMGroupPolicyImpl(holdingIdentity, root, properties)
         }
     )
 
@@ -52,7 +56,8 @@ class GroupPolicyParserImpl @Activate constructor(
     @Suppress("ThrowsCount")
     override fun parse(
         holdingIdentity: HoldingIdentity,
-        groupPolicy: String?
+        groupPolicy: String?,
+        properties: LayeredPropertyMap
     ): GroupPolicy {
         val node = when {
             groupPolicy == null -> {
@@ -75,7 +80,7 @@ class GroupPolicyParserImpl @Activate constructor(
         val version = node.getFileFormatVersion()
 
         return if (MGM_DEFAULT_GROUP_ID == node.getGroupId()) {
-            mgmVersions[version]?.invoke(holdingIdentity, node)
+            mgmVersions[version]?.invoke(holdingIdentity, node, properties)
         } else {
             memberVersions[version]?.invoke(node)
         }
@@ -105,7 +110,7 @@ class GroupPolicyParserImpl @Activate constructor(
         groupPolicy: String
     ): MemberInfo? {
         val parsedGroupPolicy = try {
-            parse(holdingIdentity, groupPolicy)
+            parse(holdingIdentity, groupPolicy, layeredPropertyMapFactory.createMap(emptyMap()))
         } catch (e: BadGroupPolicyException) {
             logger.error("Unable to parse group policy file.", e)
             null

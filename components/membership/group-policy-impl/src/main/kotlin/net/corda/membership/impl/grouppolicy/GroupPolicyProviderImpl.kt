@@ -14,6 +14,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -34,6 +36,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = GroupPolicyParser::class)
     private val groupPolicyParser: GroupPolicyParser,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : GroupPolicyProvider {
 
     /**
@@ -129,7 +133,11 @@ class GroupPolicyProviderImpl @Activate constructor(
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
         ) = try {
-            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
+            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }.also {
+                if(groupPolicies[holdingIdentity] is MGMGroupPolicy) {
+                    groupPolicies.remove(holdingIdentity)
+                }
+            }
         } catch (e: BadGroupPolicyException) {
             logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null
@@ -176,7 +184,8 @@ class GroupPolicyProviderImpl @Activate constructor(
             }
             return groupPolicyParser.parse(
                 holdingIdentity,
-                metadata?.groupPolicy
+                metadata?.groupPolicy,
+                membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
             )
         }
 

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,6 +14,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -59,11 +63,13 @@ class GroupPolicyProviderImplTest {
 
     val alice = MemberX500Name("Alice", "London", "GB")
     val bob = MemberX500Name("Bob", "London", "GB")
+    val mgm = MemberX500Name("MGM", "London", "GB")
 
     val groupPolicy1 = "{\"$registrationProtocolKey\": \"$regProtocol1\", \"$groupIdKey\": \"$groupId1\"}"
     val groupPolicy2 = "{\"$registrationProtocolKey\": \"$regProtocol2\", \"$groupIdKey\": \"$groupId1\"}"
     val groupPolicy3 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
     val groupPolicy4: String? = null
+    val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
         on { groupId } doReturn groupId1
@@ -77,11 +83,13 @@ class GroupPolicyProviderImplTest {
         on { groupId } doReturn groupId2
         on { registrationProtocol }.doReturn(regProtocol3)
     }
+    private val parsedMgmGroupPolicy: MGMGroupPolicy = mock()
 
     val holdingIdentity1 = HoldingIdentity(alice.toString(), groupId1)
     val holdingIdentity2 = HoldingIdentity(bob.toString(), groupId1)
     val holdingIdentity3 = HoldingIdentity(alice.toString(), groupId2)
     val holdingIdentity4 = HoldingIdentity(bob.toString(), groupId2)
+    val holdingIdentity5 = HoldingIdentity(mgm.toString(), groupId2)
 
     fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
@@ -91,11 +99,13 @@ class GroupPolicyProviderImplTest {
     val cpiMetadata2 = mockMetadata(groupPolicy2)
     val cpiMetadata3 = mockMetadata(groupPolicy3)
     val cpiMetadata4 = mockMetadata(groupPolicy4)
+    val cpiMetadata5 = mockMetadata(groupPolicy5)
 
     val cpiIdentifier1: CpiIdentifier = mock()
     val cpiIdentifier2: CpiIdentifier = mock()
     val cpiIdentifier3: CpiIdentifier = mock()
     val cpiIdentifier4: CpiIdentifier = mock()
+    val cpiIdentifier5: CpiIdentifier = mock()
 
     var virtualNodeListener: VirtualNodeInfoListener? = null
 
@@ -108,6 +118,7 @@ class GroupPolicyProviderImplTest {
         on { get(eq(holdingIdentity2)) } doReturn createVirtualNodeInfo(holdingIdentity2, cpiIdentifier2)
         on { get(eq(holdingIdentity3)) } doReturn createVirtualNodeInfo(holdingIdentity3, cpiIdentifier3)
         on { get(eq(holdingIdentity4)) } doReturn createVirtualNodeInfo(holdingIdentity4, cpiIdentifier4)
+        on { get(eq(holdingIdentity5)) } doReturn createVirtualNodeInfo(holdingIdentity5, cpiIdentifier5)
         on { registerCallback(any()) } doAnswer {
             virtualNodeListener = it.arguments[0] as VirtualNodeInfoListener
             mock()
@@ -119,6 +130,7 @@ class GroupPolicyProviderImplTest {
         on { get(cpiIdentifier2) } doReturn cpiMetadata2
         on { get(cpiIdentifier3) } doReturn cpiMetadata3
         on { get(cpiIdentifier4) } doReturn cpiMetadata4
+        on { get(cpiIdentifier5) } doReturn cpiMetadata5
     }
 
     var handler: LifecycleEventHandler? = null
@@ -144,12 +156,19 @@ class GroupPolicyProviderImplTest {
             coordinator
         }
     }
+    private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory()
+    private val properties = layeredPropertyMapFactory.createMap(emptyMap())
     private val groupPolicyParser: GroupPolicyParser = mock {
-        on { parse(eq(holdingIdentity1), eq(groupPolicy1)) }.doReturn(parsedGroupPolicy1)
-        on { parse(eq(holdingIdentity1), eq(groupPolicy2)) }.doReturn(parsedGroupPolicy2)
-        on { parse(eq(holdingIdentity2), eq(groupPolicy2)) }.doReturn(parsedGroupPolicy2)
-        on { parse(eq(holdingIdentity3), eq(groupPolicy3)) }.doReturn(parsedGroupPolicy3)
-        on { parse(eq(holdingIdentity4), eq(null)) }.doThrow(BadGroupPolicyException(""))
+        on { parse(eq(holdingIdentity1), eq(groupPolicy1), eq(properties)) }.doReturn(parsedGroupPolicy1)
+        on { parse(eq(holdingIdentity1), eq(groupPolicy2), eq(properties)) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity2), eq(groupPolicy2), eq(properties)) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity3), eq(groupPolicy3), eq(properties)) }.doReturn(parsedGroupPolicy3)
+        on { parse(eq(holdingIdentity4), eq(null), eq(properties)) }.doThrow(BadGroupPolicyException(""))
+        on { parse(eq(holdingIdentity5), eq(groupPolicy3), eq(properties)) }.doReturn(parsedMgmGroupPolicy)
+    }
+
+    private val membershipQueryClient: MembershipQueryClient = mock {
+        on { queryGroupPolicy(any()) }.doReturn(MembershipQueryResult.Success(properties))
     }
 
     fun registrationChange(status: LifecycleStatus = LifecycleStatus.UP) {
@@ -162,7 +181,8 @@ class GroupPolicyProviderImplTest {
             virtualNodeInfoReadService,
             cpiInfoReader,
             lifecycleCoordinatorFactory,
-            groupPolicyParser
+            groupPolicyParser,
+            membershipQueryClient
         )
     }
 
@@ -220,7 +240,7 @@ class GroupPolicyProviderImplTest {
         val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
         assertEquals(result1, result2)
-        verify(groupPolicyParser, times(1)).parse(any(), any())
+        verify(groupPolicyParser, times(1)).parse(any(), any(), any())
     }
 
     @Test
@@ -231,7 +251,17 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
         groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
-        verify(groupPolicyParser, times(2)).parse(any(), any())
+        verify(groupPolicyParser, times(2)).parse(any(), any(), eq(properties))
+    }
+
+    @Test
+    fun `MGM group policy not cached - always gets re-calculated`() {
+        startComponentAndDependencies()
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+
+        verify(groupPolicyParser, times(3)).parse(any(), any(), eq(properties))
     }
 
     @Test
@@ -335,8 +365,8 @@ class GroupPolicyProviderImplTest {
         // test holding identity
         val holdingIdentity = HoldingIdentity(alice.toString(), "FOO-BAR")
 
-        doReturn(parsedGroupPolicy1).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(groupPolicy1))
-        doThrow(BadGroupPolicyException("")).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(null))
+        doReturn(parsedGroupPolicy1).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(groupPolicy1), eq(properties))
+        doThrow(BadGroupPolicyException("")).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(null), eq(properties))
 
         // set up mock for new CPI and send update to virtual node callback
         fun setCpi(cpiIdentifier: CpiIdentifier) {
