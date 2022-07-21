@@ -19,9 +19,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -39,7 +36,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.test.flow.util.buildSessionEvent
-import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -79,9 +75,6 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowMapperService: FlowMapperService
 
-    @InjectService(timeout = 4000)
-    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
@@ -96,7 +89,6 @@ class FlowMapperServiceIntegrationTest {
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
             flowMapperService.start()
-            republishConfig(publisher)
         }
     }
 
@@ -126,6 +118,8 @@ class FlowMapperServiceIntegrationTest {
         p2pOutSub.start()
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
         p2pOutSub.stop()
+
+        republishConfig(publisher)
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
@@ -247,9 +241,13 @@ class FlowMapperServiceIntegrationTest {
     }
 
     private fun republishConfig(publisher: Publisher) {
-        lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<FlowMapperService>()) { _, _ -> }.use {
-            eventually { it.status == LifecycleStatus.UP }
+        // Wait for the initial config to be available
+        val configLatch = CountDownLatch(1)
+        configService.registerForUpdates { _, _ ->
+            configLatch.countDown()
         }
+        configLatch.await()
+
         publishConfig(publisher)
     }
 
