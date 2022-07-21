@@ -126,7 +126,7 @@ class PersistenceServiceImplTest {
         whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
         whenever(serializationService.deserialize<List<TestObject>>(any<ByteArray>(), any())).thenReturn(expectedList)
 
-        assertThat(persistenceService.findAll(TestObject::class.java)).isEqualTo(expectedList)
+        assertThat(persistenceService.findAll(TestObject::class.java).execute()).isEqualTo(expectedList)
 
         verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, times(0)).serialize<String>(any())
@@ -138,7 +138,7 @@ class PersistenceServiceImplTest {
         whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
         whenever(serializationService.deserialize<FailTestObject>(any<ByteArray>(), any())).thenReturn(FailTestObject())
 
-        assertThrows<CordaRuntimeException> { persistenceService.findAll(TestObject::class.java) }
+        assertThrows<CordaRuntimeException> { persistenceService.findAll(TestObject::class.java).execute() }
 
         verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, times(0)).serialize<String>(any())
