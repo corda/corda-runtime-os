@@ -10,5 +10,5 @@ class SigningPublicKeySaveContext(
     override val category: String,
     override val keyScheme: KeyScheme,
     override val externalId: String?,
-    override val associationId: String
+    override val workerSetId: String
 ) : SigningKeySaveContext

@@ -7,6 +7,10 @@ class HSMTenantAssociation(
     val category: String,
     val masterKeyAlias: String?,
     val aliasSecret: ByteArray?,
-    val config: HSMConfig,
+    val workerSetId: String,
     val deprecatedAt: Long
-)
+) {
+    override fun toString(): String {
+        return "id=$id(tenant=$tenantId,category=$category,set=$workerSetId,deprecated=$deprecatedAt)"
+    }
+}

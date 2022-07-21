@@ -16,6 +16,6 @@ class SigningCachedKey(
     val externalId: String?,
     val encodingVersion: Int?,
     val timestamp: Instant,
-    val associationId: String,
+    val workerSetId: String,
     val status: SigningKeyStatus
 )

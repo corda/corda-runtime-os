@@ -266,7 +266,7 @@ class SigningKeyStoreImpl @Activate constructor(
                 externalId = externalId,
                 encodingVersion = encodingVersion,
                 timestamp = timestamp,
-                associationId = associationId,
+                workerSetId = workerSetId,
                 status = SigningKeyStatus.valueOf(status.name)
             )
 

@@ -96,7 +96,7 @@ class MemberProcessorTestUtils {
                     )
             ).addDefaultBootCryptoConfig(
                 fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-                fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+                fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
             )
             extra.forEach {
                 cfg = cfg.withFallback(cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped())))

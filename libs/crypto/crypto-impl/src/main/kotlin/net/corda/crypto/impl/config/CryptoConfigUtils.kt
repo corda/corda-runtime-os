@@ -2,9 +2,6 @@ package net.corda.crypto.impl.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.crypto.core.Encryptor
-import net.corda.crypto.core.aes.AesEncryptor
-import net.corda.crypto.core.aes.AesKey
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -15,14 +12,6 @@ import java.util.UUID
 
 /*
 {
-    "rootKey": {
-        "salt": "<plain-text-value>",
-        "passphrase": {
-            "configSecret": {
-                "encryptedSecret": "<encrypted-value>"
-            }
-        }
-    },
     "cryptoConnectionFactory: {
         "connectionsExpireAfterAccessMins": 5,
         "connectionNumberLimit": 3
@@ -31,33 +20,64 @@ import java.util.UUID
         "keyCache": {
             "expireAfterAccessMins": 60,
             "maximumSize": 1000
-        },
-        "cryptoRefsCache: {
-            "expireAfterAccessMins": 240,
-            "maximumSize": 10000
         }
     },
-
-
-
-    "softPersistence": {
-        "expireAfterAccessMins": 240,
-        "maximumSize": 1000,
-        "maxAttempts": 1,
-        "attemptTimeoutMills": 20000,
-        "salt": "<plain-text-value>",
-        "passphrase": {
-            "configSecret": {
-                "encryptedSecret": "<encrypted-value>"
+    "workerSetId": "SOFT",
+    "workerSets": {
+        "SOFT": {
+            "topicSuffix": "",
+            "retry" : {
+                "maxAttempts": 3,
+                "attemptTimeoutMills": 20000
+            },
+            "hsm": {
+                "name": "SOFT",
+                "cfg": {
+                    "salt": "<plain-text-value>",
+                    "passphrase": {
+                        "configSecret": {
+                            "encryptedSecret": "<encrypted-value>"
+                        }
+                    },
+                    "keyMap": {
+                        "name": "CACHING",
+                        "cache": {
+                            "expireAfterAccessMins": 60,
+                            "maximumSize": 1000
+                        }
+                    },
+                    "wrappingKeyMap": {
+                        "name": "CACHING",
+                        "cache": {
+                            "expireAfterAccessMins": 60,
+                            "maximumSize": 1000
+                        }
+                    },
+                    "wrapping": {
+                        "name": "DEFAULT",
+                        "hsm": {
+                            "name": ".."
+                            "config": {
+                            }
+                        }
+                    }
+                }
             }
+        },
+        "AWS": {
+            "retry" : {
+                "maxAttempts": 3,
+                "attemptTimeoutMills": 20000
+            },
+            "hsm": {
+                "name": "SOFT",
+                "config": {
+                }
         }
     },
-    "signingPersistence": {
-        "keysExpireAfterAccessMins": 90,
-        "keyNumberLimit": 20,
-        "vnodesExpireAfterAccessMins": 120,
-        "vnodeNumberLimit": 100
-    },
+
+
+
     "hsmPersistence": {
         "expireAfterAccessMins": 240,
         "maximumSize": 1000,
@@ -86,13 +106,22 @@ import java.util.UUID
 }
  */
 
-private const val ROOT_KEY_SALT = "rootKey.salt"
-private const val ROOT_KEY_PASSPHRASE = "rootKey.passphrase"
 private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
 private const val SIGNING_SERVICE_OBJ = "signingService"
+private const val WORKER_SET_ID = "workerSetId"
+private const val WORKER_SET_OBJ = "workerSets.%s"
+private const val DEFAULT_WORKER_SET_ID = "SOFT"
+private val DEFAULT_WORKER_SET_OBJ = String.format(WORKER_SET_OBJ, DEFAULT_WORKER_SET_ID)
+private val MASTER_WRAPPING_KEY_SALT = DEFAULT_WORKER_SET_OBJ +
+        CryptoWorkerSetConfig::hsm.name +
+        CryptoWorkerSetConfig.HSMConfig::cfg.name +
+        "wrappingKeyMap.salt"
+private val MASTER_WRAPPING_KEY_PASSPHRASE = DEFAULT_WORKER_SET_OBJ +
+        CryptoWorkerSetConfig::hsm.name +
+        CryptoWorkerSetConfig.HSMConfig::cfg.name +
+        "wrappingKeyMap.passphrase"
 
-private const val SOFT_PERSISTENCE_OBJ = "softPersistence"
-private const val SIGNING_PERSISTENCE_OBJ = "signingPersistence"
+
 private const val HSM_PERSISTENCE_OBJ = "hsmPersistence"
 private const val BUS_PROCESSORS_OBJ = "bus.processors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
@@ -103,21 +132,13 @@ private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
 fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
     createDefaultCryptoConfig(
         smartFactoryKey = smartFactoryKey,
-        cryptoRootKey = KeyCredentials(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString()
-        ),
-        softKey = KeyCredentials(
+        masterWrappingKey = KeyCredentials(
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString()
         )
     )
 
-fun createDefaultCryptoConfig(
-    smartFactoryKey: KeyCredentials,
-    cryptoRootKey: KeyCredentials,
-    softKey: KeyCredentials
-): SmartConfig =
+fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials, masterWrappingKey: KeyCredentials): SmartConfig =
     SmartConfigFactory.create(
         ConfigFactory.parseString(
             """
@@ -125,66 +146,39 @@ fun createDefaultCryptoConfig(
             ${SmartConfigFactory.SECRET_SALT_KEY}=${smartFactoryKey.salt}
         """.trimIndent()
         )
-    ).createDefaultCryptoConfig(cryptoRootKey, softKey)
+    ).createDefaultCryptoConfig(masterWrappingKey)
 
-fun SmartConfig.addDefaultBootCryptoConfig(
-    fallbackCryptoRootKey: KeyCredentials,
-    fallbackSoftKey: KeyCredentials
-): SmartConfig {
+fun SmartConfig.addDefaultBootCryptoConfig(fallbackMasterWrappingKey: KeyCredentials): SmartConfig {
     val cryptoLibrary = if (hasPath(BOOT_CRYPTO)) {
         getConfig(BOOT_CRYPTO)
     } else {
         null
     }
-    val cryptoRootKeyPassphrase = if (cryptoLibrary?.hasPath(ROOT_KEY_PASSPHRASE) == true) {
-        cryptoLibrary.getString(ROOT_KEY_PASSPHRASE)
+    val masterWrappingKeySalt = if (cryptoLibrary?.hasPath(MASTER_WRAPPING_KEY_SALT) == true) {
+        cryptoLibrary.getString(MASTER_WRAPPING_KEY_SALT)
     } else {
-        fallbackCryptoRootKey.passphrase
+        fallbackMasterWrappingKey.salt
     }
-    val cryptoRootKeySalt = if (cryptoLibrary?.hasPath(ROOT_KEY_SALT) == true) {
-        cryptoLibrary.getString(ROOT_KEY_SALT)
-    } else {
-        fallbackCryptoRootKey.salt
-    }
-    val softPersistenceConfig = if (cryptoLibrary?.hasPath(SOFT_PERSISTENCE_OBJ) == true) {
-        cryptoLibrary.getConfig(SOFT_PERSISTENCE_OBJ)
-    } else {
-        null
-    }
-    val softKeyPassphrase = if (softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::passphrase.name) == true) {
-        softPersistenceConfig.getString(CryptoSoftPersistenceConfig::passphrase.name)
-    } else {
-        fallbackSoftKey.passphrase
-    }
-    val softKeySoft = if (softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::salt.name) == true) {
-        softPersistenceConfig.getString(CryptoSoftPersistenceConfig::salt.name)
-    } else {
-        fallbackSoftKey.salt
-    }
-    val cryptoRootKey = KeyCredentials(cryptoRootKeyPassphrase, cryptoRootKeySalt)
-    val softKey = KeyCredentials(softKeyPassphrase, softKeySoft)
+    val masterWrappingKeyPassphrase =
+        if (cryptoLibrary?.hasPath(MASTER_WRAPPING_KEY_PASSPHRASE) == true) {
+            cryptoLibrary.getString(MASTER_WRAPPING_KEY_PASSPHRASE)
+        } else {
+            fallbackMasterWrappingKey.passphrase
+        }
+    val masterWrappingKey = KeyCredentials(masterWrappingKeyPassphrase, masterWrappingKeySalt)
     return withFallback(
         withValue(
             BOOT_CRYPTO,
             ConfigValueFactory.fromMap(
-                factory.createDefaultCryptoConfig(cryptoRootKey, softKey).root().unwrapped()
+                factory.createDefaultCryptoConfig(masterWrappingKey).root().unwrapped()
             )
         )
     )
 }
 
-fun SmartConfigFactory.createDefaultCryptoConfig(
-    cryptoRootKey: KeyCredentials,
-    softKey: KeyCredentials
-): SmartConfig = try {
+fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentials): SmartConfig = try {
     this.create(
         ConfigFactory.empty()
-            .withValue(ROOT_KEY_SALT, ConfigValueFactory.fromAnyRef(cryptoRootKey.salt))
-            .withValue(
-                ROOT_KEY_PASSPHRASE, ConfigValueFactory.fromMap(
-                    makeSecret(cryptoRootKey.passphrase).root().unwrapped()
-                )
-            )
             .withValue(
                 CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
@@ -197,42 +191,53 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                 SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         CryptoSigningServiceConfig::keyCache.name to mapOf(
-                            CryptoSigningServiceConfig.Cache::expireAfterAccessMins.name to "60",
-                            CryptoSigningServiceConfig.Cache::maximumSize.name to "1000"
+                            CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to "60",
+                            CryptoSigningServiceConfig.CacheConfig::maximumSize.name to "1000"
+                        )
+                    )
+                )
+            )
+            .withValue(WORKER_SET_ID, ConfigValueFactory.fromAnyRef("SOFT"))
+            .withValue(
+                DEFAULT_WORKER_SET_OBJ, ConfigValueFactory.fromMap(
+                    mapOf(
+                        CryptoWorkerSetConfig::topicSuffix.name to "",
+                        CryptoWorkerSetConfig::retry.name to mapOf(
+                            CryptoWorkerSetConfig.RetryConfig::maxAttempts.name to "3",
+                            CryptoWorkerSetConfig.RetryConfig::attemptTimeoutMills.name to "20000",
                         ),
-                        CryptoSigningServiceConfig::cryptoRefsCache.name to mapOf(
-                            CryptoSigningServiceConfig.Cache::expireAfterAccessMins.name to "240",
-                            CryptoSigningServiceConfig.Cache::maximumSize.name to "10000"
+                        CryptoWorkerSetConfig::hsm.name to mapOf(
+                            CryptoWorkerSetConfig.HSMConfig::name.name to "SOFT",
+                            CryptoWorkerSetConfig.HSMConfig::cfg.name to mapOf(
+                                "keyMap" to mapOf(
+                                    "name" to "CACHING",
+                                    "cache" to mapOf(
+                                        "expireAfterAccessMins" to "60",
+                                        "maximumSize" to "1000"
+                                    )
+                                ),
+                                "wrappingKeyMap" to mapOf(
+                                    "name" to "CACHING",
+                                    "salt" to masterWrappingKey.salt,
+                                    "passphrase" to ConfigValueFactory.fromMap(
+                                        makeSecret(masterWrappingKey.passphrase).root().unwrapped()
+                                    ),
+                                    "cache" to mapOf(
+                                        "expireAfterAccessMins" to "60",
+                                        "maximumSize" to "100"
+                                    )
+                                ),
+                                "wrapping" to mapOf(
+                                    "name" to "DEFAULT",
+                                    "hsm" to emptyMap<String, String>()
+                                )
+                            )
                         )
                     )
                 )
             )
 
 
-            .withValue(
-                SOFT_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoSoftPersistenceConfig::expireAfterAccessMins.name to "240",
-                        CryptoSoftPersistenceConfig::maximumSize.name to "1000",
-                        CryptoSoftPersistenceConfig::salt.name to softKey.salt,
-                        CryptoSoftPersistenceConfig::passphrase.name to ConfigValueFactory.fromMap(
-                            makeSecret(softKey.passphrase).root().unwrapped()
-                        ),
-                        CryptoSoftPersistenceConfig::maxAttempts.name to "1",
-                        CryptoSoftPersistenceConfig::attemptTimeoutMills.name to "20000"
-                    )
-                )
-            )
-            .withValue(
-                SIGNING_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoSigningPersistenceConfig::keysExpireAfterAccessMins.name to "90",
-                        CryptoSigningPersistenceConfig::keyNumberLimit.name to "20",
-                        CryptoSigningPersistenceConfig::vnodesExpireAfterAccessMins.name to "120",
-                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100"
-                    )
-                )
-            )
             .withValue(
                 HSM_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
@@ -274,17 +279,6 @@ fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
         "Could not generate a crypto configuration due to missing key: $CRYPTO_CONFIG"
     )
 
-fun SmartConfig.rootEncryptor(): Encryptor =
-    try {
-        val key = AesKey.derive(
-            passphrase = getString(ROOT_KEY_PASSPHRASE),
-            salt = getString(ROOT_KEY_SALT)
-        )
-        AesEncryptor(key)
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get Encryptor.", e)
-    }
-
 fun SmartConfig.cryptoConnectionFactory(): CryptoConnectionsFactoryConfig =
     try {
         CryptoConnectionsFactoryConfig(getConfig(CRYPTO_CONNECTION_FACTORY_OBJ))
@@ -299,20 +293,24 @@ fun SmartConfig.signingService(): CryptoSigningServiceConfig =
         throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
     }
 
-
-fun SmartConfig.softPersistence(): CryptoSoftPersistenceConfig =
+fun SmartConfig.workerSetId(): String =
     try {
-        CryptoSoftPersistenceConfig(getConfig(SOFT_PERSISTENCE_OBJ))
+        getString(WORKER_SET_ID)
     } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get CryptoSoftPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get $WORKER_SET_ID.", e)
     }
 
-fun SmartConfig.signingPersistence(): CryptoSigningPersistenceConfig =
-    try {
-        CryptoSigningPersistenceConfig(getConfig(SIGNING_PERSISTENCE_OBJ))
+fun SmartConfig.workerSet(id: String): CryptoWorkerSetConfig {
+    val path = String.format(WORKER_SET_OBJ, id)
+    return try {
+        CryptoWorkerSetConfig(getConfig(path))
     } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get CryptoSigningPersistenceConfig.", e)
+        throw IllegalStateException("Failed to get $path.", e)
     }
+}
+
+
+
 
 fun SmartConfig.hsmPersistence(): CryptoHSMPersistenceConfig =
     try {

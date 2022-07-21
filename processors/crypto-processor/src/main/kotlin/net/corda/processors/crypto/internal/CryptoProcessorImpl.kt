@@ -211,7 +211,7 @@ class CryptoProcessorImpl @Activate constructor(
             } else {
                 event.config.factory.createDefaultCryptoConfig(
                     cryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-                    softKey = KeyCredentials("soft-passphrase", "soft-salt")
+                    masterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
                 )
             }.root().render()
             logger.debug("Crypto Processor config\n: {}", configValue)

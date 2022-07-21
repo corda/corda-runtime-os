@@ -1,23 +1,26 @@
 package net.corda.crypto.service.impl.signing
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
-import net.corda.crypto.core.Encryptor
-import net.corda.crypto.impl.config.CryptoSigningServiceConfig
-import net.corda.crypto.impl.config.rootEncryptor
-import net.corda.crypto.impl.config.signingService
+import net.corda.crypto.impl.config.CryptoWorkerSetConfig
 import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.impl.config.workerSet
+import net.corda.crypto.impl.config.workerSetId
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.HSMService
-import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -29,7 +32,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 /**
  * A crypto worker instance will ever support only one HSM implementation due the HSM client libraries limitations, such
@@ -66,94 +68,95 @@ class CryptoServiceFactoryImpl @Activate constructor(
 ), CryptoServiceFactory {
     companion object {
         private val logger = contextLogger()
+
+        private val jsonMapper = JsonMapper
+            .builder()
+            .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
+            .build()
+        private val objectMapper: ObjectMapper = jsonMapper
+            .registerModule(JavaTimeModule())
+            .registerModule(KotlinModule.Builder().build())
+            .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
         event,
         hsmRegistrar,
-        cryptoServiceProvider
+        cryptoServiceProvider as CryptoServiceProvider<Any>
     )
 
-    override fun getServiceRef(tenantId: String, category: String): CryptoServiceRef =
-        impl.getInstance(tenantId, category)
+    override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
+        impl.findInstance(tenantId, category)
 
-    override fun getInstance(configId: String): CryptoService =
-        impl.getInstance(configId)
+    override fun getInstance(workerSetId: String): CryptoService =
+        impl.getInstance(workerSetId)
 
     class Impl(
         event: ConfigChangedEvent,
         private val hsmRegistrar: HSMService,
-        private val cryptoServiceProvider: CryptoServiceProvider<*>
+        private val cryptoServiceProvider: CryptoServiceProvider<Any>
     ) : DownstreamAlwaysUpAbstractImpl() {
 
-        private val cryptoServiceCreateLock = Any()
+        private val workerSetId: String
 
-        @Volatile
-        private var cryptoService: CryptoService? = null
-
-        private val encryptor: Encryptor
-
-        private val cacheConfig: CryptoSigningServiceConfig.Cache
+        private val workerSetConfig: CryptoWorkerSetConfig
 
         init {
             val cryptoConfig = event.config.toCryptoConfig()
-            encryptor = cryptoConfig.rootEncryptor()
-            cacheConfig = cryptoConfig.signingService().cryptoRefsCache
-        }
-
-        private val cryptoRefs: Cache<Pair<String, String>, CryptoServiceRef> = Caffeine.newBuilder()
-            .expireAfterAccess(cacheConfig.expireAfterAccessMins, TimeUnit.MINUTES)
-            .maximumSize(cacheConfig.maximumSize)
-            .build()
-
-        fun getInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
-            return cryptoRefs.get(tenantId to category) {
-                val association = hsmRegistrar.findAssignedHSM(tenantId, category)
-                    ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
-                logger.info(
-                    "Creating {}: id={} configId={} (tenantId={}, category={})",
-                    CryptoServiceRef::class.simpleName,
-                    association.id,
-                    association.config.info.id,
-                    association.tenantId,
-                    association.category
+            workerSetId = cryptoConfig.workerSetId()
+            workerSetConfig = cryptoConfig.workerSet(workerSetId)
+            if(workerSetConfig.hsm.name != cryptoServiceProvider.name) {
+                throw FatalActivationException(
+                    "Expected to handle ${workerSetConfig.hsm.name} but provided with ${cryptoServiceProvider.name}."
                 )
-                CryptoServiceRef(
-                    tenantId = association.tenantId,
-                    category = association.category,
-                    masterKeyAlias = association.masterKeyAlias,
-                    aliasSecret = association.aliasSecret,
-                    associationId = association.id,
-                    instance = getCryptoServiceInstance(association.config.info, association.config.serviceConfig)
-                )            }
+            }
         }
 
-        fun getInstance(configId: String): CryptoService {
-            logger.debug { "Getting the crypto service for configId=$configId)" }
-            val config = hsmRegistrar.findHSMConfig(configId)
-                ?: throw IllegalStateException("The config=$configId is not found.")
-            return getCryptoServiceInstance(config.info, config.serviceConfig)
+        private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+            val retry = workerSetConfig.retry
+            val hsm = workerSetConfig.hsm
+            val cryptoService = cryptoServiceProvider.getInstance(
+                objectMapper.convertValue(hsm.cfg.root().unwrapped(), cryptoServiceProvider.configType)
+            )
+            CryptoServiceDecorator.create(
+                cryptoService,
+                retry.maxAttempts,
+                Duration.ofMillis(retry.attemptTimeoutMills)
+            )
         }
 
-        private fun getCryptoServiceInstance(info: HSMInfo, serviceConfig: ByteArray): CryptoService {
-            if (cryptoServiceProvider.name != info.serviceName) {
-                throw IllegalStateException("The worker is not configured to handle ${info.serviceName}")
+        fun findInstance(tenantId: String, category: String): CryptoServiceRef {
+            logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
+            val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+                ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
+            if(association.workerSetId != workerSetId) {
+                throw IllegalStateException(
+                    "This workerSet=$workerSetId is not configured to handle tenant=$tenantId " +
+                            "with category=$category and association=$association"
+                )
             }
-            @Suppress("UNCHECKED_CAST")
-            if (cryptoService == null) {
-                synchronized(cryptoServiceCreateLock) {
-                    if (cryptoService == null) {
-                        cryptoService = CryptoServiceDecorator.create(
-                            cryptoServiceProvider as CryptoServiceProvider<Any>,
-                            encryptor.decrypt(serviceConfig),
-                            info.maxAttempts,
-                            Duration.ofMillis(info.attemptTimeoutMills)
-                        )
-                    }
-                }
+            logger.info("Creating {}: association={}", CryptoServiceRef::class.simpleName, association)
+            return CryptoServiceRef(
+                tenantId = association.tenantId,
+                category = association.category,
+                masterKeyAlias = association.masterKeyAlias,
+                aliasSecret = association.aliasSecret,
+                workerSetId = association.workerSetId,
+                instance = cryptoService
+            )
+        }
+
+        fun getInstance(workerSetId: String): CryptoService {
+            logger.debug { "Getting the crypto service for configId=$workerSetId)" }
+            if(workerSetId != this.workerSetId) {
+                throw IllegalArgumentException(
+                    "The worker is not configured to handle $workerSetId, it handles ${this.workerSetId}."
+                )
             }
-            return cryptoService!!
+            return cryptoService
         }
     }
 }

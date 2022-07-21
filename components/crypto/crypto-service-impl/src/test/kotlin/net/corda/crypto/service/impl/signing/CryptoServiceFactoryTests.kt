@@ -91,7 +91,7 @@ class CryptoServiceFactoryTests {
     fun `Should start component and use active implementation only after the component is up`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
@@ -99,7 +99,7 @@ class CryptoServiceFactoryTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
         )
     }
 
@@ -107,16 +107,16 @@ class CryptoServiceFactoryTests {
     fun `getInstance(tenant,category) should return same instance when params are resolved to same HSM config id`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val i1 = component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
-        val i2 = component.getServiceRef(tenantId2, CryptoConsts.Categories.LEDGER)
-        val i3 = component.getServiceRef(tenantId3, CryptoConsts.Categories.LEDGER)
+        val i1 = component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
+        val i2 = component.findInstance(tenantId2, CryptoConsts.Categories.LEDGER)
+        val i3 = component.findInstance(tenantId3, CryptoConsts.Categories.LEDGER)
         assertNotNull(i1)
         assertNotNull(i2)
         assertNotNull(i3)
@@ -136,19 +136,19 @@ class CryptoServiceFactoryTests {
         assertFalse(component.isRunning)
         val associationId = UUID.randomUUID().toString()
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         assertThrows<IllegalArgumentException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.TLS, associationId)
+            component.findInstance(tenantId, CryptoConsts.Categories.TLS, associationId)
         }
         assertThrows<IllegalArgumentException> {
-            component.getServiceRef(tenantId2, CryptoConsts.Categories.LEDGER, associationId)
+            component.findInstance(tenantId2, CryptoConsts.Categories.LEDGER, associationId)
         }
     }
 
@@ -158,15 +158,15 @@ class CryptoServiceFactoryTests {
         assertFalse(component.isRunning)
         val associationId = UUID.randomUUID().toString()
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val i1 = component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, associationId)
-        val i2 = component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        val i1 = component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        val i2 = component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
         assertNotNull(i1)
         assertNotNull(i2)
         assertEquals(tenantId, i1.tenantId)
@@ -181,15 +181,15 @@ class CryptoServiceFactoryTests {
     fun `getInstance(tenant,category) should return different instance when params are not resolved to same HSM config id`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val i1 = component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
-        val i2 = component.getServiceRef(tenantId4, CryptoConsts.Categories.JWT_KEY)
+        val i1 = component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
+        val i2 = component.findInstance(tenantId4, CryptoConsts.Categories.JWT_KEY)
         assertNotNull(i1)
         assertNotNull(i2)
         assertEquals(tenantId, i1.tenantId)
@@ -203,7 +203,7 @@ class CryptoServiceFactoryTests {
     fun `getInstance(configId) should return different instances for different HSM config id`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER)
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
@@ -222,15 +222,15 @@ class CryptoServiceFactoryTests {
     fun `getInstance(tenant,category,associationId) should return different instance when params are not resolved to same HSM config id`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
+            component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val i1 = component.getServiceRef(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
-        val i2 = component.getServiceRef(tenantId4, CryptoConsts.Categories.JWT_KEY, UUID.randomUUID().toString())
+        val i1 = component.findInstance(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
+        val i2 = component.findInstance(tenantId4, CryptoConsts.Categories.JWT_KEY, UUID.randomUUID().toString())
         assertNotNull(i1)
         assertNotNull(i2)
         assertEquals(tenantId, i1.tenantId)

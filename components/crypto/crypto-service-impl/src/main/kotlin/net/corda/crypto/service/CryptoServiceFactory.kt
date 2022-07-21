@@ -8,14 +8,14 @@ import net.corda.v5.cipher.suite.CryptoService
  */
 interface CryptoServiceFactory : Lifecycle {
     /**
-     * Returns [CryptoServiceRef] containing instance of [CryptoService]
-     * for specified tenant and category. Once created the information and instance are cached.
-     */
-    fun getServiceRef(tenantId: String, category: String): CryptoServiceRef
-
-    /**
-     * Returns instance of [CryptoService] for specified HSM configuration.
+     * Returns [CryptoServiceRef] containing [CryptoService] for a given tenant and category.
      * Once created the information and instance are cached.
      */
-    fun getInstance(configId: String): CryptoService
+    fun findInstance(tenantId: String, category: String): CryptoServiceRef
+
+    /**
+     * Returns instance of [CryptoService] for specified worker set.
+     * Once created the information and instance are cached.
+     */
+    fun getInstance(workerSetId: String): CryptoService
 }

@@ -5,8 +5,8 @@ import net.corda.libs.configuration.SmartConfig
 /**
  * The signing service configuration.
  */
-class CryptoSigningServiceConfig(internal val config: SmartConfig) : SmartConfig by config {
-    class Cache(internal val config: SmartConfig) : SmartConfig by config {
+class CryptoSigningServiceConfig(private val config: SmartConfig) : SmartConfig by config {
+    class CacheConfig(private val config: SmartConfig) : SmartConfig by config {
         val expireAfterAccessMins: Long
             get() = try {
                 config.getLong(this::expireAfterAccessMins.name)
@@ -22,16 +22,9 @@ class CryptoSigningServiceConfig(internal val config: SmartConfig) : SmartConfig
             }
     }
 
-    val keyCache: Cache
+    val keyCache: CacheConfig
         get() = try {
-            Cache(config.getConfig(this::keyCache.name))
-        } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::keyCache.name}", e)
-        }
-
-    val cryptoRefsCache: Cache
-        get() = try {
-            Cache(config.getConfig(this::keyCache.name))
+            CacheConfig(config.getConfig(this::keyCache.name))
         } catch (e: Throwable) {
             throw IllegalStateException("Failed to get ${this::keyCache.name}", e)
         }

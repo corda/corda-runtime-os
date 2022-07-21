@@ -349,7 +349,7 @@ class CryptoConfigUtilsTests {
             )
         ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
         val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
@@ -397,7 +397,7 @@ class CryptoConfigUtilsTests {
             )
         ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
         val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
@@ -443,7 +443,7 @@ class CryptoConfigUtilsTests {
             )
         ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
         val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
@@ -489,7 +489,7 @@ class CryptoConfigUtilsTests {
             )
         ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
         val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
@@ -547,7 +547,7 @@ class CryptoConfigUtilsTests {
             )
         ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
         val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()

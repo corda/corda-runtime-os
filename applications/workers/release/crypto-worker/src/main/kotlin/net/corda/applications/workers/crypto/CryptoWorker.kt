@@ -70,7 +70,7 @@ fun buildBoostrapConfig(params: CryptoWorkerParams, configurationValidatorFactor
         params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf(databaseConfig, cryptoConfig)
     ).addDefaultBootCryptoConfig(
         fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-        fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
     )
 }
 

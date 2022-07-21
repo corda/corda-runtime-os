@@ -20,7 +20,11 @@ const val WRAPPING_HSM_NAME = "HSM"
  *      "wrappingKeyMap": {
  *          "name": "TRANSIENT|CACHING",
  *          "salt": "<plain-text-value>",
- *          "passphrase": "<plain-text-value>",
+ *          "passphrase": {
+ *              "configSecret": {
+ *                  "encryptedSecret": "<encrypted-value>"
+ *              }
+ *          },
  *          "cache": {
  *              "expireAfterAccessMins": 60,
  *              "maximumSize": 100

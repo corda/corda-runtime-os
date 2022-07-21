@@ -81,7 +81,7 @@ class CombinedWorker @Activate constructor(
             listOf(databaseConfig, cryptoConfig)
         ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
         cryptoProcessor.start(config)

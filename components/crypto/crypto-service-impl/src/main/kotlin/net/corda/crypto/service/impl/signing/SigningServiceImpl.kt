@@ -9,8 +9,15 @@ import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.SharedSecretAliasSpec
+import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
+import net.corda.v5.cipher.suite.SigningAliasSpec
+import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -29,9 +36,12 @@ class SigningServiceImpl(
         private val logger = contextLogger()
     }
 
+    data class OwnedKeyRecord(val publicKey: PublicKey, val data: SigningCachedKey)
+
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
-        return cryptoServiceFactory.getServiceRef(tenantId = tenantId, category = category).getSupportedSchemes()
+        val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
+        return ref.instance.supportedSchemes.map { it.key.codeName }
     }
 
     override fun lookup(
@@ -149,11 +159,27 @@ class SigningServiceImpl(
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getServiceRef(
-            tenantId = tenantId,
-            category = record.data.category
-        )
-        val signedBytes = cryptoService.sign(record, scheme, signatureSpec, data, context)
+        val cryptoService = cryptoServiceFactory.getInstance(record.data.workerSetId)
+        val spec = if (record.data.keyMaterial != null) {
+            SigningWrappedSpec(
+                publicKey = record.publicKey,
+                keyMaterialSpec = KeyMaterialSpec(
+                    keyMaterial = record.data.keyMaterial!!,
+                    masterKeyAlias = record.data.masterKeyAlias,
+                    encodingVersion = record.data.encodingVersion!!
+                ),
+                keyScheme = scheme,
+                signatureSpec = signatureSpec
+            )
+        } else {
+            SigningAliasSpec(
+                publicKey = record.publicKey,
+                hsmAlias = record.data.hsmAlias!!,
+                keyScheme = scheme,
+                signatureSpec = signatureSpec
+            )
+        }
+        val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignature.WithKey(
             by = record.publicKey,
             bytes = signedBytes,
@@ -175,11 +201,27 @@ class SigningServiceImpl(
             otherPublicKey.publicKeyId()
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getServiceRef(
-            tenantId = tenantId,
-            category = record.data.category
-        )
-        return cryptoService.deriveSharedSecret(record, scheme, otherPublicKey, context)
+        val cryptoService = cryptoServiceFactory.getInstance(record.data.workerSetId)
+        val spec = if (record.data.keyMaterial != null) {
+            SharedSecretWrappedSpec(
+                publicKey = record.publicKey,
+                keyMaterialSpec = KeyMaterialSpec(
+                    keyMaterial = record.data.keyMaterial!!,
+                    masterKeyAlias = record.data.masterKeyAlias,
+                    encodingVersion = record.data.encodingVersion!!
+                ),
+                keyScheme = scheme,
+                otherPublicKey = otherPublicKey
+            )
+        } else {
+            SharedSecretAliasSpec(
+                publicKey = record.publicKey,
+                hsmAlias = record.data.hsmAlias!!,
+                keyScheme = scheme,
+                otherPublicKey = otherPublicKey
+            )
+        }
+        return cryptoService.deriveSharedSecret(spec, context + mapOf(CRYPTO_TENANT_ID to tenantId))
     }
 
     @Suppress("LongParameterList")
@@ -192,12 +234,23 @@ class SigningServiceImpl(
         context: Map<String, String>
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-        val cryptoService = cryptoServiceFactory.getServiceRef(tenantId = tenantId, category = category)
+        val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
         if (alias != null && store.find(tenantId, alias) != null) {
             throw IllegalStateException("The key with alias $alias already exist for tenant $tenantId")
         }
-        val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
-        store.save(tenantId, cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
+        val generatedKey = ref.instance.generateKeyPair(
+            KeyGenerationSpec(
+                keyScheme = scheme,
+                alias = alias,
+                masterKeyAlias = ref.masterKeyAlias,
+                secret = ref.aliasSecret
+            ),
+            context + mapOf(
+                CRYPTO_TENANT_ID to tenantId,
+                CRYPTO_CATEGORY to category
+            )
+        )
+        store.save(tenantId, ref.toSaveKeyContext(generatedKey, alias, scheme, externalId))
         return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
     }
 

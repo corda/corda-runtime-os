@@ -10,7 +10,7 @@ import net.corda.libs.configuration.SmartConfig
  *      "connectionNumberLimit": 3
  *  }
  */
-class CryptoConnectionsFactoryConfig(internal val config: SmartConfig) : SmartConfig by config {
+class CryptoConnectionsFactoryConfig(private val config: SmartConfig) : SmartConfig by config {
     val connectionsExpireAfterAccessMins: Long
         get() = try {
             config.getLong(this::connectionsExpireAfterAccessMins.name)

@@ -11,5 +11,5 @@ class SigningWrappedKeySaveContext(
     override val alias: String?,
     override val category: String,
     override val keyScheme: KeyScheme,
-    override val associationId: String
+    override val workerSetId: String
 ) : SigningKeySaveContext
