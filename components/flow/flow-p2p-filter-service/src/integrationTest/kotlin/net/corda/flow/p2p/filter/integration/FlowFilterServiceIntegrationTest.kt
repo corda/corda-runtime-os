@@ -14,7 +14,6 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -67,9 +66,6 @@ class FlowFilterServiceIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var flowSessionFilterService: FlowP2PFilterService
-
-    @InjectService(timeout = 4000)
-    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     private val bootConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
