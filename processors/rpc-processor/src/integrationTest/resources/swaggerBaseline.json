@@ -75,7 +75,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -189,7 +189,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/GenerateCsrRequest"
+                "$ref" : "#/components/schemas/GenerateCsrWrapperRequest"
               }
             }
           },
@@ -228,7 +228,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/UpdateclusterconfigurationRequest"
+                "$ref" : "#/components/schemas/UpdateConfigParameters"
               }
             }
           },
@@ -236,7 +236,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The updated cluster configuration for the specified section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -262,7 +262,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -302,7 +302,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The Configuration for the given section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -328,7 +328,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "List details of the all CPIs uploaded to the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -372,7 +372,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The request Id calculated for a CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -398,7 +398,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -464,7 +464,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -504,7 +504,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The status of the flow.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -542,7 +542,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/StartFlowRequest"
+                "$ref" : "#/components/schemas/StartFlowParameters"
               }
             }
           },
@@ -550,7 +550,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The initial status of the flow, if the flow already exists the status of the existing flow will be returned.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -598,7 +598,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The status of the flow.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -624,7 +624,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -664,7 +664,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The class names of all flows that can be run",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -690,7 +690,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -796,7 +796,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -970,7 +970,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1125,7 +1125,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "A map from a tenant key ID to its metadata.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1168,7 +1168,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/GenerateKeyPairRequest"
+                "$ref" : "#/components/schemas/GenerateKeyPairWrapperRequest"
               }
             }
           },
@@ -1176,7 +1176,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The ID of the newly generated key pair.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1226,7 +1226,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The list of schemes codes which are supported by the associated HSM integration.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1280,7 +1280,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The public key in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1328,7 +1328,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The request Id calculated for a CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1354,7 +1354,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1451,7 +1451,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1583,7 +1583,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1661,7 +1661,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/StartRegistrationRequest"
+                "$ref" : "#/components/schemas/MemberRegistrationRequest"
               }
             }
           },
@@ -1695,7 +1695,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1738,7 +1738,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/SetupHostedIdentitiesRequest"
+                "$ref" : "#/components/schemas/SetupHostedIdentitiesWrapperRequest"
               }
             }
           },
@@ -1768,7 +1768,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreatePermissionRequest"
+                "$ref" : "#/components/schemas/CreatePermissionType"
               }
             }
           },
@@ -1802,7 +1802,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1900,7 +1900,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateRoleRequest"
+                "$ref" : "#/components/schemas/CreateRoleType"
               }
             }
           },
@@ -1937,7 +1937,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddPermissionRequest"
+                "$ref" : "#/components/schemas/AddPermissionWrapperRequest"
               }
             }
           },
@@ -1971,7 +1971,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2003,7 +2003,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RemovePermissionRequest"
+                "$ref" : "#/components/schemas/RemovePermissionWrapperRequest"
               }
             }
           },
@@ -2074,7 +2074,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2169,7 +2169,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateUserRequest"
+                "$ref" : "#/components/schemas/CreateUserType"
               }
             }
           },
@@ -2206,7 +2206,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddRoleRequest"
+                "$ref" : "#/components/schemas/AddRoleWrapperRequest"
               }
             }
           },
@@ -2240,7 +2240,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2309,7 +2309,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RemoveRoleRequest"
+                "$ref" : "#/components/schemas/RemoveRoleWrapperRequest"
               }
             }
           },
@@ -2343,7 +2343,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "List details of the all virtual nodes in the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2370,7 +2370,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreatevirtualnodeRequest"
+                "$ref" : "#/components/schemas/CreateVirtualNodeParameters"
               }
             }
           },
@@ -2378,7 +2378,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The details of the created virtual node.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2404,7 +2404,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2428,7 +2428,7 @@
   },
   "components" : {
     "schemas" : {
-      "AddPermissionRequest" : {
+      "AddPermissionWrapperRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
           "permissionId" : {
@@ -2444,10 +2444,10 @@
             "example" : "string"
           }
         },
-        "description" : "AddPermissionRequest",
+        "description" : "AddPermissionWrapperRequest",
         "nullable" : false
       },
-      "AddRoleRequest" : {
+      "AddRoleWrapperRequest" : {
         "required" : [ "loginName", "roleId" ],
         "properties" : {
           "loginName" : {
@@ -2463,7 +2463,7 @@
             "example" : "string"
           }
         },
-        "description" : "AddRoleRequest",
+        "description" : "AddRoleWrapperRequest",
         "nullable" : false
       },
       "CpiIdentifier" : {
@@ -2628,16 +2628,6 @@
           }
         }
       },
-      "CreatePermissionRequest" : {
-        "required" : [ "createPermissionType" ],
-        "properties" : {
-          "createPermissionType" : {
-            "$ref" : "#/components/schemas/CreatePermissionType"
-          }
-        },
-        "description" : "CreatePermissionRequest",
-        "nullable" : false
-      },
       "CreatePermissionType" : {
         "required" : [ "permissionString", "permissionType" ],
         "type" : "object",
@@ -2665,16 +2655,6 @@
         },
         "description" : "Details of the permission to be created"
       },
-      "CreateRoleRequest" : {
-        "required" : [ "createRoleType" ],
-        "properties" : {
-          "createRoleType" : {
-            "$ref" : "#/components/schemas/CreateRoleType"
-          }
-        },
-        "description" : "CreateRoleRequest",
-        "nullable" : false
-      },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
         "type" : "object",
@@ -2691,16 +2671,6 @@
           }
         },
         "description" : "Details of the role to be created"
-      },
-      "CreateUserRequest" : {
-        "required" : [ "createUserType" ],
-        "properties" : {
-          "createUserType" : {
-            "$ref" : "#/components/schemas/CreateUserType"
-          }
-        },
-        "description" : "CreateUserRequest",
-        "nullable" : false
       },
       "CreateUserType" : {
         "required" : [ "enabled", "fullName", "loginName" ],
@@ -2826,16 +2796,6 @@
           }
         }
       },
-      "CreatevirtualnodeRequest" : {
-        "required" : [ "request" ],
-        "properties" : {
-          "request" : {
-            "$ref" : "#/components/schemas/CreateVirtualNodeParameters"
-          }
-        },
-        "description" : "CreatevirtualnodeRequest",
-        "nullable" : false
-      },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
         "type" : "object",
@@ -2906,7 +2866,7 @@
           }
         }
       },
-      "GenerateCsrRequest" : {
+      "GenerateCsrWrapperRequest" : {
         "required" : [ "certificateRole", "x500name" ],
         "properties" : {
           "certificateRole" : {
@@ -2941,10 +2901,10 @@
             "example" : "string"
           }
         },
-        "description" : "GenerateCsrRequest",
+        "description" : "GenerateCsrWrapperRequest",
         "nullable" : false
       },
-      "GenerateKeyPairRequest" : {
+      "GenerateKeyPairWrapperRequest" : {
         "required" : [ "alias", "hsmCategory", "scheme" ],
         "properties" : {
           "alias" : {
@@ -2966,7 +2926,7 @@
             "example" : "string"
           }
         },
-        "description" : "GenerateKeyPairRequest",
+        "description" : "GenerateKeyPairWrapperRequest",
         "nullable" : false
       },
       "GetCPIsResponse" : {
@@ -3332,7 +3292,7 @@
           }
         }
       },
-      "RemovePermissionRequest" : {
+      "RemovePermissionWrapperRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
           "permissionId" : {
@@ -3348,10 +3308,10 @@
             "example" : "string"
           }
         },
-        "description" : "RemovePermissionRequest",
+        "description" : "RemovePermissionWrapperRequest",
         "nullable" : false
       },
-      "RemoveRoleRequest" : {
+      "RemoveRoleWrapperRequest" : {
         "required" : [ "loginName", "roleId" ],
         "properties" : {
           "loginName" : {
@@ -3367,7 +3327,7 @@
             "example" : "string"
           }
         },
-        "description" : "RemoveRoleRequest",
+        "description" : "RemoveRoleWrapperRequest",
         "nullable" : false
       },
       "RoleAssociationResponseType" : {
@@ -3495,7 +3455,7 @@
           }
         }
       },
-      "SetupHostedIdentitiesRequest" : {
+      "SetupHostedIdentitiesWrapperRequest" : {
         "required" : [ "certificateChainAlias" ],
         "properties" : {
           "certificateChainAlias" : {
@@ -3517,7 +3477,7 @@
             "example" : "string"
           }
         },
-        "description" : "SetupHostedIdentitiesRequest",
+        "description" : "SetupHostedIdentitiesWrapperRequest",
         "nullable" : false
       },
       "StartFlowParameters" : {
@@ -3541,26 +3501,6 @@
           }
         },
         "description" : "Information required to start a flow for this holdingId"
-      },
-      "StartFlowRequest" : {
-        "required" : [ "startFlow" ],
-        "properties" : {
-          "startFlow" : {
-            "$ref" : "#/components/schemas/StartFlowParameters"
-          }
-        },
-        "description" : "StartFlowRequest",
-        "nullable" : false
-      },
-      "StartRegistrationRequest" : {
-        "required" : [ "memberRegistrationRequest" ],
-        "properties" : {
-          "memberRegistrationRequest" : {
-            "$ref" : "#/components/schemas/MemberRegistrationRequest"
-          }
-        },
-        "description" : "StartRegistrationRequest",
-        "nullable" : false
       },
       "StartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
@@ -3643,16 +3583,6 @@
             "example" : 0
           }
         }
-      },
-      "UpdateclusterconfigurationRequest" : {
-        "required" : [ "request" ],
-        "properties" : {
-          "request" : {
-            "$ref" : "#/components/schemas/UpdateConfigParameters"
-          }
-        },
-        "description" : "UpdateclusterconfigurationRequest",
-        "nullable" : false
       },
       "UploadResponse" : {
         "required" : [ "id" ],

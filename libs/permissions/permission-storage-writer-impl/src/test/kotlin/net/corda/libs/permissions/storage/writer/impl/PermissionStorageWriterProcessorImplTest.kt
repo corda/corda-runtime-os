@@ -59,7 +59,8 @@ class PermissionStorageWriterProcessorImplTest {
     private val permissionWriter = mock<PermissionWriter>()
     private val permissionStorageReader = mock<PermissionStorageReader>()
 
-    private val processor = PermissionStorageWriterProcessorImpl(permissionStorageReader, userWriter, roleWriter, permissionWriter)
+    private val processor =
+        PermissionStorageWriterProcessorImpl({ permissionStorageReader }, userWriter, roleWriter, permissionWriter)
 
     @Test
     fun `receiving invalid request completes exceptionally`() {

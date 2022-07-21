@@ -617,6 +617,18 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     }
 
     @Test
+    fun `file upload with file missing`() {
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(path = "fileupload/upload", formParameters = mapOf("foo" to "bar")),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, createEntityResponse.responseStatus)
+    }
+
+    @Test
     fun `POST call using name in annotation`() {
 
         val fullUrl = "health/stringmethodwithnameinannotation"
