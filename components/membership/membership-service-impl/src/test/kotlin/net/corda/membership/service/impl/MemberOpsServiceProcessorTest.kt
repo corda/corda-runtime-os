@@ -53,7 +53,7 @@ class MemberOpsServiceProcessorTest {
                 ))
             }
             virtualNodeInfoReadService = mock {
-                on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+                on { getByHoldingIdentityShortHash(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
                     holdingIdentity,
                     CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
                     null, UUID.randomUUID(), null, UUID.randomUUID(),

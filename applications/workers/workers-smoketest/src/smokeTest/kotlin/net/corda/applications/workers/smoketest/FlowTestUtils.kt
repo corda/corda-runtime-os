@@ -120,7 +120,7 @@ fun createVirtualNodeFor(x500: String): String {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
         val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-        val hash = truncateLongHash(json["fileChecksum"].textValue())
+        val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
@@ -128,7 +128,7 @@ fun createVirtualNodeFor(x500: String): String {
             failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
-        val holdingId = vNodeJson["holdingIdHash"].textValue()
+        val holdingId = vNodeJson["holdingIdentityShortHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
     }

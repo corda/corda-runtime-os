@@ -103,7 +103,7 @@ internal class VirtualNodeWriterProcessor(
             }
             checkUniqueId(holdingId)
 
-            val vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.id, create)
+            val vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
 
             createSchemasAndUsers(holdingId, vNodeDbs.values)
 
@@ -168,7 +168,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun checkUniqueId(holdingId: HoldingIdentity) {
-        virtualNodeEntityRepository.getHoldingIdentity(holdingId.id)?.let { storedHoldingId ->
+        virtualNodeEntityRepository.getHoldingIdentity(holdingId.shortHash)?.let { storedHoldingId ->
             if (storedHoldingId != holdingId) {
                 throw VirtualNodeWriteServiceException(
                     "New holding identity $holdingId has a short hash that collided with existing holding identity $storedHoldingId."
@@ -324,7 +324,7 @@ internal class VirtualNodeWriterProcessor(
         val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name.toString(), mgmInfo.groupId)
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
-            "${holdingIdentity.id}-${mgmHoldingIdentity.id}",
+            "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}",
             PersistentMemberInfo(
                 holdingIdentity.toAvro(),
                 mgmInfo.memberProvidedContext.toAvro(),
@@ -351,7 +351,7 @@ internal class VirtualNodeWriterProcessor(
             instant,
             VirtualNodeCreateResponse(
                 holdingIdentity.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
-                holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.id,
+                holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.shortHash,
                 dbConnections.vaultDdlConnectionId?.toString(),
                 dbConnections.vaultDmlConnectionId.toString(),
                 dbConnections.cryptoDdlConnectionId?.toString(),

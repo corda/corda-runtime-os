@@ -60,7 +60,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         virtualNodes.forEach { vNode ->
             val hid = vNode.second.holdingIdentity
-            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
+            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.shortHash}'")
         }
 
         cpiList.flatMap { it.cpks }.map { cpk ->

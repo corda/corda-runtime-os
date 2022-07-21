@@ -104,7 +104,7 @@ class MemberOpsServiceProcessor(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService
     ) : RpcHandler<RegistrationRpcRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
-            val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
             val result = try {
                 registrationProxy.register(holdingIdentity, request.context.toMap())

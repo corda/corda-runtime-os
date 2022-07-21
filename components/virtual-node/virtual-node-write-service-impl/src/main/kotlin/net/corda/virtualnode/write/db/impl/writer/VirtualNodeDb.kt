@@ -23,7 +23,7 @@ import net.corda.v5.base.util.contextLogger
  */
 @Suppress("LongParameterList")
 class VirtualNodeDb(
-    private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityId: String,
+    private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityShortHash: String,
     val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
     private val dbConnectionManager: DbConnectionManager, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
@@ -45,7 +45,7 @@ class VirtualNodeDb(
                         throw DBConfigurationException("DB user not known for connection ${connection.description}")
                     val password = connection.getPassword() ?:
                         throw DBConfigurationException("DB password not known for connection ${connection.description}")
-                    val dbSchema = dbType.getSchemaName(holdingIdentityId)
+                    val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
                     // This covers scenario when previous virtual node on-boarding request failed after user was created
                     // Since connections are persisted at later point, user's password is lost, so user is re-created
                     if (dbAdmin.userExists(user)) {
@@ -77,7 +77,7 @@ class VirtualNodeDb(
                 ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
             }
             val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
-            val dbSchema = dbType.getSchemaName(holdingIdentityId)
+            val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
 
             dataSource.connection.use { connection ->
                 schemaMigrator.updateDb(connection, dbChange, dbSchema)

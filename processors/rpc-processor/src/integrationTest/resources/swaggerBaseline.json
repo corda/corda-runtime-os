@@ -482,19 +482,19 @@
         }
       }
     },
-    "/flow/{holdershortid}" : {
+    "/flow/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
-        "operationId" : "get_flow__holdershortid_",
+        "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
@@ -521,15 +521,15 @@
       "post" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Instructs Corda to start a new instance of the specified flow",
-        "operationId" : "post_flow__holdershortid_",
+        "operationId" : "post_flow__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
@@ -565,19 +565,19 @@
         }
       }
     },
-    "/flow/{holdershortid}/{clientrequestid}" : {
+    "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
       "get" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Gets the current status for a given flow.",
-        "operationId" : "get_flow__holdershortid___clientrequestid_",
+        "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
@@ -642,19 +642,19 @@
         }
       }
     },
-    "/flowclass/{holdershortid}" : {
+    "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "FlowClassRPCOps" ],
         "description" : "Get all the flows that are startable for this holding identity.",
-        "operationId" : "get_flowclass__holdershortid_",
+        "operationId" : "get_flowclass__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
@@ -1401,13 +1401,13 @@
         }
       }
     },
-    "/members/{holdingidentityid}" : {
+    "/members/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "MemberLookupRpcOps" ],
         "description" : "Lists the active members in the membership group.",
-        "operationId" : "get_members__holdingidentityid_",
+        "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,
@@ -1533,13 +1533,13 @@
         }
       }
     },
-    "/membership/{holdingidentityid}" : {
+    "/membership/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "MemberRegistrationRpcOps" ],
         "description" : "Checks the status of the registration request.",
-        "operationId" : "get_membership__holdingidentityid_",
+        "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,
@@ -1572,9 +1572,9 @@
       "post" : {
         "tags" : [ "MemberRegistrationRpcOps" ],
         "description" : "Start registration process for a virtual node.",
-        "operationId" : "post_membership__holdingidentityid_",
+        "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,
@@ -1645,13 +1645,13 @@
         }
       }
     },
-    "/network/setup/{holdingidentityid}" : {
+    "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
         "tags" : [ "NetworkRpcOps" ],
         "description" : "Set up the holding identity on the network.",
-        "operationId" : "put_network_setup__holdingidentityid_",
+        "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to set up.",
           "required" : true,
@@ -2457,7 +2457,7 @@
         }
       },
       "CpiMetadata" : {
-        "required" : [ "cpks", "fileChecksum", "id", "timestamp" ],
+        "required" : [ "cpks", "cpiFileChecksum", "id", "timestamp" ],
         "type" : "object",
         "properties" : {
           "cpks" : {
@@ -2468,7 +2468,7 @@
               "$ref" : "#/components/schemas/CpkMetadata"
             }
           },
-          "fileChecksum" : {
+          "cpiFileChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2677,7 +2677,7 @@
         "description" : "Details of the virtual node to be created"
       },
       "CreateVirtualNodeResponse" : {
-        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
+        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
         "type" : "object",
         "properties" : {
           "cpiFileChecksum" : {
@@ -2698,7 +2698,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "holdingIdHash" : {
+          "holdingIdentityShortHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2742,7 +2742,7 @@
         }
       },
       "FlowStatusResponse" : {
-        "required" : [ "flowStatus", "holdingShortId", "timestamp" ],
+        "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
         "type" : "object",
         "properties" : {
           "clientRequestId" : {
@@ -2768,7 +2768,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "holdingShortId" : {
+          "holdingIdentityShortHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2917,7 +2917,7 @@
         }
       },
       "HoldingIdentity" : {
-        "required" : [ "groupId", "hash", "id", "x500Name" ],
+        "required" : [ "groupId", "fullHash", "shortHash", "x500Name" ],
         "type" : "object",
         "properties" : {
           "groupId" : {
@@ -2925,12 +2925,12 @@
             "nullable" : false,
             "example" : "string"
           },
-          "hash" : {
+          "fullHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           },
-          "id" : {
+          "shortHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3401,7 +3401,7 @@
           },
           "tlsTenantId" : {
             "type" : "string",
-            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
+            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityShortHash, default to the holdingIdentityShortHash).",
             "nullable" : true,
             "example" : "string"
           }
@@ -3447,10 +3447,10 @@
         }
       },
       "Status" : {
-        "required" : [ "checksum", "status" ],
+        "required" : [ "cpiFileChecksum", "status" ],
         "type" : "object",
         "properties" : {
-          "checksum" : {
+          "cpiFileChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"

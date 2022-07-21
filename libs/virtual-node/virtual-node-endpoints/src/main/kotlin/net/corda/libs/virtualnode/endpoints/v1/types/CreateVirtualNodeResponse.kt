@@ -9,7 +9,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  * @param cpiId The long identifier of the CPI the virtual node is being created for.
  * @param cpiFileChecksum The checksum of the CPI file.
  * @param mgmGroupId The identifier of the CPI's MGM.
- * @param holdingIdHash The holding identifier for the virtual node.
+ * @param holdingIdentityShortHash The holding identifier short hash for the virtual node.
  * @param vaultDdlConnectionId The ID of the connection for DDL operations in virtual node's vault database.
  * @param vaultDmlConnectionId The ID of the connection for DML operations in virtual node's vault database.
  * @param cryptoDdlConnectionId The ID of the connection for DDL operations in virtual node's crypto database.
@@ -20,7 +20,7 @@ data class CreateVirtualNodeResponse(
     val cpiId: CpiIdentifier,
     val cpiFileChecksum: String?,
     val mgmGroupId: String,
-    val holdingIdHash: String,
+    val holdingIdentityShortHash: String,
     val vaultDdlConnectionId: String? = null,
     val vaultDmlConnectionId: String,
     val cryptoDdlConnectionId: String? = null,

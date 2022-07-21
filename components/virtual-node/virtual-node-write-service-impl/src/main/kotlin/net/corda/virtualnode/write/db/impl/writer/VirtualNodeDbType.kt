@@ -24,29 +24,29 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
 
     /**
      * Returns DB schema name
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return schema name for given holding identity ID
      */
-    fun getSchemaName(holdingIdentityId: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityId".lowercase()
+    fun getSchemaName(holdingIdentityShortHash: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityShortHash".lowercase()
 
     /**
      * Returns DB user for given DB privilege
      * @param dbPrivilege DB privilege
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return DB user for given DB privilege
      */
-    fun getUserName(dbPrivilege: DbPrivilege, holdingIdentityId: String) =
+    fun getUserName(dbPrivilege: DbPrivilege, holdingIdentityShortHash: String) =
         when (dbPrivilege) {
-            DDL -> "vnode_${infix}_${holdingIdentityId}_ddl".lowercase()
-            DML -> "vnode_${infix}_${holdingIdentityId}_dml".lowercase()
+            DDL -> "vnode_${infix}_${holdingIdentityShortHash}_ddl".lowercase()
+            DML -> "vnode_${infix}_${holdingIdentityShortHash}_dml".lowercase()
         }
 
     /**
      * Returns DB connection name
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return DB connection name
      */
-    fun getConnectionName(holdingIdentityId: String) = "vnode_${infix}_$holdingIdentityId".lowercase()
+    fun getConnectionName(holdingIdentityShortHash: String) = "vnode_${infix}_$holdingIdentityShortHash".lowercase()
 
     /**
      * Returns DB connection description for given privilege

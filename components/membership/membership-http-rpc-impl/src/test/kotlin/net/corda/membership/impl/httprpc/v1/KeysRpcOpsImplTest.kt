@@ -240,17 +240,17 @@ class KeysRpcOpsImplTest {
         @Test
         fun `generateKeyPem returns the keys PEMs`() {
             val keyId = "keyId"
-            val holdingIdentityId = "holdingIdentityId"
+            val holdingIdentityShortHash = "holdingIdentityShortHash"
             val publicKeyBytes = "123".toByteArray()
             val key = mock<CryptoSigningKey> {
                 on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
             }
             val decodedPublicKey = mock<PublicKey>()
-            whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(listOf(key))
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(decodedPublicKey)
             whenever(keyEncodingService.encodeAsString(decodedPublicKey)).doReturn("PEM")
 
-            val pem = keysOps.generateKeyPem(holdingIdentityId, keyId)
+            val pem = keysOps.generateKeyPem(holdingIdentityShortHash, keyId)
 
             assertThat(pem).isEqualTo("PEM")
         }
@@ -258,11 +258,11 @@ class KeysRpcOpsImplTest {
         @Test
         fun `generateKeyPem throws Exception when the key is unknwon`() {
             val keyId = "keyId"
-            val holdingIdentityId = "holdingIdentityId"
-            whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(emptyList())
+            val holdingIdentityShortHash = "holdingIdentityShortHash"
+            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
-                keysOps.generateKeyPem(holdingIdentityId, keyId)
+                keysOps.generateKeyPem(holdingIdentityShortHash, keyId)
             }
         }
 

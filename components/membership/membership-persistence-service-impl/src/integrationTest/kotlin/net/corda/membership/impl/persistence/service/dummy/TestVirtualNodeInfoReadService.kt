@@ -52,8 +52,8 @@ class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity) = vnodes[holdingIdentity]
 
-    override fun getById(id: String) = vnodes.entries.firstOrNull {
-        it.key.id == id
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String) = vnodes.entries.firstOrNull {
+        it.key.shortHash == holdingIdentityShortHash
     }?.value
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {

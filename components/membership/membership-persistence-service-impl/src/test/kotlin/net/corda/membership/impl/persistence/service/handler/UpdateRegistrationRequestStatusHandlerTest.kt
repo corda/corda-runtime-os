@@ -77,7 +77,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
 
     private val services = PersistenceHandlerServices(

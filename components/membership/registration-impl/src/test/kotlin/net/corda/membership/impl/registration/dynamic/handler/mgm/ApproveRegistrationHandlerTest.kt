@@ -168,7 +168,7 @@ class ApproveRegistrationHandlerTest {
         assertThat(memberRecords)
             .hasSize(1)
             .allSatisfy {
-                assertThat(it.key).isEqualTo("${owner.id}-${member.id}")
+                assertThat(it.key).isEqualTo("${owner.shortHash}-${member.shortHash}")
                 val value = it.value as? PersistentMemberInfo
                 assertThat(value?.viewOwningMember).isEqualTo(owner.toAvro())
                 assertThat(value?.memberContext?.items).contains(

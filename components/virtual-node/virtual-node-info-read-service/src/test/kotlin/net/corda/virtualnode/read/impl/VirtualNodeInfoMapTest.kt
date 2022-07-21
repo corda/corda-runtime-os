@@ -190,7 +190,7 @@ class VirtualNodeInfoMapTest {
             val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
             val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
             // Actually use the real short hash/id of the holding identity
-            val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), holdingIdentity.id)
+            val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), holdingIdentity.shortHash)
             keys.add(key)
             map.put(key, virtualNodeInfo.toAvro())
         }
@@ -209,8 +209,8 @@ class VirtualNodeInfoMapTest {
             assertThat(map.get(k.toAvro())).isNotNull
             assertThat(map.get(k.toAvro())).isEqualTo(v.toAvro())
 
-            assertThat(map.getById(k.id)).isNotNull
-            assertThat(map.getById(k.id))!!.isEqualTo(v.toAvro())
+            assertThat(map.getById(k.shortHash)).isNotNull
+            assertThat(map.getById(k.shortHash))!!.isEqualTo(v.toAvro())
         }
 
         // Remove them
@@ -231,7 +231,7 @@ class VirtualNodeInfoMapTest {
             assertThat(map.get(k.toAvro())).isNull()
             // even if we had clashing hashes, we should have removed them and the last one should
             // remove the list and return null
-            assertThat(map.getById(k.id)).isNull()
+            assertThat(map.getById(k.shortHash)).isNull()
         }
     }
 
@@ -246,7 +246,7 @@ class VirtualNodeInfoMapTest {
             val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
             val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
             // Actually use the real short hash/id of the holding identity
-            val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), holdingIdentity.id)
+            val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), holdingIdentity.shortHash)
             map.put(key, virtualNodeInfo.toAvro())
         }
 
@@ -256,14 +256,14 @@ class VirtualNodeInfoMapTest {
             assertThat(map.get(k.toAvro())).isNotNull
             assertThat(map.get(k.toAvro())).isEqualTo(v.toAvro())
 
-            assertThat(map.getById(k.id)).isNotNull
-            assertThat(map.getById(k.id))!!.isEqualTo(v.toAvro())
+            assertThat(map.getById(k.shortHash)).isNotNull
+            assertThat(map.getById(k.shortHash))!!.isEqualTo(v.toAvro())
         }
 
         allVirtualNodeInfos.forEach { (k, _) ->
             map.remove(
                 VirtualNodeInfoMap.Key(
-                    k.toAvro(), k.id
+                    k.toAvro(), k.shortHash
                 )
             )
         }
@@ -272,7 +272,7 @@ class VirtualNodeInfoMapTest {
         // remove the list and return null
         allVirtualNodeInfos.forEach { (k, _) ->
             assertThat(map.get(k.toAvro())).isNull()
-            assertThat(map.getById(k.id)).isNull()
+            assertThat(map.getById(k.shortHash)).isNull()
         }
     }
 }

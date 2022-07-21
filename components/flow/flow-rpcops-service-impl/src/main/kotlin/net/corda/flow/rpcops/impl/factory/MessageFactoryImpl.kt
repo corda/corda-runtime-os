@@ -43,7 +43,7 @@ class MessageFactoryImpl : MessageFactory {
     override fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse {
 
         return FlowStatusResponse(
-            flowStatus.key.identity.toCorda().id,
+            flowStatus.key.identity.toCorda().shortHash,
             flowStatus.key.id,
             flowStatus.flowId,
             flowStatus.flowStatus.toString(),

@@ -71,7 +71,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val registrationRequest = RegistrationRequestEntity(
         ourRegistrationId,
-        ourHoldingIdentity.id,
+        ourHoldingIdentity.shortHash,
         RegistrationStatus.NEW.name,
         clock.instant(),
         clock.instant(),
@@ -99,7 +99,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
 
     private lateinit var responseFuture: CompletableFuture<MembershipPersistenceResponse>
