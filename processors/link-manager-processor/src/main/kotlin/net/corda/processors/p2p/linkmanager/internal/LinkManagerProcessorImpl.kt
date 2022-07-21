@@ -33,7 +33,7 @@ import org.slf4j.Logger
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [LinkManagerProcessor::class])
-class LinkManagerProcessImpl @Activate constructor(
+class LinkManagerProcessorImpl @Activate constructor(
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
     @Reference(service = ConfigurationReadService::class)
@@ -63,7 +63,7 @@ class LinkManagerProcessImpl @Activate constructor(
     private var registration: RegistrationHandle? = null
     private var linkManager: LinkManager? = null
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessImpl>(::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessorImpl>(::eventHandler)
 
     override fun start(bootConfig: SmartConfig, useStubComponents: Boolean) {
         log.info("Link manager processor starting.")
