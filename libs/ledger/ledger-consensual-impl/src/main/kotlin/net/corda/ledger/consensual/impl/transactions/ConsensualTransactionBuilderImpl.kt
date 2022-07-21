@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.impl.transactions
 
 import net.corda.ledger.common.impl.transactions.PrivacySaltImpl
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -43,22 +44,27 @@ class ConsensualTransactionBuilderImpl(
     override fun build(
         merkleTreeFactory: MerkleTreeFactory,
         digestService: DigestService,
-        secureRandom: SecureRandom
+        secureRandom: SecureRandom,
+        serializer: SerializationService //TODO(Is this used correctly? Do we need this one or another maybe?)
     ): ConsensualWireTransaction {
-        // TODO(verify at least that everything is filled...)
+        // TODO(more verifications...)
+        require(metadata != null){"Null metadata is not allowed"}
+        require(timeStamp != null){"Null timeStamp is not allowed"}
+        require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
+
         val entropy = ByteArray(32) //TODO(get this const from somewhere)
         secureRandom.nextBytes(entropy)
         val privacySalt = PrivacySaltImpl(entropy)
         val requiredSigners = consensualStates.map{it.participants}.flatten()
-        ConsensualWireTransactionImpl(
+        return ConsensualWireTransactionImpl(
             merkleTreeFactory,
             digestService,
             privacySalt,
-            metadata, // TODO: serialize these ones somehow.
-            timeStamp,
-            requiredSigners,
-            consensualStates,
-            consensualStateTypes
+            serializer.serialize(metadata).bytes,
+            serializer.serialize(timeStamp).bytes,
+            requiredSigners.map{serializer.serialize(it).bytes},
+            consensualStates.map{serializer.serialize(it).bytes},
+            consensualStates.map{serializer.serialize(it::class.java.name).bytes}
         )
     }
 }
