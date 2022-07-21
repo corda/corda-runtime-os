@@ -9,6 +9,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
+import net.corda.v5.base.util.contextLogger
 import java.sql.DriverManager
 import java.time.Instant
 import java.util.UUID
@@ -41,6 +42,8 @@ class PostgresDbSetup: DbSetup {
             "net/corda/db/schema/cluster-certificates/db.changelog-master.xml" to null,
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
+
+        private val log = contextLogger()
     }
 
 
@@ -52,11 +55,11 @@ class PostgresDbSetup: DbSetup {
     }
 
     override fun run() {
+        log.info("Bootstrap Postgres DB.")
         Class.forName(DB_DRIVER)
 
-
-
         if (!dbInitialised()) {
+            log.info("Initialising DB.")
             initDb()
             runDbMigration()
             initConfiguration("corda-rbac", "rbac_user", "rbac_password", DB_URL)
@@ -74,6 +77,7 @@ class PostgresDbSetup: DbSetup {
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
                 .use {
                     if (it.next()) {
+                        log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
                         return it.getBoolean(1)
                     }
                 }
@@ -82,6 +86,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun initDb() {
+        log.info("Create user $DB_ADMIN in $DB_NAME in $dbSuperUserUrl.")
         DriverManager
             .getConnection(dbSuperUserUrl)
             .use { connection ->
@@ -98,6 +103,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun runDbMigration() {
+        log.info("Run DB migrations in $DB_ADMIN_URL.")
         DriverManager
             .getConnection(DB_ADMIN_URL)
             .use { connection ->
@@ -123,6 +129,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun createDbSchema(schema: String) {
+        log.info("Create SCHEMA $schema.")
         DriverManager
             .getConnection(DB_ADMIN_URL)
             .use { connection ->
@@ -131,6 +138,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun initConfiguration(connectionName: String, username: String, password :String, jdbcUrl:String) {
+        log.info("Initialise configuration for $connectionName ($jdbcUrl).")
         val secretsService = EncryptionSecretsServiceImpl(SECRETS_PASSWORD, SECRETS_SALT)
 
         val dbConnectionConfig = DbConnectionConfig(
@@ -151,6 +159,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun createUserConfig(user: String, password: String) {
+        log.info("Create user config for $user")
         DriverManager
             .getConnection(DB_ADMIN_URL)
             .use { connection ->
