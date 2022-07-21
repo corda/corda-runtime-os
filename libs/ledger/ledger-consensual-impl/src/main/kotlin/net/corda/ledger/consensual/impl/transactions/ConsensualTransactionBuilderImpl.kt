@@ -52,7 +52,7 @@ class ConsensualTransactionBuilderImpl(
         require(timeStamp != null){"Null timeStamp is not allowed"}
         require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
 
-        val entropy = ByteArray(32) //TODO(get this const from somewhere)
+        val entropy = ByteArray(32)
         secureRandom.nextBytes(entropy)
         val privacySalt = PrivacySaltImpl(entropy)
         val requiredSigners = consensualStates.map{it.participants}.flatten()
