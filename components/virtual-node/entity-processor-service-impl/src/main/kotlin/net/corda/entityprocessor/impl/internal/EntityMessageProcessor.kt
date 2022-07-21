@@ -12,10 +12,12 @@ import net.corda.data.persistence.EntityResponseFailure
 import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
+import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -160,6 +162,11 @@ class EntityMessageProcessor(
                         request.request as FindAll,
                         holdingIdentity
                     )
+                    is FindWithNamedQuery -> persistenceServiceInternal.findWithNamedQuery(
+                        serializationService,
+                        it,
+                        request.request as FindWithNamedQuery
+                    )
                     else -> {
                         failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
                     }
@@ -172,6 +179,8 @@ class EntityMessageProcessor(
         } catch (e: KafkaMessageSizeException) {
             // Results exceeded max packet size that we support at the moment.
             // We intend to support chunked results later.
+            failureResponse(requestId, e, Error.FATAL)
+        } catch (e: NullParameterException) {
             failureResponse(requestId, e, Error.FATAL)
         } catch (e: Exception) {
             failureResponse(requestId, e, Error.DATABASE)
