@@ -133,10 +133,14 @@ private fun List<EndpointParameter>.toMediaType(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
                 .type(DataType.OBJECT.toString().lowercase())
         )
-    } else if (isSingleRef || multiParams) {
+    } else if (isSingleRef) {
+        MediaType().schema(
+            SchemaModelToOpenApiSchemaConverter.convert(schemaModelProvider.toSchemaModel(this.first()))
+        )
+    } else if (multiParams) {
         MediaType().schema(
             SchemaModelToOpenApiSchemaConverter.convert(
-                schemaModelProvider.toSchemaModel(this, methodName + "Request")
+                schemaModelProvider.toSchemaModel(this, methodName + "WrapperRequest")
             )
         )
     } else {
