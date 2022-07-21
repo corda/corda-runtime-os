@@ -1,11 +1,13 @@
 package net.corda.flow.testing.fakes
 
 import co.paralleluniverse.fibers.FiberScheduler
+import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.Interruptable
 import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import org.osgi.service.component.annotations.Component
@@ -18,17 +20,27 @@ import java.util.concurrent.Future
 @Component(service = [FlowFiberFactory::class, FakeFlowFiberFactory::class])
 class FakeFlowFiberFactory : FlowFiberFactory {
 
+    private class FakeInterruptable : Interruptable {
+        override fun attemptInterrupt() {
+            // do nothing
+        }
+    }
+
     val fiber = FakeFiber(UUID(0, 0), RPCStartedFlow(FakeFlow(), FakeRPCRequestData()))
 
-    override fun createFlowFiber(flowId: String, logic: FlowLogicAndArgs): FlowFiber {
-        return fiber
+    override fun createAndStartFlowFiber(
+        flowFiberExecutionContext: FlowFiberExecutionContext,
+        flowId: String,
+        logic: FlowLogicAndArgs
+    ): FiberFuture {
+        return FiberFuture(FakeInterruptable(), fiber.startFlow(flowFiberExecutionContext))
     }
 
     override fun createAndResumeFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
         suspensionOutcome: FlowContinuation
-    ): Future<FlowIORequest<*>> {
-        return fiber.resume(suspensionOutcome)
+    ): FiberFuture {
+        return FiberFuture(FakeInterruptable(), fiber.resume(suspensionOutcome))
     }
 
     class FakeFiber(
