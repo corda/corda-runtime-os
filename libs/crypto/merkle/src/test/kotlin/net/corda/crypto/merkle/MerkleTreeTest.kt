@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.SecureRandom
@@ -59,6 +60,19 @@ class MerkleTreeTest {
 
         @JvmStatic
         fun merkleProofTestSizes(): List<Int> = (1 until 16).toList()
+    }
+
+    @Test
+    fun `Tweakable hash digest provider argument min length tests`() {
+        assertDoesNotThrow {
+            TweakableHashDigestProvider(digestAlgorithm, digestService, "0".toByteArray(), "1".toByteArray())
+        }
+        assertThrows(IllegalArgumentException::class.java)  {
+            TweakableHashDigestProvider(digestAlgorithm, digestService, "".toByteArray(), "1".toByteArray())
+        }
+        assertThrows(IllegalArgumentException::class.java)  {
+            TweakableHashDigestProvider(digestAlgorithm, digestService, "0".toByteArray(), "".toByteArray())
+        }
     }
 
     @Test

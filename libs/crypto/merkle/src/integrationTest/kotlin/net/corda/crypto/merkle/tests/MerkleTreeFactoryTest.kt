@@ -28,7 +28,7 @@ class MerkleTreeFactoryTest {
         nonceHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
             HASH_DIGEST_PROVIDER_NONCE_NAME,
             digestAlgorithm,
-            mapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to 123.toByteArray())
+            mapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to "1".repeat(32).toByteArray())
         )
     }
 
