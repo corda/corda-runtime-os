@@ -29,7 +29,7 @@ interface CpiUploadRPCOps : RpcOps {
     fun cpi(upload: HttpFileUpload): UploadResponse
 
     /** Simple class to return the status of the upload request */
-    data class Status(val status: String, val checksum: String)
+    data class Status(val status: String, val cpiFileChecksum: String)
 
     /**
      * Get the status of the upload.

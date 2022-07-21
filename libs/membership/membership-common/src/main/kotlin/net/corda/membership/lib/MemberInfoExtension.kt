@@ -112,7 +112,7 @@ class MemberInfoExtension {
         /** Member ID. */
         @JvmStatic
         val MemberInfo.id: String
-            get() = holdingIdentity.id
+            get() = holdingIdentity.shortHash
 
         /** List of P2P endpoints for member's node. */
         @JvmStatic

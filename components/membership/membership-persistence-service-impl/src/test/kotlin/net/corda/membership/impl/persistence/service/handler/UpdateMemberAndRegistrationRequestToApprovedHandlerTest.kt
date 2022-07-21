@@ -76,7 +76,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         timestamp = clock.instant(),
     )
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getById(any()) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(any()) } doReturn virtualNodeInfo
     }
     private val entityManager = mock<EntityManager> {
         on { transaction } doReturn mock()

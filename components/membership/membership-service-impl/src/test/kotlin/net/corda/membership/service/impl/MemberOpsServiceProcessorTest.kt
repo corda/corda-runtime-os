@@ -66,7 +66,7 @@ class MemberOpsServiceProcessorTest {
     }
 
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
-        on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),
@@ -111,7 +111,7 @@ class MemberOpsServiceProcessorTest {
             "corda.ecdh.key" to "corda.ecdh.key",
             "corda.endpoints.0.connectionURL" to "corda.endpoints.0.connectionURL",
             "corda.endpoints.0.protocolVersion" to "1"
-            ),
+        ),
         sortedMapOf(
             MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
             MemberInfoExtension.MODIFIED_TIME to clock.instant().toString()

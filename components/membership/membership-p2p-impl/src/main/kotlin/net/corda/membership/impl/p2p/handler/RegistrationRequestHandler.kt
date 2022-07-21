@@ -25,7 +25,7 @@ internal class RegistrationRequestHandler(
         logger.info("Received registration request. Issuing StartRegistration command.")
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            header.source.toCorda().id,
+            header.source.toCorda().shortHash,
             RegistrationCommand(
                 StartRegistration(
                     header.destination,

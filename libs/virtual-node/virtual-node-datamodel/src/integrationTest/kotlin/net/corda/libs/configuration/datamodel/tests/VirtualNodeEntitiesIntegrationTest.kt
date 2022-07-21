@@ -66,9 +66,9 @@ class VirtualNodeEntitiesIntegrationTest {
 
     @Test
     fun `can persist and read back Holding Identity entity`() {
-        val holdingIdentityId = Generator.randomHex()
+        val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
         val holdingIdentity = HoldingIdentityEntity(
-            holdingIdentityId, "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
+            holdingIdentityShortHash, "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
             "${random.nextInt()}", null, null, null, null, null
         )
 
@@ -79,7 +79,7 @@ class VirtualNodeEntitiesIntegrationTest {
         assertEquals(
             holdingIdentity,
             entityManagerFactory.createEntityManager()
-                .find(HoldingIdentityEntity::class.java, holdingIdentity.holdingIdentityId)
+                .find(HoldingIdentityEntity::class.java, holdingIdentity.holdingIdentityShortHash)
         )
     }
 
@@ -90,11 +90,11 @@ class VirtualNodeEntitiesIntegrationTest {
         val hash = "CPI summary hash"
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentityId = Generator.randomHex()
-        val entity = newHoldingIdentityEntity(holdingIdentityId)
+        val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
+        val entity = newHoldingIdentityEntity(holdingIdentityShortHash)
 
         val holdingIdentityEntity = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityId) }
+            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityShortHash) }
 
         val virtualNode = VirtualNodeEntity(entity, name, version, hash)
 
@@ -115,8 +115,8 @@ class VirtualNodeEntitiesIntegrationTest {
         val hash = "CPI summary hash"
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentityId = Generator.randomHex()
-        val holdingIdentityEntity = newHoldingIdentityEntity(holdingIdentityId)
+        val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
+        val holdingIdentityEntity = newHoldingIdentityEntity(holdingIdentityShortHash)
 
         // Persist holding identity...
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentityEntity) }
@@ -132,7 +132,7 @@ class VirtualNodeEntitiesIntegrationTest {
         // Use a reference to *find* only - we do NOT need the other fields in the HoldingIdentityEntity
         // (and in fact, neither does hibernate - it only cares about the primary keys).
         val holdingIdentityReference = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityId) }
+            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityShortHash) }
         val key = VirtualNodeEntityKey(holdingIdentityReference, name, version, hash)
 
         assertEquals(virtualNode, entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key))
@@ -166,7 +166,7 @@ class VirtualNodeEntitiesIntegrationTest {
 
     private fun newVNode(name: String, version: String, hash: String) {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentity = newHoldingIdentityEntity(Generator.randomHex())
+        val holdingIdentity = newHoldingIdentityEntity(Generator.randomHoldingIdentityShortHash())
         val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash)
 
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentity) }
@@ -174,8 +174,8 @@ class VirtualNodeEntitiesIntegrationTest {
         entityManagerFactory.createEntityManager().transaction { em -> em.merge(virtualNode) }
     }
 
-    private fun newHoldingIdentityEntity(holdingIdentityId: String) = HoldingIdentityEntity(
-        holdingIdentityId = holdingIdentityId,
+    private fun newHoldingIdentityEntity(holdingIdentityShortHash: String) = HoldingIdentityEntity(
+        holdingIdentityShortHash = holdingIdentityShortHash,
         holdingIdentityFullHash = "1234",
         x500Name = "dummy",
         mgmGroupId = "dummy",
@@ -195,7 +195,7 @@ class VirtualNodeEntitiesIntegrationTest {
         version = version,
         signerSummaryHash = hash,
         fileName = "file",
-        fileChecksum = Generator.randomHex(),
+        fileChecksum = Generator.randomHoldingIdentityShortHash(),
         groupPolicy = "group policy",
         groupId = "group ID",
         fileUploadRequestId = "request ID",

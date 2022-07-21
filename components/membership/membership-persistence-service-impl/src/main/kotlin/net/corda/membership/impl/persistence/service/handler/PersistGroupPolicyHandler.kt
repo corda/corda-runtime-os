@@ -23,7 +23,7 @@ internal class PersistGroupPolicyHandler(
     }
 
     override fun invoke(context: MembershipRequestContext, request: PersistGroupPolicy): PersistGroupPolicyResponse {
-        val version = transaction(context.holdingIdentity.toCorda().id) { em ->
+        val version = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val entity = GroupPolicyEntity(
                 version = null,
                 createdAt = clock.instant(),

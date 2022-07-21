@@ -90,7 +90,7 @@ internal class ApproveRegistrationHandler(
             .build()
         val memberRecord = Record(
             topic = MEMBER_LIST_TOPIC,
-            key = "${approvedBy.toCorda().id}-${approvedMember.toCorda().id}",
+            key = "${approvedBy.toCorda().shortHash}-${approvedMember.toCorda().shortHash}",
             value = persistentMemberInfo,
         )
 

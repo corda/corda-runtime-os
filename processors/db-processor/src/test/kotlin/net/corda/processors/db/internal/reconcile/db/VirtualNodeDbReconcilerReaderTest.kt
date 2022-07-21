@@ -42,7 +42,7 @@ class VirtualNodeDbReconcilerReaderTest {
 
     private fun mockHoldingIdentity(): HoldingIdentityEntity {
         return mock {
-            whenever(it.holdingIdentityId).then { holdingId }
+            whenever(it.holdingIdentityShortHash).then { holdingId }
             whenever(it.x500Name).then { x500name }
             whenever(it.mgmGroupId).then { groupId }
             whenever(it.vaultDMLConnectionId).then { vaultDmlConnectionId }

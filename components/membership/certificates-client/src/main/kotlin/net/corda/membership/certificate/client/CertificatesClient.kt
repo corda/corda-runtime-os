@@ -21,14 +21,14 @@ interface CertificatesClient : Lifecycle {
      * Setup locally hosted identity.
      *
      *
-     * @param holdingIdentityId ID of the holding identity to be published.
+     * @param holdingIdentityShortHash ID of the holding identity to be published.
      * @param certificateChainAlias The certificates chain alias.
-     * @param tlsTenantId The TLS tenant ID (either p2p ot the holdingIdentityId, default to the holdingIdentityId).
+     * @param tlsTenantId The TLS tenant ID (either p2p ot the holdingIdentityShortHash, default to the holdingIdentityShortHash).
      * @param sessionKeyId The session key ID (will use the first one if null).
      * @throws CertificatesResourceNotFoundException if a resource was not found
      */
     fun setupLocallyHostedIdentity(
-        holdingIdentityId: String,
+        holdingIdentityShortHash: String,
         certificateChainAlias: String,
         tlsTenantId: String?,
         sessionKeyId: String?

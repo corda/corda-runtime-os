@@ -88,7 +88,8 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoProcessor.get(holdingIdentity)
 
-    override fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoProcessor.getById(id)
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String): VirtualNodeInfo?
+        = virtualNodeInfoProcessor.getById(holdingIdentityShortHash)
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
         virtualNodeInfoProcessor.registerCallback(listener)

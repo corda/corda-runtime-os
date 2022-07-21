@@ -61,7 +61,7 @@ class MembershipQueryClientImpl(
     override val clientName = "membership.db.query.client"
 
     override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
-        logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.id}].")
+        logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.shortHash}].")
         return queryMemberInfo(viewOwningIdentity, emptyList())
     }
 

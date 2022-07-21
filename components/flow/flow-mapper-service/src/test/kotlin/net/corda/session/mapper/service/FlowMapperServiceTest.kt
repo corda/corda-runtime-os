@@ -1,17 +1,20 @@
 package net.corda.session.mapper.service
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.FlowConfig
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -23,12 +26,7 @@ import org.mockito.kotlin.whenever
 internal class FlowMapperServiceTest {
 
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
-    private val bootConfig = configFactory.create(
-        ConfigFactory.parseString(
-            """
-                    """.trimIndent()
-        )
-    )
+    private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
 
     private val messagingConfig = configFactory.create(
         ConfigFactory.parseString(
@@ -56,7 +54,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             verifyIsUp<FlowMapperService>()
 
@@ -103,7 +101,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             // Create and start the subscription (using the message config)
             verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
@@ -115,7 +113,7 @@ internal class FlowMapperServiceTest {
             verify(subscription).start()
             verifyIsUp<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             // Close, recreate and start the subscription (using the message config)
             verify(subscription).close()
@@ -155,7 +153,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
 
             // Create and start the subscription (using the message config)
             verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(

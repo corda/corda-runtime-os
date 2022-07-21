@@ -55,13 +55,13 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
 
     /**
      * Reads a holding identity from the database.
-     * @param holdingIdShortHash Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return Holding identity for a given ID (short hash) or null if not found
      */
-    internal fun getHoldingIdentity(holdingIdShortHash: String): HoldingIdentity? {
+    internal fun getHoldingIdentity(holdingIdentityShortHash: String): HoldingIdentity? {
         return entityManagerFactory
             .transaction { entityManager ->
-                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdShortHash) ?: return null
+                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash) ?: return null
                 HoldingIdentity(hidEntity.x500Name, hidEntity.mgmGroupId)
             }
     }
@@ -77,7 +77,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         holdingIdentity: HoldingIdentity,
         connections: VirtualNodeDbConnections
     ) {
-        val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.id)?.apply {
+        val entity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentity.shortHash)?.apply {
             update(
                 connections.vaultDdlConnectionId,
                 connections.vaultDmlConnectionId,
@@ -85,8 +85,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 connections.cryptoDmlConnectionId
             )
         } ?: HoldingIdentityEntity(
-            holdingIdentity.id,
-            holdingIdentity.hash,
+            holdingIdentity.shortHash,
+            holdingIdentity.fullHash,
             holdingIdentity.x500Name,
             holdingIdentity.groupId,
             connections.vaultDdlConnectionId,
@@ -108,7 +108,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         return entityManagerFactory
             .transaction {
                 val signerSummaryHash = if (cpiId.signerSummaryHash != null) cpiId.signerSummaryHash.toString() else ""
-                val hie = it.find(HoldingIdentityEntity::class.java, holdingId.id) ?: return false // TODO throw?
+                val hie = it.find(HoldingIdentityEntity::class.java, holdingId.shortHash) ?: return false // TODO throw?
                 val key = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
                 it.find(VirtualNodeEntity::class.java, key) != null
             }
@@ -121,7 +121,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      */
     internal fun putVirtualNode(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
         val signerSummaryHash = cpiId.signerSummaryHash?.toString() ?: ""
-        val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.id)
+        val hie = entityManager.find(HoldingIdentityEntity::class.java, holdingId.shortHash)
             ?: throw CordaRuntimeException("Could not find holding identity") // TODO throw?
 
         val virtualNodeEntityKey = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
@@ -135,8 +135,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
 
 
     fun HoldingIdentity.toEntity(connections: VirtualNodeDbConnections?) = HoldingIdentityEntity(
-        this.id,
-        this.hash,
+        this.shortHash,
+        this.fullHash,
         this.x500Name,
         this.groupId,
         connections?.vaultDdlConnectionId,

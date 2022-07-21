@@ -56,7 +56,7 @@ class VirtualNodeVaultEntitiesIntegrationTest {
 
     @Test
     fun `can persist and read back Vault entity`() {
-        val key = Generator.randomHex()
+        val key = Generator.randomHoldingIdentityShortHash()
         val vault = VaultEntity(key)
 
         entityManagerFactory.createEntityManager().transaction { em ->

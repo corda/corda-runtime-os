@@ -119,7 +119,7 @@ class StaticNetworkTest {
             eventually {
                 val status = proxy.status(id)
                 assertThat(status.status).isEqualTo("OK")
-                status.checksum
+                status.cpiFileChecksum
             }
         }
     }
@@ -143,7 +143,7 @@ class StaticNetworkTest {
                         cryptoDdlConnection = null,
                         cryptoDmlConnection = null,
                     )
-                ).holdingIdHash
+                ).holdingIdentityShortHash
             }
         }
     }

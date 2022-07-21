@@ -30,10 +30,10 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
 
         private val cache = ConcurrentHashMap<String, ReplaceableList<MemberInfo>>()
 
-        override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity.id] ?: emptyList()
+        override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity.shortHash] ?: emptyList()
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
-            cache.compute(holdingIdentity.id) { _, value ->
+            cache.compute(holdingIdentity.shortHash) { _, value ->
                 (value ?: ReplaceableList())
                     .addOrReplace(data) { old, new ->
                         old.name == new.name

@@ -58,7 +58,7 @@ class CertificatesProcessorTest {
     }
     private val nodeTenantId = "ID1"
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getById(nodeTenantId) } doReturn nodeInfo
+        on { getByHoldingIdentityShortHash(nodeTenantId) } doReturn nodeInfo
     }
     private val response = CompletableFuture<CertificateRpcResponse>()
 

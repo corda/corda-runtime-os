@@ -74,7 +74,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
         return virtualNodeInfoMap[holdingIdentity]
     }
 
-    override fun getById(id: String): VirtualNodeInfo? {
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String): VirtualNodeInfo? {
         TODO("Not yet implemented - getById")
     }
 
