@@ -7,8 +7,6 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -168,11 +166,11 @@ class MGMOpsClientImpl @Activate constructor(
         override fun generateGroupPolicy(holdingIdentityId: String): String {
 
             val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
-                ?: throw ResourceNotFoundException ("Could not find holding identity associated with member.")
+                ?: throw CordaRuntimeException ("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
-            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw ResourceNotFoundException ("Could not find holding identity associated with member.")
+            val filteredMembers = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))?:throw CordaRuntimeException ("Could not find holding identity associated with member.")
 
             if(filteredMembers.isMgm) {
 
@@ -187,7 +185,7 @@ class MGMOpsClientImpl @Activate constructor(
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            else throw BadRequestException("Holding identity does not represent an MGM virtual node.")
+            else throw CordaRuntimeException("Holding identity does not represent an MGM virtual node.")
 
         }
 
