@@ -1,9 +1,7 @@
 package net.corda.v5.application.persistence
 
-import net.corda.v5.application.persistence.query.NamedQueryFilter
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.stream.Cursor
 import net.corda.v5.persistence.CordaPersistenceException
 
 /**
@@ -91,93 +89,77 @@ interface PersistenceService {
     fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T>
 
     /**
-     * Find all entities of the same type from the persistence context in a single transaction.
+     * Create a [PagedQuery] to find all entities of the same type from the persistence context in a single transaction.
+     *
+     * Example usage:
+     * ```java
+     * // create a query that returns the second page of up to 100 Dog objects:
+     * PagedQuery<Dog> pagedQuery = persistenceService
+     *      .findAll(Dog.class)
+     *      .setLimit(100)
+     *      .setOffset(200)
+     * // execute the query and return the results as a List
+     * List<Foo> result = pagedQuery.execute();
+     * ```
      *
      * @param entityClass the type of the entities to find.
-     * @return list of entities found. Empty list if none were found.
+     * @return a [PagedQuery] that returns the list of entities found.
      * @throws CordaPersistenceException if an error happens during find operation
      */
     @Suspendable
-    fun <T : Any> findAll(entityClass: Class<T>): List<T>
+    fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T>
 
     /**
-     * Execute a named query in a single transaction. Casts results to the specified type [R].
+     * Create a [ParameterisedQuery] to support a named query to return a list of entities of the given type in a single transaction. Casts results to the specified type [T].
+     * Example usage:
+     * ```java
+     * // For JPA Entity:
+     * @CordaSerializable
+     * @Entity
+     * @Table(name="DOGS")
+     * @NamedQuery(name="find_by_name_and_age", query="SELECT d FROM Dog d WHERE d.name = :name AND d.age <= :maxAge")
+     * public class Dog {
+     *  @Id
+     *  private UUID id;
+     *  @Column(name="DOG_NAME", length=50, nullable=false, unique=false)
+     *  private String name;
+     *  @Column(name="DOG_AGE")
+     *  private Int age;
      *
+     * // getters and setters
+     * ...
+     * }
+     *
+     * // create a named query setting parameters one-by-one, that returns the second page of up to 100 records
+     * ParameterisedQuery<Dog> paramQuery = persistenceService
+     *      .query("find_by_name_and_age", Dog.class)
+     *      .setParameter("name", "Felix")
+     *      .setParameter("maxAge", 5)
+     *      .setLimit(100)
+     *      .setOffset(200)
+     * // execute the query and return the results as a List
+     * List<Dog> result = pagedQuery.execute();
+     *
+     * // create a named query setting parameters as Map, that returns the second page of up to 100 records
+     * ParameterisedQuery<Dog> paramQuery = persistenceService
+     *      .query("find_by_name_and_age", Dog.class)
+     *      .setParameters(Map.of("name", "Felix", "maxAge", 5))
+     *      .setLimit(100)
+     *      .setOffset(200)
+     * // execute the query and return the results as a List
+     * List<Dog> result = pagedQuery.execute();
+     * ```
      * @param queryName the name of the named query registered in the persistence context.
-     * @param namedParameters the named parameters to be set in the named query.
-     * @param R the type of the results
-     * @return Cursor configured to poll data for this named query.
+     * @param entityClass the type of the entities to find.
+     * @param T the type of the results.
+     * @return a [ParameterisedQuery] that returns the list of entities found. Empty list if none were found.
      * @throws CordaPersistenceException if an error happens during query operation
      */
     @Suspendable
-    fun <R> query(
+    fun <T : Any> query(
         queryName: String,
-        namedParameters: Map<String, Any>
-    ): Cursor<R>
-
-    /**
-     * Execute a named query in a single transaction and apply post filtering. Casts results to the specified type [R].
-     *
-     * @param queryName the name of the named query registered in the persistence context.
-     * @param namedParameters the named parameters to be set in the named query.
-     * @param postFilter the filter to be applied after named query execution.
-     * @param R the type of the results
-     * @return Cursor configured to poll data for this named query.
-     * @throws CordaPersistenceException if an error happens during query operation
-     */
-    @Suspendable
-    fun <R> query(
-        queryName: String,
-        namedParameters: Map<String, Any>,
-        postFilter: NamedQueryFilter
-    ): Cursor<R>
-
-    /**
-     * Execute a named query in a single transaction and apply post-processing to the results. Casts results to the specified type [R].
-     *
-     * @param queryName the name of the named query registered in the persistence context.
-     * @param namedParameters the named parameters to be set in the named query.
-     * @param postProcessorName the name of the post-processor that will process named query results.
-     * @param R the type of the results
-     * @return Cursor configured to poll data for this named query.
-     * @throws CordaPersistenceException if an error happens during query operation
-     */
-    @Suspendable
-    fun <R> query(
-        queryName: String,
-        namedParameters: Map<String, Any>,
-        postProcessorName: String
-    ): Cursor<R>
-
-    /**
-     * Execute a named query in a single transaction and apply post-filtering and post-processing to the results. Casts results to the specified type [R].
-     *
-     * @param queryName the name of the named query registered in the persistence context.
-     * @param namedParameters the named parameters to be set in the named query.
-     * @param postFilter the filter to be applied after named query execution.
-     * @param postProcessorName the name of the post-processor that will process named query results.
-     * @param R the type of the results
-     * @return Cursor configured to poll data for this named query.
-     * @throws CordaPersistenceException if an error happens during query operation
-     */
-    @Suspendable
-    fun <R> query(
-        queryName: String,
-        namedParameters: Map<String, Any>,
-        postFilter: NamedQueryFilter,
-        postProcessorName: String
-    ): Cursor<R>
-
-    /**
-     * Execute a named query in a single transaction with optional post-filtering and post-processing applied to the results. Casts results to the specified type [R].
-     *
-     * @param persistenceQueryRequest the request containing information to execute named queries with optional filtering and post-processing
-     * @param R the type of the results
-     * @return Cursor configured to poll data for this named query.
-     * @throws CordaPersistenceException if an error happens during query operation
-     */
-    @Suspendable
-    fun <R> query(persistenceQueryRequest: PersistenceQueryRequest): Cursor<R>
+        entityClass: Class<T>
+    ): ParameterisedQuery<T>
 }
 
 /**
@@ -202,6 +184,6 @@ inline fun <reified T : Any> PersistenceService.find(primaryKeys: List<Any>): Li
  * Find all entities of the same type in a single transaction.
  *
  * @param T the type of the entities to find.
- * @return list of entities found. Empty list if none were found.
+ * @return a [PagedQuery] that returns the list of entities found. Empty list if none were found.
  */
-inline fun <reified T : Any> PersistenceService.findAll(): List<T> = findAll(T::class.java)
+inline fun <reified T : Any> PersistenceService.findAll(): PagedQuery<T> = findAll(T::class.java)

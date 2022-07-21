@@ -1,6 +1,5 @@
 package net.corda.v5.ledger.obsolete.services.vault
 
-import net.corda.v5.application.persistence.query.NamedQueryFilter
 import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant
 

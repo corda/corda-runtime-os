@@ -1,6 +1,5 @@
 package net.corda.v5.ledger.obsolete.services.vault
 
-import net.corda.v5.application.persistence.query.GenericQueryPostProcessor
 import net.corda.v5.ledger.obsolete.contracts.ContractState
 import net.corda.v5.ledger.obsolete.contracts.StateAndRef
 import java.util.stream.Stream

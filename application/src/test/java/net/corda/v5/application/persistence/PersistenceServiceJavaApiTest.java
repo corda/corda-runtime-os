@@ -1,23 +1,18 @@
 package net.corda.v5.application.persistence;
 
-import net.corda.v5.application.persistence.query.NamedQueryFilter;
-import net.corda.v5.base.stream.Cursor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class PersistenceServiceJavaApiTest {
 
     final private PersistenceService persistenceService = mock(PersistenceService.class);
     @SuppressWarnings("unchecked")
-    Cursor<Object> cursor = mock(Cursor.class);
+    List<Object> result = mock(List.class);
 
     @Test
     public void persist() {
@@ -85,76 +80,27 @@ public class PersistenceServiceJavaApiTest {
 
     @Test
     public void findAll() {
-        when(persistenceService.findAll(Integer.class)).thenReturn(List.of(1, 2, 3, 4));
+        List<Integer> expectedResult = List.of(1, 2, 3, 4);
+        PagedQuery<Integer> query = mock(PagedQuery.class);
+        when(query.execute()).thenReturn(expectedResult);
+        when(persistenceService.findAll(Integer.class)).thenReturn(query);
 
-        List<Integer> result = persistenceService.findAll(Integer.class);
+        List<Integer> result = persistenceService.findAll(Integer.class).execute();
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(List.of(1, 2, 3, 4));
+        Assertions.assertThat(result).isEqualTo(expectedResult);
     }
 
     @Test
-    public void queryWithTwo() {
-        when(persistenceService.query("test", Map.of("testKey", "testValue"))).thenReturn(cursor);
+    public void query() {
+        List<Integer> expectedResult = List.of(1, 2, 3, 4);
+        ParameterisedQuery<Integer> query = mock(ParameterisedQuery.class);
+        when(query.execute()).thenReturn(expectedResult);
+        doReturn(query).when(persistenceService).query("test", Integer.class);
 
-        Cursor<Object> result = persistenceService.query("test", Map.of("testKey", "testValue"));
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(cursor);
-    }
-
-    @Test
-    public void queryWithThree() {
-        NamedQueryFilter namedQueryFilter = mock(NamedQueryFilter.class);
-        when(persistenceService.query("test", Map.of("testKey", "testValue"), namedQueryFilter)).thenReturn(cursor);
-
-        Cursor<Object> result = persistenceService.query("test", Map.of("testKey", "testValue"), namedQueryFilter);
+        List<Integer> result = persistenceService.query("test", Integer.class).execute();
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(cursor);
-    }
-
-    @Test
-    public void queryWithThreeParameters() {
-        when(persistenceService.query("test", Map.of("testKey", "testValue"), "postProcessorName")).thenReturn(cursor);
-
-        Cursor<Object> result = persistenceService.query("test", Map.of("testKey", "testValue"), "postProcessorName");
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(cursor);
-    }
-
-    @Test
-    public void queryWithFour() {
-        NamedQueryFilter namedQueryFilter = mock(NamedQueryFilter.class);
-        when(persistenceService.query("test", Map.of("testKey", "testValue"), namedQueryFilter, "postProcessorName")).thenReturn(cursor);
-
-        Cursor<Object> result = persistenceService.query("test", Map.of("testKey", "testValue"), namedQueryFilter, "postProcessorName");
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(cursor);
-    }
-
-    @Test
-    public void queryWithPersistenceQueryRequest() {
-        PersistenceQueryRequest persistenceQueryRequest = new PersistenceQueryRequest("test", Map.of("testKey", "testValue"), null, null);
-        when(persistenceService.query(persistenceQueryRequest)).thenReturn(cursor);
-
-        Cursor<Object> result = persistenceService.query(persistenceQueryRequest);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(cursor);
-    }
-
-    @Test
-    public void queryWithPersistenceQueryRequestBuilder() {
-        PersistenceQueryRequest.Builder builder = new PersistenceQueryRequest.Builder("test", Map.of("testKey", "testValue'"));
-        PersistenceQueryRequest persistenceQueryRequest = builder.build();
-        when(persistenceService.query(persistenceQueryRequest)).thenReturn(cursor);
-
-        Cursor<Object> result = persistenceService.query(persistenceQueryRequest);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(cursor);
+        Assertions.assertThat(result).isEqualTo(expectedResult);
     }
 }
