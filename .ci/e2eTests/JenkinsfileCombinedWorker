@@ -111,11 +111,10 @@ pipeline {
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
                 sh '''
-                    nohup java ${LOG4J_PARAMETERS}x -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE} >> workerLogs.txt 2>&1 &
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE} >> workerLogs.txt 2>&1 &
                     procno=$!
                     trap "kill -9 ${procno}" EXIT
                 '''
-
                 sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
     
                 }
@@ -128,6 +127,7 @@ pipeline {
         always {
 	// remove Database see here https://github.com/corda/corda-shared-build-pipeline-steps/blob/5.0/vars/cordaPipeline.groovy#L487-L500
             script {
+                            
                     if (config.createPostgresDb) {
                         withEnv([
                                 "PGHOST=${postgresHost}",
@@ -137,12 +137,20 @@ pipeline {
                             withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
                                     passwordVariable: 'PGPASSWORD',
                                     usernameVariable: 'PGUSER')]) {
+
                                 sh 'dropdb -w "${DATABASE}" || true'
                             }
+                            
                         }
                     }
             }
-            script{
+
+            sh '''
+                touch pod_logs.txt
+                for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod >> pod_logs.txt; done
+            '''
+
+            script {
                 writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
                 //archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
