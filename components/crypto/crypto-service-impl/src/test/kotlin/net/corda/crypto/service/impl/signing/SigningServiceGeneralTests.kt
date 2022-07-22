@@ -17,6 +17,7 @@ import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
+import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE

@@ -12,9 +12,12 @@ import net.corda.crypto.softhsm.impl.infra.TestWrappingKeyStore
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
+import net.corda.v5.cipher.suite.ConfigurationSecrets
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -28,6 +31,7 @@ class SoftCryptoServiceProviderTests {
     private lateinit var wrappingKeyStore: TestWrappingKeyStore
     private lateinit var component: SoftCryptoServiceProviderImpl
     private lateinit var config: SoftCryptoServiceConfig
+    private lateinit var configurationSecrets: ConfigurationSecrets
 
     @BeforeEach
     fun setup() {
@@ -42,16 +46,18 @@ class SoftCryptoServiceProviderTests {
             wrappingKeyMap = SoftWrappingKeyMapConfig(
                 name = KEY_MAP_CACHING_NAME,
                 salt = "salt",
-                passphrase = "passphrase",
+                passphrase = emptyMap(),
                 cache = SoftCacheConfig(
                     expireAfterAccessMins = 60,
                     maximumSize = 1000
                 )
             ),
             wrapping = SoftWrappingConfig(
-                name = WRAPPING_DEFAULT_NAME
+                name = WRAPPING_DEFAULT_NAME,
+                hsm = null
             )
         )
+        configurationSecrets = mock { on { getSecret(any()) } doReturn "passphrase" }
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
         wrappingKeyStore = TestWrappingKeyStore(coordinatorFactory).also {
@@ -72,29 +78,29 @@ class SoftCryptoServiceProviderTests {
     fun `Should start component and use active implementation only after the component is up`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getInstance(config)
+            component.getInstance(config, configurationSecrets)
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.getInstance(config))
+        assertNotNull(component.getInstance(config, configurationSecrets))
     }
 
     @Test
     fun `getInstance should return new instance each time`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.getInstance(config)
+            component.getInstance(config, configurationSecrets)
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val i1 = component.getInstance(config)
-        val i2 = component.getInstance(config)
+        val i1 = component.getInstance(config, configurationSecrets)
+        val i2 = component.getInstance(config, configurationSecrets)
         assertNotNull(i1)
         assertNotNull(i2)
         assertNotSame(i1, i2)
@@ -108,7 +114,7 @@ class SoftCryptoServiceProviderTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.getInstance(config))
+        assertNotNull(component.getInstance(config, configurationSecrets))
         component.stop()
         eventually {
             assertFalse(component.isRunning)
@@ -116,7 +122,7 @@ class SoftCryptoServiceProviderTests {
         }
         eventually {
             assertThrows<IllegalStateException> {
-                component.getInstance(config)
+                component.getInstance(config, configurationSecrets)
             }
         }
     }
@@ -129,18 +135,18 @@ class SoftCryptoServiceProviderTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.getInstance(config))
+        assertNotNull(component.getInstance(config, configurationSecrets))
         wrappingKeyStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertThrows<IllegalStateException> {
-            component.getInstance(config)
+            component.getInstance(config, configurationSecrets)
         }
         wrappingKeyStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.getInstance(config))
+        assertNotNull(component.getInstance(config, configurationSecrets))
     }
 }

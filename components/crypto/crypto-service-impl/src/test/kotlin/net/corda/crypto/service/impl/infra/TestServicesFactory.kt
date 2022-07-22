@@ -14,8 +14,8 @@ import net.corda.crypto.service.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
 import net.corda.crypto.service.impl.softhsm.SoftCryptoService
 import net.corda.crypto.service.impl.softhsm.SoftCryptoServiceProviderImpl
-import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
-import net.corda.crypto.service.impl.signing.SigningServiceImpl
+import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
+import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl

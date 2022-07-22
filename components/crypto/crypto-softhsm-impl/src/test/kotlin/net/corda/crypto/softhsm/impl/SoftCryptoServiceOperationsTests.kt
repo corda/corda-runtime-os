@@ -6,6 +6,7 @@ import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.SoftWrappingKeyMap

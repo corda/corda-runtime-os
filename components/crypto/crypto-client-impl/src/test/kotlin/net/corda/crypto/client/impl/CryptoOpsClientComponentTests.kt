@@ -720,7 +720,7 @@ class CryptoOpsClientComponentTests {
         }
         val result = sender.act {
             component.createWrappingKey(
-                configId = configId,
+                workerSetId = configId,
                 failIfExists = true,
                 masterKeyAlias = masterKeyAlias,
                 context = knownOperationContext

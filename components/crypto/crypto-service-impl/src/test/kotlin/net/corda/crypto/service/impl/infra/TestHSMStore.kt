@@ -9,9 +9,8 @@ import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
 import net.corda.crypto.persistence.db.model.HSMConfigEntity
 import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
 import net.corda.crypto.persistence.hsm.HSMConfig
-import net.corda.crypto.persistence.hsm.HSMStat
+import net.corda.crypto.persistence.hsm.HSMUsage
 import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -32,13 +31,13 @@ class TestHSMStore : HSMStore {
     private val associations = mutableListOf<HSMAssociationEntity>()
     private val categoryAssociations = mutableListOf<HSMCategoryAssociationEntity>()
 
-    override fun act(): HSMStoreActions = Actions(this)
+    override fun act(): HSMStore = Actions(this)
 
     override fun close() = Unit
 
     private class Actions(
         private val cache: TestHSMStore
-    ) : HSMStoreActions {
+    ) : HSMStore {
         companion object {
             private val secureRandom = SecureRandom()
         }
@@ -52,7 +51,7 @@ class TestHSMStore : HSMStore {
             category: String
         ): HSMTenantAssociation? = cache.lock.withLock {
             cache.categoryAssociations.firstOrNull {
-                it.category == category && it.hsm.tenantId == tenantId
+                it.category == category && it.association.tenantId == tenantId
             }?.toHSMTenantAssociation()
         }
 
@@ -75,16 +74,16 @@ class TestHSMStore : HSMStore {
             }.map { it.toHSMInfo() }
         }
 
-        override fun getHSMStats(category: String): List<HSMStat> = cache.lock.withLock {
+        override fun getHSMUsage(category: String): List<HSMUsage> = cache.lock.withLock {
             cache.configs.filter {
-                it.id != CryptoConsts.SOFT_HSM_CONFIG_ID && cache.categoryMap.any { a ->
+                it.id != CryptoConsts.SOFT_HSM_WORKER_SET_ID && cache.categoryMap.any { a ->
                     a.config.id == it.id && a.category == category
                 }
             }.map {
-                HSMStat(
-                    configId = it.id,
+                HSMUsage(
+                    workerSetId = it.id,
                     usages = cache.categoryAssociations.count { a ->
-                        a.hsm.config.id == it.id
+                        a.association.config.id == it.id
                     },
                     privateKeyPolicy = net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.valueOf(
                         cache.categoryMap.first { a ->
@@ -140,16 +139,16 @@ class TestHSMStore : HSMStore {
         override fun associate(
             tenantId: String,
             category: String,
-            configId: String
+            workerSetId: String
         ): HSMTenantAssociation = cache.lock.withLock {
-            val association = cache.associations.firstOrNull { it.tenantId == tenantId && it.config.id == configId }
-                ?: createAndPersistAssociation(tenantId, configId)
+            val association = cache.associations.firstOrNull { it.tenantId == tenantId && it.config.id == workerSetId }
+                ?: createAndPersistAssociation(tenantId, workerSetId)
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
                 tenantId = tenantId,
                 category = category,
                 timestamp = Instant.now(),
-                hsm = association,
+                association = association,
                 deprecatedAt = 0
             )
             cache.categoryAssociations.add(categoryAssociation)
@@ -218,11 +217,11 @@ class TestHSMStore : HSMStore {
 
         private fun HSMCategoryAssociationEntity.toHSMTenantAssociation() = HSMTenantAssociation(
             id = id,
-            tenantId = hsm.tenantId,
+            tenantId = association.tenantId,
             category = category,
-            masterKeyAlias = hsm.masterKeyAlias,
-            aliasSecret = hsm.aliasSecret,
-            config = hsm.config.toHSMConfig(),
+            masterKeyAlias = association.masterKeyAlias,
+            aliasSecret = association.aliasSecret,
+            config = association.config.toHSMConfig(),
             deprecatedAt = deprecatedAt
         )
     }

@@ -26,6 +26,7 @@ dependencies {
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-flow')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
@@ -33,7 +34,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
 
-    testImplementation project(":components:crypto:crypto-db-persistence-model")
+    testImplementation project(":components:crypto:crypto-persistence-model")
     testImplementation project(":libs:layered-property-map")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

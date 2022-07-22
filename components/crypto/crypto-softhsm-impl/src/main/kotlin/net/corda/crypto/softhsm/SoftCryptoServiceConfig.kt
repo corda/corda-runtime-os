@@ -63,13 +63,13 @@ class SoftKeyMapConfig(
 class SoftWrappingKeyMapConfig(
     val name: String,
     val salt: String,
-    val passphrase: String,
+    val passphrase: Map<String, Any>,
     val cache: SoftCacheConfig
 )
 
 class SoftWrappingConfig(
     val name: String,
-    val hsm: SoftWrappingHSMConfig? = null
+    val hsm: SoftWrappingHSMConfig?
 )
 
 class SoftWrappingHSMConfig(

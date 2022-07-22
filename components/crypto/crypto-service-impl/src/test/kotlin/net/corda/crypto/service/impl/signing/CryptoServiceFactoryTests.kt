@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
@@ -210,7 +211,7 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val i1 = component.getInstance(CryptoConsts.SOFT_HSM_CONFIG_ID)
+        val i1 = component.getInstance(CryptoConsts.SOFT_HSM_WORKER_SET_ID)
         val i2 = component.getInstance(customHSMConfigId)
         assertNotNull(i1)
         assertNotNull(i2)

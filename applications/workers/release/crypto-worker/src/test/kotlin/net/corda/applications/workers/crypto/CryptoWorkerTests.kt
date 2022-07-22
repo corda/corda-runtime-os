@@ -3,7 +3,7 @@ package net.corda.applications.workers.crypto
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.crypto.core.aes.AesEncryptor
 import net.corda.crypto.core.aes.AesKey
-import net.corda.crypto.impl.config.hsmPersistence
+import net.corda.crypto.impl.config.hsmService
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.softPersistence
@@ -67,7 +67,7 @@ class CryptoWorkerTests {
         assertEquals(100, signingPersistence.vnodeNumberLimit)
         assertEquals(15, signingPersistence.connectionsExpireAfterAccessMins)
         assertEquals(2, signingPersistence.connectionNumberLimit)
-        val hsmPersistence = cryptoConfig.hsmPersistence()
+        val hsmPersistence = cryptoConfig.hsmService()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
 
@@ -117,7 +117,7 @@ class CryptoWorkerTests {
         assertEquals(100, signingPersistence.vnodeNumberLimit)
         assertEquals(15, signingPersistence.connectionsExpireAfterAccessMins)
         assertEquals(2, signingPersistence.connectionNumberLimit)
-        val hsmPersistence = cryptoConfig.hsmPersistence()
+        val hsmPersistence = cryptoConfig.hsmService()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
 

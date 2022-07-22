@@ -3,7 +3,7 @@ package net.corda.crypto.service.impl.bus.rpc
 import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.service.impl.signing.SigningServiceFactoryImpl
+import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleStatus

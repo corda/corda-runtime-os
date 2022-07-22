@@ -15,7 +15,7 @@
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.crypto-client-hsm-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
-    bnd.identity;id='net.corda.crypto-db-persistence-impl',\
+    bnd.identity;id='net.corda.crypto-persistence-impl',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.crypto-ecies-core-impl',\
     bnd.identity;id='net.corda.crypto-ecies-impl',\
