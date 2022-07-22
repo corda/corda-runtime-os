@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.client
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -10,10 +11,13 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -94,6 +98,7 @@ class MembershipQueryClientImplTest {
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { create(any()) } doReturn ourMemberInfo
     }
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(emptyList())
 
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
@@ -129,7 +134,7 @@ class MembershipQueryClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipQueryClient = MembershipQueryClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock
+            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock, layeredPropertyMapFactory
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())
@@ -406,6 +411,58 @@ class MembershipQueryClientImplTest {
         assertThat(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))).isInstanceOf(
             MembershipQueryResult.Failure::class.java
         )
+    }
+
+    @Test
+    fun `successful request for group policy`() {
+        postConfigChangedEvent()
+
+        whenever(rpcSender.sendRequest(any())).thenAnswer {
+            val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                MembershipResponseContext(
+                    requestTimestamp,
+                    requestId,
+                    clock.instant(),
+                    holdingIdentity
+                )
+            }
+            CompletableFuture.completedFuture(
+                MembershipPersistenceResponse(
+                    context,
+                    GroupPolicyQueryResponse(KeyValuePairList(listOf(KeyValuePair("Key", "Value"))))
+                )
+            )
+        }
+
+        val result = membershipQueryClient.queryGroupPolicy(ourHoldingIdentity)
+        assertThat(result.getOrThrow()).isNotNull
+        assertThat(result.getOrThrow().entries.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `when no group policy found empty property map is created`() {
+        postConfigChangedEvent()
+
+        whenever(rpcSender.sendRequest(any())).thenAnswer {
+            val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
+                MembershipResponseContext(
+                    requestTimestamp,
+                    requestId,
+                    clock.instant(),
+                    holdingIdentity
+                )
+            }
+            CompletableFuture.completedFuture(
+                MembershipPersistenceResponse(
+                    context,
+                    GroupPolicyQueryResponse(KeyValuePairList(emptyList()))
+                )
+            )
+        }
+
+        val result = membershipQueryClient.queryGroupPolicy(ourHoldingIdentity)
+        assertThat(result.getOrThrow()).isNotNull
+        assertThat(result.getOrThrow().entries).isEmpty()
     }
 
     @Nested

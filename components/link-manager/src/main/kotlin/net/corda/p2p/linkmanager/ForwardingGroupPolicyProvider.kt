@@ -10,6 +10,7 @@ import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
@@ -25,7 +26,8 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
                                              private val groupPolicyProvider: GroupPolicyProvider,
                                              private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
                                              private val cpiInfoReadService: CpiInfoReadService,
-                                             private val thirdPartyComponentsMode: ThirdPartyComponentsMode):
+                                             private val thirdPartyComponentsMode: ThirdPartyComponentsMode,
+                                             private val membershipQueryClient: MembershipQueryClient):
     LinkManagerGroupPolicyProvider {
 
     private companion object {
@@ -39,7 +41,8 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
         ThirdPartyComponentsMode.REAL -> setOf(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-            LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+            LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
+            LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
         )
     }
     private val managedChildren = when(thirdPartyComponentsMode) {
@@ -47,7 +50,8 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
         ThirdPartyComponentsMode.REAL -> setOf(
             NamedLifecycle(groupPolicyProvider, LifecycleCoordinatorName.forComponent<GroupPolicyProvider>()),
             NamedLifecycle(virtualNodeInfoReadService, LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
-            NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>())
+            NamedLifecycle(cpiInfoReadService, LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
+            NamedLifecycle(membershipQueryClient, LifecycleCoordinatorName.forComponent<MembershipQueryClient>())
         )
     }
 
