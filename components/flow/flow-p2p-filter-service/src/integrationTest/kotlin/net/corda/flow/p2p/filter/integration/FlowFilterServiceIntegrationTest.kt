@@ -93,7 +93,7 @@ class FlowFilterServiceIntegrationTest {
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
-        // Test config updates don't break FlowMapperService
+        // Test config updates don't break Flow Session Filter Service
         republishConfig(publisher)
 
         val identity = HoldingIdentity(testId, testId)
