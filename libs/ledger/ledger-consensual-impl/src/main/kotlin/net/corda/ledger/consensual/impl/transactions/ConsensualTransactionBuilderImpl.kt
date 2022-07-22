@@ -47,10 +47,12 @@ class ConsensualTransactionBuilderImpl(
         secureRandom: SecureRandom,
         serializer: SerializationService //TODO(Is this used correctly? Do we need this one or another maybe?)
     ): ConsensualWireTransaction {
-        // TODO(more verifications...)
+        // TODO(more verifications)
+        // TODO(metadata verifications: nulls, order of CPK, at least one CPK?)
         require(metadata != null){"Null metadata is not allowed"}
         require(timeStamp != null){"Null timeStamp is not allowed"}
         require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
+        require(consensualStates.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
 
         val entropy = ByteArray(32)
         secureRandom.nextBytes(entropy)

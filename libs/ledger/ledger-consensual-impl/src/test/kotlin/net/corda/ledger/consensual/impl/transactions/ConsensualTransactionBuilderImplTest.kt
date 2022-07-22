@@ -99,8 +99,18 @@ internal class ConsensualTransactionBuilderImplTest{
         assertEquals("At least one Consensual State is required", exception.message)
     }
 
-    // states without signers ?
-    // metadata without cpks
+    @Test
+    fun `cannot build Transaction with Consensual States without participants`() {
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            ConsensualTransactionBuilderImpl()
+                .withMetadata(metadata)
+                .withTimeStamp(Instant.now())
+                .withConsensualState(consensualState)
+                .withConsensualState(TestConsensualState("test", emptyList()))
+                .build(merkleTreeFactory, digestService, secureRandom, serializer)
+        }
+        assertEquals("All consensual states needs to have participants", exception.message)
+    }
 
 
 }
