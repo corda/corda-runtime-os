@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.events
 
+import co.paralleluniverse.fibers.Suspendable
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
@@ -9,11 +10,13 @@ import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MAX_RETRIES
@@ -21,21 +24,30 @@ import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_W
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.apache.avro.specific.SpecificRecord
+import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 // Do not serialize the [eventToSend] as it is only needed when leaving the fiber and executed in the request handler
+// seems like it probably better to use handlers (have the input and output handlers in a single class)
+// use the class of the handler in the request, store in the waiting for handler or the state and then resume with it by extracting from a map of handlers
 data class ExternalEventRequest(
-    val requestId: String = UUID.randomUUID().toString(),
-    @Transient val eventToSend: EventToSend
-) : FlowIORequest<ExternalEventRequest.Response> {
+    val requestId: String,
+    val handlerClass: Class<out Handler<out Any, *, *>>,
+    val parameters: Any
+) : FlowIORequest<Any> {
 
-    fun interface EventToSend {
-        fun createRecord(requestId: String): EventRecord
+    interface Handler<PARAMETERS : Any, RESPONSE, RESUME> {
+
+        fun suspending(checkpoint: FlowCheckpoint, requestId: String, parameters: PARAMETERS): EventRecord
+
+        fun resuming(checkpoint: FlowCheckpoint, response: Response<RESPONSE>): RESUME
     }
 
     // Can't decide whether to just use [Record] directly at this point
@@ -44,9 +56,82 @@ data class ExternalEventRequest(
         constructor(topic: String, payload: SpecificRecord) : this(topic, null, payload)
     }
 
-    data class Response(val lastEvent: Any?, val data: ByteArray?) {
+    data class Response<RESPONSE>(val lastResponsePayload: RESPONSE, val data: ByteArray?)
+}
 
-        inline fun <reified T> lastEventAs(): T = lastEvent as T
+interface ExternalEventExecutor {
+
+    @Suspendable
+    fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventRequest.Handler<PARAMETERS, RESPONSE, RESUME>> execute(
+        requestId: String,
+        handlerClass: Class<T>,
+        parameters: PARAMETERS
+    ): RESUME
+
+    @Suspendable
+    fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventRequest.Handler<PARAMETERS, RESPONSE, RESUME>> execute(
+        handlerClass: Class<T>,
+        parameters: PARAMETERS
+    ): RESUME
+}
+
+@Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
+class ExternalEventExecutorImpl @Activate constructor(
+    @Reference(service = FlowFiberService::class)
+    private val flowFiberService: FlowFiberService
+) : ExternalEventExecutor, SingletonSerializeAsToken {
+
+    @Suspendable
+    override fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventRequest.Handler<PARAMETERS, RESPONSE, RESUME>> execute(
+        requestId: String,
+        handlerClass: Class<T>,
+        parameters: PARAMETERS
+    ): RESUME {
+        return uncheckedCast(
+            flowFiberService.getExecutingFiber().suspend(
+                ExternalEventRequest(
+                    requestId,
+                    handlerClass,
+                    parameters
+                )
+            )
+        )
+    }
+
+    @Suspendable
+    override fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventRequest.Handler<PARAMETERS, RESPONSE, RESUME>> execute(
+        handlerClass: Class<T>,
+        parameters: PARAMETERS
+    ): RESUME {
+        return execute(UUID.randomUUID().toString(), handlerClass, parameters)
+    }
+}
+
+@Component(service = [ExternalEventHandlerMap::class])
+class ExternalEventHandlerMap @Activate constructor(private val componentContext: ComponentContext) {
+
+    private companion object {
+        const val EXTERNAL_EVENT_HANDLERS = "externalEventHandlers"
+        fun <T> ComponentContext.fetchServices(refName: String): List<T> {
+            @Suppress("unchecked_cast")
+            return (locateServices(refName) as? Array<T>)?.toList() ?: emptyList()
+        }
+    }
+
+    private val handlers: Map<String, ExternalEventRequest.Handler<Any, Any?, Any>> by lazy {
+        componentContext
+            .fetchServices<ExternalEventRequest.Handler<Any, Any?, Any>>(EXTERNAL_EVENT_HANDLERS)
+            .associateBy { it::class.java.name }
+    }
+
+//    fun get(handlerClass: Class<out ExternalEventRequest.Handler<out Any, *, *>>): ExternalEventRequest.Handler<Any, *, *> {
+//        return handlers[handlerClass]
+//            ?: throw FlowFatalException("$handlerClass does not have an associated external event handler")
+//    }
+
+    fun get(handlerClassName: String): ExternalEventRequest.Handler<Any, Any?, *> {
+        return handlers[handlerClassName]
+            ?: throw FlowFatalException("$handlerClassName does not have an associated external event handler")
     }
 }
 
@@ -65,7 +150,8 @@ class FlowExternalEventHandler @Activate constructor(
         if (externalEventState == null) {
             // do something, probably discard the event
         } else {
-            checkpoint.externalEventState = externalEventManager.processEventReceived(externalEventState, externalEventResponse)
+            checkpoint.externalEventState =
+                externalEventManager.processEventReceived(externalEventState, externalEventResponse)
         }
         return context
     }
@@ -74,7 +160,9 @@ class FlowExternalEventHandler @Activate constructor(
 @Component(service = [FlowWaitingForHandler::class])
 class ExternalEventResponseWaitingForHandler @Activate constructor(
     @Reference(service = ExternalEventManager::class)
-    private val externalEventManager: ExternalEventManager
+    private val externalEventManager: ExternalEventManager,
+    @Reference(service = ExternalEventHandlerMap::class)
+    private val externalEventHandlerMap: ExternalEventHandlerMap
 ) : FlowWaitingForHandler<net.corda.data.flow.state.waiting.external.ExternalEventResponse> {
 
     private companion object {
@@ -88,14 +176,16 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         waitingFor: net.corda.data.flow.state.waiting.external.ExternalEventResponse
     ): FlowContinuation {
         val externalEventState =
-            context.checkpoint.externalEventState ?: throw FlowFatalException("Waiting for external event but state not set", context)
+            context.checkpoint.externalEventState
+                ?: throw FlowFatalException("Waiting for external event but state not set")
 
         val continuation = when (externalEventState.status.type) {
             ExternalEventStateType.OK -> {
                 when (val externalEventResponse = externalEventManager.getReceivedResponse(externalEventState)) {
                     null -> FlowContinuation.Continue
                     else -> {
-                        FlowContinuation.Run(externalEventResponse)
+                        val handler = externalEventHandlerMap.get(externalEventState.handlerClassName)
+                        FlowContinuation.Run(handler.resuming(context.checkpoint, externalEventResponse))
                     }
                 }
             }
@@ -106,11 +196,10 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
                 FlowContinuation.Error(CordaRuntimeException(externalEventState.status.exception.errorMessage))
             }
             ExternalEventStateType.FATAL_ERROR -> {
-                throw FlowFatalException(externalEventState.status.exception.errorMessage, context)
+                throw FlowFatalException(externalEventState.status.exception.errorMessage)
             }
             null -> throw FlowFatalException(
-                "Unexpected null ${ExternalEventStateType::class.java.name} for flow ${context.checkpoint.flowId}",
-                context
+                "Unexpected null ${ExternalEventStateType::class.java.name} for flow ${context.checkpoint.flowId}"
             )
         }
 
@@ -121,7 +210,11 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         return continuation
     }
 
-    private fun retryOrError(config: SmartConfig, exception: ExceptionEnvelope, externalEventState: ExternalEventState): FlowContinuation {
+    private fun retryOrError(
+        config: SmartConfig,
+        exception: ExceptionEnvelope,
+        externalEventState: ExternalEventState
+    ): FlowContinuation {
         val retries = externalEventState.retries
         // external event config needed
         return if (retries >= config.getLong(EXTERNAL_EVENT_MAX_RETRIES)) {
@@ -138,7 +231,9 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
 @Component(service = [FlowRequestHandler::class])
 class ExternalEventRequestHandler @Activate constructor(
     @Reference(service = ExternalEventManager::class)
-    private val externalEventManager: ExternalEventManager
+    private val externalEventManager: ExternalEventManager,
+    @Reference(service = ExternalEventHandlerMap::class)
+    private val externalEventHandlerMap: ExternalEventHandlerMap
 ) : FlowRequestHandler<ExternalEventRequest> {
 
     override val type = ExternalEventRequest::class.java
@@ -148,7 +243,9 @@ class ExternalEventRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: ExternalEventRequest): FlowEventContext<Any> {
-        val eventRecord = request.eventToSend.createRecord(request.requestId)
+        val eventRecord = externalEventHandlerMap.get(request.handlerClass.name)
+            .suspending(context.checkpoint, request.requestId, request.parameters)
+
         context.checkpoint.externalEventState = externalEventManager.processEventToSend(
             context.checkpoint.flowId,
             request.requestId,
@@ -168,9 +265,12 @@ interface ExternalEventManager {
         instant: Instant
     ): ExternalEventState
 
-    fun processEventReceived(externalEventState: ExternalEventState, externalEventResponse: ExternalEventResponse): ExternalEventState
+    fun processEventReceived(
+        externalEventState: ExternalEventState,
+        externalEventResponse: ExternalEventResponse
+    ): ExternalEventState
 
-    fun getReceivedResponse(externalEventState: ExternalEventState): ExternalEventRequest.Response?
+    fun getReceivedResponse(externalEventState: ExternalEventState): ExternalEventRequest.Response<Any?>?
 
     fun getEventToSend(
         flowId: String,
@@ -248,7 +348,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
         return externalEventState
     }
 
-    override fun getReceivedResponse(externalEventState: ExternalEventState): ExternalEventRequest.Response? {
+    override fun getReceivedResponse(externalEventState: ExternalEventState): ExternalEventRequest.Response<Any?>? {
         return if (!isWaitingForResponse(externalEventState)) {
             val sortedResponses = externalEventState.responses.sortedBy { response -> response.chunkNumber }
             val data = if (sortedResponses.first().numberOfChunks != null) {

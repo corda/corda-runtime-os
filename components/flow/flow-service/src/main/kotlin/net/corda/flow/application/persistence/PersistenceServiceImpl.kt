@@ -2,15 +2,18 @@ package net.corda.flow.application.persistence
 
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.EntityRequest
+import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.pipeline.handlers.events.ExternalEventExecutor
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.flow.pipeline.handlers.events.ExternalEventRequest
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.persistence.query.NamedQueryFilter
@@ -33,8 +36,10 @@ import java.nio.ByteBuffer
 @Suppress("TooManyFunctions")
 @Component(service = [PersistenceService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
 class PersistenceServiceImpl @Activate constructor(
+    @Reference(service = ExternalEventExecutor::class)
+    private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService,
+    private val flowFiberService: FlowFiberService
 ) : PersistenceService, SingletonSerializeAsToken {
 
     private companion object {
@@ -45,7 +50,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
-        return suspend(FindEntity(entityClass.canonicalName, serialize(primaryKey))) {
+        return execute(FindEntity(entityClass.canonicalName, serialize(primaryKey))) {
             "Preparing to send Find query for class of type ${entityClass.canonicalName} with id $it"
         }?.let { deserializeReceivedPayload(it, entityClass) }
     }
@@ -61,7 +66,7 @@ class PersistenceServiceImpl @Activate constructor(
         return object : PagedQuery<R> {
             @Suspendable
             override fun execute(): List<R> {
-                val deserialized = suspend(FindAll(entityClass.canonicalName)) {
+                val deserialized = execute(FindAll(entityClass.canonicalName)) {
                     "Preparing to send FindAll query for class of type ${entityClass.canonicalName} with id $it"
                 }?.let { deserializeReceivedPayload(it, List::class.java) }
 
@@ -83,7 +88,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
-        return suspend(MergeEntity(serialize(entity))){
+        return execute(MergeEntity(serialize(entity))) {
             "Preparing to send Merge query for class of type ${entity::class.java} with id $it"
         }?.let { deserializeReceivedPayload(it, entity::class.java) }
     }
@@ -95,7 +100,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persist(entity: Any) {
-        suspend(PersistEntity(serialize(entity))) {
+        execute(PersistEntity(serialize(entity))) {
             "Preparing to send Persist query for class of type ${entity::class.java} with id $it"
         }
     }
@@ -107,7 +112,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun remove(entity: Any) {
         enforceNotPrimitive(entity::class.java)
-        suspend(DeleteEntity(serialize(entity))) { "Preparing to send Delete query for class of type ${entity::class.java} with id $it" }
+        execute(DeleteEntity(serialize(entity))) { "Preparing to send Delete query for class of type ${entity::class.java} with id $it" }
     }
 
     @Suspendable
@@ -123,18 +128,12 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun suspend(request: Any, debugLog: (requestId: String) -> String): ByteArray? {
-        val holdingIdentity = flowFiberService.getExecutingFiber().getExecutionContext().holdingIdentity.toAvro()
+    private fun execute(request: Any, debugLog: (requestId: String) -> String): ByteArray? {
         return try {
-            flowFiberService.getExecutingFiber().suspend(
-                ExternalEventRequest {
-                    log.debug { debugLog(it) }
-                    ExternalEventRequest.EventRecord(
-                        Schemas.VirtualNode.ENTITY_PROCESSOR,
-                        EntityRequest(holdingIdentity, request)
-                    )
-                }
-            ).data
+            externalEventExecutor.execute(
+                PersistenceServiceExternalEventHandler::class.java,
+                PersistenceParameters(request, debugLog)
+            )
         } catch (e: CordaRuntimeException) {
             throw CordaPersistenceException(e.message ?: "Exception occurred when executing persistence operation")
         }
@@ -177,5 +176,35 @@ class PersistenceServiceImpl @Activate constructor(
         return fiber.getExecutionContext().run {
             sandboxGroupContext.amqpSerializer
         }
+    }
+}
+
+data class PersistenceParameters(val request: Any, val debugLog: (requestId: String) -> String)
+
+@Component(service = [ExternalEventRequest.Handler::class])
+class PersistenceServiceExternalEventHandler :
+    ExternalEventRequest.Handler<PersistenceParameters, EntityResponse, ByteArray?> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    override fun suspending(
+        checkpoint: FlowCheckpoint,
+        requestId: String,
+        parameters: PersistenceParameters
+    ): ExternalEventRequest.EventRecord {
+        log.debug { parameters.debugLog(requestId) }
+        return ExternalEventRequest.EventRecord(
+            Schemas.VirtualNode.ENTITY_PROCESSOR,
+            EntityRequest(checkpoint.holdingIdentity.toAvro(), parameters.request)
+        )
+    }
+
+    override fun resuming(
+        checkpoint: FlowCheckpoint,
+        response: ExternalEventRequest.Response<EntityResponse>
+    ): ByteArray? {
+        return response.data
     }
 }
