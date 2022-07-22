@@ -68,11 +68,28 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
  * @see use
  */
 inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
-    val currentTransaction = transaction
+    // delegate to non-extension method so that it can be tested
+    return transactionExecutor(this, block)
+}
+
+/**
+ * Begins a new transaction, commits it and then closes it after executing the [block].
+ *
+ * If an error occurs and the transaction is marked as "rollbackOnly" and is rolled back instead of committed.
+ *
+ * @param block The code to execute before committing the [EntityManager]'s transaction.
+ * @param R The type returned by [block].
+ *
+ * @return The result of executing [block].
+ *
+ * @see transaction
+ */
+inline fun <R> transactionExecutor(entityManager: EntityManager,  block: (EntityManager) -> R): R {
+    val currentTransaction = entityManager.transaction
     currentTransaction.begin()
 
     return try {
-        block(this)
+        block(entityManager)
     } catch (e: Exception) {
         currentTransaction.setRollbackOnly()
         throw e
@@ -82,6 +99,6 @@ inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
         } else {
             currentTransaction.rollback()
         }
-        close()
+        entityManager.close()
     }
 }
