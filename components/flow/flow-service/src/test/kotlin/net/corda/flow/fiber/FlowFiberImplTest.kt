@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled
+@Disabled // See https://r3-cev.atlassian.net/browse/CORE-4820
 class FlowFiberImplTest {
 
     val mockFlowStack = mock<FlowStack>()
