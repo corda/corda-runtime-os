@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
+import net.corda.utilities.executeWithStdErrSuppressed
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -58,7 +59,12 @@ internal class HealthMonitorImpl @Activate constructor(
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
             executeWithThreadContextClassLoader(OsgiClassLoader(listOf(bundle))) {
-                server.start(port)
+                // Required because Javalin prints an error directly to stderr if it cannot find a logging
+                // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
+                // The logging implementation is found correctly in practice.
+                executeWithStdErrSuppressed {
+                    server.start(port)
+                }
             }
         }
     }
