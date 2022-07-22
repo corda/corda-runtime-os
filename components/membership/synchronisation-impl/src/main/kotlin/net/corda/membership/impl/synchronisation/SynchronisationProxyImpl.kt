@@ -28,6 +28,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -220,16 +221,26 @@ class SynchronisationProxyImpl @Activate constructor(
 
     private inner class Processor : DurableProcessor<String, SynchronisationCommand> {
 
+        private val handlers = mapOf<Class<*>, SynchronisationHandler<*>>(
+            ProcessMembershipUpdates::class.java to ProcessMembershipUpdatesHandler(),
+        )
+
         override fun onNext(events: List<Record<String, SynchronisationCommand>>): List<Record<*, *>> {
             events.forEach { record ->
                 try {
-                    require(record.value != null) {
-                        throw SynchronisationException("SynchronisationCommand on topic: ${record.topic} with " +
-                                "key: ${record.key} was null.")
+                    record.value
+                        ?: throw SynchronisationException("SynchronisationCommand with record key: ${record.key} was null.")
+                    when (record.value!!.command) {
+                        is ProcessMembershipUpdates -> {
+                            logger.info("Received process membership updates command.")
+                            handlers[ProcessMembershipUpdates::class.java]?.invoke(record)
+                        }
+                        else -> {
+                            logger.warn("Unhandled synchronisation command received.")
+                        }
                     }
-                    processMembershipUpdates(record.value!!.command as ProcessMembershipUpdates)
                 } catch (e: Exception) {
-                    logger.error("Failed to process synchronisation event. Cause: $e", e)
+                    logger.error("Failed to process synchronisation event.", e)
                 }
             }
             return emptyList()
@@ -237,5 +248,31 @@ class SynchronisationProxyImpl @Activate constructor(
 
         override val keyClass = String::class.java
         override val valueClass = SynchronisationCommand::class.java
+    }
+
+    interface SynchronisationHandler<T> {
+        fun invoke(event: Record<String, SynchronisationCommand>) {
+            val command = event.value?.command
+            if (commandType.isInstance(command)) {
+                @Suppress("unchecked_cast")
+                return invoke(command as T)
+            } else {
+                throw CordaRuntimeException("Invalid command: $command")
+            }
+        }
+
+        fun invoke(command: T)
+
+        val commandType: Class<T>
+    }
+
+    private inner class ProcessMembershipUpdatesHandler : SynchronisationHandler<ProcessMembershipUpdates> {
+        override fun invoke(command: ProcessMembershipUpdates) {
+            processMembershipUpdates(command)
+        }
+
+        override val commandType: Class<ProcessMembershipUpdates>
+            get() = ProcessMembershipUpdates::class.java
+
     }
 }
