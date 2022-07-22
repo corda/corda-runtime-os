@@ -2,6 +2,7 @@ package net.corda.uniqueness.backingstore
 
 import net.corda.uniqueness.backingstore.BackingStore.Session
 import net.corda.uniqueness.datamodel.*
+import net.corda.v5.crypto.SecureHash
 
 /**
  * Abstracts the retrieval and persistence of data required by uniqueness checker implementations.
@@ -89,8 +90,8 @@ interface BackingStore {
          * transactions that have been previously committed, keyed by their transaction id.
          */
         fun getTransactionDetails(
-            txIds: Collection<UniquenessCheckInternalTxHash>
-        ): Map<UniquenessCheckInternalTxHash, UniquenessCheckInternalTransactionDetails>
+            txIds: Collection<SecureHash>
+        ): Map<SecureHash, UniquenessCheckInternalTransactionDetails>
 
         /**
          * Provides the set of operations that may be performed within the context of a transaction.
@@ -109,7 +110,7 @@ interface BackingStore {
              * the specified transaction id.
              */
             fun consumeStates(
-                consumingTxId: UniquenessCheckInternalTxHash,
+                consumingTxId: SecureHash,
                 stateRefs: Collection<UniquenessCheckInternalStateRef>
             )
 

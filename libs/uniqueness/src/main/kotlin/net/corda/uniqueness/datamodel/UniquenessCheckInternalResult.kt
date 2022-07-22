@@ -1,5 +1,7 @@
 package net.corda.uniqueness.datamodel
 
+import net.corda.data.uniqueness.*
+import org.apache.avro.specific.SpecificRecord
 import java.time.Instant
 
 /**
@@ -19,6 +21,34 @@ sealed class UniquenessCheckInternalResult {
 
     data class Failure(val error: UniquenessCheckInternalError) : UniquenessCheckInternalResult() {
         override fun toCharacterRepresentation(): Char = RESULT_REJECTED_REPRESENTATION
+
+        /**
+         * Converts the failure to the external Avro error
+         */
+        fun toExternalError(): SpecificRecord {
+            return when (error) {
+                is UniquenessCheckInternalError.InputStateConflict ->
+                    UniquenessCheckResultInputStateConflict(
+                        error.conflictingStates.map { it.stateRef.toString() })
+                is UniquenessCheckInternalError.InputStateUnknown ->
+                    UniquenessCheckResultInputStateUnknown(
+                        error.unknownStates.map { it.toString() })
+                is UniquenessCheckInternalError.ReferenceStateConflict ->
+                    UniquenessCheckResultReferenceStateConflict(
+                        error.conflictingStates.map { it.stateRef.toString() })
+                is UniquenessCheckInternalError.ReferenceStateUnknown ->
+                    UniquenessCheckResultReferenceStateUnknown(
+                        error.unknownStates.map { it.toString() })
+                is UniquenessCheckInternalError.TimeWindowOutOfBounds ->
+                    with(error) {
+                        UniquenessCheckResultTimeWindowOutOfBounds(
+                            evaluationTimestamp,
+                            timeWindowLowerBound,
+                            timeWindowUpperBound
+                        )
+                    }
+            }
+        }
     }
 
     abstract fun toCharacterRepresentation(): Char

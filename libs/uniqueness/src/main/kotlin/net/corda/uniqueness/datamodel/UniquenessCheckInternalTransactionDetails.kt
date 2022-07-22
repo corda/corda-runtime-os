@@ -1,5 +1,7 @@
 package net.corda.uniqueness.datamodel
 
+import net.corda.v5.crypto.SecureHash
+
 /**
  * Internal representation of the transaction details that must be persisted by the uniqueness
  * checker, used by the uniqueness checker and backing store only. This representation is agnostic
@@ -7,6 +9,6 @@ package net.corda.uniqueness.datamodel
  * store.
  */
 data class UniquenessCheckInternalTransactionDetails(
-    val txId: UniquenessCheckInternalTxHash,
+    val txId: SecureHash,
     val result: UniquenessCheckInternalResult
 )

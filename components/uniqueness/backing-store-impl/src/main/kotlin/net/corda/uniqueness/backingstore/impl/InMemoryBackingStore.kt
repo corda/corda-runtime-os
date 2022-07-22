@@ -8,6 +8,7 @@ package net.corda.uniqueness.backingstore.impl
  */
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.*
+import net.corda.v5.crypto.SecureHash
 
 @Suppress("ForbiddenComment")
 // TODO: Move to testkit once we have the real implementation
@@ -17,13 +18,13 @@ open class InMemoryBackingStore : BackingStore {
     private val persistedStateData =
         HashMap<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
     private val persistedTxnData =
-        HashMap<UniquenessCheckInternalTxHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
 
     // Temporary cache of data created / updated during the current session
     private val sessionStateData =
         HashMap<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
     private val sessionTxnData =
-        HashMap<UniquenessCheckInternalTxHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
 
     @Synchronized
     override fun session(block: (BackingStore.Session) -> Unit) = block(SessionImpl())
@@ -52,7 +53,7 @@ open class InMemoryBackingStore : BackingStore {
         override fun getStateDetails(states: Collection<UniquenessCheckInternalStateRef>) =
             persistedStateData.filterKeys { states.contains(it) }
 
-        override fun getTransactionDetails(txIds: Collection<UniquenessCheckInternalTxHash>) =
+        override fun getTransactionDetails(txIds: Collection<SecureHash>) =
             persistedTxnData.filterKeys { txIds.contains(it) }
 
         protected open inner class TransactionOpsImpl : BackingStore.Session.TransactionOps {
@@ -68,7 +69,7 @@ open class InMemoryBackingStore : BackingStore {
 
             @Synchronized
             override fun consumeStates(
-                consumingTxId: UniquenessCheckInternalTxHash,
+                consumingTxId: SecureHash,
                 stateRefs: Collection<UniquenessCheckInternalStateRef>
             ) {
 

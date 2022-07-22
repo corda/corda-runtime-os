@@ -1,6 +1,9 @@
 package net.corda.uniqueness.checker.impl
 
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckRequest
+import net.corda.data.uniqueness.UniquenessCheckResponse
+import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
+import net.corda.data.uniqueness.UniquenessCheckResultSuccess
 import net.corda.lifecycle.*
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.impl.InMemoryBackingStore
@@ -9,7 +12,7 @@ import net.corda.uniqueness.datamodel.*
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import org.apache.avro.specific.SpecificRecord
+import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,7 +50,7 @@ class BatchedUniquenessCheckerImpl(
     // In-memory caches of transaction and state details. When processing a batch, these are
     // initially seeded from the backing store, but are updated as we iterate through a batch
     private val transactionDetailsCache =
-        HashMap<UniquenessCheckInternalTxHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
     private val stateDetailsCache =
         HashMap<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
 
@@ -75,7 +78,7 @@ class BatchedUniquenessCheckerImpl(
         // the tx id)
         val requestsToProcess = requests.mapNotNull {
             try {
-                UniquenessCheckInternalRequest(it)
+                UniquenessCheckInternalRequest.create(it)
             } catch (e: IllegalArgumentException) {
                 results.add(UniquenessCheckResponse(
                     it.txId,
@@ -94,7 +97,7 @@ class BatchedUniquenessCheckerImpl(
                         UniquenessCheckResultSuccess(result.commitTimestamp)
                     }
                     is UniquenessCheckInternalResult.Failure -> {
-                        convertToExternalError(result)
+                        result.toExternalError()
                     }
                 }
             )
@@ -291,37 +294,6 @@ class BatchedUniquenessCheckerImpl(
     ): Boolean {
         return ((timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
                 timeWindowUpperBound.isAfter(currentTime))
-    }
-
-    private fun convertToExternalError(
-        result: UniquenessCheckInternalResult.Failure
-    ): SpecificRecord {
-        return when (result.error) {
-            is UniquenessCheckInternalError.InputStateConflict ->
-                UniquenessCheckResultInputStateConflict(
-                    (result.error as UniquenessCheckInternalError.InputStateConflict)
-                        .conflictingStates.map { it.stateRef.toString() })
-            is UniquenessCheckInternalError.InputStateUnknown ->
-                UniquenessCheckResultInputStateUnknown(
-                    (result.error as UniquenessCheckInternalError.InputStateUnknown)
-                        .unknownStates.map { it.toString() })
-            is UniquenessCheckInternalError.ReferenceStateConflict ->
-                UniquenessCheckResultReferenceStateConflict(
-                    (result.error as UniquenessCheckInternalError.ReferenceStateConflict)
-                        .conflictingStates.map { it.stateRef.toString() })
-            is UniquenessCheckInternalError.ReferenceStateUnknown ->
-                UniquenessCheckResultReferenceStateUnknown(
-                    (result.error as UniquenessCheckInternalError.ReferenceStateUnknown)
-                        .unknownStates.map { it.toString() })
-            is UniquenessCheckInternalError.TimeWindowOutOfBounds ->
-                with(result.error as UniquenessCheckInternalError.TimeWindowOutOfBounds) {
-                    UniquenessCheckResultTimeWindowOutOfBounds(
-                        evaluationTimestamp,
-                        timeWindowLowerBound,
-                        timeWindowUpperBound
-                    )
-                }
-        }
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
