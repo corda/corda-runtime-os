@@ -44,7 +44,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private val dbName by lazy {
-        System.getenv("CORDA_DEV_CLUSER_DB_NAME") ?: "cordacluster"
+        System.getenv("CORDA_DEV_CLUSTER_DB_NAME") ?: "cordacluster"
     }
 
     private val dbUrl by lazy {
