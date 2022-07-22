@@ -11,6 +11,7 @@ dependencies {
 
     // TODO: review dependencies
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:membership:membership-common")
     implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-ledger-common"
