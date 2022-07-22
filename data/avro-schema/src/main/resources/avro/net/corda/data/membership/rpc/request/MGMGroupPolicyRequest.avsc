@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "MGMGroupPolicyRequest",
+  "namespace": "net.corda.data.membership.rpc.request",
+  "doc": "Request to fetch the group policy of MGM.",
+  "fields": [
+    {
+      "name": "holdingIdentityId",
+      "doc": "ID of the holding identity whose group policy we want to fetch.",
+      "type": "string"
+    }
+  ]
+}
