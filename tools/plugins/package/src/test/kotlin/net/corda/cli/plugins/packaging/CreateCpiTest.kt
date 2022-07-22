@@ -19,6 +19,7 @@ import java.util.jar.JarOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
+import picocli.CommandLine.Help
 
 class CreateCpiTest {
 
@@ -206,7 +207,11 @@ class CreateCpiTest {
     @Suppress("MaxLineLength")
     fun testNoOptionError() {
 
-        val errText = captureStdErr { CommandLine(app).execute("") }
+        val errText = captureStdErr {
+            CommandLine(app)
+                .setColorScheme(Help.defaultColorScheme(Help.Ansi.OFF))
+                .execute("")
+        }
 
         assertEquals("""Missing required options: '--cpb=<cpbFileName>', '--group-policy=<groupPolicyFileName>', '--keystore=<keyStoreFileName>', '--storepass=<keyStorePass>', '--key=<keyAlias>'
 Usage: create -c=<cpbFileName> [-f=<outputFileName>] -g=<groupPolicyFileName>

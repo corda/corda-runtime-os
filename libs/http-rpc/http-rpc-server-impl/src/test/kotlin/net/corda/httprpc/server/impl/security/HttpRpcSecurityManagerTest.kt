@@ -1,14 +1,14 @@
 package net.corda.httprpc.server.impl.security
 
-import net.corda.httprpc.rpc.proxies.RpcAuthHelper
+import io.javalin.http.ForbiddenResponse
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.server.impl.context.ContextUtils
 import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -18,21 +18,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import javax.security.auth.login.FailedLoginException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.assertDoesNotThrow
+import java.lang.reflect.Method
 
-interface TestRpcOps : RpcOps {
-  fun dummy()
-  fun dummy2()
-}
-
-class TestRpcOpsImpl : TestRpcOps {
-  override val protocolVersion: Int
-    get() = 2
-
-  override fun dummy() {}
-  override fun dummy2() {}
-}
-
-class SecurityManagerTest {
+class HttpRpcSecurityManagerTest {
     private val authenticationProvider1: AuthenticationProvider = mock()
     private val authenticationProvider2: AuthenticationProvider = mock(extraInterfaces = arrayOf(AuthenticationSchemeProvider::class))
     private val subject: AuthorizingSubject = mock()
@@ -40,6 +29,21 @@ class SecurityManagerTest {
     private val userAlice = User("Alice", password, setOf("ALL"))
     private val userBob = User("Bob", password, setOf("InvokeRpc:net.corda.httprpc.server.security.TestRPCOps#dummy2"))
     private val securityManager = SecurityManagerRPCImpl(setOf(authenticationProvider1, authenticationProvider2))
+
+    private companion object {
+
+        private fun authorize(authenticatedUser: AuthorizingSubject, method: Method) {
+            return ContextUtils.authorize(authenticatedUser, methodFullName(method))
+        }
+
+        private fun methodFullName(method: Method): String = methodFullName(method.declaringClass, method.name)
+
+        private fun methodFullName(clazz: Class<*>, methodName: String): String {
+            require(clazz.isInterface) { "Must be an interface: $clazz" }
+            require(RpcOps::class.java.isAssignableFrom(clazz)) { "Must be assignable from RPCOps: $clazz" }
+            return clazz.name + "#" + methodName
+        }
+    }
 
     @BeforeEach
     fun setUp() {
@@ -113,29 +117,32 @@ class SecurityManagerTest {
         whenever(authenticationProvider1.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))).thenReturn(
             subject
         )
-        whenever(subject.isPermitted(RpcAuthHelper.methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
+        whenever(subject.isPermitted(methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
 
         val authenticatedBob = securityManager.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))
 
-        val isBobAuthorizedToMethod = securityManager.authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy"))
-        val isBobAuthorizedToMethod2 = securityManager.authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy2"))
+        assertThrows(ForbiddenResponse::class.java) {
+            authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy"))
+        }
 
-        assert(isBobAuthorizedToMethod2)
-        assertFalse(isBobAuthorizedToMethod)
+        assertDoesNotThrow {
+            authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy2"))
+        }
     }
 
     @Test
     fun `isPermitted_authenticatedUserAndPermittedAll_shouldBeAuthorizedToEveryMethod`() {
-        whenever(subject.isPermitted(RpcAuthHelper.methodFullName(TestRpcOps::class.java.getMethod("dummy")))).thenReturn(true)
-        whenever(subject.isPermitted(RpcAuthHelper.methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
+        whenever(subject.isPermitted(methodFullName(TestRpcOps::class.java.getMethod("dummy")))).thenReturn(true)
+        whenever(subject.isPermitted(methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
 
         val authenticatedAlice = securityManager.authenticate(UsernamePasswordAuthenticationCredentials(userAlice.username, password))
 
-        val isAliceAuthorizedToMethod = securityManager.authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy"))
-        val isAliceAuthorizedToMethod2 = securityManager.authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy2"))
-
-        assert(isAliceAuthorizedToMethod)
-        assert(isAliceAuthorizedToMethod2)
+        assertDoesNotThrow {
+            authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy"))
+        }
+        assertDoesNotThrow {
+            authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy2"))
+        }
     }
 
     @Test
@@ -143,5 +150,5 @@ class SecurityManagerTest {
         assertArrayEquals(arrayOf(authenticationProvider2), securityManager.getSchemeProviders().toTypedArray())
     }
 
-  private data class User(val username: String, val password: String, val permissions: Set<String>)
+    private data class User(val username: String, val password: String, val permissions: Set<String>)
 }
