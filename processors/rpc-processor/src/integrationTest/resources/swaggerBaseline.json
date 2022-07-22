@@ -1383,7 +1383,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
