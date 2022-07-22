@@ -119,8 +119,6 @@ class FlowMapperServiceIntegrationTest {
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
         p2pOutSub.stop()
 
-        republishConfig(publisher)
-
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
@@ -228,6 +226,60 @@ class FlowMapperServiceIntegrationTest {
         p2pOutSub.stop()
     }
 
+    @Test
+    fun `flow mapper still works after config update`() {
+        val testId = "test4"
+        val versions = listOf(1)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+
+        //send 2 session init, 1 is duplicate
+        val sessionInitEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                    testId, versions, testId, testId,null
+                ))
+            )
+        )
+
+        publisher.publish(listOf(sessionInitEvent))
+
+        //validate p2p receives the init
+        val p2pLatch = CountDownLatch(1)
+        val p2pOutSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            TestP2POutProcessor(testId, p2pLatch, 1), bootConfig, null
+        )
+        p2pOutSub.start()
+        assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
+        p2pOutSub.stop()
+
+        // Publish the config again to trigger the update logic
+        publishConfig(publisher)
+
+        //send data back
+        val sessionDataEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray())))
+            )
+        )
+        publisher.publish(listOf(sessionDataEvent))
+
+        //validate flow event topic
+        val flowEventLatch = CountDownLatch(1)
+        val testProcessor = TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
+        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
+            testProcessor,
+            bootConfig,
+            null
+        )
+
+        flowEventSub.start()
+        assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
+        flowEventSub.stop()
+    }
+
+
     private fun setupConfig(publisher: Publisher) {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
         publishConfig(publisher)
@@ -238,17 +290,6 @@ class FlowMapperServiceIntegrationTest {
     private fun publishConfig(publisher: Publisher) {
         publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, flowConf, 0, schemaVersion))))
         publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
-    }
-
-    private fun republishConfig(publisher: Publisher) {
-        // Wait for the initial config to be available
-        val configLatch = CountDownLatch(1)
-        configService.registerForUpdates { _, _ ->
-            configLatch.countDown()
-        }
-        configLatch.await()
-
-        publishConfig(publisher)
     }
 
     private val bootConf = """
