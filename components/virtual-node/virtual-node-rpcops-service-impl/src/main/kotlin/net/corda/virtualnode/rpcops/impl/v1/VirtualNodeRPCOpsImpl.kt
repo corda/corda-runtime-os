@@ -15,7 +15,7 @@ import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.toEndpointType
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -132,6 +132,22 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     override fun getAllVirtualNodes(): GetVirtualNodesResponse {
         return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
+
+    private fun net.corda.virtualnode.VirtualNodeInfo.toEndpointType(): VirtualNodeInfo =
+        VirtualNodeInfo(
+            holdingIdentity,
+            cpiIdentifier.toEndpointType(),
+            vaultDdlConnectionId,
+            vaultDmlConnectionId,
+            cryptoDdlConnectionId,
+            cryptoDmlConnectionId,
+            hsmConnectionId,
+            version,
+            timestamp
+        )
+
+    private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =
+        CpiIdentifier(name, version, signerSummaryHash?.toString())
 
     /** Validates the [x500Name]. */
     private fun validateX500Name(x500Name: String) = try {

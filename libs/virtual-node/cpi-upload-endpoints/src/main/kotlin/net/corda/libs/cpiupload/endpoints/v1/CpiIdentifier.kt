@@ -6,6 +6,3 @@ data class CpiIdentifier(val cpiName: String, val cpiVersion: String, val signer
             CpiIdentifier(cpiId.name, cpiId.version, cpiId.signerSummaryHash?.toString())
     }
 }
-
-fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType() : CpiIdentifier =
-    CpiIdentifier(name, version, signerSummaryHash?.toString())
