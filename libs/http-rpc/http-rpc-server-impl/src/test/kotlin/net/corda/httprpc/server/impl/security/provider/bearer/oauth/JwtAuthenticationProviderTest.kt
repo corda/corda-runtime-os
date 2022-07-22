@@ -2,9 +2,9 @@ package net.corda.httprpc.server.impl.security.provider.bearer.oauth
 
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWTParser
-import net.corda.httprpc.security.read.AdminSubject
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.impl.security.TestRpcOps
+import net.corda.httprpc.server.impl.security.provider.bearer.TestAdminSubject
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import org.junit.jupiter.api.Assertions
@@ -26,7 +26,7 @@ class JwtAuthenticationProviderTest {
     private val permission = "InvokeRpc:${TestRpcOps::class.java.name}#dummy2"
 
     private val rpcSecurityManager = mock<RPCSecurityManager>().apply {
-        whenever(buildSubject(any())).thenReturn(AdminSubject(username))
+        whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
     }
 
     private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, rpcSecurityManager)
