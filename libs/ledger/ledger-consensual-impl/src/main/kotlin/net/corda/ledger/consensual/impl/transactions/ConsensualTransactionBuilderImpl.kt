@@ -45,7 +45,7 @@ class ConsensualTransactionBuilderImpl(
         merkleTreeFactory: MerkleTreeFactory,
         digestService: DigestService,
         secureRandom: SecureRandom,
-        serializer: SerializationService //TODO(Is this used correctly? Do we need this one or another maybe?)
+        serializer: SerializationService
     ): ConsensualWireTransaction {
         // TODO(more verifications)
         // TODO(metadata verifications: nulls, order of CPK, at least one CPK?)
