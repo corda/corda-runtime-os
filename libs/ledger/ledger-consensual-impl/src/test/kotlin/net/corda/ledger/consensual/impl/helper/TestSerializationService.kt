@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.impl.helper
 
+import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
@@ -15,6 +16,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.framework.Bundle
 
 //TODO(Deduplicate with net.corda.internal.serialization.amqp.testutils)
@@ -42,6 +44,7 @@ private val testSerializationContext = SerializationContextImpl(
 )
 
 private fun testDefaultFactoryNoEvolution(
+    keyEncodingService: KeyEncodingService,
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ): SerializerFactory =
@@ -49,12 +52,15 @@ private fun testDefaultFactoryNoEvolution(
         testSerializationContext.currentSandboxGroup(),
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
         allowEvolution = false
-    ).also { registerCustomSerializers(it) }
+    ).also {
+        registerCustomSerializers(it)
+        it.register(PublicKeySerializer(keyEncodingService), it)
+}
 
 class TestSerializationService {
     companion object{
-        fun getTestSerializationService() : SerializationService {
-            val factory = testDefaultFactoryNoEvolution()
+        fun getTestSerializationService(keyEncodingService: KeyEncodingService) : SerializationService {
+            val factory = testDefaultFactoryNoEvolution(keyEncodingService)
             val output = SerializationOutput(factory)
             val input = DeserializationInput(factory)
             val context = testSerializationContext
