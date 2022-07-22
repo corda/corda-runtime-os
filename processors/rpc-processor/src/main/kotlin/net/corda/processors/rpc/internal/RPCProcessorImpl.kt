@@ -20,6 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -58,6 +59,8 @@ class RPCProcessorImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = MemberOpsClient::class)
     private val memberOpsClient: MemberOpsClient,
+    @Reference(service = MGMOpsClient::class)
+    private val mgmOpsClient: MGMOpsClient,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -94,6 +97,7 @@ class RPCProcessorImpl @Activate constructor(
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberOpsClient,
+        ::mgmOpsClient,
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,
