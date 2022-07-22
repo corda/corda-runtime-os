@@ -104,7 +104,7 @@ class VirtualNodeWriterProcessorTests {
             holdingIdentity.toAvro(),
             cpiIdentifier,
             connectionId, connectionId, connectionId, connectionId,
-            null, "", -1, clock.instant()
+            null, "ACTIVE", -1, clock.instant()
         )
 
     private val vnodeCreationReq =
@@ -354,7 +354,7 @@ class VirtualNodeWriterProcessorTests {
                 connectionId,
                 connectionId,
                 null,
-                ""
+                "ACTIVE"
             )
         )
 

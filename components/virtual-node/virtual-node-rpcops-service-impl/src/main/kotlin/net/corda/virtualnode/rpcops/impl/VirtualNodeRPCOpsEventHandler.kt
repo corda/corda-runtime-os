@@ -40,6 +40,7 @@ internal class VirtualNodeRPCOpsEventHandler(
             is StartEvent -> followConfigReadServiceStatus(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
             is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event)
+            is StopEvent -> stop()
         }
     }
 
