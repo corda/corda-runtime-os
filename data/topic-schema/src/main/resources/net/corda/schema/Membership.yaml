@@ -70,3 +70,8 @@ topics:
     consumers:
     producers:
     config:
+  MembershipSynchronisationTopic:
+    name: membership.sync
+    consumers:
+    producers:
+    config:

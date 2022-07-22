@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ProcessMembershipUpdates",
+  "namespace": "net.corda.data.membership.command.synchronisation.member",
+  "doc": "Command issued for a member to process the membership updates sent by the MGM.",
+  "fields": [
+    {
+      "name": "destination",
+      "doc": "Holding identity of the member receiving the membership updates",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "source",
+      "doc": "Holding identity of the MGM.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "membershipPackage",
+      "doc" : "Data package distributed by the MGM containing membership updates.",
+      "type": "net.corda.data.membership.p2p.MembershipPackage"
+    }
+  ]
+}

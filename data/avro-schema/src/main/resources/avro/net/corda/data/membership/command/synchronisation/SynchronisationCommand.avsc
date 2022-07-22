@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "SynchronisationCommand",
+  "namespace": "net.corda.data.membership.command.synchronisation",
+  "doc": "Synchronisation event type",
+  "fields": [
+    {
+      "name": "command",
+      "doc": "Indicator of the type of synchronisation command that was issued.",
+      "type": [
+        "net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates"
+      ]
+    }
+  ]
+}
