@@ -1,17 +1,23 @@
 package net.corda.cli.plugins.topicconfig
 
 import org.apache.kafka.clients.admin.Admin
+import org.apache.kafka.clients.admin.AlterConfigOp
+import org.apache.kafka.clients.admin.ConfigEntry
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.acl.AccessControlEntry
 import org.apache.kafka.common.acl.AclBinding
 import org.apache.kafka.common.acl.AclOperation
 import org.apache.kafka.common.acl.AclPermissionType
+import org.apache.kafka.common.config.ConfigResource
+import org.apache.kafka.common.errors.TopicExistsException
 import org.apache.kafka.common.resource.PatternType
 import org.apache.kafka.common.resource.ResourcePattern
 import org.apache.kafka.common.resource.ResourceType
 import picocli.CommandLine
+import java.time.LocalDateTime
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @CommandLine.Command(name = "connect", description = ["Connects to Kafka broker to create topics"])
 class CreateConnect : Runnable {
@@ -45,8 +51,10 @@ class CreateConnect : Runnable {
             val topicConfigsToProcess = if (delete) {
                 if (existingTopicNames.isNotEmpty()) {
                     println("Deleting existing topics: ${existingTopicNames.joinToString()}")
+                    val configOp = listOf(AlterConfigOp(ConfigEntry("retention.ms", "1"), AlterConfigOp.OpType.SET))
+                    val alterConfigs = existingTopicNames.associate { ConfigResource(ConfigResource.Type.TOPIC, it) to configOp }
+                    client.incrementalAlterConfigs(alterConfigs).all().get(wait, TimeUnit.SECONDS)
                     client.deleteTopics(existingTopicNames).all().get(wait, TimeUnit.SECONDS)
-                    client.waitForTopicDeletion(create!!.topic!!.namePrefix, wait)
                 }
                 topicConfigs
             } else {
@@ -58,9 +66,37 @@ class CreateConnect : Runnable {
             }
 
             if (topicConfigsToProcess.isNotEmpty()) {
-                val topics = getTopics(topicConfigsToProcess)
-                println("Creating topics: ${topics.joinToString { it.name() }}")
-                client.createTopics(topics).all().get(wait, TimeUnit.SECONDS)
+                val topics = getTopics(topicConfigsToProcess).toMutableMap()
+                println("Creating topics: ${topics.keys.joinToString { it }}")
+                val end = LocalDateTime.now().plusSeconds(wait)
+                while (true) {
+                    if (topics.isEmpty()) {
+                        break
+                    } else {
+                        if (LocalDateTime.now().isAfter(end)) {
+                            throw TimeoutException("Timed out creating topics")
+                        }
+                        val errors = mutableSetOf<ExecutionException>()
+                        client.createTopics(topics.values).values().forEach { (topic, future) ->
+                            try {
+                                future.get(wait, TimeUnit.SECONDS)
+                                println("Created topic $topic")
+                                topics.remove(topic)
+                            } catch (e: ExecutionException) {
+                                if (e.cause is TopicExistsException) {
+                                    println("Topic $topic exists - will try again")
+                                } else {
+                                    println("Failed to create topic $topic: ${e.message}")
+                                    errors.add(e)
+                                }
+                            }
+                        }
+                        if (errors.isNotEmpty()) {
+                            throw errors.first()
+                        }
+                        Thread.sleep(1000)
+                    }
+                }
                 client.createAcls(getAclBindings(topicConfigsToProcess)).all().get()
             }
         } catch (e: ExecutionException) {
@@ -84,8 +120,8 @@ class CreateConnect : Runnable {
 
     fun getTopics(topicConfigs: List<Create.TopicConfig>) =
         topicConfigs.map { topicConfig: Create.TopicConfig ->
-            NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
+            topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
                 .configs(topicConfig.config)
-        }
+        }.toMap()
 
 }
