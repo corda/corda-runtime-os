@@ -15,7 +15,6 @@ import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
@@ -40,7 +39,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.Future
 
 class FlowRunnerImplTest {
 
