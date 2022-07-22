@@ -1,4 +1,5 @@
 plugins {
+    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle)
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
@@ -24,4 +25,10 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:merkle")
+    testImplementation project(":libs:serialization:serialization-amqp")
+    testImplementation project(":libs:serialization:serialization-internal")
+    testImplementation project(":libs:virtual-node:sandbox-group-context")
+    testImplementation project(':libs:virtual-node:virtual-node-info')
 }
