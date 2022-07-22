@@ -10,6 +10,7 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
@@ -48,7 +49,7 @@ private fun testDefaultFactoryNoEvolution(
         testSerializationContext.currentSandboxGroup(),
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
         allowEvolution = false
-    )
+    ).also { registerCustomSerializers(it) }
 
 class TestSerializationService {
     companion object{
