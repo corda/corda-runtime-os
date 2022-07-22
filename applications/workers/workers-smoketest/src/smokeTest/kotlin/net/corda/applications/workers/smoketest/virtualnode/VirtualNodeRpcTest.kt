@@ -244,7 +244,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val states = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["id"].textValue() to it["state"].textValue()
+                it["holdingIdentity"]["shortHash"].textValue() to it["state"].textValue()
             }
 
             val vnode = states.last()
@@ -258,7 +258,7 @@ class VirtualNodeRpcTest {
                 condition {
                     it.code == 200 &&
                         it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["id"].textValue() == vnode.first
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
                         }["state"].textValue() == newState
                 }
                 interval(Duration.ofSeconds(2))
@@ -272,7 +272,7 @@ class VirtualNodeRpcTest {
                 condition {
                     it.code == 200 &&
                         it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["id"].textValue() == vnode.first
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
                         }["state"].textValue() == oldState
                 }
                 interval(Duration.ofSeconds(2))

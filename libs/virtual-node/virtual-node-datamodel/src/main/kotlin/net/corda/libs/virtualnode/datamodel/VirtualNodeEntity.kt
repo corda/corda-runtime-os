@@ -117,7 +117,7 @@ fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNode
         root.fetch<Any, Any>("holdingIdentity")
         queryBuilder.where(
             equal(
-                root.get<HoldingIdentityEntity>("holdingIdentity").get<String>("holdingIdentityId"),
+                root.get<HoldingIdentityEntity>("holdingIdentity").get<String>("holdingIdentityShortHash"),
                 parameter(String::class.java, "shortId")
             )
         ).orderBy(desc(root.get<String>("cpiVersion")))
