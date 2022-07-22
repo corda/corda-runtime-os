@@ -16,7 +16,6 @@ import net.corda.flow.pipeline.handlers.events.ExternalEventRequest
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.v5.application.persistence.PersistenceService
-import net.corda.v5.application.persistence.query.NamedQueryFilter
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -84,6 +83,7 @@ class PersistenceServiceImpl @Activate constructor(
             override fun setOffset(offset: Int): PagedQuery<R> {
                 TODO("Not yet implemented")
             }
+        }
     }
 
     @Suspendable
@@ -123,7 +123,8 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun <T : Any> query(
         queryName: String,
-        entityClass: Class<T>): ParameterisedQuery<T> {
+        entityClass: Class<T>
+    ): ParameterisedQuery<T> {
         TODO("Not yet implemented")
     }
 
