@@ -177,8 +177,8 @@ class VirtualNodeEntitiesIntegrationTest {
 
         // Now check the query - and also we should look at the console output for this
         val virtualNode = entityManagerFactory.createEntityManager().use {
-            it.findVirtualNode(vnodes.last().holdingIdentity.holdingIdentityId)
-        }
+            it.findVirtualNode(vnodes.last().holdingIdentity.holdingIdentityShortHash)
+        }!!
 
         // Validate relation for holdingIdentity has been resolved
         assertNotNull(virtualNode.holdingIdentity.x500Name)

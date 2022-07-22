@@ -19,17 +19,18 @@ import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
@@ -143,15 +144,20 @@ internal class VirtualNodeWriterProcessor(
 
         // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
-            val updatedVirtualNodeEntity = virtualNodeEntityRepository.setVirtualNodeState(
-                dbConnectionManager.getClusterEntityManagerFactory().createEntityManager(),
-                stateChangeRequest.holdingIdentityShortHash,
-                stateChangeRequest.newState
-            )
+            val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+            val updatedVirtualNodeEntity = em.use { entityManager ->
+                virtualNodeEntityRepository.setVirtualNodeState(
+                    entityManager,
+                    stateChangeRequest.holdingIdentityShortHash,
+                    stateChangeRequest.newState
+                )
+            }
 
             val virtualNodeInfo = with(updatedVirtualNodeEntity) {
-                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(this.cpiName, this.cpiVersion)
-                    ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityId)
+                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    this.cpiName,
+                    this.cpiVersion
+                ) ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityShortHash)
                 val holdingIdentity = HoldingIdentity(
                     this.holdingIdentity.x500Name,
                     this.holdingIdentity.mgmGroupId

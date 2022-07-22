@@ -110,7 +110,7 @@ fun EntityManager.findAllVirtualNodes(): Stream<VirtualNodeEntity> {
     return createQuery(query).resultStream
 }
 
-fun EntityManager.findVirtualNode(holdIdShortHash: String): VirtualNodeEntity? {
+fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNodeEntity? {
     val queryBuilder = with(criteriaBuilder!!) {
         val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!
         val root = queryBuilder.from(VirtualNodeEntity::class.java)
@@ -125,7 +125,7 @@ fun EntityManager.findVirtualNode(holdIdShortHash: String): VirtualNodeEntity? {
     }
 
     return createQuery(queryBuilder)
-        .setParameter("shortId", holdIdShortHash)
+        .setParameter("shortId", holdingIdentityShortHash)
         .setMaxResults(1)
         .singleResult
 }

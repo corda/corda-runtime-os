@@ -82,7 +82,7 @@ class VirtualNodeRPCOpsImplTests {
         cryptoDdlConnectionId,
         cryptoDmlConnectionId,
         hsmConnectionId,
-        VirtualNodeInfo.DEFAULT_INITIAL_STATE
+        VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
     )
 
     private val rpcRequestTimeoutDuration = 3000
@@ -138,9 +138,9 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
         val successResponse =
             CreateVirtualNodeResponse(
-                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdentityShortHash,
-                vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId,
-                VirtualNodeInfo.DEFAULT_INITIAL_STATE
+                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId,
+                holdingIdentityShortHash, vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId,
+                cryptoDmlConnectionId, VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 
