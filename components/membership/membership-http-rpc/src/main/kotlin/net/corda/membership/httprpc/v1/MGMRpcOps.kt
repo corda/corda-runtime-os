@@ -17,16 +17,16 @@ interface MGMRpcOps : RpcOps {
     /**
      * GET endpoint to fetch the requested group policy string
      *
-     * @param holdingIdentityId The ID of the holding identity to be checked.
+     * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @return [String] MGM Generated Group Policy JSON.
      *  local member data.
      */
     @HttpRpcGET(
-        path = "{holdingIdentityId}/info",
+        path = "{holdingIdentityShortHash}/info",
         description = "Fetches the requested group policy string"
     )
     fun generateGroupPolicy(
         @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
-        holdingIdentityId: String
+        holdingIdentityShortHash: String
     ): String
 }

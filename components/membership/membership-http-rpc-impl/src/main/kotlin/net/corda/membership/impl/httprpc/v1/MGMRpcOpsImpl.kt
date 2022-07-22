@@ -27,7 +27,7 @@ class MGMRpcOpsImpl @Activate constructor(
     }
 
     private interface InnerMGMRpcOps {
-        fun generateGroupPolicy(holdingIdentityId: String): String
+        fun generateGroupPolicy(holdingIdentityShortHash: String): String
     }
 
     private val className = this::class.java.simpleName
@@ -63,8 +63,8 @@ class MGMRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun generateGroupPolicy(holdingIdentityId: String) =
-        impl.generateGroupPolicy(holdingIdentityId)
+    override fun generateGroupPolicy(holdingIdentityShortHash: String) =
+        impl.generateGroupPolicy(holdingIdentityShortHash)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -77,15 +77,15 @@ class MGMRpcOpsImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMGMRpcOps {
-        override fun generateGroupPolicy(holdingIdentityId: String) =
+        override fun generateGroupPolicy(holdingIdentityShortHash: String) =
             throw ServiceUnavailableException(
                 "${MGMRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
     }
 
     private inner class ActiveImpl : InnerMGMRpcOps {
-        override fun generateGroupPolicy(holdingIdentityId: String): String {
-            return mgmOpsClient.generateGroupPolicy(holdingIdentityId)
+        override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
+            return mgmOpsClient.generateGroupPolicy(holdingIdentityShortHash)
         }
     }
 }

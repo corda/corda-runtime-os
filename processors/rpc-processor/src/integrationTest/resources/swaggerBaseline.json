@@ -1404,13 +1404,13 @@
         }
       }
     },
-    "/mgm/{holdingidentityid}/info" : {
+    "/mgm/{holdingIdentityShortHash}/info" : {
       "get" : {
         "tags" : [ "MGMRpcOps" ],
         "description" : "Fetches the requested group policy string",
-        "operationId" : "get_mgm__holdingidentityid__info",
+        "operationId" : "get_mgm__holdingIdentityShortHash__info",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingIdentityShortHash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,

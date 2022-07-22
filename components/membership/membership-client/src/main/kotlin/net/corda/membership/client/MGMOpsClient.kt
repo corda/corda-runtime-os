@@ -10,8 +10,8 @@ interface MGMOpsClient : Lifecycle {
     /**
      * Generates the Group Policy file to be used to register a new member to the MGM
      *
-     * @param holdingIdentityId The ID of the holding identity to be checked.
+     * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @return [String] Generated Group Policy Response.
      */
-    fun generateGroupPolicy(holdingIdentityId: String): String
+    fun generateGroupPolicy(holdingIdentityShortHash: String): String
 }
