@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.URI
@@ -41,6 +42,7 @@ import javax.net.ssl.X509ExtendedKeyManager
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
+@Disabled("Disable until CORE-5877 is completed and it can be enabled back.")
 class HttpTest : TestBase() {
 
     companion object {
