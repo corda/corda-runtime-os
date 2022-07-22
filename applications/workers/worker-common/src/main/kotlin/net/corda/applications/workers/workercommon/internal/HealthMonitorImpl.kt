@@ -5,6 +5,8 @@ import io.javalin.Javalin
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
+import net.corda.utilities.classload.OsgiClassLoader
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -55,13 +57,8 @@ internal class HealthMonitorImpl @Activate constructor(
             server.start(port)
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-            val factoryClassLoader = bundle.loadClass(WebSocketServletFactory::class.java.name).classLoader
-            val threadClassLoader = Thread.currentThread().contextClassLoader
-            try {
-                Thread.currentThread().contextClassLoader = factoryClassLoader
+            executeWithThreadContextClassLoader(OsgiClassLoader(listOf(bundle))) {
                 server.start(port)
-            } finally {
-                Thread.currentThread().contextClassLoader = threadClassLoader
             }
         }
     }

@@ -18,7 +18,7 @@ import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
 import net.corda.httprpc.server.impl.context.ContextUtils.authorize
 import net.corda.httprpc.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.httprpc.server.impl.context.ContextUtils.invokeHttpMethod
-import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
