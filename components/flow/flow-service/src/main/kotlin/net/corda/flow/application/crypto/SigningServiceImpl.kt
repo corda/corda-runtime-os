@@ -57,7 +57,7 @@ class CreateSignatureExternalEventHandler @Activate constructor(
     ): ExternalEventRequest.EventRecord {
         val flowOpsRequest = cryptoFlowOpsTransformer.createSign(
             requestId = requestId,
-            tenantId = checkpoint.holdingIdentity.id,
+            tenantId = checkpoint.holdingIdentity.shortHash,
             publicKey = parameters.publicKey,
             signatureSpec = parameters.signatureSpec,
             data = parameters.bytes,

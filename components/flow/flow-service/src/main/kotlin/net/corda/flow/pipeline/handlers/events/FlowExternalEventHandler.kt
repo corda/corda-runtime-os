@@ -14,6 +14,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.handlers.events.ExternalEventHandlerMap.Companion.EXTERNAL_EVENT_HANDLERS
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.state.FlowCheckpoint
@@ -28,9 +29,7 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.apache.avro.specific.SpecificRecord
 import org.osgi.service.component.ComponentContext
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.*
 import java.time.Instant
 import java.util.*
 
@@ -107,12 +106,22 @@ class ExternalEventExecutorImpl @Activate constructor(
     }
 }
 
-@Component(service = [ExternalEventHandlerMap::class])
+@Component(
+    service = [ExternalEventHandlerMap::class],
+    reference = [
+        Reference(
+            name = EXTERNAL_EVENT_HANDLERS,
+            service = ExternalEventRequest.Handler::class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC
+        )
+    ]
+)
 class ExternalEventHandlerMap @Activate constructor(private val componentContext: ComponentContext) {
 
-    private companion object {
+    internal companion object {
         const val EXTERNAL_EVENT_HANDLERS = "externalEventHandlers"
-        fun <T> ComponentContext.fetchServices(refName: String): List<T> {
+        private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
             @Suppress("unchecked_cast")
             return (locateServices(refName) as? Array<T>)?.toList() ?: emptyList()
         }
@@ -249,6 +258,7 @@ class ExternalEventRequestHandler @Activate constructor(
         context.checkpoint.externalEventState = externalEventManager.processEventToSend(
             context.checkpoint.flowId,
             request.requestId,
+            request.handlerClass.name,
             eventRecord,
             Instant.now()
         )
@@ -261,6 +271,7 @@ interface ExternalEventManager {
     fun processEventToSend(
         flowId: String,
         requestId: String,
+        handlerClassName: String,
         eventRecord: ExternalEventRequest.EventRecord,
         instant: Instant
     ): ExternalEventState
@@ -291,6 +302,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
     override fun processEventToSend(
         flowId: String,
         requestId: String,
+        handlerClassName: String,
         eventRecord: ExternalEventRequest.EventRecord,
         instant: Instant
     ): ExternalEventState {
@@ -307,6 +319,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
             .setRequestId(requestId)
             .setStatus(ExternalEventStateStatus(ExternalEventStateType.OK, null))
             .setEventToSend(event)
+            .setHandlerClassName(handlerClassName)
             .setSendTimestamp(instant)
             .setResponses(mutableListOf())
             .build()
