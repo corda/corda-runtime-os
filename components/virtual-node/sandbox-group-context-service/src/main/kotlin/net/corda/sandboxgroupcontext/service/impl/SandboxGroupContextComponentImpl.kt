@@ -93,7 +93,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     override fun getOrCreate(
         virtualNodeContext: VirtualNodeContext, initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext =
-        sandboxGroupContextService?.getOrCreate(virtualNodeContext, initializer)?:
+        sandboxGroupContextService?.getOrCreate(virtualNodeContext, initializer) ?:
             throw IllegalStateException("SandboxGroupContextService is not ready.")
 
 
@@ -105,13 +105,12 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     ): AutoCloseable =
         sandboxGroupContextService?.registerMetadataServices(
             sandboxGroupContext, serviceNames, isMetadataService, serviceMarkerType
-        )?:
-            throw IllegalStateException("SandboxGroupContextService is not ready.")
+        )?: throw IllegalStateException("SandboxGroupContextService is not ready.")
 
     override fun registerCustomCryptography(
         sandboxGroupContext: SandboxGroupContext
     ): AutoCloseable =
-        sandboxGroupContextService?.registerCustomCryptography(sandboxGroupContext)?:
+        sandboxGroupContextService?.registerCustomCryptography(sandboxGroupContext) ?:
             throw IllegalStateException("SandboxGroupContextService is not ready.")
 
     override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean =
@@ -130,7 +129,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     @Deactivate
     override fun close() {
-        stop()
         coordinator.close()
         sandboxGroupContextService?.close()
         cpkReadService.close()

@@ -1,17 +1,19 @@
 package net.corda.flow.mapper.impl.executor
 
+import java.nio.ByteBuffer
+import java.util.UUID
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfig
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
-import java.nio.ByteBuffer
-import java.util.*
 
 /**
  * Generate and return random ID for flowId
@@ -51,13 +53,23 @@ private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<Ho
  * Generate an AppMessage to send to the P2P.out topic.
  * @param sessionEvent Flow event to send
  * @param sessionEventSerializer Serializer for session events
+ * @param flowConfig config
  * @return AppMessage to send to the P2P.out topic with the serialized session event as payload
  */
-fun generateAppMessage(sessionEvent: SessionEvent, sessionEventSerializer: CordaAvroSerializer<SessionEvent>): AppMessage {
+fun generateAppMessage(
+    sessionEvent: SessionEvent,
+    sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
+    flowConfig: SmartConfig
+): AppMessage {
     val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
-    //TODO set p2pTTL value from flow config - CORE-4574
-    val header =
-        AuthenticatedMessageHeader(sourceIdentity, destinationIdentity, Long.MAX_VALUE, sessionEvent.sessionId, "", FLOW_SESSION_SUBSYSTEM)
+    val header = AuthenticatedMessageHeader(
+        destinationIdentity,
+        sourceIdentity,
+        sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(SESSION_P2P_TTL),
+        sessionEvent.sessionId + "-" + UUID.randomUUID(),
+        "",
+        FLOW_SESSION_SUBSYSTEM
+    )
     return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
 }
 

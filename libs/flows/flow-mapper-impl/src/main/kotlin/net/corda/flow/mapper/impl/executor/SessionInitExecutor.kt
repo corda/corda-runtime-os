@@ -9,15 +9,18 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 
+@Suppress("LongParameterList")
 class SessionInitExecutor(
     private val eventKey: String,
     private val sessionEvent: SessionEvent,
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
+    private val flowConfig: SmartConfig,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -78,7 +81,7 @@ class SessionInitExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer)
+                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
             )
         }
     }

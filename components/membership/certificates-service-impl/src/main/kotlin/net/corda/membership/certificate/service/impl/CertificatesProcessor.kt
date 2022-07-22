@@ -87,7 +87,7 @@ internal class CertificatesProcessor(
         return if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
             ClusterCertificateProcessor(tenantId)
         } else {
-            val info = virtualNodeInfoReadService.getById(tenantId) ?: throw NoSuchNode(tenantId)
+            val info = virtualNodeInfoReadService.getByHoldingIdentityShortHash(tenantId) ?: throw NoSuchNode(tenantId)
             val factory = dbConnectionManager.createEntityManagerFactory(
                 info.vaultDmlConnectionId,
                 jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)

@@ -149,7 +149,7 @@ class MembershipGroupReaderImplTest {
     fun `lookup throws illegal state exception if no cached member list available`() {
         val error = assertThrows<IllegalStateException> { membershipGroupReaderImpl.lookup() }
         assertEquals(
-            "Failed to find member list for ID='${aliceIdGroup1.id}, Group ID='${aliceIdGroup1.groupId}'",
+            "Failed to find member list for ID='${aliceIdGroup1.shortHash}, Group ID='${aliceIdGroup1.groupId}'",
             error.message
         )
     }

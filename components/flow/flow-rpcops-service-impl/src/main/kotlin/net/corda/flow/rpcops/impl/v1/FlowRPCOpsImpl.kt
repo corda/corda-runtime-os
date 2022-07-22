@@ -60,14 +60,14 @@ class FlowRPCOpsImpl @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startFlow(
-        holderShortId: String,
+        holdingIdentityShortHash: String,
         startFlow: StartFlowParameters
     ): FlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(holderShortId)
+        val vNode = getVirtualNode(holdingIdentityShortHash)
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
@@ -95,20 +95,20 @@ class FlowRPCOpsImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(status)
     }
 
-    override fun getFlowStatus(holderShortId: String, clientRequestId: String): FlowStatusResponse {
-        val vNode = getVirtualNode(holderShortId)
+    override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
 
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
-                "Failed to find the flow status for Holder ID='${holderShortId} " +
+                "Failed to find the flow status for holding identity='${holdingIdentityShortHash} " +
                         "and Client Request ID='${clientRequestId}"
             )
 
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    override fun getMultipleFlowStatus(holderShortId: String): FlowStatusResponses {
-        val vNode = getVirtualNode(holderShortId)
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
@@ -120,7 +120,7 @@ class FlowRPCOpsImpl @Activate constructor(
     }
 
     private fun getVirtualNode(shortId: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getById(shortId)?.toAvro()
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortId)?.toAvro()
             ?: throw FlowRPCOpsServiceException("Failed to find a Virtual Node for ID='${shortId}'")
     }
 }

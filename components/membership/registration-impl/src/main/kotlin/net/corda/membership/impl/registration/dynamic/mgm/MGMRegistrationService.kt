@@ -185,8 +185,8 @@ class MGMRegistrationService @Activate constructor(
         ): MembershipRequestRegistrationResult {
             try {
                 validateContext(context)
-                val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.id)
-                val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.id)
+                val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash)
+                val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash)
                 val now = clock.instant().toString()
                 val mgmInfo = memberInfoFactory.create(
                     memberContext = (
@@ -241,7 +241,7 @@ class MGMRegistrationService @Activate constructor(
 
                 val mgmRecord = Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
-                    "${member.id}-${member.id}",
+                    "${member.shortHash}-${member.shortHash}",
                     PersistentMemberInfo(
                         member.toAvro(),
                         mgmInfo.memberProvidedContext.toAvro(),

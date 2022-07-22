@@ -70,7 +70,7 @@ class MGMRegistrationServiceTest {
 
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
     private val mgm = HoldingIdentity(mgmName.toString(), "dummy_group")
-    private val mgmId = mgm.id
+    private val mgmId = mgm.shortHash
     private val sessionKey: PublicKey = mock {
         on { encoded } doReturn SESSION_KEY.toByteArray()
     }

@@ -435,7 +435,7 @@ class PersistenceTests {
         vnodeInfo = object : VirtualNodeInfoReadService {
             override fun getAll(): List<VirtualNodeInfo> = throw NotImplementedError()
             override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo = throw NotImplementedError()
-            override fun getById(id: String): VirtualNodeInfo =
+            override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String): VirtualNodeInfo =
                 VirtualNodeInfo(
                     holdingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
                     cpiIdentifier = CpiIdentifier(

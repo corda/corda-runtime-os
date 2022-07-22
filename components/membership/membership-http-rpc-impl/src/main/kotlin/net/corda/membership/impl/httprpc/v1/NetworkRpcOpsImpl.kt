@@ -29,14 +29,14 @@ class NetworkRpcOpsImpl @Activate constructor(
     }
 
     override fun setupHostedIdentities(
-        holdingIdentityId: String,
+        holdingIdentityShortHash: String,
         certificateChainAlias: String,
         tlsTenantId: String?,
         sessionKeyId: String?
     ) {
         try {
             certificatesClient.setupLocallyHostedIdentity(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 certificateChainAlias,
                 tlsTenantId,
                 sessionKeyId,

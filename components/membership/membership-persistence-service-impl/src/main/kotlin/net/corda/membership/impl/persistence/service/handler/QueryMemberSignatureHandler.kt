@@ -29,7 +29,7 @@ internal class QueryMemberSignatureHandler(
         context: MembershipRequestContext,
         request: QueryMemberSignature,
     ): MemberSignatureQueryResponse {
-        return transaction(context.holdingIdentity.toCorda().id) { em ->
+        return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             MemberSignatureQueryResponse(
                 request.queryIdentities.mapNotNull { holdingIdentity ->
                     val signatureEntity = em.find(

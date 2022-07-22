@@ -14,8 +14,8 @@ const authConfig = {
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
 /* GET home page. */
-router.post('/start/:holdershortid/:clientrequestid/:flowclassname', function (req, res, next) {
-    var shortId = req.params.holdershortid;
+router.post('/start/:holdingidentityshorthash/:clientrequestid/:flowclassname', function (req, res, next) {
+    var shortId = req.params.holdingidentityshorthash;
     var requestId = req.params.clientrequestid;
     var flowclassname = req.params.flowclassname;
  
@@ -30,8 +30,8 @@ router.post('/start/:holdershortid/:clientrequestid/:flowclassname', function (r
     })
 });
 
-router.get('/:holdershortid/:clientrequestid/', function (req, res, next) {
-    var shortId = req.params.holdershortid;
+router.get('/:holdingidentityshorthash/:clientrequestid/', function (req, res, next) {
+    var shortId = req.params.holdingidentityshorthash;
     var clientrequestid = req.params.clientrequestid;
     
     axios.get(`https://localhost:8888/api/v1/flow/status/${shortId}/${clientrequestid}`, authConfig)

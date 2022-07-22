@@ -55,7 +55,7 @@ class VirtualNodeRPCOpsImplTests {
         }
     }
 
-    private val holdingIdHash = "holdingIdHash"
+    private val holdingIdentityShortHash = "holdingIdentityShortHash"
     private val cpiIdAvro = CpiIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
     private val cpiId = CpiIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
     private val holdingId = HoldingIdentity("o=test,l=test,c=GB", "mgmGroupId")
@@ -75,7 +75,7 @@ class VirtualNodeRPCOpsImplTests {
         httpCreateVNRequest.cpiFileChecksum,
         holdingId.groupId,
         holdingId,
-        holdingIdHash,
+        holdingIdentityShortHash,
         vaultDdlConnectionId,
         vaultDmlConnectionId,
         cryptoDdlConnectionId,
@@ -136,7 +136,7 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
         val successResponse =
             CreateVirtualNodeResponse(
-                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdHash,
+                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdentityShortHash,
                 vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId
             )
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()

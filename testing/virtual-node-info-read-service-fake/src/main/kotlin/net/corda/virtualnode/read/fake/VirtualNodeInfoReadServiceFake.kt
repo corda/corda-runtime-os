@@ -112,9 +112,9 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         return map[holdingIdentity]
     }
 
-    override fun getById(id: String): VirtualNodeInfo? {
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String): VirtualNodeInfo? {
         throwIfNotRunning()
-        return map.entries.firstOrNull { id == it.key.id }?.value
+        return map.entries.firstOrNull { holdingIdentityShortHash == it.key.shortHash }?.value
     }
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {

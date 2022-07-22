@@ -6,12 +6,12 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.security.MessageDigest
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 
 class SecureHashSerializationTests {
     companion object {
@@ -68,7 +68,7 @@ class SecureHashSerializationTests {
         val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
-        assertFailsWith(IllegalArgumentException::class) {
+        assertThrows(IllegalArgumentException::class.java) {
             SecureHash.deserialize(sha256serialized, digestService)
         }
     }
@@ -79,7 +79,7 @@ class SecureHashSerializationTests {
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
-        assertFailsWith(IllegalArgumentException::class) {
+        assertThrows(IllegalArgumentException::class.java) {
             SecureHash.deserialize(sha256serialized, digestService)
         }
     }
@@ -90,7 +90,7 @@ class SecureHashSerializationTests {
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21)
-        assertFailsWith(IllegalArgumentException::class) {
+        assertThrows(IllegalArgumentException::class.java) {
             SecureHash.deserialize(sha256serialized, digestService)
         }
     }
@@ -101,7 +101,7 @@ class SecureHashSerializationTests {
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
             -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83, -83)
-        assertFailsWith(IllegalArgumentException::class) {
+        assertThrows(IllegalArgumentException::class.java) {
             SecureHash.deserialize(sha256serialized, digestService)
         }
     }

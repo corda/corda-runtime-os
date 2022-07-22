@@ -18,7 +18,7 @@ fun storeIncomingMessage(
     sender: String,
     message: String
 ) {
-    val existingMessages = persistenceService.findAll<IncomingChatMessage>()
+    val existingMessages = persistenceService.findAll<IncomingChatMessage>().execute()
     trimMessages(existingMessages, persistenceService)
     persistenceService.persist(
         IncomingChatMessage(
@@ -36,7 +36,7 @@ fun storeOutgoingMessage(
     recipient: String,
     message: String
 ) {
-    val existingMessages = persistenceService.findAll<OutgoingChatMessage>()
+    val existingMessages = persistenceService.findAll<OutgoingChatMessage>().execute()
     trimMessages(existingMessages, persistenceService)
     persistenceService.persist(
         OutgoingChatMessage(
@@ -50,8 +50,8 @@ fun storeOutgoingMessage(
 
 @Suspendable
 fun readAllMessages(persistenceService: PersistenceService): List<Chat> {
-    val incomingMessages = persistenceService.findAll<IncomingChatMessage>()
-    val outgoingMessages = persistenceService.findAll<OutgoingChatMessage>()
+    val incomingMessages = persistenceService.findAll<IncomingChatMessage>().execute()
+    val outgoingMessages = persistenceService.findAll<OutgoingChatMessage>().execute()
     return chats(incomingMessages = incomingMessages, outgoingMessages = outgoingMessages)
 }
 

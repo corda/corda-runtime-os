@@ -28,7 +28,7 @@ internal class PersistMemberInfoHandler(
     override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo) {
         if (request.members.isNotEmpty()) {
             logger.info("Persisting member information.")
-            transaction(context.holdingIdentity.toCorda().id) { em ->
+            transaction(context.holdingIdentity.toCorda().shortHash) { em ->
                 request.members.forEach {
                     val memberInfo = memberInfoFactory.create(it)
                     val entity = MemberInfoEntity(

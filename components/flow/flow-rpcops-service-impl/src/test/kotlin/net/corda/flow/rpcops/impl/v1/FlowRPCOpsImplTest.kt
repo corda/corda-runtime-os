@@ -58,7 +58,7 @@ class FlowRPCOpsImplTest {
         messageFactory = mock()
         virtualNodeInfoReadService = mock()
 
-        whenever(virtualNodeInfoReadService.getById(any())).thenReturn(getStubVirtualNode())
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(getStubVirtualNode())
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(null)
         whenever(messageFactory.createStartFlowStatus(any(), any(), any())).thenReturn(FlowStatus().apply { key = FlowKey() })
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
@@ -78,7 +78,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
         flowRPCOps.getFlowStatus("", "")
 
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
     }
@@ -89,7 +89,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps = FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
         flowRPCOps.getMultipleFlowStatus("")
 
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(2)).createFlowStatusResponse(any())
     }
@@ -100,7 +100,7 @@ class FlowRPCOpsImplTest {
         flowRPCOps.initialise(SmartConfigImpl.empty())
         flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
 
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
@@ -117,7 +117,7 @@ class FlowRPCOpsImplTest {
             flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
         }
 
-        verify(virtualNodeInfoReadService, times(0)).getById(any())
+        verify(virtualNodeInfoReadService, times(0)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(0)).getStatus(any(), any())
         verify(messageFactory, times(0)).createStartFlowEvent(any(), any(), any(), any())
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
@@ -135,7 +135,7 @@ class FlowRPCOpsImplTest {
             flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
         }
 
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(0)).createStartFlowEvent(any(), any(), any(), any())
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
@@ -153,7 +153,7 @@ class FlowRPCOpsImplTest {
             flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
         }
 
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())

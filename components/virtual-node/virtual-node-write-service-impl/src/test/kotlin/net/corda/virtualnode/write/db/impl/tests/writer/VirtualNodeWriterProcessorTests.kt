@@ -147,9 +147,9 @@ class VirtualNodeWriterProcessorTests {
     )
 
     private val vaultDb = VirtualNodeDb(
-        VirtualNodeDbType.VAULT, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock())
+        VirtualNodeDbType.VAULT, true, "holdingIdentityShortHash", dbConnections, mock(), connectionManager, mock())
     private val cryptoDb = VirtualNodeDb(
-        VirtualNodeDbType.CRYPTO, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock())
+        VirtualNodeDbType.CRYPTO, true, "holdingIdentityShortHash", dbConnections, mock(), connectionManager, mock())
     private val vNodeFactory = mock<VirtualNodeDbFactory>() {
         on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
             VirtualNodeDbType.VAULT to vaultDb,
@@ -293,7 +293,7 @@ class VirtualNodeWriterProcessorTests {
             it.assertThat(publishedMgmInfoList.size).isEqualTo(1)
             val publishedMgmInfo = publishedMgmInfoList.first()
             it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
-            val expectedRecordKey = "${holdingIdentity.id}-${mgmHoldingIdentity.id}"
+            val expectedRecordKey = "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
             it.assertThat(persistentMemberPublished.memberContext.items)
@@ -348,7 +348,7 @@ class VirtualNodeWriterProcessorTests {
                 vnodeCreationReq.cpiFileChecksum,
                 vnodeInfo.holdingIdentity.groupId,
                 vnodeInfo.holdingIdentity,
-                holdingIdentity.id,
+                holdingIdentity.shortHash,
                 connectionId,
                 connectionId,
                 connectionId,
@@ -438,7 +438,7 @@ class VirtualNodeWriterProcessorTests {
         val collisionHoldingIdentity = mock<HoldingIdentity>() {
             on { x500Name }.thenReturn("OU=LLC, O=Alice, L=Dublin, C=IE")
             on { groupId }.thenReturn("group_id")
-            on { id }.thenReturn(holdingIdentity.id)
+            on { shortHash }.thenReturn(holdingIdentity.shortHash)
         }
 
         val entityRepository = mock<VirtualNodeEntityRepository>() {

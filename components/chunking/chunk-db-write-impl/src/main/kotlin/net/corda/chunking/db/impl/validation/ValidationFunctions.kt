@@ -1,10 +1,10 @@
 package net.corda.chunking.db.impl.validation
 
+import net.corda.chunking.ChunkReaderFactory
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
-import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
@@ -28,14 +28,19 @@ import org.slf4j.Logger
  *
  * @throws ValidationException
  */
-fun getCpiFileInfo(cpiCacheDir: Path, chunkPersistence: ChunkPersistence, requestId: RequestId): FileInfo {
+fun assembleFileFromChunks(
+    cacheDir: Path,
+    chunkPersistence: ChunkPersistence,
+    requestId: RequestId,
+    chunkReaderFactory: ChunkReaderFactory
+): FileInfo {
     var fileName: String? = null
     lateinit var tempPath: Path
     lateinit var checksum: SecureHash
     var localProperties: Map<String, String?>? = null
 
     // Set up chunk reader.  If onComplete is never called, we've failed.
-    val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
+    val reader = chunkReaderFactory.create(cacheDir).apply {
         onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
             fileName = originalFileName
             tempPath = tempPathOfBinary
@@ -96,7 +101,7 @@ fun CpiPersistence.persistCpiToDatabase(
     // We'll publish to the database using the de-chunking checksum.
 
     try {
-        val groupId = cpi.validateAndGetGroupId()
+        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::getOrCreateGroupId)
 
         val cpiExists = this.cpiExists(
             cpi.metadata.cpiId.name,
@@ -129,13 +134,22 @@ fun CpiPersistence.persistCpiToDatabase(
 /**
  * Get groupId from group policy JSON on the [Cpi] object.
  *
+ * @param getGroupIdFromJson lambda that takes a json string and returns the `groupId`
+ *
  * @throws ValidationException if there is no group policy json.
  * @throws CordaRuntimeException if there is an error parsing the group policy json.
  * @return `groupId`
  */
-fun Cpi.validateAndGetGroupId(): String {
+@Suppress("ThrowsCount")
+fun Cpi.validateAndGetGroupId(getGroupIdFromJson: (String) -> String): String {
     if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
-    return GroupPolicyParser.getOrCreateGroupId(this.metadata.groupPolicy!!)
+    val groupId = try {
+        getGroupIdFromJson(this.metadata.groupPolicy!!)
+    } catch (e: CordaRuntimeException) {
+        throw ValidationException("CPI group policy file needs a groupId", e)
+    }
+    if (groupId.isBlank()) throw ValidationException("CPI group policy file needs a groupId")
+    return groupId
 }
 
 /**
@@ -158,9 +172,10 @@ private fun isSigned(cpiInputStream: InputStream): Boolean {
 }
 
 /**
- * @throws ValidationException if the CPI is already uploaded with this group
+ * Checks the group id for cpi of a specific (name, version)
+ * @throws ValidationException if the CPI (name, version) is already uploaded with this group
  */
-fun CpiPersistence.checkGroupIdDoesNotExistForCpi(cpi: Cpi) {
+fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
     val groupIdInDatabase = this.getGroupId(
         cpi.metadata.cpiId.name,
         cpi.metadata.cpiId.version,

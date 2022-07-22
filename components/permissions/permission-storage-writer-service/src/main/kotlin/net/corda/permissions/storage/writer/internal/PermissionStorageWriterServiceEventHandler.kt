@@ -97,8 +97,7 @@ class PermissionStorageWriterServiceEventHandler(
             ),
             messagingConfig = messagingConfig,
             responderProcessor = permissionStorageWriterProcessorFactory.create(
-                entityManagerFactoryCreator(),
-                readerService.permissionStorageReader!!
+                entityManagerFactoryCreator(), readerService::permissionStorageReader
             )
         ).also {
             it.start()

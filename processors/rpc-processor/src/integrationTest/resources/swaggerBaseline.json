@@ -72,7 +72,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -186,7 +186,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/GenerateCsrRequest"
+                "$ref" : "#/components/schemas/GenerateCsrWrapperRequest"
               }
             }
           },
@@ -225,7 +225,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/UpdateclusterconfigurationRequest"
+                "$ref" : "#/components/schemas/UpdateConfigParameters"
               }
             }
           },
@@ -233,7 +233,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The updated cluster configuration for the specified section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -259,7 +259,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -299,7 +299,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The Configuration for the given section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -325,7 +325,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "List details of the all CPIs uploaded to the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The request Id calculated for a CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -395,7 +395,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -461,7 +461,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -482,26 +482,26 @@
         }
       }
     },
-    "/flow/{holdershortid}" : {
+    "/flow/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
-        "operationId" : "get_flow__holdershortid_",
+        "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The status of the flow.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -521,15 +521,15 @@
       "post" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Instructs Corda to start a new instance of the specified flow",
-        "operationId" : "post_flow__holdershortid_",
+        "operationId" : "post_flow__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
@@ -539,7 +539,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/StartFlowRequest"
+                "$ref" : "#/components/schemas/StartFlowParameters"
               }
             }
           },
@@ -547,7 +547,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The initial status of the flow, if the flow already exists the status of the existing flow will be returned.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -565,19 +565,19 @@
         }
       }
     },
-    "/flow/{holdershortid}/{clientrequestid}" : {
+    "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
       "get" : {
         "tags" : [ "FlowRPCOps" ],
         "description" : "Gets the current status for a given flow.",
-        "operationId" : "get_flow__holdershortid___clientrequestid_",
+        "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
@@ -595,7 +595,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The status of the flow.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -621,7 +621,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -642,26 +642,26 @@
         }
       }
     },
-    "/flowclass/{holdershortid}" : {
+    "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "FlowClassRPCOps" ],
         "description" : "Get all the flows that are startable for this holding identity.",
-        "operationId" : "get_flowclass__holdershortid_",
+        "operationId" : "get_flowclass__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdershortid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short form of the Holder Identifier",
+          "description" : "Short hash of the holding identity",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short form of the Holder Identifier",
+            "description" : "Short hash of the holding identity",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The class names of all flows that can be run",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -687,7 +687,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -793,7 +793,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -967,7 +967,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1122,7 +1122,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "A map from a tenant key ID to its metadata.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1165,7 +1165,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/GenerateKeyPairRequest"
+                "$ref" : "#/components/schemas/GenerateKeyPairWrapperRequest"
               }
             }
           },
@@ -1173,7 +1173,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The ID of the newly generated key pair.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1223,7 +1223,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The list of schemes codes which are supported by the associated HSM integration.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1277,7 +1277,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The public key in PEM format.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1325,7 +1325,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The request Id calculated for a CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1351,7 +1351,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1380,7 +1380,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1401,13 +1401,13 @@
         }
       }
     },
-    "/members/{holdingidentityid}" : {
+    "/members/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "MemberLookupRpcOps" ],
         "description" : "Lists the active members in the membership group.",
-        "operationId" : "get_members__holdingidentityid_",
+        "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,
@@ -1512,7 +1512,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1533,13 +1533,13 @@
         }
       }
     },
-    "/membership/{holdingidentityid}" : {
+    "/membership/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "MemberRegistrationRpcOps" ],
         "description" : "Checks the status of the registration request.",
-        "operationId" : "get_membership__holdingidentityid_",
+        "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,
@@ -1572,9 +1572,9 @@
       "post" : {
         "tags" : [ "MemberRegistrationRpcOps" ],
         "description" : "Start registration process for a virtual node.",
-        "operationId" : "post_membership__holdingidentityid_",
+        "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to be checked.",
           "required" : true,
@@ -1590,7 +1590,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/StartRegistrationRequest"
+                "$ref" : "#/components/schemas/MemberRegistrationRequest"
               }
             }
           },
@@ -1624,7 +1624,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1645,13 +1645,13 @@
         }
       }
     },
-    "/network/setup/{holdingidentityid}" : {
+    "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
         "tags" : [ "NetworkRpcOps" ],
         "description" : "Set up the holding identity on the network.",
-        "operationId" : "put_network_setup__holdingidentityid_",
+        "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
-          "name" : "holdingidentityid",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity to set up.",
           "required" : true,
@@ -1667,7 +1667,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/SetupHostedIdentitiesRequest"
+                "$ref" : "#/components/schemas/SetupHostedIdentitiesWrapperRequest"
               }
             }
           },
@@ -1697,7 +1697,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreatePermissionRequest"
+                "$ref" : "#/components/schemas/CreatePermissionType"
               }
             }
           },
@@ -1731,7 +1731,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1829,7 +1829,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateRoleRequest"
+                "$ref" : "#/components/schemas/CreateRoleType"
               }
             }
           },
@@ -1866,7 +1866,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddPermissionRequest"
+                "$ref" : "#/components/schemas/AddPermissionWrapperRequest"
               }
             }
           },
@@ -1900,7 +1900,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1932,7 +1932,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RemovePermissionRequest"
+                "$ref" : "#/components/schemas/RemovePermissionWrapperRequest"
               }
             }
           },
@@ -2003,7 +2003,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2098,7 +2098,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateUserRequest"
+                "$ref" : "#/components/schemas/CreateUserType"
               }
             }
           },
@@ -2135,7 +2135,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AddRoleRequest"
+                "$ref" : "#/components/schemas/AddRoleWrapperRequest"
               }
             }
           },
@@ -2169,7 +2169,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2238,7 +2238,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RemoveRoleRequest"
+                "$ref" : "#/components/schemas/RemoveRoleWrapperRequest"
               }
             }
           },
@@ -2272,7 +2272,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "List details of the all virtual nodes in the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2299,7 +2299,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreatevirtualnodeRequest"
+                "$ref" : "#/components/schemas/CreateVirtualNodeParameters"
               }
             }
           },
@@ -2307,7 +2307,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The details of the created virtual node.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2333,7 +2333,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Integer value specifying the version of the endpoint.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2357,7 +2357,7 @@
   },
   "components" : {
     "schemas" : {
-      "AddPermissionRequest" : {
+      "AddPermissionWrapperRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
           "permissionId" : {
@@ -2373,10 +2373,10 @@
             "example" : "string"
           }
         },
-        "description" : "AddPermissionRequest",
+        "description" : "AddPermissionWrapperRequest",
         "nullable" : false
       },
-      "AddRoleRequest" : {
+      "AddRoleWrapperRequest" : {
         "required" : [ "loginName", "roleId" ],
         "properties" : {
           "loginName" : {
@@ -2392,7 +2392,7 @@
             "example" : "string"
           }
         },
-        "description" : "AddRoleRequest",
+        "description" : "AddRoleWrapperRequest",
         "nullable" : false
       },
       "CpiIdentifier" : {
@@ -2457,7 +2457,7 @@
         }
       },
       "CpiMetadata" : {
-        "required" : [ "cpks", "fileChecksum", "id", "timestamp" ],
+        "required" : [ "cpks", "cpiFileChecksum", "id", "timestamp" ],
         "type" : "object",
         "properties" : {
           "cpks" : {
@@ -2468,7 +2468,7 @@
               "$ref" : "#/components/schemas/CpkMetadata"
             }
           },
-          "fileChecksum" : {
+          "cpiFileChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2557,16 +2557,6 @@
           }
         }
       },
-      "CreatePermissionRequest" : {
-        "required" : [ "createPermissionType" ],
-        "properties" : {
-          "createPermissionType" : {
-            "$ref" : "#/components/schemas/CreatePermissionType"
-          }
-        },
-        "description" : "CreatePermissionRequest",
-        "nullable" : false
-      },
       "CreatePermissionType" : {
         "required" : [ "permissionString", "permissionType" ],
         "type" : "object",
@@ -2594,16 +2584,6 @@
         },
         "description" : "Details of the permission to be created"
       },
-      "CreateRoleRequest" : {
-        "required" : [ "createRoleType" ],
-        "properties" : {
-          "createRoleType" : {
-            "$ref" : "#/components/schemas/CreateRoleType"
-          }
-        },
-        "description" : "CreateRoleRequest",
-        "nullable" : false
-      },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
         "type" : "object",
@@ -2620,16 +2600,6 @@
           }
         },
         "description" : "Details of the role to be created"
-      },
-      "CreateUserRequest" : {
-        "required" : [ "createUserType" ],
-        "properties" : {
-          "createUserType" : {
-            "$ref" : "#/components/schemas/CreateUserType"
-          }
-        },
-        "description" : "CreateUserRequest",
-        "nullable" : false
       },
       "CreateUserType" : {
         "required" : [ "enabled", "fullName", "loginName" ],
@@ -2707,7 +2677,7 @@
         "description" : "Details of the virtual node to be created"
       },
       "CreateVirtualNodeResponse" : {
-        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
+        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
         "type" : "object",
         "properties" : {
           "cpiFileChecksum" : {
@@ -2728,7 +2698,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "holdingIdHash" : {
+          "holdingIdentityShortHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2755,16 +2725,6 @@
           }
         }
       },
-      "CreatevirtualnodeRequest" : {
-        "required" : [ "request" ],
-        "properties" : {
-          "request" : {
-            "$ref" : "#/components/schemas/CreateVirtualNodeParameters"
-          }
-        },
-        "description" : "CreatevirtualnodeRequest",
-        "nullable" : false
-      },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
         "type" : "object",
@@ -2782,7 +2742,7 @@
         }
       },
       "FlowStatusResponse" : {
-        "required" : [ "flowStatus", "holdingShortId", "timestamp" ],
+        "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
         "type" : "object",
         "properties" : {
           "clientRequestId" : {
@@ -2808,7 +2768,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "holdingShortId" : {
+          "holdingIdentityShortHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2835,7 +2795,7 @@
           }
         }
       },
-      "GenerateCsrRequest" : {
+      "GenerateCsrWrapperRequest" : {
         "required" : [ "certificateRole", "x500name" ],
         "properties" : {
           "certificateRole" : {
@@ -2870,10 +2830,10 @@
             "example" : "string"
           }
         },
-        "description" : "GenerateCsrRequest",
+        "description" : "GenerateCsrWrapperRequest",
         "nullable" : false
       },
-      "GenerateKeyPairRequest" : {
+      "GenerateKeyPairWrapperRequest" : {
         "required" : [ "alias", "hsmCategory", "scheme" ],
         "properties" : {
           "alias" : {
@@ -2895,7 +2855,7 @@
             "example" : "string"
           }
         },
-        "description" : "GenerateKeyPairRequest",
+        "description" : "GenerateKeyPairWrapperRequest",
         "nullable" : false
       },
       "GetCPIsResponse" : {
@@ -2957,7 +2917,7 @@
         }
       },
       "HoldingIdentity" : {
-        "required" : [ "groupId", "hash", "id", "x500Name" ],
+        "required" : [ "groupId", "fullHash", "shortHash", "x500Name" ],
         "type" : "object",
         "properties" : {
           "groupId" : {
@@ -2965,12 +2925,12 @@
             "nullable" : false,
             "example" : "string"
           },
-          "hash" : {
+          "fullHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           },
-          "id" : {
+          "shortHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3261,7 +3221,7 @@
           }
         }
       },
-      "RemovePermissionRequest" : {
+      "RemovePermissionWrapperRequest" : {
         "required" : [ "permissionId", "roleId" ],
         "properties" : {
           "permissionId" : {
@@ -3277,10 +3237,10 @@
             "example" : "string"
           }
         },
-        "description" : "RemovePermissionRequest",
+        "description" : "RemovePermissionWrapperRequest",
         "nullable" : false
       },
-      "RemoveRoleRequest" : {
+      "RemoveRoleWrapperRequest" : {
         "required" : [ "loginName", "roleId" ],
         "properties" : {
           "loginName" : {
@@ -3296,7 +3256,7 @@
             "example" : "string"
           }
         },
-        "description" : "RemoveRoleRequest",
+        "description" : "RemoveRoleWrapperRequest",
         "nullable" : false
       },
       "RoleAssociationResponseType" : {
@@ -3424,7 +3384,7 @@
           }
         }
       },
-      "SetupHostedIdentitiesRequest" : {
+      "SetupHostedIdentitiesWrapperRequest" : {
         "required" : [ "certificateChainAlias" ],
         "properties" : {
           "certificateChainAlias" : {
@@ -3441,12 +3401,12 @@
           },
           "tlsTenantId" : {
             "type" : "string",
-            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
+            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityShortHash, default to the holdingIdentityShortHash).",
             "nullable" : true,
             "example" : "string"
           }
         },
-        "description" : "SetupHostedIdentitiesRequest",
+        "description" : "SetupHostedIdentitiesWrapperRequest",
         "nullable" : false
       },
       "StartFlowParameters" : {
@@ -3471,26 +3431,6 @@
         },
         "description" : "Information required to start a flow for this holdingId"
       },
-      "StartFlowRequest" : {
-        "required" : [ "startFlow" ],
-        "properties" : {
-          "startFlow" : {
-            "$ref" : "#/components/schemas/StartFlowParameters"
-          }
-        },
-        "description" : "StartFlowRequest",
-        "nullable" : false
-      },
-      "StartRegistrationRequest" : {
-        "required" : [ "memberRegistrationRequest" ],
-        "properties" : {
-          "memberRegistrationRequest" : {
-            "$ref" : "#/components/schemas/MemberRegistrationRequest"
-          }
-        },
-        "description" : "StartRegistrationRequest",
-        "nullable" : false
-      },
       "StartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
         "type" : "object",
@@ -3507,10 +3447,10 @@
         }
       },
       "Status" : {
-        "required" : [ "checksum", "status" ],
+        "required" : [ "cpiFileChecksum", "status" ],
         "type" : "object",
         "properties" : {
-          "checksum" : {
+          "cpiFileChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3572,16 +3512,6 @@
             "example" : 0
           }
         }
-      },
-      "UpdateclusterconfigurationRequest" : {
-        "required" : [ "request" ],
-        "properties" : {
-          "request" : {
-            "$ref" : "#/components/schemas/UpdateConfigParameters"
-          }
-        },
-        "description" : "UpdateclusterconfigurationRequest",
-        "nullable" : false
       },
       "UploadResponse" : {
         "required" : [ "id" ],

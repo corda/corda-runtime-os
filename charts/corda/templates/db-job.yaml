@@ -9,6 +9,9 @@ metadata:
     "helm.sh/hook": pre-install
 spec:
   template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
