@@ -12,6 +12,7 @@ import org.mockito.kotlin.verify
 import javax.persistence.EntityManager
 import javax.persistence.EntityTransaction
 
+@Suppress("TooGenericExceptionThrown")
 class EntityManagerUtilsTest {
 
     @Test
