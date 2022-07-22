@@ -9,6 +9,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
+import net.corda.v5.base.util.contextLogger
 import java.sql.DriverManager
 import java.time.Instant
 import java.util.UUID
@@ -24,13 +25,10 @@ class PostgresDbSetup: DbSetup {
         private const val DB_DRIVER = "org.postgresql.Driver"
         private const val DB_HOST = "localhost"
         private const val DB_PORT = "5432"
-        private const val DB_NAME = "cordacluster"
-        private const val DB_URL = "jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME"
         private const val DB_SUPERUSER_DEFAULT = "postgres"
         private const val DB_SUPERUSER_PASSWORD_DEFAULT = "password"
         private const val DB_ADMIN = "user"
         private const val DB_ADMIN_PASSWORD = "password"
-        private const val DB_ADMIN_URL = "$DB_URL?user=$DB_ADMIN&password=$DB_ADMIN_PASSWORD"
         private const val SECRETS_SALT = "salt"
         private const val SECRETS_PASSWORD = "password"
 
@@ -41,26 +39,39 @@ class PostgresDbSetup: DbSetup {
             "net/corda/db/schema/cluster-certificates/db.changelog-master.xml" to null,
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
+
+        private val log = contextLogger()
     }
 
+    private val dbName by lazy {
+        System.getenv("CORDA_DEV_CLUSER_DB_NAME") ?: "cordacluster"
+    }
+
+    private val dbUrl by lazy {
+        "jdbc:postgresql://$DB_HOST:$DB_PORT/$dbName"
+    }
+
+    private val dbAdminUrl by lazy {
+        "$dbUrl?user=$DB_ADMIN&password=$DB_ADMIN_PASSWORD"
+    }
 
     private val dbSuperUserUrl by lazy {
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: DB_SUPERUSER_DEFAULT
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: DB_SUPERUSER_PASSWORD_DEFAULT
 
-        "$DB_URL?user=$superUser&password=$superUserPassword"
+        "$dbUrl?user=$superUser&password=$superUserPassword"
     }
 
     override fun run() {
+        log.info("Bootstrap Postgres DB.")
         Class.forName(DB_DRIVER)
 
-
-
         if (!dbInitialised()) {
+            log.info("Initialising DB.")
             initDb()
             runDbMigration()
-            initConfiguration("corda-rbac", "rbac_user", "rbac_password", DB_URL)
-            initConfiguration("corda-crypto", "crypto_user", "crypto_password", "$DB_URL?currentSchema=CRYPTO")
+            initConfiguration("corda-rbac", "rbac_user", "rbac_password", dbUrl)
+            initConfiguration("corda-crypto", "crypto_user", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
         }
@@ -74,6 +85,7 @@ class PostgresDbSetup: DbSetup {
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
                 .use {
                     if (it.next()) {
+                        log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
                         return it.getBoolean(1)
                     }
                 }
@@ -82,6 +94,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun initDb() {
+        log.info("Create user $DB_ADMIN in $dbName in $dbSuperUserUrl.")
         DriverManager
             .getConnection(dbSuperUserUrl)
             .use { connection ->
@@ -91,15 +104,16 @@ class PostgresDbSetup: DbSetup {
                     """
                         CREATE USER "$DB_ADMIN" WITH ENCRYPTED PASSWORD '$DB_ADMIN_PASSWORD';
                         ALTER ROLE "$DB_ADMIN" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
-                        ALTER DATABASE "$DB_NAME" OWNER TO "$DB_ADMIN";
+                        ALTER DATABASE "$dbName" OWNER TO "$DB_ADMIN";
                         ALTER SCHEMA public OWNER TO "$DB_ADMIN";
                     """.trimIndent())
             }
     }
 
     private fun runDbMigration() {
+        log.info("Run DB migrations in $dbAdminUrl.")
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 changelogFiles.forEach { (file, schema) ->
                     val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
@@ -123,14 +137,16 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun createDbSchema(schema: String) {
+        log.info("Create SCHEMA $schema.")
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute("CREATE SCHEMA IF NOT EXISTS $schema;")
             }
     }
 
     private fun initConfiguration(connectionName: String, username: String, password :String, jdbcUrl:String) {
+        log.info("Initialise configuration for $connectionName ($jdbcUrl).")
         val secretsService = EncryptionSecretsServiceImpl(SECRETS_PASSWORD, SECRETS_SALT)
 
         val dbConnectionConfig = DbConnectionConfig(
@@ -144,15 +160,16 @@ class PostgresDbSetup: DbSetup {
         ).also { it.version = 0 }
 
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute(dbConnectionConfig.toInsertStatement())
             }
     }
 
     private fun createUserConfig(user: String, password: String) {
+        log.info("Create user config for $user")
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute(buildRbacConfigSql(user, password, "Setup Script"))
             }
@@ -171,7 +188,7 @@ class PostgresDbSetup: DbSetup {
         """.trimIndent()
 
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute(sql)
             }
