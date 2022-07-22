@@ -213,7 +213,7 @@ class MemberSynchronisationServiceImplTest {
             it.assertThat(publishedMemberList.size).isEqualTo(1)
             val publishedMember = publishedMemberList.first()
             it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
-            it.assertThat(publishedMember.key).isEqualTo("${member.id}-${participant.id}")
+            it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
             with(publishedMember.value as PersistentMemberInfo) {
                 val name = memberContext.items.first { item -> item.key == PARTY_NAME }.value
                 it.assertThat(name).isEqualTo(participantName.toString())

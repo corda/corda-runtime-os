@@ -7,7 +7,6 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
-import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -136,7 +135,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
                     val identity = memberInfoFactory.create(persistentMemberInfo).id
                     Record(
                         MEMBER_LIST_TOPIC,
-                        "${viewOwningMember.id}-$identity",
+                        "${viewOwningMember.shortHash}-$identity",
                         persistentMemberInfo
                     )
                 }

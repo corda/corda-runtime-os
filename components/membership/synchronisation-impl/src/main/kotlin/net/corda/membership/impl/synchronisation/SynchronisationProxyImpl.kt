@@ -200,7 +200,7 @@ class SynchronisationProxyImpl @Activate constructor(
                 logger.error(err, e)
                 throw SynchronisationProtocolSelectionException(err, e)
             } ?: throw SynchronisationProtocolSelectionException(
-                "Could not find group policy file for holding identity: [${viewOwningMember.id}]"
+                "Could not find group policy file for holding identity: [${viewOwningMember.shortHash}]"
             )
 
             getSynchronisationService(protocol).processMembershipUpdates(updates)
