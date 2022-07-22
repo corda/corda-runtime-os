@@ -13,7 +13,7 @@ import net.corda.httprpc.ResponseCode.INVALID_INPUT_DATA
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
-import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
+import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender

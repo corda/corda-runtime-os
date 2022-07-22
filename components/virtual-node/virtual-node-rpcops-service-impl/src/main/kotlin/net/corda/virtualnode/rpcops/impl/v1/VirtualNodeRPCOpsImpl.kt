@@ -10,11 +10,12 @@ import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.toEndpointType
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -129,7 +130,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     }
 
     override fun getAllVirtualNodes(): GetVirtualNodesResponse {
-        return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll())
+        return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
     /** Validates the [x500Name]. */
