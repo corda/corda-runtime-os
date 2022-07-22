@@ -99,7 +99,7 @@ const NetworkVisualizer = () => {
                     to: messageLog.receiver,
                     arrows: 'to',
                     dashes: true,
-                    timestamp: Date.now(),
+                    timestamp: messageLog.timestamp,
                 },
             ];
         });
