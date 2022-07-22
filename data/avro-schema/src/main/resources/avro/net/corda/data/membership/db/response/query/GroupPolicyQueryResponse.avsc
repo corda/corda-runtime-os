@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "GroupPolicyQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for the group policy.",
+  "fields": [
+    {
+      "name": "properties",
+      "doc": "Group policy properties.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

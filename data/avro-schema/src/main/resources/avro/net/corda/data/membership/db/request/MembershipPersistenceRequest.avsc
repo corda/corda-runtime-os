@@ -17,6 +17,7 @@
         "net.corda.data.membership.db.request.command.PersistGroupPolicy",
         "net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved",
         "net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus",
+        "net.corda.data.membership.db.request.query.QueryGroupPolicy",
         "net.corda.data.membership.db.request.query.QueryMemberInfo",
         "net.corda.data.membership.db.request.query.QueryMemberSignature"
       ],
