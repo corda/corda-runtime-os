@@ -71,6 +71,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.StringWriter
@@ -86,6 +87,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import org.mockito.kotlin.mock
 import java.util.UUID
 
+@Disabled("Disable until CORE-5877 is completed and it can be enabled back.")
 class P2PLayerEndToEndTest {
 
     companion object {
