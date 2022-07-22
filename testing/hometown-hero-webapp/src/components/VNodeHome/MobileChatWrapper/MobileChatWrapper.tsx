@@ -36,7 +36,9 @@ const MobileChatWrapper = () => {
                             handleClearParticipants={() => {
                                 setSelectedParticipants([]);
                             }}
-                            clearButtonEnabled={false}
+                            onClick={() => {
+                                setIsParticipantsOpen((prev) => !prev);
+                            }}
                         />
                     </div>
                     <Chat

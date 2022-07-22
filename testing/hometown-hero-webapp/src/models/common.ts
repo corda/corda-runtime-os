@@ -8,7 +8,7 @@ export type FlowResult = {
 
 export type FlowStatus = {
     clientRequestId: string;
-    flowError: string;
+    flowError: { message: string; type: string };
     flowId: string;
     flowResult: string;
     flowStatus: string;

@@ -45,12 +45,16 @@ export const LOCATION_COLORS: Map<string, string> = new Map([
     ['IE', '#84DE6C'],
     ['GB', '#839FF0'],
     ['US', '#F65D5D'],
+    ['SG', '#f57171'],
+    ['IN', '#fc7f03'],
     ['default', DEFAULT_COLOR],
 ]);
 
 export const LOCATION_GROUP_COORDS = new Map([
     ['IE', { x: 800, y: 0 }],
     ['GB', { x: 0, y: 800 }],
-    ['US', { x: 800, y: -800 }],
-    ['default', { x: -800, y: 0 }],
+    ['US', { x: -800, y: -800 }],
+    ['SG', { x: -800, y: 0 }],
+    ['IN', { x: 800, y: -800 }],
+    ['default', { x: 0, y: 0 }],
 ]);

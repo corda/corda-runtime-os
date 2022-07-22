@@ -1,6 +1,6 @@
 import { Button, FileUpload, NotificationService } from '@r3/r3-tooling-design-system/exports';
 
-import adminAxiosInstance from '@/api/adminAxios';
+import { ADMIN_AUTH_CONFIG } from '@/constants/authAdmin';
 import apiCall from '@/api/apiCall';
 import { useState } from 'react';
 
@@ -22,7 +22,7 @@ const UploadCpi = () => {
             method: 'post',
             path: '/api/v1/cpi',
             params: formData,
-            axiosInstance: adminAxiosInstance,
+            auth: ADMIN_AUTH_CONFIG,
         });
 
         if (response.error) {

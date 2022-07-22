@@ -1,12 +1,15 @@
 import { ResolvedPromise, resolvePromise } from './resolvePromise';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosStatic, CancelToken } from 'axios';
 
+import { BASE_URL } from '@/constants/baseUrl';
 import { trackPromise } from 'react-promise-tracker';
 
 //Globally tracking all api calls with react-promise-tracker
 
 export type ApiCallParams = {
     method: 'get' | 'post' | 'put';
+    baseUrl?: string;
+    headers?: any;
     path: string;
     dontTrackRequest?: boolean;
     params?: any;
@@ -18,6 +21,7 @@ export type ApiCallParams = {
 
 export default async function apiCall({
     method,
+    baseUrl,
     path,
     dontTrackRequest,
     params,
@@ -25,16 +29,18 @@ export default async function apiCall({
     config,
     axiosInstance,
     auth,
+    headers,
 }: ApiCallParams): Promise<ResolvedPromise> {
     const parameters = method === 'get' ? { params } : { data: params };
     const requestConfig: AxiosRequestConfig = {
-        baseURL: 'https://localhost:8888',
+        baseURL: baseUrl ?? BASE_URL,
         url: `${path}`,
         method,
         cancelToken: cancelToken,
         auth: auth,
         ...config,
         ...parameters,
+        ...headers,
     };
     const axiosHandler: AxiosInstance | AxiosStatic = axiosInstance ?? axios;
 

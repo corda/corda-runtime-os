@@ -1,7 +1,7 @@
 import { Button, Checkbox, NotificationService, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
 import { LOGIN, VNODE_HOME } from '@/constants/routes';
 import { addPermissionToRole, addRoleToUser, createPermission, createRole, createUser, createVNode } from './utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import FormContentWrapper from '@/components/FormContentWrapper/FormContentWrapper';
 import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
@@ -10,6 +10,7 @@ import RegisterViz from '@/components/Visualizations/RegisterViz';
 import { VirtualNode } from '@/models/virtualnode';
 import VisualizationWrapper from '@/components/Visualizations/VisualizationWrapper';
 import apiCall from '@/api/apiCall';
+import extractUsernameFromX500 from '@/utils/x500Username';
 import { trackPromise } from 'react-promise-tracker';
 import useAppDataContext from '@/contexts/appDataContext';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +25,7 @@ const Register = () => {
     const [confirmPassword, setConfirmPassword] = useState<string>('');
     const [newVNode, setNewVNode] = useState<VirtualNode | undefined>(undefined);
 
-    const { refreshVNodes, cpiList, refreshCpiList } = useAppDataContext();
+    const { refreshVNodes, cpiList, refreshCpiList, vNodes } = useAppDataContext();
 
     useEffect(() => {
         refreshCpiList();
@@ -140,7 +141,16 @@ const Register = () => {
         setConfirmPassword('');
     };
 
-    const canSubmit = username.length > 0 && password.length > 0 && confirmPassword === password;
+    const usernameExists = useMemo(() => {
+        const vNodeX500s = vNodes.map((vNode) => extractUsernameFromX500(vNode.holdingIdentity.x500Name));
+        for (let vN of vNodeX500s) {
+            if (vN === username) {
+                return true;
+            }
+        }
+        return false;
+    }, [vNodes, username]);
+    const canSubmit = username.length > 0 && !usernameExists && password.length > 0 && confirmPassword === password;
 
     return (
         <PageContentWrapper>
@@ -157,10 +167,11 @@ const Register = () => {
                         <TextInput
                             required
                             name="username"
-                            label={'Username'}
+                            label={usernameExists ? 'Username already exists' : 'Username'}
                             value={username}
                             onChange={handleInputChange}
-                            invalid={username.length === 0}
+                            invalid={username.length === 0 || usernameExists}
+                            errorMessage={usernameExists ? 'Username already exists' : undefined}
                         />
                         <PasswordInput
                             required
@@ -177,6 +188,11 @@ const Register = () => {
                             value={confirmPassword}
                             onChange={handleInputChange}
                             invalid={confirmPassword !== password || confirmPassword.length === 0}
+                            errorMessage={
+                                confirmPassword !== password || confirmPassword.length === 0
+                                    ? 'Passwords must match'
+                                    : undefined
+                            }
                         />
 
                         <Button

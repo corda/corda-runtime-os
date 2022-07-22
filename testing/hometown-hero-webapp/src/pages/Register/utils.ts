@@ -1,6 +1,6 @@
+import { ADMIN_AUTH_CONFIG } from '@/constants/authAdmin';
 import { FULL_NAME_SPLITTER } from '@/constants/fullNameSplit';
 import { NotificationService } from '@r3/r3-tooling-design-system/exports';
-import adminAxiosInstance from '@/api/adminAxios';
 import apiCall from '@/api/apiCall';
 
 export const createVNode = async (x500Name: string, cpiFileChecksum: string): Promise<boolean> => {
@@ -13,7 +13,7 @@ export const createVNode = async (x500Name: string, cpiFileChecksum: string): Pr
                 x500Name: x500Name,
             },
         },
-        axiosInstance: adminAxiosInstance,
+        auth: ADMIN_AUTH_CONFIG,
     });
     if (response.error) {
         NotificationService.notify(`Failed to create VNode: Error: ${response.error}`, 'Error', 'danger');
@@ -36,7 +36,7 @@ export const createUser = async (username: string, password: string, holdingShor
                 loginName: username,
             },
         },
-        axiosInstance: adminAxiosInstance,
+        auth: ADMIN_AUTH_CONFIG,
     });
     if (response.error) {
         NotificationService.notify(
@@ -65,7 +65,7 @@ export const createPermission = async (
                 permissionType: permissionType,
             },
         },
-        axiosInstance: adminAxiosInstance,
+        auth: ADMIN_AUTH_CONFIG,
     });
     if (response.error) {
         NotificationService.notify(
@@ -88,7 +88,7 @@ export const createRole = async (): Promise<string | undefined> => {
                 roleName: 'user_role',
             },
         },
-        axiosInstance: adminAxiosInstance,
+        auth: ADMIN_AUTH_CONFIG,
     });
     if (response.error) {
         NotificationService.notify(`Failed to create new role: Error: ${response.error}`, 'Error', 'danger');
@@ -108,7 +108,7 @@ export const addPermissionToRole = async (permissionId: string, roleId: string) 
             permissionId: permissionId,
             roleId: roleId,
         },
-        axiosInstance: adminAxiosInstance,
+        auth: ADMIN_AUTH_CONFIG,
     });
     if (response.error) {
         NotificationService.notify(
@@ -130,7 +130,7 @@ export const addRoleToUser = async (loginName: string, roleId: string): Promise<
             loginName: loginName,
             roleId: roleId,
         },
-        axiosInstance: adminAxiosInstance,
+        auth: ADMIN_AUTH_CONFIG,
     });
     if (response.error) {
         NotificationService.notify(

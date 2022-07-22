@@ -1,4 +1,6 @@
 export type Message = {
-    x500name: string;
-    message: string;
+    content: string;
+    direction: 'incoming' | 'outgoing';
+    id: string;
+    timestamp: string;
 };
