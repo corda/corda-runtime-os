@@ -11,7 +11,6 @@ dependencies {
     api project(':libs:http-rpc:http-rpc')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api project(':libs:packaging:packaging-core')
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }

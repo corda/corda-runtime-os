@@ -1,7 +1,6 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
-import net.corda.libs.cpiupload.endpoints.v1.toEndpointType
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 import java.util.UUID
@@ -24,10 +23,3 @@ data class VirtualNodeInfo(
     /** Creation timestamp */
     val timestamp: Instant,
 )
-
-fun net.corda.virtualnode.VirtualNodeInfo.toEndpointType() : VirtualNodeInfo =
-    VirtualNodeInfo(
-        holdingIdentity,
-        cpiIdentifier.toEndpointType(),
-        vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId, hsmConnectionId, version, timestamp
-    )
