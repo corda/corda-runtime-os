@@ -34,6 +34,7 @@ pipeline {
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_DEV_POSTGRES_USER="${env.POSTGRES_CREDENTIALS_USR}"
         CORDA_DEV_POSTGRES_PASSWORD="${env.POSTGRES_CREDENTIALS_PSW}"
+        CORDA_DEV_CLUSTER_DB_NAME="${postgresDb}"
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("e2e-tests-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
@@ -146,7 +147,7 @@ pipeline {
                         }
                         
                     }
-                    
+
                 writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
                 //archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
