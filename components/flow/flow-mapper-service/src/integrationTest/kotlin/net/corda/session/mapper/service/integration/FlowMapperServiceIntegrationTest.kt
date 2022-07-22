@@ -230,7 +230,7 @@ class FlowMapperServiceIntegrationTest {
     fun `flow mapper still works after config update`() {
         val testId = "test4"
         val versions = listOf(1)
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
@@ -247,7 +247,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor(testId, p2pLatch, 1), bootConfig, null
+            TestP2POutProcessor(testId, p2pLatch, 1), messagingConfig, null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
@@ -270,7 +270,7 @@ class FlowMapperServiceIntegrationTest {
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
             testProcessor,
-            bootConfig,
+            messagingConfig,
             null
         )
 
