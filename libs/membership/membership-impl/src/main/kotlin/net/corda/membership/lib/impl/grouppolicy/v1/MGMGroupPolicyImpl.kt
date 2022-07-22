@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.PropertyKeys
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
@@ -40,13 +40,9 @@ class MGMGroupPolicyImpl(
         holdingIdentity.groupId
     }
 
-    override val registrationProtocol =
-        persistedProperties.parseOrNull(PropertyKeys.REGISTRATION_PROTOCOL, String::class.java)
-            ?: rootNode.getMandatoryString(Root.REGISTRATION_PROTOCOL)
+    override val registrationProtocol = rootNode.getMandatoryString(REGISTRATION_PROTOCOL)
 
-    override val synchronisationProtocol =
-        persistedProperties.parseOrNull(PropertyKeys.SYNC_PROTOCOL, String::class.java)
-            ?: rootNode.getMandatoryString(SYNC_PROTOCOL)
+    override val synchronisationProtocol = rootNode.getMandatoryString(SYNC_PROTOCOL)
 
     override val protocolParameters: GroupPolicy.ProtocolParameters = ProtocolParametersImpl(persistedProperties)
 

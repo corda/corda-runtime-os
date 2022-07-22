@@ -51,7 +51,7 @@ interface GroupPolicyParser {
     fun parse(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String?,
-        properties: LayeredPropertyMap
+        groupPolicyPropertiesQuery: () -> LayeredPropertyMap?
     ): GroupPolicy
 
     /**

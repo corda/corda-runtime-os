@@ -86,11 +86,12 @@ class ForwardingGroupPolicyProviderTest {
     fun `dependent and managed children are set properly when using the real policy provider`() {
         createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
 
-        assertThat(dependentChildren).hasSize(3)
+        assertThat(dependentChildren).hasSize(4)
         assertThat(dependentChildren).containsExactlyInAnyOrder(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-            LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+            LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
+            LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
         )
         assertThat(managedChildren).hasSize(4)
         assertThat(managedChildren).containsExactlyInAnyOrder(

@@ -34,10 +34,6 @@ class GroupPolicyConstants {
          * Keys as stored in the persistence layer.
          */
         object PropertyKeys {
-            const val REGISTRATION_PROTOCOL = "protocol.registration"
-
-            const val SYNC_PROTOCOL = "protocol.synchronisation"
-
             const val SESSION_KEY_POLICY = "key.session.policy"
 
             const val SESSION_PKI = "pki.session"

@@ -2,7 +2,6 @@ package net.corda.membership.lib.impl.grouppolicy
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -27,9 +26,7 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParserImpl @Activate constructor(
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    val memberInfoFactory: MemberInfoFactory
 ) : GroupPolicyParser {
     companion object {
         private val logger = contextLogger()
@@ -57,7 +54,7 @@ class GroupPolicyParserImpl @Activate constructor(
     override fun parse(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String?,
-        properties: LayeredPropertyMap
+        groupPolicyPropertiesQuery: () -> LayeredPropertyMap?
     ): GroupPolicy {
         val node = when {
             groupPolicy == null -> {
@@ -80,7 +77,7 @@ class GroupPolicyParserImpl @Activate constructor(
         val version = node.getFileFormatVersion()
 
         return if (MGM_DEFAULT_GROUP_ID == node.getGroupId()) {
-            mgmVersions[version]?.invoke(holdingIdentity, node, properties)
+            groupPolicyPropertiesQuery.invoke()?.let { mgmVersions[version]?.invoke(holdingIdentity, node, it) }
         } else {
             memberVersions[version]?.invoke(node)
         }
@@ -110,7 +107,10 @@ class GroupPolicyParserImpl @Activate constructor(
         groupPolicy: String
     ): MemberInfo? {
         val parsedGroupPolicy = try {
-            parse(holdingIdentity, groupPolicy, layeredPropertyMapFactory.createMap(emptyMap()))
+            parse(holdingIdentity, groupPolicy) {
+                logger.debug("Tried to query for MGM group policy, which is inaccessible for member.")
+                null
+            }
         } catch (e: BadGroupPolicyException) {
             logger.error("Unable to parse group policy file.", e)
             null

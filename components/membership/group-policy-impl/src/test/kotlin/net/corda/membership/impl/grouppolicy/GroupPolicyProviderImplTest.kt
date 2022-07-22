@@ -159,12 +159,12 @@ class GroupPolicyProviderImplTest {
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory()
     private val properties = layeredPropertyMapFactory.createMap(emptyMap())
     private val groupPolicyParser: GroupPolicyParser = mock {
-        on { parse(eq(holdingIdentity1), eq(groupPolicy1), eq(properties)) }.doReturn(parsedGroupPolicy1)
-        on { parse(eq(holdingIdentity1), eq(groupPolicy2), eq(properties)) }.doReturn(parsedGroupPolicy2)
-        on { parse(eq(holdingIdentity2), eq(groupPolicy2), eq(properties)) }.doReturn(parsedGroupPolicy2)
-        on { parse(eq(holdingIdentity3), eq(groupPolicy3), eq(properties)) }.doReturn(parsedGroupPolicy3)
-        on { parse(eq(holdingIdentity4), eq(null), eq(properties)) }.doThrow(BadGroupPolicyException(""))
-        on { parse(eq(holdingIdentity5), eq(groupPolicy3), eq(properties)) }.doReturn(parsedMgmGroupPolicy)
+        on { parse(eq(holdingIdentity1), eq(groupPolicy1), any()) }.doReturn(parsedGroupPolicy1)
+        on { parse(eq(holdingIdentity1), eq(groupPolicy2), any()) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity2), eq(groupPolicy2), any()) }.doReturn(parsedGroupPolicy2)
+        on { parse(eq(holdingIdentity3), eq(groupPolicy3), any()) }.doReturn(parsedGroupPolicy3)
+        on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
+        on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
     }
 
     private val membershipQueryClient: MembershipQueryClient = mock {
@@ -251,7 +251,7 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
         groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
-        verify(groupPolicyParser, times(2)).parse(any(), any(), eq(properties))
+        verify(groupPolicyParser, times(2)).parse(any(), any(), any())
     }
 
     @Test
@@ -261,7 +261,7 @@ class GroupPolicyProviderImplTest {
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
 
-        verify(groupPolicyParser, times(3)).parse(any(), any(), eq(properties))
+        verify(groupPolicyParser, times(3)).parse(any(), any(), any())
     }
 
     @Test
@@ -365,8 +365,8 @@ class GroupPolicyProviderImplTest {
         // test holding identity
         val holdingIdentity = HoldingIdentity(alice.toString(), "FOO-BAR")
 
-        doReturn(parsedGroupPolicy1).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(groupPolicy1), eq(properties))
-        doThrow(BadGroupPolicyException("")).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(null), eq(properties))
+        doReturn(parsedGroupPolicy1).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(groupPolicy1), any())
+        doThrow(BadGroupPolicyException("")).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(null), any())
 
         // set up mock for new CPI and send update to virtual node callback
         fun setCpi(cpiIdentifier: CpiIdentifier) {

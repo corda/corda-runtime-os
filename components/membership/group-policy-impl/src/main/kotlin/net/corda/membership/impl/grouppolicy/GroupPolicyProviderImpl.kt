@@ -83,7 +83,8 @@ class GroupPolicyProviderImpl @Activate constructor(
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                        LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+                        LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
                     )
                 )
             }
@@ -184,9 +185,8 @@ class GroupPolicyProviderImpl @Activate constructor(
             }
             return groupPolicyParser.parse(
                 holdingIdentity,
-                metadata?.groupPolicy,
-                membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
-            )
+                metadata?.groupPolicy
+            ) { membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow() }
         }
 
         /**

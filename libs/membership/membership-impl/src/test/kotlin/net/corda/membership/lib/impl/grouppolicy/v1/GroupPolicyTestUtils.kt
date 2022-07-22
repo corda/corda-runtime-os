@@ -122,8 +122,6 @@ fun buildEmptyProperties(layeredPropertyMapFactory: LayeredPropertyMapFactory) =
 fun buildPersistedProperties(layeredPropertyMapFactory: LayeredPropertyMapFactory) =
     layeredPropertyMapFactory.createMap(
         mapOf(
-            "protocol.registration" to TEST_REG_PROTOCOL,
-            "protocol.synchronisation" to TEST_SYNC_PROTOCOL,
             "protocol.p2p.mode" to "Authentication",
             "key.session.policy" to "Distinct",
             "pki.session" to "StandardEV3",

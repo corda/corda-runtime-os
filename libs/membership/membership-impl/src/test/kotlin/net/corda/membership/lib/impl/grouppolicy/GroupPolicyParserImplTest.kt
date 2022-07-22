@@ -23,9 +23,6 @@ import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_CERT
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_FILE_FORMAT_VERSION
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_GROUP_ID
-import net.corda.membership.lib.impl.grouppolicy.v1.TEST_REG_PROTOCOL
-import net.corda.membership.lib.impl.grouppolicy.v1.TEST_SYNC_PROTOCOL
-import net.corda.membership.lib.impl.grouppolicy.v1.buildEmptyProperties
 import net.corda.membership.lib.impl.grouppolicy.v1.buildPersistedProperties
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -69,9 +66,7 @@ class GroupPolicyParserImplTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
     private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
-    private val groupPolicyParser = GroupPolicyParserImpl(memberInfoFactory, layeredPropertyMapFactory)
-
-    private val emptyProperties = buildEmptyProperties(layeredPropertyMapFactory)
+    private val groupPolicyParser = GroupPolicyParserImpl(memberInfoFactory)
     private val persistedProperties = buildPersistedProperties(layeredPropertyMapFactory)
 
     private val holdingIdentity = HoldingIdentity(
@@ -81,29 +76,29 @@ class GroupPolicyParserImplTest {
 
     @Test
     fun `Empty string as group policy throws corda runtime exception`() {
-        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, EMPTY_STRING, emptyProperties) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, EMPTY_STRING) { null } }
     }
 
     @Test
     fun `Whitespace string as group policy throws corda runtime exception`() {
-        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, WHITESPACE_STRING, emptyProperties) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, WHITESPACE_STRING) { null } }
     }
 
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
-        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, INVALID_FORMAT_GROUP_POLICY, emptyProperties) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, INVALID_FORMAT_GROUP_POLICY) { null } }
     }
 
     @Test
     fun `Parse group policy - verify interface properties`() {
-        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC), emptyProperties)
+        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC)) { null }
         assertEquals(testGroupId, result.groupId)
     }
 
     @Test
     @Suppress("UNCHECKED_CAST")
     fun `Parse group policy for member - verify internal map`() {
-        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC), emptyProperties)
+        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC)) { null }
 
         assertSoftly { softly ->
             softly.assertThat(result).isInstanceOf(MemberGroupPolicy::class.java)
@@ -158,15 +153,17 @@ class GroupPolicyParserImplTest {
 
     @Test
     fun `Parse group policy for MGM - verify internal map`() {
-        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.MGM), persistedProperties)
+        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.MGM)) { persistedProperties }
 
         assertSoftly {
             it.assertThat(result).isInstanceOf(MGMGroupPolicy::class.java)
 
             it.assertThat(result.fileFormatVersion).isEqualTo(TEST_FILE_FORMAT_VERSION)
             it.assertThat(result.groupId).isEqualTo(TEST_GROUP_ID)
-            it.assertThat(result.registrationProtocol).isEqualTo(TEST_REG_PROTOCOL)
-            it.assertThat(result.synchronisationProtocol).isEqualTo(TEST_SYNC_PROTOCOL)
+            it.assertThat(result.registrationProtocol)
+                .isEqualTo("net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService")
+            it.assertThat(result.synchronisationProtocol)
+                .isEqualTo("net.corda.membership.impl.sync.dynamic.MemberSyncService")
             it.assertThat(result.protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
             it.assertThat(result.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
             it.assertThat(result.p2pParameters.sessionTrustRoots).isNotNull

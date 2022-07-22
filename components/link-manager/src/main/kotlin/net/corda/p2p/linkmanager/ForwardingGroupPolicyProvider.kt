@@ -41,7 +41,8 @@ internal class ForwardingGroupPolicyProvider(private val coordinatorFactory: Lif
         ThirdPartyComponentsMode.REAL -> setOf(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-            LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+            LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
+            LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
         )
     }
     private val managedChildren = when(thirdPartyComponentsMode) {
