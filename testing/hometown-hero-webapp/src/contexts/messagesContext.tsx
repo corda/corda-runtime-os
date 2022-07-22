@@ -1,4 +1,8 @@
-import { FETCH_MESSAGE_FLOW_POLLING_DELETE_TIMEOUT, FETCH_MESSAGE_FLOW_POLLING_INTERVAL } from '@/constants/timeouts';
+import {
+    FETCH_MESSAGE_FLOW_POLLING_DELETE_TIMEOUT,
+    FETCH_MESSAGE_FLOW_POLLING_INTERVAL,
+    MESSAGE_SEND_STATUS_POLL_INTERVAL_MS,
+} from '@/constants/timeouts';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Message } from '@/models/Message';
@@ -26,6 +30,7 @@ type MessagesContextProps = {
     chatHistories: ChatHistory[];
     getChatHistoryForCounterparty: (counterparty: string) => ChatHistory | undefined;
     getTotalMessagesForCounterparty: (counterparty: string) => number;
+    fetchMessages: () => void;
 };
 
 const [useMessagesContext, Provider] = createCtx<MessagesContextProps>();
@@ -52,43 +57,44 @@ export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> =
         [getChatHistoryForCounterparty]
     );
 
+    const fetchMessages = useCallback(async () => {
+        const clientRequestId = 'fetchMessage' + Date.now();
+        const flowStatusInterval = await handleFlow({
+            holderShortId,
+            clientRequestId,
+            flowType: 'net.cordapp.testing.chat.ChatReaderFlow',
+            payload: JSON.stringify({}),
+            pollIntervalMs: MESSAGE_SEND_STATUS_POLL_INTERVAL_MS,
+            onStartFailure: (errorText) => {
+                NotificationService.notify(
+                    `Error starting flow with clientRequestId: ${clientRequestId}.. Error: ${errorText}`,
+                    'error',
+                    'danger'
+                );
+            },
+            onStatusSuccess: (flowResult) => {
+                const chatHistories = JSON.parse(flowResult) as ChatHistory[];
+                setChatHistories(chatHistories);
+            },
+            onStatusFailure: (errorText) => {
+                NotificationService.notify(
+                    `Error polling flow status with clientRequestId: ${clientRequestId}.. Error: ${errorText}`,
+                    'error',
+                    'danger'
+                );
+            },
+            auth: { username, password },
+        });
+
+        setTimeout(() => {
+            clearInterval(flowStatusInterval);
+        }, FETCH_MESSAGE_FLOW_POLLING_DELETE_TIMEOUT);
+    }, []);
+
     useEffect(() => {
         if (holderShortId.length === 0 || isPollingMessages) return;
         setIsPollingMessages(true);
 
-        const fetchMessages = async () => {
-            const clientRequestId = 'fetchMessage' + Date.now();
-            const flowStatusInterval = await handleFlow({
-                holderShortId,
-                clientRequestId,
-                flowType: 'net.cordapp.testing.chat.ChatReaderFlow',
-                payload: JSON.stringify({}),
-                pollIntervalMs: 1000,
-                onStartFailure: (errorText) => {
-                    NotificationService.notify(
-                        `Error starting flow with clientRequestId: ${clientRequestId}.. Error: ${errorText}`,
-                        'error',
-                        'danger'
-                    );
-                },
-                onStatusSuccess: (flowResult) => {
-                    const chatHistories = JSON.parse(flowResult) as ChatHistory[];
-                    setChatHistories(chatHistories);
-                },
-                onStatusFailure: (errorText) => {
-                    NotificationService.notify(
-                        `Error polling flow status with clientRequestId: ${clientRequestId}.. Error: ${errorText}`,
-                        'error',
-                        'danger'
-                    );
-                },
-                auth: { username, password },
-            });
-
-            setTimeout(() => {
-                clearInterval(flowStatusInterval);
-            }, FETCH_MESSAGE_FLOW_POLLING_DELETE_TIMEOUT);
-        };
         const interval = setInterval(() => {
             fetchMessages();
         }, FETCH_MESSAGE_FLOW_POLLING_INTERVAL);
@@ -104,6 +110,7 @@ export const MessagesContextProvider: React.FC<{ children?: React.ReactNode }> =
                 chatHistories,
                 getChatHistoryForCounterparty,
                 getTotalMessagesForCounterparty,
+                fetchMessages,
             }}
         >
             {children}

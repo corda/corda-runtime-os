@@ -1,5 +1,5 @@
 import { Button, Checkbox } from '@r3/r3-tooling-design-system/exports';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 import SelectedParticipants from '../SelectedParticipants/SelectedParticipants';
 import style from './chatParticipants.module.scss';
@@ -20,7 +20,20 @@ const ChatParticipants: React.FC<Props> = ({
 }) => {
     const { vNodes, refreshVNodes } = useAppDataContext();
     const { vNode: myVNode } = useUserContext();
-    const { getTotalMessagesForCounterparty } = useMessagesContext();
+    const { getTotalMessagesForCounterparty, fetchMessages } = useMessagesContext();
+    const [refreshCounter, setRefreshCounter] = useState<number>(0);
+
+    useEffect(() => {
+        fetchMessages();
+
+        const bumpCounterInterval = setInterval(() => {
+            setRefreshCounter((prev) => prev + 1);
+        }, 1000);
+
+        return () => {
+            clearInterval(bumpCounterInterval);
+        };
+    }, []);
 
     const handleCheckboxClicked = (checkBoxChecked: boolean, participant: string) => {
         if (!checkBoxChecked) {
@@ -47,7 +60,7 @@ const ChatParticipants: React.FC<Props> = ({
 
                     return 0;
                 }),
-        [vNodes, myVNode]
+        [vNodes, myVNode, refreshCounter]
     );
 
     return (

@@ -1,4 +1,5 @@
 import {
+    FETCH_MESSAGES_AFTER_SEND_FLOW_MS,
     FETCH_SEND_MESSAGE_FLOW_STATUS_POLLING_INTERVAL,
     MESSAGE_SEND_FLOW_POLLING_DELETE_TIMEOUT,
 } from '@/constants/timeouts';
@@ -28,7 +29,11 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
     const [messageValue, setMessageValue] = useState<string>('');
     const [messagesInProgress, setMessagesInProgress] = useState<Map<string, string>>(new Map());
 
-    const { getChatHistoryForCounterparty, chatHistories } = useMessagesContext();
+    useEffect(() => {
+        setMessagesInProgress(new Map());
+    }, [selectedParticipants]);
+
+    const { getChatHistoryForCounterparty, chatHistories, fetchMessages } = useMessagesContext();
     const { vNode, holderShortId, username, password } = useUserContext();
 
     useEffect(() => {
@@ -90,7 +95,10 @@ const Chat: React.FC<Props> = ({ handleOpenParticipantsModal, handleSelectReplyP
             },
             onStatusSuccess: (flowStatus) => {
                 // NotificationService.notify(`ChatOutgoingFlow finished, message delivered!`, 'Success', 'success');
-                removePendingMessageWithRequestId(clientRequestId);
+                setTimeout(() => {
+                    fetchMessages();
+                    removePendingMessageWithRequestId(clientRequestId);
+                }, FETCH_MESSAGES_AFTER_SEND_FLOW_MS);
                 clearInterval(pollingInterval);
             },
             onStatusFailure: (errorText) => {
