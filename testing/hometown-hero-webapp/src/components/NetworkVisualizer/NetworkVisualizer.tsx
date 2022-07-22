@@ -1,4 +1,4 @@
-import { GRAPH_OPTIONS, LOCATIONS, LOCATION_COLORS, LOCATION_GROUP_COORDS } from './options';
+import { GRAPH_OPTIONS, LOCATION_COLORS, LOCATION_GROUP_COORDS } from './options';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@r3/r3-tooling-design-system/exports';
@@ -73,7 +73,6 @@ const NetworkVisualizer = () => {
 
     useEffect(() => {
         if (messageLogs.length === 0) return;
-        //Here we need to update the messages
         const newGraphData = { ...graphData };
 
         messageLogs.forEach((messageLog) => {
@@ -83,9 +82,25 @@ const NetworkVisualizer = () => {
             if (secondsDifference >= MESSAGE_MAX_AGE) {
                 return;
             }
+            if (
+                newGraphData.edges.findIndex(
+                    (edge: any) =>
+                        edge.from === messageLog.sender &&
+                        edge.to === messageLog.receiver &&
+                        edge.timestamp === messageLog.timestamp
+                ) > -1
+            ) {
+                return;
+            }
             newGraphData.edges = [
                 ...newGraphData.edges,
-                { from: messageLog.sender, to: messageLog.receiver, arrows: 'to', dashes: true, timestamp: Date.now() },
+                {
+                    from: messageLog.sender,
+                    to: messageLog.receiver,
+                    arrows: 'to',
+                    dashes: true,
+                    timestamp: Date.now(),
+                },
             ];
         });
 
@@ -104,6 +119,10 @@ const NetworkVisualizer = () => {
                 location = 'GB';
             } else if (x500Name.includes('C=US')) {
                 location = 'US';
+            } else if (x500Name.includes('C=IN')) {
+                location = 'IN';
+            } else if (x500Name.includes('C=SG')) {
+                location = 'SG';
             }
             const locCoords = LOCATION_GROUP_COORDS.get(location);
             const newNode = {

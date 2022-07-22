@@ -1,3 +1,4 @@
+import { HOME, LOGIN } from '@/constants/routes';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ADMIN_AUTH_CONFIG } from '@/constants/authAdmin';
@@ -47,6 +48,11 @@ export const AppDataContextProvider: React.FC<Props> = ({ children }) => {
     useEffect(() => {
         refreshCpiList();
         refreshVNodes();
+
+        const currentPath = window.location.pathname;
+        if (currentPath === HOME || currentPath === LOGIN) {
+            return;
+        }
 
         const interval = setInterval(() => {
             refreshVNodes();
