@@ -82,7 +82,7 @@ class VirtualNodeRPCOpsImplTests {
         cryptoDdlConnectionId,
         cryptoDmlConnectionId,
         hsmConnectionId,
-        "ACTIVE"
+        VirtualNodeInfo.DEFAULT_INITIAL_STATE
     )
 
     private val rpcRequestTimeoutDuration = 3000
