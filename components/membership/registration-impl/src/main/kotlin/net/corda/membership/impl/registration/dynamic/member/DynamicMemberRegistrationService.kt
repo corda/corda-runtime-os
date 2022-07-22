@@ -209,7 +209,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             } catch (ex: MembershipSchemaValidationException) {
                 return MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid: " + ex.message
+                    "Registration failed. The registration context is invalid. " + ex.getErrorSummary()
                 )
             }
             try {

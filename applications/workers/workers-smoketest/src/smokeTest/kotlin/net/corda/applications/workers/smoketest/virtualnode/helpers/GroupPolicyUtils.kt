@@ -1,15 +1,12 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.commons.text.StringEscapeUtils
 
 object GroupPolicyUtils {
-    private fun createCertificate() = StringEscapeUtils.escapeJson(
-        CpiLoader::class.java.classLoader.getResource("certificate.pem")!!
-            .readText()
-            .replace("\r", "")
-            .replace("\n", System.lineSeparator())
-    )
+    private fun createCertificate() = CpiLoader::class.java.classLoader.getResource("certificate.pem")!!
+        .readText()
+        .replace("\r", "")
+        .replace("\n", System.lineSeparator())
 
     fun getDefaultStaticNetworkGroupPolicy(
         groupId: String,

@@ -22,6 +22,7 @@ class MembershipSchemaValidatorImpl(
     private companion object {
         private val REGISTERED_SCHEMES = listOf("https", "http")
         val logger = contextLogger()
+        private const val VALIDATION_ERROR = "Exception when validating membership schema."
     }
 
     private val schemaFactory = buildSchemaFactory()
@@ -32,32 +33,22 @@ class MembershipSchemaValidatorImpl(
         version: Version,
         groupPolicy: String
     ) {
+
         val schemaInput = try {
             membershipSchemaProvider.getSchema(schema, version)
         } catch (ex: MembershipSchemaException) {
-            val err = "Failed to retrieve the schema require to validate the group policy file."
-            logger.error(err, ex)
-            throw MembershipSchemaValidationException(err, ex)
+            val errReason = "Failed to retrieve the schema require to validate the group policy file."
+            logger.error(errReason, ex)
+            throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
         val groupPolicyJson = try {
             objectMapper.readTree(groupPolicy)
         } catch (ex: Exception) {
-            val err = "Failed to parse group policy as valid JSON."
-            logger.error(err, ex)
-            throw MembershipSchemaValidationException(err, ex)
+            val errReason = "Failed to parse group policy as valid JSON."
+            logger.error(errReason, ex)
+            throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
-        validateJson(schemaInput, groupPolicyJson)
-    }
-
-    private fun validateJson(
-        schemaInput: InputStream,
-        json: JsonNode
-    ) {
-        val jsonSchema = schemaFactory.getSchema(schemaInput)
-        val errors = jsonSchema.walk(json, true)
-        if (errors.validationMessages.isNotEmpty()) {
-            throw MembershipSchemaValidationException("Schema validation failed. ${errors.validationMessages.joinToString()}")
-        }
+        validateJson(schema, schemaInput, groupPolicyJson)
     }
 
     override fun validateRegistrationContext(
@@ -68,9 +59,9 @@ class MembershipSchemaValidatorImpl(
         val schemaInput = try {
             membershipSchemaProvider.getSchema(schema, version)
         } catch (ex: MembershipSchemaException) {
-            val err = "Failed to retrieve the schema require to validate the registration context."
-            logger.error(err, ex)
-            throw MembershipSchemaValidationException(err, ex)
+            val errReason = "Failed to retrieve the schema require to validate the registration context."
+            logger.error(errReason, ex)
+            throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
         val contextAsJson = try {
             objectMapper.readTree(
@@ -79,11 +70,28 @@ class MembershipSchemaValidatorImpl(
                 )
             )
         } catch (ex: Exception) {
-            val err = "Failed to map registration context to JSON."
-            logger.error(err, ex)
-            throw MembershipSchemaValidationException(err, ex)
+            val errReason = "Failed to map registration context to JSON."
+            logger.error(errReason, ex)
+            throw MembershipSchemaValidationException(VALIDATION_ERROR, ex, schema, listOf(errReason))
         }
-        validateJson(schemaInput, contextAsJson)
+        validateJson(schema, schemaInput, contextAsJson)
+    }
+
+    private fun validateJson(
+        schemaType: MembershipSchema,
+        schemaInput: InputStream,
+        json: JsonNode
+    ) {
+        val jsonSchema = schemaFactory.getSchema(schemaInput)
+        val errors = jsonSchema.walk(json, true)
+        if (errors.validationMessages.isNotEmpty()) {
+            throw MembershipSchemaValidationException(
+                VALIDATION_ERROR,
+                null,
+                schemaType,
+                errors.validationMessages.map { it.message }
+            )
+        }
     }
 
     private fun buildSchemaFactory(): JsonSchemaFactory {

@@ -133,7 +133,7 @@ class StaticMemberRegistrationService @Activate constructor(
         } catch (ex: MembershipSchemaValidationException) {
             return MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
-                "Registration failed. The registration context is invalid: " + ex.message
+                "Registration failed. The registration context is invalid: " + ex.getErrorSummary()
             )
         }
         try {

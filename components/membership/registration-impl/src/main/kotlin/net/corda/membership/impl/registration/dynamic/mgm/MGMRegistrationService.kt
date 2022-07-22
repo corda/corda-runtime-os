@@ -200,7 +200,7 @@ class MGMRegistrationService @Activate constructor(
             } catch (ex: MembershipSchemaValidationException) {
                 return MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Onboarding MGM failed. The registration context is invalid: " + ex.message
+                    "Onboarding MGM failed. The registration context is invalid: " + ex.getErrorSummary()
                 )
             }
             try {

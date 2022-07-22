@@ -331,19 +331,28 @@ class DynamicMemberRegistrationServiceTest {
     fun `registration fails if the registration context doesn't match the schema`() {
         postConfigChangedEvent()
         val err = "ERROR-MESSAGE"
+        val errReason = "ERROR-REASON"
         whenever(
             membershipSchemaValidator.validateRegistrationContext(
                 eq(MembershipSchema.RegistrationContextSchema.DynamicMember),
                 any(),
                 any()
             )
-        ).doThrow(MembershipSchemaValidationException(err))
+        ).doThrow(
+            MembershipSchemaValidationException(
+                err,
+                null,
+                MembershipSchema.RegistrationContextSchema.DynamicMember,
+                listOf(errReason)
+            )
+        )
 
         registrationService.start()
         val result = registrationService.register(member, context)
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message).contains(err)
+            it.assertThat(result.message).contains(errReason)
         }
         registrationService.stop()
     }

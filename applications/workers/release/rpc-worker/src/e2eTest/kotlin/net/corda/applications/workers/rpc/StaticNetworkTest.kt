@@ -11,7 +11,6 @@ import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
-import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
@@ -23,12 +22,11 @@ import java.util.zip.ZipEntry
 class StaticNetworkTest {
     private val testToolkit by TestToolkitProperty()
     private val json = ObjectMapper()
-    private fun createCertificate() = StringEscapeUtils.escapeJson(
-        StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!
-            .readText()
-            .replace("\r", "")
-            .replace("\n", System.lineSeparator())
-    )
+    private fun createCertificate() = StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!
+        .readText()
+        .replace("\r", "")
+        .replace("\n", System.lineSeparator())
+
     private val groupId = "102012c6-1b53-49b3-8915-b7d7cc0ba8d9"
 
     private fun createGroupPolicyJson(
@@ -45,14 +43,14 @@ class StaticNetworkTest {
                 "sessionKeyPolicy" to "Combined",
                 "staticNetwork" to mapOf(
                     "members" to
-                        memberNames.map {
-                            mapOf(
-                                "name" to it,
-                                "memberStatus" to "ACTIVE",
-                                "endpointUrl-1" to "http://localhost:1080",
-                                "endpointProtocol-1" to 1
-                            )
-                        }
+                            memberNames.map {
+                                mapOf(
+                                    "name" to it,
+                                    "memberStatus" to "ACTIVE",
+                                    "endpointUrl-1" to "http://localhost:1080",
+                                    "endpointProtocol-1" to 1
+                                )
+                            }
                 )
             ),
             "p2pParameters" to mapOf(
