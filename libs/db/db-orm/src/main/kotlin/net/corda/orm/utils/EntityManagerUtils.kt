@@ -85,20 +85,21 @@ inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
  * @see transaction
  */
 inline fun <R> transactionExecutor(entityManager: EntityManager,  block: (EntityManager) -> R): R {
-    val currentTransaction = entityManager.transaction
-    currentTransaction.begin()
+    entityManager.use { em ->
+        val currentTransaction = em.transaction
+        currentTransaction.begin()
 
-    return try {
-        block(entityManager)
-    } catch (e: Exception) {
-        currentTransaction.setRollbackOnly()
-        throw e
-    } finally {
-        if (!currentTransaction.rollbackOnly) {
-            currentTransaction.commit()
-        } else {
-            currentTransaction.rollback()
+        return try {
+            block(em)
+        } catch (e: Exception) {
+            currentTransaction.setRollbackOnly()
+            throw e
+        } finally {
+            if (!currentTransaction.rollbackOnly) {
+                currentTransaction.commit()
+            } else {
+                currentTransaction.rollback()
+            }
         }
-        entityManager.close()
     }
 }
