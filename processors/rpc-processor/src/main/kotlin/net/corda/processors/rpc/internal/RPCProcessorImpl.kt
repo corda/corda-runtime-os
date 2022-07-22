@@ -23,6 +23,7 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
@@ -76,6 +77,8 @@ class RPCProcessorImpl @Activate constructor(
     private val certificatesClient: CertificatesClient,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : RPCProcessor {
 
     private companion object {
@@ -102,6 +105,7 @@ class RPCProcessorImpl @Activate constructor(
         ::hsmRegistrationClient,
         ::certificatesClient,
         ::groupPolicyProvider,
+        ::membershipQueryClient,
     )
 
     override fun start(bootConfig: SmartConfig) {
