@@ -1,6 +1,6 @@
 package net.corda.membership.synchronisation
 
-import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 
@@ -19,9 +19,9 @@ interface MemberSynchronisationService : Lifecycle {
         get() = LifecycleCoordinatorName(MemberSynchronisationService::class.java.name, this::class.java.name)
 
     /**
-     * Publishes the member list updates contained in the [membershipPackage] sent by the MGM to the receiving member.
+     * Publishes the member list updates contained in the [updates] sent by the MGM to the receiving member.
      *
-     * @param membershipPackage Data package distributed by the MGM containing membership updates.
+     * @param updates Data package distributed by the MGM containing membership updates.
      */
-    fun processMembershipUpdates(membershipPackage: MembershipPackage)
+    fun processMembershipUpdates(updates: ProcessMembershipUpdates)
 }

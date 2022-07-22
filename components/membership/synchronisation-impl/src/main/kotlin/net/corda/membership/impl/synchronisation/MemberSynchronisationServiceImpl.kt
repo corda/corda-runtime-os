@@ -6,6 +6,7 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -52,7 +53,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationService : AutoCloseable {
-        fun processMembershipUpdates(membershipPackage: MembershipPackage)
+        fun processMembershipUpdates(updates: ProcessMembershipUpdates)
     }
 
     private companion object {
@@ -81,8 +82,8 @@ class MemberSynchronisationServiceImpl @Activate constructor(
 
     private var impl: InnerSynchronisationService = InactiveImpl
 
-    override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
-        impl.processMembershipUpdates(membershipPackage)
+    override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
+        impl.processMembershipUpdates(updates)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -109,7 +110,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerSynchronisationService {
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
         override fun close() = Unit
@@ -122,10 +123,10 @@ class MemberSynchronisationServiceImpl @Activate constructor(
                 logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
             }, KeyValuePairList::class.java)
 
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) {
-            val viewOwningMember = membershipPackage.viewOwningMember.toCorda()
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+            val viewOwningMember = updates.destination.toCorda()
             try {
-                val records = membershipPackage.memberships.memberships.map { update ->
+                val records = updates.membershipPackage.memberships.memberships.map { update ->
                     // TODO - CORE-5811 - verify signatures in signed member infos.
                     val persistentMemberInfo = PersistentMemberInfo(
                         viewOwningMember.toAvro(),

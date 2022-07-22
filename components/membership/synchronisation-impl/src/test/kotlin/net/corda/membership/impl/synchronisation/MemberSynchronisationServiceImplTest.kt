@@ -9,6 +9,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
+import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.libs.configuration.SmartConfigFactory
@@ -138,8 +139,11 @@ class MemberSynchronisationServiceImplTest {
         on { memberships } doReturn listOf(signedMemberInfo)
     }
     private val membershipPackage: MembershipPackage = mock {
-        on { viewOwningMember } doReturn member.toAvro()
         on { memberships } doReturn signedMemberships
+    }
+    private val updates: ProcessMembershipUpdates = mock {
+        on { destination } doReturn member.toAvro()
+        on { membershipPackage } doReturn membershipPackage
     }
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
@@ -202,7 +206,7 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        synchronisationService.processMembershipUpdates(membershipPackage)
+        synchronisationService.processMembershipUpdates(updates)
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMemberList = capturedPublishedList.firstValue
         SoftAssertions.assertSoftly {

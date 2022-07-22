@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -47,6 +48,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -118,19 +120,21 @@ class SynchronisationProxyImplTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(any()) } doReturn mock()
     }
-    private val participantName = MemberX500Name("Participant", "London", "GB")
-    private val participant = HoldingIdentity(participantName.toString(), DUMMY_GROUP_ID)
-    private val membershipPackage: MembershipPackage = mock {
-        on { viewOwningMember } doReturn participant.toAvro()
+    private val membershipPackage: MembershipPackage = mock()
+    private val updates: ProcessMembershipUpdates = mock {
+        on { destination } doReturn createHoldingIdentity().toAvro()
+        on { membershipPackage } doReturn membershipPackage
     }
     private lateinit var synchronisationProxy: SynchronisationProxy
 
     private fun createHoldingIdentity() = HoldingIdentity("O=Alice, L=London, C=GB", DUMMY_GROUP_ID)
 
     private fun createGroupPolicy(synchronisationProtocol: String): GroupPolicy {
-        val r3comCert = ClassLoader.getSystemResource("r3Com.pem")
-            .readText()
-            .replace(System.getProperty("line.separator"), "\\n" )
+        val r3comCert = StringEscapeUtils.escapeJson(
+            ClassLoader.getSystemResource("r3Com.pem")!!.readText()
+                .replace("\r", "")
+                .replace("\n", System.lineSeparator())
+        )
 
         return MemberGroupPolicyImpl(
             ObjectMapper().readTree(
@@ -215,14 +219,14 @@ class SynchronisationProxyImplTest {
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(SyncProtocol1::class.java.name), identity1)
         val ex1 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processMembershipUpdates(membershipPackage)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
         assertThat(ex1.message).isEqualTo("SyncProtocol1 called")
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(SyncProtocol2::class.java.name), identity2)
         val ex2 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processMembershipUpdates(membershipPackage)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
         assertThat(ex2.message).isEqualTo("SyncProtocol2 called")
     }
@@ -235,7 +239,7 @@ class SynchronisationProxyImplTest {
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
         assertFailsWith<SynchronisationProtocolSelectionException> {
-            synchronisationProxy.processMembershipUpdates(membershipPackage)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
     }
 
@@ -339,19 +343,19 @@ class SynchronisationProxyImplTest {
     }
 
     class SyncProtocol1 : AbstractSyncProtocol() {
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
             throw SynchronisationException("SyncProtocol1 called")
     }
 
     class SyncProtocol2 : AbstractSyncProtocol() {
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
             throw SynchronisationException("SyncProtocol2 called")
     }
 
     abstract class AbstractSyncProtocol : MemberSynchronisationService {
         var started = 0
 
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
             throw SynchronisationException("AbstractSyncProtocol called")
 
         override val isRunning = true

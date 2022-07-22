@@ -1,6 +1,6 @@
 package net.corda.membership.synchronisation
 
-import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.exceptions.SynchronisationProtocolSelectionException
 
@@ -14,9 +14,9 @@ interface SynchronisationProxy : Lifecycle {
      * Retrieves the appropriate instance of [MemberSynchronisationService] for a holding identity as specified in the CPI
      * configuration, and delegates the processing of membership updates to it.
      *
-     * @param membershipPackage Data package distributed by the MGM containing membership updates.
+     * @param updates Data package distributed by the MGM containing membership updates.
      *
      * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
      */
-    fun processMembershipUpdates(membershipPackage: MembershipPackage)
+    fun processMembershipUpdates(updates: ProcessMembershipUpdates)
 }

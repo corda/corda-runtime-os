@@ -2,7 +2,8 @@ package net.corda.membership.impl.synchronisation
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,6 +19,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.exceptions.SynchronisationProtocolSelectionException
 import net.corda.membership.synchronisation.MemberSynchronisationService
+import net.corda.membership.synchronisation.SynchronisationException
 import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -57,7 +59,7 @@ class SynchronisationProxyImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationProxy {
-        fun processMembershipUpdates(membershipPackage: MembershipPackage)
+        fun processMembershipUpdates(updates: ProcessMembershipUpdates)
     }
 
     private companion object {
@@ -84,12 +86,12 @@ class SynchronisationProxyImpl @Activate constructor(
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
     ) + synchronisationServices.map { it.lifecycleCoordinatorName }
 
-    private var subscription: Subscription<String, MembershipPackage>? = null
+    private var subscription: Subscription<String, SynchronisationCommand>? = null
 
     private var impl: InnerSynchronisationProxy = InactiveImpl
 
-    override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
-        impl.processMembershipUpdates(membershipPackage)
+    override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
+        impl.processMembershipUpdates(updates)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -182,14 +184,14 @@ class SynchronisationProxyImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerSynchronisationProxy {
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) =
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
             throw IllegalStateException("SynchronisationProxy currently inactive.")
 
     }
 
     private inner class ActiveImpl: InnerSynchronisationProxy {
-        override fun processMembershipUpdates(membershipPackage: MembershipPackage) {
-            val viewOwningMember = membershipPackage.viewOwningMember.toCorda()
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+            val viewOwningMember = updates.destination.toCorda()
             val protocol = try {
                 groupPolicyProvider.getGroupPolicy(viewOwningMember)?.synchronisationProtocol
             } catch (e: BadGroupPolicyException) {
@@ -201,7 +203,7 @@ class SynchronisationProxyImpl @Activate constructor(
                 "Could not find group policy file for holding identity: [${viewOwningMember.id}]"
             )
 
-            getSynchronisationService(protocol).processMembershipUpdates(membershipPackage)
+            getSynchronisationService(protocol).processMembershipUpdates(updates)
         }
 
         private fun getSynchronisationService(protocol: String): MemberSynchronisationService {
@@ -216,18 +218,24 @@ class SynchronisationProxyImpl @Activate constructor(
         }
     }
 
-    private inner class Processor : DurableProcessor<String, MembershipPackage> {
+    private inner class Processor : DurableProcessor<String, SynchronisationCommand> {
 
-        override fun onNext(events: List<Record<String, MembershipPackage>>): List<Record<*, *>> {
+        override fun onNext(events: List<Record<String, SynchronisationCommand>>): List<Record<*, *>> {
             events.forEach { record ->
-                if (record.value != null) {
-                    processMembershipUpdates(record.value!!)
+                try {
+                    require(record.value != null) {
+                        throw SynchronisationException("SynchronisationCommand on topic: ${record.topic} with " +
+                                "key: ${record.key} was null.")
+                    }
+                    processMembershipUpdates(record.value!!.command as ProcessMembershipUpdates)
+                } catch (e: Exception) {
+                    logger.error("Failed to process synchronisation event. Cause: $e", e)
                 }
             }
             return emptyList()
         }
 
         override val keyClass = String::class.java
-        override val valueClass = MembershipPackage::class.java
+        override val valueClass = SynchronisationCommand::class.java
     }
 }
