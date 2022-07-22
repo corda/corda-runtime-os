@@ -45,10 +45,8 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -321,8 +319,10 @@ class DynamicMemberRegistrationServiceTest {
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
-                .isEqualTo("Registration failed. " +
-                        "The registration context is invalid: Provided ledger key IDs are incorrectly numbered.")
+                .isEqualTo(
+                    "Registration failed. " +
+                            "The registration context is invalid: Provided ledger key IDs are incorrectly numbered."
+                )
         }
         registrationService.stop()
     }
@@ -331,11 +331,13 @@ class DynamicMemberRegistrationServiceTest {
     fun `registration fails if the registration context doesn't match the schema`() {
         postConfigChangedEvent()
         val err = "ERROR-MESSAGE"
-        whenever(membershipSchemaValidator.validateRegistrationContext(
-            eq(MembershipSchema.RegistrationContextSchema.DynamicMember),
-            any(),
-            any()
-        )).doThrow(MembershipSchemaValidationException(err))
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.DynamicMember),
+                any(),
+                any()
+            )
+        ).doThrow(MembershipSchemaValidationException(err))
 
         registrationService.start()
         val result = registrationService.register(member, context)

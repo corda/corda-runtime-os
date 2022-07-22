@@ -40,7 +40,6 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -359,11 +358,13 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails if the registration context doesn't match the schema`() {
         setUpPublisher()
         val err = "ERROR-MESSAGE"
-        whenever(membershipSchemaValidator.validateRegistrationContext(
-            eq(MembershipSchema.RegistrationContextSchema.StaticMember),
-            any(),
-            any()
-        )).doThrow(MembershipSchemaValidationException(err))
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.StaticMember),
+                any(),
+                any()
+            )
+        ).doThrow(MembershipSchemaValidationException(err))
 
         registrationService.start()
         val result = registrationService.register(alice, mockContext)

@@ -44,7 +44,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
@@ -365,8 +364,10 @@ class MGMRegistrationServiceTest {
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
-                .isEqualTo("Onboarding MGM failed. " +
-                        "The registration context is invalid: Provided TLS trust stores are incorrectly numbered.")
+                .isEqualTo(
+                    "Onboarding MGM failed. " +
+                            "The registration context is invalid: Provided TLS trust stores are incorrectly numbered."
+                )
         }
         registrationService.stop()
     }
@@ -375,11 +376,13 @@ class MGMRegistrationServiceTest {
     fun `registration fails if the registration context doesn't match the schema`() {
         postConfigChangedEvent()
         val err = "ERROR-MESSAGE"
-        whenever(membershipSchemaValidator.validateRegistrationContext(
-            eq(MembershipSchema.RegistrationContextSchema.Mgm),
-            any(),
-            any()
-        )).doThrow(MembershipSchemaValidationException(err))
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.Mgm),
+                any(),
+                any()
+            )
+        ).doThrow(MembershipSchemaValidationException(err))
 
         registrationService.start()
         val result = registrationService.register(mgm, properties)
