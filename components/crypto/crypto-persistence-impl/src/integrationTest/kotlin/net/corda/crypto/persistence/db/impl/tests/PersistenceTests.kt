@@ -1,5 +1,8 @@
 package net.corda.crypto.persistence.db.impl.tests
 
+import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -12,32 +15,22 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.config.createDefaultCryptoConfig
-import net.corda.crypto.impl.config.signingPersistence
-import net.corda.crypto.impl.config.softPersistence
-import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.impl.HSMStoreImpl
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
 import net.corda.crypto.persistence.impl.WrappingKeyStoreImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
-import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
-import net.corda.crypto.persistence.db.model.HSMConfigEntity
-import net.corda.crypto.persistence.db.model.MasterKeyPolicy
-import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.persistence.impl.HSMStoreImpl
 import net.corda.crypto.persistence.signing.SigningKeyStatus
-import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
-import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
@@ -82,8 +75,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.UUID
 import java.util.stream.Stream
@@ -145,45 +136,23 @@ class PersistenceTests {
         }
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
-
-        fun generateKeyPair(schemeName: String): KeyPair {
-            val scheme = schemeMetadata.findKeyScheme(schemeName)
-            val keyPairGenerator = KeyPairGenerator.getInstance(
-                scheme.algorithmName,
-                schemeMetadata.providers.getValue(scheme.providerName)
-            )
-            if (scheme.algSpec != null) {
-                keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
-            } else if (scheme.keySize != null) {
-                keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
-            }
-            return keyPairGenerator.generateKeyPair()
-        }
     }
 
     private fun createAndPersistHSMEntities(
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
-        capacity: Int = 3,
-        categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() },
         deprecatedAt: Long = 0
     ): HSMCategoryAssociationEntity {
-        val configId = UUID.randomUUID().toString()
+        val workerSetId = UUID.randomUUID().toString()
         val associationId = UUID.randomUUID().toString()
         val categoryAssociationId = UUID.randomUUID().toString()
-        val config = createAndPersistHSMConfigEntity(
-            configId = configId,
-            masterKeyPolicy = masterKeyPolicy,
-            capacity = capacity,
-            categories = categories
-        )
         val association = HSMAssociationEntity(
             id = associationId,
             tenantId = tenantId,
-            config = config,
+            workerSetId = workerSetId,
             timestamp = Instant.now(),
-            masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.NEW) {
+            masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
                 UUID.randomUUID().toString().toByteArray().toHex().take(30)
             } else {
                 null
@@ -207,68 +176,6 @@ class PersistenceTests {
         return categoryAssociation
     }
 
-    private fun createAndPersistHSMConfigEntity(
-        configId: String,
-        serviceName: String = "test",
-        masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
-        capacity: Int = 3,
-        categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() }
-    ): HSMConfigEntity {
-        val config = createHSMConfigEntity(
-            configId = configId,
-            serviceName = serviceName,
-            masterKeyPolicy = masterKeyPolicy,
-            capacity = capacity
-        )
-        cryptoEmf.transaction { em ->
-            em.persist(config)
-            categories(config).forEach { c -> em.persist(c) }
-        }
-        return config
-    }
-
-    private fun createHSMConfigEntity(
-        configId: String,
-        serviceName: String = "test",
-        masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
-        capacity: Int = 3
-    ) = HSMConfigEntity(
-        id = configId,
-        timestamp = Instant.now(),
-        workerLabel = UUID.randomUUID().toString(),
-        description = "Test configuration",
-        masterKeyPolicy = masterKeyPolicy,
-        masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.SHARED) "some-alias" else null,
-        supportedSchemes = "CORDA.RSA,CORDA.ECDSA.SECP256K1,CORDA.ECDSA.SECP256R1,CORDA.EDDSA.ED25519",
-        maxAttempts = 0,
-        attemptTimeoutMills = 5000,
-        serviceName = serviceName,
-        serviceConfig = "{}".toByteArray(),
-        capacity = capacity
-    )
-
-    private fun createHSMInfo(
-        configId: String,
-        serviceName: String = "test",
-        masterKeyPolicy: net.corda.data.crypto.wire.hsm.MasterKeyPolicy =
-            net.corda.data.crypto.wire.hsm.MasterKeyPolicy.SHARED,
-        capacity: Int = 3
-    ) = HSMInfo(
-        configId,
-        Instant.now(),
-        UUID.randomUUID().toString(),
-        "Test configuration",
-        masterKeyPolicy,
-        if (masterKeyPolicy == net.corda.data.crypto.wire.hsm.MasterKeyPolicy.SHARED) "some-alias" else null,
-        0,
-        5000,
-        listOf(
-            "CORDA.RSA", "CORDA.ECDSA.SECP256K1", "CORDA.ECDSA.SECP256R1", "CORDA.EDDSA.ED25519"
-        ),
-        serviceName,
-        capacity
-    )
-
     private fun assertHSMCategoryAssociationEntity(
         expected: HSMCategoryAssociationEntity,
         actual: HSMTenantAssociation?
@@ -277,34 +184,10 @@ class PersistenceTests {
         assertEquals(expected.category, actual!!.category)
         assertEquals(expected.tenantId, actual.tenantId)
         assertEquals(expected.deprecatedAt, actual.deprecatedAt)
-        assertEquals(expected.hsmAssociation.config.id, actual.config.info.id)
+        assertEquals(expected.hsmAssociation.workerSetId, actual.workerSetId)
         assertEquals(expected.hsmAssociation.tenantId, actual.tenantId)
         assertEquals(expected.hsmAssociation.masterKeyAlias, actual.masterKeyAlias)
         assertArrayEquals(expected.hsmAssociation.aliasSecret, actual.aliasSecret)
-        assertHSMConfig(expected.hsmAssociation.config, actual.config)
-    }
-
-    private fun assertHSMConfig(expected: HSMConfigEntity, actual: HSMConfig?) {
-        assertNotNull(actual)
-        assertArrayEquals(expected.serviceConfig, actual!!.serviceConfig)
-        assertHSMInfo(expected, actual.info)
-    }
-
-    private fun assertHSMInfo(expected: HSMConfigEntity, actual: HSMInfo?) {
-        assertNotNull(actual)
-        assertEquals(expected.id, actual!!.id)
-        assertEquals(expected.masterKeyAlias, actual.masterKeyAlias)
-        assertEquals(expected.workerLabel, actual.workerLabel)
-        assertEquals(expected.description, actual.description)
-        assertEquals(expected.maxAttempts, actual.maxAttempts)
-        assertEquals(expected.attemptTimeoutMills, actual.attemptTimeoutMills)
-        val expectedList = expected.supportedSchemes.split(",")
-        assertTrue(actual.supportedSchemes.isNotEmpty())
-        assertEquals(expectedList.size, actual.supportedSchemes.size)
-        assertTrue(expectedList.all { actual.supportedSchemes.contains(it) })
-        assertEquals(expected.serviceName, actual.serviceName)
-        assertEquals(expected.masterKeyPolicy.name, actual.masterKeyPolicy.name)
-        assertEquals(expected.capacity, actual.capacity)
     }
 
     private fun assertSigningCachedKey(
@@ -327,7 +210,7 @@ class PersistenceTests {
         val now = Instant.now()
         assertTrue(actual.timestamp >= now.minusSeconds(60))
         assertTrue(actual.timestamp <= now.minusSeconds(-1))
-        assertEquals(expected.associationId, actual.associationId)
+        assertEquals(expected.workerSetId, actual.workerSetId)
         assertEquals(SigningKeyStatus.NORMAL, actual.status)
     }
 
@@ -351,34 +234,20 @@ class PersistenceTests {
         val now = Instant.now()
         assertTrue(actual.timestamp >= now.minusSeconds(60))
         assertTrue(actual.timestamp <= now.minusSeconds(-1))
-        assertEquals(expected.associationId, actual.associationId)
+        assertEquals(expected.workerSetId, actual.workerSetId)
     }
 
-    private fun getHSMCategoryMapEntities(
-        it: EntityManager,
-        configId1: String
-    ): List<HSMCategoryMapEntity> {
-        val config = it.find(HSMConfigEntity::class.java, configId1)
-        return it.createQuery(
-            "SELECT m FROM HSMCategoryMapEntity m WHERE m.config=:config",
-            HSMCategoryMapEntity::class.java
-        )
-            .setParameter("config", config)
-            .resultList
-    }
-
-    private fun createHSMCacheImpl() = HSMStoreImpl(
-        entityManagerFactory = cryptoEmf
+    private fun createHSMStoreImpl() = HSMStoreImpl(
     )
 
-    private fun createSoftCryptoKeyCacheImpl() = WrappingKeyStoreImpl(
+    private fun createWrappingKeyStoreImpl() = WrappingKeyStoreImpl(
         config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).softPersistence(),
         entityManagerFactory = cryptoEmf,
         masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
     )
 
-    private fun createSigningKeyCacheImpl() = SigningKeyStoreImpl(
-        config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).signingPersistence(),
+    private fun createSigningKeyStoreImpl() = SigningKeyStoreImpl(
+        config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).signingService(),
         dbConnectionOps = object : DbConnectionOps {
             override fun putConnection(
                 name: String,
@@ -719,7 +588,7 @@ class PersistenceTests {
 
     @Test
     fun `findTenantAssociation(tenantId, category) should not return deprecated associations`() {
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val tenantId1 = randomTenantId()
         val a1 = createAndPersistHSMEntities(
             tenantId = tenantId1,
@@ -749,7 +618,7 @@ class PersistenceTests {
         val tenantId1 = randomTenantId()
         val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION_INIT, MasterKeyPolicy.SHARED)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
         val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.SESSION_INIT) }
         assertHSMCategoryAssociationEntity(a1, r1)
@@ -760,7 +629,7 @@ class PersistenceTests {
     fun `findTenantAssociation(tenantId, category) should return null when parameters are not matching`() {
         val tenantId = randomTenantId()
         createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val r1 = cache.act { it.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION_INIT) }
         assertNull(r1)
         val r2 = cache.act { it.findTenantAssociation(randomTenantId(), CryptoConsts.Categories.LEDGER) }
@@ -772,7 +641,7 @@ class PersistenceTests {
         val tenantId1 = randomTenantId()
         val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION_INIT, MasterKeyPolicy.SHARED)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val r1 = cache.act { it.findTenantAssociation(a1.id) }
         val r2 = cache.act { it.findTenantAssociation(a2.id) }
         assertHSMCategoryAssociationEntity(a1, r1)
@@ -783,7 +652,7 @@ class PersistenceTests {
     fun `findTenantAssociation(associationId) should return null when ids are not matching`() {
         val tenantId = randomTenantId()
         createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val r1 = cache.act { it.findTenantAssociation(UUID.randomUUID().toString()) }
         assertNull(r1)
         val r2 = cache.act { it.findTenantAssociation(UUID.randomUUID().toString()) }
@@ -794,7 +663,7 @@ class PersistenceTests {
     fun `findConfig should be able to find HSM config`() {
         val configId = UUID.randomUUID().toString()
         val expected = createAndPersistHSMConfigEntity(configId)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val actual = cache.act { it.findConfig(configId) }
         assertHSMConfig(expected, actual)
     }
@@ -803,7 +672,7 @@ class PersistenceTests {
     fun `findConfig returns null when id is not matching`() {
         val configId = UUID.randomUUID().toString()
         createAndPersistHSMConfigEntity(configId)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val actual = cache.act { it.findConfig(UUID.randomUUID().toString()) }
         assertNull(actual)
     }
@@ -818,7 +687,7 @@ class PersistenceTests {
         val config1 = createAndPersistHSMConfigEntity(configId1, serviceName1)
         val config2 = createAndPersistHSMConfigEntity(configId2, serviceName2)
         val config3 = createAndPersistHSMConfigEntity(configId3, serviceName2)
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val actual1 = cache.act { it.lookup(emptyMap()) }
         assertTrue(actual1.size >= 3) // there could be more left from other tests
         assertHSMInfo(config1, actual1.first { it.id == configId1 })
@@ -846,7 +715,7 @@ class PersistenceTests {
         val fakeLedgeCategory = "LED-${UUID.randomUUID().toString().toByteArray().toHex().take(12)}"
         val fakeTLSCategory = "TLS-${UUID.randomUUID().toString().toByteArray().toHex().take(12)}"
         val fakeSessionCategory = "SES-${UUID.randomUUID().toString().toByteArray().toHex().take(12)}"
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val configId1 = UUID.randomUUID().toString()
         val configId2 = UUID.randomUUID().toString()
         cache.act {
@@ -919,7 +788,7 @@ class PersistenceTests {
 
     @Test
     fun `linkCategories should replace previous mapping`() {
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val configId = UUID.randomUUID().toString()
         cache.act {
             it.add(createHSMInfo(configId = configId, capacity = 5), "{}".toByteArray())
@@ -972,7 +841,7 @@ class PersistenceTests {
 
     @Test
     fun `Should return linked categories`() {
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val configId = UUID.randomUUID().toString()
         cache.act {
             it.add(createHSMInfo(configId = configId, capacity = 5), "{}".toByteArray())
@@ -1007,7 +876,7 @@ class PersistenceTests {
 
     @Test
     fun `linkCategories should throw IllegalStateException if config does not exist`() {
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         cache.act {
             assertThrows(IllegalStateException::class.java) {
                 it.linkCategories(
@@ -1028,7 +897,7 @@ class PersistenceTests {
 
     @Test
     fun `Should merge HSM configuration`() {
-        val cache = createHSMCacheImpl()
+        val cache = createHSMStoreImpl()
         val info = createHSMInfo(configId = "", capacity = 5)
         val configId = cache.act {
             it.add(info, "{}".toByteArray())
@@ -1065,7 +934,7 @@ class PersistenceTests {
 
     @Test
     fun `Should be able to cache and then retrieve repeatedly wrapping keys`() {
-        val cache = createSoftCryptoKeyCacheImpl()
+        val cache = createWrappingKeyStoreImpl()
         val alias1 = UUID.randomUUID().toString()
         val newKey1 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
@@ -1096,7 +965,7 @@ class PersistenceTests {
 
     @Test
     fun `Should fail to save wrapping key with same alias when failIfExists equals true`() {
-        val cache = createSoftCryptoKeyCacheImpl()
+        val cache = createWrappingKeyStoreImpl()
         val alias = UUID.randomUUID().toString()
         val newKey1 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
@@ -1115,7 +984,7 @@ class PersistenceTests {
 
     @Test
     fun `Should not override existing wrapping key with same alias when failIfExists equals false`() {
-        val cache = createSoftCryptoKeyCacheImpl()
+        val cache = createWrappingKeyStoreImpl()
         val alias = UUID.randomUUID().toString()
         val newKey1 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
@@ -1140,7 +1009,7 @@ class PersistenceTests {
         val tenantId1 = randomTenantId()
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         assertThrows(PersistenceException::class.java) {
             cache.act(tenantId1) {
@@ -1161,7 +1030,7 @@ class PersistenceTests {
         val tenantId2 = randomTenantId()
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p1) }
         cache.act(tenantId1) { it.save(w1) }
@@ -1197,7 +1066,7 @@ class PersistenceTests {
         val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
         val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
         val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p12) }
         cache.act(tenantId1) { it.save(p2) }
@@ -1226,7 +1095,7 @@ class PersistenceTests {
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
         val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p12) }
         cache.act(tenantId1) { it.save(p2) }
@@ -1265,7 +1134,7 @@ class PersistenceTests {
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
         val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p12) }
         cache.act(tenantId1) { it.save(p2) }
@@ -1310,7 +1179,7 @@ class PersistenceTests {
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
         val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p12) }
         cache.act(tenantId1) { it.save(p2) }
@@ -1430,7 +1299,7 @@ class PersistenceTests {
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
         val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
-        val cache = createSigningKeyCacheImpl()
+        val cache = createSigningKeyStoreImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p12) }
         cache.act(tenantId1) { it.save(p2) }

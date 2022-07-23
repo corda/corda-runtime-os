@@ -15,7 +15,7 @@ import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.hsm.HSMStore
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
-import net.corda.data.crypto.wire.hsm.AssociationInfo
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -53,10 +53,10 @@ class HSMServiceImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
         Impl(logger, event, store, cryptoOpsClient)
 
-    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): AssociationInfo =
+    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
         impl.assignHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): AssociationInfo =
+    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
         impl.assignSoftHSM(tenantId, category, context)
 
     override fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? =
@@ -84,7 +84,7 @@ class HSMServiceImpl @Activate constructor(
             BackoffStrategy.createBackoff(hsmConfig.downstreamMaxAttempts, listOf(100L))
         )
 
-        fun assignHSM(tenantId: String, category: String, context: Map<String, String>): AssociationInfo {
+        fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
             if(workerSets.isOnlySoftHSM) {
                 logger.warn("There is only SOFT HSM configured, will assign that.")
@@ -97,7 +97,7 @@ class HSMServiceImpl @Activate constructor(
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
-                return AssociationInfo(existing.workerSetId, existing.deprecatedAt)
+                return HSMAssociationInfo(existing.workerSetId, existing.deprecatedAt)
             }
             val stats = workerSets.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
             val chosen = if (context.isPreferredPrivateKeyPolicy(CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
@@ -111,10 +111,10 @@ class HSMServiceImpl @Activate constructor(
                 workerSetId = chosen.workerSetId
             )
             ensureWrappingKey(association)
-            return AssociationInfo(association.workerSetId, association.deprecatedAt)
+            return HSMAssociationInfo(association.workerSetId, association.deprecatedAt)
         }
 
-        fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): AssociationInfo {
+        fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
             val existing = store.findTenantAssociation(tenantId, category)
             if(existing != null) {
@@ -123,7 +123,7 @@ class HSMServiceImpl @Activate constructor(
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
-                return AssociationInfo(existing.workerSetId, existing.deprecatedAt)
+                return HSMAssociationInfo(existing.workerSetId, existing.deprecatedAt)
             }
             val association = store.associate(
                 tenantId = tenantId,
@@ -131,7 +131,7 @@ class HSMServiceImpl @Activate constructor(
                 workerSetId = SOFT_HSM_WORKER_SET_ID
             )
             ensureWrappingKey(association)
-            return AssociationInfo(association.workerSetId, association.deprecatedAt)
+            return HSMAssociationInfo(association.workerSetId, association.deprecatedAt)
         }
 
         fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
