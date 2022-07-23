@@ -197,7 +197,7 @@ class PersistenceTests {
             id = categoryAssociationId,
             tenantId = tenantId,
             category = category,
-            association = association,
+            hsmAssociation = association,
             timestamp = Instant.now(),
             deprecatedAt = deprecatedAt
         )
@@ -277,11 +277,11 @@ class PersistenceTests {
         assertEquals(expected.category, actual!!.category)
         assertEquals(expected.tenantId, actual.tenantId)
         assertEquals(expected.deprecatedAt, actual.deprecatedAt)
-        assertEquals(expected.association.config.id, actual.config.info.id)
-        assertEquals(expected.association.tenantId, actual.tenantId)
-        assertEquals(expected.association.masterKeyAlias, actual.masterKeyAlias)
-        assertArrayEquals(expected.association.aliasSecret, actual.aliasSecret)
-        assertHSMConfig(expected.association.config, actual.config)
+        assertEquals(expected.hsmAssociation.config.id, actual.config.info.id)
+        assertEquals(expected.hsmAssociation.tenantId, actual.tenantId)
+        assertEquals(expected.hsmAssociation.masterKeyAlias, actual.masterKeyAlias)
+        assertArrayEquals(expected.hsmAssociation.aliasSecret, actual.aliasSecret)
+        assertHSMConfig(expected.hsmAssociation.config, actual.config)
     }
 
     private fun assertHSMConfig(expected: HSMConfigEntity, actual: HSMConfig?) {
@@ -619,7 +619,7 @@ class PersistenceTests {
             id = categoryAssociationId,
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
-            association = association,
+            hsmAssociation = association,
             timestamp = Instant.now(),
             deprecatedAt = 0
         )
@@ -632,23 +632,23 @@ class PersistenceTests {
             assertNotSame(categoryAssociation, retrieved)
             assertEquals(categoryAssociationId, retrieved.id)
             assertEquals(CryptoConsts.Categories.LEDGER, retrieved.category)
-            assertNotSame(association, retrieved.association)
-            assertEquals(associationId, retrieved.association.id)
-            assertEquals(tenantId, retrieved.association.tenantId)
-            assertEquals(association.masterKeyAlias, retrieved.association.masterKeyAlias)
-            assertArrayEquals(association.aliasSecret, retrieved.association.aliasSecret)
-            assertNotSame(config, retrieved.association.config)
-            assertEquals(configId, retrieved.association.config.id)
-            assertEquals(config.masterKeyAlias, retrieved.association.config.masterKeyAlias)
-            assertEquals(config.workerLabel, retrieved.association.config.workerLabel)
-            assertEquals(config.description, retrieved.association.config.description)
-            assertEquals(config.maxAttempts, retrieved.association.config.maxAttempts)
-            assertEquals(config.attemptTimeoutMills, retrieved.association.config.attemptTimeoutMills)
-            assertEquals(config.supportedSchemes, retrieved.association.config.supportedSchemes)
-            assertEquals(config.serviceName, retrieved.association.config.serviceName)
-            assertArrayEquals(config.serviceConfig, retrieved.association.config.serviceConfig)
+            assertNotSame(association, retrieved.hsmAssociation)
+            assertEquals(associationId, retrieved.hsmAssociation.id)
+            assertEquals(tenantId, retrieved.hsmAssociation.tenantId)
+            assertEquals(association.masterKeyAlias, retrieved.hsmAssociation.masterKeyAlias)
+            assertArrayEquals(association.aliasSecret, retrieved.hsmAssociation.aliasSecret)
+            assertNotSame(config, retrieved.hsmAssociation.config)
+            assertEquals(configId, retrieved.hsmAssociation.config.id)
+            assertEquals(config.masterKeyAlias, retrieved.hsmAssociation.config.masterKeyAlias)
+            assertEquals(config.workerLabel, retrieved.hsmAssociation.config.workerLabel)
+            assertEquals(config.description, retrieved.hsmAssociation.config.description)
+            assertEquals(config.maxAttempts, retrieved.hsmAssociation.config.maxAttempts)
+            assertEquals(config.attemptTimeoutMills, retrieved.hsmAssociation.config.attemptTimeoutMills)
+            assertEquals(config.supportedSchemes, retrieved.hsmAssociation.config.supportedSchemes)
+            assertEquals(config.serviceName, retrieved.hsmAssociation.config.serviceName)
+            assertArrayEquals(config.serviceConfig, retrieved.hsmAssociation.config.serviceConfig)
             assertEquals(MasterKeyPolicy.SHARED, config.masterKeyPolicy)
-            assertEquals(config.capacity, retrieved.association.config.capacity)
+            assertEquals(config.capacity, retrieved.hsmAssociation.config.capacity)
 
             val retrievedMapping1 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId1)
             assertEquals(CryptoConsts.Categories.LEDGER, retrievedMapping1.category)
@@ -668,8 +668,8 @@ class PersistenceTests {
         val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val association = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
-            tenantId = a1.association.tenantId,
-            config = a1.association.config,
+            tenantId = a1.hsmAssociation.tenantId,
+            config = a1.hsmAssociation.config,
             timestamp = Instant.now(),
             masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
             aliasSecret = "Hello World!".toByteArray()
@@ -689,7 +689,7 @@ class PersistenceTests {
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
             category = a1.category,
-            association = a1.association,
+            hsmAssociation = a1.hsmAssociation,
             timestamp = Instant.now(),
             deprecatedAt = Instant.now().toEpochMilli()
         )
@@ -706,7 +706,7 @@ class PersistenceTests {
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
             category = a1.category,
-            association = a1.association,
+            hsmAssociation = a1.hsmAssociation,
             timestamp = Instant.now(),
             deprecatedAt = 0
         )
@@ -733,7 +733,7 @@ class PersistenceTests {
             id = UUID.randomUUID().toString(),
             tenantId = a1.tenantId,
             category = a1.category,
-            association = a1.association,
+            hsmAssociation = a1.hsmAssociation,
             timestamp = Instant.now(),
             deprecatedAt = 0
         )

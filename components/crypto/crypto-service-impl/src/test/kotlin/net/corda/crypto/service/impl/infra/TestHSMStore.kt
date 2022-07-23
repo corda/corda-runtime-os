@@ -51,7 +51,7 @@ class TestHSMStore : HSMStore {
             category: String
         ): HSMTenantAssociation? = cache.lock.withLock {
             cache.categoryAssociations.firstOrNull {
-                it.category == category && it.association.tenantId == tenantId
+                it.category == category && it.hsmAssociation.tenantId == tenantId
             }?.toHSMTenantAssociation()
         }
 
@@ -83,7 +83,7 @@ class TestHSMStore : HSMStore {
                 HSMUsage(
                     workerSetId = it.id,
                     usages = cache.categoryAssociations.count { a ->
-                        a.association.config.id == it.id
+                        a.hsmAssociation.config.id == it.id
                     },
                     privateKeyPolicy = net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.valueOf(
                         cache.categoryMap.first { a ->
@@ -148,7 +148,7 @@ class TestHSMStore : HSMStore {
                 tenantId = tenantId,
                 category = category,
                 timestamp = Instant.now(),
-                association = association,
+                hsmAssociation = association,
                 deprecatedAt = 0
             )
             cache.categoryAssociations.add(categoryAssociation)
@@ -217,11 +217,11 @@ class TestHSMStore : HSMStore {
 
         private fun HSMCategoryAssociationEntity.toHSMTenantAssociation() = HSMTenantAssociation(
             id = id,
-            tenantId = association.tenantId,
+            tenantId = hsmAssociation.tenantId,
             category = category,
-            masterKeyAlias = association.masterKeyAlias,
-            aliasSecret = association.aliasSecret,
-            config = association.config.toHSMConfig(),
+            masterKeyAlias = hsmAssociation.masterKeyAlias,
+            aliasSecret = hsmAssociation.aliasSecret,
+            config = hsmAssociation.config.toHSMConfig(),
             deprecatedAt = deprecatedAt
         )
     }

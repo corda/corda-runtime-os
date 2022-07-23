@@ -62,9 +62,6 @@ class HSMServiceImpl @Activate constructor(
     override fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? =
         impl.findAssignedHSM(tenantId, category)
 
-    override fun findAssociation(associationId: String): HSMTenantAssociation? =
-        impl.findAssociation(associationId)
-
     class Impl(
         private val logger: Logger,
         event: ConfigChangedEvent,
@@ -78,9 +75,9 @@ class HSMServiceImpl @Activate constructor(
 
         private val config = event.config.toCryptoConfig()
 
-        private val workerSets = WorkerSets(config, store)
-
         private val hsmConfig = config.hsmService()
+
+        private val workerSets = WorkerSets(config, store)
 
         private val executor = CryptoRetryingExecutor(
             logger,
@@ -96,7 +93,7 @@ class HSMServiceImpl @Activate constructor(
             val existing = store.findTenantAssociation(tenantId, category)
             if(existing != null) {
                 logger.warn(
-                    "The ${existing.workerSetId} HSM already assigned fro tenant={}, category={}",
+                    "The ${existing.workerSetId} HSM already assigned for tenant={}, category={}",
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
@@ -108,7 +105,11 @@ class HSMServiceImpl @Activate constructor(
             } else {
                 tryChooseAny(stats)
             }
-            val association = store.associate(tenantId = tenantId, category = category, workerSetId = chosen.workerSetId)
+            val association = store.associate(
+                tenantId = tenantId,
+                category = category,
+                workerSetId = chosen.workerSetId
+            )
             ensureWrappingKey(association)
             return AssociationInfo(association.workerSetId, association.deprecatedAt)
         }
@@ -138,22 +139,11 @@ class HSMServiceImpl @Activate constructor(
             return store.findTenantAssociation(tenantId, category)
         }
 
-        fun findAssociation(associationId: String): HSMTenantAssociation? {
-            logger.debug {"findAssociation(associationId=$associationId)" }
-            return store.findTenantAssociation(associationId)
-        }
-
-        override fun close() {
-            store.close()
-        }
-
         private fun ensureWrappingKey(association: HSMTenantAssociation) {
             if (workerSets.getMasterKeyPolicy(association.workerSetId) == MasterKeyPolicy.UNIQUE) {
                 require(!association.masterKeyAlias.isNullOrBlank()) {
                     "The master key alias is not specified."
                 }
-                // All config information at that point is persisted, so it's safe to call crypto operations
-                // for that tenant and category
                 executor.executeWithRetry {
                     cryptoOpsClient.createWrappingKey(
                         workerSetId = association.workerSetId,

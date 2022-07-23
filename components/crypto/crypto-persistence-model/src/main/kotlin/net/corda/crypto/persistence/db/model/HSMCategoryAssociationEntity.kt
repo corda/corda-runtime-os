@@ -38,7 +38,7 @@ class HSMCategoryAssociationEntity(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hsm_association_id", nullable = false, updatable = false)
-    var association: HSMAssociationEntity,
+    var hsmAssociation: HSMAssociationEntity,
 
     /**
      * When the association was created.

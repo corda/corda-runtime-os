@@ -26,16 +26,17 @@ dependencies {
     implementation project(":components:db:db-connection-manager")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:crypto:crypto-config-impl")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:virtual-node:virtual-node-info")
-
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    testImplementation project(":components:crypto:crypto-component-test-utils")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:registry")

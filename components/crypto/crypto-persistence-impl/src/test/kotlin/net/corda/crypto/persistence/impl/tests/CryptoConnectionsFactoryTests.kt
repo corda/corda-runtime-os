@@ -1,43 +1,64 @@
 package net.corda.crypto.persistence.impl.tests
 
-import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.persistence.impl.WrappingKeyStoreImpl
-import net.corda.crypto.persistence.impl.tests.infra.TestCryptoConnectionsFactory
+import net.corda.crypto.component.test.utils.TestConfigurationReadService
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.persistence.impl.CryptoConnectionsFactoryImpl
+import net.corda.crypto.persistence.impl.tests.infra.TestDbConnectionManager
+import net.corda.crypto.persistence.impl.tests.infra.TestVirtualNodeInfoReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.test.util.eventually
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
-class WrappingKeyStoreTests {
-    private lateinit var connectionsFactory: TestCryptoConnectionsFactory
+class CryptoConnectionsFactoryTests {
+    private lateinit var configurationReadService: TestConfigurationReadService
+    private lateinit var dbConnectionManager: TestDbConnectionManager
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var component: WrappingKeyStoreImpl
+    private lateinit var virtualNodeInfoReadService: TestVirtualNodeInfoReadService
+    private lateinit var component: CryptoConnectionsFactoryImpl
 
     @BeforeEach
     fun setup() {
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
-        connectionsFactory = TestCryptoConnectionsFactory(coordinatorFactory).also {
+        configurationReadService = TestConfigurationReadService(
+            coordinatorFactory,
+            configUpdates = listOf(
+                CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt"))
+            )
+        ).also {
             it.start()
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
             }
         }
-        whenever(connectionsFactory._mock.getEntityManagerFactory(CryptoTenants.CRYPTO)).doReturn(
-            mock()
-        )
-        component = WrappingKeyStoreImpl(
+        dbConnectionManager = TestDbConnectionManager(coordinatorFactory).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+            }
+        }
+        virtualNodeInfoReadService = TestVirtualNodeInfoReadService(coordinatorFactory).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+            }
+        }
+        component = CryptoConnectionsFactoryImpl(
             coordinatorFactory,
-            connectionsFactory
+            configurationReadService,
+            dbConnectionManager,
+            mock(),
+            virtualNodeInfoReadService
         )
     }
 
@@ -54,7 +75,7 @@ class WrappingKeyStoreTests {
     }
 
     @Test
-    fun `Should not use ActiveImpl when component is stopped`() {
+    fun `Should use InactiveImpl when component is stopped`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> { component.impl }
         component.start()
@@ -80,11 +101,13 @@ class WrappingKeyStoreTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        connectionsFactory.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        assertNotNull(component.impl)
+        dbConnectionManager.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        connectionsFactory.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        assertThrows<IllegalStateException> { component.impl }
+        dbConnectionManager.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

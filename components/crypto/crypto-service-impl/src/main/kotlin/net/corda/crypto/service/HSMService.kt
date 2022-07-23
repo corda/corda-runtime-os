@@ -22,9 +22,4 @@ interface HSMService : Lifecycle {
      * Returns information about assigned HSM by tenant and category.
      */
     fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation?
-
-    /**
-     * Returns information about assigned HSM by association id.
-     */
-    fun findAssociation(associationId: String): HSMTenantAssociation?
 }

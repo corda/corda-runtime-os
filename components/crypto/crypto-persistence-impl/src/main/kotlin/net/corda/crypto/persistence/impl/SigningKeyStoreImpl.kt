@@ -6,10 +6,10 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.config.impl.CryptoSigningServiceConfig
+import net.corda.crypto.config.impl.signingService
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.config.CryptoSigningServiceConfig
-import net.corda.crypto.impl.config.signingService
-import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
@@ -64,7 +64,10 @@ class SigningKeyStoreImpl @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<SigningKeyStore>(),
     configurationReadService = configurationReadService,
     upstream = DependenciesTracker.Default(
-        setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+            LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>()
+        )
     ),
     configKeys = setOf(CRYPTO_CONFIG)
 ), SigningKeyStore {

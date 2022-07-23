@@ -6,12 +6,11 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.config.impl.CryptoConnectionsFactoryConfig
+import net.corda.crypto.config.impl.cryptoConnectionFactory
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.config.CryptoConnectionsFactoryConfig
-import net.corda.crypto.impl.config.cryptoConnectionFactory
-import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.CryptoConnectionsFactory
-import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
@@ -41,10 +40,11 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
     private val vnodeInfo: VirtualNodeInfoReadService
 ) : AbstractConfigurableComponent<CryptoConnectionsFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
-    myName = LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
+    myName = LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>(),
     configurationReadService = configurationReadService,
     upstream = DependenciesTracker.DefaultWithConfigReader(
         setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
         )

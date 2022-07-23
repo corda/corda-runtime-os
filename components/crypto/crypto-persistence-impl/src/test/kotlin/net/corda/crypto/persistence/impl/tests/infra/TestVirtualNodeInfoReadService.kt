@@ -11,7 +11,7 @@ class TestVirtualNodeInfoReadService(
     coordinatorFactory: LifecycleCoordinatorFactory,
     val _mock: VirtualNodeInfoReadService = mock()
 ) : VirtualNodeInfoReadService by _mock {
-    val coordinator = coordinatorFactory.createCoordinator(
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
     ) { e, c ->
         if (e is StartEvent) {
@@ -20,13 +20,13 @@ class TestVirtualNodeInfoReadService(
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }
