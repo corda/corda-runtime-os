@@ -13,11 +13,13 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import java.time.Instant
 import java.util.UUID
 import java.util.stream.Stream
 
-@Component
+//@ServiceRanking(Int.MAX_VALUE)
+//@Component(service = [VirtualNodeInfoReadService::class])
 class TestVirtualNodeInfoReadService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory
@@ -46,7 +48,7 @@ class TestVirtualNodeInfoReadService @Activate constructor(
         throw NotImplementedError()
 
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo = VirtualNodeInfo(
-        holdingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
+        holdingIdentity = vNodeHoldingIdentity,
         cpiIdentifier = CpiIdentifier(
             name = "some-name",
             version = "1",

@@ -4,10 +4,8 @@ import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
 import javax.persistence.Table
 
 /**
@@ -30,7 +28,6 @@ class HSMAssociationEntity(
     @Column(name = "tenant_id", nullable = false, updatable = false, length = 12)
     var tenantId: String,
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_set_id", nullable = false, updatable = false)
     var workerSetId: String,
 
