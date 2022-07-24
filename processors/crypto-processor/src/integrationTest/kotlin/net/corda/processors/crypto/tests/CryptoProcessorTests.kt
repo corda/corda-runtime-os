@@ -36,7 +36,7 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.infra.DependenciesTracker
+import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
@@ -284,7 +284,7 @@ class CryptoProcessorTests {
             hsmRegistrationClient.startAndWait()
             cryptoProcessor.startAndWait(boostrapConfig)
             stableDecryptor.startAndWait()
-            val tracker = DependenciesTracker(
+            val tracker = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
                 lifecycleRegistry,
