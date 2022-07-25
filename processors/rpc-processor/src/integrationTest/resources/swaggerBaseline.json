@@ -2487,50 +2487,15 @@
           }
         }
       },
-      "CpiIdentifier_1" : {
-        "required" : [ "name", "version" ],
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "$ref" : "#/components/schemas/SecureHash"
-          },
-          "version" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "CpiIdentifier_2" : {
-        "required" : [ "cpiName", "cpiVersion" ],
-        "type" : "object",
-        "properties" : {
-          "cpiName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cpiVersion" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          }
-        }
-      },
       "CpiMetadata" : {
-        "required" : [ "cpks", "cpiFileChecksum", "id", "timestamp" ],
+        "required" : [ "cpiFileChecksum", "cpks", "id", "timestamp" ],
         "type" : "object",
         "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
           "cpks" : {
             "uniqueItems" : false,
             "type" : "array",
@@ -2538,11 +2503,6 @@
             "items" : {
               "$ref" : "#/components/schemas/CpkMetadata"
             }
-          },
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
           },
           "groupPolicy" : {
             "type" : "string",
@@ -2748,7 +2708,7 @@
         "description" : "Details of the virtual node to be created"
       },
       "CreateVirtualNodeResponse" : {
-        "required" : [ "cpiId", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
         "type" : "object",
         "properties" : {
           "cpiFileChecksum" : {
@@ -2756,8 +2716,8 @@
             "nullable" : true,
             "example" : "string"
           },
-          "cpiId" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_2"
+          "cpiIdentifier" : {
+            "$ref" : "#/components/schemas/CpiIdentifier"
           },
           "cryptoDdlConnectionId" : {
             "type" : "string",
@@ -2988,15 +2948,15 @@
         }
       },
       "HoldingIdentity" : {
-        "required" : [ "groupId", "fullHash", "shortHash", "x500Name" ],
+        "required" : [ "fullHash", "groupId", "shortHash", "x500Name" ],
         "type" : "object",
         "properties" : {
-          "groupId" : {
+          "fullHash" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           },
-          "fullHash" : {
+          "groupId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3426,35 +3386,6 @@
           }
         }
       },
-      "SecureHash" : {
-        "required" : [ "algorithm", "bytes", "offset", "size" ],
-        "type" : "object",
-        "properties" : {
-          "algorithm" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "bytes" : {
-            "type" : "string",
-            "format" : "byte",
-            "nullable" : false,
-            "example" : "No example available for this type"
-          },
-          "offset" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        }
-      },
       "SetupHostedIdentitiesWrapperRequest" : {
         "required" : [ "certificateChainAlias" ],
         "properties" : {
@@ -3718,7 +3649,7 @@
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_1"
+            "$ref" : "#/components/schemas/CpiIdentifier"
           },
           "cryptoDdlConnectionId" : {
             "type" : "string",
