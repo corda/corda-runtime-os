@@ -169,10 +169,11 @@ class PostgresDbSetup(
         val sql = """
             CREATE SCHEMA IF NOT EXISTS CRYPTO;
             
-            CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password';
+            IF NOT EXISTS ( SELECT FROM pg_roles  WHERE  rolname = 'rbac_user') THEN CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password' END IF;
             GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;
-            CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password';
+            
+            IF NOT EXISTS ( SELECT FROM pg_roles  WHERE  rolname = 'crypto_user') THEN CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password' END IF;
             GRANT USAGE ON SCHEMA CRYPTO to crypto_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user;
         """.trimIndent()
