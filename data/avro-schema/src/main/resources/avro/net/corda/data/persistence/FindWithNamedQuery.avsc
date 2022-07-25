@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "FindWithNamedQuery",
+  "doc": "Find entities matched by a named query. Parameters for the query may be specified. Pagination is supported, but there's no guarantee of consistency if the underlying data changes or is unsorted.  Replies with {@link EntityResponse}",
+  "namespace": "net.corda.data.persistence",
+  "fields": [
+    {
+      "name": "queryName",
+      "type": "string",
+      "doc": "The name of a named query defined somewhere in the CPK."
+    },
+    {
+      "name": "parameters",
+      "type": {
+        "type": "map",
+        "values": "bytes"
+      },
+      "doc": "Parameters for the query, with each value represented as a bytes array payload serialized in AMQP format. Null values must be tested using IS NULL in the query; it is not possible to pass in a null as a parameter value. "
+    },
+    {
+       "name": "offset",
+       "type" : "int",
+       "doc": "The index of the first result in the query output that should be returned."
+    },
+    {
+        "name": "limit",
+        "type": "int",
+        "doc": "Limit number of rows in the output query results, after applying the offset. Use the maximum int value if you do not want a lower limit."
+    }
+  ]
+}
