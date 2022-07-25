@@ -2,17 +2,21 @@ package net.corda.flow.rpcops.impl.v1
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
+import net.corda.flow.rpcops.impl.flowstatus.websocket.WebSocketFlowStatusUpdateHandler
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
+import net.corda.flow.rpcops.v1.types.request.WebSocketTerminateFlowStatusFeedType
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
@@ -122,6 +126,47 @@ class FlowRPCOpsImpl @Activate constructor(
         val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun flowStatusUpdatesFeed(
+        channel: DuplexChannel,
+        holdingIdentityShortHash: String,
+        clientRequestId: String
+    ) {
+        val holdingIdentity = getVirtualNode(holdingIdentityShortHash).holdingIdentity
+        channel.onConnect = {
+            log.info("onConnect called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
+            val handler = WebSocketFlowStatusUpdateHandler(channel, clientRequestId, holdingIdentity) {
+                unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
+            }
+            flowStatusCacheService.registerFlowStatusFeed(clientRequestId, holdingIdentity, handler)
+        }
+        channel.onClose = { statusCode, reason ->
+            log.info("onClose called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
+            log.info("StatusCode: $statusCode, reason: $reason")
+            unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
+        }
+        channel.onError = { e ->
+            log.info("onError called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash", e)
+            unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
+        }
+        channel.incomingMessageType = WebSocketTerminateFlowStatusFeedType::class.java
+        channel.outgoingMessageType = FlowStatusResponse::class.java
+        channel.onTextMessage = { message ->
+            log.info("onTextMessage called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
+            when(message) {
+                is WebSocketTerminateFlowStatusFeedType -> {
+                    log.info("Terminating feed for req: $clientRequestId, holdingId: $holdingIdentityShortHash")
+                    this.close()
+                    unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
+                }
+            }
+        }
+    }
+
+    private fun unregisterFlowStatusFeed(clientRequestId: String, holdingIdentity: HoldingIdentity) {
+        log.info("Unregistering flow status feed for request: $clientRequestId and identity: $holdingIdentity.")
+        flowStatusCacheService.unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
     }
 
     override fun start() = Unit

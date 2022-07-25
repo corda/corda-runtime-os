@@ -1,5 +1,6 @@
 package net.corda.httprpc.ws
 
+import java.lang.Exception
 import java.util.concurrent.Future
 
 /**
@@ -15,9 +16,19 @@ interface DuplexChannel : AutoCloseable {
     fun send(message: String): Future<Void>
 
     /**
+     * Allows to asynchronously send a message to the remote side
+     */
+    fun send(message: Any): Future<Void>
+
+    /**
      * Allows to close this communication channel
      */
     override fun close()
+
+    /**
+     * Allows to close this communication channel with exception
+     */
+    fun error(e: Exception)
 
     /**
      * Callback to be invoked when connected to remote side
@@ -27,7 +38,17 @@ interface DuplexChannel : AutoCloseable {
     /**
      * Callback to be invoked when text message received from remote side
      */
-    var onTextMessage: ((message: String) -> Unit)?
+    var onTextMessage: ((message: Any) -> Unit)?
+
+    /**
+     * Type for incoming messages.
+     */
+    var incomingMessageType: Class<*>?
+
+    /**
+     * Type for outgoing messages.
+     */
+    var outgoingMessageType: Class<*>?
 
     /**
      * Callback to be invoked in case of an error
