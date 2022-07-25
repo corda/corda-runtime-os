@@ -32,8 +32,12 @@ internal class QueryGroupPolicyHandler(
                 GroupPolicyEntity::class.java
             ).resultList
             if(result.isEmpty()) {
+                logger.info("There was no persisted group policy found for identity ${context.holdingIdentity}. " +
+                        "Returning empty properties.")
                 GroupPolicyQueryResponse(KeyValuePairList(emptyList<KeyValuePair>()))
             } else {
+                logger.info("Persisted group policy was found for identity ${context.holdingIdentity}. " +
+                        "Returning properties.")
                 GroupPolicyQueryResponse(keyValuePairListDeserializer.deserialize(result.first().properties))
             }
         }
