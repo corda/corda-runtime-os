@@ -25,7 +25,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -158,7 +157,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                         "${exception.errorType}: ${exception.errorMessage}")
                 throw InternalServerException(exception.errorMessage)
             }
-            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+            else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
         }
     }
 
