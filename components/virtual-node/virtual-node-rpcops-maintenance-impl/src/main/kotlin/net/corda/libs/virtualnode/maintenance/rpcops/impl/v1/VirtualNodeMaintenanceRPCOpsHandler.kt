@@ -37,7 +37,11 @@ internal class VirtualNodeMaintenanceRPCOpsHandler(
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is StopEvent -> onStopEvent(coordinator)
-            is BootstrapConfigEvent -> onFirstConfigEvent(coordinator, event)
+            is BootstrapConfigEvent -> onConfigChangedEvent(
+                coordinator,
+                mapOf(ConfigKeys.RPC_CONFIG to event.bootstrapConfig),
+                setOf(ConfigKeys.RPC_CONFIG)
+            )
             is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event.config, event.keys)
         }
     }

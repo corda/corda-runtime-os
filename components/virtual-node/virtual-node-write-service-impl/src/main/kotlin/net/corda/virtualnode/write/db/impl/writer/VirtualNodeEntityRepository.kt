@@ -76,7 +76,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
-            if (it == "") null else SecureHash.create(it)
+            if (it.isBlank()) null else SecureHash.create(it)
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
         val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
