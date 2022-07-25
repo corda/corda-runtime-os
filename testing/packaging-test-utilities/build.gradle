@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'Corda Packaging Verify'
+description 'Corda Packaging Test - Build in memory CPI, CPB, and CPK for testing'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -17,9 +17,8 @@ dependencies {
 
     implementation project(':libs:packaging:packaging')
     implementation project(':libs:packaging:packaging-core')
+    implementation project(":testing:test-utilities")
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
 
-    testImplementation project(':testing:test-utilities')
-    testImplementation project(':testing:packaging-test-utilities')
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

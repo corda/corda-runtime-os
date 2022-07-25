@@ -1,14 +1,14 @@
-package net.corda.libs.packaging.verify.internal.cpi
+package net.corda.libs.packaging.testutils.cpi
 
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.addFile
-import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.internal.cpb.TestCpbV2Builder
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.addFile
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
-internal class TestCpiV2Builder {
+class TestCpiV2Builder {
     companion object {
         val POLICY_FILE = "META-INF/GroupPolicy.json"
     }

@@ -1,13 +1,13 @@
-package net.corda.libs.packaging.verify.internal.cpk
+package net.corda.libs.packaging.testutils.cpk
 
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.addFile
-import net.corda.libs.packaging.verify.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.addFile
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
-internal class TestCpkV1Builder {
+class TestCpkV1Builder {
     var name = "testCpkV1-1.0.0.0.cpk"
         private set
     var manifest: Manifest? = null
