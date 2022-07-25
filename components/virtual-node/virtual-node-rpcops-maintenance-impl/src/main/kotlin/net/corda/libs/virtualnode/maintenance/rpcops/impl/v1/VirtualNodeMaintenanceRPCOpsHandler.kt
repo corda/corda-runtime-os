@@ -102,11 +102,6 @@ internal class VirtualNodeMaintenanceRPCOpsHandler(
         }
     }
 
-    private fun onFirstConfigEvent(coordinator: LifecycleCoordinator, event: BootstrapConfigEvent) {
-        val config = event.bootstrapConfig
-        onConfigChangedEvent(coordinator, mapOf(ConfigKeys.RPC_CONFIG to config), setOf(ConfigKeys.RPC_CONFIG))
-    }
-
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
         closeResources()
         coordinator.updateStatus(LifecycleStatus.DOWN)
