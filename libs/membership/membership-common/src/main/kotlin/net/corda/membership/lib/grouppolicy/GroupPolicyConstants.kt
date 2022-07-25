@@ -31,25 +31,6 @@ class GroupPolicyConstants {
         }
 
         /**
-         * Keys as stored in the persistence layer.
-         */
-        object PropertyKeys {
-            const val SESSION_KEY_POLICY = "key.session.policy"
-
-            const val SESSION_PKI = "pki.session"
-
-            const val TLS_PKI = "pki.tls"
-
-            const val TLS_VERSION = "tls.version"
-
-            const val SESSION_TRUST_ROOTS = "truststore.session"
-
-            const val TLS_TRUST_ROOTS = "truststore.tls"
-
-            const val PROTOCOL_MODE = "protocol.p2p.mode"
-        }
-
-        /**
          * Protocol parameter level keys.
          */
         object ProtocolParameters {
@@ -199,5 +180,20 @@ class GroupPolicyConstants {
                 }
             }
         }
+    }
+
+    /**
+     * Keys as stored in the persistence layer.
+     */
+    object PropertyKeys {
+        const val REGISTRATION_PROTOCOL = "corda.group.protocol.registration"
+        const val SYNC_PROTOCOL = "corda.group.protocol.synchronisation"
+        const val SESSION_KEY_POLICY = "key.session.policy"
+        const val SESSION_PKI_MODE = "pki.session"
+        const val TLS_PKI_MODE = "pki.tls"
+        const val TLS_VERSION = "tls.version"
+        const val SESSION_TRUST_ROOTS = "truststore.session"
+        const val TLS_TRUST_ROOTS = "truststore.tls"
+        const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
     }
 }
