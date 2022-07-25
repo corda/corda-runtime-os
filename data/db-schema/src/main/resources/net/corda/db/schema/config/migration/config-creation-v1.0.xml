@@ -263,6 +263,9 @@
             <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name = "state" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <!-- audit -->
             <column name="entity_version" type="INT">
                 <constraints nullable="false"/>

@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "VirtualNodeStateChangeRequest",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "holdingIdentityShortHash",
+      "type": "string"
+    },
+    {
+      "name": "newState",
+      "type": "string"
+    },
+    {
+      "name": "updateActor",
+      "type": "string",
+      "doc": "ID of RPC user that requested the virtual node state update.."
+    }
+  ]
+}

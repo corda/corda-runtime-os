@@ -83,6 +83,11 @@
         "string"
       ],
       "doc": "ID of HSM connection. Null value means that HSM is not used."
+    },
+    {
+      "name": "virtualNodeState",
+      "type": "string",
+      "doc": "The current maintenance state of the virtual node."
     }
   ]
 }

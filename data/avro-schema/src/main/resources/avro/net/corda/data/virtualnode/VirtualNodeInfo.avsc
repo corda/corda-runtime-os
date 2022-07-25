@@ -11,6 +11,7 @@
       "name": "cpiIdentifier",
       "type": "net.corda.data.packaging.CpiIdentifier"
     },
+
     {
       "name": "vaultDdlConnectionId",
       "type": ["null", "string"],
@@ -35,6 +36,11 @@
       "name": "hsmConnectionId",
       "type": ["null", "string"],
       "doc": "ID of HSM connection. Null value means that HSM is not used."
+    },
+    {
+      "name": "virtualNodeState",
+      "type": "string",
+      "doc": "The current maintenance state of the virtual node."
     },
     {
       "name": "version",

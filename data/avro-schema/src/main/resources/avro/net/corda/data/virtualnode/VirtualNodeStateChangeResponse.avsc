@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "VirtualNodeStateChangeResponse",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "holdingIdentityShortHash",
+      "type": "string"
+    },
+    {
+      "name": "virtualNodeState",
+      "type": "string",
+      "doc": "The current maintenance state of the virtual node"
+    }
+  ]
+}
