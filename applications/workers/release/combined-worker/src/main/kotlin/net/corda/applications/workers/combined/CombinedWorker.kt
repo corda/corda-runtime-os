@@ -82,13 +82,13 @@ class CombinedWorker @Activate constructor(
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbUrl = config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL)
-            ?: "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.JDBC_URL))
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER)
-            ?: "user"
-        val dbAdminPassword = config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_PASS)
-            ?: "password"
+        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_USER))
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER) else "user"
+        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_PASS))
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_PASS) else "password"
         val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
         val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
 
