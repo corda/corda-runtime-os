@@ -28,6 +28,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,27 +36,22 @@ import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
-class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
-    private val configReadService: ConfigurationReadService,
+class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
+    configReadService: ConfigurationReadService,
+    @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
+    @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    private val clock: Clock
+    private val clock: Clock = UTCClock()
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
-
-    @Activate constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = ConfigurationReadService::class)
-        configReadService: ConfigurationReadService,
-        @Reference(service = CpiUploadRPCOpsService::class)
-        cpiUploadRPCOpsService: CpiUploadRPCOpsService,
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory
-    ) : this(coordinatorFactory, configReadService, cpiUploadRPCOpsService, publisherFactory, UTCClock())
 
     companion object {
         /** The configuration used for the RPC sender. */
+        private const val GROUP_NAME = "virtual.node.management"
+        private const val CLIENT_NAME_HTTP = "virtual.node.manager.http"
         private val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
@@ -63,7 +59,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
             VirtualNodeManagementRequest::class.java,
             VirtualNodeManagementResponse::class.java
         )
-        val logger = contextLogger()
+        private val logger = contextLogger()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeMaintenanceRPCOps>(
@@ -130,7 +126,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
         val instant = clock.instant()
         // Lookup actor to keep track of which RPC user triggered an update
         val actor = CURRENT_RPC_CONTEXT.get().principal
-        logger.debug("Received request to update state for $virtualNodeShortId to $newState by $actor at $instant")
+        logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
         // TODO: Validate newState
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
@@ -143,7 +139,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
         )
         // Actually send request and await response message on bus
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
-        logger.debug("Received response to update for $virtualNodeShortId to $newState by $actor")
+        logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
@@ -158,8 +154,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @VisibleForTesting constructor(
                     logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                     throw InternalServerException("Request was unsuccessful but no exception was provided.")
                 }
-                @Suppress("MaxLineLength")
-                logger.warn("Remote request to update virtual node responded with exception of type ${exception.errorType}: ${exception.errorMessage}")
+                logger.warn("Remote request to update virtual node responded with exception of type " +
+                        "${exception.errorType}: ${exception.errorMessage}")
                 throw InternalServerException(exception.errorMessage)
             }
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
