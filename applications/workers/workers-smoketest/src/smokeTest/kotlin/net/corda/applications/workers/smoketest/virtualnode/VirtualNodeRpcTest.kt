@@ -24,7 +24,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.Random
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -52,8 +51,6 @@ class VirtualNodeRpcTest {
 
         private val aliceHoldingId: String = getHoldingIdShortHash(X500_ALICE, GROUP_ID)
     }
-
-    val random = Random()
 
     /**
      * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.

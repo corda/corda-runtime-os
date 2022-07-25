@@ -38,7 +38,7 @@ internal class VirtualNodeMaintenanceRPCOpsHandler(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is StopEvent -> onStopEvent(coordinator)
             is BootstrapConfigEvent -> onFirstConfigEvent(coordinator, event)
-            is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event)
+            is ConfigChangedEvent -> onConfigChangedEvent(coordinator, event.config, event.keys)
         }
     }
 
@@ -76,10 +76,7 @@ internal class VirtualNodeMaintenanceRPCOpsHandler(
         coordinator.updateStatus(event.status)
     }
 
-    private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        val config = event.config
-        val changedKeys = event.keys
-
+    private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, config: Map<String, SmartConfig>, changedKeys: Set<String>) {
         if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
             val rpcConfig = config.getConfig(ConfigKeys.RPC_CONFIG)
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
@@ -103,24 +100,7 @@ internal class VirtualNodeMaintenanceRPCOpsHandler(
 
     private fun onFirstConfigEvent(coordinator: LifecycleCoordinator, event: BootstrapConfigEvent) {
         val config = event.bootstrapConfig
-        val rpcConfig = config.getConfig(ConfigKeys.RPC_CONFIG)
-        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-
-        if (rpcConfig.hasPath(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS)) {
-            val timeoutMillis = rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS)
-            virtualNodeMaintenanceRPCOps.setTimeout(timeoutMillis)
-        }
-        try {
-            virtualNodeMaintenanceRPCOps.configureRPCSender(messagingConfig)
-        } catch (e: Exception) {
-            coordinator.updateStatus(LifecycleStatus.ERROR)
-            throw VirtualNodeRPCMaintenanceOpsServiceException(
-                "Could not start the RPC sender for incoming HTTP RPC virtual node management requests", e
-            )
-        }
-        if (virtualNodeMaintenanceRPCOps.isRunning) {
-            coordinator.updateStatus(LifecycleStatus.UP)
-        }
+        onConfigChangedEvent(coordinator, mapOf(ConfigKeys.RPC_CONFIG to config), setOf(ConfigKeys.RPC_CONFIG))
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
