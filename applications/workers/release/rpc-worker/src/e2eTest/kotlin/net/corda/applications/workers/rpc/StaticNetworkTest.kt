@@ -22,8 +22,12 @@ import java.util.zip.ZipEntry
 class StaticNetworkTest {
     private val testToolkit by TestToolkitProperty()
     private val json = ObjectMapper()
-    private fun createCertificate() = StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!.readText()
-    private val groupId = testToolkit.uniqueName
+    private fun createCertificate() = StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!
+        .readText()
+        .replace("\r", "")
+        .replace("\n", System.lineSeparator())
+
+    private val groupId = "102012c6-1b53-49b3-8915-b7d7cc0ba8d9"
 
     private fun createGroupPolicyJson(
         memberNames: Collection<String>,
@@ -31,20 +35,22 @@ class StaticNetworkTest {
         val groupPolicy = mapOf(
             "fileFormatVersion" to 1,
             "groupId" to groupId,
-            "registrationProtocol" to "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
-            "synchronisationProtocol" to "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
+            "registrationProtocol"
+                    to "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
+            "synchronisationProtocol"
+                    to "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
             "protocolParameters" to mapOf(
                 "sessionKeyPolicy" to "Combined",
                 "staticNetwork" to mapOf(
                     "members" to
-                        memberNames.map {
-                            mapOf(
-                                "name" to it,
-                                "memberStatus" to "ACTIVE",
-                                "endpointUrl-1" to "http://localhost:1080",
-                                "endpointProtocol-1" to 1
-                            )
-                        }
+                            memberNames.map {
+                                mapOf(
+                                    "name" to it,
+                                    "memberStatus" to "ACTIVE",
+                                    "endpointUrl-1" to "http://localhost:1080",
+                                    "endpointProtocol-1" to 1
+                                )
+                            }
                 )
             ),
             "p2pParameters" to mapOf(
@@ -72,7 +78,6 @@ class StaticNetworkTest {
 
         return ByteArrayOutputStream().use { outputStream ->
             json.writeValue(outputStream, groupPolicy)
-
             outputStream.toByteArray()
         }
     }

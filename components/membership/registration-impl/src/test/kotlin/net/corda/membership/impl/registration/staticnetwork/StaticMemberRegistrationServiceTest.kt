@@ -24,7 +24,6 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -32,10 +31,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.PublicKeyConverter
 import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
@@ -47,19 +50,23 @@ import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -168,6 +175,11 @@ class StaticMemberRegistrationServiceTest {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
 
+    private val membershipSchemaValidator: MembershipSchemaValidator = mock()
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
+        on { createValidator() } doReturn membershipSchemaValidator
+    }
+
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -176,7 +188,8 @@ class StaticMemberRegistrationServiceTest {
         configurationReadService,
         lifecycleCoordinatorFactory,
         hsmRegistrationClient,
-        memberInfoFactory
+        memberInfoFactory,
+        membershipSchemaValidatorFactory
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -205,7 +218,8 @@ class StaticMemberRegistrationServiceTest {
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
-            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+            Mockito.verify(hsmRegistrationClient, times(1))
+                .assignSoftHSM(aliceId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
         }
         registrationService.stop()
 
@@ -337,6 +351,36 @@ class StaticMemberRegistrationServiceTest {
             ),
             registrationResult
         )
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails if the registration context doesn't match the schema`() {
+        setUpPublisher()
+        val err = "ERROR-MESSAGE"
+        val errReason = "ERROR-REASON"
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.StaticMember),
+                any(),
+                any()
+            )
+        ).doThrow(
+            MembershipSchemaValidationException(
+                err,
+                null,
+                MembershipSchema.RegistrationContextSchema.DynamicMember,
+                listOf(errReason)
+            )
+        )
+
+        registrationService.start()
+        val result = registrationService.register(alice, mockContext)
+        SoftAssertions.assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(NOT_SUBMITTED)
+            it.assertThat(result.message).contains(err)
+            it.assertThat(result.message).contains(errReason)
+        }
         registrationService.stop()
     }
 }

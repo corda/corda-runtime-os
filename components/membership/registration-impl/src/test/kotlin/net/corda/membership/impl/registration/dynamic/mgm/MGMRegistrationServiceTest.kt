@@ -18,12 +18,15 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.PublicKeyConverter
 import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -35,6 +38,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -49,6 +53,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -143,6 +148,10 @@ class MGMRegistrationServiceTest {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
         on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
     }
+    private val membershipSchemaValidator: MembershipSchemaValidator = mock()
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
+        on { createValidator() } doReturn membershipSchemaValidator
+    }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -152,21 +161,26 @@ class MGMRegistrationServiceTest {
         memberInfoFactory,
         membershipPersistenceClient,
         layeredPropertyMapFactory,
+        membershipSchemaValidatorFactory
     )
 
     private val properties = mapOf(
         "corda.session.key.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
-        "corda.group.protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-        "corda.group.protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+        "corda.group.protocol.registration"
+                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+        "corda.group.protocol.synchronisation"
+                to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATED_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
         "corda.group.pki.session" to "Standard",
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.truststore.session.0"
+                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.truststore.tls.0"
+                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
     )
 
     private fun postStartEvent() {
@@ -260,14 +274,18 @@ class MGMRegistrationServiceTest {
         assertThat(groupProperties.firstValue.entries)
             .containsExactlyInAnyOrderElementsOf(
                 mapOf(
-                    "protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-                    "protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+                    "protocol.registration"
+                            to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                    "protocol.synchronisation"
+                            to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
                     "protocol.p2p.mode" to "AUTHENTICATED_ENCRYPTION",
                     "key.session.policy" to "Combined",
                     "pki.session" to "Standard",
                     "pki.tls" to "C5",
-                    "truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                    "truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    "truststore.session.0"
+                            to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    "truststore.tls.0"
+                            to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
                 ).entries
             )
         registrationService.stop()
@@ -284,8 +302,8 @@ class MGMRegistrationServiceTest {
             eq(mgm),
             argThat {
                 this.size == 1 &&
-                    this.first().isMgm &&
-                    this.first().name == mgmName
+                        this.first().isMgm &&
+                        this.first().name == mgmName
             }
         )
     }
@@ -339,13 +357,47 @@ class MGMRegistrationServiceTest {
         val testProperties =
             properties + mapOf(
                 "corda.group.truststore.tls.100" to
-                    "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
         val result = registrationService.register(mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-            it.assertThat(result.message).isEqualTo("Registration failed. Reason: Provided TLS trust stores are incorrectly numbered.")
+            it.assertThat(result.message)
+                .isEqualTo(
+                    "Onboarding MGM failed. " +
+                            "The registration context is invalid: Provided TLS trust stores are incorrectly numbered."
+                )
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails if the registration context doesn't match the schema`() {
+        postConfigChangedEvent()
+        val err = "ERROR-MESSAGE"
+        val errReason = "ERROR-REASON"
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.Mgm),
+                any(),
+                any()
+            )
+        ).doThrow(
+            MembershipSchemaValidationException(
+                err,
+                null,
+                MembershipSchema.RegistrationContextSchema.Mgm,
+                listOf(errReason)
+            )
+        )
+
+        registrationService.start()
+        val result = registrationService.register(mgm, properties)
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).contains(err)
+            it.assertThat(result.message).contains(errReason)
         }
         registrationService.stop()
     }
