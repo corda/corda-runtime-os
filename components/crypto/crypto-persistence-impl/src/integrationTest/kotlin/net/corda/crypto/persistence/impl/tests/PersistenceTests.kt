@@ -2,10 +2,8 @@ package net.corda.crypto.persistence.impl.tests
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.MasterKeyPolicy
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
@@ -20,28 +18,21 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.persistence.hsm.HSMStore
+import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
-import net.corda.crypto.persistence.impl.tests.infra.makeBootstrapConfig
-import net.corda.crypto.persistence.impl.tests.infra.makeMessagingConfig
 import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.persistence.wrapping.WrappingKeyStore
-import net.corda.data.config.Configuration
-import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -50,9 +41,7 @@ import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -101,68 +90,17 @@ class PersistenceTests {
 
         private lateinit var tracker: TestDependenciesTracker
 
-        private val boostrapConfig = makeBootstrapConfig(
-            mapOf(
-                BootConfig.BOOT_DB_PARAMS to CryptoDBSetup.clusterDb.config
-            )
-        )
-
-        private val messagingConfig = makeMessagingConfig(boostrapConfig)
-
         @JvmStatic
         @BeforeAll
         fun setup() {
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+            publisher = publisherFactory.createPublisher(
+                PublisherConfig(CLIENT_ID),
+                CryptoConfigurationSetup.messagingConfig
+            )
             CryptoDBSetup.setup()
-            setupConfiguration()
+            CryptoConfigurationSetup.setup(publisher)
             setupDependencies()
             waitForVirtualNodeInfoReady()
-        }
-
-        private fun setupConfiguration() {
-            val cryptoConfig = createDefaultCryptoConfig(
-                KeyCredentials("passphrase", "salt")
-            ) .root().render()
-            val virtualNodeInfo = VirtualNodeInfo(
-                holdingIdentity = CryptoDBSetup.vNodeHoldingIdentity,
-                cpiIdentifier = CpiIdentifier(
-                    name = "cpi",
-                    version = "1",
-                    signerSummaryHash = null
-                ),
-                cryptoDmlConnectionId = CryptoDBSetup.connectionId(CryptoDBSetup.vnodeDb.name),
-                vaultDmlConnectionId = UUID.randomUUID(),
-                timestamp = Instant.now()
-            )
-            publisher.publish(
-                listOf(
-                    Record(
-                        Schemas.Config.CONFIG_TOPIC,
-                        ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(
-                            messagingConfig.root().render(),
-                            messagingConfig.root().render(),
-                            0,
-                            ConfigurationSchemaVersion(1, 0)
-                        )
-                    ),
-                    Record(
-                        Schemas.Config.CONFIG_TOPIC,
-                        ConfigKeys.CRYPTO_CONFIG,
-                        Configuration(
-                            cryptoConfig,
-                            cryptoConfig,
-                            0,
-                            ConfigurationSchemaVersion(1, 0)
-                        )
-                    ),
-                    Record(
-                        Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
-                        virtualNodeInfo.holdingIdentity.toAvro(),
-                        virtualNodeInfo.toAvro()
-                    )
-                )
-            )
         }
 
         private fun setupDependencies() {
@@ -178,8 +116,10 @@ class PersistenceTests {
                     HSMStore::class.java
                 )
             )
-            tracker.component<ConfigurationReadService>().bootstrapConfig(boostrapConfig)
-            tracker.component<DbConnectionManager>().bootstrap(boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS))
+            tracker.component<ConfigurationReadService>().bootstrapConfig(CryptoConfigurationSetup.boostrapConfig)
+            tracker.component<DbConnectionManager>().bootstrap(
+                CryptoConfigurationSetup.boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS)
+            )
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
         }
 
