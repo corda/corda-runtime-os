@@ -261,8 +261,6 @@ class VirtualNodeRpcTest {
                             virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
                         }["state"].textValue() == newState
                 }
-                interval(Duration.ofSeconds(2))
-                timeout(Duration.ofSeconds(60))
             }
 
             updateVirtualNodeState(vnode.first, oldState)
@@ -275,8 +273,6 @@ class VirtualNodeRpcTest {
                             virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
                         }["state"].textValue() == oldState
                 }
-                interval(Duration.ofSeconds(2))
-                timeout(Duration.ofSeconds(60))
             }
         }
     }

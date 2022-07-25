@@ -1300,6 +1300,43 @@
         }
       }
     },
+    "/maintenance/virtualnode" : {
+      "put" : {
+        "tags" : [ "VirtualNodeMaintenanceRPCOps" ],
+        "description" : "Updates the state of a new virtual node.",
+        "operationId" : "put_maintenance_virtualnode",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatevirtualnodestateWrapperRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The details of the updated virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "VirtualNodeMaintenanceRPCOps" ],
@@ -1362,74 +1399,6 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/mgm/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "MGMRpcOps" ],
-        "description" : "",
-        "operationId" : "get_mgm_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
-    "/mgm/{holdingidentityshorthash}/info" : {
-      "get" : {
-        "tags" : [ "MGMRpcOps" ],
-        "description" : "Fetches the requested group policy string",
-        "operationId" : "get_mgm__holdingidentityshorthash__info",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
                 }
               }
             }
@@ -1674,6 +1643,74 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/RegistrationRequestProgress"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/mgm/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "MGMRpcOps" ],
+        "description" : "",
+        "operationId" : "get_mgm_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Integer value specifying the version of the endpoint.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/info" : {
+      "get" : {
+        "tags" : [ "MGMRpcOps" ],
+        "description" : "Fetches the requested group policy string",
+        "operationId" : "get_mgm__holdingidentityshorthash__info",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "ID of the holding identity to be checked.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the holding identity to be checked.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "string"
                 }
               }
             }
@@ -2466,6 +2503,22 @@
         "description" : "AddRoleWrapperRequest",
         "nullable" : false
       },
+      "ChangeVirtualNodeStateResponse" : {
+        "required" : [ "holdingIdShortHash", "newState" ],
+        "type" : "object",
+        "properties" : {
+          "holdingIdShortHash" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "newState" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "CpiIdentifier" : {
         "required" : [ "cpiName", "cpiVersion" ],
         "type" : "object",
@@ -2708,7 +2761,7 @@
         "description" : "Details of the virtual node to be created"
       },
       "CreateVirtualNodeResponse" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "x500Name" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "virtualNodeState", "x500Name" ],
         "type" : "object",
         "properties" : {
           "cpiFileChecksum" : {
@@ -2745,6 +2798,11 @@
             "example" : "string"
           },
           "vaultDmlConnectionId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "virtualNodeState" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3515,6 +3573,25 @@
           }
         }
       },
+      "UpdatevirtualnodestateWrapperRequest" : {
+        "required" : [ "newState", "virtualNodeShortId" ],
+        "properties" : {
+          "newState" : {
+            "type" : "string",
+            "description" : "Details of the virtual node to be created",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "virtualNodeShortId" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        },
+        "description" : "UpdatevirtualnodestateWrapperRequest",
+        "nullable" : false
+      },
       "UploadResponse" : {
         "required" : [ "id" ],
         "type" : "object",
@@ -3645,7 +3722,7 @@
         }
       },
       "VirtualNodeInfo" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "timestamp", "vaultDmlConnectionId", "version" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "timestamp", "vaultDmlConnectionId", "version" ],
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
@@ -3671,6 +3748,11 @@
             "format" : "uuid",
             "nullable" : true,
             "example" : "No example available for this type"
+          },
+          "state" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           },
           "timestamp" : {
             "type" : "string",

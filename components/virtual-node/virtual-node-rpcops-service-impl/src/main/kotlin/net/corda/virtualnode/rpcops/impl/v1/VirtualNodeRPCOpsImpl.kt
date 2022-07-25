@@ -142,6 +142,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             cryptoDdlConnectionId,
             cryptoDmlConnectionId,
             hsmConnectionId,
+            state.name,
             version,
             timestamp
         )
