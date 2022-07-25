@@ -22,8 +22,8 @@ interface CpiUploadRPCOps : RpcOps {
      * Please note that this method will not close [cpiContent] input stream, the caller must close it.
      */
     @HttpRpcPOST(
-        title = "Upload a CPI",
-        description = "Uploads a CPI",
+        title = "CPI API",
+        description = "CPI management endpoints.",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
     fun cpi(upload: HttpFileUpload): UploadResponse
