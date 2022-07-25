@@ -1,12 +1,14 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
+import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
+
 /**
  * The data object received via HTTP in response to a request to create a virtual node.
  *
- * Exactly one of [cpiId] and [cpiFileChecksum] should be null.
+ * Exactly one of [cpiIdentifier] and [cpiFileChecksum] should be null.
  *
  * @param x500Name The X500 name for the new virtual node.
- * @param cpiId The long identifier of the CPI the virtual node is being created for.
+ * @param cpiIdentifier The long identifier of the CPI the virtual node is being created for.
  * @param cpiFileChecksum The checksum of the CPI file.
  * @param mgmGroupId The identifier of the CPI's MGM.
  * @param holdingIdentityShortHash The holding identifier short hash for the virtual node.
@@ -18,7 +20,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  */
 data class CreateVirtualNodeResponse(
     val x500Name: String,
-    val cpiId: CpiIdentifier,
+    val cpiIdentifier: CpiIdentifier,
     val cpiFileChecksum: String?,
     val mgmGroupId: String,
     val holdingIdentityShortHash: String,

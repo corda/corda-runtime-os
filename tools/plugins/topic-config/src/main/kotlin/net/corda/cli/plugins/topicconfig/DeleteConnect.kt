@@ -1,12 +1,13 @@
 package net.corda.cli.plugins.topicconfig
 
 import org.apache.kafka.clients.admin.Admin
+import org.apache.kafka.clients.admin.AlterConfigOp
+import org.apache.kafka.clients.admin.ConfigEntry
+import org.apache.kafka.common.config.ConfigResource
 import picocli.CommandLine
 import picocli.CommandLine.ParentCommand
-import java.time.LocalDateTime
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 
 @CommandLine.Command(name = "connect", description = ["Connects to Kafka broker to delete topics"])
@@ -35,8 +36,10 @@ class DeleteConnect : Runnable {
                 println("No matching topics found")
             } else {
                 println("Deleting topics: ${topicNames.joinToString()}")
+                val configOp = listOf(AlterConfigOp(ConfigEntry("retention.ms", "1"), AlterConfigOp.OpType.SET))
+                val alterConfigs = topicNames.associate { ConfigResource(ConfigResource.Type.TOPIC, it) to configOp }
+                client.incrementalAlterConfigs(alterConfigs).all().get(wait, TimeUnit.SECONDS)
                 client.deleteTopics(topicNames).all().get(wait, TimeUnit.SECONDS)
-                client.waitForTopicDeletion(delete!!.topic!!.namePrefix, wait)
             }
         } catch (e: ExecutionException) {
             throw e.cause ?: e
@@ -45,21 +48,6 @@ class DeleteConnect : Runnable {
         Thread.currentThread().contextClassLoader = contextCL
     }
 
-}
-
-fun Admin.waitForTopicDeletion(prefix: String, wait: Long) {
-    val end = LocalDateTime.now().plusSeconds(wait)
-    while (true) {
-        val existingTopicNames = existingTopicNamesWithPrefix(prefix, wait)
-        if (existingTopicNames.isEmpty()) {
-            break
-        } else {
-            if (LocalDateTime.now().isAfter(end)) {
-                throw TimeoutException("Timed out deleting topics: ${existingTopicNames.joinToString()}")
-            }
-            Thread.sleep(1000)
-        }
-    }
 }
 
 fun Admin.existingTopicNamesWithPrefix(prefix: String, wait: Long) =
