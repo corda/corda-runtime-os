@@ -48,7 +48,7 @@ class ConsensualTransactionBuilderImpl(
         serializer: SerializationService
     ): ConsensualWireTransaction {
         // TODO(more verifications)
-        // TODO(metadata verifications: nulls, order of CPK, at least one CPK?)
+        // TODO(metadata verifications: nulls, order of CPKs, at least one CPK?)
         require(metadata != null){"Null metadata is not allowed"}
         require(timeStamp != null){"Null timeStamp is not allowed"}
         require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
