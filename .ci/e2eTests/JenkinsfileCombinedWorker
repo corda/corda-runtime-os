@@ -103,11 +103,6 @@ pipeline {
             }
             steps {
         
-                withEnv([
-                        "PGHOST=${postgresHost}",
-                        "PGPORT=${postgresPort}",
-                        "DATABASE=${postgresDb}"
-                ]){
                 //JAVA_TOOL_OPTS env var to pass extra paramaters such as vm paramaters
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
@@ -116,7 +111,6 @@ pipeline {
                 '''
                 sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
     
-                }
             }
             // we need the DB credetals here also
             
@@ -132,17 +126,11 @@ pipeline {
                         touch pod_logs.txt
                         for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> pod_logs.txt; done
                     '''     
-                    withEnv([
-                            "PGHOST=${postgresHost}",
-                            "PGPORT=${postgresPort}",
-                            "DATABASE=${postgresDb}"
-                    ]) {
-                        withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                                passwordVariable: 'PGPASSWORD',
-                                usernameVariable: 'PGUSER')]) {
+                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                            passwordVariable: 'PGPASSWORD',
+                            usernameVariable: 'PGUSER')]) {
 
-                            sh 'dropdb -w "${DATABASE}" || true'
-                        }
+                        sh 'dropdb -w "${postgresDb}" || true'
                         
                     }
 
