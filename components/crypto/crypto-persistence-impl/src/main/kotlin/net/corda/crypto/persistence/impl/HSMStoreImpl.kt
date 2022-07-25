@@ -64,8 +64,7 @@ class HSMStoreImpl @Activate constructor(
                 val result = it.createQuery(
                     """
             SELECT ca FROM HSMCategoryAssociationEntity ca
-                JOIN FETCH ca.hsm a
-                JOIN FETCH a.config c
+                JOIN FETCH ca.hsmAssociation a
             WHERE ca.category = :category 
                 AND ca.tenantId = :tenantId
                 AND ca.deprecatedAt = 0
@@ -83,15 +82,15 @@ class HSMStoreImpl @Activate constructor(
         fun getHSMUsage(): List<HSMUsage> = entityManagerFactory().use {
             it.createQuery(
                 """
-            SELECT ha.workerSetId workerSetId, COUNT(*) usages 
+            SELECT ha.workerSetId as workerSetId, COUNT(*) as usages 
             FROM HSMCategoryAssociationEntity ca JOIN ca.hsmAssociation ha
             GROUP by ha.workerSetId
             """.trimIndent(),
                 Tuple::class.java
-            ).resultList.map {
+            ).resultList.map { record ->
                 HSMUsage(
-                    usages = (it.get("usages") as Number).toInt(),
-                    workerSetId = it.get("workerSetId") as String
+                    usages = (record.get("usages") as Number).toInt(),
+                    workerSetId = record.get("workerSetId") as String
                 )
             }
         }
@@ -120,16 +119,16 @@ class HSMStoreImpl @Activate constructor(
 
         private fun findHSMAssociationEntity(
             tenantId: String,
-            configId: String
+            workerSetId: String
         ) = entityManagerFactory().use {
             it.createQuery(
             """
             SELECT a 
-            FROM HSMAssociationEntity a JOIN a.config c
-            WHERE a.tenantId = :tenantId AND c.id = :configId
+            FROM HSMAssociationEntity a
+            WHERE a.tenantId = :tenantId AND a.workerSetId = :workerSetId
             """.trimIndent(),
                 HSMAssociationEntity::class.java
-            ).setParameter("tenantId", tenantId).setParameter("configId", configId).resultList.singleOrNull()
+            ).setParameter("tenantId", tenantId).setParameter("workerSetId", workerSetId).resultList.singleOrNull()
         }
 
         private fun createAndPersistAssociation(
