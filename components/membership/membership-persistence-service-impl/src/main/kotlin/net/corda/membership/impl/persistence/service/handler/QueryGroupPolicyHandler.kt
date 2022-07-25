@@ -28,7 +28,7 @@ internal class QueryGroupPolicyHandler(
         logger.info("Searching for group policy for identity ${context.holdingIdentity}.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val result = em.createQuery(
-                "SELECT * FROM ${GroupPolicyEntity::class.java.simpleName} ORDER BY version DESC LIMIT 1",
+                "SELECT g FROM ${GroupPolicyEntity::class.simpleName} g ORDER BY version DESC",
                 GroupPolicyEntity::class.java
             ).resultList
             if(result.isEmpty()) {
