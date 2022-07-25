@@ -60,8 +60,8 @@ class PostgresDbSetup(
             log.info("Initialising DB.")
             initDb()
             runDbMigration()
-            initConfiguration("corda-rbac", "rbac_user", "rbac_password", dbUrl)
-            initConfiguration("corda-crypto", "crypto_user", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
+            initConfiguration("corda-rbac", "rbac_user_$dbName", "rbac_password", dbUrl)
+            initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
         }
@@ -169,17 +169,12 @@ class PostgresDbSetup(
         val sql = """
             CREATE SCHEMA IF NOT EXISTS CRYPTO;
             
-            BEGIN
-                IF NOT EXISTS ( SELECT FROM pg_roles  WHERE  rolname = 'rbac_user') THEN CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password' END IF;
-            END
-            GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;
-            
-            BEGIN
-                IF NOT EXISTS ( SELECT FROM pg_roles  WHERE  rolname = 'crypto_user') THEN CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password' END IF;
-            END
-            GRANT USAGE ON SCHEMA CRYPTO to crypto_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user;
+            CREATE USER rbac_user_$dbName WITH ENCRYPTED PASSWORD 'rbac_password';
+            GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user_$dbName;
+            CREATE USER crypto_user_$dbName WITH ENCRYPTED PASSWORD 'crypto_password';
+            GRANT USAGE ON SCHEMA CRYPTO to crypto_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user_$dbName;
         """.trimIndent()
 
         DriverManager
