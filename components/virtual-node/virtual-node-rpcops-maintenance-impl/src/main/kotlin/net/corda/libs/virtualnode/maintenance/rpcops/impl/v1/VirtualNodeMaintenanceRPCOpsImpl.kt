@@ -23,7 +23,6 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
-import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
@@ -43,8 +42,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    private val clock: Clock = UTCClock()
+    private val publisherFactory: PublisherFactory
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
 
     companion object {
@@ -60,6 +58,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         )
         private val logger = contextLogger()
     }
+
+    private val clock = UTCClock()
 
     private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeMaintenanceRPCOps>(
         VirtualNodeMaintenanceRPCOpsHandler(configReadService, this)
