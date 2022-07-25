@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,6 +31,7 @@ class LinkManager(
     cpiInfoReadService: CpiInfoReadService,
     cryptoOpsClient: CryptoOpsClient,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    membershipQueryClient: MembershipQueryClient,
     thirdPartyComponentsMode: ThirdPartyComponentsMode,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
@@ -48,7 +50,7 @@ class LinkManager(
 
     private val forwardingGroupPolicyProvider =
         ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration, groupPolicyProvider,
-            virtualNodeInfoReadService, cpiInfoReadService, thirdPartyComponentsMode)
+            virtualNodeInfoReadService, cpiInfoReadService, thirdPartyComponentsMode, membershipQueryClient)
 
     private val linkManagerCryptoProcessor: CryptoProcessor = when(thirdPartyComponentsMode) {
         ThirdPartyComponentsMode.REAL -> DelegatingCryptoService(cryptoOpsClient)

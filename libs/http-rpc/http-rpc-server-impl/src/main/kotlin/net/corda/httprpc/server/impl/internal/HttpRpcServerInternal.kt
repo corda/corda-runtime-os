@@ -18,8 +18,9 @@ import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
 import net.corda.httprpc.server.impl.context.ContextUtils.authorize
 import net.corda.httprpc.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.httprpc.server.impl.context.ContextUtils.invokeHttpMethod
-import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
+import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -36,8 +37,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
-import java.io.OutputStream
-import java.io.PrintStream
 import java.nio.file.Path
 import javax.servlet.MultipartConfigElement
 
@@ -228,21 +227,24 @@ internal class HttpRpcServerInternal(
         val existingSystemErrStream = System.err
         try {
             log.trace { "Starting the Javalin server." }
-            // Required because Javalin prints an error directly to stderr if it cannot find a logging implementation
-            // via the service loader mechanism. This mechanism is not appropriate for OSGi. The logging
-            // implementation is found correctly in practice.
-            System.setErr(PrintStream(OutputStream.nullOutputStream()))
 
-            // We need to set thread context classloader here as
-            // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
-            // classloading during `start` method invocation.
             val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
             if (bundle != null) {
                 val bundleList = listOfNotNull(bundle, getSwaggerUiBundle())
                 val osgiClassLoader = OsgiClassLoader(bundleList)
-                // Correct context classloader need to be set at start time
+                // We need to set thread context classloader at start time as
+                // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
+                // classloading during `start` method invocation.
                 executeWithThreadContextClassLoader(osgiClassLoader) {
-                    server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+                    // Required because Javalin prints an error directly to stderr if it cannot find a logging
+                    // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
+                    // The logging implementation is found correctly in practice.
+                    executeWithStdErrSuppressed {
+                        server.start(
+                            configurationsProvider.getHostAndPort().host,
+                            configurationsProvider.getHostAndPort().port
+                        )
+                    }
                 }
             } else {
                 server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)

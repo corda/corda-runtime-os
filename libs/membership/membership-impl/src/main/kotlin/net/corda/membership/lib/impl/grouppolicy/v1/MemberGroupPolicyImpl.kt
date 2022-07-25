@@ -25,6 +25,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
+import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryEnum
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryInt
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryJsonNode
@@ -38,7 +39,7 @@ import net.corda.membership.lib.impl.grouppolicy.getOptionalStringList
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringMap
 import net.corda.membership.lib.impl.grouppolicy.validatePemCert
 
-class MemberGroupPolicyImpl(rootNode: JsonNode) : GroupPolicy {
+class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
 
     override val fileFormatVersion = rootNode.getMandatoryInt(FILE_FORMAT_VERSION)
 

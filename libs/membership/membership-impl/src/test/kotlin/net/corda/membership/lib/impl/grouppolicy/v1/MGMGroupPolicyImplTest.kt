@@ -1,16 +1,20 @@
 package net.corda.membership.lib.impl.grouppolicy.v1
 
+import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion.VERSION_1_3
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.DISTINCT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.impl.grouppolicy.BAD_MGM_GROUP_ID_ERROR
 import net.corda.membership.lib.impl.grouppolicy.getBlankValueError
@@ -33,6 +37,9 @@ class MGMGroupPolicyImplTest {
         private val name = MemberX500Name.parse("O=MGM, L=London, C=GB")
         val holdingIdentity = HoldingIdentity(name.toString(), TEST_GROUP_ID)
     }
+    private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory()
+    private val emptyProperties = buildEmptyProperties(layeredPropertyMapFactory)
+    private val persistedProperties = buildPersistedProperties(layeredPropertyMapFactory)
 
     @Nested
     inner class MGMPolicyTests {
@@ -47,7 +54,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
 
@@ -58,8 +66,7 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.synchronisationProtocol).isEqualTo(TEST_SYNC_PROTOCOL)
 
                 /**
-                 * The following properties are currently defaults but will need to be mocked
-                 * from a database in the future.
+                 * The following properties are currently defaults as group policy is not yet persisted at this point.
                  */
                 it.assertThat(groupPolicy.protocolParameters.sessionKeyPolicy).isEqualTo(COMBINED)
                 it.assertThat(groupPolicy.protocolParameters.staticNetworkMembers).isNull()
@@ -70,6 +77,43 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD)
                 it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_3)
                 it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH_ENCRYPT)
+
+                it.assertThat(groupPolicy.mgmInfo).isNull()
+                it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
+            }
+        }
+
+        @Test
+        fun `complete MGM group policy can be parsed correctly using persisted properties`() {
+            val groupPolicy: GroupPolicy = assertDoesNotThrow {
+                MGMGroupPolicyImpl(
+                    holdingIdentity,
+                    buildGroupPolicyNode(
+                        groupIdOverride = MGM_DEFAULT_GROUP_ID,
+                        protocolParametersOverride = null,
+                        p2pParametersOverride = null,
+                        mgmInfoOverride = null,
+                        cipherSuiteOverride = null
+                    ),
+                    persistedProperties
+                )
+            }
+
+            assertSoftly {
+                it.assertThat(groupPolicy.fileFormatVersion).isEqualTo(TEST_FILE_FORMAT_VERSION)
+                it.assertThat(groupPolicy.groupId).isEqualTo(TEST_GROUP_ID)
+                it.assertThat(groupPolicy.registrationProtocol).isEqualTo(TEST_REG_PROTOCOL)
+                it.assertThat(groupPolicy.synchronisationProtocol).isEqualTo(TEST_SYNC_PROTOCOL)
+                it.assertThat(groupPolicy.protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
+                it.assertThat(groupPolicy.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
+                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots).isNotNull
+                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots?.size).isEqualTo(1)
+                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots?.first()).isEqualTo(TEST_CERT)
+                it.assertThat(groupPolicy.p2pParameters.tlsTrustRoots.size).isEqualTo(1)
+                it.assertThat(groupPolicy.p2pParameters.tlsTrustRoots.first()).isEqualTo(TEST_CERT)
+                it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
+                it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
+                it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
@@ -91,7 +135,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(FILE_FORMAT_VERSION))
@@ -108,7 +153,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(GROUP_ID))
@@ -125,7 +171,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(GROUP_ID))
@@ -142,7 +189,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(GROUP_ID))
@@ -159,7 +207,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(BAD_MGM_GROUP_ID_ERROR)
@@ -177,7 +226,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(REGISTRATION_PROTOCOL))
@@ -195,7 +245,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(REGISTRATION_PROTOCOL))
@@ -213,7 +264,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(REGISTRATION_PROTOCOL))
@@ -231,7 +283,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(SYNC_PROTOCOL))
@@ -249,7 +302,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(SYNC_PROTOCOL))
@@ -267,7 +321,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    )
+                    ),
+                    emptyProperties
                 )
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(SYNC_PROTOCOL))

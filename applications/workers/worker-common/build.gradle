@@ -16,6 +16,7 @@ dependencies {
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:lifecycle:registry')
+    implementation project(':libs:utilities')
     implementation project(':osgi-framework-api')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

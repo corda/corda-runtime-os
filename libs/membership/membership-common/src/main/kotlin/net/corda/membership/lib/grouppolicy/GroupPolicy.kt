@@ -6,6 +6,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 
+interface MGMGroupPolicy : GroupPolicy
+interface MemberGroupPolicy : GroupPolicy
+
 /**
  * Object representation of the group policy file which is packaged within a CPI and provides
  * group configurations.
