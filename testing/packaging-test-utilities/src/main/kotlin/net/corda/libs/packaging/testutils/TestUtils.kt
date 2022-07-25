@@ -1,13 +1,14 @@
 package net.corda.libs.packaging.testutils
 
-import net.corda.libs.packaging.hash
 import net.corda.test.util.InMemoryZipFile
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.security.CodeSigner
 import java.security.KeyStore
 import java.security.KeyStore.PasswordProtection
+import java.security.MessageDigest
 import java.security.Timestamp
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
@@ -24,6 +25,15 @@ object TestUtils {
     internal val CA1 = certificate("ca1", resourceInputStream("ca1.p12"))
     internal val CA2 = certificate("ca2", resourceInputStream("ca2.p12"))
     internal val CODE_SIGNER_ALICE = codeSigner("alice", resourceInputStream("alice.p12"))
+
+    /**
+     * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
+     */
+    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME) : SecureHash {
+        val md = MessageDigest.getInstance(algo.name)
+        md.update(this)
+        return SecureHash(algo.name, md.digest())
+    }
 
     private fun resourceInputStream(fileName: String): InputStream =
         this::class.java.classLoader.getResourceAsStream(fileName)

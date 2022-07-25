@@ -10,15 +10,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     api platform("net.corda:corda-api:$cordaApiVersion")
-
-    api 'net.corda:corda-base'
     api 'net.corda:corda-crypto'
-    api 'net.corda:corda-cipher-suite'
 
-    implementation project(':libs:packaging:packaging')
-    implementation project(':libs:packaging:packaging-core')
     implementation project(":testing:test-utilities")
-    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
-
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

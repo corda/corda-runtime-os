@@ -1,12 +1,10 @@
 package net.corda.libs.packaging.testutils.cpk
 
-import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
-import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
-import net.corda.test.util.InMemoryZipFile
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.packaging.testutils.TestUtils.addFile
 import net.corda.libs.packaging.testutils.TestUtils.signedBy
 import net.corda.libs.packaging.testutils.TestUtils.toBase64
+import net.corda.test.util.InMemoryZipFile
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
