@@ -3,8 +3,10 @@ package net.corda.crypto.persistence.impl.tests
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
@@ -27,20 +29,20 @@ import net.corda.crypto.persistence.impl.tests.infra.vNodeHoldingIdentity
 import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.persistence.wrapping.WrappingKeyStore
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
-import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -48,8 +50,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
@@ -57,6 +57,7 @@ import net.corda.orm.utils.use
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -64,8 +65,9 @@ import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.junit.jupiter.api.AfterAll
+import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -75,7 +77,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.KeyPair
@@ -85,7 +86,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 class PersistenceTests {
     companion object {
         private val CLIENT_ID = "${PersistenceTests::class.java}-integration-test"
@@ -160,47 +161,11 @@ class PersistenceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            setupPrerequisites()
-            setupDatabases()
-            configurationReadService.start()
-            dbConnectionManager.start()
-            vnodeInfo.start()
-            cryptoConnectionsFactory.start()
-            hsmStore.start()
-            signingKeyStore.start()
-            wrappingKeyStore.start()
-            val tracker = TestDependenciesTracker(
-                LifecycleCoordinatorName.forComponent<PersistenceTests>(),
-                coordinatorFactory,
-                lifecycleRegistry,
-                setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
-                    LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>(),
-                    LifecycleCoordinatorName.forComponent<HSMStore>(),
-                    LifecycleCoordinatorName.forComponent<SigningKeyStore>(),
-                    LifecycleCoordinatorName.forComponent<HSMStore>(),
-                )
-            ).also { it.start() }
-            tracker.waitUntilAllUp(Duration.ofSeconds(60))
-        }
-
-        private fun setupPrerequisites() {
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
-            publisher.publish(
-                listOf(
-                    Record(
-                        Schemas.Config.CONFIG_TOPIC,
-                        ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(
-                            messagingConfig.root().render(),
-                            messagingConfig.root().render(),
-                            0,
-                            ConfigurationSchemaVersion(1, 0)
-                        )
-                    )
-                )
-            )
+            setupDatabases()
+            setupConfiguration()
+            setupDependencies()
+            waitForVirtualNodeInfoReady()
         }
 
         private fun setupDatabases() {
@@ -255,6 +220,86 @@ class PersistenceTests {
                 }
             }
             return ids
+        }
+
+        private fun setupConfiguration() {
+            val cryptoConfig = createDefaultCryptoConfig(
+                KeyCredentials("passphrase", "salt")
+            ) .root().render()
+            val virtualNodeInfo = VirtualNodeInfo(
+                holdingIdentity = vNodeHoldingIdentity,
+                cpiIdentifier = CpiIdentifier(
+                    name = "cpi",
+                    version = "1",
+                    signerSummaryHash = null
+                ),
+                cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                timestamp = Instant.now()
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.MESSAGING_CONFIG,
+                        Configuration(
+                            messagingConfig.root().render(),
+                            messagingConfig.root().render(),
+                            0,
+                            ConfigurationSchemaVersion(1, 0)
+                        )
+                    ),
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.CRYPTO_CONFIG,
+                        Configuration(
+                            cryptoConfig,
+                            cryptoConfig,
+                            0,
+                            ConfigurationSchemaVersion(1, 0)
+                        )
+                    ),
+                    Record(
+                        Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
+                        virtualNodeInfo.holdingIdentity.toAvro(),
+                        virtualNodeInfo.toAvro()
+                    )
+                )
+            )
+        }
+
+        private fun setupDependencies() {
+            configurationReadService.start()
+            configurationReadService.bootstrapConfig(boostrapConfig)
+            dbConnectionManager.start()
+            dbConnectionManager.bootstrap(boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS))
+            vnodeInfo.start()
+            cryptoConnectionsFactory.start()
+            hsmStore.start()
+            signingKeyStore.start()
+            wrappingKeyStore.start()
+            val tracker = TestDependenciesTracker(
+                LifecycleCoordinatorName.forComponent<PersistenceTests>(),
+                coordinatorFactory,
+                lifecycleRegistry,
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                    LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>(),
+                    LifecycleCoordinatorName.forComponent<HSMStore>(),
+                    LifecycleCoordinatorName.forComponent<SigningKeyStore>(),
+                    LifecycleCoordinatorName.forComponent<HSMStore>(),
+                )
+            ).also { it.start() }
+            tracker.waitUntilAllUp(Duration.ofSeconds(60))
+        }
+
+        private fun waitForVirtualNodeInfoReady() {
+            eventually {
+                val info = vnodeInfo.get(vNodeHoldingIdentity)
+                assertNotNull(info)
+                assertEquals(connectionIds.getValue(vnodeDb.name), info!!.cryptoDmlConnectionId)
+            }
         }
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
