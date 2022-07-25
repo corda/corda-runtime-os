@@ -262,7 +262,7 @@ helm test "<RELEASE NAME>" -n "<RELEASE NAMESPACE>"
 
 ### Externalise services
 
-As an alternative to port-forwarding services for accessing them outside the cluster, a non-default `values-external.yaml` has been crafted - intended to decorate the existing `values.yaml` to expose postgreSQL via a NodePort service.
+As an alternative to port-forwarding services for accessing them outside the cluster, a non-default `values-external.yaml` has been crafted - intended to enrich the default parameters to expose postgreSQL via a NodePort service.
 
 It can be used by appending the following option to the `helm upgrade` command:
 ```shell
