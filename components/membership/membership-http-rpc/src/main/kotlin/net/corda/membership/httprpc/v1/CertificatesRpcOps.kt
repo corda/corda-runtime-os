@@ -9,8 +9,8 @@ import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
 @HttpRpcResource(
-    name = "CertificatesRpcOps",
-    description = "Certificates API",
+    name = "Certificates API",
+    description = "Certificates management endpoints",
     path = "certificates"
 )
 interface CertificatesRpcOps : RpcOps {

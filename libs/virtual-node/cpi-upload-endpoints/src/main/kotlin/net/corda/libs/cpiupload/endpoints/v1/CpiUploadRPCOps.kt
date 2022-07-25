@@ -8,8 +8,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.HttpFileUpload
 
 @HttpRpcResource(
-    name = "CpiUploadRPCOps",
-    description = "Cpi Upload management endpoints",
+    name = "CPI Upload API",
+    description = "CPI Upload management endpoints",
     path = "cpi"
 )
 interface CpiUploadRPCOps : RpcOps {
