@@ -46,6 +46,9 @@ data class VirtualNodeEntity(
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
 
+    @Column(name = "state", nullable = false)
+    var virtualNodeState: String,
+
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null,
 
@@ -77,6 +80,10 @@ data class VirtualNodeEntity(
         result = 31 * result + cpiSignerSummaryHash.hashCode()
         return result
     }
+
+    fun update(newState: String) {
+        virtualNodeState = newState
+    }
 }
 
 /** The composite primary key for a virtual node instance. */
@@ -101,4 +108,24 @@ fun EntityManager.findAllVirtualNodes(): Stream<VirtualNodeEntity> {
     query.select(root)
 
     return createQuery(query).resultStream
+}
+
+fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNodeEntity? {
+    val queryBuilder = with(criteriaBuilder!!) {
+        val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!
+        val root = queryBuilder.from(VirtualNodeEntity::class.java)
+        root.fetch<Any, Any>("holdingIdentity")
+        queryBuilder.where(
+            equal(
+                root.get<HoldingIdentityEntity>("holdingIdentity").get<String>("holdingIdentityShortHash"),
+                parameter(String::class.java, "shortId")
+            )
+        ).orderBy(desc(root.get<String>("cpiVersion")))
+        queryBuilder
+    }
+
+    return createQuery(queryBuilder)
+        .setParameter("shortId", holdingIdentityShortHash)
+        .setMaxResults(1)
+        .singleResult
 }

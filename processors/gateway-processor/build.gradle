@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(":components:crypto:crypto-client")
+    implementation project(":components:gateway")
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-merger')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
+    implementation 'net.corda:corda-base'
+
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(":libs:crypto:crypto-impl")
+}
+
+description 'Gateway Processor'

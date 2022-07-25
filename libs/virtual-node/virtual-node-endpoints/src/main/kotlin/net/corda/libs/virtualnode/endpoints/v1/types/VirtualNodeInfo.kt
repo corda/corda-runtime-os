@@ -18,6 +18,7 @@ data class VirtualNodeInfo(
     val cryptoDmlConnectionId: UUID,
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
+    val state: String,
     /** Version of this vnode */
     val version: Int = -1,
     /** Creation timestamp */

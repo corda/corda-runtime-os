@@ -7,6 +7,8 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
+import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
@@ -17,17 +19,21 @@ import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
@@ -82,7 +88,7 @@ internal class VirtualNodeWriterProcessor(
         }
 
         try {
-            val cpiMetadata = virtualNodeEntityRepository.getCPIMetadata(create.cpiFileChecksum)
+            val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByChecksum(create.cpiFileChecksum)
             if (cpiMetadata == null) {
                 handleException(
                     respFuture,
@@ -110,7 +116,7 @@ internal class VirtualNodeWriterProcessor(
             runDbMigrations(holdingId, vNodeDbs.values)
 
             val vaultDb = vNodeDbs[VAULT]
-            if ( null == vaultDb) {
+            if (null == vaultDb) {
                 handleException(respFuture, VirtualNodeWriteServiceException("Vault DB not configured"))
                 return
             } else {
@@ -129,6 +135,93 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
+    // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
+    private fun changeVirtualNodeState(
+        instant: Instant,
+        stateChangeRequest: VirtualNodeStateChangeRequest,
+        respFuture: CompletableFuture<VirtualNodeManagementResponse>
+    ) {
+
+        // Attempt and update, and on failure, pass the error back to the RPC processor
+        try {
+            val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+            val updatedVirtualNodeEntity = em.use { entityManager ->
+                virtualNodeEntityRepository.setVirtualNodeState(
+                    entityManager,
+                    stateChangeRequest.holdingIdentityShortHash,
+                    stateChangeRequest.newState
+                )
+            }
+
+            val virtualNodeInfo = with(updatedVirtualNodeEntity) {
+                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    this.cpiName,
+                    this.cpiVersion
+                ) ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityShortHash)
+                val holdingIdentity = HoldingIdentity(
+                    this.holdingIdentity.x500Name,
+                    this.holdingIdentity.mgmGroupId
+                )
+                val cpiIdentifier = CpiIdentifier(
+                    cpiMetadata.id.name,
+                    cpiMetadata.id.version,
+                    cpiMetadata.id.signerSummaryHash
+                )
+                VirtualNodeInfo(
+                    holdingIdentity,
+                    cpiIdentifier,
+                    this.holdingIdentity.vaultDDLConnectionId,
+                    this.holdingIdentity.vaultDMLConnectionId!!,
+                    this.holdingIdentity.cryptoDDLConnectionId,
+                    this.holdingIdentity.cryptoDMLConnectionId!!,
+                    this.holdingIdentity.hsmConnectionId,
+                    VirtualNodeState.valueOf(this.virtualNodeState),
+                    this.entityVersion,
+                    this.insertTimestamp!!
+                )
+            }.toAvro()
+
+            val virtualNodeRecord = Record(
+                VIRTUAL_NODE_INFO_TOPIC,
+                virtualNodeInfo.holdingIdentity,
+                virtualNodeInfo
+            )
+
+            try {
+                // TODO - CORE-3319 - Strategy for DB and Kafka retries.
+                val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
+
+                // TODO - CORE-3730 - Define timeout policy.
+                future.get()
+            } catch (e: Exception) {
+                throw VirtualNodeWriteServiceException(
+                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
+                )
+            }
+
+            val response = VirtualNodeManagementResponse(
+                instant,
+                VirtualNodeStateChangeResponse(
+                    stateChangeRequest.holdingIdentityShortHash,
+                    stateChangeRequest.newState
+                )
+            )
+            respFuture.complete(response)
+        } catch (e: Exception) {
+            respFuture.complete(
+                VirtualNodeManagementResponse(
+                    instant,
+                    VirtualNodeManagementResponseFailure(
+                        ExceptionEnvelope(
+                            e::class.java.name,
+                            e.message
+                        )
+                    )
+                )
+            )
+        }
+    }
+
     /**
      * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
      * the created virtual node is then published by the [vnodePublisher] to the `VIRTUAL_NODE_INFO_TOPIC` topic.
@@ -141,6 +234,7 @@ internal class VirtualNodeWriterProcessor(
     ) {
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -287,7 +381,8 @@ internal class VirtualNodeWriterProcessor(
                 vaultDmlConnectionId,
                 cryptoDdlConnectionId,
                 cryptoDmlConnectionId,
-                timestamp = clock.instant()
+                timestamp = clock.instant(),
+                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             )
                 .toAvro()
         }
@@ -356,7 +451,8 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.vaultDmlConnectionId.toString(),
                 dbConnections.cryptoDdlConnectionId?.toString(),
                 dbConnections.cryptoDmlConnectionId.toString(),
-                null
+                null,
+                VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
         )
         respFuture.complete(response)
@@ -381,3 +477,6 @@ internal class VirtualNodeWriterProcessor(
         return respFuture.complete(response)
     }
 }
+
+class CpiNotFoundException(holdingIdentityShortId: String) :
+    CordaRuntimeException("No corresponding meta data found for cpi for $holdingIdentityShortId")
