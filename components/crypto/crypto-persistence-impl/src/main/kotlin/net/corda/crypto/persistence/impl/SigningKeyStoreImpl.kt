@@ -236,7 +236,7 @@ class SigningKeyStoreImpl @Activate constructor(
         private fun findByIds(tenantId: String, ids: Collection<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
-                    "from SigningKeyEntity where tenantId=:tenantId AND keyId IN(:ids)",
+                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND keyId IN(:ids)",
                     SigningKeyEntity::class.java
                 ).also { q ->
                     q.setParameter("tenantId", tenantId)
@@ -247,7 +247,7 @@ class SigningKeyStoreImpl @Activate constructor(
         private fun findByAliases(tenantId: String, aliases: Collection<String>): Collection<SigningKeyEntity> =
             entityManagerFactory(tenantId).use { em ->
                 em.createQuery(
-                    "from SigningKeyEntity where tenantId=:tenantId AND alias IN(:aliases)",
+                    "FROM SigningKeyEntity WHERE tenantId=:tenantId AND alias IN(:aliases)",
                     SigningKeyEntity::class.java
                 ).also { q ->
                     q.setParameter("tenantId", tenantId)
