@@ -96,7 +96,7 @@ class HSMRegistrationBusProcessor(
             return if(result == null) {
                 CryptoNoContentValue()
             } else {
-                HSMAssociationInfo(result.workerSetId, result.deprecatedAt)
+                HSMAssociationInfo(result.hsmId, result.deprecatedAt)
             }
         }
     }

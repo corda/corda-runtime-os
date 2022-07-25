@@ -69,16 +69,16 @@ class SigningServiceImpl(
     }
 
     override fun createWrappingKey(
-        workerSetId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
         logger.debug {
-            "createWrappingKey(workerSetId=$workerSetId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
+            "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
                     "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
-        cryptoServiceFactory.getInstance(workerSetId).createWrappingKey(
+        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(
             masterKeyAlias = masterKeyAlias,
             failIfExists = failIfExists,
             context = context
@@ -159,7 +159,7 @@ class SigningServiceImpl(
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(record.data.workerSetId)
+        val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
         val spec = if (record.data.keyMaterial != null) {
             SigningWrappedSpec(
                 publicKey = record.publicKey,
@@ -201,7 +201,7 @@ class SigningServiceImpl(
             otherPublicKey.publicKeyId()
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(record.data.workerSetId)
+        val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
         val spec = if (record.data.keyMaterial != null) {
             SharedSecretWrappedSpec(
                 publicKey = record.publicKey,

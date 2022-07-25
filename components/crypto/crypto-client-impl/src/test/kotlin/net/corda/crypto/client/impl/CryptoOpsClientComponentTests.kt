@@ -713,14 +713,14 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         setupCompletedResponse {
             CryptoNoContentValue()
         }
         val result = sender.act {
             component.createWrappingKey(
-                workerSetId = workerSetId,
+                hsmId = hsmId,
                 failIfExists = true,
                 masterKeyAlias = masterKeyAlias,
                 context = knownOperationContext
@@ -728,7 +728,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         val command = assertOperationType<GenerateWrappingKeyRpcCommand>()
-        assertEquals(workerSetId, command.workerSetId)
+        assertEquals(hsmId, command.hsmId)
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
         assertOperationContext(command.context)

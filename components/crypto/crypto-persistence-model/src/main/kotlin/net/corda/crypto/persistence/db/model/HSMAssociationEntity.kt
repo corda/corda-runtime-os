@@ -28,8 +28,8 @@ class HSMAssociationEntity(
     @Column(name = "tenant_id", nullable = false, updatable = false, length = 12)
     var tenantId: String,
 
-    @Column(name = "worker_set_id", nullable = false, updatable = false)
-    var workerSetId: String,
+    @Column(name = "hsm_id", nullable = false, updatable = false)
+    var hsmId: String,
 
     /**
      * When the configuration was created.

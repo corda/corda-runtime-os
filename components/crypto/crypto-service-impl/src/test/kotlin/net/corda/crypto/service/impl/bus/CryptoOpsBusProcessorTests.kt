@@ -470,14 +470,14 @@ class CryptoOpsBusProcessorTests {
             KeyValuePair("reason", "Hello World!"),
             KeyValuePair(CRYPTO_TENANT_ID, tenantId)
         )
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         val future1 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context1,
                 GenerateWrappingKeyRpcCommand(
-                    workerSetId,
+                    hsmId,
                     masterKeyAlias,
                     true,
                     KeyValuePairList(operationContext)

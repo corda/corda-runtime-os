@@ -53,9 +53,9 @@ class TestHSMStore(
     }
 
     override fun getHSMUsage(): List<HSMUsage> = lock.withLock {
-        categoryAssociations.groupBy { it.hsmAssociation.workerSetId }.map {
+        categoryAssociations.groupBy { it.hsmAssociation.hsmId }.map {
             HSMUsage(
-                workerSetId = it.key,
+                hsmId = it.key,
                 usages = it.value.count()
             )
         }
@@ -64,11 +64,11 @@ class TestHSMStore(
     override fun associate(
         tenantId: String,
         category: String,
-        workerSetId: String,
+        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
     ): HSMTenantAssociation = lock.withLock {
-        val association = associations.firstOrNull { it.tenantId == tenantId && it.workerSetId == workerSetId }
-            ?: createAndPersistAssociation(tenantId, workerSetId, masterKeyPolicy)
+        val association = associations.firstOrNull { it.tenantId == tenantId && it.hsmId == hsmId }
+            ?: createAndPersistAssociation(tenantId, hsmId, masterKeyPolicy)
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
@@ -83,7 +83,7 @@ class TestHSMStore(
 
     private fun createAndPersistAssociation(
         tenantId: String,
-        workerSetId: String,
+        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
     ): HSMAssociationEntity {
         val aliasSecret = ByteArray(32)
@@ -91,7 +91,7 @@ class TestHSMStore(
         val association = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
-            workerSetId = workerSetId,
+            hsmId = hsmId,
             timestamp = Instant.now(),
             masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
                 generateRandomShortAlias()
@@ -113,7 +113,7 @@ class TestHSMStore(
         category = category,
         masterKeyAlias = hsmAssociation.masterKeyAlias,
         aliasSecret = hsmAssociation.aliasSecret,
-        workerSetId = hsmAssociation.workerSetId,
+        hsmId = hsmAssociation.hsmId,
         deprecatedAt = deprecatedAt
     )
 }

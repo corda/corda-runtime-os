@@ -27,7 +27,7 @@ class TestCryptoOpsProxyClient(
     }
 
     override fun createWrappingKey(
-        workerSetId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>

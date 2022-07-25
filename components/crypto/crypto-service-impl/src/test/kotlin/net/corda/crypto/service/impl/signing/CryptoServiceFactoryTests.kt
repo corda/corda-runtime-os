@@ -30,7 +30,7 @@ class CryptoServiceFactoryTests {
     private lateinit var tenantId2: String
     private lateinit var tenantId3: String
     private lateinit var tenantId4: String
-    private lateinit var customWorkerSetId: String
+    private lateinit var customHsmIdId: String
     private lateinit var factory: TestServicesFactory
     private lateinit var component: CryptoServiceFactoryImpl
 

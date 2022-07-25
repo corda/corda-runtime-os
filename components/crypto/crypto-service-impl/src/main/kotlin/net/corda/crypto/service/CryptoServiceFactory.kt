@@ -14,8 +14,8 @@ interface CryptoServiceFactory : Lifecycle {
     fun findInstance(tenantId: String, category: String): CryptoServiceRef
 
     /**
-     * Returns instance of [CryptoService] for specified worker set.
+     * Returns instance of [CryptoService] for specified HSM id.
      * Once created the information and instance are cached.
      */
-    fun getInstance(workerSetId: String): CryptoService
+    fun getInstance(hsmId: String): CryptoService
 }

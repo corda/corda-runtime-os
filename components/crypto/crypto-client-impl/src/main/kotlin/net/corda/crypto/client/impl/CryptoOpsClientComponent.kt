@@ -161,11 +161,11 @@ class CryptoOpsClientComponent @Activate constructor(
     ): CryptoSignatureWithKey = impl.ops.signProxy(tenantId, publicKey, signatureSpec, data, context)
 
     override fun createWrappingKey(
-        workerSetId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>
-    ) = impl.ops.createWrappingKey(workerSetId, failIfExists, masterKeyAlias, context)
+    ) = impl.ops.createWrappingKey(hsmId, failIfExists, masterKeyAlias, context)
 
     override fun deriveSharedSecret(
         tenantId: String,

@@ -230,7 +230,7 @@ class CryptoOpsBusProcessor(
     ) : Handler<GenerateWrappingKeyRpcCommand> {
         override fun handle(context: CryptoRequestContext, request: GenerateWrappingKeyRpcCommand): Any {
             signingService.createWrappingKey(
-                workerSetId = request.workerSetId,
+                hsmId = request.hsmId,
                 failIfExists = request.failIfExists,
                 masterKeyAlias = request.masterKeyAlias,
                 context = request.context.items.toMap()

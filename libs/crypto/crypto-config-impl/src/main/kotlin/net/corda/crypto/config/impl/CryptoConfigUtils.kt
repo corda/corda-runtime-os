@@ -32,8 +32,8 @@ import java.util.UUID
         },
         "downstreamMaxAttempts": 3
     },
-    "workerSetId": "SOFT",
-    "workerSets": {
+    "hsmId": "SOFT",
+    "hsms": {
         "SOFT": {
             "workerSuffix": "",
             "retry" : {
@@ -157,15 +157,15 @@ import java.util.UUID
 private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_SERVICE_OBJ = "hsmService"
-private const val WORKER_SET_ID = "workerSetId"
-private const val WORKER_SETS_MAP = "workerSets"
-private const val WORKER_SET_OBJ = "workerSets.%s"
-private val DEFAULT_WORKER_SET_OBJ = String.format(WORKER_SET_OBJ, SOFT_HSM_WORKER_SET_ID)
-private val MASTER_WRAPPING_KEY_SALT = DEFAULT_WORKER_SET_OBJ +
+private const val HSM_ID = "hsmId"
+private const val HSM_MAP = "hsms"
+private const val HSM_OBJ = "hsms.%s"
+private val DEFAULT_HSM_OBJ = String.format(HSM_OBJ, SOFT_HSM_WORKER_SET_ID)
+private val MASTER_WRAPPING_KEY_SALT = DEFAULT_HSM_OBJ +
         CryptoWorkerSetConfig::hsm.name +
         CryptoWorkerSetConfig.HSMConfig::cfg.name +
         "wrappingKeyMap.salt"
-private val MASTER_WRAPPING_KEY_PASSPHRASE = DEFAULT_WORKER_SET_OBJ +
+private val MASTER_WRAPPING_KEY_PASSPHRASE = DEFAULT_HSM_OBJ +
         CryptoWorkerSetConfig::hsm.name +
         CryptoWorkerSetConfig.HSMConfig::cfg.name +
         "wrappingKeyMap.passphrase"
@@ -196,25 +196,25 @@ fun SmartConfig.signingService(): CryptoSigningServiceConfig =
         throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
     }
 
-fun SmartConfig.workerSetId(): String =
+fun SmartConfig.hsmId(): String =
     try {
-        getString(WORKER_SET_ID)
+        getString(HSM_ID)
     } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $WORKER_SET_ID.", e)
+        throw IllegalStateException("Failed to get $HSM_ID.", e)
     }
 
-fun SmartConfig.workerSets(): Map<String, CryptoWorkerSetConfig> =
+fun SmartConfig.hsmMap(): Map<String, CryptoWorkerSetConfig> =
     try {
-        val set = getConfig(WORKER_SETS_MAP)
+        val set = getConfig(HSM_MAP)
         set.root().keys.associateWith {
             CryptoWorkerSetConfig(set.getConfig(it))
         }
     } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $WORKER_SETS_MAP.", e)
+        throw IllegalStateException("Failed to get $HSM_MAP.", e)
     }
 
-fun SmartConfig.workerSet(id: String): CryptoWorkerSetConfig {
-    val path = String.format(WORKER_SET_OBJ, id)
+fun SmartConfig.hsm(id: String): CryptoWorkerSetConfig {
+    val path = String.format(HSM_OBJ, id)
     return try {
         CryptoWorkerSetConfig(getConfig(path))
     } catch (e: Throwable) {
@@ -222,7 +222,7 @@ fun SmartConfig.workerSet(id: String): CryptoWorkerSetConfig {
     }
 }
 
-fun SmartConfig.workerSet(): CryptoWorkerSetConfig = workerSet(workerSetId())
+fun SmartConfig.hsm(): CryptoWorkerSetConfig = hsm(hsmId())
 
 fun SmartConfig.hsmService(): CryptoHSMServiceConfig =
     try {
@@ -339,10 +339,10 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                 )
             )
             .withValue(
-                WORKER_SET_ID, ConfigValueFactory.fromAnyRef(SOFT_HSM_WORKER_SET_ID)
+                HSM_ID, ConfigValueFactory.fromAnyRef(SOFT_HSM_WORKER_SET_ID)
             )
             .withValue(
-                DEFAULT_WORKER_SET_OBJ, ConfigValueFactory.fromMap(
+                DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         CryptoWorkerSetConfig::workerSuffix.name to "",
                         CryptoWorkerSetConfig::retry.name to mapOf(

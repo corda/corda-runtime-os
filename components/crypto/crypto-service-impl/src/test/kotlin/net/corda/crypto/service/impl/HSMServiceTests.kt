@@ -22,7 +22,7 @@ class HSMServiceTests {
         private fun assertHSMAssociation(tenantId: String, category: String, association: HSMTenantAssociation?) {
             assertNotNull(association)
             assertThat(association.id).isNotBlank
-            assertEquals(SOFT_HSM_WORKER_SET_ID, association.workerSetId)
+            assertEquals(SOFT_HSM_WORKER_SET_ID, association.worhsmIdkerSetId)
             assertEquals(0, association.deprecatedAt)
             assertEquals(tenantId, association.tenantId)
             assertEquals(category, association.category)
@@ -45,14 +45,14 @@ class HSMServiceTests {
         val tenantId1 = UUID.randomUUID().toString()
         val tenantId2 = UUID.randomUUID().toString()
         val association11 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association11.workerSetId)
+        assertEquals(SOFT_HSM_WORKER_SET_ID, association11.hsmId)
         assertEquals(0, association11.deprecatedAt)
         val foundAssociation11 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
         assertHSMAssociation(tenantId1, CryptoConsts.Categories.LEDGER, foundAssociation11)
         assertNull(service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS))
         assertNull(service.findAssignedHSM(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER))
         val association12 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association12.workerSetId)
+        assertEquals(SOFT_HSM_WORKER_SET_ID, association12.hsmId)
         assertEquals(0, association12.deprecatedAt)
         val foundAssociation12 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
         assertHSMAssociation(tenantId1, CryptoConsts.Categories.TLS, foundAssociation12)
@@ -61,10 +61,8 @@ class HSMServiceTests {
             foundAssociation12!!.masterKeyAlias,
             "The master key alias must stay the same for the same tenant, even if categories are different"
         )
-
-
         val association21 = service.assignSoftHSM(tenantId2, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association21.workerSetId)
+        assertEquals(SOFT_HSM_WORKER_SET_ID, association21.hsmId)
         assertEquals(0, association21.deprecatedAt)
         val foundAssociation21 = service.findAssignedHSM(tenantId2, CryptoConsts.Categories.LEDGER)
         assertHSMAssociation(tenantId2, CryptoConsts.Categories.TLS, foundAssociation21)
@@ -79,10 +77,10 @@ class HSMServiceTests {
     fun `Should not fail assigning SOFT HSM twice`() {
         val tenantId1 = UUID.randomUUID().toString()
         val association1 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association1.workerSetId)
+        assertEquals(SOFT_HSM_WORKER_SET_ID, association1.hsmId)
         assertEquals(0, association1.deprecatedAt)
         val association2 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association2.workerSetId)
+        assertEquals(SOFT_HSM_WORKER_SET_ID, association2.hsmId)
         assertEquals(0, association2.deprecatedAt)
     }
 

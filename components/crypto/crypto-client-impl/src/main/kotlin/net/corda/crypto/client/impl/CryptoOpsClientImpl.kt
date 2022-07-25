@@ -249,22 +249,22 @@ class CryptoOpsClientImpl(
     }
 
     fun createWrappingKey(
-        workerSetId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
         logger.info(
-            "Sending '{}'(workerSetId={},failIfExists={},masterKeyAlias={})",
+            "Sending '{}'(hsmId={},failIfExists={},masterKeyAlias={})",
             GenerateWrappingKeyRpcCommand::class.java.simpleName,
-            workerSetId,
+            hsmId,
             failIfExists,
             masterKeyAlias
         )
         val request = createRequest(
             CryptoTenants.CRYPTO,
             GenerateWrappingKeyRpcCommand(
-                workerSetId,
+                hsmId,
                 masterKeyAlias,
                 failIfExists,
                 context.toWire()

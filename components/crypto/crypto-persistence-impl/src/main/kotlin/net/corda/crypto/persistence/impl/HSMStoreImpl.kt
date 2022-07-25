@@ -49,9 +49,9 @@ class HSMStoreImpl @Activate constructor(
     override fun associate(
         tenantId: String,
         category: String,
-        workerSetId: String,
+        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
-    ): HSMTenantAssociation = impl.associate(tenantId, category, workerSetId, masterKeyPolicy)
+    ): HSMTenantAssociation = impl.associate(tenantId, category, hsmId, masterKeyPolicy)
 
     class Impl(
         private val connectionsFactory: CryptoConnectionsFactory,
@@ -82,15 +82,15 @@ class HSMStoreImpl @Activate constructor(
         fun getHSMUsage(): List<HSMUsage> = entityManagerFactory().use {
             it.createQuery(
                 """
-            SELECT ha.workerSetId as workerSetId, COUNT(*) as usages 
+            SELECT ha.hsmId as hsmId, COUNT(*) as usages 
             FROM HSMCategoryAssociationEntity ca JOIN ca.hsmAssociation ha
-            GROUP by ha.workerSetId
+            GROUP by ha.hsmId
             """.trimIndent(),
                 Tuple::class.java
             ).resultList.map { record ->
                 HSMUsage(
                     usages = (record.get("usages") as Number).toInt(),
-                    workerSetId = record.get("workerSetId") as String
+                    hsmId = record.get("hsmId") as String
                 )
             }
         }
@@ -98,11 +98,11 @@ class HSMStoreImpl @Activate constructor(
         fun associate(
             tenantId: String,
             category: String,
-            workerSetId: String,
+            hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
         ): HSMTenantAssociation {
-            val association = findHSMAssociationEntity(tenantId, workerSetId)
-                ?: createAndPersistAssociation(tenantId, workerSetId, masterKeyPolicy)
+            val association = findHSMAssociationEntity(tenantId, hsmId)
+                ?: createAndPersistAssociation(tenantId, hsmId, masterKeyPolicy)
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
                 tenantId = tenantId,
@@ -119,21 +119,21 @@ class HSMStoreImpl @Activate constructor(
 
         private fun findHSMAssociationEntity(
             tenantId: String,
-            workerSetId: String
+            hsmId: String
         ) = entityManagerFactory().use {
             it.createQuery(
             """
             SELECT a 
             FROM HSMAssociationEntity a
-            WHERE a.tenantId = :tenantId AND a.workerSetId = :workerSetId
+            WHERE a.tenantId = :tenantId AND a.hsmId = :hsmId
             """.trimIndent(),
                 HSMAssociationEntity::class.java
-            ).setParameter("tenantId", tenantId).setParameter("workerSetId", workerSetId).resultList.singleOrNull()
+            ).setParameter("tenantId", tenantId).setParameter("hsmId", hsmId).resultList.singleOrNull()
         }
 
         private fun createAndPersistAssociation(
             tenantId: String,
-            workerSetId: String,
+            hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
         ): HSMAssociationEntity {
             val aliasSecret = ByteArray(32)
@@ -141,7 +141,7 @@ class HSMStoreImpl @Activate constructor(
             val association = HSMAssociationEntity(
                 id = UUID.randomUUID().toString(),
                 tenantId = tenantId,
-                workerSetId = workerSetId,
+                hsmId = hsmId,
                 timestamp = Instant.now(),
                 masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
                     generateRandomShortAlias()
@@ -165,7 +165,7 @@ class HSMStoreImpl @Activate constructor(
             category = category,
             masterKeyAlias = hsmAssociation.masterKeyAlias,
             aliasSecret = hsmAssociation.aliasSecret,
-            workerSetId = hsmAssociation.workerSetId,
+            hsmId = hsmAssociation.hsmId,
             deprecatedAt = deprecatedAt
         )
 

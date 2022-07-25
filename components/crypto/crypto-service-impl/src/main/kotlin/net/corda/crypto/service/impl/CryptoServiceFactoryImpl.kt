@@ -16,8 +16,8 @@ import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoWorkerSetConfig
 import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
-import net.corda.crypto.config.impl.workerSet
-import net.corda.crypto.config.impl.workerSetId
+import net.corda.crypto.config.impl.hsm
+import net.corda.crypto.config.impl.hsmId
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -93,8 +93,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
         impl.findInstance(tenantId, category)
 
-    override fun getInstance(workerSetId: String): CryptoService =
-        impl.getInstance(workerSetId)
+    override fun getInstance(hsmId: String): CryptoService =
+        impl.getInstance(hsmId)
 
     class Impl(
         event: ConfigChangedEvent,
@@ -102,7 +102,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val cryptoServiceProvider: CryptoServiceProvider<Any>
     ) : DownstreamAlwaysUpAbstractImpl() {
 
-        private val workerSetId: String
+        private val hsmId: String
 
         private val cryptoConfig: SmartConfig
 
@@ -110,8 +110,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         init {
             cryptoConfig = event.config.toCryptoConfig()
-            workerSetId = cryptoConfig.workerSetId()
-            workerSetConfig = cryptoConfig.workerSet(workerSetId)
+            hsmId = cryptoConfig.hsmId()
+            workerSetConfig = cryptoConfig.hsm(hsmId)
             if(workerSetConfig.hsm.name != cryptoServiceProvider.name) {
                 throw FatalActivationException(
                     "Expected to handle ${workerSetConfig.hsm.name} but provided with ${cryptoServiceProvider.name}."
@@ -137,9 +137,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
             logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
             val association = hsmRegistrar.findAssignedHSM(tenantId, category)
                 ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
-            if(association.workerSetId != workerSetId) {
+            if(association.hsmId != hsmId) {
                 throw IllegalStateException(
-                    "This workerSet=$workerSetId is not configured to handle tenant=$tenantId " +
+                    "This hsmId=$hsmId is not configured to handle tenant=$tenantId " +
                             "with category=$category and association=$association"
                 )
             }
@@ -149,16 +149,16 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 category = association.category,
                 masterKeyAlias = association.masterKeyAlias,
                 aliasSecret = association.aliasSecret,
-                workerSetId = association.workerSetId,
+                hsmId = association.hsmId,
                 instance = cryptoService
             )
         }
 
-        fun getInstance(workerSetId: String): CryptoService {
-            logger.debug { "Getting the crypto service for workerSetId=$workerSetId)" }
-            if(workerSetId != this.workerSetId) {
+        fun getInstance(hsmId: String): CryptoService {
+            logger.debug { "Getting the crypto service for hsmId=$hsmId)" }
+            if(hsmId != this.hsmId) {
                 throw IllegalArgumentException(
-                    "The worker is not configured to handle $workerSetId, it handles ${this.workerSetId}."
+                    "The worker is not configured to handle $hsmId, it handles ${this.hsmId}."
                 )
             }
             return cryptoService

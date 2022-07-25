@@ -24,7 +24,7 @@ interface HSMStore : Lifecycle {
     fun associate(
         tenantId: String,
         category: String,
-        workerSetId: String,
+        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
     ): HSMTenantAssociation
 }

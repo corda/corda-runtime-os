@@ -18,7 +18,7 @@ class CryptoServiceRef(
     val category: String,
     val masterKeyAlias: String?,
     val aliasSecret: ByteArray?,
-    val workerSetId: String,
+    val hsmId: String,
     val instance: CryptoService
 ) {
     fun toSaveKeyContext(
@@ -33,7 +33,7 @@ class CryptoServiceRef(
                 alias = alias,
                 keyScheme = scheme,
                 category = category,
-                workerSetId = workerSetId,
+                hsmId = hsmId,
                 externalId = externalId
             )
             is GeneratedWrappedKey -> SigningWrappedKeySaveContext(
@@ -43,7 +43,7 @@ class CryptoServiceRef(
                 alias = alias,
                 keyScheme = scheme,
                 category = category,
-                workerSetId = workerSetId
+                hsmId = hsmId
             )
             else -> throw IllegalStateException("Unknown key generation response: ${key::class.java.name}")
         }

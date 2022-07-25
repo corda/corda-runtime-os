@@ -139,7 +139,7 @@ class SigningKeyStoreImpl @Activate constructor(
                         alias = context.alias,
                         hsmAlias = context.key.hsmAlias,
                         externalId = context.externalId,
-                        workerSetId = context.workerSetId,
+                        hsmId = context.hsmId,
                         status = SigningKeyEntityStatus.NORMAL
                     )
                 }
@@ -159,7 +159,7 @@ class SigningKeyStoreImpl @Activate constructor(
                         alias = context.alias,
                         hsmAlias = null,
                         externalId = context.externalId,
-                        workerSetId = context.workerSetId,
+                        hsmId = context.hsmId,
                         status = SigningKeyEntityStatus.NORMAL
                     )
                 }
@@ -269,7 +269,7 @@ class SigningKeyStoreImpl @Activate constructor(
                 externalId = externalId,
                 encodingVersion = encodingVersion,
                 timestamp = timestamp,
-                workerSetId = workerSetId,
+                hsmId = hsmId,
                 status = SigningKeyStatus.valueOf(status.name)
             )
 

@@ -55,7 +55,7 @@ class TestSigningKeyStore(
                     externalId = null,
                     encodingVersion = null,
                     timestamp = now,
-                    workerSetId = context.workerSetId,
+                    hsmId = context.hsmId,
                     status = SigningKeyStatus.NORMAL
                 )
             }
@@ -74,7 +74,7 @@ class TestSigningKeyStore(
                     externalId = context.externalId,
                     encodingVersion = context.key.encodingVersion,
                     timestamp = now,
-                    workerSetId = context.workerSetId,
+                    hsmId = context.hsmId,
                     status = SigningKeyStatus.NORMAL
                 )
             }

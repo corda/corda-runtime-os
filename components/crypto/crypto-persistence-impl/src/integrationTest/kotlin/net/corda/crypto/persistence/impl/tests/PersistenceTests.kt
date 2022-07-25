@@ -171,13 +171,13 @@ class PersistenceTests {
             masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
             deprecatedAt: Long = 0
         ): HSMCategoryAssociationEntity {
-            val workerSetId = UUID.randomUUID().toString()
+            val hsmId = UUID.randomUUID().toString()
             val associationId = UUID.randomUUID().toString()
             val categoryAssociationId = UUID.randomUUID().toString()
             val association = HSMAssociationEntity(
                 id = associationId,
                 tenantId = tenantId,
-                workerSetId = workerSetId,
+                hsmId = hsmId,
                 timestamp = Instant.now(),
                 masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
                     UUID.randomUUID().toString().toByteArray().toHex().take(30)
@@ -204,7 +204,7 @@ class PersistenceTests {
         }
 
         private fun createSigningWrappedKeySaveContext(
-            workerSetId: String,
+            hsmId: String,
             schemeCodeName: String
         ): SigningWrappedKeySaveContext {
             val keyPair = generateKeyPair(schemeCodeName)
@@ -219,12 +219,12 @@ class PersistenceTests {
                 alias = null,
                 category = CryptoConsts.Categories.CI,
                 keyScheme = schemeMetadata.findKeyScheme(schemeCodeName),
-                workerSetId = workerSetId
+                hsmId = hsmId
             )
         }
 
         private fun createSigningKeySaveContext(
-            workerSetId: String,
+            hsmId: String,
             category: String,
             schemeCodeName: String
         ): SigningPublicKeySaveContext {
@@ -238,7 +238,7 @@ class PersistenceTests {
                 category = category,
                 keyScheme = schemeMetadata.findKeyScheme(schemeCodeName),
                 externalId = UUID.randomUUID().toString(),
-                workerSetId = workerSetId
+                hsmId = hsmId
             )
         }
 
@@ -250,7 +250,7 @@ class PersistenceTests {
             assertEquals(expected.category, actual!!.category)
             assertEquals(expected.tenantId, actual.tenantId)
             assertEquals(expected.deprecatedAt, actual.deprecatedAt)
-            assertEquals(expected.hsmAssociation.workerSetId, actual.workerSetId)
+            assertEquals(expected.hsmAssociation.hsmId, actual.hsmId)
             assertEquals(expected.hsmAssociation.tenantId, actual.tenantId)
             assertEquals(expected.hsmAssociation.masterKeyAlias, actual.masterKeyAlias)
             assertArrayEquals(expected.hsmAssociation.aliasSecret, actual.aliasSecret)
@@ -276,7 +276,7 @@ class PersistenceTests {
             val now = Instant.now()
             assertTrue(actual.timestamp >= now.minusSeconds(60))
             assertTrue(actual.timestamp <= now.minusSeconds(-1))
-            assertEquals(expected.workerSetId, actual.workerSetId)
+            assertEquals(expected.hsmId, actual.hsmId)
             assertEquals(SigningKeyStatus.NORMAL, actual.status)
         }
 
@@ -300,7 +300,7 @@ class PersistenceTests {
             val now = Instant.now()
             assertTrue(actual.timestamp >= now.minusSeconds(60))
             assertTrue(actual.timestamp <= now.minusSeconds(-1))
-            assertEquals(expected.workerSetId, actual.workerSetId)
+            assertEquals(expected.hsmId, actual.hsmId)
         }
     }
 
@@ -348,7 +348,7 @@ class PersistenceTests {
             alias = UUID.randomUUID().toString(),
             hsmAlias = UUID.randomUUID().toString(),
             externalId = UUID.randomUUID().toString(),
-            workerSetId = UUID.randomUUID().toString(),
+            hsmId = UUID.randomUUID().toString(),
             status = SigningKeyEntityStatus.NORMAL
         )
         cryptoDbEmf().transaction { em ->
@@ -374,20 +374,20 @@ class PersistenceTests {
             assertEquals(entity.alias, retrieved.alias)
             assertEquals(entity.hsmAlias, retrieved.hsmAlias)
             assertEquals(entity.externalId, retrieved.externalId)
-            assertEquals(entity.workerSetId, retrieved.workerSetId)
+            assertEquals(entity.hsmId, retrieved.hsmId)
         }
     }
 
     @Test
     fun `Should persist and retrieve raw HSM related entities`() {
         val tenantId = randomTenantId()
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val associationId = UUID.randomUUID().toString()
         val categoryAssociationId = UUID.randomUUID().toString()
         val association = HSMAssociationEntity(
             id = associationId,
             tenantId = tenantId,
-            workerSetId = workerSetId,
+            hsmId = hsmId,
             timestamp = Instant.now(),
             masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
             aliasSecret = "Hello World!".toByteArray()
@@ -423,11 +423,11 @@ class PersistenceTests {
     @Test
     fun `Should fail to save HSMAssociationEntity with duplicate tenant and work set id`() {
         val tenantId = randomTenantId()
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val association1 = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
-            workerSetId = workerSetId,
+            hsmId = hsmId,
             timestamp = Instant.now(),
             masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
             aliasSecret = UUID.randomUUID().toString().toByteArray()
@@ -438,7 +438,7 @@ class PersistenceTests {
         val association2 = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
-            workerSetId = workerSetId,
+            hsmId = hsmId,
             timestamp = Instant.now(),
             masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
             aliasSecret = UUID.randomUUID().toString().toByteArray()
@@ -554,29 +554,29 @@ class PersistenceTests {
 
     @Test
     fun `Should associate tenants to categories and then retrieve them and get HSM usage`() {
-        val workerSetId1 = UUID.randomUUID().toString()
-        val workerSetId2 = UUID.randomUUID().toString()
+        val hsmId1 = UUID.randomUUID().toString()
+        val hsmId2 = UUID.randomUUID().toString()
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
         val tenantId3 = randomTenantId()
         val tenantId4 = randomTenantId()
         val tenantId5 = randomTenantId()
-        hsmStore.associate(tenantId1, CryptoConsts.Categories.LEDGER, workerSetId1, MasterKeyPolicy.NONE)
-        hsmStore.associate(tenantId2, CryptoConsts.Categories.LEDGER, workerSetId2, MasterKeyPolicy.UNIQUE)
-        hsmStore.associate(tenantId3, CryptoConsts.Categories.LEDGER, workerSetId2, MasterKeyPolicy.NONE)
-        hsmStore.associate(tenantId4, CryptoConsts.Categories.TLS, workerSetId2, MasterKeyPolicy.NONE)
-        hsmStore.associate(tenantId5, CryptoConsts.Categories.TLS, workerSetId1, MasterKeyPolicy.NONE)
+        hsmStore.associate(tenantId1, CryptoConsts.Categories.LEDGER, hsmId1, MasterKeyPolicy.NONE)
+        hsmStore.associate(tenantId2, CryptoConsts.Categories.LEDGER, hsmId2, MasterKeyPolicy.UNIQUE)
+        hsmStore.associate(tenantId3, CryptoConsts.Categories.LEDGER, hsmId2, MasterKeyPolicy.NONE)
+        hsmStore.associate(tenantId4, CryptoConsts.Categories.TLS, hsmId2, MasterKeyPolicy.NONE)
+        hsmStore.associate(tenantId5, CryptoConsts.Categories.TLS, hsmId1, MasterKeyPolicy.NONE)
         val usages = hsmStore.getHSMUsage()
         assertTrue(usages.size >= 2)
-        assertEquals(2, usages.first { it.workerSetId == workerSetId1 }.usages)
-        assertEquals(3, usages.first { it.workerSetId == workerSetId2 }.usages)
+        assertEquals(2, usages.first { it.hsmId == hsmId1 }.usages)
+        assertEquals(3, usages.first { it.hsmId == hsmId2 }.usages)
 
         val association1 = hsmStore.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER)
         assertNotNull(association1)
         assertEquals(tenantId1, association1!!.tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, association1.category)
         assertEquals(0, association1.deprecatedAt)
-        assertEquals(workerSetId1, association1.workerSetId)
+        assertEquals(hsmId1, association1.hsmId)
         assertNull(association1.masterKeyAlias)
         assertNotNull(association1.aliasSecret)
 
@@ -585,7 +585,7 @@ class PersistenceTests {
         assertEquals(tenantId2, association2!!.tenantId)
         assertEquals(CryptoConsts.Categories.LEDGER, association2.category)
         assertEquals(0, association2.deprecatedAt)
-        assertEquals(workerSetId2, association2.workerSetId)
+        assertEquals(hsmId2, association2.hsmId)
         assertNotNull(association2.masterKeyAlias)
         assertNotNull(association2.aliasSecret)
     }
@@ -640,9 +640,9 @@ class PersistenceTests {
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should fail saving same public key`(tenantId: String) {
-        val workerSetId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(workerSetId, EDDSA_ED25519_CODE_NAME)
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId, p1)
         assertThrows(PersistenceException::class.java) {
             signingKeyStore.save(tenantId, p1)
@@ -655,11 +655,11 @@ class PersistenceTests {
 
     @Test
     fun `Should save same public keys for different tenants and lookup by id for each tenant`() {
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val tenantId1 = CryptoTenants.P2P
         val tenantId2 = CryptoTenants.RPC_API
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(workerSetId, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId1, p1)
         signingKeyStore.save(tenantId2, p1)
         signingKeyStore.save(tenantId1, w1)
@@ -681,9 +681,9 @@ class PersistenceTests {
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should find existing signing keys by alias`(tenantId: String) {
-        val workerSetId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
         signingKeyStore.save(tenantId, p1)
         signingKeyStore.save(tenantId, p2)
         assertNull(signingKeyStore.find(tenantId, UUID.randomUUID().toString()))
@@ -695,15 +695,15 @@ class PersistenceTests {
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should looup existing signing keys by ids`(tenantId: String) {
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val p0 = generateKeyPair(EDDSA_ED25519_CODE_NAME).public
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(workerSetId, EDDSA_ED25519_CODE_NAME)
-        val w2 = createSigningWrappedKeySaveContext(workerSetId, ECDSA_SECP256R1_CODE_NAME)
-        val w3 = createSigningWrappedKeySaveContext(workerSetId, ECDSA_SECP256R1_CODE_NAME)
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
         signingKeyStore.save(tenantId, p1)
         signingKeyStore.save(tenantId, p2)
         signingKeyStore.save(tenantId, p3)
@@ -729,9 +729,9 @@ class PersistenceTests {
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should find existing signing keys by public keys`(tenantId: String) {
-        val workerSetId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(workerSetId, EDDSA_ED25519_CODE_NAME)
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
         signingKeyStore.save(tenantId, p1)
         signingKeyStore.save(tenantId, w1)
         assertNull(signingKeyStore.find(tenantId, generateKeyPair(EDDSA_ED25519_CODE_NAME).public))
@@ -745,14 +745,14 @@ class PersistenceTests {
     @ParameterizedTest
     @MethodSource("signingTenants")
     fun `Should do various lookups for signing keys`(tenantId: String) {
-        val workerSetId = UUID.randomUUID().toString()
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(workerSetId, EDDSA_ED25519_CODE_NAME)
-        val w2 = createSigningWrappedKeySaveContext(workerSetId, ECDSA_SECP256R1_CODE_NAME)
-        val w3 = createSigningWrappedKeySaveContext(workerSetId, ECDSA_SECP256R1_CODE_NAME)
+        val hsmId = UUID.randomUUID().toString()
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, EDDSA_ED25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(hsmId, ECDSA_SECP256R1_CODE_NAME)
         val thisTestKeys = setOf(
             p1.key.publicKey.publicKeyId(),
             p2.key.publicKey.publicKeyId(),
@@ -865,15 +865,15 @@ class PersistenceTests {
      */
     @Test
     fun `Should do paged lookups for signing keys`() {
-        val workerSetId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val tenantId = CryptoDBSetup.vNodeHoldingIdentity.id
-        val p1 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
-        val p2 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.TLS, X25519_CODE_NAME)
-        val p3 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.SESSION_INIT, X25519_CODE_NAME)
-        val p4 = createSigningKeySaveContext(workerSetId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
-        val w1 = createSigningWrappedKeySaveContext(workerSetId, X25519_CODE_NAME)
-        val w2 = createSigningWrappedKeySaveContext(workerSetId, X25519_CODE_NAME)
-        val w3 = createSigningWrappedKeySaveContext(workerSetId, X25519_CODE_NAME)
+        val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
+        val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, X25519_CODE_NAME)
+        val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, X25519_CODE_NAME)
+        val p4 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(hsmId, X25519_CODE_NAME)
         signingKeyStore.save(tenantId, p1)
         signingKeyStore.save(tenantId, p2)
         signingKeyStore.save(tenantId, p3)

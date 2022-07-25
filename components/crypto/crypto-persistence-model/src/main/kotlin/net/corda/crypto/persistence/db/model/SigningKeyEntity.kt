@@ -100,8 +100,8 @@ class SigningKeyEntity(
     @Column(name = "external_id", nullable = true, updatable = false, length = 64)
     var externalId: String?,
 
-    @Column(name = "worker_set_id", nullable = false, updatable = true, length = 36)
-    var workerSetId: String,
+    @Column(name = "hsm_id", nullable = false, updatable = true, length = 36)
+    var hsmId: String,
 
     /**
      * Defines how wrapping key should be used for each tenant.

@@ -93,11 +93,11 @@ class HSMServiceImpl @Activate constructor(
             val existing = store.findTenantAssociation(tenantId, category)
             if(existing != null) {
                 logger.warn(
-                    "The ${existing.workerSetId} HSM already assigned for tenant={}, category={}",
+                    "The ${existing.hsmId} HSM already assigned for tenant={}, category={}",
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
-                return HSMAssociationInfo(existing.workerSetId, existing.deprecatedAt)
+                return HSMAssociationInfo(existing.hsmId, existing.deprecatedAt)
             }
             val stats = workerSets.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
             val chosen = if (context.isPreferredPrivateKeyPolicy(CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
@@ -108,11 +108,11 @@ class HSMServiceImpl @Activate constructor(
             val association = store.associate(
                 tenantId = tenantId,
                 category = category,
-                workerSetId = chosen.workerSetId,
-                masterKeyPolicy = workerSets.getMasterKeyPolicy(chosen.workerSetId)
+                hsmId = chosen.hsmId,
+                masterKeyPolicy = workerSets.getMasterKeyPolicy(chosen.hsmId)
             )
             ensureWrappingKey(association)
-            return HSMAssociationInfo(association.workerSetId, association.deprecatedAt)
+            return HSMAssociationInfo(association.hsmId, association.deprecatedAt)
         }
 
         fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo {
@@ -120,20 +120,20 @@ class HSMServiceImpl @Activate constructor(
             val existing = store.findTenantAssociation(tenantId, category)
             if(existing != null) {
                 logger.warn(
-                    "The ${existing.workerSetId} HSM already assigned for tenant={}, category={}",
+                    "The ${existing.hsmId} HSM already assigned for tenant={}, category={}",
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
-                return HSMAssociationInfo(existing.workerSetId, existing.deprecatedAt)
+                return HSMAssociationInfo(existing.hsmId, existing.deprecatedAt)
             }
             val association = store.associate(
                 tenantId = tenantId,
                 category = category,
-                workerSetId = SOFT_HSM_WORKER_SET_ID,
+                hsmId = SOFT_HSM_WORKER_SET_ID,
                 masterKeyPolicy = workerSets.getMasterKeyPolicy(SOFT_HSM_WORKER_SET_ID)
             )
             ensureWrappingKey(association)
-            return HSMAssociationInfo(association.workerSetId, association.deprecatedAt)
+            return HSMAssociationInfo(association.hsmId, association.deprecatedAt)
         }
 
         fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
@@ -142,13 +142,13 @@ class HSMServiceImpl @Activate constructor(
         }
 
         private fun ensureWrappingKey(association: HSMTenantAssociation) {
-            if (workerSets.getMasterKeyPolicy(association.workerSetId) == MasterKeyPolicy.UNIQUE) {
+            if (workerSets.getMasterKeyPolicy(association.hsmId) == MasterKeyPolicy.UNIQUE) {
                 require(!association.masterKeyAlias.isNullOrBlank()) {
                     "The master key alias is not specified."
                 }
                 executor.executeWithRetry {
                     cryptoOpsClient.createWrappingKey(
-                        workerSetId = association.workerSetId,
+                        hsmId = association.hsmId,
                         failIfExists = false,
                         masterKeyAlias = association.masterKeyAlias!!,
                         context = mapOf(
