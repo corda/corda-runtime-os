@@ -28,7 +28,7 @@ class HSMAssociationEntity(
     @Column(name = "tenant_id", nullable = false, updatable = false, length = 12)
     var tenantId: String,
 
-    @JoinColumn(name = "worker_set_id", nullable = false, updatable = false)
+    @Column(name = "worker_set_id", nullable = false, updatable = false)
     var workerSetId: String,
 
     /**

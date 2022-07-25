@@ -9,6 +9,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.framework.FrameworkUtil
@@ -54,7 +55,8 @@ object CryptoDBSetup {
         )
         databaseInstaller.setupDatabase(
             cryptoDb,
-            "crypto"
+            "crypto",
+            CryptoEntities.classes
         ).close()
         databaseInstaller.setupDatabase(
             vnodeDb,
