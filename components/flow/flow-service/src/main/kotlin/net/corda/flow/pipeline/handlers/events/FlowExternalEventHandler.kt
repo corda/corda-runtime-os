@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.handlers.events
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.external.ExternalEvent
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.state.external.ExternalEventState
@@ -44,7 +45,11 @@ data class ExternalEventRequest(
 
     interface Handler<PARAMETERS : Any, RESPONSE, RESUME> {
 
-        fun suspending(checkpoint: FlowCheckpoint, requestId: String, parameters: PARAMETERS): EventRecord
+        fun suspending(
+            checkpoint: FlowCheckpoint,
+            flowExternalEventContext: ExternalEventContext,
+            parameters: PARAMETERS
+        ): EventRecord
 
         fun resuming(checkpoint: FlowCheckpoint, response: Response<RESPONSE>): RESUME
     }
@@ -252,8 +257,13 @@ class ExternalEventRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: ExternalEventRequest): FlowEventContext<Any> {
+        val flowExternalEventContext = ExternalEventContext.newBuilder()
+            .setRequestId(request.requestId)
+            .setFlowId(context.checkpoint.flowId)
+            .build()
+
         val eventRecord = externalEventHandlerMap.get(request.handlerClass.name)
-            .suspending(context.checkpoint, request.requestId, request.parameters)
+            .suspending(context.checkpoint, flowExternalEventContext, request.parameters)
 
         context.checkpoint.externalEventState = externalEventManager.processEventToSend(
             context.checkpoint.flowId,
@@ -288,7 +298,7 @@ interface ExternalEventManager {
         externalEventState: ExternalEventState,
         instant: Instant,
         config: SmartConfig
-    ): Pair<ExternalEventState, Record<*, ExternalEvent>?>
+    ): Pair<ExternalEventState, Record<*, *>?>
 }
 
 @Component(service = [ExternalEventManager::class])
@@ -308,8 +318,6 @@ class ExternalEventManagerImpl : ExternalEventManager {
     ): ExternalEventState {
         logger.debug { "Processing external event response of type ${eventRecord.payload.javaClass.name} with id $requestId" }
         val event = ExternalEvent.newBuilder()
-            .setRequestId(requestId)
-            .setFlowId(flowId)
             .setTopic(eventRecord.topic)
             .setKey(eventRecord.key ?: flowId)
             .setPayload(eventRecord.payload)
@@ -325,8 +333,6 @@ class ExternalEventManagerImpl : ExternalEventManager {
             .build()
     }
 
-    // I need the exception so that I can return an error with the correct error message to the flow
-    // either store the exception on the status (change the status to a class with an enum + nullable exception) or use the response itself
     override fun processEventReceived(
         externalEventState: ExternalEventState,
         externalEventResponse: ExternalEventResponse
@@ -384,7 +390,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
         externalEventState: ExternalEventState,
         instant: Instant,
         config: SmartConfig
-    ): Pair<ExternalEventState, Record<*, ExternalEvent>?> {
+    ): Pair<ExternalEventState, Record<*, *>?> {
         return if (isWaitingForResponse(externalEventState) && isSendWindowValid(externalEventState, instant)) {
             val eventToSend = externalEventState.eventToSend
             // Have a "sending" and "resending" log line
@@ -392,7 +398,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
             // need to handle crypto or persistence config - just have external event config that covers all
             eventToSend.timestamp = instant
             externalEventState.sendTimestamp = instant.plusMillis(config.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
-            externalEventState to Record(eventToSend.topic, eventToSend.key, eventToSend)
+            externalEventState to Record(eventToSend.topic, eventToSend.key, eventToSend.payload)
         } else {
             externalEventState to null
         }

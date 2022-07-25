@@ -7,7 +7,7 @@ import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.service.CryptoFlowOpsBusService
-import net.corda.data.flow.event.external.ExternalEvent
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -70,7 +70,7 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
     }
 
     class Impl(
-        val subscription: Subscription<String, ExternalEvent>
+        val subscription: Subscription<String, FlowOpsRequest>
     ) : AbstractImpl {
         override val downstream: DependenciesTracker =
             DependenciesTracker.Default(setOf(subscription.subscriptionName))

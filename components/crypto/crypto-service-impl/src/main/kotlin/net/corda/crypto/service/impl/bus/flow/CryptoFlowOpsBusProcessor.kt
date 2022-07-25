@@ -9,7 +9,6 @@ import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -17,9 +16,8 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType.FATAL_ERROR
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType.PLATFORM_ERROR
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType.RETRY
 import net.corda.data.flow.event.external.ExternalEventResponseExceptionEnvelope
@@ -34,7 +32,7 @@ import java.time.Instant
 class CryptoFlowOpsBusProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient,
     event: ConfigChangedEvent
-) : WireProcessor(handlers), DurableProcessor<String, ExternalEvent> {
+) : WireProcessor(handlers), DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
@@ -45,7 +43,7 @@ class CryptoFlowOpsBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
 
-    override val valueClass: Class<ExternalEvent> = ExternalEvent::class.java
+    override val valueClass = FlowOpsRequest::class.java
 
     private val config = event.config.toCryptoConfig().flowBusProcessor()
 
@@ -54,43 +52,21 @@ class CryptoFlowOpsBusProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    override fun onNext(events: List<Record<String, ExternalEvent>>): List<Record<*, *>> =
+    override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
 
     // need to convert the error responses into the external event error handling
-    private fun onNext(event: Record<String, ExternalEvent>): Record<*, *>? {
-        if (event.value == null) {
-            // We received a [null] external event therefore we do not know the flow id to respond to.
-            return null
-        }
-        val externalEvent = event.value!!
-        val request = externalEvent.payload
+    private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
+        val request = event.value
         if (request == null) {
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
-            return null
+            return null // cannot send any error back as have no idea where to send to
         }
-        if (request !is FlowOpsRequest) {
-            // maybe don't need the flow id on the event itself? as the requests are keyed by flow id anyway, so we just pull the flow id off the key
-            return Record(
-                FLOW_EVENT_TOPIC,
-                externalEvent.flowId,
-                FlowEvent(
-                    externalEvent.flowId,
-                    ExternalEventResponse.newBuilder()
-                        .setRequestId(externalEvent.requestId)
-                        .setChunkNumber(null)
-                        .setNumberOfChunks(null)
-                        .setPayload(null)
-                        .setData(null)
-                        .setExceptionEnvelope(ExternalEventResponseExceptionEnvelope(FATAL_ERROR, ExceptionEnvelope()))
-                        .setTimestamp(Instant.now())
-                        .build()
-                )
-            )
-        }
-
         
+        val flowId = request.flowExternalEventContext.flowId
+        val requestId = request.flowExternalEventContext.requestId
         val expireAt = getRequestExpireAt(request)
+        
         if (Instant.now() >= expireAt) {
             logger.error(
                 "Event {} for tenant {} is no longer valid, expired at {}",
@@ -98,27 +74,7 @@ class CryptoFlowOpsBusProcessor(
                 request.context.tenantId,
                 expireAt
             )
-            return Record(
-                FLOW_EVENT_TOPIC,
-                externalEvent.flowId,
-                FlowEvent(
-                    externalEvent.flowId,
-                    ExternalEventResponse.newBuilder()
-                        .setRequestId(externalEvent.requestId)
-                        .setChunkNumber(null)
-                        .setNumberOfChunks(null)
-                        .setPayload(null)
-                        .setData(null)
-                        .setExceptionEnvelope(
-                            ExternalEventResponseExceptionEnvelope(
-                                RETRY,
-                                ExceptionEnvelope("Expired", "Expired at $expireAt")
-                            )
-                        )
-                        .setTimestamp(Instant.now())
-                        .build()
-                )
-            )
+            return createErrorResponse(request, RETRY, "Expired", "Expired at $expireAt")
         }
         return try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
@@ -133,35 +89,15 @@ class CryptoFlowOpsBusProcessor(
                     request.context.tenantId,
                     expireAt
                 )
-                return Record(
-                    FLOW_EVENT_TOPIC,
-                    externalEvent.flowId,
-                    FlowEvent(
-                        externalEvent.flowId,
-                        ExternalEventResponse.newBuilder()
-                            .setRequestId(externalEvent.requestId)
-                            .setChunkNumber(null)
-                            .setNumberOfChunks(null)
-                            .setPayload(null)
-                            .setData(null)
-                            .setExceptionEnvelope(
-                                ExternalEventResponseExceptionEnvelope(
-                                    RETRY,
-                                    ExceptionEnvelope("Expired", "Expired at $expireAt")
-                                )
-                            )
-                            .setTimestamp(Instant.now())
-                            .build()
-                    )
-                )
+                return createErrorResponse(request, RETRY, "Expired", "Expired at $expireAt")
             }
             val result = Record(
                 FLOW_EVENT_TOPIC,
-                externalEvent.flowId,
+                flowId,
                 FlowEvent(
-                    externalEvent.flowId,
+                    flowId,
                     ExternalEventResponse.newBuilder()
-                        .setRequestId(externalEvent.requestId)
+                        .setRequestId(requestId)
                         .setChunkNumber(null)
                         .setNumberOfChunks(null)
                         .setPayload(FlowOpsResponse(createResponseContext(request), response, null))
@@ -176,27 +112,7 @@ class CryptoFlowOpsBusProcessor(
         } catch (e: Throwable) {
             val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"
             logger.error(message, e)
-            return Record(
-                FLOW_EVENT_TOPIC,
-                externalEvent.flowId,
-                FlowEvent(
-                    externalEvent.flowId,
-                    ExternalEventResponse.newBuilder()
-                        .setRequestId(externalEvent.requestId)
-                        .setChunkNumber(null)
-                        .setNumberOfChunks(null)
-                        .setPayload(null)
-                        .setData(null)
-                        .setExceptionEnvelope(
-                            ExternalEventResponseExceptionEnvelope(
-                                PLATFORM_ERROR,
-                                ExceptionEnvelope(e::class.java.name, e.message ?: e::class.java.name)
-                            )
-                        )
-                        .setTimestamp(Instant.now())
-                        .build()
-                )
-            )
+            return createErrorResponse(request, PLATFORM_ERROR, e::class.java.name, e.message ?: e::class.java.name)
         }
     }
 
@@ -209,8 +125,34 @@ class CryptoFlowOpsBusProcessor(
         }?.value?.toLong() ?: 300
     }
 
-    private fun createErrorResponse(request: FlowOpsRequest, errorType: String, errorMessage: String): FlowOpsResponse =
-        FlowOpsResponse(createResponseContext(request), CryptoNoContentValue(), ExceptionEnvelope(errorType, errorMessage))
+    private fun createErrorResponse(
+        request: FlowOpsRequest,
+        externalEventResponseErrorType: ExternalEventResponseErrorType,
+        errorType: String,
+        errorMessage: String
+    ): Record<String, FlowEvent> {
+        return Record(
+            FLOW_EVENT_TOPIC,
+            request.flowExternalEventContext.flowId,
+            FlowEvent(
+                request.flowExternalEventContext.flowId,
+                ExternalEventResponse.newBuilder()
+                    .setRequestId(request.flowExternalEventContext.requestId)
+                    .setChunkNumber(null)
+                    .setNumberOfChunks(null)
+                    .setPayload(null)
+                    .setData(null)
+                    .setExceptionEnvelope(
+                        ExternalEventResponseExceptionEnvelope(
+                            externalEventResponseErrorType,
+                            ExceptionEnvelope(errorType, errorMessage)
+                        )
+                    )
+                    .setTimestamp(Instant.now())
+                    .build()
+            )
+        )
+    }
 
     private fun createResponseContext(request: FlowOpsRequest) = CryptoResponseContext(
         request.context.requestingComponent,

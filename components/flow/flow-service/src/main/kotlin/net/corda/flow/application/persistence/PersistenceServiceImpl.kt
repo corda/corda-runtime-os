@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence
 
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
@@ -192,13 +193,17 @@ class PersistenceServiceExternalEventHandler :
 
     override fun suspending(
         checkpoint: FlowCheckpoint,
-        requestId: String,
+        flowExternalEventContext: ExternalEventContext,
         parameters: PersistenceParameters
     ): ExternalEventRequest.EventRecord {
-        log.debug { parameters.debugLog(requestId) }
+        log.debug { parameters.debugLog(flowExternalEventContext.requestId) }
         return ExternalEventRequest.EventRecord(
             Schemas.VirtualNode.ENTITY_PROCESSOR,
-            EntityRequest(checkpoint.holdingIdentity.toAvro(), parameters.request)
+            EntityRequest.newBuilder()
+                .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
+                .setRequest(parameters.request)
+                .setFlowExternalEventContext(flowExternalEventContext)
+                .build()
         )
     }
 

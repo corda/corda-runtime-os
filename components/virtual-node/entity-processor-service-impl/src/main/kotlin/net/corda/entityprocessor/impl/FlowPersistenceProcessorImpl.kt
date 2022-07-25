@@ -1,6 +1,5 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.entityprocessor.FlowPersistenceProcessor
 import net.corda.messaging.api.subscription.Subscription
@@ -11,7 +10,7 @@ import org.osgi.service.component.annotations.Component
  */
 @Component(service = [FlowPersistenceProcessor::class])
 class FlowPersistenceProcessorImpl(
-    private val subscription: Subscription<String, ExternalEvent>
+    private val subscription: Subscription<String, EntityRequest>
 ) :
     FlowPersistenceProcessor {
     override val isRunning: Boolean

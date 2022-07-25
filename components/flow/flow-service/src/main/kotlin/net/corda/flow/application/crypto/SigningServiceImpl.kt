@@ -3,7 +3,7 @@ package net.corda.flow.application.crypto
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.flow.fiber.FlowFiberService
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.pipeline.handlers.events.ExternalEventExecutor
 import net.corda.flow.pipeline.handlers.events.ExternalEventRequest
 import net.corda.flow.state.FlowCheckpoint
@@ -52,16 +52,17 @@ class CreateSignatureExternalEventHandler @Activate constructor(
 
     override fun suspending(
         checkpoint: FlowCheckpoint,
-        requestId: String,
+        flowExternalEventContext: ExternalEventContext,
         parameters: SignParameters
     ): ExternalEventRequest.EventRecord {
         val flowOpsRequest = cryptoFlowOpsTransformer.createSign(
-            requestId = requestId,
+            requestId = flowExternalEventContext.requestId,
             tenantId = checkpoint.holdingIdentity.shortHash,
             publicKey = parameters.publicKey,
             signatureSpec = parameters.signatureSpec,
             data = parameters.bytes,
-            context = emptyMap()
+            context = emptyMap(),
+            flowExternalEventContext = flowExternalEventContext
         )
         return ExternalEventRequest.EventRecord(Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, flowOpsRequest)
     }

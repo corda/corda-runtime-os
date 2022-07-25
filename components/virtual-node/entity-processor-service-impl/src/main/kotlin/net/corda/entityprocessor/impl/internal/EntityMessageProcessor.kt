@@ -47,7 +47,7 @@ class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val clock: Clock,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
-) : DurableProcessor<String, ExternalEvent> {
+) : DurableProcessor<String, EntityRequest> {
     companion object {
         private val log = contextLogger()
     }
@@ -66,39 +66,32 @@ class EntityMessageProcessor(
                         "${virtualNodeContext.holdingIdentity}"
             )
 
-    override fun onNext(events: List<Record<String, ExternalEvent>>): List<Record<*, *>> {
+    override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
         return events.mapNotNull { event ->
-            val externalEvent = event.value
-            if (externalEvent == null) {
+            val request = event.value
+            if (request == null) {
                 // We received a [null] external event therefore we do not know the flow id to respond to.
                 return@mapNotNull null
             } else {
                 val response = try {
-                    when (val payload = externalEvent.payload) {
-                        is EntityRequest -> {
-                            processRequest(event.value!!.requestId, payload)
-                        }
-                        null -> throw IllegalArgumentException(
-                            "Unexpected null request for event with the key ${event.key}, request id ${externalEvent.requestId}"
-                        )
-                        else -> throw IllegalArgumentException(
-                            "Unexpected ${payload::class.java.name} request for event with the key ${event.key}, request id " +
-                                    "${externalEvent.requestId} and content $payload"
-                        )
-                    }
+                    processRequest(request)
                 } catch (e: Exception) {
                     // If we're catching at this point, it's an unrecoverable error.
                     errorResponse(event.key, e, ExternalEventResponseErrorType.FATAL_ERROR)
                 }
-                Record(Schemas.Flow.FLOW_EVENT_TOPIC, externalEvent.flowId, FlowEvent(externalEvent.flowId, response))
+                Record(
+                    Schemas.Flow.FLOW_EVENT_TOPIC,
+                    request.flowExternalEventContext.flowId,
+                    FlowEvent(request.flowExternalEventContext.flowId, response)
+                )
             }
         }
     }
 
-    private fun processRequest(requestId: String, request: EntityRequest): ExternalEventResponse {
+    private fun processRequest(request: EntityRequest): ExternalEventResponse {
+        val requestId = request.flowExternalEventContext.requestId
         val holdingIdentity = request.holdingIdentity.toCorda()
-
         // Get the sandbox for the given request.
         // Handle any exceptions as close to the throw-site as possible.
         val sandbox = try {
@@ -220,5 +213,5 @@ class EntityMessageProcessor(
 
     override val keyClass = String::class.java
 
-    override val valueClass = ExternalEvent::class.java
+    override val valueClass = EntityRequest::class.java
 }
