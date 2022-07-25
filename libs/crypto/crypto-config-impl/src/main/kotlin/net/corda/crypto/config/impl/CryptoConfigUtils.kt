@@ -33,7 +33,7 @@ import java.util.UUID
         "downstreamMaxAttempts": 3
     },
     "hsmId": "SOFT",
-    "hsms": {
+    "hsmMap": {
         "SOFT": {
             "workerSuffix": "",
             "retry" : {
@@ -158,9 +158,9 @@ private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_SERVICE_OBJ = "hsmService"
 private const val HSM_ID = "hsmId"
-private const val HSM_MAP = "hsms"
-private const val HSM_OBJ = "hsms.%s"
-private val DEFAULT_HSM_OBJ = String.format(HSM_OBJ, SOFT_HSM_WORKER_SET_ID)
+private const val HSM_MAP = "hsmMap"
+private const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
+private val DEFAULT_HSM_OBJ = String.format(HSM_MAP_ITEM_OBJ, SOFT_HSM_WORKER_SET_ID)
 private val MASTER_WRAPPING_KEY_SALT = DEFAULT_HSM_OBJ +
         CryptoWorkerSetConfig::hsm.name +
         CryptoWorkerSetConfig.HSMConfig::cfg.name +
@@ -214,7 +214,7 @@ fun SmartConfig.hsmMap(): Map<String, CryptoWorkerSetConfig> =
     }
 
 fun SmartConfig.hsm(id: String): CryptoWorkerSetConfig {
-    val path = String.format(HSM_OBJ, id)
+    val path = String.format(HSM_MAP_ITEM_OBJ, id)
     return try {
         CryptoWorkerSetConfig(getConfig(path))
     } catch (e: Throwable) {

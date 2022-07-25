@@ -149,7 +149,7 @@ class CryptoConfigUtilsTests {
         assertEquals(PrivateKeyPolicy.WRAPPED, softWorker.hsm.categories[0].policy)
         assertEquals(MasterKeyPolicy.UNIQUE, softWorker.hsm.masterKeyPolicy)
         assertNull(softWorker.hsm.masterKeyAlias)
-        assertEquals(0, softWorker.hsm.capacity)
+        assertEquals(-1, softWorker.hsm.capacity)
         assertThat(softWorker.hsm.supportedSchemes).hasSize(8)
         assertThat(softWorker.hsm.supportedSchemes).contains(
             "CORDA.RSA",
