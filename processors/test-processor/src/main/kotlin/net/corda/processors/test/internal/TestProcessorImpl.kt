@@ -1,18 +1,18 @@
 package net.corda.processors.test.internal
 
+import net.corda.components.test.internal.TestService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.processors.test.TestProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -26,10 +26,10 @@ import org.slf4j.Logger
 class TestProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SubscriptionFactory::class)
-    subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = TestService::class)
+    private val testService: TestService
 ) : TestProcessor {
 
     private companion object {
@@ -37,7 +37,8 @@ class TestProcessorImpl @Activate constructor(
     }
 
     private val dependentComponents = DependentComponents.of(
-        ::configurationReadService
+        ::configurationReadService,
+        ::testService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<TestProcessorImpl>(::eventHandler)
