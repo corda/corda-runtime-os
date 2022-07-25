@@ -19,18 +19,19 @@ import java.util.UUID
 // refactoring, but first we need an input from the DevX team, whether this is the right approach or developers should
 // use CLI instead
 
-class PostgresDbSetup: DbSetup {
+class PostgresDbSetup(
+    private val dbUrl: String,
+    private val superUser: String,
+    private val superUserPassword: String,
+    private val dbAdmin: String,
+    private val dbAdminPassword: String,
+    private val dbName: String,
+    private val secretsSalt: String,
+    private val secretsPassphrase: String,
+): DbSetup {
     
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
-        private const val DB_HOST = "localhost"
-        private const val DB_PORT = "5432"
-        private const val DB_SUPERUSER_DEFAULT = "postgres"
-        private const val DB_SUPERUSER_PASSWORD_DEFAULT = "password"
-        private const val DB_ADMIN = "user"
-        private const val DB_ADMIN_PASSWORD = "password"
-        private const val SECRETS_SALT = "salt"
-        private const val SECRETS_PASSWORD = "password"
 
         private val changelogFiles = mapOf(
             "net/corda/db/schema/config/db.changelog-master.xml" to null,
@@ -43,22 +44,11 @@ class PostgresDbSetup: DbSetup {
         private val log = contextLogger()
     }
 
-    private val dbName by lazy {
-        System.getenv("CORDA_DEV_CLUSER_DB_NAME") ?: "cordacluster"
-    }
-
-    private val dbUrl by lazy {
-        "jdbc:postgresql://$DB_HOST:$DB_PORT/$dbName"
-    }
-
     private val dbAdminUrl by lazy {
-        "$dbUrl?user=$DB_ADMIN&password=$DB_ADMIN_PASSWORD"
+        "$dbUrl?user=$dbAdmin&password=$dbAdminPassword"
     }
 
     private val dbSuperUserUrl by lazy {
-        val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: DB_SUPERUSER_DEFAULT
-        val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: DB_SUPERUSER_PASSWORD_DEFAULT
-
         "$dbUrl?user=$superUser&password=$superUserPassword"
     }
 
@@ -94,7 +84,7 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun initDb() {
-        log.info("Create user $DB_ADMIN in $dbName in $dbSuperUserUrl.")
+        log.info("Create user $dbAdmin in $dbName in $dbSuperUserUrl.")
         DriverManager
             .getConnection(dbSuperUserUrl)
             .use { connection ->
@@ -102,10 +92,10 @@ class PostgresDbSetup: DbSetup {
                     // NOTE: this is different to the cli as this is set up to be using the official postgres image
                     //   instead of the Bitnami. The official image doesn't already have the "user" user.
                     """
-                        CREATE USER "$DB_ADMIN" WITH ENCRYPTED PASSWORD '$DB_ADMIN_PASSWORD';
-                        ALTER ROLE "$DB_ADMIN" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
-                        ALTER DATABASE "$dbName" OWNER TO "$DB_ADMIN";
-                        ALTER SCHEMA public OWNER TO "$DB_ADMIN";
+                        CREATE USER "$dbAdmin" WITH ENCRYPTED PASSWORD '$dbAdminPassword';
+                        ALTER ROLE "$dbAdmin" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
+                        ALTER DATABASE "$dbName" OWNER TO "$dbAdmin";
+                        ALTER SCHEMA public OWNER TO "$dbAdmin";
                     """.trimIndent())
             }
     }
@@ -147,7 +137,7 @@ class PostgresDbSetup: DbSetup {
 
     private fun initConfiguration(connectionName: String, username: String, password :String, jdbcUrl:String) {
         log.info("Initialise configuration for $connectionName ($jdbcUrl).")
-        val secretsService = EncryptionSecretsServiceImpl(SECRETS_PASSWORD, SECRETS_SALT)
+        val secretsService = EncryptionSecretsServiceImpl(secretsPassphrase, secretsSalt)
 
         val dbConnectionConfig = DbConnectionConfig(
             id = UUID.randomUUID(),

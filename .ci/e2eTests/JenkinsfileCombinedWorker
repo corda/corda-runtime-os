@@ -98,7 +98,7 @@ pipeline {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
                 LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 -spassphrase=password -ssalt=salt -ddatabase.user=user -ddatabase.pass=password"
+                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/${postgresDb}"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {
@@ -112,9 +112,7 @@ pipeline {
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
                 sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} -ddatabase.jdbc.url=jdbc:postgresql://${PGHOST}:${PGPORT}/${DATABASE} >> workerLogs.txt 2>&1 &
-                    procno=$!
-                    trap "kill -9 ${procno}" EXIT
+                    java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS}
                 '''
                 sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
     

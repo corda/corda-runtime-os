@@ -22,6 +22,7 @@ import net.corda.processors.member.MemberProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -65,13 +66,8 @@ class CombinedWorker @Activate constructor(
             logger.info("Quasar's instrumentation verification is enabled")
         }
 
-        PostgresDbSetup().run()
-
-        JavaSerialisationFilter.install()
-
         val params = getParams(args, CombinedWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
-        setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
@@ -84,6 +80,32 @@ class CombinedWorker @Activate constructor(
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
+        val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
+        val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
+        val dbUrl = config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL)
+            ?: "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbName = dbUrl.split("/").last().split("?").first()
+        val dbAdmin = config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER)
+            ?: "user"
+        val dbAdminPassword = config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_PASS)
+            ?: "password"
+        val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
+        val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
+
+        PostgresDbSetup(
+            dbUrl,
+            superUser,
+            superUserPassword,
+            dbAdmin,
+            dbAdminPassword,
+            dbName,
+            secretsSalt,
+            secretsPassphrase
+        ).run()
+
+        setUpHealthMonitor(healthMonitor, params.defaultParams)
+
+        JavaSerialisationFilter.install()
 
         logger.info("CONFIG = $config")
 
