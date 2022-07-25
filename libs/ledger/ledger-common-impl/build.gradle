@@ -12,4 +12,7 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-ledger-common"
+    testImplementation project(":libs:crypto:merkle")
+
+    implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
 }
