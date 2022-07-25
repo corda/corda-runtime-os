@@ -19,7 +19,6 @@ import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -62,7 +61,6 @@ class GatewayProcessorImpl @Activate constructor(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "Link manager received event $event." }
         when (event) {
             is StartEvent -> {
                 configurationReadService.start()
