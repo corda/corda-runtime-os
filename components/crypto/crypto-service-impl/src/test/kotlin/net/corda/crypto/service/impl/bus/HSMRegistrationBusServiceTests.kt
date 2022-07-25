@@ -1,15 +1,13 @@
-package net.corda.crypto.service.impl.bus.rpc
+package net.corda.crypto.service.impl.bus
 
-import net.corda.crypto.component.test.utils.reportDownComponents
+import net.corda.crypto.service.impl.bus.HSMRegistrationBusServiceImpl
 import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.service.impl.SigningServiceFactoryImpl
-import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
-import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -23,38 +21,24 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class CryptoOpsBusServiceTests {
-    companion object {
-        private val logger = contextLogger()
-    }
-
+class HSMRegistrationBusServiceTests {
     private lateinit var factory: TestServicesFactory
-    private lateinit var subscription: TestRPCSubscription<RpcOpsRequest, RpcOpsResponse>
+    private lateinit var subscription: TestRPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var component: CryptoOpsBusServiceImpl
+    private lateinit var component: HSMRegistrationBusServiceImpl
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
         subscription = TestRPCSubscription(factory.coordinatorFactory)
         subscriptionFactory = mock {
-            on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
+            on { createRPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any(), any()) } doReturn subscription
         }
-        component = CryptoOpsBusServiceImpl(
+        component = HSMRegistrationBusServiceImpl(
             factory.coordinatorFactory,
+            factory.readService,
             subscriptionFactory,
-            SigningServiceFactoryImpl(
-                factory.coordinatorFactory,
-                factory.schemeMetadata,
-                factory.signingKeyStoreProvider,
-                factory.createCryptoServiceFactory()
-            ).also {
-                it.start()
-                eventually {
-                    assertTrue(it.isRunning)
-                }
-            },
-            factory.readService
+            factory.hsmService
         )
     }
 
@@ -124,11 +108,7 @@ class CryptoOpsBusServiceTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
-            assertEquals(
-                LifecycleStatus.UP,
-                component.lifecycleCoordinator.status,
-                factory.coordinatorFactory.reportDownComponents(logger)
-            )
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertSame(subscription, component.impl.subscription)
         subscription.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)

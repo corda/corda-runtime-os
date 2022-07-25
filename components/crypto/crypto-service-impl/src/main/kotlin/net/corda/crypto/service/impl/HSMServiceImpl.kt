@@ -56,8 +56,8 @@ class HSMServiceImpl @Activate constructor(
     override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
         impl.assignHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
-        impl.assignSoftHSM(tenantId, category, context)
+    override fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo =
+        impl.assignSoftHSM(tenantId, category)
 
     override fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? =
         impl.findAssignedHSM(tenantId, category)
@@ -88,7 +88,7 @@ class HSMServiceImpl @Activate constructor(
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
             if(workerSets.isOnlySoftHSM) {
                 logger.warn("There is only SOFT HSM configured, will assign that.")
-                return assignSoftHSM(tenantId, category, context)
+                return assignSoftHSM(tenantId, category)
             }
             val existing = store.findTenantAssociation(tenantId, category)
             if(existing != null) {
@@ -108,18 +108,19 @@ class HSMServiceImpl @Activate constructor(
             val association = store.associate(
                 tenantId = tenantId,
                 category = category,
-                workerSetId = chosen.workerSetId
+                workerSetId = chosen.workerSetId,
+                masterKeyPolicy = workerSets.getMasterKeyPolicy(chosen.workerSetId)
             )
             ensureWrappingKey(association)
             return HSMAssociationInfo(association.workerSetId, association.deprecatedAt)
         }
 
-        fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
+        fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo {
             logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
             val existing = store.findTenantAssociation(tenantId, category)
             if(existing != null) {
                 logger.warn(
-                    "The ${existing.workerSetId} HSM already assigned fro tenant={}, category={}",
+                    "The ${existing.workerSetId} HSM already assigned for tenant={}, category={}",
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
@@ -128,7 +129,8 @@ class HSMServiceImpl @Activate constructor(
             val association = store.associate(
                 tenantId = tenantId,
                 category = category,
-                workerSetId = SOFT_HSM_WORKER_SET_ID
+                workerSetId = SOFT_HSM_WORKER_SET_ID,
+                masterKeyPolicy = workerSets.getMasterKeyPolicy(SOFT_HSM_WORKER_SET_ID)
             )
             ensureWrappingKey(association)
             return HSMAssociationInfo(association.workerSetId, association.deprecatedAt)

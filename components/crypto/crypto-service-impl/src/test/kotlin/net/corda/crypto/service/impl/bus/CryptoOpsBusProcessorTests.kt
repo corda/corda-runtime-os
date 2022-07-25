@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.bus.rpc
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.component.test.utils.generateKeyPair
@@ -470,14 +470,14 @@ class CryptoOpsBusProcessorTests {
             KeyValuePair("reason", "Hello World!"),
             KeyValuePair(CRYPTO_TENANT_ID, tenantId)
         )
-        val configId = UUID.randomUUID().toString()
+        val workerSetId = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         val future1 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context1,
                 GenerateWrappingKeyRpcCommand(
-                    configId,
+                    workerSetId,
                     masterKeyAlias,
                     true,
                     KeyValuePairList(operationContext)

@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.bus.registration
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.core.CryptoConsts

@@ -69,16 +69,16 @@ class SigningServiceImpl(
     }
 
     override fun createWrappingKey(
-        configId: String,
+        workerSetId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
         logger.debug {
-            "createWrappingKey(configId=$configId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
+            "createWrappingKey(workerSetId=$workerSetId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
                     "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
-        cryptoServiceFactory.getInstance(configId).createWrappingKey(
+        cryptoServiceFactory.getInstance(workerSetId).createWrappingKey(
             masterKeyAlias = masterKeyAlias,
             failIfExists = failIfExists,
             context = context

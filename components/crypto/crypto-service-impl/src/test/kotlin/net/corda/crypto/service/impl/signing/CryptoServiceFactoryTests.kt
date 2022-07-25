@@ -30,7 +30,7 @@ class CryptoServiceFactoryTests {
     private lateinit var tenantId2: String
     private lateinit var tenantId3: String
     private lateinit var tenantId4: String
-    private lateinit var customHSMConfigId: String
+    private lateinit var customWorkerSetId: String
     private lateinit var factory: TestServicesFactory
     private lateinit var component: CryptoServiceFactoryImpl
 
@@ -201,7 +201,7 @@ class CryptoServiceFactoryTests {
     }
 
     @Test
-    fun `getInstance(configId) should return different instances for different HSM config id`() {
+    fun `getInstance(configId) should return different instances for different worker set id`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
             component.findInstance(tenantId, CryptoConsts.Categories.LEDGER)

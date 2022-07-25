@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.bus.registration
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -15,7 +15,6 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
@@ -44,7 +43,6 @@ class HSMRegistrationBusServiceImpl @Activate constructor(
     ),
     configKeys = setOf(
         MESSAGING_CONFIG,
-        BOOT_CONFIG,
         CRYPTO_CONFIG
     )
 ), HSMRegistrationBusService {

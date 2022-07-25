@@ -1,12 +1,15 @@
-package net.corda.crypto.service.impl.bus.configuration
+package net.corda.crypto.service.impl.bus
 
+import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
-import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationResponse
+import net.corda.crypto.service.impl.SigningServiceFactoryImpl
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -20,26 +23,38 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class HSMConfigurationBusServiceTests {
+class CryptoOpsBusServiceTests {
+    companion object {
+        private val logger = contextLogger()
+    }
+
     private lateinit var factory: TestServicesFactory
-    private lateinit var subscription: TestRPCSubscription<HSMConfigurationRequest, HSMConfigurationResponse>
+    private lateinit var subscription: TestRPCSubscription<RpcOpsRequest, RpcOpsResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var component: HSMConfigurationBusServiceImpl
+    private lateinit var component: CryptoOpsBusServiceImpl
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
         subscription = TestRPCSubscription(factory.coordinatorFactory)
         subscriptionFactory = mock {
-            on {
-                createRPCSubscription<HSMConfigurationRequest, HSMConfigurationResponse>(any(), any(), any())
-            } doReturn subscription
+            on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
         }
-        component = HSMConfigurationBusServiceImpl(
+        component = CryptoOpsBusServiceImpl(
             factory.coordinatorFactory,
-            factory.readService,
             subscriptionFactory,
-            factory.hsmService
+            SigningServiceFactoryImpl(
+                factory.coordinatorFactory,
+                factory.schemeMetadata,
+                factory.signingKeyStore,
+                factory.createCryptoServiceFactory()
+            ).also {
+                it.start()
+                eventually {
+                    assertTrue(it.isRunning)
+                }
+            },
+            factory.readService
         )
     }
 
@@ -109,7 +124,11 @@ class HSMConfigurationBusServiceTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+            assertEquals(
+                LifecycleStatus.UP,
+                component.lifecycleCoordinator.status,
+                factory.coordinatorFactory.reportDownComponents(logger)
+            )
         }
         assertSame(subscription, component.impl.subscription)
         subscription.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)

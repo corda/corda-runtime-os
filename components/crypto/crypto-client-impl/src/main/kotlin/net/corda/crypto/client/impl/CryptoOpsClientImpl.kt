@@ -255,7 +255,7 @@ class CryptoOpsClientImpl(
         context: Map<String, String>
     ) {
         logger.info(
-            "Sending '{}'(configId={},failIfExists={},masterKeyAlias={})",
+            "Sending '{}'(workerSetId={},failIfExists={},masterKeyAlias={})",
             GenerateWrappingKeyRpcCommand::class.java.simpleName,
             workerSetId,
             failIfExists,

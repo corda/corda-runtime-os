@@ -72,13 +72,13 @@ interface SigningService {
      * the wrapping key in such cases the implementation should do nothing (note that requiresWrappingKey
      * in CryptoService should return false for such implementations).
      *
-     * @param configId the HSM's configuration id which the key is generated in.
+     * @param workerSetId the HSM's configuration id which the key is generated in.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
      * the provided alias or return normally without overriding the key.
      * @param context the optional key/value operation context.
      */
     fun createWrappingKey(
-        configId: String,
+        workerSetId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>

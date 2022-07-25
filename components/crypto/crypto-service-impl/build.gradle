@@ -35,6 +35,7 @@ dependencies {
     testImplementation project(":components:crypto:crypto-component-test-utils")
 
     testImplementation project(":components:crypto:crypto-persistence-model")
+    testImplementation project(":components:crypto:crypto-softhsm-impl")
     testImplementation project(":libs:layered-property-map")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

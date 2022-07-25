@@ -1,8 +1,8 @@
-package net.corda.crypto.service.impl.bus.rpc
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.impl.config.opsBusProcessor
-import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.config.impl.opsBusProcessor
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
@@ -230,7 +230,7 @@ class CryptoOpsBusProcessor(
     ) : Handler<GenerateWrappingKeyRpcCommand> {
         override fun handle(context: CryptoRequestContext, request: GenerateWrappingKeyRpcCommand): Any {
             signingService.createWrappingKey(
-                configId = request.configId,
+                workerSetId = request.workerSetId,
                 failIfExists = request.failIfExists,
                 masterKeyAlias = request.masterKeyAlias,
                 context = request.context.items.toMap()

@@ -13,11 +13,11 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
-import net.corda.crypto.impl.config.CryptoWorkerSetConfig
-import net.corda.crypto.impl.config.toConfigurationSecrets
-import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.impl.config.workerSet
-import net.corda.crypto.impl.config.workerSetId
+import net.corda.crypto.config.impl.CryptoWorkerSetConfig
+import net.corda.crypto.config.impl.toConfigurationSecrets
+import net.corda.crypto.config.impl.toCryptoConfig
+import net.corda.crypto.config.impl.workerSet
+import net.corda.crypto.config.impl.workerSetId
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -155,7 +155,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         fun getInstance(workerSetId: String): CryptoService {
-            logger.debug { "Getting the crypto service for configId=$workerSetId)" }
+            logger.debug { "Getting the crypto service for workerSetId=$workerSetId)" }
             if(workerSetId != this.workerSetId) {
                 throw IllegalArgumentException(
                     "The worker is not configured to handle $workerSetId, it handles ${this.workerSetId}."

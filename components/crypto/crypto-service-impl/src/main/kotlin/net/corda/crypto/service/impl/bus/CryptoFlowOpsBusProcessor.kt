@@ -1,10 +1,10 @@
-package net.corda.crypto.service.impl.bus.flow
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.config.impl.flowBusProcessor
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
-import net.corda.crypto.impl.config.flowBusProcessor
-import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.ExceptionEnvelope

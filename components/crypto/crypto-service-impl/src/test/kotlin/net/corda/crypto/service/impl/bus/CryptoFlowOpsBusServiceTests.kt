@@ -1,7 +1,8 @@
-package net.corda.crypto.service.impl.bus.flow
+package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusServiceImpl
 import net.corda.crypto.service.impl.infra.TestDurableSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest

@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.bus.flow
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -15,7 +15,6 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
@@ -44,7 +43,6 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
     ),
     configKeys = setOf(
         MESSAGING_CONFIG,
-        BOOT_CONFIG,
         CRYPTO_CONFIG
     )
 ), CryptoFlowOpsBusService {

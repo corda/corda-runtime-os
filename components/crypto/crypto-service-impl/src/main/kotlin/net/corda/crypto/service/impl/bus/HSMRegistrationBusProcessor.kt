@@ -1,8 +1,8 @@
-package net.corda.crypto.service.impl.bus.registration
+package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.impl.config.hsmRegistrationBusProcessor
-import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.service.HSMService
@@ -10,6 +10,7 @@ import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
@@ -83,7 +84,7 @@ class HSMRegistrationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<AssignSoftHSMCommand> {
         override fun handle(context: CryptoRequestContext, request: AssignSoftHSMCommand): Any {
-            return hsmService.assignSoftHSM(context.tenantId, request.category, request.context.toMap())
+            return hsmService.assignSoftHSM(context.tenantId, request.category)
         }
     }
 
@@ -91,8 +92,12 @@ class HSMRegistrationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<AssignedHSMQuery> {
         override fun handle(context: CryptoRequestContext, request: AssignedHSMQuery): Any {
-            return hsmService.findAssignedHSM(context.tenantId, request.category)?.config?.info
-                ?: CryptoNoContentValue()
+            val result = hsmService.findAssignedHSM(context.tenantId, request.category)
+            return if(result == null) {
+                CryptoNoContentValue()
+            } else {
+                HSMAssociationInfo(result.workerSetId, result.deprecatedAt)
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.hsm.service
+package net.corda.crypto.service.impl
 
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -12,18 +12,17 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
-class HSMServiceImplTests {
+class HSMServiceLifecycleTests {
     private lateinit var factory: TestServicesFactory
-    private lateinit var component: HSMServiceComponent
+    private lateinit var component: HSMServiceImpl
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        component = HSMServiceComponent(
+        component = HSMServiceImpl(
             factory.coordinatorFactory,
-            factory.readService,
-            factory.hsmCacheProvider,
-            factory.schemeMetadata,
+            factory.configurationReadService,
+            factory.hsmStore,
             factory.opsProxyClient
         )
     }
@@ -32,44 +31,44 @@ class HSMServiceImplTests {
     fun `Should create ActiveImpl only after the component is up`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.impl.service
+            component.impl
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.service)
+        assertNotNull(component.impl)
     }
 
     @Test
     fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException> {
-            component.impl.service
+            component.impl
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.service)
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        assertNotNull(component.impl)
+        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.hsmStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertNotNull(component.impl.service)
+        assertNotNull(component.impl)
     }
 
     @Test
     fun `Should recreate implementation on config change`() {
         assertFalse(component.isRunning)
         assertThrows<IllegalStateException>() {
-            component.impl.service
+            component.impl
         }
         component.start()
         eventually {
@@ -77,16 +76,16 @@ class HSMServiceImplTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val originalImpl = component.impl
-        assertNotNull(component.impl.service)
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        assertNotNull(component.impl)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        factory.readService.reissueConfigChangedEvent(component.lifecycleCoordinator)
+        factory.configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
         eventually {
             assertNotSame(originalImpl, component.impl)
         }
