@@ -3,8 +3,11 @@ package net.corda.libs.virtualnode.maintenance.endpoints.v1
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
 
 /**
  * Maintenance RPC operations for virtual node management.
@@ -33,4 +36,22 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         responseDescription = "The request Id calculated for a CPI upload request"
     )
     fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse
+
+    /**
+     * Updates a virtual nodes state.
+     *
+     * @throws `VirtualNodeRPCOpsServiceException` If the virtual node update request could not be published.
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpRpcPUT(
+        title = "Update virtual node state",
+        description = "Updates the state of a new virtual node.",
+        responseDescription = "The details of the updated virtual node."
+    )
+    fun updateVirtualNodeState(
+        @HttpRpcRequestBodyParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
+        newState: String
+    ): ChangeVirtualNodeStateResponse
 }

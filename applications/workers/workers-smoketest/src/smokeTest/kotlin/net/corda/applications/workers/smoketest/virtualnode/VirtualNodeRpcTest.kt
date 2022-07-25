@@ -236,6 +236,45 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(61)
+    fun `set virtual node state`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val states = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["shortHash"].textValue() to it["state"].textValue()
+            }
+
+            val vnode = states.last()
+            val oldState = vnode.second
+            val newState = "IN_MAINTENANCE"
+
+            updateVirtualNodeState(vnode.first, newState)
+
+            assertWithRetry {
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                        it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                        }["state"].textValue() == newState
+                }
+            }
+
+            updateVirtualNodeState(vnode.first, oldState)
+
+            assertWithRetry {
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                        it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                        }["state"].textValue() == oldState
+                }
+            }
+        }
+    }
+
+    @Test
     @Order(80)
     fun `can force upload same CPI`() {
         cluster {

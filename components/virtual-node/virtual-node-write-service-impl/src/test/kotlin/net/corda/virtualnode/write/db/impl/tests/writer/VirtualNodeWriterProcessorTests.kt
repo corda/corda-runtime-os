@@ -104,7 +104,7 @@ class VirtualNodeWriterProcessorTests {
             holdingIdentity.toAvro(),
             cpiIdentifier,
             connectionId, connectionId, connectionId, connectionId,
-            null, -1, clock.instant()
+            null, "ACTIVE", -1, clock.instant()
         )
 
     private val vnodeCreationReq =
@@ -157,7 +157,7 @@ class VirtualNodeWriterProcessorTests {
     }
 
     private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-        on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+        on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         on { virtualNodeExists(any(), any()) }.doReturn(false)
         on { getHoldingIdentity(any()) }.doReturn(null)
     }
@@ -263,7 +263,7 @@ class VirtualNodeWriterProcessorTests {
     fun `publishes MGM member info to Kafka`() {
         val publisher = getPublisher()
         val vNodeRepo = mock<VirtualNodeEntityRepository> {
-            on { getCPIMetadata(any()) }.doReturn(cpiMetaDataWithMGM)
+            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaDataWithMGM)
         }
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -311,7 +311,7 @@ class VirtualNodeWriterProcessorTests {
     fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
         val publisher = getPublisher()
         val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -353,7 +353,8 @@ class VirtualNodeWriterProcessorTests {
                 connectionId,
                 connectionId,
                 connectionId,
-                null
+                null,
+                "ACTIVE"
             )
         )
 
@@ -411,7 +412,7 @@ class VirtualNodeWriterProcessorTests {
         )
 
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
-            whenever(getCPIMetadata(any())).thenReturn(null)
+            whenever(getCPIMetadataByChecksum(any())).thenReturn(null)
         }
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
@@ -442,7 +443,7 @@ class VirtualNodeWriterProcessorTests {
         }
 
         val entityRepository = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
             on { virtualNodeExists(any(), any()) }.doReturn(false)
             on { getHoldingIdentity(any()) }.doReturn(collisionHoldingIdentity)
         }
