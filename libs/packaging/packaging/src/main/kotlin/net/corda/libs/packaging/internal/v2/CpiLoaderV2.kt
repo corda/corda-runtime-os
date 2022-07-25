@@ -36,7 +36,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
         val hash = calculateHash(cpiBytes)
 
         // Read CPI
-        JarInputStream(cpiBytes.inputStream(), false).use { jarInputStream ->
+        JarInputStream(cpiBytes.inputStream()).use { jarInputStream ->
 
             val cpiEntries = readJar(jarInputStream)
 
@@ -50,9 +50,9 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
             return CpiImpl(
                 CpiMetadata(
                     cpiId = CpiIdentifier(
-                        mainAttributes.getValue(PackagingConstants.CPB_NAME_ATTRIBUTE)
+                        mainAttributes.getValue(PackagingConstants.CPI_NAME_ATTRIBUTE)
                             ?: throw PackagingException("CPI name missing from manifest"),
-                        mainAttributes.getValue(PackagingConstants.CPB_VERSION_ATTRIBUTE)
+                        mainAttributes.getValue(PackagingConstants.CPI_VERSION_ATTRIBUTE)
                             ?: throw PackagingException("CPI version missing from manifest"),
                         groupPolicy.entry.certificates.asSequence().certSummaryHash()
                     ),
@@ -72,9 +72,10 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
         return md.digest()
     }
 
-    private fun readCpb(cpb: InputStream, expansionLocation: Path, cpiLocation: String?): Sequence<Cpk> {
+    private fun readCpb(cpb: InputStream, expansionLocation: Path, cpiLocation: String?): List<Cpk> {
         return JarInputStream(cpb, false).use { cpbInputStream ->
             readJar(cpbInputStream)
+                .filter { it.entry.name.endsWith(".jar") }
                 .map {
                     CpkReader.readCpk(
                         it.bytes.inputStream(),

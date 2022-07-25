@@ -36,7 +36,7 @@ class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
     private fun isCpk(entry: JarReader.Entry): Boolean {
         return entry.name.let {
             it.indexOf('/') == -1 &&
-            it.endsWith(CPK_FILE_EXTENSION, ignoreCase = true)
+            it.endsWith(".jar", ignoreCase = true)
         }
     }
 

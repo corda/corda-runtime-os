@@ -18,8 +18,8 @@ class TestCpbV2Builder {
     var policy = "{\"groupId\":\"test\"}"
         private set
     var cpks = arrayOf<TestCpkV2Builder>(
-            TestCpkV2Builder().name("testCpk1-1.0.0.0.cpk").bundleName("test.cpk1").bundleVersion("1.0.0.0"),
-            TestCpkV2Builder().name("testCpk2-2.0.0.0.cpk").bundleName("test.cpk2").bundleVersion("2.0.0.0")
+            TestCpkV2Builder().name("testCpk1-1.0.0.0.jar").bundleName("test.cpk1").bundleVersion("1.0.0.0"),
+            TestCpkV2Builder().name("testCpk2-2.0.0.0.jar").bundleName("test.cpk2").bundleVersion("2.0.0.0")
                 .dependencies(TestUtils.Dependency("test.cpk1", "1.0.0.0"))
         )
         private set

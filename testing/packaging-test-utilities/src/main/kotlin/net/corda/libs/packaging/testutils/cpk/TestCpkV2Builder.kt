@@ -12,7 +12,7 @@ const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
 const val CPK_BUNDLE_VERSION_ATTRIBUTE = "Bundle-Version"
 
 class TestCpkV2Builder {
-    var name = "testCpkV2-1.0.0.0.cpk"
+    var name = "testCpkV2-1.0.0.0.jar"
         private set
     var bundleName = "test.cpk"
         private set

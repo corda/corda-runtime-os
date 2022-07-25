@@ -49,6 +49,8 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:packaging-test-utilities")
 
     // TODO:  We're pulling in some code (flows) from corda5 dev preview to build test cpks for our tests.
     // TODO:  This should be re-visited when more of the cordapp APIs are imported into this repo.
