@@ -59,6 +59,7 @@ class CombinedWorker @Activate constructor(
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
+    @Suppress("ComplexMethod")
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
 
