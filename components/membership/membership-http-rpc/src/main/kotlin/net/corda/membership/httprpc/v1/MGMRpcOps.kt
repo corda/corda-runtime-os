@@ -9,8 +9,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
  * MGM RPC operations within a group.
  */
 @HttpRpcResource(
-    name = "MGMRpcOps",
-    description = "Membership Group Management APIs",
+    name = "MGM API",
+    description = "Membership Group Management endpoints.",
     path = "mgm"
 )
 interface MGMRpcOps : RpcOps {

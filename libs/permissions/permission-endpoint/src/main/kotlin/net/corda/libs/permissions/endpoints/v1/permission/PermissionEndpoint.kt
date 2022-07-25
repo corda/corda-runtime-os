@@ -10,11 +10,11 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermission
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 
 /**
- * Permission endpoint exposes HTTP endpoints for management of Permissions in the RBAC permission system.
+ * Permission endpoint exposes functionality for management of Permissions in the RBAC permission system.
  */
 @HttpRpcResource(
-    name = "PermissionEndpoint",
-    description = "Permissions Management APIs",
+    name = "RBAC Permission API",
+    description = "Role Based Access Control Permissions Management endpoints.",
     path = "permission"
 )
 interface PermissionEndpoint : RpcOps {

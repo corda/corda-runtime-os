@@ -16,8 +16,8 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
  * User endpoint exposes HTTP endpoints for management of Users in the RBAC permission system.
  */
 @HttpRpcResource(
-    name = "UserEndpoint",
-    description = "User Management APIs",
+    name = "RBAC User API",
+    description = "Role Based Access Control User Management endpoints.",
     path = "user"
 )
 interface UserEndpoint : RpcOps {

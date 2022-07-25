@@ -13,8 +13,8 @@ import net.corda.libs.configuration.SmartConfig
 
 /** RPC operations for flow management. */
 @HttpRpcResource(
-    name = "FlowRPCOps",
-    description = "Flow management endpoints",
+    name = "Flow Management API",
+    description = "Flow management endpoints.",
     path = "flow"
 )
 interface FlowRpcOps : RpcOps {

@@ -12,8 +12,8 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
  * Some of them could be highly disruptive, so great care should be taken when using them.
  */
 @HttpRpcResource(
-    name = "VirtualNodeMaintenanceRPCOps",
-    description = "Virtual node maintenance endpoints",
+    name = "Virtual Node Maintenance API",
+    description = "Virtual node maintenance endpoints.",
     path = "maintenance/virtualnode"
 )
 interface VirtualNodeMaintenanceRPCOps : RpcOps {

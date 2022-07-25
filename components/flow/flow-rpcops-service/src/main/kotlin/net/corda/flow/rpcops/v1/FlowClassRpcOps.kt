@@ -8,8 +8,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 
 /** RPC operations for getting flow information from a vNode. */
 @HttpRpcResource(
-    name = "FlowClassRPCOps",
-    description = "Startable flow classes endpoint",
+    name = "Flow Info API",
+    description = "Startable flow classes endpoints.",
     path = "flowclass"
 )
 interface FlowClassRpcOps : RpcOps {
