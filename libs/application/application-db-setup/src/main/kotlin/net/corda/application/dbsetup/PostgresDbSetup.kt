@@ -19,6 +19,7 @@ import java.util.UUID
 // refactoring, but first we need an input from the DevX team, whether this is the right approach or developers should
 // use CLI instead
 
+@Suppress("LongParameterList")
 class PostgresDbSetup(
     private val dbUrl: String,
     private val superUser: String,
