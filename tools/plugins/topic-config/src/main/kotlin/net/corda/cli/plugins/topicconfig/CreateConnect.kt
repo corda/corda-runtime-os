@@ -66,37 +66,7 @@ class CreateConnect : Runnable {
             }
 
             if (topicConfigsToProcess.isNotEmpty()) {
-                val topics = getTopics(topicConfigsToProcess).toMutableMap()
-                println("Creating topics: ${topics.keys.joinToString { it }}")
-                val end = LocalDateTime.now().plusSeconds(wait)
-                while (true) {
-                    if (topics.isEmpty()) {
-                        break
-                    } else {
-                        if (LocalDateTime.now().isAfter(end)) {
-                            throw TimeoutException("Timed out creating topics")
-                        }
-                        val errors = mutableSetOf<ExecutionException>()
-                        client.createTopics(topics.values).values().forEach { (topic, future) ->
-                            try {
-                                future.get(wait, TimeUnit.SECONDS)
-                                println("Created topic $topic")
-                                topics.remove(topic)
-                            } catch (e: ExecutionException) {
-                                if (e.cause is TopicExistsException) {
-                                    println("Topic $topic exists - will try again")
-                                } else {
-                                    println("Failed to create topic $topic: ${e.message}")
-                                    errors.add(e)
-                                }
-                            }
-                        }
-                        if (errors.isNotEmpty()) {
-                            throw errors.first()
-                        }
-                        Thread.sleep(1000)
-                    }
-                }
+                createTopicsWithRetry(client, topicConfigsToProcess)
                 client.createAcls(getAclBindings(topicConfigsToProcess)).all().get()
             }
         } catch (e: ExecutionException) {
@@ -104,6 +74,44 @@ class CreateConnect : Runnable {
         }
 
         Thread.currentThread().contextClassLoader = contextCL
+    }
+
+    private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.TopicConfig>) {
+        val topics = getTopics(topicConfigs).toMutableMap()
+        println("Creating topics: ${topics.keys.joinToString { it }}")
+        val end = LocalDateTime.now().plusSeconds(wait)
+        while (true) {
+            if (topics.isEmpty()) {
+                break
+            } else {
+                if (LocalDateTime.now().isAfter(end)) {
+                    throw TimeoutException("Timed out creating topics")
+                }
+                createTopics(client, topics)
+                Thread.sleep(1000)
+            }
+        }
+    }
+
+    private fun createTopics(client: Admin, topics: MutableMap<String, NewTopic>) {
+        val errors = mutableSetOf<ExecutionException>()
+        client.createTopics(topics.values).values().forEach { (topic, future) ->
+            try {
+                future.get(wait, TimeUnit.SECONDS)
+                println("Created topic $topic")
+                topics.remove(topic)
+            } catch (e: ExecutionException) {
+                if (e.cause is TopicExistsException) {
+                    println("Topic $topic exists - will try again")
+                } else {
+                    println("Failed to create topic $topic: ${e.message}")
+                    errors.add(e)
+                }
+            }
+        }
+        if (errors.isNotEmpty()) {
+            throw errors.first()
+        }
     }
 
     fun getAclBindings(topicConfigs: List<Create.TopicConfig>) =
