@@ -6,6 +6,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
+import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,6 +22,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,7 +35,12 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : FlowStatusCacheService, CompactedProcessor<FlowKey, FlowStatus> {
 
+    private companion object {
+        val log = contextLogger()
+    }
+
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
+    private val flowStatusUpdateHandlers = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatusUpdateHandler>())
     private val cache = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatus>())
     private var subReg: RegistrationHandle? = null
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
@@ -75,6 +82,51 @@ class FlowStatusCacheServiceImpl @Activate constructor(
          }
     }
 
+    override fun registerFlowStatusFeed(
+        clientRequestId: String,
+        holdingIdentity: HoldingIdentity,
+        flowStatusUpdateHandler: FlowStatusUpdateHandler
+    ) {
+        val flowKey = FlowKey(clientRequestId, holdingIdentity)
+
+        val errors = validateRegistrationForFlowStatusUpdates(flowKey, holdingIdentity, clientRequestId)
+
+        if (errors.isNotEmpty()) {
+            flowStatusUpdateHandler.onError(errors)
+            return
+        }
+
+        flowStatusUpdateHandlers[flowKey] = flowStatusUpdateHandler
+    }
+
+    override fun unregisterFlowStatusFeed(clientRequestId: String, holdingIdentity: HoldingIdentity) {
+        log.info("Unregistering flow status feed ")
+        val key = FlowKey(clientRequestId, holdingIdentity)
+        flowStatusUpdateHandlers[key]?.close()
+        flowStatusUpdateHandlers.remove(key)
+    }
+
+    private fun validateRegistrationForFlowStatusUpdates(
+        flowKey: FlowKey,
+        holdingIdentity: HoldingIdentity,
+        clientRequestId: String
+    ): List<String> {
+        val errors = mutableListOf<String>()
+        if (flowStatusUpdateHandlers[flowKey] != null) {
+            errors.add(
+                "Identity $holdingIdentity has already registered for flow status feed for request $clientRequestId."
+            )
+        }
+
+        if (cache[flowKey] == null) {
+            errors.add(
+                "Cannot register for flow status updates because flow for identity $holdingIdentity and request " +
+                        "$clientRequestId does not exist."
+            )
+        }
+        return errors
+    }
+
     override fun onSnapshot(currentData: Map<FlowKey, FlowStatus>) {
         cache.clear()
 
@@ -92,8 +144,13 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     ) {
         if (newRecord.value == null) {
             cache.remove(newRecord.key)
+            // delete any listeners for this key
+            flowStatusUpdateHandlers[newRecord.key]?.close()
+            flowStatusUpdateHandlers.remove(newRecord.key)
         } else {
             cache[newRecord.key] = newRecord.value
+            // update any listeners for this key
+            flowStatusUpdateHandlers[newRecord.key]?.onFlowStatusUpdate(newRecord.value!!)
         }
     }
 

@@ -63,7 +63,12 @@ internal class WebsocketRouteAdaptor(
     }
 
     override fun handleMessage(ctx: WsMessageContext) {
-        requireNotNull(channel).onTextMessage?.let { it(ctx.message()) }
+        // todo conal - should we probably be trying handle the type of the protocol?
+        //  maybe protocol stuff come later
+        requireNotNull(channel).onTextMessage?.let {
+//            it(ctx.message())
+            it(ctx.messageAsClass(channel!!.incomingMessageType as Class<*>))
+        }
     }
 
     override fun handleError(ctx: WsErrorContext) {
