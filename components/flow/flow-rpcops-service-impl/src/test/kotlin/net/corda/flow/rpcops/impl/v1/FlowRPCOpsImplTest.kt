@@ -85,7 +85,7 @@ class FlowRPCOpsImplTest {
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(FlowStatus())
         val flowRPCOps =
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
-        flowRPCOps.getFlowStatus("", "")
+        flowRPCOps.getFlowStatus("1234567890ab", "")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -97,7 +97,7 @@ class FlowRPCOpsImplTest {
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
         val flowRPCOps =
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
-        flowRPCOps.getMultipleFlowStatus("")
+        flowRPCOps.getMultipleFlowStatus("1234567890ab")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
@@ -109,7 +109,7 @@ class FlowRPCOpsImplTest {
         val flowRPCOps =
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
         flowRPCOps.initialise(SmartConfigImpl.empty())
-        flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
+        flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -126,7 +126,7 @@ class FlowRPCOpsImplTest {
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
         }
 
         verify(virtualNodeInfoReadService, times(0)).getByHoldingIdentityShortHash(any())
@@ -145,7 +145,7 @@ class FlowRPCOpsImplTest {
 
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(mock())
         assertThrows<ResourceAlreadyExistsException> {
-            flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -164,7 +164,7 @@ class FlowRPCOpsImplTest {
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow("", StartFlowParameters("", "", ""))
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())

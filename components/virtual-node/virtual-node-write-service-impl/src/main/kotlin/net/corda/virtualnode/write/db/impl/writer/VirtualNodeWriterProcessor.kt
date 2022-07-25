@@ -451,7 +451,7 @@ internal class VirtualNodeWriterProcessor(
             instant,
             VirtualNodeCreateResponse(
                 holdingIdentity.x500Name.toString(), cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
-                holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.shortHash,
+                holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.shortHash.value,
                 dbConnections.vaultDdlConnectionId?.toString(),
                 dbConnections.vaultDmlConnectionId.toString(),
                 dbConnections.cryptoDdlConnectionId?.toString(),

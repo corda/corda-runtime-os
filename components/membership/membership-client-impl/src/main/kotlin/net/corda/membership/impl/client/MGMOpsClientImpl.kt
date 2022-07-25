@@ -29,12 +29,13 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
+import java.util.UUID
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(
@@ -164,8 +165,9 @@ class MGMOpsClientImpl @Activate constructor(
     ) : InnerMGMOpsClient {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
 
-            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw CordaRuntimeException ("Could not find holding identity associated with member.")
+            val holdingIdentity =
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(holdingIdentityShortHash))?.holdingIdentity
+                    ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 

@@ -43,6 +43,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
 import net.corda.test.util.time.TestClock
+import net.corda.virtualnode.ShortHash
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -50,7 +51,8 @@ import kotlin.test.assertFailsWith
 class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
-        private const val HOLDING_IDENTITY_STRING = "test"
+        private val HOLDING_IDENTITY_STRING = "1234567890ab"
+        private val BAD_HOLDING_IDENTITY = ShortHash.of("deaddeaddead")
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
@@ -162,7 +164,7 @@ class MemberLookupRpcOpsTest {
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getByHoldingIdentityShortHash(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),
@@ -309,7 +311,7 @@ class MemberLookupRpcOpsTest {
     fun `lookup should fail when non-existent holding identity is used`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRpcOps.lookup("failingTest") }
+        val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRpcOps.lookup(BAD_HOLDING_IDENTITY.value) }
         assertTrue(ex.message.contains("holding identity"))
         memberLookupRpcOps.deactivate("")
         memberLookupRpcOps.stop()
@@ -317,7 +319,7 @@ class MemberLookupRpcOpsTest {
 
     @Test
     fun `exception should be thrown when service is not running`() {
-        val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRpcOps.lookup("failingTest") }
+        val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRpcOps.lookup(BAD_HOLDING_IDENTITY.value) }
         assertTrue(ex.message.contains("MemberLookupRpcOpsImpl"))
     }
 }

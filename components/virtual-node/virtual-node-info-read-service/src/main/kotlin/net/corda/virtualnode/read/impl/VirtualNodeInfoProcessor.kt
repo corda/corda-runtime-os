@@ -4,6 +4,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -121,7 +122,8 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
         virtualNodeInfoMap.get(holdingIdentity.toAvro())?.toCorda()
 
-    fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoMap.getById(id)?.toCorda()
+    fun getById(holdingIdShortHash: ShortHash): VirtualNodeInfo? =
+        virtualNodeInfoMap.getById(holdingIdShortHash)?.toCorda()
 
     fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {
         lock.withLock {
