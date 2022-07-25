@@ -14,22 +14,50 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.osgi.framework.BundleContext
+import org.osgi.framework.FrameworkUtil
 import java.time.Duration
 
-class TestDependenciesTracker(
-    coordinatorName: LifecycleCoordinatorName,
-    coordinatorFactory: LifecycleCoordinatorFactory,
+class TestDependenciesTracker private constructor(
+    myName: LifecycleCoordinatorName,
+    val coordinatorFactory: LifecycleCoordinatorFactory,
     private val lifecycleRegistry: LifecycleRegistry,
+    val components: Map<Class<out Lifecycle>, Lifecycle>,
     private val dependencies: Set<LifecycleCoordinatorName>
 ) : Lifecycle, AutoCloseable {
     companion object {
         private val logger = contextLogger()
+
+        fun create(myName: LifecycleCoordinatorName, dependencies: Set<Class<out Lifecycle>>): TestDependenciesTracker {
+            val bundleContext = FrameworkUtil.getBundle(this::class.java.classLoader).get().bundleContext
+            val components = mutableMapOf<Class<out Lifecycle>, Lifecycle>()
+            val names = mutableSetOf<LifecycleCoordinatorName>()
+            dependencies.forEach { clazz ->
+                components[clazz] = bundleContext.getComponent(clazz).also { it.start() }
+                names.add(LifecycleCoordinatorName(clazz.name))
+            }
+            return TestDependenciesTracker(
+                myName = myName,
+                coordinatorFactory = bundleContext.getComponent(),
+                lifecycleRegistry = bundleContext.getComponent(),
+                components = components,
+                dependencies = names
+            ).also { it.start() }
+        }
+
+        private fun BundleContext.getComponent(clazz: Class<out Lifecycle>): Lifecycle {
+            val ref = getServiceReference(clazz)
+            return getService(ref)
+        }
     }
+
+    inline fun <reified T: Lifecycle> component(): T =
+        components[T::class.java] as? T ?: throw IllegalArgumentException("Component ${T::class.java} is not a dependency")
 
     @Volatile
     private var registrationHandle: RegistrationHandle? = null
 
-    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, ::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

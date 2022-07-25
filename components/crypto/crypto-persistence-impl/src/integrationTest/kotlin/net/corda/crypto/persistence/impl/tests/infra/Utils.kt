@@ -4,13 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.toAvro
-import java.util.UUID
+import org.osgi.framework.BundleContext
 
 private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
@@ -35,12 +29,10 @@ private const val BOOT_CONFIGURATION = """
         bus.busType = INMEMORY
     """
 
-val vNodeHoldingIdentity = HoldingIdentity(
-    "CN=Alice, O=Alice Corp, L=LDN, C=GB",
-    UUID.randomUUID().toString()
-)
-
-lateinit var connectionIds: Map<String, UUID>
+inline fun <reified T> BundleContext.getComponent(): T {
+    val ref = getServiceReference(T::class.java)
+    return getService(ref)
+}
 
 fun makeMessagingConfig(boostrapConfig: SmartConfig): SmartConfig =
     boostrapConfig.factory.create(

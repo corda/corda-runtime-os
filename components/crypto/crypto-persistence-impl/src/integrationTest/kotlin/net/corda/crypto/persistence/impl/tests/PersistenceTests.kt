@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.impl.tests
 
-import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
@@ -14,7 +13,6 @@ import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
@@ -22,36 +20,23 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.impl.tests.infra.connectionIds
+import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.makeBootstrapConfig
 import net.corda.crypto.persistence.impl.tests.infra.makeMessagingConfig
-import net.corda.crypto.persistence.impl.tests.infra.vNodeHoldingIdentity
 import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.persistence.wrapping.WrappingKeyStore
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DatabaseInstaller
-import net.corda.db.testkit.TestDbInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.libs.configuration.datamodel.ConfigurationEntities
-import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas
@@ -92,37 +77,13 @@ class PersistenceTests {
         private val CLIENT_ID = "${PersistenceTests::class.java}-integration-test"
 
         @InjectService(timeout = 5000)
-        lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
-
-        @InjectService(timeout = 5000)
-        lateinit var lbm: LiquibaseSchemaMigrator
-
-        @InjectService(timeout = 5000)
-        lateinit var entitiesRegistry: JpaEntitiesRegistry
-
-        @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
 
         @InjectService(timeout = 5000)
         lateinit var schemeMetadata: CipherSchemeMetadata
 
-        @InjectService(timeout = 5000)
-        lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-
-        @InjectService(timeout = 5000L)
-        lateinit var lifecycleRegistry: LifecycleRegistry
-
         @InjectService(timeout = 5000L)
         lateinit var publisherFactory: PublisherFactory
-
-        @InjectService(timeout = 5000)
-        lateinit var configurationReadService: ConfigurationReadService
-
-        @InjectService(timeout = 5000)
-        lateinit var dbConnectionManager: DbConnectionManager
-
-        @InjectService(timeout = 5000)
-        lateinit var vnodeInfo: VirtualNodeInfoReadService
 
         @InjectService(timeout = 5000)
         lateinit var cryptoConnectionsFactory: CryptoConnectionsFactory
@@ -136,23 +97,13 @@ class PersistenceTests {
         @InjectService(timeout = 5000)
         lateinit var wrappingKeyStore: WrappingKeyStore
 
-        private val clusterDb = TestDbInfo.createConfig()
-
-        private val cryptoDb = TestDbInfo(
-            name = CordaDb.Crypto.persistenceUnitName,
-            schemaName = DbSchema.CRYPTO
-        )
-
-        private val vnodeDb = TestDbInfo(
-            name = "vnode_crypto_${vNodeHoldingIdentity.id}",
-            schemaName = "vnode_crypto"
-        )
-
         private lateinit var publisher: Publisher
+
+        private lateinit var tracker: TestDependenciesTracker
 
         private val boostrapConfig = makeBootstrapConfig(
             mapOf(
-                BootConfig.BOOT_DB_PARAMS to clusterDb.config
+                BootConfig.BOOT_DB_PARAMS to CryptoDBSetup.clusterDb.config
             )
         )
 
@@ -162,64 +113,10 @@ class PersistenceTests {
         @BeforeAll
         fun setup() {
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
-            setupDatabases()
+            CryptoDBSetup.setup()
             setupConfiguration()
             setupDependencies()
             waitForVirtualNodeInfoReady()
-        }
-
-        private fun setupDatabases() {
-            val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            val configEmf = databaseInstaller.setupClusterDatabase(
-                clusterDb,
-                "config",
-                ConfigurationEntities.classes
-            )
-            databaseInstaller.setupDatabase(
-                cryptoDb,
-                "crypto"
-            ).close()
-            databaseInstaller.setupDatabase(
-                vnodeDb,
-                "vnode-crypto",
-                CryptoEntities.classes
-            ).close()
-            connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
-            configEmf.close()
-        }
-
-        private fun addDbConnectionConfigs(
-            configEmf: EntityManagerFactory,
-            vararg dbs: TestDbInfo
-        ): Map<String, UUID> {
-            val ids = mutableMapOf<String, UUID>()
-            dbs.forEach { db ->
-                val configAsString = db.config.root().render(ConfigRenderOptions.concise())
-                configEmf.transaction {
-                    val existing = it.createQuery("""
-                        SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
-                    """.trimIndent(), DbConnectionConfig::class.java)
-                        .setParameter("name", db.name)
-                        .setParameter("privilege", DbPrivilege.DML)
-                        .resultList
-                    ids[db.name] = if(existing.isEmpty()) {
-                        val record = DbConnectionConfig(
-                            UUID.randomUUID(),
-                            db.name,
-                            DbPrivilege.DML,
-                            Instant.now(),
-                            "sa",
-                            "Test ${db.name}",
-                            configAsString
-                        )
-                        it.persist(record)
-                        record.id
-                    } else {
-                        existing.first().id
-                    }
-                }
-            }
-            return ids
         }
 
         private fun setupConfiguration() {
@@ -227,13 +124,13 @@ class PersistenceTests {
                 KeyCredentials("passphrase", "salt")
             ) .root().render()
             val virtualNodeInfo = VirtualNodeInfo(
-                holdingIdentity = vNodeHoldingIdentity,
+                holdingIdentity = CryptoDBSetup.vNodeHoldingIdentity,
                 cpiIdentifier = CpiIdentifier(
                     name = "cpi",
                     version = "1",
                     signerSummaryHash = null
                 ),
-                cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
+                cryptoDmlConnectionId = CryptoDBSetup.connectionId(CryptoDBSetup.vnodeDb.name),
                 vaultDmlConnectionId = UUID.randomUUID(),
                 timestamp = Instant.now()
             )
@@ -269,58 +166,50 @@ class PersistenceTests {
         }
 
         private fun setupDependencies() {
-            configurationReadService.start()
-            configurationReadService.bootstrapConfig(boostrapConfig)
-            dbConnectionManager.start()
-            dbConnectionManager.bootstrap(boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS))
-            vnodeInfo.start()
-            cryptoConnectionsFactory.start()
-            hsmStore.start()
-            signingKeyStore.start()
-            wrappingKeyStore.start()
-            val tracker = TestDependenciesTracker(
+            tracker = TestDependenciesTracker.create(
                 LifecycleCoordinatorName.forComponent<PersistenceTests>(),
-                coordinatorFactory,
-                lifecycleRegistry,
                 setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
-                    LifecycleCoordinatorName.forComponent<CryptoConnectionsFactory>(),
-                    LifecycleCoordinatorName.forComponent<HSMStore>(),
-                    LifecycleCoordinatorName.forComponent<SigningKeyStore>(),
-                    LifecycleCoordinatorName.forComponent<HSMStore>(),
+                    ConfigurationReadService::class.java,
+                    DbConnectionManager::class.java,
+                    VirtualNodeInfoReadService::class.java,
+                    CryptoConnectionsFactory::class.java,
+                    HSMStore::class.java,
+                    SigningKeyStore::class.java,
+                    HSMStore::class.java
                 )
-            ).also { it.start() }
+            )
+            tracker.component<ConfigurationReadService>().bootstrapConfig(boostrapConfig)
+            tracker.component<DbConnectionManager>().bootstrap(boostrapConfig.getConfig(BootConfig.BOOT_DB_PARAMS))
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
         }
 
         private fun waitForVirtualNodeInfoReady() {
             eventually {
-                val info = vnodeInfo.get(vNodeHoldingIdentity)
+                val info =  tracker.component<VirtualNodeInfoReadService>().get(CryptoDBSetup.vNodeHoldingIdentity)
                 assertNotNull(info)
-                assertEquals(connectionIds.getValue(vnodeDb.name), info!!.cryptoDmlConnectionId)
+                assertEquals(CryptoDBSetup.connectionId(CryptoDBSetup.vnodeDb.name), info!!.cryptoDmlConnectionId)
             }
         }
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
-        fun cryptoEmf(): EntityManagerFactory = cryptoConnectionsFactory.getEntityManagerFactory(
-            CryptoTenants.CRYPTO
+        private fun emf(tenant: String): EntityManagerFactory = cryptoConnectionsFactory.getEntityManagerFactory(
+            tenant
         )
-    }
 
-    private fun generateKeyPair(schemeName: String): KeyPair {
-        val scheme = schemeMetadata.findKeyScheme(schemeName)
-        val keyPairGenerator = KeyPairGenerator.getInstance(
-            scheme.algorithmName,
-            schemeMetadata.providers.getValue(scheme.providerName)
-        )
-        if (scheme.algSpec != null) {
-            keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
-        } else if (scheme.keySize != null) {
-            keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
+        private fun generateKeyPair(schemeName: String): KeyPair {
+            val scheme = schemeMetadata.findKeyScheme(schemeName)
+            val keyPairGenerator = KeyPairGenerator.getInstance(
+                scheme.algorithmName,
+                schemeMetadata.providers.getValue(scheme.providerName)
+            )
+            if (scheme.algSpec != null) {
+                keyPairGenerator.initialize(scheme.algSpec, schemeMetadata.secureRandom)
+            } else if (scheme.keySize != null) {
+                keyPairGenerator.initialize(scheme.keySize!!, schemeMetadata.secureRandom)
+            }
+            return keyPairGenerator.generateKeyPair()
         }
-        return keyPairGenerator.generateKeyPair()
     }
 
     private fun createAndPersistHSMEntities(
@@ -344,7 +233,7 @@ class PersistenceTests {
             },
             aliasSecret = "Hello World!".toByteArray()
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(association)
         }
         val categoryAssociation = HSMCategoryAssociationEntity(
@@ -355,7 +244,7 @@ class PersistenceTests {
             timestamp = Instant.now(),
             deprecatedAt = deprecatedAt
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(categoryAssociation)
         }
         return categoryAssociation
@@ -470,10 +359,10 @@ class PersistenceTests {
             algorithmName = "AES",
             keyMaterial = generateKeyPair(EDDSA_ED25519_CODE_NAME).public.encoded
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(entity)
         }
-        cryptoEmf().use { em ->
+        emf(CryptoTenants.CRYPTO).use { em ->
             val retrieved = em.find(WrappingKeyEntity::class.java, entity.alias)
             assertNotNull(retrieved)
             assertEquals(entity.alias, retrieved.alias)
@@ -508,10 +397,10 @@ class PersistenceTests {
             workerSetId = UUID.randomUUID().toString(),
             status = SigningKeyEntityStatus.NORMAL
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(entity)
         }
-        cryptoEmf().use { em ->
+        emf(CryptoTenants.CRYPTO).use { em ->
             val retrieved = em.find(
                 SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
                     tenantId = tenantId,
@@ -552,7 +441,7 @@ class PersistenceTests {
             masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
             aliasSecret = "Hello World!".toByteArray()
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(association)
         }
         val categoryAssociation = HSMCategoryAssociationEntity(
@@ -563,10 +452,10 @@ class PersistenceTests {
             timestamp = Instant.now(),
             deprecatedAt = 0
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(categoryAssociation)
         }
-        cryptoEmf().use { em ->
+        emf(CryptoTenants.CRYPTO).use { em ->
             val retrieved = em.find(HSMCategoryAssociationEntity::class.java, categoryAssociationId)
             assertNotNull(retrieved)
             assertNotSame(categoryAssociation, retrieved)
@@ -593,7 +482,7 @@ class PersistenceTests {
             aliasSecret = "Hello World!".toByteArray()
         )
         assertThrows(PersistenceException::class.java) {
-            cryptoEmf().transaction { em ->
+            emf(CryptoTenants.CRYPTO).transaction { em ->
                 em.persist(association)
             }
         }
@@ -611,7 +500,7 @@ class PersistenceTests {
             timestamp = Instant.now(),
             deprecatedAt = Instant.now().toEpochMilli()
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(categoryAssociation)
         }
     }
@@ -629,7 +518,7 @@ class PersistenceTests {
             deprecatedAt = 0
         )
         assertThrows(PersistenceException::class.java) {
-            cryptoEmf().transaction { em ->
+            emf(CryptoTenants.CRYPTO).transaction { em ->
                 em.persist(categoryAssociation)
             }
         }
@@ -655,7 +544,7 @@ class PersistenceTests {
             timestamp = Instant.now(),
             deprecatedAt = 0
         )
-        cryptoEmf().transaction { em ->
+        emf(CryptoTenants.CRYPTO).transaction { em ->
             em.persist(a2)
         }
         val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
@@ -856,7 +745,7 @@ class PersistenceTests {
                 )
             )
         }
-        val mapping1 = cryptoEmf().use {
+        val mapping1 = emf(CryptoTenants.CRYPTO).use {
             getHSMCategoryMapEntities(it, configId)
         }
         assertEquals(2, mapping1.size)
@@ -878,7 +767,7 @@ class PersistenceTests {
                 )
             )
         }
-        val mapping2 = cryptoEmf().use {
+        val mapping2 = emf(CryptoTenants.CRYPTO).use {
             getHSMCategoryMapEntities(it, configId)
         }
         assertEquals(1, mapping2.size)
@@ -951,7 +840,7 @@ class PersistenceTests {
         val configId = cache.act {
             it.add(info, "{}".toByteArray())
         }
-        val config1 = cryptoEmf().use {
+        val config1 = emf(CryptoTenants.CRYPTO).use {
             it.find(HSMConfigEntity::class.java, configId)
         }
         info.id = configId // for the asser bellow to work
@@ -974,7 +863,7 @@ class PersistenceTests {
         cache.act {
             it.merge(updated, "{}".toByteArray())
         }
-        val config2 = cryptoEmf().use {
+        val config2 = emf(CryptoTenants.CRYPTO).use {
             it.find(HSMConfigEntity::class.java, updated.id)
         }
         assertEquals(configId, updated.id)
