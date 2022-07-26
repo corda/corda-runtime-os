@@ -33,7 +33,7 @@ object CryptoDBSetup {
     )
 
     val vnodeDb = TestDbInfo(
-        name = "vnode_crypto_${vNodeHoldingIdentity.id}",
+        name = "vnode_crypto_${vNodeHoldingIdentity.shortHash}",
         schemaName = "vnode_crypto"
     )
 

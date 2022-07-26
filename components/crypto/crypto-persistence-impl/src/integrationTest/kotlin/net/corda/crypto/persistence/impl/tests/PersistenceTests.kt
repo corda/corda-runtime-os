@@ -115,7 +115,7 @@ class PersistenceTests {
         }
 
         @JvmStatic
-        fun signingTenants() = CryptoTenants.allClusterTenants + CryptoDBSetup.vNodeHoldingIdentity.id
+        fun signingTenants() = CryptoTenants.allClusterTenants + CryptoDBSetup.vNodeHoldingIdentity.shortHash
 
         private fun setupDependencies() {
             tracker = TestDependenciesTracker.create(
@@ -858,7 +858,7 @@ class PersistenceTests {
     @Test
     fun `Should do paged lookups for signing keys`() {
         val hsmId = UUID.randomUUID().toString()
-        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.id
+        val tenantId = CryptoDBSetup.vNodeHoldingIdentity.shortHash
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, X25519_CODE_NAME)
         val p2 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.TLS, X25519_CODE_NAME)
         val p3 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.SESSION_INIT, X25519_CODE_NAME)
