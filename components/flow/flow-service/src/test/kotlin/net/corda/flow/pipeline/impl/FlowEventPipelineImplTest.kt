@@ -9,6 +9,7 @@ import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.Interruptable
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
@@ -33,6 +34,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
@@ -80,6 +82,7 @@ class FlowEventPipelineImplTest {
 
     private val runFlowFiberFuture = mock<FiberFuture>().apply {
         whenever(future).thenReturn(mock<Future<FlowIORequest<*>>>())
+        whenever(interruptable).thenReturn(mock<Interruptable>())
     }
 
     private val flowRunner = mock<FlowRunner>().apply {
@@ -187,6 +190,39 @@ class FlowEventPipelineImplTest {
         assertEquals(pipeline, pipeline.runOrContinue(RUN_OR_CONTINUE_TIMEOUT))
         verify(flowRunner, never()).runFlow(any(), any())
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
+    }
+
+    @Test
+    fun `runOrContinue with a failed flow`() {
+        whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Run())
+        whenever(
+            runFlowFiberFuture.future.get(
+                RUN_OR_CONTINUE_TIMEOUT,
+                TimeUnit.MILLISECONDS
+            )
+        ).thenReturn(FlowIORequest.FlowFailed(IllegalStateException()))
+        val pipeline = buildPipeline()
+        pipeline.runOrContinue(RUN_OR_CONTINUE_TIMEOUT)
+        verify(flowRunner).runFlow(any(), any())
+        verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
+        verify(checkpoint, never()).serializedFiber
+    }
+
+    @Test
+    fun `runOrContinue suffers a timeout`() {
+        whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Run())
+        whenever(
+            runFlowFiberFuture.future.get(
+                RUN_OR_CONTINUE_TIMEOUT,
+                TimeUnit.MILLISECONDS
+            )
+        ).thenThrow(TimeoutException())
+        val pipeline = buildPipeline()
+        pipeline.runOrContinue(RUN_OR_CONTINUE_TIMEOUT)
+        verify(flowRunner).runFlow(any(), any())
+        verify(runFlowFiberFuture.future).get(RUN_OR_CONTINUE_TIMEOUT, TimeUnit.MILLISECONDS)
+        verify(runFlowFiberFuture.interruptable).attemptInterrupt()
+        verify(checkpoint, never()).serializedFiber
     }
 
     @Test
