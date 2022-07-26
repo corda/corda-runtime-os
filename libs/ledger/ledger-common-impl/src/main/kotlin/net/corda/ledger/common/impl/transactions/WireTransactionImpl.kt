@@ -14,6 +14,7 @@ import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.ledger.common.transactions.PrivacySalt
+import net.corda.v5.ledger.common.transactions.WireTransaction
 
 internal const val ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
@@ -22,15 +23,18 @@ internal const val COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROV
 internal val COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
 internal val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
 
-abstract class CommonWireTransaction(
+class WireTransactionImpl(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
-    val privacySalt: PrivacySalt,
-    protected open val componentGroupLists: List<List<ByteArray>>
-){
-    val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val privacySalt: PrivacySalt,
+    override val componentGroupLists: List<List<ByteArray>>
+): WireTransaction{
+    override val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
         rootMerkleTree.root
     }
+
+    override fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
+        componentGroupLists[componentGroupId]
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
         ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME,
