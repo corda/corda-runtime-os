@@ -44,7 +44,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
             val cpb = cpiEntries.single { it.entry.name.endsWith(".cpb") }
 
             // Read CPB
-            val cpks = readCpb(cpb.bytes.inputStream(), expansionLocation, cpiLocation).toList()
+            val cpks = readCpksFromCpb(cpb.bytes.inputStream(), expansionLocation, cpiLocation).toList()
 
             val mainAttributes = jarInputStream.manifest.mainAttributes
             return CpiImpl(
@@ -72,7 +72,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
         return md.digest()
     }
 
-    private fun readCpb(cpb: InputStream, expansionLocation: Path, cpiLocation: String?): List<Cpk> {
+    private fun readCpksFromCpb(cpb: InputStream, expansionLocation: Path, cpiLocation: String?): List<Cpk> {
         return JarInputStream(cpb, false).use { cpbInputStream ->
             readJar(cpbInputStream)
                 .filter { it.entry.name.endsWith(".jar") }
