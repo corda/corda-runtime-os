@@ -1,8 +1,12 @@
 package net.corda.flow.fiber
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.data.services.ClaimResultStatus
+import net.corda.data.services.TokenClaimResult
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.services.ClaimCriteria
+import net.corda.v5.application.services.ClaimedTokens
 import net.corda.v5.base.types.MemberX500Name
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -94,4 +98,8 @@ interface FlowIORequest<out R> {
      */
     data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) :
         FlowIORequest<Unit>
+
+
+    data class TokenQuery(val criteria: ClaimCriteria, val timeoutMilliseconds: Int? = 0,) :
+        FlowIORequest<Pair<Boolean, ClaimedTokens?>>
 }
