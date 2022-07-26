@@ -13,15 +13,16 @@ import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
+import kotlin.test.assertIs
 
-internal class ConsensualTransactionBuilderImplTest{
+// TODO(deduplicate boilerplate with ConsensualTransactionBuilderImplTest)
+internal class ConsensualLedgerTransactionImplTest{
     companion object {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory
@@ -36,7 +37,13 @@ internal class ConsensualTransactionBuilderImplTest{
         class TestConsensualState(
             val testField: String,
             override val participants: List<Party>
-        ) : ConsensualState
+        ) : ConsensualState {
+            override fun equals(other: Any?): Boolean =
+                other === this ||
+                        other is TestConsensualState &&
+                        other.testField == testField &&
+                        other.participants == participants
+        }
 
         @BeforeAll
         @JvmStatic
@@ -51,67 +58,23 @@ internal class ConsensualTransactionBuilderImplTest{
             kpg.initialize(512) // Shortest possible to not slow down tests.
             testPublicKey = kpg.genKeyPair().public
 
-            testConsensualState = TestConsensualState(
-                "test",
-                listOf(PartyImpl(testMemberX500Name, testPublicKey))
-            )
+            testConsensualState = TestConsensualState("test", listOf(PartyImpl(testMemberX500Name, testPublicKey)))
         }
     }
 
     @Test
-    fun `can build a simple Transaction`() {
-        ConsensualTransactionBuilderImpl()
+    fun `ledger transaction contains the same data what it was created with`() {
+        val testTimestamp = Instant.now()
+        val wireTransaction = ConsensualTransactionBuilderImpl()
             .withMetadata(testMetadata)
-            .withTimeStamp(Instant.now())
+            .withTimeStamp(testTimestamp)
             .withConsensualState(testConsensualState)
             .build(merkleTreeFactory, digestService, secureRandom, serializer)
+        val ledgerTransaction = ConsensualLedgerTransactionImpl(wireTransaction, serializer)
+        // assertEquals(testMetadata, ledgerTransaction.metadata)
+        assertEquals(testTimestamp, ledgerTransaction.timestamp)
+        assertIs<List<ConsensualState>>(ledgerTransaction.consensualStates)
+        assertEquals(1, ledgerTransaction.consensualStates.size)
+        assertEquals(testConsensualState, ledgerTransaction.consensualStates.first())
     }
-
-    @Test
-    fun `cannot build Transaction without Metadata`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl()
-                .withTimeStamp(Instant.now())
-                .withConsensualState(testConsensualState)
-                .build(merkleTreeFactory, digestService, secureRandom, serializer)
-        }
-        assertEquals("Null metadata is not allowed", exception.message)
-    }
-
-    @Test
-    fun `cannot build Transaction without TimeStamp`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl()
-                .withMetadata(testMetadata)
-                .withConsensualState(testConsensualState)
-                .build(merkleTreeFactory, digestService, secureRandom, serializer)
-        }
-        assertEquals("Null timeStamp is not allowed", exception.message)
-    }
-
-    @Test
-    fun `cannot build Transaction without Consensual States`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl()
-                .withMetadata(testMetadata)
-                .withTimeStamp(Instant.now())
-                .build(merkleTreeFactory, digestService, secureRandom, serializer)
-        }
-        assertEquals("At least one Consensual State is required", exception.message)
-    }
-
-    @Test
-    fun `cannot build Transaction with Consensual States without participants`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl()
-                .withMetadata(testMetadata)
-                .withTimeStamp(Instant.now())
-                .withConsensualState(testConsensualState)
-                .withConsensualState(TestConsensualState("test", emptyList()))
-                .build(merkleTreeFactory, digestService, secureRandom, serializer)
-        }
-        assertEquals("All consensual states needs to have participants", exception.message)
-    }
-
-
 }
