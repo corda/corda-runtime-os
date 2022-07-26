@@ -12,7 +12,7 @@ object AnimalCreator {
         "Snoopy" to "Charlie Brown",
         "Gromit" to "Wallace",
         "Toto" to "Dorothy",
-        "Lassie" to "No owner",
+        "Lassie" to null,
         "Nipper" to "HMV",
         "Eddie" to "Martin Crane"
     )
