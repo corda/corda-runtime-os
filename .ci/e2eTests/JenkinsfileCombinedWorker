@@ -11,6 +11,26 @@ String postgresCredentialsId = 'e2e-postgresql-credentials'
 @Field
 String postgresDb = "test_${UUID.randomUUID().toString().replace("-", "")}"
 
+def checkConnection(){
+
+    def status = null
+
+    while (status != "200"){
+
+        sleep(time: 30, unit: "SECONDS")
+        try{
+            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7000/status', returnStdout: true)
+        }catch(error){
+            echo "can't connect, retrying..."
+        }
+
+        echo "${status}"
+        echo "${status.getClass()}"
+          
+    }
+
+}
+
 pipeline {
     agent {
         docker {
@@ -107,9 +127,15 @@ pipeline {
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
                 sh '''
-                    java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS}
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
+                    export PROCNO=$!
                 '''
+
+                checkConnection()    
+
                 sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
+
+                sh 'trap "kill -9 ${PROCNO}" EXIT'
     
             }
             // we need the DB credetals here also
