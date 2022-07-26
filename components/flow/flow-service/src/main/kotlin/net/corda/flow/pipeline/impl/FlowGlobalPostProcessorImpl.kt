@@ -1,17 +1,15 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.crypto.manager.CryptoManager
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.events.ExternalEventManager
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
@@ -19,15 +17,14 @@ import net.corda.v5.base.util.minutes
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
-    @Reference(service = CryptoManager::class)
-    private val cryptoManager: CryptoManager,
+    @Reference(service = ExternalEventManager::class)
+    private val externalEventManager: ExternalEventManager,
     @Reference(service = SessionManager::class)
     private val sessionManager: SessionManager,
-    @Reference(service = PersistenceManager::class)
-    private val persistenceManager: PersistenceManager,
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
@@ -45,8 +42,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         val outputRecords = getSessionEvents(context, now) +
                 getFlowMapperSessionCleanupEvents(context, now) +
-                getCryptoMessage(context, now) +
-                getPersistenceMessage(context, now) +
+                getExternalEvent(context, now) +
                 postProcessRetries(context)
 
         return context.copy(outputRecords = context.outputRecords + outputRecords)
@@ -102,44 +98,23 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     /**
-     * Check to see if any persistence message needs to be sent
-     * or resent due to no response being received within a given time period.
+     * Check to see if any external events needs to be sent or resent due to no response being received within a given time period.
      */
-    private fun getPersistenceMessage(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
+    private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
         val config = context.config
-        val persistenceState = context.checkpoint.persistenceState
-        return if (persistenceState == null) {
+        val externalEventState = context.checkpoint.externalEventState
+        return if (externalEventState == null) {
             listOf()
         } else {
-            persistenceManager.getMessageToSend(persistenceState, now, config ).let { (persistenceState, request) ->
-                if (request != null) {
-                    context.checkpoint.persistenceState = persistenceState
-                    listOf(flowRecordFactory.createEntityRequestRecord(persistenceState.requestId, request))
-                } else {
-                    listOf()
+            externalEventManager.getEventToSend(context.checkpoint.flowId, externalEventState, now, config)
+                .let { (updatedExternalEventState, record) ->
+                    if (record != null) {
+                        context.checkpoint.externalEventState = updatedExternalEventState
+                        listOf(record)
+                    } else {
+                        listOf()
+                    }
                 }
-            }
-        }
-    }
-
-    /**
-     * Check to see if any crypto message needs to be sent
-     * or resent due to no response being received within a given time period.
-     */
-    private fun getCryptoMessage(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
-        val config = context.config
-        val cryptoState = context.checkpoint.cryptoState
-        return if (cryptoState == null) {
-            listOf()
-        } else {
-            cryptoManager.getMessageToSend(cryptoState, now, config ).let { (updatedCryptoState, request) ->
-                if (request != null) {
-                    context.checkpoint.cryptoState = updatedCryptoState
-                    listOf(flowRecordFactory.createFlowOpsRequestRecord(context.checkpoint.flowId, request))
-                } else {
-                    listOf()
-                }
-            }
         }
     }
 

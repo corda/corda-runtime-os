@@ -1,10 +1,21 @@
 package net.corda.flow.application.persistence
 
+import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.EntityRequest
+import net.corda.data.persistence.EntityResponse
+import net.corda.data.persistence.FindAll
+import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.MergeEntity
+import net.corda.data.persistence.PersistEntity
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.handlers.events.ExternalEventExecutor
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.flow.pipeline.handlers.events.ExternalEventRequest
+import net.corda.flow.state.FlowCheckpoint
+import net.corda.schema.Schemas
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -12,19 +23,23 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.persistence.CordaPersistenceException
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 import java.io.NotSerializableException
-import java.util.UUID
+import java.nio.ByteBuffer
 
 @Suppress("TooManyFunctions")
 @Component(service = [PersistenceService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
 class PersistenceServiceImpl @Activate constructor(
+    @Reference(service = ExternalEventExecutor::class)
+    private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService,
+    private val flowFiberService: FlowFiberService
 ) : PersistenceService, SingletonSerializeAsToken {
 
     private companion object {
@@ -35,10 +50,9 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
-        val request = FlowIORequest.Find(UUID.randomUUID().toString(), entityClass.canonicalName, serialize(primaryKey))
-        log.debug { "Preparing to send Find query for class of type ${request.className} with id ${request.requestId} " }
-        val received = fiber.suspend(request)
-        return if (received != null) deserializeReceivedPayload(received.array(), entityClass) else null
+        return execute(FindEntity(entityClass.canonicalName, serialize(primaryKey))) {
+            "Preparing to send Find query for class of type ${entityClass.canonicalName} with id $it"
+        }?.let { deserializeReceivedPayload(it, entityClass) }
     }
 
     @Suspendable
@@ -52,13 +66,10 @@ class PersistenceServiceImpl @Activate constructor(
         return object : PagedQuery<R> {
             @Suspendable
             override fun execute(): List<R> {
-                val request = FlowIORequest.FindAll(UUID.randomUUID().toString(), entityClass.canonicalName)
-                log.debug { "Preparing to send FindAll query for class of type ${request.className} with id ${request.requestId} " }
-                val received = fiber.suspend(request)
+                val deserialized = execute(FindAll(entityClass.canonicalName)) {
+                    "Preparing to send FindAll query for class of type ${entityClass.canonicalName} with id $it"
+                }?.let { deserializeReceivedPayload(it, List::class.java) }
 
-                val deserialized = received?.let {
-                    deserializeReceivedPayload(it.array(), List::class.java)
-                }
                 if (deserialized != null) {
                     @Suppress("Unchecked_cast")
                     return deserialized as List<R>
@@ -78,11 +89,9 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
-        val entityClass = entity::class.java
-        val request = FlowIORequest.Merge(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Merge query for class of type $entityClass with id ${request.requestId} " }
-        val received = fiber.suspend(request)
-        return if (received != null) deserializeReceivedPayload(received.array(), entityClass) else null
+        return execute(MergeEntity(serialize(entity))) {
+            "Preparing to send Merge query for class of type ${entity::class.java} with id $it"
+        }?.let { deserializeReceivedPayload(it, entity::class.java) }
     }
 
     @Suspendable
@@ -92,9 +101,9 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persist(entity: Any) {
-        val request = FlowIORequest.Persist(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Persist query for class of type ${entity::class.java} with id ${request.requestId} " }
-        fiber.suspend(request)
+        execute(PersistEntity(serialize(entity))) {
+            "Preparing to send Persist query for class of type ${entity::class.java} with id $it"
+        }
     }
 
     override fun persist(entities: List<Any>) {
@@ -103,11 +112,8 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun remove(entity: Any) {
-        val entityClass = entity::class.java
-        enforceNotPrimitive(entityClass)
-        val request = FlowIORequest.Delete(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Delete query for class of type $entityClass with id ${request.requestId} " }
-        fiber.suspend(request)
+        enforceNotPrimitive(entity::class.java)
+        execute(DeleteEntity(serialize(entity))) { "Preparing to send Delete query for class of type ${entity::class.java} with id $it" }
     }
 
     @Suspendable
@@ -118,8 +124,21 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun <T : Any> query(
         queryName: String,
-        entityClass: Class<T>): ParameterisedQuery<T> {
+        entityClass: Class<T>
+    ): ParameterisedQuery<T> {
         TODO("Not yet implemented")
+    }
+
+    @Suspendable
+    private fun execute(request: Any, debugLog: (requestId: String) -> String): ByteArray? {
+        return try {
+            externalEventExecutor.execute(
+                PersistenceServiceExternalEventHandler::class.java,
+                PersistenceParameters(request, debugLog)
+            )
+        } catch (e: CordaRuntimeException) {
+            throw CordaPersistenceException(e.message ?: "Exception occurred when executing persistence operation")
+        }
     }
 
     /**
@@ -129,8 +148,8 @@ class PersistenceServiceImpl @Activate constructor(
         require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
-    private fun serialize(payload: Any): ByteArray {
-        return getSerializationService().serialize(payload).bytes
+    private fun serialize(payload: Any): ByteBuffer {
+        return ByteBuffer.wrap(getSerializationService().serialize(payload).bytes)
     }
 
     private fun <R : Any> deserializeReceivedPayload(received: ByteArray, receiveType: Class<R>): R {
@@ -142,7 +161,6 @@ class PersistenceServiceImpl @Activate constructor(
             log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
             throw e
         }
-
     }
 
     /**
@@ -160,5 +178,39 @@ class PersistenceServiceImpl @Activate constructor(
         return fiber.getExecutionContext().run {
             sandboxGroupContext.amqpSerializer
         }
+    }
+}
+
+data class PersistenceParameters(val request: Any, val debugLog: (requestId: String) -> String)
+
+@Component(service = [ExternalEventRequest.Handler::class])
+class PersistenceServiceExternalEventHandler :
+    ExternalEventRequest.Handler<PersistenceParameters, EntityResponse, ByteArray?> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    override fun suspending(
+        checkpoint: FlowCheckpoint,
+        flowExternalEventContext: ExternalEventContext,
+        parameters: PersistenceParameters
+    ): ExternalEventRequest.EventRecord {
+        log.debug { parameters.debugLog(flowExternalEventContext.requestId) }
+        return ExternalEventRequest.EventRecord(
+            Schemas.VirtualNode.ENTITY_PROCESSOR,
+            EntityRequest.newBuilder()
+                .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
+                .setRequest(parameters.request)
+                .setFlowExternalEventContext(flowExternalEventContext)
+                .build()
+        )
+    }
+
+    override fun resuming(
+        checkpoint: FlowCheckpoint,
+        response: ExternalEventRequest.Response<EntityResponse>
+    ): ByteArray? {
+        return response.data
     }
 }

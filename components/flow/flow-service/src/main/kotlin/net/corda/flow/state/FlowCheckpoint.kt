@@ -5,8 +5,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.data.flow.state.crypto.CryptoState
-import net.corda.data.flow.state.persistence.PersistenceState
+import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.serialization.checkpoint.NonSerializable
@@ -36,9 +35,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val sessions: List<SessionState>
 
-    var cryptoState: CryptoState?
-
-    var persistenceState: PersistenceState?
+    var externalEventState: ExternalEventState?
 
     val doesExist: Boolean
 
