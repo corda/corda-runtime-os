@@ -23,7 +23,7 @@ spec:
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
             '-k', '/tmp/working_dir/config.properties',
             {{- if .Values.kafka.topicPrefix }}
-            '-n', '"{{ .Values.kafka.topicPrefix }}"',
+            '-n', '{{ .Values.kafka.topicPrefix }}',
             {{- end }}
             'create',
             '-r', '{{ .Values.kafka.replicas }}',

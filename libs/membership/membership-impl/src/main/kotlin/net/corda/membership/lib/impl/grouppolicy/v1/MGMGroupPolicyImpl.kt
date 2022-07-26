@@ -3,7 +3,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.PropertyKeys
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
@@ -87,7 +87,7 @@ class MGMGroupPolicyImpl(
         override val sessionPki by lazy {
             SessionPkiMode.fromString(
                 getPersistedString(
-                    PropertyKeys.SESSION_PKI
+                    PropertyKeys.SESSION_PKI_MODE
                 )
             ) ?: NO_PKI
         }
@@ -110,7 +110,7 @@ class MGMGroupPolicyImpl(
 
         override val tlsPki by lazy {
             TlsPkiMode.fromString(
-                getPersistedString(PropertyKeys.TLS_PKI)
+                getPersistedString(PropertyKeys.TLS_PKI_MODE)
             ) ?: STANDARD
         }
         override val tlsVersion by lazy {
@@ -120,7 +120,7 @@ class MGMGroupPolicyImpl(
         }
         override val protocolMode by lazy {
             ProtocolMode.fromString(
-                getPersistedString(PropertyKeys.PROTOCOL_MODE)
+                getPersistedString(PropertyKeys.P2P_PROTOCOL_MODE)
             ) ?: AUTH_ENCRYPT
         }
     }
