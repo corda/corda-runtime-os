@@ -40,7 +40,12 @@ data class HsmInfo(
     /**
      * How to generate wrapping key on the HSM registration
      */
-    val masterKeyPolicy: MasterKeyPolicy,
+    val masterKeyPolicy: String,
+
+    /**
+     * If masterKeyPolicy=SHARED then this field must be specified with the wrapping key name
+     */
+    val masterKeyAlias: String?,
 
     /**
      * List of supported signature scheme codes.
@@ -57,11 +62,3 @@ data class HsmInfo(
      */
     val serviceName: String,
 )
-
-sealed interface MasterKeyPolicy {
-    val type: String
-        get() = javaClass.simpleName
-}
-object None : MasterKeyPolicy
-data class Shared(val alias: String) : MasterKeyPolicy
-object New : MasterKeyPolicy

@@ -4,7 +4,6 @@ import net.corda.crypto.client.hsm.HSMConfigurationClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.data.crypto.wire.hsm.HSMInfo
-import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
@@ -13,9 +12,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.HsmRpcOps
 import net.corda.membership.httprpc.v1.types.response.HsmInfo
-import net.corda.membership.httprpc.v1.types.response.New
-import net.corda.membership.httprpc.v1.types.response.None
-import net.corda.membership.httprpc.v1.types.response.Shared
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -46,12 +42,8 @@ class HsmRpcOpsImpl @Activate constructor(
                         it
                     }
                 },
-                masterKeyPolicy = when (this.masterKeyPolicy) {
-                    MasterKeyPolicy.NONE -> None
-                    MasterKeyPolicy.NEW -> New
-                    MasterKeyPolicy.SHARED -> Shared(this.masterKeyAlias)
-                    else -> None
-                },
+                masterKeyPolicy = this.masterKeyPolicy.toString(),
+                masterKeyAlias = this.masterKeyAlias,
                 createdAt = this.timestamp,
                 maxAttempts = this.maxAttempts,
                 serviceName = this.serviceName,
