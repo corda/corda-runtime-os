@@ -55,4 +55,16 @@ jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -cer
 
 # Verify a CPI
 ./corda-cli.sh package verify mycpi.cpi
+
+# Sign a CPI or CPB or CPK
+./corda-cli.sh package sign \
+    mycpb.cpb \
+    --file signed.cpb \
+    --keystore signingkeys.pfx \
+    --storepass "keystore password" \
+    --key "signing key 1" \
+    --tsa https://freetsa.org/tsr
+
+# Check a CPI or CPB or CPK jarsigner signatures
+jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify signed.cpb
 ```

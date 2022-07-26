@@ -22,7 +22,9 @@ class CreateCpbTest {
 
     private val app = CreateCpb()
 
-    companion object {
+    internal companion object {
+        const val CREATED_CPB_NAME = "cpb-test-outcome.cpb"
+
         private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
             ?: error("signingkeys.pfx not found"))
     }
@@ -57,7 +59,7 @@ class CreateCpbTest {
             )
         )
 
-        val outcomeCpb = Path.of("$tempDir/cpb-test-outcome.cpb")
+        val outcomeCpb = Path.of("$tempDir/$CREATED_CPB_NAME")
 
         CommandLine(app)
             .execute(
@@ -122,7 +124,7 @@ class CreateCpbTest {
             )
         )
 
-        val outcomeCpb = Path.of("$tempDir/cpb-test-outcome.cpb")
+        val outcomeCpb = Path.of("$tempDir/$CREATED_CPB_NAME")
 
         CommandLine(app)
             .execute(

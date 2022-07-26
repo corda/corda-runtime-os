@@ -10,6 +10,7 @@ import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
+import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
 /**
  * Verifies JAR by performing following checks:
@@ -58,7 +59,7 @@ class JarVerifier(
                 val jarEntry = it.nextJarEntry ?: break
 
                 // All files except signing related files should be signed
-                if (jarEntry.isDirectory || isSigningRelated(jarEntry.name)) continue
+                if (jarEntry.isDirectory || isSigningRelated(jarEntry)) continue
 
                 // Code signers can be retrieved only after JarEntry has been completely verified by reading from the entry
                 // input stream until the end of the stream has been reached
@@ -104,54 +105,5 @@ class JarVerifier(
         if (filesInManifest.isNotEmpty()) {
             throw SecurityException("Manifest entry found for missing file ${filesInManifest.first()} in package \"$jarName\"")
         }
-    }
-
-    /** Check whether JAR entry is signing related */
-    private fun isSigningRelated(name: String): Boolean {
-        var uppercaseName = name.uppercase()
-        if (!uppercaseName.startsWith("META-INF/"))
-            return false
-
-        // Discard "META-INF/" prefix
-        uppercaseName = uppercaseName.substring(9)
-        if (uppercaseName.indexOf('/') != -1)
-            return false
-
-        if (isBlockOrSF(uppercaseName) || (uppercaseName == "MANIFEST.MF"))
-            return true
-
-        if (uppercaseName.startsWith("SIG-")) {
-            extension(uppercaseName)?.let {
-                if (!extensionValid(it))
-                    return false
-            }
-            return true // no extension is OK
-        }
-        return false
-    }
-
-    /** Returns file's extension */
-    private fun extension(fileName: String): String? {
-        val extIndex = fileName.lastIndexOf('.')
-        return if (extIndex != -1) {
-            fileName.substring(extIndex + 1)
-        } else {
-            null
-        }
-    }
-
-    /**
-     * Checks whether file extension is valid.
-     * See http://docs.oracle.com/javase/7/docs/technotes/guides/jar/jar.html#Digital_Signatures
-     * */
-    private fun extensionValid(extension: String): Boolean =
-        extension.isNotEmpty() && extension.length > 3 && extension.all { it.isLetterOrDigit() }
-
-    /** Checks whether file is a signing file or signing block file */
-    private fun isBlockOrSF(s: String): Boolean {
-        return (s.endsWith(".SF")
-                || s.endsWith(".DSA")
-                || s.endsWith(".RSA")
-                || s.endsWith(".EC"))
     }
 }
