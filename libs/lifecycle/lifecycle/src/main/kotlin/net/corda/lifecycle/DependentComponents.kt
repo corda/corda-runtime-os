@@ -17,8 +17,8 @@ class DependentComponents private constructor(private val map: Map<LifecycleCoor
          * When registered, this will track the given components with the (default) null
          * instance ID.
          *
-         * @param properties
-         * @return
+         * @param properties a list of the dependencies (as class properties) that will be tracked
+         * @return a [DependentComponents] to manage the [properties].
          */
         fun of(vararg properties: KProperty0<Lifecycle>): DependentComponents {
             return DependentComponents(
