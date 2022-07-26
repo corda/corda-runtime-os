@@ -130,7 +130,7 @@ class VirtualNodeDbFactory(
         dbPrivilege: DbPrivilege
     ): DbConnection {
         with(dbType) {
-            val user = getUserName(dbPrivilege, holdingIdentityShortHash)
+            val user = createUsername(dbPrivilege, holdingIdentityShortHash)
             val password = generatePassword()
             val maxPoolSize = when (dbPrivilege) {
                 DDL -> ddlMaxPoolSize
