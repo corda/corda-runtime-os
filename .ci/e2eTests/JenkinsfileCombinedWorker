@@ -148,8 +148,7 @@ pipeline {
             script {      
 
                     sh '''
-                        touch podLogs.txt
-                        for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> pod_logs.txt; done
+                        for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> podLogs.txt; done
                     '''     
                     withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
                             passwordVariable: 'PGPASSWORD',
