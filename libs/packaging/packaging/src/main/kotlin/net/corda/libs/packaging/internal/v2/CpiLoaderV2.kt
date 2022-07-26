@@ -24,19 +24,17 @@ import java.util.jar.JarInputStream
 class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
 
     override fun loadCpi(
-        inputStream: InputStream,
+        byteArray: ByteArray,
         expansionLocation: Path,
         cpiLocation: String?,
         verifySignature: Boolean,
     ): Cpi {
-        // Read input stream so we can process it multiple times
-        val cpiBytes = inputStream.readAllBytes()
 
         // Calculate file hash
-        val hash = calculateHash(cpiBytes)
+        val hash = calculateHash(byteArray)
 
         // Read CPI
-        JarInputStream(cpiBytes.inputStream()).use { jarInputStream ->
+        JarInputStream(byteArray.inputStream()).use { jarInputStream ->
 
             val cpiEntries = readJar(jarInputStream)
 

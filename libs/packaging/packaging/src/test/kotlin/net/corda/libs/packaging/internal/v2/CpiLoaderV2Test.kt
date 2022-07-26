@@ -18,7 +18,7 @@ class CpiLoaderV2Test {
             .signers(ALICE)
             .build()
 
-        val cpi = CpiLoaderV2().loadCpi(inMemoryCpi.inputStream(), tmp, "in-memory", false)
+        val cpi = CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
 
         assertAll(
             { assertEquals("testCpiV2.cpi", cpi.metadata.cpiId.name) },
