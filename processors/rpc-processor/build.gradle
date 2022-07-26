@@ -24,7 +24,7 @@ dependencies {
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:virtual-node:cpi-upload-rpcops-service')
-    implementation project(':components:virtual-node:virtual-node-rpcops-service')
+    implementation project(':components:virtual-node:virtual-node-rpcops-service-impl')
     implementation project(':components:flow:flow-rpcops-service')
     implementation project(':components:http-rpc-gateway-comp')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
