@@ -1,12 +1,11 @@
 package net.corda.libs.packaging.verify.internal.cpb
 
-import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_VERSION_ATTRIBUTE
-import net.corda.libs.packaging.PackagingConstants.CPK_FILE_EXTENSION
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.verify.internal.cpk.AvailableCpk
 import net.corda.libs.packaging.verify.internal.cpk.CpkV2Verifier
 import net.corda.libs.packaging.verify.internal.cpk.FileHashCalculator
