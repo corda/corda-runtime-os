@@ -16,7 +16,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -32,6 +31,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -189,19 +189,20 @@ class MemberOpsServiceProcessor(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )
 
-            val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-
-            val filteredMember = reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))
-                ?: throw GroupPolicyGenerationException(
+            val mgm = membershipGroupReaderProvider
+                .getGroupReader(holdingIdentity)
+                .lookup(
+                    MemberX500Name.parse(holdingIdentity.x500Name)
+                )?.also {
+                    if (!it.isMgm) {
+                        throw GroupPolicyGenerationException(
+                            "${request.holdingIdentityId} is not the holding identity of an MGM " +
+                                    "and so this holding identity cannot generate a group policy file."
+                        )
+                    }
+                } ?: throw GroupPolicyGenerationException(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )
-
-            if (!filteredMember.isMgm) {
-                throw GroupPolicyGenerationException(
-                    "${request.holdingIdentityId} is not the holding identity of an MGM and so this holding identity " +
-                            "cannot generate a group policy file."
-                )
-            }
 
             val persistedGroupPolicyProperties = membershipQueryClient
                 .queryGroupPolicy(holdingIdentity)
@@ -228,7 +229,7 @@ class MemberOpsServiceProcessor(
 
             val groupPolicy = mapOf(
                 FILE_FORMAT_VERSION to 1,
-                GROUP_ID to filteredMember.groupId,
+                GROUP_ID to mgm.groupId,
                 REGISTRATION_PROTOCOL to registrationProtocol,
                 SYNC_PROTOCOL to syncProtocol,
                 PROTOCOL_PARAMETERS to mapOf(
@@ -242,7 +243,7 @@ class MemberOpsServiceProcessor(
                     TLS_VERSION to tlsVersion,
                     PROTOCOL_MODE to p2pMode
                 ),
-                MGM_INFO to filteredMember.memberProvidedContext.entries.associate { it.key to it.value },
+                MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value },
                 CIPHER_SUITE to emptyMap<String, String>()
             )
             return MGMGroupPolicyResponse(ObjectMapper().writeValueAsString(groupPolicy))
