@@ -20,9 +20,11 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
@@ -194,7 +196,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         ): MembershipRequestRegistrationResult {
             try {
                 val registrationId = UUID.randomUUID().toString()
-                val memberContext = buildMemberContext(context, registrationId, member.shortHash)
+                val memberContext = buildMemberContext(context, registrationId, member)
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
@@ -248,16 +250,18 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun buildMemberContext(
             context: Map<String, String>,
             registrationId: String,
-            tenantId: String
+            member: HoldingIdentity
         ): KeyValuePairList {
             validateContext(context)
             return KeyValuePairList(
                 context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
                     .toWire().items
-                        + generateSessionKeyData(context, tenantId).items
-                        + generateLedgerKeyData(context, tenantId).items
+                        + generateSessionKeyData(context, member.shortHash).items
+                        + generateLedgerKeyData(context, member.shortHash).items
                         + listOf(
                     KeyValuePair(REGISTRATION_ID, registrationId),
+                    KeyValuePair(PARTY_NAME, member.x500Name),
+                    KeyValuePair(GROUP_ID, member.groupId),
                     // temporarily hardcoded
                     KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),
                     KeyValuePair(SOFTWARE_VERSION, SOFTWARE_VERSION_CONST),
