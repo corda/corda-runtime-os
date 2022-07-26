@@ -15,9 +15,11 @@ def checkConnection(){
 
     def status = null
 
+    sleep(time: 30, unit: "SECONDS") 
+
     while (status != "200"){
 
-        sleep(time: 30, unit: "SECONDS")
+        sleep(time: 3, unit: "SECONDS")
         try{
             status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7000/status', returnStdout: true)
         }catch(error){
@@ -25,7 +27,6 @@ def checkConnection(){
         }
 
         echo "${status}"
-        echo "${status.getClass()}"
           
     }
 
@@ -134,8 +135,6 @@ pipeline {
                 checkConnection()    
 
                 sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
-
-                sh 'trap "kill -9 ${PROCNO}" EXIT'
     
             }
             // we need the DB credetals here also
