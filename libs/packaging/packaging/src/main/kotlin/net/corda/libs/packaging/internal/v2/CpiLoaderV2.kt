@@ -9,6 +9,7 @@ import net.corda.libs.packaging.certSummaryHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpiImpl
 import net.corda.libs.packaging.internal.CpiLoader
 import net.corda.utilities.time.Clock
@@ -18,7 +19,6 @@ import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.security.MessageDigest
 import java.util.jar.JarInputStream
 
 class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
@@ -64,11 +64,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
         }
     }
 
-    private fun calculateHash(cpiBytes: ByteArray): ByteArray {
-        val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        md.update(cpiBytes)
-        return md.digest()
-    }
+    private fun calculateHash(cpiBytes: ByteArray) = cpiBytes.hash(DigestAlgorithmName.SHA2_256).bytes
 
     private fun readCpksFromCpb(cpb: InputStream, expansionLocation: Path, cpiLocation: String?): List<Cpk> {
         return JarInputStream(cpb, false).use { cpbInputStream ->
