@@ -13,6 +13,10 @@ internal interface Sandbox {
      *  sandbox can see. */
     val publicBundles: Set<Bundle>
 
+    /** The sandbox's private bundles. The private bundles are the bundles that another sandbox with visibility of this
+     *  sandbox can't see. */
+    val privateBundles: Set<Bundle>
+
     /** Indicates whether any public or private bundle in the sandbox contains the given [bundle]. */
     fun containsBundle(bundle: Bundle): Boolean
 

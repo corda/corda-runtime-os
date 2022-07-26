@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -59,7 +59,7 @@ class FlowProtocolStoreImplTest {
             INITIATING_FLOW_A to makeProtocols(PROTOCOL_1, listOf(1, 2, 3))
         )
         val protocolStore = FlowProtocolStoreImpl(initiatorsToProtocols, mapOf())
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowFatalException> {
             protocolStore.protocolsForInitiator(INITIATING_FLOW_B, mock())
         }
     }
@@ -72,10 +72,10 @@ class FlowProtocolStoreImplTest {
             FlowProtocol(PROTOCOL_1, 3) to RESPONDER_FLOW_B
         )
         val protocolStore = FlowProtocolStoreImpl(mapOf(), protocolsToResponders)
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowFatalException> {
             protocolStore.responderForProtocol(PROTOCOL_2, listOf(1, 2, 3), mock())
         }
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowFatalException> {
             protocolStore.responderForProtocol(PROTOCOL_1, listOf(4), mock())
         }
     }
@@ -86,7 +86,7 @@ class FlowProtocolStoreImplTest {
             INITIATING_FLOW_A to makeProtocols(PROTOCOL_1, listOf(1, 2, 3)) + makeProtocols(PROTOCOL_2, listOf(1))
         )
         val protocolStore = FlowProtocolStoreImpl(initiatorsToProtocols, mapOf())
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowFatalException> {
             protocolStore.protocolsForInitiator(INITIATING_FLOW_A, mock())
         }
     }

@@ -192,7 +192,7 @@ class ResourceToOpenApiSpecMapperTest {
             assertTrue(components.schemas.containsKey("PingPongData"))
 
             assertEquals(
-                "#/components/schemas/PingRequest",
+                "#/components/schemas/PingPongData",
                 this.paths["/health/ping"]!!.post.requestBody.content["application/json"]!!.schema.`$ref`
             )
         }

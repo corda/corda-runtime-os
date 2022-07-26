@@ -11,5 +11,5 @@ class CordaRPCAPISenderException(message: String?, exception: Throwable? = null)
 /**
  * Exception that occurred on the responder side of RPC messaging pattern
  */
-class CordaRPCAPIResponderException(message: String?, exception: Throwable? = null) :
+class CordaRPCAPIResponderException(val errorType: String, message: String?, exception: Throwable? = null) :
     CordaRuntimeException(message, exception)

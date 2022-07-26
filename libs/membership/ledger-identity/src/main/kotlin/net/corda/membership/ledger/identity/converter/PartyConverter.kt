@@ -3,7 +3,7 @@ package net.corda.membership.ledger.identity.converter
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.membership.ledger.identity.PartyImpl
-import net.corda.v5.ledger.identity.Party
+import net.corda.v5.ledger.obsolete.identity.Party
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService

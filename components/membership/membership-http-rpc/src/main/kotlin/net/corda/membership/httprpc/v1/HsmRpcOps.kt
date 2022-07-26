@@ -4,14 +4,13 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.HsmInfo
 
 @HttpRpcResource(
-    name = "HsmRpcOps",
-    description = "HSM API",
-    path = "/"
+    name = "HSM API",
+    description = "Hardware Security Modules interaction endpoints.",
+    path = "hsm"
 )
 interface HsmRpcOps : RpcOps {
     /**
@@ -20,7 +19,6 @@ interface HsmRpcOps : RpcOps {
      * @return A list of available HSMs.
      */
     @HttpRpcGET(
-        path = "hsm",
         description = "Get list of available HSMs."
     )
     fun listHsms(): Collection<HsmInfo>
@@ -31,14 +29,14 @@ interface HsmRpcOps : RpcOps {
      * @return A list of assigned HSMs.
      */
     @HttpRpcGET(
-        path = "{tenantId}/hsm",
+        path = "{tenantId}/{category}",
         description = "Get list of assigned HSMs."
     )
     fun assignedHsm(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api' or holding identity ID.")
         tenantId: String,
-        @HttpRpcQueryParameter(description = "Category", required = true)
-        category: String,
+        @HttpRpcPathParameter(description = "Category of the HSM.  E.g. LEDGER, TLS, etc.")
+        category: String
     ): HsmInfo?
 
     /**
@@ -47,14 +45,14 @@ interface HsmRpcOps : RpcOps {
      * @return The newly assigned HSM.
      */
     @HttpRpcPOST(
-        path = "{tenantId}/hsm/soft",
+        path = "soft/{tenantId}/{category}",
         description = "Assign soft HSM"
     )
     fun assignSoftHsm(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api' or holding identity ID.")
         tenantId: String,
-        @HttpRpcQueryParameter(description = "Category", required = true)
-        category: String,
+        @HttpRpcPathParameter(description = "Category of the HSM.  E.g. LEDGER, TLS, etc.")
+        category: String
     ): HsmInfo
 
     /**
@@ -63,13 +61,13 @@ interface HsmRpcOps : RpcOps {
      * @return The newly assigned HSM.
      */
     @HttpRpcPOST(
-        path = "{tenantId}/hsm",
+        path = "{tenantId}/{category}",
         description = "Assign HSM."
     )
     fun assignHsm(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api' or holding identity ID.")
         tenantId: String,
-        @HttpRpcQueryParameter(description = "Category", required = true)
-        category: String,
+        @HttpRpcPathParameter(description = "Category of the HSM.  E.g. LEDGER, TLS, etc.")
+        category: String
     ): HsmInfo
 }

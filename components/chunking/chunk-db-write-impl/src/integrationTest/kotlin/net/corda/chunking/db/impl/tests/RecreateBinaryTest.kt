@@ -1,10 +1,10 @@
 package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
-import net.corda.chunking.ChunkReaderFactory
+import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.datamodel.ChunkingEntities
-import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -81,7 +81,7 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize).apply {
+        val writer = ChunkWriterFactory.create(chunkSize + 10240).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
@@ -127,7 +127,7 @@ class RecreateBinaryTest {
         var tempPath: Path? = null
         val destDir = fs.getPath("destDir").apply { Files.createDirectories(this) }
 
-        val chunkReader = ChunkReaderFactory.create(destDir).apply {
+        val chunkReader = ChunkReaderFactoryImpl.create(destDir).apply {
             this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash, _ ->
                 actualFileName = originalFileName
                 tempPath = tempPathOfBinary

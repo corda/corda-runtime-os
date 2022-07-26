@@ -2,13 +2,14 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.EMPTY_SMART_CONFIG
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -108,11 +109,11 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Flow eransient exception is handled`() {
-        val error = FlowTransientException("", updatedContext)
+    fun `Flow transient exception is handled`() {
+        val error = FlowTransientException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -121,10 +122,22 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Flow event exception is handled`() {
-        val error = FlowEventException("", updatedContext)
+        val error = FlowEventException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
+
+        val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+
+        assertThat(response).isEqualTo(outputResponse)
+    }
+
+    @Test
+    fun `Flow platform exception is handled`() {
+        val error = FlowPlatformException("")
+
+        whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 
@@ -133,10 +146,10 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Flow fatal exception is handled`() {
-        val error = FlowFatalException("", updatedContext)
+        val error = FlowFatalException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
         val response = processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
 

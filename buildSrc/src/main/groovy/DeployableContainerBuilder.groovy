@@ -2,16 +2,25 @@ import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
 import com.google.cloud.tools.jib.api.buildplan.Platform
 import org.gradle.api.DefaultTask
-import org.gradle.api.Task
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.SkipWhenEmpty
+import org.gradle.api.tasks.TaskAction
+import static org.gradle.api.tasks.PathSensitivity.RELATIVE
 
 import javax.inject.Inject
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
@@ -100,9 +109,16 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     final ListProperty<String> arguments =
             getObjects().listProperty(String)
 
-    @Input
-    final ListProperty<Task> sourceTasks =
-            getObjects().listProperty(Task)
+    @PathSensitive(RELATIVE)
+    @SkipWhenEmpty
+    @InputFiles
+    final ConfigurableFileCollection sourceFiles =
+            getObjects().fileCollection()
+
+    @PathSensitive(RELATIVE)
+    @InputFiles
+    final ConfigurableFileCollection extraSourceFiles =
+            getObjects().fileCollection()
 
     @Input
     final Property<String> overrideEntryName =
@@ -134,7 +150,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @TaskAction
     def updateImage() {
-        def outputFiles = sourceTasks.get().collect{ it -> it.getOutputs().files.files }.flatten() as List<File>
         def buildBaseDir = temporaryDir.toPath()
         def containerizationDir = Paths.get("$buildBaseDir/containerization/")
 
@@ -147,7 +162,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             Files.createDirectories(containerizationDir)
         }
 
-        outputFiles.forEach{
+        sourceFiles.forEach{
             def jarName = useShortName
                 ? it.name.replace("corda-", "").replace("-${project.version}", "")
                 : it.name
@@ -173,6 +188,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("No daemon available")
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
+        }
+        List<Path> imageFiles = extraSourceFiles.collect { it.toPath() }
+        if (!imageFiles.empty) {
+            builder.addLayer(imageFiles, CONTAINER_LOCATION)
         }
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())

@@ -3,7 +3,6 @@ package net.corda.testing.sandboxes.impl
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -21,6 +20,7 @@ import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
 @Component(
@@ -92,11 +92,8 @@ class CpkReadServiceImpl @Activate constructor(
         return CompletableFuture.completedFuture(cpi)
     }
 
-    override fun get(cpkId: CpkIdentifier): Cpk? {
-        val cpk = cpks.firstOrNull {
-            it.metadata.cpkId.name == cpkId.name &&
-                    it.metadata.cpkId.version == cpkId.version &&
-                    it.metadata.cpkId.signerSummaryHash == cpkId.signerSummaryHash }
+    override fun get(cpkFileChecksum: SecureHash): Cpk? {
+        val cpk = cpks.firstOrNull { it.metadata.fileChecksum == cpkFileChecksum }
 
         return cpk
     }

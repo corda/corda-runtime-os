@@ -50,7 +50,7 @@ class KeysRpcOpsImplTest {
             val keys = (1..4).map {
                 val idToReturn = "id.$it"
                 val aliasToReturn = "alias-$it"
-                val categoryToReturn = "category:$it"
+                val categoryToReturn = "CATEGORY:$it"
                 val scheme = "scheme($it)"
                 val createdTimestamp = Instant.ofEpochMilli(it * 1000L)
                 val mka = "master key alias $it"
@@ -83,7 +83,7 @@ class KeysRpcOpsImplTest {
                 KeyMetaData(
                     keyId = "id.$it",
                     alias = "alias-$it",
-                    hsmCategory = "category:$it",
+                    hsmCategory = "CATEGORY:$it",
                     scheme = "scheme($it)",
                     created = Instant.ofEpochMilli(it * 1000L),
                     masterKeyAlias = "master key alias $it"
@@ -98,7 +98,7 @@ class KeysRpcOpsImplTest {
             val keys = (1..3).map {
                 val idToReturn = "id.$it"
                 val aliasToReturn = "alias-$it"
-                val categoryToReturn = "category:$it"
+                val categoryToReturn = "CATEGORY:$it"
                 val scheme = "scheme($it)"
                 val createdTimestamp = Instant.ofEpochMilli(it * 1000L)
                 val mka = "master key alias $it"
@@ -131,7 +131,7 @@ class KeysRpcOpsImplTest {
                 KeyMetaData(
                     keyId = "id.$it",
                     alias = "alias-$it",
-                    hsmCategory = "category:$it",
+                    hsmCategory = "CATEGORY:$it",
                     scheme = "scheme($it)",
                     created = Instant.ofEpochMilli(it * 1000L),
                     masterKeyAlias = "master key alias $it"
@@ -179,7 +179,7 @@ class KeysRpcOpsImplTest {
             )
 
             assertThat(filterMap.firstValue)
-                .containsEntry(CATEGORY_FILTER, "c1")
+                .containsEntry(CATEGORY_FILTER, "C1")
                 .containsEntry(SCHEME_CODE_NAME_FILTER, "sc1")
                 .containsEntry(ALIAS_FILTER, "a1")
                 .containsEntry(MASTER_KEY_ALIAS_FILTER, "mka1")
@@ -230,7 +230,7 @@ class KeysRpcOpsImplTest {
             val publicKey = mock<PublicKey> {
                 on { encoded } doReturn byteArrayOf(1, 2, 3)
             }
-            whenever(cryptoOpsClient.generateKeyPair("tenantId", "category", "alias", "scheme")).doReturn(publicKey)
+            whenever(cryptoOpsClient.generateKeyPair("tenantId", "CATEGORY", "alias", "scheme")).doReturn(publicKey)
 
             val id = keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = "scheme")
 
@@ -240,17 +240,17 @@ class KeysRpcOpsImplTest {
         @Test
         fun `generateKeyPem returns the keys PEMs`() {
             val keyId = "keyId"
-            val holdingIdentityId = "holdingIdentityId"
+            val holdingIdentityShortHash = "holdingIdentityShortHash"
             val publicKeyBytes = "123".toByteArray()
             val key = mock<CryptoSigningKey> {
                 on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
             }
             val decodedPublicKey = mock<PublicKey>()
-            whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(listOf(key))
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(decodedPublicKey)
             whenever(keyEncodingService.encodeAsString(decodedPublicKey)).doReturn("PEM")
 
-            val pem = keysOps.generateKeyPem(holdingIdentityId, keyId)
+            val pem = keysOps.generateKeyPem(holdingIdentityShortHash, keyId)
 
             assertThat(pem).isEqualTo("PEM")
         }
@@ -258,17 +258,17 @@ class KeysRpcOpsImplTest {
         @Test
         fun `generateKeyPem throws Exception when the key is unknwon`() {
             val keyId = "keyId"
-            val holdingIdentityId = "holdingIdentityId"
-            whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(emptyList())
+            val holdingIdentityShortHash = "holdingIdentityShortHash"
+            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
-                keysOps.generateKeyPem(holdingIdentityId, keyId)
+                keysOps.generateKeyPem(holdingIdentityShortHash, keyId)
             }
         }
 
         @Test
         fun `listSchemes return list of schemes`() {
-            whenever(cryptoOpsClient.getSupportedSchemes("id", "category")).doReturn(listOf("one", "two"))
+            whenever(cryptoOpsClient.getSupportedSchemes("id", "CATEGORY")).doReturn(listOf("one", "two"))
 
             val schemes = keysOps.listSchemes("id", "category")
 

@@ -1,5 +1,6 @@
 package net.corda.applications.workers.combined
 
+import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
@@ -8,14 +9,18 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.rpc.RPCProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -32,6 +37,8 @@ class CombinedWorker @Activate constructor(
     private val cryptoProcessor: CryptoProcessor,
     @Reference(service = DBProcessor::class)
     private val dbProcessor: DBProcessor,
+    @Reference(service = UniquenessProcessor::class)
+    private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
     @Reference(service = RPCProcessor::class)
@@ -53,6 +60,13 @@ class CombinedWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the processors. */
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
+
+        if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
+            logger.info("Quasar's instrumentation verification is enabled")
+        }
+
+        PostgresDbSetup().run()
+
         JavaSerialisationFilter.install()
 
         val params = getParams(args, CombinedWorkerParams())
@@ -60,14 +74,19 @@ class CombinedWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
+        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
         val config = getBootstrapConfig(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig)
+            listOf(databaseConfig, cryptoConfig)
+        ).addDefaultBootCryptoConfig(
+            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)
+        uniquenessProcessor.start()
         flowProcessor.start(config)
         memberProcessor.start(config)
         rpcProcessor.start(config)
@@ -77,6 +96,7 @@ class CombinedWorker @Activate constructor(
         logger.info("Combined worker stopping.")
 
         cryptoProcessor.stop()
+        uniquenessProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
         memberProcessor.stop()
@@ -96,4 +116,7 @@ private class CombinedWorkerParams {
 
     @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
     var rpcParams = emptyMap<String, String>()
+
+    @Option(names = ["--cryptoParams"], description = ["Crypto parameters for the worker."])
+    var cryptoParams = emptyMap<String, String>()
 }

@@ -1,8 +1,12 @@
 package net.corda.crypto.service.impl.bus.rpc
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
@@ -10,6 +14,7 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -22,6 +27,7 @@ import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -30,6 +36,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -40,8 +47,7 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -60,6 +66,13 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CryptoOpsBusProcessorTests {
+    companion object {
+        private val configEvent = ConfigChangedEvent(
+            setOf(ConfigKeys.CRYPTO_CONFIG),
+            mapOf(ConfigKeys.CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+        )
+    }
+
     private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
     private lateinit var schemeMetadata: CipherSchemeMetadata
@@ -77,9 +90,7 @@ class CryptoOpsBusProcessorTests {
         signingFactory = mock {
             on { getInstance() }.thenReturn(signingService)
         }
-        processor = CryptoOpsBusProcessor(
-            signingFactory
-        )
+        processor = CryptoOpsBusProcessor(signingFactory, configEvent)
     }
 
     private fun newAlias(): String = UUID.randomUUID().toString()
@@ -487,6 +498,46 @@ class CryptoOpsBusProcessorTests {
     }
 
     @Test
+    fun `Should derive shared secret key`() {
+        setup()
+        val context1 = createRequestContext()
+        val operationContext = listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!"),
+            KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+        )
+        val otherKeyPair = generateKeyPair(schemeMetadata, X25519_CODE_NAME)
+        val publicKey = signingService.generateKeyPair(
+            tenantId,
+            CryptoConsts.Categories.SESSION_INIT,
+            "ecd-key",
+            schemeMetadata.findKeyScheme(X25519_CODE_NAME)
+        )
+        val future1 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                DeriveSharedSecretCommand(
+                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(otherKeyPair.public)),
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future1
+        )
+        val result1 = future1.get()
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(3, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertResponseContext(context1, result1.context)
+        assertThat(result1.response).isInstanceOf(CryptoDerivedSharedSecret::class.java)
+        assertThat((result1.response as CryptoDerivedSharedSecret).secret.array()).isNotEmpty
+    }
+
+    @Test
     fun `Should complete future exceptionally in case of service failure`() {
         setup()
         val data = UUID.randomUUID().toString().toByteArray()
@@ -548,11 +599,11 @@ class CryptoOpsBusProcessorTests {
             future3.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Should complete future exceptionally in case of unknown request`() {
+    fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
@@ -567,8 +618,7 @@ class CryptoOpsBusProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
-        assertThat(exception.cause?.cause).isInstanceOf(CryptoServiceBadRequestException::class.java)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

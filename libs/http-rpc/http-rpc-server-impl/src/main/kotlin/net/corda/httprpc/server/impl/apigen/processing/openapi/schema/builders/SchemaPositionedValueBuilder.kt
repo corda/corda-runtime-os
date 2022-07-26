@@ -32,7 +32,7 @@ internal class SchemaPositionedValueBuilder(private val schemaModelProvider: Sch
                         )
 
                     )
-                }
+                }.toSortedMap()
         )
     }
 

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
@@ -30,26 +31,33 @@ class MembershipGroupReaderImplTest {
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)
     }
-    private val knownKey: PublicKey = mock()
-    private val knownKeyAsByteArray = "1234".toByteArray()
-    private val knownKeyHash = PublicKeyHash.parse(knownKeyAsByteArray.sha256Bytes())
+    private val mockLedgerKey: PublicKey = mock()
+    private val mockLedgerKeyAsByteArray = "1234".toByteArray()
+    private val mockLedgerKeyHash = PublicKeyHash.parse(mockLedgerKeyAsByteArray.sha256Bytes())
+    private val mockSessionKey: PublicKey = mock()
+    private val mockSessionKeyAsByteArray = "5678".toByteArray()
+    private val mockSessionKeyHash = PublicKeyHash.parse(mockSessionKeyAsByteArray.sha256Bytes())
+    private val mockedSuspendedMemberProvidedContext = mock<MemberContext> {
+        on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
+        on { parse(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
+    }
     private val suspendedMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
-        on { ledgerKeys } doReturn listOf(knownKey)
-        val mockedMemberProvidedContext = mock<MemberContext> {
-            on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
-        }
-        on { memberProvidedContext } doReturn mockedMemberProvidedContext
+        on { ledgerKeys } doReturn listOf(mockLedgerKey)
+        on { sessionInitiationKey } doReturn mockSessionKey
+        on { memberProvidedContext } doReturn mockedSuspendedMemberProvidedContext
         on { isActive } doReturn false
     }
 
+    private val mockedActiveMemberProvidedContext = mock<MemberContext> {
+        on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
+        on { parse(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
+    }
     private val activeMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
-        on { ledgerKeys } doReturn listOf(knownKey)
-        val mockedMemberProvidedContext = mock<MemberContext> {
-            on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
-        }
-        on { memberProvidedContext } doReturn mockedMemberProvidedContext
+        on { ledgerKeys } doReturn listOf(mockLedgerKey)
+        on { sessionInitiationKey } doReturn mockSessionKey
+        on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
         on { isActive } doReturn true
     }
 
@@ -84,21 +92,51 @@ class MembershipGroupReaderImplTest {
     }
 
     @Test
-    fun `lookup known member with active status based on public key hash`() {
+    fun `lookup known member with active status based on ledger public key hash`() {
         mockMemberList(listOf(activeMemberInfo))
-        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookup(knownKeyHash))
+        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookup(mockLedgerKeyHash))
     }
 
     @Test
-    fun `lookup known member with non active status based on public key hash`() {
+    fun `lookup known member with non active status based on ledger public key hash`() {
         mockMemberList(listOf(suspendedMemberInfo))
-        assertNull(membershipGroupReaderImpl.lookup(knownKeyHash))
+        assertNull(membershipGroupReaderImpl.lookup(mockLedgerKeyHash))
     }
 
     @Test
-    fun `lookup non-existing member based on public key hash`() {
+    fun `lookup non-existing member based on ledger public key hash`() {
         mockMemberList(emptyList())
-        assertNull(membershipGroupReaderImpl.lookup(knownKeyHash))
+        assertNull(membershipGroupReaderImpl.lookup(mockLedgerKeyHash))
+    }
+
+    @Test
+    fun `lookup member based on ledger public key hash using session key fails`() {
+        mockMemberList(listOf(activeMemberInfo))
+        assertNull(membershipGroupReaderImpl.lookup(mockSessionKeyHash))
+    }
+
+    @Test
+    fun `lookup known member with active status based on session public key hash`() {
+        mockMemberList(listOf(activeMemberInfo))
+        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
+    }
+
+    @Test
+    fun `lookup known member with non active status based on session public key hash`() {
+        mockMemberList(listOf(suspendedMemberInfo))
+        assertNull(membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
+    }
+
+    @Test
+    fun `lookup non-existing member based on session public key hash`() {
+        mockMemberList(emptyList())
+        assertNull(membershipGroupReaderImpl.lookupBySessionKey(mockSessionKeyHash))
+    }
+
+    @Test
+    fun `lookup member based on session public key hash using ledger key fails`() {
+        mockMemberList(listOf(activeMemberInfo))
+        assertNull(membershipGroupReaderImpl.lookupBySessionKey(mockLedgerKeyHash))
     }
 
     @Test
@@ -110,6 +148,9 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup throws illegal state exception if no cached member list available`() {
         val error = assertThrows<IllegalStateException> { membershipGroupReaderImpl.lookup() }
-        assertEquals("Failed to find member list for ID='${aliceIdGroup1.id}, Group ID='${aliceIdGroup1.groupId}'",error.message)
+        assertEquals(
+            "Failed to find member list for ID='${aliceIdGroup1.shortHash}, Group ID='${aliceIdGroup1.groupId}'",
+            error.message
+        )
     }
 }

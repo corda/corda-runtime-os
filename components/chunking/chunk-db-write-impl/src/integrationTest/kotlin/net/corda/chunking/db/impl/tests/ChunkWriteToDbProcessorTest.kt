@@ -3,7 +3,7 @@ package net.corda.chunking.db.impl.tests
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
-import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record

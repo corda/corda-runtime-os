@@ -8,15 +8,15 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 
 @HttpRpcResource(
-    name = "MemberLookupRpcOps",
-    description = "Membership Lookup APIs",
+    name = "Member Lookup API",
+    description = "Network Membership Lookup endpoints.",
     path = "members"
 )
 interface MemberLookupRpcOps : RpcOps {
     /**
      * GET endpoint which returns the list of active members in the membership group.
      *
-     * @param holdingIdentityId ID of the holding identity to be checked.
+     * @param holdingIdentityShortHash ID of the holding identity to be checked.
      * @param commonName Optional. Common Name (CN) attribute of the X.500 name to filter members by.
      * @param organisation Optional. Organisation (O) attribute of the X.500 name to filter members by.
      * @param organisationUnit Optional. Organisation Unit (OU) attribute of the X.500 name to filter members by.
@@ -27,13 +27,13 @@ interface MemberLookupRpcOps : RpcOps {
      * @return The known information of ACTIVE members.
      */
     @HttpRpcGET(
-        path = "{holdingIdentityId}",
+        path = "{holdingIdentityShortHash}",
         description = "Lists the active members in the membership group."
     )
     @Suppress("LongParameterList")
     fun lookup(
         @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
-        holdingIdentityId: String,
+        holdingIdentityShortHash: String,
         @HttpRpcQueryParameter(
             name = "cn",
             description = "Common Name (CN) attribute of the X.500 name to filter members by",

@@ -1,9 +1,16 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
+    id 'corda.docker-app'
 }
 
 description 'Flow Worker'
+
+osgiRun {
+    frameworkProperties.putAll(
+        'org.osgi.framework.security': 'osgi'
+    )
+}
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -18,10 +25,11 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
 
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "net.corda:corda-application"
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -34,9 +42,5 @@ dependencies {
         exclude group: 'org.osgi'
     }
 
-    osgiRun {
-        frameworkProperties.putAll(
-                'org.osgi.framework.security': 'osgi'
-        )
-    }
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

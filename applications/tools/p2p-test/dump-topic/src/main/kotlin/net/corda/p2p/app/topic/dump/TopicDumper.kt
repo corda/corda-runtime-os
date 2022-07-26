@@ -1,12 +1,19 @@
 package net.corda.p2p.app.topic.dump
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.apache.avro.generic.IndexedRecord
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
@@ -17,6 +24,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.thread
+import kotlin.random.Random
 
 @Command(
     header = ["Topic dumper"],
@@ -26,35 +34,35 @@ import kotlin.concurrent.thread
     showAtFileInUsageHelp = true,
 )
 internal class TopicDumper(
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    private val configMerger: ConfigMerger
 ) : Runnable, Closeable {
     companion object {
         private val logger = LoggerFactory.getLogger("Console")
-        private const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
     }
     @Option(
-        names = ["-k", "--kafka-servers"],
-        description = ["A comma-separated list of addresses of Kafka brokers."]
+        names = ["-m", "--messagingParams"],
+        description = ["Messaging parameters for the topic dumper."]
     )
-    private var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+    var messagingParams = emptyMap<String, String>()
 
     @Option(
         names = ["-t", "--topic"],
-        description = ["The topic to dump"],
+        description = ["The name of the topic to dump."],
         required = true,
     )
     private lateinit var topic: String
 
     @Option(
         names = ["-v", "--values"],
-        description = ["The value class"],
+        description = ["The class name of the expected value (full canonical name)."],
         required = true,
     )
     private lateinit var values: String
 
     @Option(
         names = ["-o", "--output"],
-        description = ["The output file"],
+        description = ["The output file."],
         required = true,
     )
     private lateinit var output: File
@@ -132,11 +140,26 @@ internal class TopicDumper(
 
     override fun run() {
         output.parentFile.mkdirs()
-        logger.info("Connecting to $kafkaServers")
         val subscriptionConfig = SubscriptionConfig("topic-dumper-${UUID.randomUUID()}", topic)
-        val kafkaConfig = SmartConfigImpl.empty()
-            .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
-        subscription = subscriptionFactory.createDurableSubscription(subscriptionConfig, createProcessor(), kafkaConfig, null).also {
+        val parsedMessagingParams = messagingParams.mapKeys { (key, _) ->
+            "${BootConfig.BOOT_KAFKA_COMMON}.${key.trim()}"
+        }.toMutableMap()
+        parsedMessagingParams.computeIfAbsent("${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers") {
+            "localhost:9092"
+        }
+        logger.info("Connecting to ${parsedMessagingParams["${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers"]}")
+        val kafkaConfig = SmartConfigFactory.create(SmartConfigImpl.empty()).create(
+            ConfigFactory.parseMap(parsedMessagingParams)
+                .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
+                .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt()))
+        )
+        subscription = subscriptionFactory.createDurableSubscription(
+            subscriptionConfig,
+            createProcessor(),
+            configMerger.getMessagingConfig(kafkaConfig),
+            null
+        ).also {
             it.start()
         }
         logger.info("Started dumping $topic into $output")

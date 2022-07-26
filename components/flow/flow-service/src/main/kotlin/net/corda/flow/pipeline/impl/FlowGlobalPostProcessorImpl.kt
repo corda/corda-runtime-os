@@ -1,10 +1,13 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.crypto.manager.CryptoManager
+import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.FlowMessageFactory
@@ -16,12 +19,15 @@ import net.corda.v5.base.util.minutes
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
+    @Reference(service = CryptoManager::class)
+    private val cryptoManager: CryptoManager,
     @Reference(service = SessionManager::class)
     private val sessionManager: SessionManager,
+    @Reference(service = PersistenceManager::class)
+    private val persistenceManager: PersistenceManager,
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
@@ -33,11 +39,14 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
-
         val now = Instant.now()
+
+        postProcessPendingPlatformError(context)
 
         val outputRecords = getSessionEvents(context, now) +
                 getFlowMapperSessionCleanupEvents(context, now) +
+                getCryptoMessage(context, now) +
+                getPersistenceMessage(context, now) +
                 postProcessRetries(context)
 
         return context.copy(outputRecords = context.outputRecords + outputRecords)
@@ -64,13 +73,74 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
-    private fun getFlowMapperSessionCleanupEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
+    private fun getFlowMapperSessionCleanupEvents(
+        context: FlowEventContext<Any>,
+        now: Instant
+    ): List<Record<*, FlowMapperEvent>> {
         val expiryTime = now.plusMillis(1.minutes.toMillis()).toEpochMilli() // TODO Should be configurable?
         return context.checkpoint.sessions
             .filterNot { sessionState -> sessionState.hasScheduledCleanup }
             .filter { sessionState -> sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR }
-            .onEach { sessionState ->  sessionState.hasScheduledCleanup = true }
-            .map { sessionState -> flowRecordFactory.createFlowMapperEventRecord(sessionState.sessionId, ScheduleCleanup(expiryTime)) }
+            .onEach { sessionState -> sessionState.hasScheduledCleanup = true }
+            .map { sessionState ->
+                flowRecordFactory.createFlowMapperEventRecord(
+                    sessionState.sessionId,
+                    ScheduleCleanup(expiryTime)
+                )
+            }
+    }
+
+    private fun postProcessPendingPlatformError(context: FlowEventContext<Any>) {
+        /**
+         * If a platform error was previously reported to the user the error should now be cleared. If we have reached
+         * the post-processing step we can assume the pending error has been processed.
+         */
+        val checkpoint = context.checkpoint
+        if (checkpoint.doesExist) {
+            checkpoint.clearPendingPlatformError()
+        }
+    }
+
+    /**
+     * Check to see if any persistence message needs to be sent
+     * or resent due to no response being received within a given time period.
+     */
+    private fun getPersistenceMessage(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
+        val config = context.config
+        val persistenceState = context.checkpoint.persistenceState
+        return if (persistenceState == null) {
+            listOf()
+        } else {
+            persistenceManager.getMessageToSend(persistenceState, now, config ).let { (persistenceState, request) ->
+                if (request != null) {
+                    context.checkpoint.persistenceState = persistenceState
+                    listOf(flowRecordFactory.createEntityRequestRecord(persistenceState.requestId, request))
+                } else {
+                    listOf()
+                }
+            }
+        }
+    }
+
+    /**
+     * Check to see if any crypto message needs to be sent
+     * or resent due to no response being received within a given time period.
+     */
+    private fun getCryptoMessage(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
+        val config = context.config
+        val cryptoState = context.checkpoint.cryptoState
+        return if (cryptoState == null) {
+            listOf()
+        } else {
+            cryptoManager.getMessageToSend(cryptoState, now, config ).let { (updatedCryptoState, request) ->
+                if (request != null) {
+                    context.checkpoint.cryptoState = updatedCryptoState
+                    listOf(flowRecordFactory.createFlowOpsRequestRecord(context.checkpoint.flowId, request))
+                } else {
+                    listOf()
+                }
+            }
+        }
     }
 
     private fun postProcessRetries(context: FlowEventContext<Any>): List<Record<FlowKey, FlowStatus>> {

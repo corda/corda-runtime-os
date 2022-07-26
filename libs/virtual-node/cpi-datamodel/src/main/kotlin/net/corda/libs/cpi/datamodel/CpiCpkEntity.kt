@@ -25,17 +25,21 @@ data class CpiCpkEntity(
     @EmbeddedId
     private val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
-    val cpkFileName: String,
+    var cpkFileName: String,
+    @Column(name = "cpk_file_checksum", nullable = false)
+    var cpkFileChecksum: String,
     @OneToOne(cascade = [CascadeType.MERGE, CascadeType.PERSIST])
     @JoinColumns(
+        JoinColumn(name = "cpk_name", referencedColumnName = "cpk_name", insertable = false, updatable = false),
+        JoinColumn(name = "cpk_version", referencedColumnName = "cpk_version", insertable = false, updatable = false),
         JoinColumn(
-            name = "cpk_file_checksum",
-            referencedColumnName = "file_checksum",
+            name = "cpk_signer_summary_hash",
+            referencedColumnName = "cpk_signer_summary_hash",
             insertable = false,
             updatable = false
-        )
+        ),
     )
-    val metadata: CpkMetadataEntity,
+    var metadata: CpkMetadataEntity,
 ) {
     @Version
     @Column(name = "entity_version", nullable = false)
@@ -60,6 +64,10 @@ data class CpiCpkKey(
     private val cpiVersion: String,
     @Column(name = "cpi_signer_summary_hash")
     private val cpiSignerSummaryHash: String,
-    @Column(name = "cpk_file_checksum")
-    private val cpkFileChecksum: String,
+    @Column(name = "cpk_name")
+    private val cpkName: String,
+    @Column(name = "cpk_version")
+    private val cpkVersion: String,
+    @Column(name = "cpk_signer_summary_hash")
+    private val cpkSignerSummaryHash: String,
 ): Serializable

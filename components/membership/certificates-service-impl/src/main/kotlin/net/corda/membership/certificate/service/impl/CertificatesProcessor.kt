@@ -3,12 +3,15 @@ package net.corda.membership.certificate.service.impl
 import net.corda.crypto.core.CryptoTenants
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
+import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
+import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
@@ -28,8 +31,12 @@ internal class CertificatesProcessor(
             val processor = getCertificateProcessor(request.tenantId)
             val payload = when (val requestPayload = request.request) {
                 is ImportCertificateRpcRequest -> {
-                    processor.saveCertificate(requestPayload.alias, requestPayload.certificate)
+                    processor.saveCertificates(requestPayload.alias, requestPayload.certificates)
                     CertificateImportedRpcResponse()
+                }
+                is RetrieveCertificateRpcRequest -> {
+                    val certificates = processor.readCertificates(requestPayload.alias)
+                    CertificateRetrievalRpcResponse(certificates)
                 }
                 else -> {
                     throw CertificatesServiceException("Unknwon request: $request")
@@ -42,7 +49,8 @@ internal class CertificatesProcessor(
     }
 
     private interface CertificateProcessor {
-        fun saveCertificate(alias: String, certificate: String)
+        fun saveCertificates(alias: String, certificates: String)
+        fun readCertificates(alias: String): String?
     }
 
     inner class ClusterCertificateProcessor(
@@ -50,20 +58,28 @@ internal class CertificatesProcessor(
     ) : CertificateProcessor {
         private val factory = dbConnectionManager.getClusterEntityManagerFactory()
 
-        override fun saveCertificate(alias: String, certificate: String) {
+        override fun saveCertificates(alias: String, certificates: String) {
             factory.transaction { em ->
-                em.merge(ClusterCertificate(tenantId, alias, certificate))
+                em.merge(ClusterCertificate(tenantId, alias, certificates))
             }
+        }
+
+        override fun readCertificates(alias: String) = factory.transaction { em ->
+            em.find(ClusterCertificate::class.java, ClusterCertificatePrimaryKey(tenantId, alias))?.rawCertificate
         }
     }
 
     inner class NodeCertificateProcessor(
         private val factory: EntityManagerFactory
     ) : CertificateProcessor {
-        override fun saveCertificate(alias: String, certificate: String) {
+        override fun saveCertificates(alias: String, certificates: String) {
             factory.transaction { em ->
-                em.merge(Certificate(alias, certificate))
+                em.merge(Certificate(alias, certificates))
             }
+        }
+
+        override fun readCertificates(alias: String) = factory.transaction { em ->
+            em.find(Certificate::class.java, alias)?.rawCertificate
         }
     }
 
@@ -71,7 +87,7 @@ internal class CertificatesProcessor(
         return if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
             ClusterCertificateProcessor(tenantId)
         } else {
-            val info = virtualNodeInfoReadService.getById(tenantId) ?: throw NoSuchNode(tenantId)
+            val info = virtualNodeInfoReadService.getByHoldingIdentityShortHash(tenantId) ?: throw NoSuchNode(tenantId)
             val factory = dbConnectionManager.createEntityManagerFactory(
                 info.vaultDmlConnectionId,
                 jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)

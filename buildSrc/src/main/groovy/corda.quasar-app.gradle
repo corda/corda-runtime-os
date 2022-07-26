@@ -11,6 +11,7 @@ quasar {
     excludePackages = [
         'co.paralleluniverse**',
         'com.esotericsoftware.**',
+        'io.opentelemetry.**',
         'jdk**',
         'kotlin**',
         'org.apache.**',
@@ -41,7 +42,12 @@ osgiRun {
                             "org.jolokia.jvmagent,org.jolokia.util",
             "org.osgi.framework.bundle.parent" : "app"
     ]
-    agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
+    javaAgents {
+        quasarAgent {
+            className = 'co.paralleluniverse.fibers.instrument.JavaAgent'
+            args = quasar.options.map { it.substring(1) }
+        }
+    }
 
     addOpensAttribute.addAll 'java.base/java.lang', 'java.base/java.lang.invoke', 'java.base/java.nio', 'java.base/java.util'
 }

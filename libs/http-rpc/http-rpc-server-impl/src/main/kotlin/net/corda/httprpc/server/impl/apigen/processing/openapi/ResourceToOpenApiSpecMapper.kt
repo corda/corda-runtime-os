@@ -48,8 +48,6 @@ private const val APPLICATION_JSON_CONTENT_TYPE = "application/json"
  * Convert a Resource list to an OpenAPI object
  */
 internal fun List<Resource>.toOpenAPI(schemaModelContextHolder: SchemaModelContextHolder): OpenAPI {
-
-
     log.trace { "Map \"${this.size}\" resources to OpenAPI." }
     val swaggerPathInfos = mutableMapOf<String, PathItem>()
     val tags = mutableListOf<Tag>()
@@ -58,12 +56,12 @@ internal fun List<Resource>.toOpenAPI(schemaModelContextHolder: SchemaModelConte
         swaggerPathInfos.putAll(it.getPathToPathItems(DefaultSchemaModelProvider(schemaModelContextHolder)))
         tags.add(it.toTag())
     }
-    val paths = Paths().apply { swaggerPathInfos.forEach { addPathItem(it.key, it.value) } }
+    val paths = Paths().apply { swaggerPathInfos.toSortedMap().forEach { addPathItem(it.key, it.value) } }
     val schemas =
         schemaModelContextHolder.getAllSchemas().map { it.key to SchemaModelToOpenApiSchemaConverter.convert(it.value) }
-            .toMap()
+            .toMap().toSortedMap()
     return OpenAPI().apply {
-        tags(tags)
+        tags(tags.sortedBy { it.name })
         paths(paths)
 
         components(
@@ -135,10 +133,14 @@ private fun List<EndpointParameter>.toMediaType(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
                 .type(DataType.OBJECT.toString().lowercase())
         )
-    } else if (isSingleRef || multiParams) {
+    } else if (isSingleRef) {
+        MediaType().schema(
+            SchemaModelToOpenApiSchemaConverter.convert(schemaModelProvider.toSchemaModel(this.first()))
+        )
+    } else if (multiParams) {
         MediaType().schema(
             SchemaModelToOpenApiSchemaConverter.convert(
-                schemaModelProvider.toSchemaModel(this, methodName + "Request")
+                schemaModelProvider.toSchemaModel(this, methodName + "WrapperRequest")
             )
         )
     } else {
@@ -174,7 +176,7 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
             ApiResponses()
                 .addApiResponse(
                     HttpStatus.OK_200.toString(),
-                    ApiResponse().description("Success.").withResponseBodyFrom(this, schemaModelProvider)
+                    ApiResponse().withResponseBodyFrom(this, schemaModelProvider)
                 )
                 .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized."))
                 .addApiResponse(HttpStatus.FORBIDDEN_403.toString(), ApiResponse().description("Forbidden."))
@@ -214,6 +216,10 @@ private fun ApiResponse.withResponseBodyFrom(
                 )
             )
         } else this
+
+        endpoint.responseBody.description.let {
+            response.description = it.ifBlank { "Success." }
+        }
         log.trace { "ApiResponse with ResponseBody from Endpoint: \"$endpoint\" completed." }
         return response
     } catch (e: Exception) {

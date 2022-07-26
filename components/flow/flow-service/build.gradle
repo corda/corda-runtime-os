@@ -19,6 +19,10 @@ dependencies {
     implementation project(":components:virtual-node:sandbox-group-context-service")
 
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-flow")
+    implementation project(":libs:flows:crypto-manager")
+    implementation project(':libs:flows:persistence-manager')
+    implementation project(':libs:flows:session-manager')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
@@ -26,6 +30,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-amqp")
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:virtual-node:sandbox-group-context")
+    implementation project(':libs:virtual-node:virtual-node-info')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
@@ -42,13 +47,11 @@ dependencies {
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
 
-    implementation project(':libs:flows:session-manager')
-    implementation project(':libs:virtual-node:virtual-node-info')
-
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(":libs:flows:session-manager-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
@@ -72,7 +75,7 @@ dependencies {
     integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
     integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
 
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 }
 
 def jar = tasks.named('jar', Jar) {

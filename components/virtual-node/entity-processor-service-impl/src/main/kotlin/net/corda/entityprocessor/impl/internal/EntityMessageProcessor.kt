@@ -1,19 +1,23 @@
 package net.corda.entityprocessor.impl.internal
 
+import java.nio.ByteBuffer
+import javax.persistence.EntityManagerFactory
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.FlowKey
-import net.corda.data.persistence.DeleteEntityById
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
 import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
+import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -27,8 +31,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
-import java.nio.ByteBuffer
-import javax.persistence.EntityManagerFactory
 
 
 fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
@@ -67,7 +69,7 @@ class EntityMessageProcessor(
 
     override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
-        val responses = mutableListOf<Record<FlowKey, EntityResponse>>()
+        val responses = mutableListOf<Record<String, FlowEvent>>()
         events.forEach {
             val response = try {
                 processRequest(it.key, it.value!!)
@@ -75,14 +77,15 @@ class EntityMessageProcessor(
                 // If we're catching at this point, it's an unrecoverable error.
                 failureResponse(it.key, e, Error.FATAL)
             }
-            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, it.value!!.flowKey, response))
+            val flowId = it.value!!.flowId
+            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, response)))
         }
 
         return responses
     }
 
     private fun processRequest(requestId: String, request: EntityRequest): EntityResponse {
-        val holdingIdentity = request.flowKey.identity.toCorda()
+        val holdingIdentity = request.holdingIdentity.toCorda()
 
         // Get the sandbox for the given request.
         // Handle any exceptions as close to the throw-site as possible.
@@ -107,7 +110,7 @@ class EntityMessageProcessor(
         requestId: String,
         request: EntityRequest
     ): EntityResponse {
-        val holdingIdentity = request.flowKey.identity.toCorda()
+        val holdingIdentity = request.holdingIdentity.toCorda()
 
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
@@ -159,6 +162,11 @@ class EntityMessageProcessor(
                         request.request as FindAll,
                         holdingIdentity
                     )
+                    is FindWithNamedQuery -> persistenceServiceInternal.findWithNamedQuery(
+                        serializationService,
+                        it,
+                        request.request as FindWithNamedQuery
+                    )
                     else -> {
                         failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
                     }
@@ -171,6 +179,8 @@ class EntityMessageProcessor(
         } catch (e: KafkaMessageSizeException) {
             // Results exceeded max packet size that we support at the moment.
             // We intend to support chunked results later.
+            failureResponse(requestId, e, Error.FATAL)
+        } catch (e: NullParameterException) {
             failureResponse(requestId, e, Error.FATAL)
         } catch (e: Exception) {
             failureResponse(requestId, e, Error.DATABASE)

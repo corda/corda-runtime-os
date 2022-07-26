@@ -1,16 +1,22 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
-import net.corda.v5.base.util.contextLogger
+import io.javalin.websocket.WsConfig
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
+import net.corda.httprpc.server.impl.apigen.processing.ws.WebsocketRouteAdaptor
+import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
+import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
+import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
-import net.corda.v5.base.util.trace
+import net.corda.httprpc.tools.isDuplexChannel
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.httprpc.tools.annotations.validation.utils.pathParamRegex
-import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationTargetException
 
 /**
@@ -23,6 +29,7 @@ internal interface RouteProvider {
     val httpPostRoutes: List<RouteInfo>
     val httpPutRoutes: List<RouteInfo>
     val httpDeleteRoutes: List<RouteInfo>
+    val httpDuplexRoutes: List<RouteInfo>
 }
 
 internal class JavalinRouteProviderImpl(
@@ -51,18 +58,17 @@ internal class JavalinRouteProviderImpl(
 
     override val httpDeleteRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.DELETE)
 
+    override val httpDuplexRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.WS)
+
     private fun mapResourcesToRoutesByHttpMethod(httpMethod: EndpointMethod): List<RouteInfo> {
         log.trace { "Map resources to routes by http method." }
         return resources.flatMap { resource ->
             resource.endpoints.filter { it.method == httpMethod }
-                .map { it.copy(path = replacePathParametersInEndpointPath(it.path)) }
                 .map { RouteInfo(basePath, resource.path, apiVersion, it) }
 
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
 
-    private fun replacePathParametersInEndpointPath(path: String?): String? =
-        path?.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
 }
 
 internal enum class ParameterType {
@@ -127,7 +133,7 @@ internal class RouteInfo(
 
     private fun mapEndpointParameters(parameters: List<EndpointParameter>): List<Parameter> {
         log.trace { "Map endpoint parameters of endpoint \"$fullPath\" to route provider parameters, list size: \"${parameters.size}\"." }
-        return parameters.map {
+        return parameters.filterNot { it.classType.isDuplexChannel() }.map {
             log.trace { "Map endpoint parameter \"${it.name}\"." }
             Parameter(
                 it.classType,
@@ -142,6 +148,27 @@ internal class RouteInfo(
             }
         }.also {
             log.trace { "Map endpoint parameters of endpoint \"$fullPath\" to route provider parameters completed." }
+        }
+    }
+
+    internal fun setupWsCall(
+        securityManager: HttpRpcSecurityManager,
+        credentialResolver: DefaultCredentialResolver
+    ): (WsConfig) -> Unit {
+        return { wsConfig ->
+            log.info("Setting-up WS call for '$fullPath'")
+            try {
+                val adaptor = WebsocketRouteAdaptor(this, securityManager, credentialResolver)
+                wsConfig.onMessage(adaptor)
+                wsConfig.onClose(adaptor)
+                wsConfig.onConnect(adaptor)
+                wsConfig.onError(adaptor)
+
+                log.debug { "Setting-up WS call for '$fullPath' completed." }
+            } catch (e: Exception) {
+                log.warn("Error Setting-up WS call for '$fullPath'", e)
+                throw HttpExceptionMapper.mapToResponse(e)
+            }
         }
     }
 }

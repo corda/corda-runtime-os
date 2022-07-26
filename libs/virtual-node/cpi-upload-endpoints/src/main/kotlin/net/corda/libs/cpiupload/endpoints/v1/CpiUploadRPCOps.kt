@@ -8,8 +8,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.HttpFileUpload
 
 @HttpRpcResource(
-    name = "CpiUploadRPCOps",
-    description = "Cpi Upload management endpoints",
+    name = "CPI Upload API",
+    description = "CPI Upload management endpoints.",
     path = "cpi"
 )
 interface CpiUploadRPCOps : RpcOps {
@@ -22,14 +22,14 @@ interface CpiUploadRPCOps : RpcOps {
      * Please note that this method will not close [cpiContent] input stream, the caller must close it.
      */
     @HttpRpcPOST(
-        title = "Upload a CPI",
-        description = "Uploads a CPI",
+        title = "CPI API",
+        description = "CPI management endpoints.",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
     fun cpi(upload: HttpFileUpload): UploadResponse
 
     /** Simple class to return the status of the upload request */
-    data class Status(val status: String, val checksum: String)
+    data class Status(val status: String, val cpiFileChecksum: String)
 
     /**
      * Get the status of the upload.
@@ -53,5 +53,5 @@ interface CpiUploadRPCOps : RpcOps {
         description = "List all CPIs uploaded to the cluster.",
         responseDescription = "List details of the all CPIs uploaded to the cluster."
     )
-    fun getAllCpis(): HTTPGetCPIsResponse
+    fun getAllCpis(): GetCPIsResponse
 }

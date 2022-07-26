@@ -35,7 +35,6 @@ import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.TestSchema
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -53,8 +52,10 @@ import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys
 
 open class TestBase {
     companion object {
@@ -154,10 +155,11 @@ open class TestBase {
         }
 
         private fun Publisher.publishGatewayConfig(config: Config) {
+            val configSource = config.root().render(ConfigRenderOptions.concise())
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
-                "p2p.gateway",
-                Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
+                ConfigKeys.P2P_GATEWAY_CONFIG,
+                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 
@@ -172,7 +174,7 @@ open class TestBase {
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
                 .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
-                .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
+                .withValue("connectionConfig.maxReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
                 .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig).use { publisher ->
                     publisher.publishGatewayConfig(publishConfig)
@@ -230,7 +232,7 @@ open class TestBase {
                 privateKey,
             )
             val keysRecord = Record(
-                TestSchema.CRYPTO_KEYS_TOPIC,
+                CRYPTO_KEYS_TOPIC,
                 alias,
                 TenantKeys(
                     tenantId,

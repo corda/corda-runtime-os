@@ -55,6 +55,14 @@ internal class SandboxServiceImpl @Activate constructor(
     private val logger = loggerFor<SandboxServiceImpl>()
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
+        if (publicSandboxes.isNotEmpty()) {
+            val publicSandbox = publicSandboxes.first()
+            check(publicBundles.toSet() == publicSandbox.publicBundles.toSet()
+                    && privateBundles.toSet() == publicSandbox.privateBundles.toSet()) {
+                "Public sandbox was already created with different bundles"
+            }
+            logger.warn("Public sandbox was already created")
+        }
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
         (publicBundles + privateBundles).forEach { bundle ->
             bundleIdToSandbox[bundle.bundleId] = publicSandbox

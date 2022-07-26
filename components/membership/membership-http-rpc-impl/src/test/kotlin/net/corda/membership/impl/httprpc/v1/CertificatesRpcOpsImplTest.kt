@@ -98,7 +98,7 @@ class CertificatesRpcOpsImplTest {
     }
     @Nested
     inner class GenerateCsrTests {
-        private val holdingIdentityId = "id"
+        private val holdingIdentityShortHash = "id"
         private val keyId = "keyId"
         private val x500Name = "CN=Alice"
         private val role = "TLS"
@@ -106,7 +106,7 @@ class CertificatesRpcOpsImplTest {
         private val key = mock<CryptoSigningKey> {
             on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
             on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
-            on { tenantId } doReturn holdingIdentityId
+            on { tenantId } doReturn holdingIdentityShortHash
         }
         private val publicKey = KeyPairGenerator.getInstance("EC").let { keyPairGenerator ->
             val rnd = mock<SecureRandom> {
@@ -121,10 +121,10 @@ class CertificatesRpcOpsImplTest {
 
         @BeforeEach
         fun setUp() {
-            whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(listOf(key))
             whenever(
                 cryptoOpsClient.sign(
-                    eq(holdingIdentityId),
+                    eq(holdingIdentityShortHash),
                     eq(publicKey),
                     argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                     any(),
@@ -146,7 +146,7 @@ class CertificatesRpcOpsImplTest {
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
-                    holdingIdentityId,
+                    holdingIdentityShortHash,
                     keyId,
                     x500Name,
                     role,
@@ -159,7 +159,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it sign the request`() {
             certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -168,7 +168,7 @@ class CertificatesRpcOpsImplTest {
             )
 
             verify(cryptoOpsClient).sign(
-                eq(holdingIdentityId),
+                eq(holdingIdentityShortHash),
                 eq(publicKey),
                 argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                 any(),
@@ -179,7 +179,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it returns the correct signature`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -193,7 +193,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it adds alternative subject names when some are provided`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -224,7 +224,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it will not adds alternative subject names when none are provided`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -242,7 +242,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it will use the correct x500 name`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -260,7 +260,7 @@ class CertificatesRpcOpsImplTest {
         fun `it throws exception if Signature OID can not be inferred`() {
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
-                    holdingIdentityId,
+                    holdingIdentityShortHash,
                     keyId,
                     x500Name,
                     role,
@@ -276,7 +276,7 @@ class CertificatesRpcOpsImplTest {
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
-                    holdingIdentityId,
+                    holdingIdentityShortHash,
                     keyId,
                     x500Name,
                     role,
@@ -294,7 +294,7 @@ class CertificatesRpcOpsImplTest {
     }
 
     @Nested
-    inner class ImportCertificatesTests {
+    inner class ImportCertificateChainTests {
         @Test
         fun `invalid certificate will throw an exception`() {
             val certificateText = "hello"
@@ -303,7 +303,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificate("tenant", "alias", certificate)
+                certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
             }
         }
         @Test
@@ -313,9 +313,32 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificate("tenant", "alias", certificate)
+            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
 
-            verify(certificatesClient).importCertificate("tenant", "alias", certificateText)
+            verify(certificatesClient).importCertificates("tenant", "alias", certificateText)
+        }
+        @Test
+        fun `no certificates throw an exception`() {
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("tenant", "alias", emptyList())
+            }
+        }
+
+        @Test
+        fun `valid multiple certificate will send all to the client`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate1 = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+            val certificate2 = mock<HttpFileUpload> {
+                on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
+            }
+
+            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate1, certificate2))
+
+            verify(certificatesClient).importCertificates(
+                "tenant", "alias", "$certificateText\n$certificateText\n$certificateText"
+            )
         }
     }
 }

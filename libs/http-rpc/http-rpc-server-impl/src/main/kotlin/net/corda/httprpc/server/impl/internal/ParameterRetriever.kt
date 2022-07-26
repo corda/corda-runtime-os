@@ -1,9 +1,7 @@
 package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import io.javalin.plugin.json.JavalinJson
 import java.io.InputStream
-import java.lang.IllegalArgumentException
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.exception.MissingParameterException
@@ -122,7 +120,7 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
             if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
 
             val field = node?.toString() ?: "null"
-            return JavalinJson.fromJson(field, parameter.classType)
+            return ctx.fromJsonString(field, parameter.classType)
                 .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to body parameter".let {
@@ -148,7 +146,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
                 val uploadedFiles = ctx.uploadedFiles(parameter.name)
 
                 if (uploadedFiles.isEmpty())
-                    throw IllegalArgumentException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
+                    throw MissingParameterException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
 
                 if (Collection::class.java.isAssignableFrom(parameter.classType))
                     return uploadedFiles

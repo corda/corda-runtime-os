@@ -1,14 +1,12 @@
 package net.corda.crypto.client.impl
 
-import java.nio.ByteBuffer
-import java.security.PublicKey
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -16,9 +14,9 @@ import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -32,6 +30,8 @@ import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
+import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 @Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
@@ -48,9 +48,10 @@ class CryptoOpsClientComponent @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
     configurationReadService = configurationReadService,
-    impl = InactiveImpl(),
-    dependencies = setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        )
     )
 ), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
@@ -58,14 +59,8 @@ class CryptoOpsClientComponent @Activate constructor(
         const val GROUP_NAME = "crypto.ops.rpc.client"
     }
 
-    interface Impl : AutoCloseable {
-        val ops: CryptoOpsClientImpl
-    }
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(publisherFactory, schemeMetadata, event)
+        Impl(publisherFactory, schemeMetadata, event)
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
@@ -157,21 +152,6 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
-    override fun freshKeyProxy(
-        tenantId: String,
-        category: String,
-        scheme: String,
-        context: KeyValuePairList
-    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, category, scheme, context)
-
-    override fun freshKeyProxy(
-        tenantId: String,
-        category: String,
-        externalId: String,
-        scheme: String,
-        context: KeyValuePairList
-    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, category, externalId, scheme, context)
-
     override fun signProxy(
         tenantId: String,
         publicKey: ByteBuffer,
@@ -187,18 +167,18 @@ class CryptoOpsClientComponent @Activate constructor(
         context: Map<String, String>
     ) = impl.ops.createWrappingKey(configId, failIfExists, masterKeyAlias, context)
 
-    internal class InactiveImpl: Impl {
-        override val ops: CryptoOpsClientImpl
-            get() = throw IllegalStateException("Component is in illegal state.")
+    override fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray = impl.ops.deriveSharedSecret(tenantId, publicKey, otherPublicKey, context)
 
-        override fun close() = Unit
-    }
-
-    internal class ActiveImpl(
+    class Impl(
         publisherFactory: PublisherFactory,
         schemeMetadata: CipherSchemeMetadata,
         event: ConfigChangedEvent
-    ) : Impl {
+    ) : AbstractImpl {
         private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
             RPCConfig(
                 groupName = GROUP_NAME,
@@ -210,13 +190,15 @@ class CryptoOpsClientComponent @Activate constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         ).also { it.start() }
 
-        override val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
+        val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
             schemeMetadata = schemeMetadata,
             sender = sender
         )
 
+        override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))
+
         override fun close() {
-            sender.stop()
+            sender.close()
         }
     }
 }

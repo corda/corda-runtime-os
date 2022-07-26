@@ -1,7 +1,7 @@
 package net.corda.flow.scheduler.impl
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.libs.configuration.SmartConfig
@@ -13,7 +13,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -40,7 +39,7 @@ class FlowWakeUpSchedulerImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps"), config.getConfig(MESSAGING_CONFIG))
+        publisher = publisherFactory.createPublisher(PublisherConfig("FlowWakeUpRPCOps"), config.getConfig(MESSAGING_CONFIG))
     }
 
     override fun onPartitionSynced(states: Map<String, Checkpoint>) {
@@ -64,7 +63,7 @@ class FlowWakeUpSchedulerImpl constructor(
             val id = it.flowId
             val scheduledWakeUp = scheduledExecutorService.schedule(
                 { publishWakeUp(id) },
-                it.maxFlowSleepDuration.toLong(),
+                it.pipelineState.maxFlowSleepDuration.toLong(),
                 TimeUnit.MILLISECONDS
             )
 

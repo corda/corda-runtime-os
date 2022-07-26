@@ -1,6 +1,7 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -8,12 +9,17 @@ import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
+import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPairGenerator
+import java.security.PrivateKey
 
 class AllWrappedKeysHSM(
     config: AllWrappedKeysHSMConfiguration,
@@ -22,7 +28,8 @@ class AllWrappedKeysHSM(
 ) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
 
     override val extensions: List<CryptoServiceExtensions> = listOf(
-        CryptoServiceExtensions.REQUIRE_WRAPPING_KEY
+        CryptoServiceExtensions.REQUIRE_WRAPPING_KEY,
+        CryptoServiceExtensions.SHARED_SECRET_DERIVATION
     )
 
     override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> = supportedSchemesMap
@@ -82,19 +89,38 @@ class AllWrappedKeysHSM(
         require (spec is SigningWrappedSpec) {
             "The service supports only ${SigningWrappedSpec::class.java}"
         }
+        logger.debug {
+            "sign(masterKeyAlias=$spec, keyScheme=${spec.keyScheme.codeName})"
+        }
+        return sign(spec, getPrivateKey(spec.keyMaterialSpec), data)
+    }
+
+    override fun delete(alias: String, context: Map<String, String>): Boolean {
+        throw UnsupportedOperationException()
+    }
+
+    override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray {
+        require(spec is SharedSecretWrappedSpec) {
+            "The service supports only ${SharedSecretWrappedSpec::class.java}"
+        }
+        val otherPublicKeyScheme = schemeMetadata.findKeyScheme(spec.otherPublicKey)
+        require(spec.keyScheme.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)) {
+            "The key scheme '${spec.keyScheme}' must support the Diffie–Hellman key agreement."
+        }
+        require(spec.keyScheme == otherPublicKeyScheme) {
+            "The keys must use the same key scheme, publicKey=${spec.keyScheme}, otherPublicKey=$otherPublicKeyScheme"
+        }
+        logger.info("deriveSharedSecret(spec={})", spec)
+        val provider = schemeMetadata.providers.getValue(spec.keyScheme.providerName)
+        return deriveDHSharedSecret(provider, getPrivateKey(spec.keyMaterialSpec), spec.otherPublicKey)
+    }
+
+    private fun getPrivateKey(spec: KeyMaterialSpec): PrivateKey {
         require (!spec.masterKeyAlias.isNullOrBlank()) {
             "The masterKeyAlias is not specified"
         }
-        logger.debug {
-            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName})"
-        }
         val wrappingKey = masterKeys[spec.masterKeyAlias!!]
             ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
-        val privateKey = wrappingKey.unwrap(spec.keyMaterial)
-        return sign(spec, privateKey, data)
-    }
-
-    override fun delete(alias: String, context: Map<String, String>) {
-        throw UnsupportedOperationException()
+        return wrappingKey.unwrap(spec.keyMaterial)
     }
 }

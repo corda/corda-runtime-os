@@ -1,8 +1,8 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -10,7 +10,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -196,7 +196,7 @@ class SubFlowFinishedRequestHandlerTest {
                 sessions,
                 SessionStateType.ERROR
             )
-        ).thenThrow(FlowSessionMissingException("Session does not exist"))
+        ).thenThrow(FlowSessionStateException("Session does not exist"))
 
         assertThrows<FlowFatalException> {
             handler.getUpdatedWaitingFor(
@@ -375,7 +375,7 @@ class SubFlowFinishedRequestHandlerTest {
                 sessions,
                 SessionStateType.ERROR
             )
-        ).thenThrow(FlowSessionMissingException("Session does not exist"))
+        ).thenThrow(FlowSessionStateException("Session does not exist"))
 
         assertThrows<FlowFatalException> {
             handler.postProcess(

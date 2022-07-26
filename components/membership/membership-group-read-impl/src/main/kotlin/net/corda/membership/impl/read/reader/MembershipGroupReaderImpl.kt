@@ -1,7 +1,8 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.CPIWhiteList
-import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
+import net.corda.membership.lib.CPIWhiteList
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.crypto.PublicKeyHash
@@ -20,7 +21,7 @@ class MembershipGroupReaderImpl(
     private val memberList: List<MemberInfo>
         get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)
             ?: throw IllegalStateException(
-                "Failed to find member list for ID='${holdingIdentity.id}, Group ID='${holdingIdentity.groupId}'")
+                "Failed to find member list for ID='${holdingIdentity.shortHash}, Group ID='${holdingIdentity.groupId}'")
 
     override val groupParameters: GroupParameters
         get() = TODO("Not yet implemented")
@@ -31,6 +32,9 @@ class MembershipGroupReaderImpl(
 
     override fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActive && ledgerKeyHash in it.ledgerKeyHashes }
+
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
+        memberList.singleOrNull { it.isActive && sessionKeyHash == it.sessionKeyHash }
 
     override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.isActive && it.name == name }
 }

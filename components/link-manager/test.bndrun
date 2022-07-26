@@ -26,6 +26,10 @@
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\
+    bnd.identity;id='net.corda.crypto-client-impl',\
+    bnd.identity;id='net.corda.membership-group-read-impl',\
+    bnd.identity;id='net.corda.membership-persistence-client-impl',\
+    bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\

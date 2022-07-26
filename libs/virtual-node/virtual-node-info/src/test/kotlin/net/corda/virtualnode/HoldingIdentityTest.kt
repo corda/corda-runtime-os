@@ -12,12 +12,12 @@ internal class HoldingIdentityTest {
         val holdingIdentityB = HoldingIdentity("C=GB,L=London,O=PartyB", "b8baa6fc-4c77-11ec-8b1e-bb51725ace52")
         val holdingIdentityC = HoldingIdentity("C=GB,L=London,O=PartyB", "b8baa6fc-4c77-11ec-8b1e-bb51725ace53")
 
-        assertNotNull(holdingIdentityA.id)
-        assertNotNull(holdingIdentityB.id)
-        assertNotNull(holdingIdentityC.id)
+        assertNotNull(holdingIdentityA.shortHash)
+        assertNotNull(holdingIdentityB.shortHash)
+        assertNotNull(holdingIdentityC.shortHash)
 
-        assertNotEquals(holdingIdentityA.id, holdingIdentityB.id)
-        assertNotEquals(holdingIdentityB.id, holdingIdentityC.id)
-        assertNotEquals(holdingIdentityC.id, holdingIdentityA.id)
+        assertNotEquals(holdingIdentityA.shortHash, holdingIdentityB.shortHash)
+        assertNotEquals(holdingIdentityB.shortHash, holdingIdentityC.shortHash)
+        assertNotEquals(holdingIdentityC.shortHash, holdingIdentityA.shortHash)
     }
 }

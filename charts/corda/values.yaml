@@ -28,6 +28,15 @@ resources:
   # -- the default CPU/memory resource request for the Corda containers
   requests: {}
 
+# Open Telemetry configuration
+openTelemetry:
+  # -- enables the Open Telemetry Java agent for the Corda workers
+  enabled: false
+  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
+  endpoint:
+  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
+  protocol: "grpc"
+
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
@@ -53,16 +62,16 @@ db:
     # -- registry for image containing a db client, used to set up the db
     registry: ""
     # -- repository for image containing a db client, used to set up the db
-    repository: bitnami/postgresql
+    repository: postgres
     # -- tag for image containing a db client, used to set up the db
-    tag: 14.2.0-debian-10-r88
+    tag: 14.4
 
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
   bootstrapServers: ""
   # -- Kafka topic partitions
-  partitions: 3
+  partitions: 10
   # -- Kafka topic replicas
   replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
@@ -85,13 +94,16 @@ kafka:
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: ""
-  clientImage:
-    # -- registry for image containing a Kafka client, used to set up Kafka
-    registry: ""
-    # -- repository for image containing a Kafka client, used to set up Kafka
-    repository: bitnami/kafka
-    # -- tag for image containing a Kafka client, used to set up Kafka
-    tag: 3.1.0-debian-10-r89
+  # SASL configuration for client connection to Kafka
+  sasl:
+    # -- SASL username for client connection to Kafka 
+    username: "user"
+    # -- SASL password for client connection to Kafka 
+    password: ""
+    # -- SASL mechanism for client connection to Kafka 
+    mechanism: "SCRAM-SHA-256"
+    # -- enable/disable SASL for client connection to Kafka 
+    enabled: false
 
 # Configuration for the bootstrapper
 bootstrap:
@@ -130,6 +142,9 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the crypto worker until the debugger is attached
       suspend: false
+    profiling:
+      # -- run crypto worker with profiling enabled
+      enabled: false
     # resource limits and requests configuration for the crypto worker containers
     resources:
       # -- the CPU/memory resource requests for the crypto worker containers
@@ -155,6 +170,9 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the DB worker until the debugger is attached
       suspend: false
+    profiling:
+      # -- run DB worker with profiling enabled
+      enabled: false
     # -- DB worker salt, defaults to a value randomly-generated on install
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
@@ -184,12 +202,17 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the flow worker until the debugger is attached
       suspend: false
+    profiling:
+      # -- run flow worker with profiling enabled
+      enabled: false
     # resource limits and requests configuration for the flow worker containers.
     resources:
       # -- the CPU/memory resource requests for the flow worker containers
       requests: {}
       # -- the CPU/memory resource limits for the flow worker containers
       limits: {}
+    # -- run flow worker with Quasar's verifyInstrumentation enabled
+    verifyInstrumentation: false
 
   # membership worker configuration
   membership:
@@ -209,6 +232,9 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the membership worker until the debugger is attached
       suspend: false
+    profiling:
+      # -- run membership worker with profiling enabled
+      enabled: false
     # resource limits and requests configuration for the membership worker containers
     resources:
       # -- the CPU/memory resource requests for the membership worker containers
@@ -234,6 +260,9 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the RPC worker until the debugger is attached
       suspend: false
+    profiling:
+      # -- run RPC worker with profiling enabled
+      enabled: false
     # -- resource limits and requests configuration for the RPC worker containers.
     resources:
       # -- the CPU/memory resource requests for the RPC worker containers
@@ -250,3 +279,67 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
       annotations: {}
+
+  # P2P Link Manager worker configuration
+  p2pLinkManager:
+    # p2p-link-manager worker image configuration
+    image:
+      # -- p2p-link-manager worker image registry, defaults to image.registry
+      registry: ""
+      # -- p2p-link-manager worker image repository
+      repository: "corda-os-p2p-link-manager"
+      # -- p2p-link-manager worker image tag, defaults to image.tag
+      tag: ""
+    # -- p2p-link-manager worker replica count
+    replicaCount: 1
+    # -- Use stubbed crypto processor, membership group reader and group policy provider
+    useStubs: false
+    # p2p-link-manager worker debug configuration
+    debug:
+      # -- run p2p-link-manager worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the p2p-link-manager worker until the debugger is attached
+      suspend: false
+    profiling:
+      # -- run p2p-link-manager worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the p2p-link-manager worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the p2p-link-manager worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the p2p-link-manager worker containers
+      limits: {}
+
+  # P2P Gateway worker configuration
+  p2pGateway:
+    # p2p-gateway worker image configuration
+    image:
+      # -- p2p-gateway worker image registry, defaults to image.registry
+      registry: ""
+      # -- p2p-gateway worker image repository
+      repository: "corda-os-p2p-gateway"
+      # -- p2p-gateway worker image tag, defaults to image.tag
+      tag: ""
+    # -- p2p-gateway worker replica count
+    replicaCount: 1
+    # -- Use stub crypto processor
+    useStubs: false
+    # p2p-gateway worker debug configuration
+    debug:
+      # -- run p2p-gateway worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the p2p-gateway worker until the debugger is attached
+      suspend: false
+    profiling:
+      # -- run p2p-gateway worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the p2p-gateway worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the p2p-gateway worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the p2p-gateway worker containers
+      limits: {}
+    # p2p-gateway worker worker service configuration
+    service:
+      # -- The Gateway HTTP port
+      port: 8080

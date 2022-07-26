@@ -1,25 +1,24 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -81,14 +80,17 @@ class FlowEventPipelineImplTest {
         whenever(runFlow(any(), any())).thenReturn(runFlowCompletion)
     }
 
-    private val pipeline = FlowEventPipelineImpl(
-        mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
-        mapOf(WakeUpWaitingFor()::class.java to flowWaitingForHandler),
-        mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
-        flowRunner,
-        flowGlobalPostProcessor,
-        inputContext
-    )
+    private fun buildPipeline(output: FlowIORequest<*>? = null) : FlowEventPipelineImpl {
+        return FlowEventPipelineImpl(
+            mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
+            mapOf(WakeUpWaitingFor()::class.java to flowWaitingForHandler),
+            mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
+            flowRunner,
+            flowGlobalPostProcessor,
+            inputContext,
+            output
+        )
+    }
 
     companion object {
         @JvmStatic
@@ -102,6 +104,7 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `eventPreProcessing with no retry calls the event handler`() {
+        val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.eventPreProcessing().context)
         verify(wakeUpFlowEventHandler).preProcess(inputContext)
     }
@@ -112,6 +115,7 @@ class FlowEventPipelineImplTest {
         whenever(checkpoint.inRetryState).thenReturn(true)
         whenever(checkpoint.retryEvent).thenReturn(retryEvent)
         whenever(startFlowEventHandler.preProcess(any())).thenReturn(retryHandlerOutputContext)
+        val pipeline = buildPipeline()
 
         assertEquals(retryHandlerOutputContext, pipeline.eventPreProcessing().context)
         verify(startFlowEventHandler).preProcess(argThat { this.inputEvent == retryEvent && this.inputEventPayload == retryEvent.payload })
@@ -126,13 +130,13 @@ class FlowEventPipelineImplTest {
 
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowCompletion.get()).thenReturn(suspendRequest)
+        val pipeline = buildPipeline()
 
-        val state = pipeline.runOrContinue()
+        pipeline.runOrContinue()
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
         verify(checkpoint).serializedFiber = expectedFiber
-        assertThat(state.output).isSameAs(flowResult)
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with flow completion result")
@@ -144,12 +148,12 @@ class FlowEventPipelineImplTest {
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(outcome)
         whenever(runFlowCompletion.get()).thenReturn(flowResult)
 
-        val state = pipeline.runOrContinue()
+        val pipeline = buildPipeline()
+        pipeline.runOrContinue()
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, waitingForWakeup.value)
         verify(checkpoint).serializedFiber = expectedFiber
-        assertThat(state.output).isSameAs(flowResult)
     }
 
     @Test
@@ -157,6 +161,7 @@ class FlowEventPipelineImplTest {
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any()))
             .thenReturn(FlowContinuation.Error(IllegalStateException("I'm broken")))
         whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(""))
+        val pipeline = buildPipeline()
         pipeline.runOrContinue()
         verify(flowRunner).runFlow(any(), any())
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
@@ -165,6 +170,7 @@ class FlowEventPipelineImplTest {
     @Test
     fun `runOrContinue does not run a flow when FlowContinuation#Continue is returned by the FlowWaitingForHandler`() {
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Continue)
+        val pipeline = buildPipeline()
         assertEquals(pipeline, pipeline.runOrContinue())
         verify(flowRunner, never()).runFlow(any(), any())
         verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
@@ -172,48 +178,48 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `setCheckpointSuspendedOn sets the checkpoint's suspendedOn property when output is set`() {
-        val pipeline = this.pipeline.copy(output = FlowIORequest.ForceCheckpoint)
+        val pipeline = buildPipeline(FlowIORequest.ForceCheckpoint)
         pipeline.setCheckpointSuspendedOn()
         verify(checkpoint).suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
     }
 
     @Test
     fun `setCheckpointSuspendedOn does not set the checkpoint's suspendedOn property when output is not set`() {
-        val pipeline = this.pipeline.copy(output = null)
+        val pipeline = buildPipeline(output = null)
         pipeline.setCheckpointSuspendedOn()
         verify(checkpoint, never()).suspendedOn
     }
 
     @Test
     fun `requestPostProcessing calls the appropriate request handler when output is set`() {
-        val pipeline = this.pipeline.copy(output = FlowIORequest.ForceCheckpoint)
+        val pipeline = buildPipeline(output = FlowIORequest.ForceCheckpoint)
         assertEquals(outputContext, pipeline.requestPostProcessing().context)
         verify(flowRequestHandler).postProcess(inputContext, FlowIORequest.ForceCheckpoint)
     }
 
     @Test
     fun `requestPostProcessing does not call a request handler when output is not set`() {
-        val pipeline = this.pipeline.copy(output = null)
+        val pipeline = buildPipeline(output = null)
         assertEquals(pipeline, pipeline.requestPostProcessing())
         verify(flowRequestHandler, never()).postProcess(inputContext, FlowIORequest.ForceCheckpoint)
     }
 
     @Test
     fun `requestPostProcessing throws an exception if the appropriate request handler cannot be found`() {
-        val pipeline = this.pipeline.copy(output = FlowIORequest.WaitForSessionConfirmations)
-        assertThrows(FlowProcessingException::class.java) { pipeline.requestPostProcessing() }
+        val pipeline = buildPipeline(output = FlowIORequest.WaitForSessionConfirmations)
+        assertThrows<FlowFatalException> { pipeline.requestPostProcessing() }
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
-        val pipeline = this.pipeline.copy(output = FlowIORequest.ForceCheckpoint)
+        val pipeline = buildPipeline(output = FlowIORequest.ForceCheckpoint)
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
         verify(flowGlobalPostProcessor).postProcess(inputContext)
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is not set`() {
-        val pipeline = this.pipeline.copy(output = null)
+        val pipeline = buildPipeline(output = null)
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
         verify(flowGlobalPostProcessor).postProcess(inputContext)
     }

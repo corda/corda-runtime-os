@@ -44,9 +44,11 @@ class PermissionStorageWriterServiceEventHandler(
     }
 
     @VisibleForTesting
+    @Volatile
     internal var subscription: RPCSubscription<PermissionManagementRequest, PermissionManagementResponse>? = null
 
     @VisibleForTesting
+    @Volatile
     internal var crsSub: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -97,8 +99,7 @@ class PermissionStorageWriterServiceEventHandler(
             ),
             messagingConfig = messagingConfig,
             responderProcessor = permissionStorageWriterProcessorFactory.create(
-                entityManagerFactoryCreator(),
-                readerService.permissionStorageReader!!
+                entityManagerFactoryCreator(), readerService::permissionStorageReader
             )
         ).also {
             it.start()

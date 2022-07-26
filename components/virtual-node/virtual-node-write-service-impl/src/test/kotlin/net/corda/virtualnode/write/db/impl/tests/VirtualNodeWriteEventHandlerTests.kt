@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.tests
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -24,7 +25,10 @@ import org.mockito.kotlin.whenever
 
 /** Tests of [VirtualNodeWriteEventHandler]. */
 class VirtualNodeWriteEventHandlerTests {
-    private val componentsToFollow = setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+    private val componentsToFollow = setOf(
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+    )
 
     @Test
     fun `follows the configuration read service upon starting`() {
@@ -58,7 +62,7 @@ class VirtualNodeWriteEventHandlerTests {
         eventHandler.processEvent(StartEvent(), coordinator)
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, UP), coordinator)
 
-        verify(configReadService).registerForUpdates(any())
+        verify(configReadService).registerComponentForUpdates(any(), any())
     }
 
     @Test
@@ -82,7 +86,7 @@ class VirtualNodeWriteEventHandlerTests {
         eventHandler.processEvent(StartEvent(), mock())
         eventHandler.processEvent(RegistrationStatusChangeEvent(mock(), UP), mock())
 
-        verify(configReadService, times(0)).registerForUpdates(any())
+        verify(configReadService, times(0)).registerComponentForUpdates(any(), any())
     }
 
     @Test
@@ -95,7 +99,7 @@ class VirtualNodeWriteEventHandlerTests {
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, DOWN), coordinator)
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, ERROR), coordinator)
 
-        verify(configReadService, times(0)).registerForUpdates(any())
+        verify(configReadService, times(0)).registerComponentForUpdates(any(), any())
     }
 
     @Test
@@ -146,7 +150,7 @@ class VirtualNodeWriteEventHandlerTests {
     private fun getConfigReadServiceAndUpdateHandle(): Pair<ConfigurationReadService, AutoCloseable> {
         val updateHandle = mock<AutoCloseable>()
         val configReadService = mock<ConfigurationReadService>().apply {
-            whenever(registerForUpdates(any())).thenReturn(updateHandle)
+            whenever(registerComponentForUpdates(any(), any())).thenReturn(updateHandle)
         }
         return configReadService to updateHandle
     }

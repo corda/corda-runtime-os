@@ -7,6 +7,7 @@ import kotlin.random.Random
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig
 import picocli.CommandLine
 import picocli.CommandLine.Option
 
@@ -34,13 +35,13 @@ internal class CliArguments {
     var helpRequested = false
 
     @Option(
-        names = ["-k", "--kafka-servers"],
-        description = ["A comma-separated list of addresses of Kafka brokers (default: \${DEFAULT-VALUE})"]
+        names = ["-m", "--messagingParams"],
+        description = ["Messaging parameters for the gateway."]
     )
-    var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+    var messagingParams = emptyMap<String, String>()
 
     @Option(
-        names = ["--topic-prefix"],
+        names = ["--topicPrefix"],
         description = ["The topic prefix (default: \${DEFAULT-VALUE})"]
     )
     var topicPrefix = System.getenv("TOPIC_PREFIX") ?: ""
@@ -51,12 +52,22 @@ internal class CliArguments {
     )
     var instanceId = System.getenv("INSTANCE_ID")?.toInt() ?: Random.nextInt()
 
+    @Option(names = ["--without-stubs"])
+    var withoutStubs = false
+
     val bootConfiguration: Config by lazy {
-        ConfigFactory.empty()
-            .withValue("$BOOT_KAFKA_COMMON.bootstrap.servers", ConfigValueFactory.fromAnyRef(kafkaServers))
+        val parsedMessagingParams = messagingParams.mapKeys { (key, _) -> "$BOOT_KAFKA_COMMON.${key.trim()}" }.toMutableMap()
+        parsedMessagingParams.computeIfAbsent("$BOOT_KAFKA_COMMON.bootstrap.servers") {
+            System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+        }
+        ConfigFactory
+            .parseMap(parsedMessagingParams)
             .withValue(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(topicPrefix)
+            ).withValue(
+                MessagingConfig.Bus.BUS_TYPE,
+                ConfigValueFactory.fromAnyRef("KAFKA")
             )
             .withValue(
                 INSTANCE_ID,

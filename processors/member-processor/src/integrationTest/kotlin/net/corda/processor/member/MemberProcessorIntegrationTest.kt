@@ -1,11 +1,8 @@
 package net.corda.processor.member
 
 import com.typesafe.config.ConfigRenderOptions
-import java.time.Duration
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.DbPrivilege
@@ -19,7 +16,6 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
-import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -45,8 +41,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPol
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySessionKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
@@ -56,11 +51,11 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawG
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
@@ -74,8 +69,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import net.corda.test.util.time.TestClock
+import java.time.Duration
 import java.time.Instant
+import java.util.*
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -129,11 +126,11 @@ class MemberProcessorIntegrationTest {
 
         private val invalidHoldingIdentity = HoldingIdentity("", groupId)
 
-        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName).toString(), groupId).id
+        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName).toString(), groupId).shortHash
 
-        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName).toString(), groupId).id
+        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName).toString(), groupId).shortHash
 
-        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName).toString(), groupId).id
+        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName).toString(), groupId).shortHash
 
         private lateinit var testDependencies: TestDependenciesTracker
 
@@ -172,6 +169,11 @@ class MemberProcessorIntegrationTest {
         @JvmStatic
         @BeforeAll
         fun setUp() {
+            // Creating this publisher first (using the messagingConfig) will ensure we're forcing
+            // the in-memory message bus. Otherwise we may attempt to use a real database for the test
+            // and that can cause message bus conflicts when the tests are run in parallel.
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+
             setupDatabases()
 
             // Set basic bootstrap config
@@ -191,7 +193,6 @@ class MemberProcessorIntegrationTest {
                 )
             ).also { it.startAndWait() }
 
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
@@ -255,13 +256,15 @@ class MemberProcessorIntegrationTest {
             dbs.forEach { db ->
                 val configAsString = db.config.root().render(ConfigRenderOptions.concise())
                 configEmf.transaction {
-                    val existing = it.createQuery("""
+                    val existing = it.createQuery(
+                        """
                         SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
-                    """.trimIndent(), DbConnectionConfig::class.java)
+                    """.trimIndent(), DbConnectionConfig::class.java
+                    )
                         .setParameter("name", db.name)
                         .setParameter("privilege", DbPrivilege.DML)
                         .resultList
-                    ids[db.name] = if(existing.isEmpty()) {
+                    ids[db.name] = if (existing.isEmpty()) {
                         val record = DbConnectionConfig(
                             UUID.randomUUID(),
                             db.name,
@@ -303,61 +306,8 @@ class MemberProcessorIntegrationTest {
     fun `Get group policy fails for unknown holding identity`() {
         getGroupPolicyFails(
             groupPolicyProvider,
-            invalidHoldingIdentity,
-            BadGroupPolicyException::class.java
+            invalidHoldingIdentity
         )
-    }
-
-    @Test
-    fun `Group policy fails to be read if the component stops`() {
-        groupPolicyProvider.stopAndWait()
-        getGroupPolicyFails(groupPolicyProvider, aliceHoldingIdentity)
-        groupPolicyProvider.startAndWait()
-    }
-
-    @Test
-    fun `Group policy cache is cleared after a restart (new instance is returned)`() {
-        val groupPolicy1 = getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity)
-        groupPolicyProvider.stopAndWait()
-        groupPolicyProvider.startAndWait()
-        eventually {
-            assertGroupPolicy(
-                getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
-                groupPolicy1
-            )
-        }
-    }
-
-    @Test
-    fun `Group policy cannot be retrieved if virtual node info reader dependency component goes down`() {
-        val groupPolicy1 = getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity)
-        virtualNodeInfoReader.stopAndWait()
-        getGroupPolicyFails(groupPolicyProvider, aliceHoldingIdentity)
-
-        virtualNodeInfoReader.startAndWait()
-        groupPolicyProvider.isStarted()
-        eventually {
-            assertGroupPolicy(
-                getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
-                groupPolicy1
-            )
-        }
-    }
-
-    @Test
-    fun `Group policy cannot be retrieved if CPI info reader dependency component goes down`() {
-        val groupPolicy1 = getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity)
-        cpiInfoReader.stopAndWait()
-        getGroupPolicyFails(groupPolicyProvider, aliceHoldingIdentity)
-
-        cpiInfoReader.startAndWait()
-        groupPolicyProvider.isStarted()
-        eventually {
-            assertGroupPolicy(
-                getGroupPolicy(groupPolicyProvider, aliceHoldingIdentity),
-                groupPolicy1
-            )
-        }
     }
 
     @Test
@@ -437,8 +387,8 @@ class MemberProcessorIntegrationTest {
 
         assertLookupSize(bobReader, 2)
 
-        assertEquals(aliceMemberInfo, lookUpFromPublicKey(aliceGroupReader, aliceMemberInfo))
-        assertEquals(bobMemberInfo, lookUpFromPublicKey(aliceGroupReader, bobMemberInfo))
+        assertEquals(aliceMemberInfo, lookUpBySessionKey(aliceGroupReader, aliceMemberInfo))
+        assertEquals(bobMemberInfo, lookUpBySessionKey(aliceGroupReader, bobMemberInfo))
 
     }
 }

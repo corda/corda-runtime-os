@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -8,6 +9,7 @@ import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -30,6 +32,8 @@ class Gateway(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
+    signingMode: SigningMode,
+    cryptoOpsClient: CryptoOpsClient
 ) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
@@ -38,6 +42,8 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         messagingConfiguration,
+        signingMode,
+        cryptoOpsClient
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -49,10 +55,7 @@ class Gateway(
     @VisibleForTesting
     internal val children: Collection<DominoTile> =
         listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
-        dependentChildren = children, managedChildren = children)
 
-    companion object {
-        const val CONFIG_KEY = "p2p.gateway"
-    }
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
+        dependentChildren = children.map { it.coordinatorName }, managedChildren = children.map { it.toNamedLifecycle() })
 }

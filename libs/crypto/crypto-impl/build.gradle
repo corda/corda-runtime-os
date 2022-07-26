@@ -9,10 +9,11 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
+    api project(":libs:crypto:crypto-core")
+
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    api "net.corda:corda-cipher-suite"
     api 'net.corda:corda-serialization'
     api project(':libs:layered-property-map')
 
@@ -25,11 +26,10 @@ dependencies {
     implementation "net.corda:corda-membership"
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:utilities")
 
     testImplementation "javax.persistence:javax.persistence-api"
+    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

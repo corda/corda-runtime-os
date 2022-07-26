@@ -1,13 +1,16 @@
 package net.cordapp.flowworker.development.flows
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.application.flows.getRequestBodyAs
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -17,6 +20,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.cordapp.flowworker.development.messages.MessageFlowInput
 
 @InitiatingFlow(protocol = "flowDevProtocol")
 class MessagingFlow : RPCStartableFlow {
@@ -31,17 +35,23 @@ class MessagingFlow : RPCStartableFlow {
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
 
+    @CordaInject
+    lateinit var memberLookupService: MemberLookup
+
+    @CordaInject
+    lateinit var jsonMarshallingService: JsonMarshallingService
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Hello world is starting... [${flowEngine.flowId}]")
-        val session = flowMessaging.initiateFlow(
-            MemberX500Name(
-                commonName = "Alice",
-                organisation = "Alice Corp",
-                locality = "LDN",
-                country = "GB"
-            )
-        )
+        val input = requestBody.getRequestBodyAs<MessageFlowInput>(jsonMarshallingService)
+        val counterparty = MemberX500Name.parse(input.counterparty.toString())
+        log.info("Looking up member $counterparty in the network.")
+        val findCounterparty = memberLookupService.lookup(counterparty)
+            ?: throw IllegalStateException("Failed to lookup the member $counterparty")
+        log.info("Preparing to initiate flow with member from group: ${findCounterparty.name}")
+
+        val session = flowMessaging.initiateFlow(findCounterparty.name)
 
         val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
 
@@ -49,7 +59,7 @@ class MessagingFlow : RPCStartableFlow {
 
         flowEngine.subFlow(InlineSubFlow(session))
 
-        flowEngine.subFlow(InitiatingSubFlow())
+        flowEngine.subFlow(InitiatingSubFlow(counterparty))
 
         log.info("Finished initiating subflow")
 
@@ -111,7 +121,7 @@ class MessagingInitiatedFlow : ResponderFlow {
     }
 }
 
-class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
+class InlineSubFlow(private val session: FlowSession) : SubFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
@@ -127,7 +137,7 @@ class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
 }
 
 @InitiatingFlow(protocol = "subFlowDevProtocol")
-class InitiatingSubFlow : Flow<Unit> {
+class InitiatingSubFlow(private val counterparty: MemberX500Name) : SubFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
@@ -139,14 +149,7 @@ class InitiatingSubFlow : Flow<Unit> {
     @Suspendable
     override fun call() {
         log.info("Initiating subFlow is starting...")
-        val session = flowMessaging.initiateFlow(
-            MemberX500Name(
-                commonName = "Alice",
-                organisation = "Alice Corp",
-                locality = "LDN",
-                country = "GB"
-            )
-        )
+        val session = flowMessaging.initiateFlow(counterparty)
 
         val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
 

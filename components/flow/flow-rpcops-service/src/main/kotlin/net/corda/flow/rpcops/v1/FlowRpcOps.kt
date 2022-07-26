@@ -1,10 +1,11 @@
 package net.corda.flow.rpcops.v1
 
-import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
-import net.corda.flow.rpcops.v1.response.HTTPStartFlowResponse
+import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -12,8 +13,8 @@ import net.corda.libs.configuration.SmartConfig
 
 /** RPC operations for flow management. */
 @HttpRpcResource(
-    name = "FlowRPCOps",
-    description = "Flow management endpoints",
+    name = "Flow Management API",
+    description = "Flow management endpoints.",
     path = "flow"
 )
 interface FlowRpcOps : RpcOps {
@@ -24,34 +25,41 @@ interface FlowRpcOps : RpcOps {
      */
     fun initialise(config: SmartConfig)
 
-    @HttpRpcPUT(
-        path = "{holderShortId}/{clientRequestId}/{flowClassName}",
+    @HttpRpcPOST(
+        path = "{holdingIdentityShortHash}",
         title = "Start Flow",
         description = "Instructs Corda to start a new instance of the specified flow",
         responseDescription = "The initial status of the flow, if the flow already exists the status of the existing" +
                 " flow will be returned."
     )
     fun startFlow(
-        @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
-        holderShortId: String,
-        @HttpRpcPathParameter(description = "Client provided flow identifier")
-        clientRequestId: String,
-        @HttpRpcPathParameter(description ="Fully qualified class name of the flow to start.")
-        flowClassName: String,
-        @HttpRpcRequestBodyParameter(description = "Optional start arguments string passed to the flow.", required = false)
-        requestBody: String
-    ): HTTPStartFlowResponse
+        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        holdingIdentityShortHash: String,
+        @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
+        startFlow: StartFlowParameters
+    ): FlowStatusResponse
 
     @HttpRpcGET(
-        path = "{holderShortId}/{clientRequestId}",
+        path = "{holdingIdentityShortHash}/{clientRequestId}",
         title = "Get Flow Status",
         description = "Gets the current status for a given flow.",
         responseDescription = "The status of the flow."
     )
     fun getFlowStatus(
-        @HttpRpcPathParameter(description = "Short form of the Holder Identifier")
-        holderShortId: String,
+        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        holdingIdentityShortHash: String,
         @HttpRpcPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
-    ) : HTTPFlowStatusResponse
+    ): FlowStatusResponse
+
+    @HttpRpcGET(
+        path = "{holdingIdentityShortHash}",
+        title = "Get Multiple Flow Status",
+        description = "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
+        responseDescription = "The status of the flow."
+    )
+    fun getMultipleFlowStatus(
+        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        holdingIdentityShortHash: String
+    ): FlowStatusResponses
 }

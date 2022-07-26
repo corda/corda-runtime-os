@@ -303,7 +303,7 @@ class CompactedSubscriptionImplTest {
         doAnswer(onPoll).whenever(consumerMock).poll(any())
         doAnswer {
             listOf(CordaTopicPartition(config.topic, 0))
-        }.whenever(consumerMock).getPartitions(any(), any())
+        }.whenever(consumerMock).getPartitions(any())
 
         return Pair(consumerMock, cordaConsumerBuilder)
     }

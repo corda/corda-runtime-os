@@ -70,28 +70,37 @@ class StreamResourceAccessor(
      * @param relativeTo Location that streamPath should be found relative to. If null, streamPath is an absolute path
      * @return Empty list if the resource does not exist.
      * @throws IOException if there is an error reading an existing path.
+     * @throws UnsupportedOperationException if streamPath is null
      */
     override fun openStreams(relativeTo: String?, streamPath: String?): InputStreamList {
-        if (masterChangeLogFileName == streamPath) {
-            return createCompositeMasterChangeLog()
+        if (relativeTo != null) {
+            log.error("openStreams relativeTo was $relativeTo on streamPath $streamPath; reject")
+            throw UnsupportedOperationException(
+                "openStreams with relativeTo non-null '$relativeTo' on " +
+                        "stream path '$streamPath' not supported"
+            )
         }
-        if (null != streamPath && streamPath.contains("www.liquibase.org")) {
-            // NOTE: this is needed for fetching the XML schemas
-            log.debug("'$streamPath' looks like an XML schema ... delegating to ClassLoaderResourceAccessor")
-            return classLoaderResourceAccessor.openStreams(relativeTo, streamPath)
-        }
-        if (null == relativeTo && null != streamPath) {
-            log.debug("Fetching change log from: $streamPath")
-            return InputStreamList(URI(streamPath), dbChange.fetch(streamPath))
+        if (streamPath == null) {
+            log.error("openStreams with null reject")
+            throw UnsupportedOperationException("openStreams with null '$streamPath' not supported")
         }
 
-        throw UnsupportedOperationException(
-            "openStreams with arguments '$relativeTo' and '$streamPath' not supported"
-        )
+        // if we are accessing the specific path masterChangeLogFileName, we synthesise an XML file
+        // which causes Liquibase to include all the changelogs we know about.
+        if (masterChangeLogFileName == streamPath)
+            return createCompositeMasterChangeLog()
+
+        if (streamPath.contains("www.liquibase.org")) {
+            // NOTE: this is needed for fetching the XML schemas
+            log.debug("'$streamPath' looks like an XML schema ... delegating to ClassLoaderResourceAccessor")
+            return classLoaderResourceAccessor.openStreams(null, streamPath)
+        }
+        log.debug("Fetching change log from: $streamPath relative")
+        return InputStreamList(URI(streamPath), dbChange.fetch(streamPath))
     }
 
     private fun createCompositeMasterChangeLog(): InputStreamList {
-        log.info("Creating composite master changelog file $masterChangeLogFileName with: ${dbChange.masterChangeLogFiles}")
+        log.info("Creating composite master changelog XML file $masterChangeLogFileName with: ${dbChange.masterChangeLogFiles}")
         // dynamically create the master file by combining the specified.
         ByteArrayOutputStream().use {
             val xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(it,"UTF-8")
@@ -120,7 +129,7 @@ class StreamResourceAccessor(
                 transformer.setOutputProperty(OutputKeys.STANDALONE, "yes")
                 StringWriter().use { sw ->
                     transformer.transform(StreamSource(ByteArrayInputStream(it.toByteArray())), StreamResult(sw))
-                    log.debug("Generated Master XML:\n$sw")
+                    log.debug("Generated composite master changelog XML file:\n$sw")
                 }
             }
 

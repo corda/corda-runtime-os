@@ -35,7 +35,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     private interface InnerMemberLookupRpcOps {
         @Suppress("LongParameterList")
         fun lookup(
-            holdingIdentityId: String,
+            holdingIdentityShortHash: String,
             commonName: String?,
             organisation: String?,
             organisationUnit: String?,
@@ -82,34 +82,28 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     }
 
     override fun lookup(
-        holdingIdentityId: String,
+        holdingIdentityShortHash: String,
         commonName: String?,
         organisation: String?,
         organisationUnit: String?,
         locality: String?,
         state: String?,
         country: String?
-    ) = impl.lookup(holdingIdentityId, commonName, organisation, organisationUnit, locality, state, country)
+    ) = impl.lookup(holdingIdentityShortHash, commonName, organisation, organisationUnit, locality, state, country)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
-        updateStatus(LifecycleStatus.UP, reason)
+        coordinator.updateStatus(LifecycleStatus.UP, reason)
     }
 
     fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
+        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         impl = InactiveImpl
-    }
-
-    private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if (coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
     }
 
     private object InactiveImpl : InnerMemberLookupRpcOps {
         override fun lookup(
-            holdingIdentityId: String,
+            holdingIdentityShortHash: String,
             commonName: String?,
             organisation: String?,
             organisationUnit: String?,
@@ -124,7 +118,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     private inner class ActiveImpl : InnerMemberLookupRpcOps {
         @Suppress("ComplexMethod")
         override fun lookup(
-            holdingIdentityId: String,
+            holdingIdentityShortHash: String,
             commonName: String?,
             organisation: String?,
             organisationUnit: String?,
@@ -132,7 +126,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
             state: String?,
             country: String?
         ): RpcMemberInfoList {
-            val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
                 ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)

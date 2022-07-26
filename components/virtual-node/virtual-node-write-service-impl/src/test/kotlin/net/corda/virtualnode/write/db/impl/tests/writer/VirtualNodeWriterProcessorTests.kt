@@ -1,42 +1,43 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.KeyValuePairList
+import net.corda.data.KeyValuePair
 import net.corda.data.crypto.SecureHash
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.packaging.CpiIdentifier
-import net.corda.data.virtualnode.VirtualNodeCreationRequest
-import net.corda.data.virtualnode.VirtualNodeCreationResponse
+import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.create
-import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.impl.GroupPolicyParser
-import net.corda.membership.impl.MGMContextImpl
-import net.corda.membership.impl.MemberContextImpl
-import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.crypto.impl.converter.PublicKeyHashConverter
-import net.corda.membership.impl.toMemberInfo
-import net.corda.membership.impl.toSortedMap
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
+import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
@@ -45,9 +46,12 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -55,7 +59,8 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.sql.Connection
-import java.util.UUID
+import java.time.Instant
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -65,13 +70,16 @@ import javax.persistence.EntityTransaction
 class VirtualNodeWriterProcessorTests {
     companion object {
         const val CPI_ID_SHORT_HASH = "dummy_cpi_id_short_hash"
+
+        private const val dummyGroupPolicy = "{\"groupId\": \"efc27942-9d2a-4f72-ac39-320d38743173\"}"
+        private const val dummyGroupPolicyWithMGMInfo = "{\"groupId\": \"da1623ea-e6d4-4314-84f8-6e3b84a869cd\"}"
     }
 
-    private val groupId = "dummy_mgm_group_id"
+    private val groupId = "f3676687-ab69-4ca1-a17b-ab20b7bc6d03"
     private val x500Name = "OU=LLC, O=Bob, L=Dublin, C=IE"
     private val holdingIdentity = HoldingIdentity(x500Name, groupId)
     private val mgmName = MemberX500Name.parse("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
-    private val mgmHoldingIdentity = HoldingIdentity(mgmName.toString(), "f3676687-ab69-4ca1-a17b-ab20b7bc6d03")
+    private val mgmHoldingIdentity = HoldingIdentity(mgmName.toString(), groupId)
 
     private val secureHash = SecureHash(
         "SHA-256",
@@ -81,21 +89,30 @@ class VirtualNodeWriterProcessorTests {
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
-        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, "{\"groupId\": \"${UUID.randomUUID()}\"}")
+        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicy)
     private val cpiMetaDataWithMGM =
-        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, getSampleGroupPolicy())
+        CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicyWithMGMInfo)
     private val connectionId = UUID.randomUUID().toString()
+
+    /** Use the test clock so we can control the Instant that is written into timestamps such that
+     * the actual timestamp == expected timestamp in the tests.
+     */
+    private val clock = TestClock(Instant.now())
+
     private val vnodeInfo =
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
             cpiIdentifier,
             connectionId, connectionId, connectionId, connectionId,
-            null)
+            null, "ACTIVE", -1, clock.instant()
+        )
 
     private val vnodeCreationReq =
-        VirtualNodeCreationRequest(vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
+        VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
             "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor")
+            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+        )
 
     private val em = mock<EntityManager>() {
         on { transaction }.doReturn(mock<EntityTransaction>())
@@ -129,31 +146,45 @@ class VirtualNodeWriterProcessorTests {
         DbPrivilege.DML to dbConnection,
     )
 
+    private val vaultDb = VirtualNodeDb(
+        VirtualNodeDbType.VAULT, true, "holdingIdentityShortHash", dbConnections, mock(), connectionManager, mock())
+    private val cryptoDb = VirtualNodeDb(
+        VirtualNodeDbType.CRYPTO, true, "holdingIdentityShortHash", dbConnections, mock(), connectionManager, mock())
     private val vNodeFactory = mock<VirtualNodeDbFactory>() {
         on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
-            VirtualNodeDbType.VAULT to VirtualNodeDb(
-                VirtualNodeDbType.VAULT, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock()),
-            VirtualNodeDbType.CRYPTO to VirtualNodeDb(
-                VirtualNodeDbType.CRYPTO, true, "holdingIdentityId", dbConnections, mock(), connectionManager, mock())
-        ))
+            VirtualNodeDbType.VAULT to vaultDb,
+            VirtualNodeDbType.CRYPTO to cryptoDb))
     }
 
     private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-        on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+        on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         on { virtualNodeExists(any(), any()) }.doReturn(false)
         on { getHoldingIdentity(any()) }.doReturn(null)
+    }
+    private val mgmMemberContextKey = "member-context-key"
+    private val mgmMgmContextKey = "mgm-context-key"
+    private val mgmMemberContextValue = "member-context-value"
+    private val mgmMgmContextValue = "mgm-context-value"
+    private val mgmMemberContext: MemberContext = mock {
+        on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+        on { entries } doReturn mapOf(mgmMemberContextKey to mgmMemberContextValue).entries
+    }
+    private val mgmMgmContext: MGMContext = mock {
+        on { entries } doReturn mapOf(mgmMgmContextKey to mgmMgmContextValue).entries
+    }
+    private val mgmMemberInfo: MemberInfo = mock {
+        on { name } doReturn mgmName
+        on { memberProvidedContext } doReturn mgmMemberContext
+        on { mgmProvidedContext } doReturn mgmMgmContext
+    }
+    private val groupPolicyParser: GroupPolicyParser = mock {
+        on { getMgmInfo(any(), eq(dummyGroupPolicy)) } doReturn null
+        on { getMgmInfo(any(), eq(dummyGroupPolicyWithMGMInfo)) } doReturn mgmMemberInfo
     }
 
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn "1234".toByteArray()
     }
-    private val keyEncodingService: KeyEncodingService = mock {
-        on { decodePublicKey(any<String>()) } doReturn defaultKey
-    }
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
-    )
-    private val groupPolicyParser =  GroupPolicyParser(layeredPropertyMapFactory)
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
@@ -172,10 +203,10 @@ class VirtualNodeWriterProcessorTests {
     /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
     private fun processRequest(
         processor: VirtualNodeWriterProcessor,
-        req: VirtualNodeCreationRequest
-    ): VirtualNodeCreationResponse {
+        req: VirtualNodeManagementRequest
+    ): VirtualNodeManagementResponse {
 
-        val respFuture = CompletableFuture<VirtualNodeCreationResponse>()
+        val respFuture = CompletableFuture<VirtualNodeManagementResponse>()
         processor.onNext(req, respFuture)
         return respFuture.get()
     }
@@ -191,18 +222,48 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-        )
+            clock
+        )  { _, _ ->
+            listOf()
+        }
 
-        processRequest(processor, vnodeCreationReq)
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         verify(publisher).publish(listOf(expectedRecord))
     }
 
     @Test
+    fun `runs empty CPI DB Migrations`() {
+        val changeLog = mock<CpkDbChangeLogEntity> {
+            on { id } doReturn CpkDbChangeLogKey("alpha", "1", "0", "stuff.xml")
+        }
+        Mockito.mockConstruction(VirtualNodeDbChangeLog::class.java).use { vndcl ->
+            Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
+                val processor = VirtualNodeWriterProcessor(
+                    getPublisher(),
+                    connectionManager,
+                    vNodeRepo,
+                    vNodeFactory,
+                    groupPolicyParser,
+                    clock
+                ) { _, _ -> listOf(changeLog) }
+
+                processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
+
+                assertEquals(vndcl.constructed().size, 1)
+                assertEquals(liquibaseSchemaMigratorImpl.constructed().size, 1)
+                verify(liquibaseSchemaMigratorImpl.constructed().first()).updateDb(any(), argThat { dbChange ->
+                    dbChange.masterChangeLogFiles.isEmpty()
+                })
+            }
+        }
+    }
+
+    @Test
     fun `publishes MGM member info to Kafka`() {
         val publisher = getPublisher()
-        val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadata(any()) }.doReturn(cpiMetaDataWithMGM)
+        val vNodeRepo = mock<VirtualNodeEntityRepository> {
+            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaDataWithMGM)
         }
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -210,8 +271,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-        )
-        processRequest(processor, vnodeCreationReq)
+            clock
+        ) { _, _ ->
+            listOf()
+        }
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         // called twice for publishing virtual node info and MGM info
@@ -229,19 +293,17 @@ class VirtualNodeWriterProcessorTests {
             it.assertThat(publishedMgmInfoList.size).isEqualTo(1)
             val publishedMgmInfo = publishedMgmInfoList.first()
             it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
-            val expectedRecordKey = "${holdingIdentity.id}-${mgmHoldingIdentity.id}"
+            val expectedRecordKey = "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
-            val mgmPublished = toMemberInfo(
-                layeredPropertyMapFactory.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
-                ),
-                layeredPropertyMapFactory.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
-                )
-            )
-            it.assertThat(mgmPublished.name.toString())
-                .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
+            it.assertThat(persistentMemberPublished.memberContext.items)
+                .hasSize(1)
+                .containsExactly(KeyValuePair(mgmMemberContextKey, mgmMemberContextValue))
+            it.assertThat(persistentMemberPublished.mgmContext.items)
+                .hasSize(1)
+                .containsExactly(KeyValuePair(mgmMgmContextKey, mgmMgmContextValue))
+            it.assertThat(persistentMemberPublished.viewOwningMember.toCorda())
+                .isEqualTo(holdingIdentity)
         }
     }
 
@@ -249,7 +311,7 @@ class VirtualNodeWriterProcessorTests {
     fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
         val publisher = getPublisher()
         val vNodeRepo = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
         val processor = VirtualNodeWriterProcessor(
             publisher,
@@ -257,8 +319,11 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-        )
-        processRequest(processor, vnodeCreationReq)
+            clock
+        )  { _, _ ->
+            listOf()
+        }
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         // called once for publishing virtual node info
@@ -275,20 +340,22 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `sends RPC success response after publishing virtual node info to Kafka`() {
-        val expectedResp = VirtualNodeCreationResponse(
-            true,
-            null,
-            vnodeCreationReq.x500Name,
-            vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiFileChecksum,
-            vnodeInfo.holdingIdentity.groupId,
-            vnodeInfo.holdingIdentity,
-            holdingIdentity.id,
-            connectionId,
-            connectionId,
-            connectionId,
-            connectionId,
-            null
+        val expectedResp = VirtualNodeManagementResponse(
+            clock.instant(),
+            VirtualNodeCreateResponse(
+                vnodeCreationReq.x500Name,
+                vnodeInfo.cpiIdentifier,
+                vnodeCreationReq.cpiFileChecksum,
+                vnodeInfo.holdingIdentity.groupId,
+                vnodeInfo.holdingIdentity,
+                holdingIdentity.shortHash,
+                connectionId,
+                connectionId,
+                connectionId,
+                connectionId,
+                null,
+                "ACTIVE"
+            )
         )
 
         val processor = VirtualNodeWriterProcessor(
@@ -297,32 +364,21 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-        )
-        val resp = processRequest(processor, vnodeCreationReq)
+            clock
+        )  { _, _ ->
+            listOf()
+        }
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
     }
 
     @Test
     fun `sends RPC failure response if fails to publish virtual node info to Kafka`() {
+        // consider eliminating these 2 instances and just test expected values directrly in the asserts at the bottom of this function
         val expectedEnvelope = ExceptionEnvelope(
             VirtualNodeWriteServiceException::class.java.name,
             ""
-        )
-        val expectedResp = VirtualNodeCreationResponse(
-            false,
-            expectedEnvelope,
-            vnodeCreationReq.x500Name,
-            vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiFileChecksum,
-            vnodeInfo.holdingIdentity.groupId,
-            vnodeInfo.holdingIdentity,
-            holdingIdentity.id,
-            null,
-            null,
-            null,
-            null,
-            null
         )
 
         val processor = VirtualNodeWriterProcessor(
@@ -331,16 +387,13 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-        )
-        val resp = processRequest(processor, vnodeCreationReq)
+            clock
+        ) { _, _ -> listOf() }
+        val resp = processRequest(
+            processor,
+            VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
+        ).responseType as VirtualNodeManagementResponseFailure
 
-        assertEquals(expectedResp.success, resp.success)
-        assertEquals(expectedResp.x500Name, resp.x500Name)
-        assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
-        assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
-        assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
-        assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)
         assertEquals(expectedEnvelope.errorType, resp.exception.errorType)
         assertTrue(resp.exception.errorMessage.contains("written to the database, but couldn't be published"))
     }
@@ -351,12 +404,15 @@ class VirtualNodeWriterProcessorTests {
             VirtualNodeWriteServiceException::class.java.name,
             "CPI with file checksum ${vnodeCreationReq.cpiFileChecksum} was not found."
         )
-        val expectedResp = VirtualNodeCreationResponse(
-            false, expectedEnvelope, x500Name , null, null, null, null, null,
-            null, null, null, null, null)
+        val expectedResp = VirtualNodeManagementResponse(
+            clock.instant(),
+            VirtualNodeManagementResponseFailure(
+                expectedEnvelope
+            )
+        )
 
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
-            whenever(getCPIMetadata(any())).thenReturn(null)
+            whenever(getCPIMetadataByChecksum(any())).thenReturn(null)
         }
         val processor = VirtualNodeWriterProcessor(
             getPublisher(),
@@ -364,8 +420,11 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-        )
-        val resp = processRequest(processor, vnodeCreationReq)
+            clock
+        )   { _, _ ->
+            listOf()
+        }
+        val resp = processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
 
         assertEquals(expectedResp, resp)
     }
@@ -377,30 +436,14 @@ class VirtualNodeWriterProcessorTests {
             ""
         )
 
-        val expectedResp = VirtualNodeCreationResponse(
-            false,
-            expectedEnvelope,
-            vnodeCreationReq.x500Name,
-            vnodeInfo.cpiIdentifier,
-            vnodeCreationReq.cpiFileChecksum,
-            vnodeInfo.holdingIdentity.groupId,
-            vnodeInfo.holdingIdentity,
-            holdingIdentity.id,
-            null,
-            null,
-            null,
-            null,
-            null
-        )
-
         val collisionHoldingIdentity = mock<HoldingIdentity>() {
             on { x500Name }.thenReturn("OU=LLC, O=Alice, L=Dublin, C=IE")
             on { groupId }.thenReturn("group_id")
-            on { id }.thenReturn(holdingIdentity.id)
+            on { shortHash }.thenReturn(holdingIdentity.shortHash)
         }
 
         val entityRepository = mock<VirtualNodeEntityRepository>() {
-            on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+            on { getCPIMetadataByChecksum(any()) }.doReturn(cpiMetaData)
             on { virtualNodeExists(any(), any()) }.doReturn(false)
             on { getHoldingIdentity(any()) }.doReturn(collisionHoldingIdentity)
         }
@@ -411,20 +454,18 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-        )
-        val resp = processRequest(processor, vnodeCreationReq)
+            clock
+        ) { _, _ -> listOf() }
+        val resp = processRequest(
+            processor,
+            VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq)
+        ).responseType as VirtualNodeManagementResponseFailure
 
-        assertEquals(expectedResp.success, resp.success)
-        assertEquals(expectedResp.x500Name, resp.x500Name)
-        assertEquals(expectedResp.cpiIdentifier, resp.cpiIdentifier)
-        assertEquals(expectedResp.cpiFileChecksum, resp.cpiFileChecksum)
-        assertEquals(expectedResp.mgmGroupId, resp.mgmGroupId)
-        assertEquals(expectedResp.holdingIdentity, resp.holdingIdentity)
-        assertEquals(expectedResp.holdingIdentifierHash, resp.holdingIdentifierHash)
         assertEquals(expectedEnvelope.errorType, resp.exception.errorType)
-        assertTrue(resp.exception.errorMessage.contains(
-            "New holding identity $holdingIdentity has a short hash that collided with existing holding identity"))
+        assertTrue(
+            resp.exception.errorMessage.contains(
+                "New holding identity $holdingIdentity has a short hash that collided with existing holding identity"
+            )
+        )
     }
-
-    private fun getSampleGroupPolicy() = this::class.java.getResource("/SampleGroupPolicy.json")!!.readText()
 }

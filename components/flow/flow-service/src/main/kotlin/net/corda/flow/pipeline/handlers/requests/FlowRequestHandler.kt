@@ -1,13 +1,12 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 
 /**
- * The [FlowRequestHandler] interface is implemented by services that process [FlowIORequest]s output by [FlowFiber]s when they suspend.
+ * The [FlowRequestHandler] interface is implemented by services that process [FlowIORequest]s output by fibers when they suspend.
  *
  * @param T The [FlowIORequest] that the [FlowRequestHandler] handles.
  */
@@ -19,7 +18,7 @@ interface FlowRequestHandler<T : FlowIORequest<*>> {
     val type: Class<T>
 
     /**
-     * Gets the new [WaitingFor] value that the flow's [Checkpoint] should be updated to.
+     * Gets the new [WaitingFor] value that the flow's checkpoint should be updated to.
      *
      * @param context The [FlowEventContext] that __should not__ be modified within this processing step.
      * @param request The [FlowIORequest] output from the suspended flow.

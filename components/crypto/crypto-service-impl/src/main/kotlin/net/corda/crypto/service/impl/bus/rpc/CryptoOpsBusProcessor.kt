@@ -1,5 +1,9 @@
 package net.corda.crypto.service.impl.bus.rpc
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.impl.config.opsBusProcessor
+import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
 import net.corda.crypto.impl.toWire
@@ -7,6 +11,7 @@ import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.WireProcessor
+import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -17,6 +22,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.crypto.wire.ops.rpc.commands.DeriveSharedSecretCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -25,20 +31,22 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class CryptoOpsBusProcessor(
-    private val signingFactory: SigningServiceFactory
+    private val signingFactory: SigningServiceFactory,
+    event: ConfigChangedEvent
 ) : WireProcessor(handlers), RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
         private val logger: Logger = contextLogger()
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
+            DeriveSharedSecretCommand::class.java to DeriveSharedSecretCommandHandler::class.java,
             GenerateFreshKeyRpcCommand::class.java to GenerateFreshKeyRpcCommandHandler::class.java,
             GenerateKeyPairCommand::class.java to GenerateKeyPairCommandHandler::class.java,
             GenerateWrappingKeyRpcCommand::class.java to GenerateWrappingKeyRpcCommandHandler::class.java,
@@ -49,12 +57,21 @@ class CryptoOpsBusProcessor(
         )
     }
 
+    private val config = event.config.toCryptoConfig().opsBusProcessor()
+
+    private val executor = CryptoRetryingExecutor(
+        logger,
+        BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
+    )
+
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
             val signingService = signingFactory.getInstance()
-            val response = getHandler(request.request::class.java, signingService)
-                .handle(request.context, request.request)
+            val handler = getHandler(request.request::class.java, signingService)
+            val response = executor.executeWithRetry {
+                handler.handle(request.context, request.request)
+            }
             val result = RpcOpsResponse(createResponseContext(request), response)
             logger.debug {
                 "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId} with" +
@@ -62,9 +79,8 @@ class CryptoOpsBusProcessor(
             }
             respFuture.complete(result)
         } catch (e: Throwable) {
-            val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"
-            logger.error(message, e)
-            respFuture.completeExceptionally(CryptoServiceLibraryException(message, e))
+            logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
+            respFuture.completeExceptionally(e)
         }
     }
 
@@ -140,6 +156,20 @@ class CryptoOpsBusProcessor(
                     )
                 }
             )
+        }
+    }
+
+    private class DeriveSharedSecretCommandHandler(
+        private val signingService: SigningService
+    ) : Handler<DeriveSharedSecretCommand> {
+        override fun handle(context: CryptoRequestContext, request: DeriveSharedSecretCommand): Any {
+            val sharedSecret = signingService.deriveSharedSecret(
+                tenantId = context.tenantId,
+                publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array()),
+                otherPublicKey = signingService.schemeMetadata.decodePublicKey(request.otherPublicKey.array()),
+                context = request.context.items.toMap()
+            )
+            return CryptoDerivedSharedSecret(ByteBuffer.wrap(sharedSecret))
         }
     }
 

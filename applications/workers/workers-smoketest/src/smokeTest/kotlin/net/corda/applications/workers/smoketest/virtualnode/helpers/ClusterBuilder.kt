@@ -19,6 +19,10 @@ class ClusterBuilder {
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
+    fun put(cmd: String, body: String) = client!!.put(cmd, body)
+
+    fun get(cmd: String) = client!!.get(cmd)
+
     private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.get(resourceName, groupId).use {
@@ -39,6 +43,11 @@ class ClusterBuilder {
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
+    fun updateVirtualNodeState(holdingIdHash: String, newState: String) = put(
+        "/api/v1/maintenance/virtualnode",
+        vNodeUpdateBody(holdingIdHash, newState)
+    )
+
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(resourceName: String, groupId: String) =
         uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload/", resourceName, groupId)
@@ -52,6 +61,12 @@ class ClusterBuilder {
     private fun vNodeBody(cpiHash: String, x500Name: String) =
         """{ "request": { "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"} }"""
 
+    private fun registerMemberBody() =
+        """{ "memberRegistrationRequest": { "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }""".trimMargin()
+
+    private fun vNodeUpdateBody(virtualNodeShortId: String, newState: String) =
+        """{ "virtualNodeShortId" : "$virtualNodeShortId", "newState" : "$newState"}"""
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         client!!.post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -59,17 +74,54 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
+    /**
+     * Register a member to the network
+     */
+    fun registerMember(holdingId: String) =
+        client!!.post("/api/v1/membership/$holdingId", registerMemberBody())
+
+    fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
+        client!!.post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
+
+    fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
+        client!!.post(
+            "/api/v1/keys/$holdingIdentityShortHash",
+            body = """{
+                    "alias": "$alias",
+                    "hsmCategory": "$category",
+                    "scheme": "$scheme"
+                }""".trimIndent()
+        )
+
+    fun getKey(holdingIdentityShortHash: String, keyId: String) =
+        client!!.get("/api/v1/keys/$holdingIdentityShortHash/$keyId")
+
     /** Get status of a flow */
-    fun flowStatus(holdingIdHash: String, clientRequestId: Int) =
-        client!!.get("/api/v1/flow/$holdingIdHash/r$clientRequestId")
+    fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
+        client!!.get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId")
+
+    /** Get status of multiple flows */
+    fun multipleFlowStatus(holdingIdentityShortHash: String) =
+        client!!.get("/api/v1/flow/$holdingIdentityShortHash")
+
+    /** Get status of multiple flows */
+    fun runnableFlowClasses(holdingIdentityShortHash: String) =
+        client!!.get("/api/v1/flowclass/$holdingIdentityShortHash")
 
     /** Start a flow */
     fun flowStart(
-        holdingIdHash: String,
-        clientRequestId: Int,
+        holdingIdentityShortHash: String,
+        clientRequestId: String,
         flowClassName: String,
-        body: String
-    ) = client!!.put("/api/v1/flow/$holdingIdHash/r$clientRequestId/$flowClassName", body)
+        requestData: String
+    ): SimpleResponse {
+        return client!!.post("/api/v1/flow/$holdingIdentityShortHash", flowStartBody(clientRequestId, flowClassName, requestData))
+    }
+
+    private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
+        """{ "startFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
+            |"$requestData"} }""".trimMargin()
+
 }
 
-fun cluster(initialize: ClusterBuilder.() -> Unit) = ClusterBuilder().apply(initialize)
+fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

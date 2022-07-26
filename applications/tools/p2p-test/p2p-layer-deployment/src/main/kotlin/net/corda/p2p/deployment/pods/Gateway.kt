@@ -38,7 +38,7 @@ class Gateway(
     }
     override val imageName = "p2p-gateway"
 
-    override val readyLog = ".*Waiting for gateway to start.*".toRegex()
+    override val readyLog = ".*Gateway-1 - Starting child.*".toRegex()
 
     override val otherPorts = when (details.lbType) {
         // In K8S load balancer the load balancer service will listen to the Gateway port, so no need to create a service.

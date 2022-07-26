@@ -14,7 +14,6 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -83,21 +82,21 @@ class FlowSandboxServiceImpl @Activate constructor(
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
 
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}}'" }
+        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}'" }
 
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
-        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}}'" }
+        check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
 
         val vNodeContext = VirtualNodeContext(
             holdingIdentity,
-            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet(), CpkMetadata::cpkId),
+            cpiMetadata.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             null
         )
 
-        if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkIdentifiers)) {
+        if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkFileChecksums)) {
             throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.cpiId}'")
         }
 

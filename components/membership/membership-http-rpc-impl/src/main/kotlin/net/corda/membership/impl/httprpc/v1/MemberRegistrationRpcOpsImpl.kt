@@ -29,9 +29,12 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
     }
 
     private interface InnerMemberRegistrationRpcOps {
-        fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress
+        fun startRegistration(
+            holdingIdentityShortHash: String,
+            memberRegistrationRequest: MemberRegistrationRequest,
+        ): RegistrationRequestProgress
 
-        fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgress
     }
 
     private val className = this::class.java.simpleName
@@ -67,47 +70,50 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest) =
-        impl.startRegistration(memberRegistrationRequest)
+    override fun startRegistration(
+        holdingIdentityShortHash: String,
+        memberRegistrationRequest: MemberRegistrationRequest
+    ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationRequest)
 
-    override fun checkRegistrationProgress(holdingIdentityId: String) =
-        impl.checkRegistrationProgress(holdingIdentityId)
+
+    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+        impl.checkRegistrationProgress(holdingIdentityShortHash)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
-        updateStatus(LifecycleStatus.UP, reason)
+        coordinator.updateStatus(LifecycleStatus.UP, reason)
     }
 
     fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
+        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         impl = InactiveImpl
     }
 
-    private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if(coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
-    }
-
     private object InactiveImpl : InnerMemberRegistrationRpcOps {
-        override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest) =
+        override fun startRegistration(
+            holdingIdentityShortHash: String,
+            memberRegistrationRequest: MemberRegistrationRequest,
+        ) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
 
-        override fun checkRegistrationProgress(holdingIdentityId: String) =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
     }
 
     private inner class ActiveImpl : InnerMemberRegistrationRpcOps {
-        override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
-            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto()).fromDto()
+        override fun startRegistration(
+            holdingIdentityShortHash: String,
+            memberRegistrationRequest: MemberRegistrationRequest,
+        ): RegistrationRequestProgress {
+            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityShortHash)).fromDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress {
-            return memberOpsClient.checkRegistrationProgress(holdingIdentityId).fromDto()
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgress {
+            return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).fromDto()
         }
     }
 }

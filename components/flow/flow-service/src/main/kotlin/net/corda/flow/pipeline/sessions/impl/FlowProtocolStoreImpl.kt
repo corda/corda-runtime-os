@@ -27,19 +27,17 @@ class FlowProtocolStoreImpl(
             }
         }
         throw FlowFatalException(
-            "No responder is configured for protocol $protocolName at versions $supportedVersions",
-            context
+            "No responder is configured for protocol $protocolName at versions $supportedVersions"
         )
     }
 
     override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
         val protocolList = initiatorToProtocol[initiator]
-            ?: throw FlowFatalException("No protocols were found for initiating flow $initiator", context)
+            ?: throw FlowFatalException("No protocols were found for initiating flow $initiator")
         val protocolNames = protocolList.map { it.protocol }.toSet()
         if (protocolNames.size != 1) {
             throw FlowFatalException(
-                "Multiple protocol names were declared by initiating flow $initiator. Names: $protocolNames",
-                context
+                "Multiple protocol names were declared by initiating flow $initiator. Names: $protocolNames"
             )
         }
         return protocolList.run {

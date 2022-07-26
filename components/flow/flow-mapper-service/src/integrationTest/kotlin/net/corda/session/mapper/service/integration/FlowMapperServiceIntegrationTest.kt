@@ -2,6 +2,11 @@ package net.corda.session.mapper.service.integration
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -44,11 +49,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.lang.System.currentTimeMillis
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -75,7 +75,7 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowMapperService: FlowMapperService
 
-    private val bootConfig = SmartConfigImpl.empty()
+    private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
@@ -86,7 +86,7 @@ class FlowMapperServiceIntegrationTest {
     fun setup() {
         if (!setup) {
             setup = true
-            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), bootConfig)
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
             flowMapperService.start()
         }
@@ -96,7 +96,7 @@ class FlowMapperServiceIntegrationTest {
     fun testSessionInitOutAndDataInbound() {
         val testId = "test1"
         val versions = listOf(1)
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
@@ -113,7 +113,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor(testId, p2pLatch, 1), bootConfig, null
+            TestP2POutProcessor(testId, p2pLatch, 1), messagingConfig, null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
@@ -133,7 +133,7 @@ class FlowMapperServiceIntegrationTest {
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
             testProcessor,
-            bootConfig,
+            messagingConfig,
             null
         )
 
@@ -145,7 +145,7 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testStartRPCDuplicatesAndCleanup() {
         val testId = "test2"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //2 startRPCRecord, 1 duplicate
         val identity = HoldingIdentity(testId, testId)
@@ -176,7 +176,7 @@ class FlowMapperServiceIntegrationTest {
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
             testProcessor,
-            bootConfig,
+            messagingConfig,
             null
         )
 
@@ -205,7 +205,7 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testNoStateForMapper() {
         val testId = "test3"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
@@ -219,7 +219,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor(testId, p2pLatch, 0), bootConfig, null
+            TestP2POutProcessor(testId, p2pLatch, 0), messagingConfig, null
         )
         p2pOutSub.start()
         assertFalse(p2pLatch.await(3, TimeUnit.SECONDS))
@@ -228,8 +228,8 @@ class FlowMapperServiceIntegrationTest {
 
     private fun setupConfig(publisher: Publisher) {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, 0, schemaVersion))))
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, flowConf, 0, schemaVersion))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }
@@ -240,19 +240,8 @@ class FlowMapperServiceIntegrationTest {
     """
 
     private val flowConf = """
-            componentVersion="5.1"
-            consumer {
-                topic = "flow.event.topic"
-                group = "FlowEventConsumer"
-            }
-            mapper {
-                topic {
-                    flowMapperEvent = "flow.mapper.event.topic"
-                    p2pout = "p2p.out"
-                }
-                consumer {
-                    group = "FlowMapperConsumer"
-                }
+            session {
+                p2pTTL = 500000
             }
         """
 

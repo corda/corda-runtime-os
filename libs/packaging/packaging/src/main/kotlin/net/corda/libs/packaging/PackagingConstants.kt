@@ -10,6 +10,8 @@ object PackagingConstants {
     const val CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME = "DependencyConstraints"
     const val CPK_DEPENDENCIES_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCIES_FILE_NAME"
     const val CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME"
+    const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
+    const val CPK_BUNDLE_VERSION_ATTRIBUTE = "Bundle-Version"
     const val CPK_FORMAT_ATTRIBUTE = "Corda-CPK-Format"
     const val CPK_NAME_ATTRIBUTE = "Corda-CPK-Cordapp-Name"
     const val CPK_VERSION_ATTRIBUTE = "Corda-CPK-Cordapp-Version"
@@ -25,7 +27,7 @@ object PackagingConstants {
     const val CPB_NAME_ATTRIBUTE = "Corda-CPB-Name"
     const val CPB_VERSION_ATTRIBUTE = "Corda-CPB-Version"
 
-    const val CPI_GROUP_POLICY_ENTRY = "$META_INF_FOLDER/GroupPolicy.json"
+    const val CPI_GROUP_POLICY_ENTRY = "GroupPolicy.json"
     const val CPI_FORMAT_ATTRIBUTE = "Corda-CPI-Format"
     const val CPI_NAME_ATTRIBUTE = "Corda-CPI-Name"
     const val CPI_VERSION_ATTRIBUTE = "Corda-CPI-Version"

@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.libs.packaging.core.CpiMetadata
@@ -8,7 +8,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
@@ -35,7 +34,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
             }
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
                 if (!flowClass.interfaces.contains(ResponderFlow::class.java)) {
-                    throw FlowProcessingException(
+                    throw FlowFatalException(
                         "Found a responder flow that does not implement ResponderFlow"
                     )
                 }
@@ -43,7 +42,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                 val versions = flowClass.getAnnotation(InitiatedBy::class.java).version
                 val protocols = versions.map { FlowProtocol(protocol, it) }
                 if (protocols.any { it in protocolToResponder }) {
-                    throw FlowProcessingException(
+                    throw FlowFatalException(
                         "Cannot declare multiple responders for the same protocol in the same CPI"
                     )
                 }
@@ -64,18 +63,6 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.flows }.forEach { flow ->
             logger.info("Reading flow $flow for protocols")
             val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
-            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
-        }
-
-        cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.rpcStartableFlows }.forEach { flow ->
-            logger.info("Reading RPC startable flow $flow for protocols")
-            val flowClass = sandboxGroup.loadClassFromMainBundles(flow, RPCStartableFlow::class.java)
-            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
-        }
-
-        cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.initiatedFlows }.forEach { flow ->
-            logger.info("Reading initiated flow $flow for protocols")
-            val flowClass = sandboxGroup.loadClassFromMainBundles(flow, ResponderFlow::class.java)
             extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
         }
 

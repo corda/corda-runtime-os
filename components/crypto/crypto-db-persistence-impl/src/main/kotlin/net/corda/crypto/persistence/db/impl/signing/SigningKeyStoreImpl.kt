@@ -74,7 +74,7 @@ class SigningKeyStoreImpl(
         }
 
     private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
-        vnodeInfo.getById(tenantId)?.cryptoDmlConnectionId
+        vnodeInfo.getByHoldingIdentityShortHash(tenantId)?.cryptoDmlConnectionId
             ?: throw throw IllegalStateException(
                 "virtual node for $tenantId is not registered."
             ),

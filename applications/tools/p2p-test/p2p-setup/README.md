@@ -90,6 +90,7 @@ First:
 ```json
 {
   "groupId": "group-1",
+  "x500name": "O=Alice, L=London, C=GB",
   "data": {
     "networkType": "CORDA_5",
     "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
@@ -98,6 +99,7 @@ First:
 }
 ```
 where:
+* `x500name` is the x500 name of the identity the group policy corresponds to.
 * `networkType` is either `CORDA_5`, `CORDA_4`.
 * `protocolModes` are either: `AUTHENTICATED_ENCRYPTION` or `AUTHENTICATION_ONLY`.
 * `trustRootCertificates` is the content of the root certificates in PEM format (use either this or `trustRootCertificatesFiles`).
@@ -115,7 +117,7 @@ To remove a membership group run the command:
 ```bash
 java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
   -k broker1:9093 \
-  remove-group "group-1"
+  remove-group -g "group-1" -x "O=Alice, L=London, C=GB"
 ```
 
 ### Adding a group member
@@ -234,7 +236,7 @@ The file should look like the following:
       "responseTimeout": 1000,
       "retryDelay": 1000,
       "initialReconnectionDelay": 1000,
-      "maximalReconnectionDelay": 16000
+      "maxReconnectionDelay": 16000
     }
   },
   "groupsToAdd": [

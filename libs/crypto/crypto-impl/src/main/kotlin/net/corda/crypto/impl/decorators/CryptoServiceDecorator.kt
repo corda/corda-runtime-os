@@ -6,17 +6,20 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.crypto.impl.CryptoRetryingExecutorWithTimeout
+import net.corda.crypto.core.isRecoverable
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutorWithTimeout
+import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.failures.CryptoException
 import java.time.Duration
 
 class CryptoServiceDecorator(
@@ -51,34 +54,60 @@ class CryptoServiceDecorator(
         )
     }
 
-    private val withTimeout = CryptoRetryingExecutorWithTimeout(logger, maxAttempts, attemptTimeout)
+    private val withTimeout = CryptoRetryingExecutorWithTimeout(
+        logger,
+        BackoffStrategy.createBackoff(maxAttempts, listOf(100L)),
+        attemptTimeout
+    )
 
     override fun close() {
         (cryptoService as? AutoCloseable)?.close()
     }
 
-    override val extensions: List<CryptoServiceExtensions> get() = try {
-        cryptoService.extensions
-    } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService extensions failed", e, isRecoverable = false)
-    }
+    override val extensions: List<CryptoServiceExtensions>
+        get() = try {
+            cryptoService.extensions
+        } catch (e: RuntimeException) {
+            if(e.isRecoverable()) {
+                throw CryptoException("Calling extensions failed", e)
+            } else {
+                throw e
+            }
+        } catch (e: Throwable) {
+            throw CryptoException("Calling extensions failed", e)
+        }
 
-    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = try {
-        cryptoService.supportedSchemes
-    } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService supportedSchemes failed", e, isRecoverable = false)
-    }
+    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
+        get() = try {
+            cryptoService.supportedSchemes
+        } catch (e: RuntimeException) {
+            if(e.isRecoverable()) {
+                throw CryptoException("Calling supportedSchemes failed", e)
+            } else {
+                throw e
+            }
+        } catch (e: Throwable) {
+            throw CryptoException("Calling supportedSchemes failed", e)
+        }
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         withTimeout.executeWithRetry {
             cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
         }
-    } catch (e: Throwable) {
-        throw CryptoServiceException(
-                "CryptoService createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
-                e,
-                isRecoverable = false
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException(
+                "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
+                e
             )
+        } else {
+            throw e
+        }
+    } catch (e: Throwable) {
+        throw CryptoException(
+            "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
+            e
+        )
     }
 
     override fun generateKeyPair(
@@ -88,12 +117,14 @@ class CryptoServiceDecorator(
         withTimeout.executeWithRetry {
             cryptoService.generateKeyPair(spec, context)
         }
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling generateKeyPair failed (spec=$spec)", e)
+        } else {
+            throw e
+        }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "CryptoService generateKeyPair failed (spec=$spec)",
-            e,
-            isRecoverable = false
-        )
+        throw CryptoException("Calling generateKeyPair failed (spec=$spec)", e)
     }
 
     override fun sign(
@@ -104,23 +135,41 @@ class CryptoServiceDecorator(
         withTimeout.executeWithRetry {
             cryptoService.sign(spec, data, context)
         }
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling sign failed (spec=$spec,data.size=${data.size})", e)
+        } else {
+            throw e
+        }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "CryptoService sign failed (spec=$spec,data.size=${data.size})",
-            e,
-            isRecoverable = false
-        )
+        throw CryptoException("Calling sign failed (spec=$spec,data.size=${data.size})", e)
     }
 
-    override fun delete(alias: String, context: Map<String, String>) = try {
+    override fun delete(alias: String, context: Map<String, String>): Boolean = try {
         withTimeout.executeWithRetry {
             cryptoService.delete(alias, context)
         }
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling delete failed (alias=$alias)", e)
+        } else {
+            throw e
+        }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "CryptoService delete failed (alias=$alias)",
-            e,
-            isRecoverable = false
-        )
+        throw CryptoException("Calling delete failed (alias=$alias)", e)
+    }
+
+    override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray = try {
+        withTimeout.executeWithRetry {
+            cryptoService.deriveSharedSecret(spec, context)
+        }
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling deriveSharedSecret failed (spec=$spec)", e)
+        } else {
+            throw e
+        }
+    } catch (e: Throwable) {
+        throw CryptoException("Calling deriveSharedSecret failed (spec=$spec)", e)
     }
 }

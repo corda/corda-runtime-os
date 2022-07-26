@@ -22,8 +22,8 @@ import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
@@ -72,19 +72,22 @@ internal class DeliveryTracker(
         coordinatorFactory,
         messageTrackerSubscription,
         setOf(
-            replayScheduler.dominoTile,
-            groups.dominoTile,
-            members.dominoTile,
-            cryptoProcessor.dominoTile,
-            sessionManager.dominoTile,
-            appMessageReplayer.dominoTile
+            replayScheduler.dominoTile.coordinatorName,
+            groups.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName,
+            cryptoProcessor.namedLifecycle.name,
+            sessionManager.dominoTile.coordinatorName,
+            appMessageReplayer.dominoTile.coordinatorName
         ),
-        setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
+        setOf(
+            replayScheduler.dominoTile.toNamedLifecycle(),
+            appMessageReplayer.dominoTile.toNamedLifecycle()
+        )
     )
 
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
-        dependentChildren = setOf(messageTrackerSubscriptionTile),
-        managedChildren = setOf(messageTrackerSubscriptionTile)
+        dependentChildren = setOf(messageTrackerSubscriptionTile.coordinatorName),
+        managedChildren = setOf(messageTrackerSubscriptionTile.toNamedLifecycle())
     )
 
     private class AppMessageReplayer(
@@ -102,14 +105,14 @@ internal class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
+                PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, true),
             messagingConfiguration
         )
 
         override val dominoTile = publisher.dominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            dominoTile.withLifecycleLock {
+            publisher.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }
@@ -140,7 +143,7 @@ internal class DeliveryTracker(
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
                 return when (markerType) {
-                    is LinkManagerSentMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
+                    is LinkManagerProcessedMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
                     is LinkManagerReceivedMarker -> Response(null, emptyList())
                     is TtlExpiredMarker -> Response(null, emptyList())
                     else -> respond(state)

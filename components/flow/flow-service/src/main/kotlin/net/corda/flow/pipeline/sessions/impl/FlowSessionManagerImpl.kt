@@ -11,11 +11,12 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionMissingException
+import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,7 +49,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(instant)
             .setSequenceNum(null)
-            .setInitiatingIdentity(checkpoint.holdingIdentity)
+            .setInitiatingIdentity(checkpoint.holdingIdentity.toAvro())
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
@@ -129,7 +130,11 @@ class FlowSessionManagerImpl @Activate constructor(
         return getReceivedEvents(checkpoint, sessionIds).size == sessionIds.size
     }
 
-    override fun getSessionsWithStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): List<SessionState> {
+    override fun getSessionsWithStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState> {
         return sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .filter { sessionState -> sessionState.status == status }
@@ -143,6 +148,26 @@ class FlowSessionManagerImpl @Activate constructor(
         return getSessionsWithStatus(checkpoint, sessionIds, status).size == sessionIds.size
     }
 
+    override fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>) {
+        val sessions = sessionIds.associateWith { checkpoint.getSessionState(it) }
+        val missingSessionStates = sessions.filter { it.value == null }.map { it.key }.toList()
+        val invalidSessions = sessions
+            .map { it.value }
+            .filterNotNull()
+            .filterNot { it.status == SessionStateType.CONFIRMED }
+            .toList()
+
+        if (missingSessionStates.isEmpty() && invalidSessions.isEmpty()) {
+            return
+        }
+
+        val sessionsToReport = missingSessionStates.map { "'${it}'=MISSING" } +
+                invalidSessions.map { "'${it.sessionId}'=${it.status}" }
+
+        throw FlowSessionStateException("${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
+                "sessions are invalid [${sessionsToReport.joinToString(", ")}]")
+    }
+
     private fun sendSessionMessageToExistingSession(
         checkpoint: FlowCheckpoint,
         sessionId: String,
@@ -151,8 +176,9 @@ class FlowSessionManagerImpl @Activate constructor(
     ): SessionState {
         val sessionState = getAndRequireSession(checkpoint, sessionId)
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-            sessionState, checkpoint.holdingIdentity
+            sessionState, checkpoint.holdingIdentity.toAvro()
         )
+
         return sessionManager.processMessageToSend(
             key = checkpoint.flowId,
             sessionState = sessionState,
@@ -185,7 +211,7 @@ class FlowSessionManagerImpl @Activate constructor(
     }
 
     private fun getAndRequireSession(checkpoint: FlowCheckpoint, sessionId: String): SessionState {
-        return checkpoint.getSessionState(sessionId) ?: throw FlowSessionMissingException(
+        return checkpoint.getSessionState(sessionId) ?: throw FlowSessionStateException(
             "Session: $sessionId does not exist when executing session operation that requires an existing session"
         )
     }

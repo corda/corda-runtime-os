@@ -1,7 +1,15 @@
 package net.corda.entityprocessor.impl.tests
 
+import java.nio.ByteBuffer
+import java.nio.file.Path
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
+import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
@@ -13,6 +21,7 @@ import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
@@ -48,7 +57,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -62,14 +70,6 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
-import java.util.Calendar
-import java.util.UUID
 
 
 /**
@@ -197,7 +197,9 @@ class PersistenceServiceInternalTests {
         val responses = processor.onNext(records)
 
         assertThat(responses.size).isEqualTo(1)
-        val response = responses.first().value as EntityResponse
+
+        val flowEvent = responses.first().value  as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         assertThat(response.requestId).isEqualTo(requestId)
     }
 
@@ -208,7 +210,10 @@ class PersistenceServiceInternalTests {
 
         val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
         val calcDbConnection = Pair(virtualNodeInfoTwo.vaultDmlConnectionId, "calc-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection, calcDbConnection))
+
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection, calcDbConnection),
+            "PSIT2")
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -221,12 +226,23 @@ class PersistenceServiceInternalTests {
 
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
 
+        // migrate DB schema
+        val dogClass = sandboxOne.sandboxGroup.getDogClass()
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    dogClass.packageName, listOf("migration/db.changelog-master.xml"),
+                    classLoader = dogClass.classLoader
+                ),
+            )
+        )
+        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
+
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
-        val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro())
-        val request = EntityRequest(Instant.now(), flowKey, PersistEntity(sandboxOne.serialize(dog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro(), PersistEntity(sandboxOne.serialize(dog)))
         val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
@@ -238,9 +254,11 @@ class PersistenceServiceInternalTests {
 
         // It's a failure
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
 
         // The failure is correctly categorised - serialization fails within the database path of the code.
         // It can never succeed on retry, therefore, it's fatal.
@@ -280,7 +298,8 @@ class PersistenceServiceInternalTests {
         )
         val catRequest = EntityRequest(
             dogRequest.timestamp,
-            dogRequest.flowKey,
+            dogRequest.flowId,
+            dogRequest.holdingIdentity,
             PersistEntity(ctx.serialize(cat))
         )
 
@@ -359,7 +378,8 @@ class PersistenceServiceInternalTests {
 
         // assert that Bella has been returned
 
-        val entityResponse = responses[0].value as EntityResponse
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
         assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
         val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
         val bytes = entityResponseSuccess.result as ByteBuffer
@@ -464,7 +484,8 @@ class PersistenceServiceInternalTests {
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
@@ -482,7 +503,8 @@ class PersistenceServiceInternalTests {
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
@@ -509,7 +531,8 @@ class PersistenceServiceInternalTests {
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
@@ -559,11 +582,96 @@ class PersistenceServiceInternalTests {
         assertThat(newBytes).isNull()
     }
 
+    @Test
+    fun `find with named query with many results`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf("name" to "%o%"), query="Dog.summonLike")
+        assertThat(r.size).isEqualTo(4)
+    }
+
+    @Test
+    fun `find with named query with 1 result`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf("name" to "Rover 1"), query="Dog.summon")
+        assertThat(r.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `find with named query and missing owner`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf(), query="Dog.independent")
+        assertThat(r.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `find with named query and incorrectly named parameter`() {
+        persistDogs(ctx, 1)
+        assertNamedQueryDog(mapOf("handle" to "Rover 1"), query="Dog.summon", expectFailure="Could not locate named parameter [handle], expecting one of [name]")
+    }
+
+    @Test
+    fun `find with incorrectly named query and incorrectly named parameter`() {
+        persistDogs(ctx, 1)
+        assertNamedQueryDog(mapOf("name" to "Rover 1"), query="Dog.findByOwner", expectFailure="No query defined for that name [Dog.findByOwner]")
+    }
+
+
+    @Test
+    fun `find with named query with all results`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf(), query="Dog.all")
+        assertThat(r.size).isEqualTo(8)
+    }
+
+    @Test
+    fun `find with named query and zero limit returns no results`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf(), query="Dog.all", limit=0)
+        assertThat(r.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `find with named query with pagination`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf(), query="Dog.all", 0, 2)
+        assertThat(r.size).isEqualTo(2)
+        assertThat(r[0].toString()).contains("Butch 1")
+        assertThat(r[1].toString()).contains("Eddie 1")
+        val r2 = assertNamedQueryDog(mapOf(), query="Dog.all", 2, 2)
+        assertThat(r.size).isEqualTo(2)
+        assertThat(r2[0].toString()).contains("Gromit 1")
+        assertThat(r2[1].toString()).contains("Lassie 1")
+    }
+
+    @Test
+    fun `find with named query with excessive pagination`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf(), query="Dog.all", 0, 1000)
+        assertThat(r.size).isEqualTo(8)
+    }
+
+    @Test
+    fun `find with named query with 0 results`() {
+        persistDogs(ctx, 1)
+        val r = assertNamedQueryDog(mapOf("name" to "Topcat"), query="Dog.summon")
+        assertThat(r.size).isEqualTo(0)
+    }
+
+
+    @Test
+    fun `find with named query result which hits Kafka message size limit`() {
+        assertNamedQueryDog(mapOf(), query="Dog.all", expectFailure="Too large", sizeLimit = 10)
+    }
+
+
     private fun createDbTestContext(): DbTestContext {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
 
-        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection))
+        val testId = (0..1000000).random() // keeping this shorter than UUID.
+        val schemaName = "PSIT$testId"
+        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection), schemaName)
 
         // set up sandbox
         val entitySandboxService =
@@ -606,13 +714,15 @@ class PersistenceServiceInternalTests {
                     setOf(dogClass, catClass, sandbox.sandboxGroup.getOwnerClass())
                 )
             ),
-            dogClass, catClass
+            dogClass, catClass,
+            schemaName
         )
     }
 
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
-            val response = it.value as EntityResponse
+            val flowEvent = it.value as FlowEvent
+            val response = flowEvent.payload as EntityResponse
             if (response.responseType is EntityResponseFailure) {
                 logger.error("$response.responseType")
             }
@@ -623,7 +733,8 @@ class PersistenceServiceInternalTests {
 
     private fun assertFailureResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
-            val response = it.value as EntityResponse
+            val flowEvent = it.value as FlowEvent
+            val response = flowEvent.payload as EntityResponse
             if (response.responseType is EntityResponseSuccess) {
                 logger.error("$response.responseType")
             }
@@ -644,9 +755,8 @@ class PersistenceServiceInternalTests {
     }
 
     private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
-        val flowKey = FlowKey(UUID.randomUUID().toString(), holdingId.toAvro())
-        logger.info("Entity Request - flow: $flowKey, entity: ${entity.javaClass.simpleName} $entity")
-        return EntityRequest(Instant.now(), flowKey, entity)
+        logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
+        return EntityRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
     }
 
     /** Find all for class name and assert
@@ -660,11 +770,44 @@ class PersistenceServiceInternalTests {
             assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
         assertThat(responses.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
-        val entityResponse = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
 
         return assertThatResponseIsAList(entityResponse)
     }
 
+    private fun assertNamedQueryDog(
+        params: Map<String, String>, query: String = "Dog.summon",
+        offset: Int = 0, limit: Int = Int.MAX_VALUE,
+        expectFailure: String? = null, sizeLimit: Int = Int.MAX_VALUE
+    ): List<*> {
+        val paramsSerialized = params.mapValues { ctx.serialize(it.value) }
+        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
+            if (sizeLimit != Int.MAX_VALUE && it.array().size > sizeLimit) throw KafkaMessageSizeException("Too large")
+            it
+        }
+        val request = createRequest(
+            ctx.virtualNodeInfo.holdingIdentity,
+            FindWithNamedQuery(query, paramsSerialized, offset, limit)
+        )
+        val records = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request)))
+        assertThat(records.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
+        val record = records.first()
+        val flowEvent = record.value as FlowEvent
+        if (expectFailure != null) {
+            val response = flowEvent.payload as EntityResponse
+            if (response.responseType is EntityResponseFailure) {
+                logger.error("$response.responseType (expected failure)")
+                assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+            }
+            assertThat(response.responseType.toString()).contains(expectFailure)
+            return listOf<String>()
+        } else {
+            val entityResponse = flowEvent.payload as EntityResponse
+            return assertThatResponseIsAList(entityResponse)
+        }
+    }
     /** Delete entity and assert
      * @return the list of successful responses
      * */
@@ -721,9 +864,8 @@ class PersistenceServiceInternalTests {
             )
         )
 
-        assertThat(responses.first().value as EntityResponse).isInstanceOf(EntityResponse::class.java)
-
-        val response = responses.first().value as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         val success = response.responseType as EntityResponseSuccess
 
         return success.result

@@ -7,9 +7,11 @@ metadata:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:

@@ -22,11 +22,13 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcWS
 import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.annotations.extensions.title
 import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.httprpc.tools.responseDescription
 import java.lang.reflect.Method
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
@@ -157,7 +159,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
                     annotation.path(method),
                     method.retrieveParameters(),
                     ResponseBody(
-                        annotation.responseDescription,
+                        method.responseDescription,
                         method.toClassAndParameterizedTypes().first,
                         method.toClassAndParameterizedTypes().second,
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false
@@ -176,6 +178,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             }
     }
 
+    @Suppress("ComplexMethod")
     private fun Method.toEndpoint(): Endpoint {
         try {
             log.trace { "Method \"${this.name}\" to endpoint." }
@@ -185,6 +188,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
                 is HttpRpcPOST -> this.toPOSTEndpoint(annotation)
                 is HttpRpcPUT -> this.toPUTEndpoint(annotation)
                 is HttpRpcDELETE -> this.toDELETEEndpoint(annotation)
+                is HttpRpcWS -> this.toWSEndpoint(annotation)
                 else -> throw IllegalArgumentException("Unknown endpoint type for: ${this.name}")
             }.also { log.trace { "Method \"${this.name}\" to endpoint completed." } }
         } catch (e: Exception) {
@@ -311,6 +315,24 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             responseBody,
             this.getInvocationMethod()
         ).also { log.trace { "Method \"${this.name}\" to PUT endpoint completed." } }
+    }
+
+    private fun Method.toWSEndpoint(annotation: HttpRpcWS): Endpoint {
+        log.trace { """Method "$name" to WS endpoint.""" }
+        return Endpoint(
+            EndpointMethod.WS,
+            annotation.title(this),
+            annotation.description,
+            annotation.path(),
+            retrieveParameters(),
+            ResponseBody(
+                annotation.responseDescription,
+                this.toClassAndParameterizedTypes().first,
+                this.toClassAndParameterizedTypes().second,
+                this.kotlinFunction?.returnType?.isMarkedNullable ?: false
+            ),
+            this.getInvocationMethod()
+        ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 
     private fun Method.getInvocationMethod(clazz: Class<out RpcOps>? = null): InvocationMethod {

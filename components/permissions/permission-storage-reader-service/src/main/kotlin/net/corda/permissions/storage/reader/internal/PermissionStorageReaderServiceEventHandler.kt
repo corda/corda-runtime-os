@@ -1,9 +1,10 @@
 package net.corda.permissions.storage.reader.internal
 
-import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,7 +17,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,6 +29,7 @@ import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMIS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
@@ -48,19 +49,26 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     @VisibleForTesting
+    @Volatile
     internal var registrationHandle: RegistrationHandle? = null
 
     @VisibleForTesting
+    @Volatile
     internal var permissionStorageReader: PermissionStorageReader? = null
 
     @VisibleForTesting
+    @Volatile
     internal var publisher: Publisher? = null
 
     @VisibleForTesting
+    @Volatile
     internal var crsSub: AutoCloseable? = null
 
     @VisibleForTesting
+    @Volatile
     internal var reconciliationTaskIntervalMs: Long? = null
+
+    private val timerKey = PermissionStorageReaderServiceEventHandler::class.simpleName!!
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -79,7 +87,8 @@ class PermissionStorageReaderServiceEventHandler(
             setOf(
                 LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
                 LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
             )
         )
         permissionValidationCacheService.start()
@@ -137,7 +146,7 @@ class PermissionStorageReaderServiceEventHandler(
         permissionStorageReader = null
         registrationHandle?.close()
         registrationHandle = null
-        coordinator.cancelTimer(PermissionStorageReaderServiceEventHandler::class.simpleName!!)
+        coordinator.cancelTimer(timerKey)
     }
 
     @VisibleForTesting
@@ -159,12 +168,8 @@ class PermissionStorageReaderServiceEventHandler(
 
         permissionStorageReader?.close()
         permissionStorageReader = permissionStorageReaderFactory.create(
-            checkNotNull(permissionValidationCacheService.permissionValidationCache) {
-                "The ${PermissionValidationCacheService::class.java} should be up and ready to provide the cache"
-            },
-            checkNotNull(permissionManagementCacheService.permissionManagementCache) {
-                "The ${permissionManagementCacheService::class.java} should be up and ready to provide the cache"
-            },
+            permissionValidationCacheService.permissionValidationCacheRef,
+            permissionManagementCacheService.permissionManagementCacheRef,
             checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
             entityManagerFactoryCreator()
         ).also {
@@ -174,7 +179,7 @@ class PermissionStorageReaderServiceEventHandler(
 
     private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
         coordinator.setTimer(
-            PermissionStorageReaderServiceEventHandler::class.simpleName!!,
+            timerKey,
             reconciliationTaskIntervalMs!!
         ) { key ->
             ReconcilePermissionSummaryEvent(key)

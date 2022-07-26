@@ -1,5 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -8,25 +10,22 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyStore
-import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeyStatus
+import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.impl.infra.generateKeyPair
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -39,7 +38,6 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 
 class SigningServiceGeneralTests {
@@ -67,39 +65,13 @@ class SigningServiceGeneralTests {
                 }.encoded
             )
         }
-        assertThrows<IllegalArgumentException> {
+        assertThrows(IllegalArgumentException::class.java) {
             signingService.lookup(UUID.randomUUID().toString(), keys)
         }
     }
 
     @Test
-    fun `Should wrap CryptoServiceException into another with more information when failing signing`() {
-        val exception = CryptoServiceException("")
-        val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            store = store,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            signingService.sign(
-                tenantId = UUID.randomUUID().toString(),
-                publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-                },
-                signatureSpec = SignatureSpec("NONE"),
-                data = ByteArray(2),
-                context = emptyMap()
-            )
-        }
-        assertNotSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
-    }
-
-    @Test
-    fun `Should wrap in CryptoServiceException when failing signing`() {
+    fun `Should throw original exception failing signing`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
             on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
@@ -109,7 +81,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        val thrown = assertThrows<CryptoServiceException> {
+        val thrown = assertThrows(exception::class.java) {
             signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = mock {
@@ -120,12 +92,12 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertSame(exception, thrown.cause)
+        assertSame(exception, thrown)
         Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
-    fun `Should throw CryptoServiceException when key is not found for signing`() {
+    fun `Should throw IllegalArgumentException when key is not found for signing`() {
         val actions = mock<SigningKeyStoreActions> {
             on { find(any<PublicKey>()) } doReturn null
         }
@@ -138,7 +110,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        assertThrows<CryptoServiceException> {
+        assertThrows(IllegalArgumentException::class.java) {
             signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = mock {
@@ -152,7 +124,62 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceException when generating key with existing alias`() {
+    fun `Should throw original exception failing derivation`() {
+        val exception = RuntimeException("")
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
+        }
+        val signingService = SigningServiceImpl(
+            store = store,
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata
+        )
+        val thrown = assertThrows(exception::class.java) {
+            signingService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                context = emptyMap()
+            )
+        }
+        assertSame(exception, thrown)
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when key is not found for deriving`() {
+        val actions = mock<SigningKeyStoreActions> {
+            on { find(any<PublicKey>()) } doReturn null
+        }
+        val store = mock<SigningKeyStore> {
+            on { act(any()) } doReturn actions
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
+        }
+        val signingService = SigningServiceImpl(
+            store = store,
+            cryptoServiceFactory = mock(),
+            schemeMetadata = schemeMetadata
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            signingService.deriveSharedSecret(
+                tenantId = UUID.randomUUID().toString(),
+                publicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                otherPublicKey = mock {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                },
+                context = emptyMap()
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalStateException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
             id = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
@@ -181,7 +208,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        assertThrows<CryptoServiceException> {
+        assertThrows(IllegalStateException::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -190,7 +217,7 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertThrows<CryptoServiceException> {
+        assertThrows(IllegalStateException::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -203,8 +230,8 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceException when failing aliased key generation`() {
-        val exception = CryptoServiceException("")
+    fun `Should throw original when failing key generation with alias`() {
+        val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
             on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
@@ -213,7 +240,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        var thrown = assertThrows<CryptoServiceException> {
+        var thrown = assertThrows(exception::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -222,8 +249,8 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertNotSame(exception, thrown)
-        thrown = assertThrows {
+        assertSame(exception, thrown)
+        thrown = assertThrows(exception::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -233,12 +260,12 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertNotSame(exception, thrown)
+        assertSame(exception, thrown)
         Mockito.verify(store, times(2)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
-    fun `Should wrap in CryptoServiceException when failing aliased key generation`() {
+    fun `Should throw original exception when failing fresh key generation`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
             on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
@@ -248,54 +275,19 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        var thrown = assertThrows<CryptoServiceException> {
-            signingService.generateKeyPair(
-                tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.Categories.LEDGER,
-                alias = UUID.randomUUID().toString(),
-                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
-                context = emptyMap()
-            )
-        }
-        assertSame(exception, thrown.cause)
-        thrown = assertThrows {
-            signingService.generateKeyPair(
-                tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.Categories.LEDGER,
-                alias = UUID.randomUUID().toString(),
-                externalId = UUID.randomUUID().toString(),
-                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
-                context = emptyMap()
-            )
-        }
-        assertSame(exception, thrown.cause)
-        Mockito.verify(store, times(2)).act<SigningKeyStoreActions>(any(), any())
-    }
-
-    @Test
-    fun `Should throw CryptoServiceException when failing fresh key generation`() {
-        val exception = CryptoServiceException("")
-        val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            store = store,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows<CryptoServiceException> {
+        val thrown = assertThrows(exception::class.java) {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.CI,
                 scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
-        assertNotSame(exception, thrown)
+        assertSame(exception, thrown)
         Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
-    fun `Should wrap in CryptoServiceException when failing fresh key generation`() {
+    fun `Should throw original exception when failing fresh key generation with external id`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
             on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
@@ -305,29 +297,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        val thrown = assertThrows<CryptoServiceException> {
-            signingService.freshKey(
-                tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.Categories.CI,
-                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
-            )
-        }
-        assertSame(exception, thrown.cause)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
-    }
-
-    @Test
-    fun `Should throw CryptoServiceException when failing fresh key generation with external id`() {
-        val exception = CryptoServiceException("")
-        val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            store = store,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows<CryptoServiceException> {
+        val thrown = assertThrows(exception::class.java) {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.CI,
@@ -335,30 +305,7 @@ class SigningServiceGeneralTests {
                 scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
-        assertNotSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
-    }
-
-    @Test
-    fun `Should wrap in CryptoServiceException when failing fresh key generation with external id`() {
-        val exception = RuntimeException("")
-        val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            store = store,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            signingService.freshKey(
-                tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.Categories.CI,
-                externalId = UUID.randomUUID().toString(),
-                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
-            )
-        }
-        assertSame(exception, thrown.cause)
+        assertSame(exception, thrown)
         Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 

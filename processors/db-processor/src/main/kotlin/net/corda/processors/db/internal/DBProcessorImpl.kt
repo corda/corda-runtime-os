@@ -11,15 +11,12 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
-import net.corda.data.config.Configuration
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -34,23 +31,21 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.datamodel.CertificateEntities
+import net.corda.membership.datamodel.MembershipEntities
+import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader
-import net.corda.processors.db.internal.reconcile.db.getAllConfigDBVersionedRecords
-import net.corda.processors.db.internal.reconcile.db.getAllCpiInfoDBVersionedRecords
-import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
-import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -94,7 +89,13 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigPublishService::class)
     private val configPublishService: ConfigPublishService,
     @Reference(service = ConfigReconcilerReader::class)
-    private val configBusReconcilerReader: ConfigReconcilerReader
+    private val configBusReconcilerReader: ConfigReconcilerReader,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = VirtualNodeInfoWriteService::class)
+    private val virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
+    @Reference(service = MembershipPersistenceService::class)
+    private val membershipPersistenceService: MembershipPersistenceService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -108,8 +109,13 @@ class DBProcessorImpl @Activate constructor(
                     + CertificateEntities.clusterClasses
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
-        entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, CertificateEntities.vnodeClasses)
+        entitiesRegistry.register(
+            CordaDb.Vault.persistenceUnitName,
+            CertificateEntities.vnodeClasses
+                    + MembershipEntities.classes
+        )
     }
+
     companion object {
         private val log = contextLogger()
     }
@@ -131,12 +137,22 @@ class DBProcessorImpl @Activate constructor(
         ::cpiInfoWriteService,
         ::certificatesService,
         ::configPublishService,
+        ::virtualNodeInfoReadService,
+        ::virtualNodeInfoWriteService,
+        ::membershipPersistenceService,
     )
 
-    private var cpiInfoDbReconcilerReader: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
-    private var cpiInfoReconciler: Reconciler? = null
-    private var configDbReconcilerReader: DbReconcilerReader<String, Configuration>? = null
-    private var configReconciler: Reconciler? = null
+    private val reconcilers = Reconcilers(
+        coordinatorFactory,
+        dbConnectionManager,
+        virtualNodeInfoWriteService,
+        virtualNodeInfoReadService,
+        cpiInfoReadService,
+        cpiInfoWriteService,
+        configPublishService,
+        configBusReconcilerReader,
+        reconcilerFactory
+    )
 
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
@@ -161,135 +177,67 @@ class DBProcessorImpl @Activate constructor(
         log.debug { "DB processor received event $event." }
 
         when (event) {
-            is StartEvent -> {
-                // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
-                // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
-                createOrUpdateConfigReconciler(3600000)
-                dependentComponents.registerAndStartAll(coordinator)
-                dbManagerRegistrationHandler = lifecycleCoordinator.followStatusChangesByName(
-                    setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>()))
-            }
-            is RegistrationStatusChangeEvent -> {
-                if (event.registration == dbManagerRegistrationHandler) {
-                    log.info("Bootstrapping config read service")
-                    configurationReadService.bootstrapConfig(bootstrapConfig!!)
-                } else {
-                    log.info("DB processor is ${event.status}")
-                    if (event.status == LifecycleStatus.UP) {
-                        configSubscription = configurationReadService.registerComponentForUpdates(
-                            coordinator, setOf(
-                                ConfigKeys.RECONCILIATION_CONFIG
-                            )
-                        )
-                    }
-                    coordinator.updateStatus(event.status)
-                }
-            }
-            is ConfigChangedEvent -> {
-                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(RECONCILIATION_CPI_INFO_INTERVAL_MS)
-                    ?.let { cpiInfoReconciliationIntervalMs ->
-                        log.info("Cpi info reconciliation interval set to $cpiInfoReconciliationIntervalMs ms")
-                        createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs)
-                    }
-                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(RECONCILIATION_CONFIG_INTERVAL_MS)
-                    ?.let { configReconciliationIntervalMs ->
-                        log.info("Config reconciliation interval set to $configReconciliationIntervalMs ms")
-                        createOrUpdateConfigReconciler(configReconciliationIntervalMs)
-                    }
-            }
-            is BootConfigEvent -> {
-                val bootstrapConfig = event.config
-                instanceId = bootstrapConfig.getInt(INSTANCE_ID)
-
-                log.info("Bootstrapping DB connection Manager")
-                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
-
-                log.info("Bootstrapping config publish service")
-                configPublishService.bootstrapConfig(bootstrapConfig)
-
-                log.info("Bootstrapping config write service with instance id: $instanceId")
-                configWriteService.bootstrapConfig(bootstrapConfig)
-
-                this.bootstrapConfig = bootstrapConfig
-            }
-            is StopEvent -> {
-                dependentComponents.stopAll()
-                cpiInfoReconciler?.close()
-                cpiInfoReconciler = null
-                cpiInfoDbReconcilerReader?.close()
-                cpiInfoDbReconcilerReader = null
-                configReconciler?.close()
-                configReconciler = null
-                configDbReconcilerReader?.close()
-                configDbReconcilerReader = null
-                dbManagerRegistrationHandler?.close()
-                dbManagerRegistrationHandler = null
-            }
-            else -> {
-                log.error("Unexpected event $event!")
-            }
+            is StartEvent -> onStartEvent(coordinator)
+            is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> reconcilers.onConfigChanged(event)
+            is BootConfigEvent -> onBootConfigEvent(event)
+            is StopEvent -> onStopEvent()
+            else -> log.error("Unexpected event $event!")
         }
     }
 
-    // TODO - the following should probably become a `Lifecycle` Reconciler's Factory/ Manager
-    //  to have its own lifecycle management i.e. waiting on needed components.
-    private fun createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs: Long) {
-        if (cpiInfoDbReconcilerReader == null) {
-            cpiInfoDbReconcilerReader =
-                DbReconcilerReader(
-                    coordinatorFactory,
-                    dbConnectionManager,
-                    CpiIdentifier::class.java,
-                    CpiMetadata::class.java,
-                    getAllCpiInfoDBVersionedRecords
-                ).also {
-                    it.start()
-                }
-        }
+    private fun onStopEvent() {
+        dependentComponents.stopAll()
+        reconcilers.close()
+        dbManagerRegistrationHandler?.close()
+        dbManagerRegistrationHandler = null
+    }
 
-        if (cpiInfoReconciler == null) {
-            cpiInfoReconciler = reconcilerFactory.create(
-                dbReader = cpiInfoDbReconcilerReader!!,
-                kafkaReader = cpiInfoReadService,
-                writer = cpiInfoWriteService,
-                keyClass = CpiIdentifier::class.java,
-                valueClass = CpiMetadata::class.java,
-                reconciliationIntervalMs = cpiInfoReconciliationIntervalMs
-            ).also { it.start() }
+    private fun onBootConfigEvent(event: BootConfigEvent) {
+        val bootstrapConfig = event.config
+        instanceId = bootstrapConfig.getInt(INSTANCE_ID)
+
+        log.info("Bootstrapping DB connection Manager")
+        dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+
+        log.info("Bootstrapping config publish service")
+        configPublishService.bootstrapConfig(bootstrapConfig)
+
+        log.info("Bootstrapping config write service with instance id: $instanceId")
+        configWriteService.bootstrapConfig(bootstrapConfig)
+
+        this.bootstrapConfig = bootstrapConfig
+    }
+
+    private fun onRegistrationStatusChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator
+    ) {
+        if (event.registration == dbManagerRegistrationHandler) {
+            log.info("Bootstrapping config read service")
+            configurationReadService.bootstrapConfig(bootstrapConfig!!)
         } else {
-            log.info("Updating Cpi Info ${Reconciler::class.java.name}")
-            cpiInfoReconciler!!.updateInterval(cpiInfoReconciliationIntervalMs)
+            log.info("DB processor is ${event.status}")
+            if (event.status == LifecycleStatus.UP) {
+                configSubscription = configurationReadService.registerComponentForUpdates(
+                    coordinator, setOf(
+                        ConfigKeys.RECONCILIATION_CONFIG
+                    )
+                )
+            }
+            coordinator.updateStatus(event.status)
         }
     }
 
-    private fun createOrUpdateConfigReconciler(configReconciliationIntervalMs: Long) {
-        if (configDbReconcilerReader == null) {
-            configDbReconcilerReader =
-                DbReconcilerReader(
-                    coordinatorFactory,
-                    dbConnectionManager,
-                    String::class.java,
-                    Configuration::class.java,
-                    getAllConfigDBVersionedRecords
-                ).also {
-                    it.start()
-                }
-        }
-
-        if (configReconciler == null) {
-            configReconciler = reconcilerFactory.create(
-                dbReader = configDbReconcilerReader!!,
-                kafkaReader = configBusReconcilerReader,
-                writer = configPublishService,
-                keyClass = String::class.java,
-                valueClass = Configuration::class.java,
-                reconciliationIntervalMs = configReconciliationIntervalMs
-            ).also { it.start() }
-        } else {
-            log.info("Updating Config ${Reconciler::class.java.name}")
-            configReconciler!!.updateInterval(configReconciliationIntervalMs)
-        }
+    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+        // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
+        // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
+        reconcilers.updateConfigReconciler(3600000)
+        dependentComponents.registerAndStartAll(coordinator)
+        dbManagerRegistrationHandler = lifecycleCoordinator.followStatusChangesByName(
+            setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
+        )
     }
+
+    data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
 }
-
-data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent

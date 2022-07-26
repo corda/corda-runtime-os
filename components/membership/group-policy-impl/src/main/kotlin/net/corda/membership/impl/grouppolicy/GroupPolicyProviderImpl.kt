@@ -10,9 +10,12 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -20,6 +23,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [GroupPolicyProvider::class])
@@ -32,13 +36,15 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = GroupPolicyParser::class)
     private val groupPolicyParser: GroupPolicyParser,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : GroupPolicyProvider {
 
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerGroupPolicyProvider : AutoCloseable {
-        fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy
+        fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy?
     }
 
     companion object {
@@ -53,12 +59,17 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var impl: InnerGroupPolicyProvider = InactiveImpl
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
+    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+        listeners.add(callback)
+    }
 
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
 
     override val isRunning get() = coordinator.isRunning
+
+    private val listeners: MutableList<(HoldingIdentity, GroupPolicy) -> Unit> = Collections.synchronizedList(mutableListOf())
 
     /**
      * Handle lifecycle events.
@@ -72,7 +83,8 @@ class GroupPolicyProviderImpl @Activate constructor(
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                        LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+                        LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>()
                     )
                 )
             }
@@ -121,7 +133,20 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
-        ) = groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
+        ) = try {
+            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }.also {
+                if(groupPolicies[holdingIdentity] is MGMGroupPolicy) {
+                    groupPolicies.remove(holdingIdentity)
+                }
+            }
+        } catch (e: BadGroupPolicyException) {
+            logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
+            null
+        } catch (e: Throwable) {
+            logger.error("Unexpected exception occurred when retrieving group policy file for " +
+                    "holding identity [$holdingIdentity].", e)
+            null
+        }
 
         override fun close() {
             virtualNodeInfoCallbackHandle.close()
@@ -148,15 +173,20 @@ class GroupPolicyProviderImpl @Activate constructor(
             virtualNodeInfo: VirtualNodeInfo? = null,
         ): GroupPolicy {
             val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
-            if(vNodeInfo == null) {
+            if (vNodeInfo == null) {
                 logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
             }
             val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-            if(metadata == null) {
-                logger.warn("Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
-                        "identifier [${vNodeInfo?.cpiIdentifier.toString()}]")
+            if (metadata == null) {
+                logger.warn(
+                    "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
+                            "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
+                )
             }
-            return groupPolicyParser.parse(metadata?.groupPolicy)
+            return groupPolicyParser.parse(
+                holdingIdentity,
+                metadata?.groupPolicy
+            ) { membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow() }
         }
 
         /**
@@ -172,9 +202,9 @@ class GroupPolicyProviderImpl @Activate constructor(
                         try {
                             parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                         } catch (e: Exception) {
-                            logger.warn(
+                            logger.error(
                                 "Failure to parse group policy after change in virtual node info. " +
-                                        "Check the format of the group policy in use for virtual node with ID [${it.id}]. " +
+                                        "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
                                         "Caught exception: ", e
                             )
                             logger.warn(
@@ -183,6 +213,9 @@ class GroupPolicyProviderImpl @Activate constructor(
                             )
                             null
                         }
+                    }
+                    synchronized(listeners) {
+                        listeners.forEach { callback -> callback(it, groupPolicies[it]!!) }
                     }
                 }
             }

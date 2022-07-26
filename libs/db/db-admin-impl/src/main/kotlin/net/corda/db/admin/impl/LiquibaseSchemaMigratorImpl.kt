@@ -68,8 +68,10 @@ class LiquibaseSchemaMigratorImpl(
         val database = databaseFactory(datasource)
 
         // only set the schema if it's not specified as the default
-        if(liquibaseSchemaName != DEFAULT_DB_SCHEMA)
+        if(liquibaseSchemaName != DEFAULT_DB_SCHEMA) {
+            log.info("Setting liquibaseSchemaName to $liquibaseSchemaName")
             database.liquibaseSchemaName = liquibaseSchemaName
+        }
 
         // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
         val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"

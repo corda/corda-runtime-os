@@ -3,15 +3,15 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -33,14 +33,16 @@ class StubMembershipGroupReaderTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), eq(configuration)) } doReturn mock()
     }
-    private lateinit var ready: CompletableFuture<Unit>
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        val createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
-        ready = createResources.invoke(mock())
+        ready = context.arguments()[2] as CompletableFuture<Unit>
+    }
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
     }
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val aliceObserver = HoldingIdentity("Observer", "GROUP-1")
     private val alice = MemberInfoEntry(
         HoldingIdentity(
             "Alice",
@@ -49,6 +51,7 @@ class StubMembershipGroupReaderTest {
         "alice_pem",
         "alice.com",
     )
+    private val bobObserver = HoldingIdentity("Observer", "GROUP-2")
     private val bob = MemberInfoEntry(
         HoldingIdentity(
             "Bob",
@@ -57,6 +60,7 @@ class StubMembershipGroupReaderTest {
         "bob_pem",
         "bob.net"
     )
+    private val carolObserver = HoldingIdentity("Observer", "GROUP-3")
     private val carol = MemberInfoEntry(
         HoldingIdentity(
             "Carol",
@@ -99,6 +103,7 @@ class StubMembershipGroupReaderTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
+        blockingDominoTile.close()
         keyReader.close()
         keyHasher.close()
     }
@@ -124,7 +129,7 @@ class StubMembershipGroupReaderTest {
         processor.firstValue.onSnapshot(membersToPublish)
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(aliceObserver, alice.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     alice.holdingIdentity,
                     alicePublicKey,
@@ -132,7 +137,7 @@ class StubMembershipGroupReaderTest {
                     alice.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(bobObserver, bob.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -140,8 +145,8 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isNull()
-            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carolObserver, carol.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(aliceObserver, aliceHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     alice.holdingIdentity,
                     alicePublicKey,
@@ -149,7 +154,7 @@ class StubMembershipGroupReaderTest {
                     alice.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(bobObserver, bobHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -157,7 +162,7 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(carolObserver, carolHash)).isNull()
         }
     }
 
@@ -176,8 +181,8 @@ class StubMembershipGroupReaderTest {
         )
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isNull()
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(aliceObserver, alice.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(bobObserver, bob.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -185,9 +190,9 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isNull()
-            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
-            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carolObserver, carol.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(aliceObserver, aliceHash)).isNull()
+            it.assertThat(members.getMemberInfo(bobObserver, bobHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -195,7 +200,7 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(carolObserver, carolHash)).isNull()
         }
     }
 
@@ -209,7 +214,7 @@ class StubMembershipGroupReaderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 null
             ),
@@ -218,8 +223,8 @@ class StubMembershipGroupReaderTest {
         )
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isNull()
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(aliceObserver, alice.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(bobObserver, bob.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -227,9 +232,9 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isNull()
-            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
-            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carolObserver, carol.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(aliceObserver, aliceHash)).isNull()
+            it.assertThat(members.getMemberInfo(bobObserver, bobHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -237,7 +242,7 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
+            it.assertThat(members.getMemberInfo(carolObserver, carolHash)).isNull()
         }
     }
     @Test
@@ -250,7 +255,7 @@ class StubMembershipGroupReaderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 carol
             ),
@@ -259,7 +264,7 @@ class StubMembershipGroupReaderTest {
         )
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(aliceObserver, alice.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     alice.holdingIdentity,
                     alicePublicKey,
@@ -267,7 +272,7 @@ class StubMembershipGroupReaderTest {
                     alice.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(bobObserver, bob.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -275,7 +280,7 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carolObserver, carol.holdingIdentity)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     carol.holdingIdentity,
                     carolPublicKey,
@@ -283,7 +288,7 @@ class StubMembershipGroupReaderTest {
                     carol.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(aliceObserver, aliceHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     alice.holdingIdentity,
                     alicePublicKey,
@@ -291,7 +296,7 @@ class StubMembershipGroupReaderTest {
                     alice.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(bobObserver, bobHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     bob.holdingIdentity,
                     bobPublicKey,
@@ -299,7 +304,7 @@ class StubMembershipGroupReaderTest {
                     bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isEqualTo(
+            it.assertThat(members.getMemberInfo(carolObserver, carolHash)).isEqualTo(
                 LinkManagerMembershipGroupReader.MemberInfo(
                     carol.holdingIdentity,
                     carolPublicKey,

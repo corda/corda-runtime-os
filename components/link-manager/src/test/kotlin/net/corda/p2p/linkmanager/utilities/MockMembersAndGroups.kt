@@ -17,7 +17,7 @@ import java.security.MessageDigest
 fun mockMembersAndGroups(
     vararg members: HoldingIdentity
 ): Pair<LinkManagerMembershipGroupReader, LinkManagerGroupPolicyProvider> {
-    return mockMembers(members.toList()) to mockGroups(members.map { it.groupId })
+    return mockMembers(members.toList()) to mockGroups(members.toList())
 }
 fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGroupReader {
     val endpoint = "http://10.0.0.1/"
@@ -41,24 +41,25 @@ fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGrou
     }
     val hashToInfo = identities.values.associateBy {
         val publicKeyHash = messageDigest.hash(it.sessionPublicKey.encoded)
-        (publicKeyHash to it.holdingIdentity.groupId)
+        (publicKeyHash to it.holdingIdentity)
     }
     return object : LinkManagerMembershipGroupReader {
-        override fun getMemberInfo(holdingIdentity: HoldingIdentity) = identities[holdingIdentity]
+        override fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity):
+                LinkManagerMembershipGroupReader.MemberInfo? = identities[lookupIdentity]
 
-        override fun getMemberInfo(hash: ByteArray, groupId: String) = hashToInfo[hash to groupId]
+        override fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray)
+            = hashToInfo[publicKeyHashToLookup to requestingIdentity]
 
         override val dominoTile = mock<DominoTile>()
     }
 }
 
-fun mockGroups(groups: Collection<String>): LinkManagerGroupPolicyProvider {
-    val groupSet = groups.toSet()
+fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): LinkManagerGroupPolicyProvider {
     return object : LinkManagerGroupPolicyProvider {
-        override fun getGroupInfo(groupId: String): GroupPolicyListener.GroupInfo? {
-            return if (groupSet.contains(groupId)) {
+        override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
+            return if (holdingIdentities.contains(holdingIdentity)) {
                 GroupPolicyListener.GroupInfo(
-                    groupId,
+                    holdingIdentity,
                     NetworkType.CORDA_5,
                     setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
                     emptyList()

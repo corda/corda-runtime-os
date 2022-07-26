@@ -1,6 +1,7 @@
 package net.corda.virtualnode
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -26,23 +27,39 @@ data class VirtualNodeInfo(
     /** Crypto DML DB connection ID */
     val cryptoDmlConnectionId: UUID,
     /** HSM connection ID */
-    val hsmConnectionId: UUID? = null)
+    val hsmConnectionId: UUID? = null,
+    /** Current state of the virtual node instance */
+    val state: VirtualNodeState = DEFAULT_INITIAL_STATE,
+    /** Version of this vnode */
+    val version: Int = -1,
+    /** Creation timestamp */
+    val timestamp: Instant,
+) {
+    companion object {
+        val DEFAULT_INITIAL_STATE = VirtualNodeState.ACTIVE
+    }
+}
 
 
-fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
+typealias VirtualNodeInfoAvro = net.corda.data.virtualnode.VirtualNodeInfo
+
+fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
     with (holdingIdentity) {
-        net.corda.data.virtualnode.VirtualNodeInfo(
+        VirtualNodeInfoAvro(
             toAvro(),
             cpiIdentifier.toAvro(),
             vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() },
             vaultDmlConnectionId.toString(),
             cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
             cryptoDmlConnectionId.toString(),
-            hsmConnectionId?.let { hsmConnectionId.toString() }
+            hsmConnectionId?.let { hsmConnectionId.toString() },
+            state.name,
+            version,
+            timestamp
         )
     }
 
-fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
+fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
     val holdingIdentity = holdingIdentity.toCorda()
     return VirtualNodeInfo(
         holdingIdentity,
@@ -52,5 +69,15 @@ fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
         cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
         UUID.fromString(cryptoDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
+        VirtualNodeState.valueOf(virtualNodeState),
+        version,
+        timestamp
     )
+}
+
+enum class VirtualNodeState {
+    ACTIVE,
+    INACTIVE,
+    IN_MAINTENANCE,
+    DRAINING
 }

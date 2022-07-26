@@ -2,15 +2,14 @@
 group 'net.corda.cli.deployment'
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-    def sourceTasks = subprojects.collect { it.tasks.named("plugin").get() }
+    def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
-    dependsOn(sourceTasks)
 
     if (cordaCliIncluded) {
         logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
         dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
     }
-    it.sourceTasks = sourceTasks
+    it.sourceFiles.setFrom(sourceTasks)
     it.subDir = "plugins/"
     it.setEntry = false
     if (project.hasProperty('jibRemotePublish')) {

@@ -34,13 +34,13 @@ class FlowFiberExecutionContextFactoryImplTest {
     @Test
     fun `create fiber execution context returns initialized context instance`() {
         val flowStartContext = FlowStartContext().apply {
-            initiatedBy = BOB_X500_HOLDING_IDENTITY
+            identity = BOB_X500_HOLDING_IDENTITY
         }
 
         val context = buildFlowEventContext<Any>(Wakeup())
 
         whenever(context.checkpoint.flowStartContext).thenReturn(flowStartContext)
-        whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY)
+        whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY.toCorda())
         whenever(flowSandboxService.get(BOB_X500_HOLDING_IDENTITY.toCorda())).thenReturn(sandboxGroupContext)
         whenever(membershipGroupReaderProvider.getGroupReader(
             BOB_X500_HOLDING_IDENTITY.toCorda()
@@ -52,7 +52,7 @@ class FlowFiberExecutionContextFactoryImplTest {
         val result = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
 
         assertThat(result.flowCheckpoint).isSameAs(context.checkpoint)
-        assertThat(result.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY)
+        assertThat(result.holdingIdentity).isEqualTo(BOB_X500_HOLDING_IDENTITY.toCorda())
         assertThat(result.sandboxGroupContext).isSameAs(sandboxGroupContext)
         assertThat(result.membershipGroupReader).isSameAs(membershipGroupReader)
         assertThat(result.memberX500Name).isEqualTo(BOB_X500_NAME)

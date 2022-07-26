@@ -5,8 +5,6 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.security.KeyPair
 import java.security.PublicKey
 
@@ -78,10 +76,6 @@ interface SigningService {
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
      * the provided alias or return normally without overriding the key.
      * @param context the optional key/value operation context.
-     *
-     * @throws [CryptoServiceBadRequestException] if a key already exists under this alias
-     * and [failIfExists] is set to true.
-     * @throws [CryptoServiceException] for general cryptographic exceptions.
      */
     fun createWrappingKey(
         configId: String,
@@ -190,4 +184,23 @@ interface SigningService {
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
+
+    /**
+     * Derive Diffie–Hellman key agreement shared secret by using the private key associated with [publicKey]
+     * and [otherPublicKey], note that the key schemes of the [publicKey] and [otherPublicKey] must be the same and
+     * the scheme must support the key agreement secret derivation.
+     *
+     * @param tenantId the tenant which owns the key pair referenced by the [publicKey]
+     * @param publicKey the public key of the key pair
+     * @param otherPublicKey the public of the "other" party which should be used to derive the secret
+     * @param context the optional key/value operation context.
+     *
+     * @return the shared secret.
+     */
+    fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): ByteArray
 }

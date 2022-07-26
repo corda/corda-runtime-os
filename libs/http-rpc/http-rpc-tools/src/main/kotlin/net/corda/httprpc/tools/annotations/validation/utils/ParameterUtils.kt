@@ -5,6 +5,7 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
+import net.corda.httprpc.tools.isDuplexChannel
 import java.lang.reflect.Parameter
 import kotlin.reflect.full.createInstance
 
@@ -19,7 +20,8 @@ val String.asPathParam
 fun Parameter.isPathOrQueryParameter() =
     this.annotations.any { annotation -> annotation is HttpRpcPathParameter || annotation is HttpRpcQueryParameter }
 
-fun Parameter.isBodyParameter() = this.annotations.any { it is HttpRpcRequestBodyParameter } || !this.isPathOrQueryParameter()
+fun Parameter.isBodyParameter() = (this.annotations.any { it is HttpRpcRequestBodyParameter } || !this.isPathOrQueryParameter())
+        && !this.type.isDuplexChannel()
 
 @Suppress("ComplexMethod")
 fun getParameterName(parameter: Parameter) =

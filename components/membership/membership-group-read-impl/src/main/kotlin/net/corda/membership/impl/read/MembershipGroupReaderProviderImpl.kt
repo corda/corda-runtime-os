@@ -1,13 +1,13 @@
 package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
@@ -43,8 +43,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    @Reference(service = MemberInfoFactory::class)
+    val memberInfoFactory: MemberInfoFactory
 ) : MembershipGroupReaderProvider {
 
     companion object {
@@ -70,20 +70,14 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private fun activate(configs: Map<String, SmartConfig>, reason: String) {
         impl.close()
         impl = ActiveImpl(configs)
-        updateStatus(LifecycleStatus.UP, reason)
+        coordinator.updateStatus(LifecycleStatus.UP, reason)
     }
 
     private fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
+        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         val current = impl
         impl = InactiveImpl
         current.close()
-    }
-
-    private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if(coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
     }
 
 
@@ -127,7 +121,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
             subscriptionFactory,
             membershipGroupReadCache,
-            layeredPropertyMapFactory
+            memberInfoFactory
         ).also {
             it.start(configs.getConfig(ConfigKeys.MESSAGING_CONFIG))
         }

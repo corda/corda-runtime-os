@@ -1,0 +1,29 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Membership data distribution and synchronisation implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:membership:group-policy")
+    implementation project(":components:membership:synchronisation")
+
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation project(":libs:membership:membership-impl")
+}

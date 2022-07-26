@@ -1,8 +1,12 @@
 package net.corda.entityprocessor.impl.tests
 
+import java.nio.ByteBuffer
+import java.nio.file.Path
+import java.time.Instant
+import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -42,10 +46,6 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.time.Instant
-import java.util.UUID
 
 
 /**
@@ -112,9 +112,11 @@ class PersistenceExceptionTests {
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
         // The failure is correctly categorised.
         assertThat(responseFailure.errorType).isEqualTo(Error.NOT_READY)
 
@@ -149,9 +151,12 @@ class PersistenceExceptionTests {
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
 
         // The failure is correctly categorised.
         assertThat(responseFailure.errorType).isEqualTo(Error.VIRTUAL_NODE)
@@ -164,7 +169,7 @@ class PersistenceExceptionTests {
     fun `exception raised when sent a missing command`() {
         val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
-        val badRequest = EntityRequest(Instant.now(), oldRequest.flowKey, unknownCommand)
+        val badRequest = EntityRequest(Instant.now(), oldRequest.flowId, oldRequest.holdingIdentity, unknownCommand)
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -181,9 +186,11 @@ class PersistenceExceptionTests {
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
 
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+        val flowEvent = responses.first().value  as FlowEvent
+        val entityResponse = flowEvent.payload as EntityResponse
+        assertThat(entityResponse.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        val responseFailure = entityResponse.responseType as EntityResponseFailure
 
         // The failure is correctly categorised.
         assertThat(responseFailure.errorType).isEqualTo(Error.FATAL)
@@ -200,7 +207,9 @@ class PersistenceExceptionTests {
     private fun setupExceptionHandlingTests(): Pair<FakeDbConnectionManager, EntityRequest> {
         val virtualNodeInfoOne = virtualNode.load(Resources.EXTENDABLE_CPB)
         val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection))
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection),
+            "PersistenceExceptionTests")
 
         // We need a 'working' service to set up the test
         val entitySandboxService =
@@ -219,8 +228,7 @@ class PersistenceExceptionTests {
         val serialisedDog = sandboxOne.getSerializer().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
-        val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro())
-        val request = EntityRequest(Instant.now(), flowKey, PersistEntity(ByteBuffer.wrap(serialisedDog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro(), PersistEntity(ByteBuffer.wrap(serialisedDog)))
         return Pair(dbConnectionManager, request)
     }
 }

@@ -92,7 +92,7 @@ data class CpiMetadataEntity(
             groupPolicy: String,
             groupId: String,
             fileUploadRequestId: String,
-            cpks: List<Pair<String, CpkMetadataEntity>>
+            cpks: Set<CpiCpkEntity>
         ): CpiMetadataEntity {
             return CpiMetadataEntity(
                 name,
@@ -103,18 +103,7 @@ data class CpiMetadataEntity(
                 groupPolicy,
                 groupId,
                 fileUploadRequestId,
-                cpks = cpks.map {
-                    CpiCpkEntity(
-                        id = CpiCpkKey(
-                            name,
-                            version,
-                            signerSummaryHash,
-                            it.second.cpkFileChecksum,
-                        ),
-                        cpkFileName = it.first,
-                        metadata = it.second,
-                    )
-                }.toSet()
+                cpks
             )
         }
     }
@@ -129,24 +118,13 @@ data class CpiMetadataEntity(
         fileUploadRequestId: String,
         fileName: String,
         fileChecksum: String,
-        cpks: List<Pair<String, CpkMetadataEntity>>
+        cpks: Set<CpiCpkEntity>
     ) =
         this.copy(
             fileUploadRequestId = fileUploadRequestId,
             fileName = fileName,
             fileChecksum = fileChecksum,
-            cpks = cpks.map {
-                CpiCpkEntity(
-                    id = CpiCpkKey(
-                        name,
-                        version,
-                        signerSummaryHash,
-                        it.second.cpkFileChecksum,
-                    ),
-                    cpkFileName = it.first,
-                    metadata = it.second,
-                )
-            }.toSet(),
+            cpks = cpks,
         )
 }
 

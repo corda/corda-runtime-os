@@ -4,9 +4,11 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.util.concurrent.Callable
@@ -107,7 +109,7 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
         val replayAlgorithmInnerConfig = when (replayAlgorithm) {
             ReplayAlgorithm.Constant -> {
                 ConfigFactory.empty().withValue(
-                    LinkManagerConfiguration.REPLAY_PERIOD_KEY,
+                    LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY,
                     ConfigValueFactory.fromAnyRef(messageReplayPeriodMilliSecs)
                 )
             }
@@ -121,14 +123,13 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
                 )
             }
         }
-        val configuration = baseConfiguration.withValue(replayAlgorithm.configKeyName(), replayAlgorithmInnerConfig.root())
+        val configuration = baseConfiguration.withValue(
+            REPLAY_ALGORITHM_KEY,
+            ConfigFactory.empty().withValue(replayAlgorithm.configKeyName(), replayAlgorithmInnerConfig.root()).root()
+        )
 
         return listOf(
-            configuration.toConfigurationRecord(
-                LinkManagerConfiguration.PACKAGE_NAME,
-                LinkManagerConfiguration.COMPONENT_NAME,
-                topic
-            )
+            configuration.toConfigurationRecord(ConfigKeys.P2P_LINK_MANAGER_CONFIG, topic)
         )
     }
 }

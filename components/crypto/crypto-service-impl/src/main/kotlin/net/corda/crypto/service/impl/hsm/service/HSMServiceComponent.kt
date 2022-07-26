@@ -3,11 +3,11 @@ package net.corda.crypto.service.impl.hsm.service
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.persistence.hsm.HSMStoreProvider
 import net.corda.crypto.persistence.hsm.HSMConfig
+import net.corda.crypto.persistence.hsm.HSMStoreProvider
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
@@ -23,24 +23,25 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [HSMService::class])
 class HSMServiceComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStoreProvider::class)
     private val storeProvider: HSMStoreProvider,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = CryptoOpsProxyClient::class)
-    private val opsProxyClient: CryptoOpsProxyClient
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient
 ) : AbstractConfigurableComponent<HSMServiceComponent.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMService>(),
     configurationReadService = configurationReadService,
-    impl = InactiveImpl(),
-    dependencies = setOf(
-        LifecycleCoordinatorName.forComponent<HSMStoreProvider>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<HSMStoreProvider>(),
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+        )
     ),
     configKeys = setOf(
         ConfigKeys.MESSAGING_CONFIG,
@@ -48,15 +49,8 @@ class HSMServiceComponent @Activate constructor(
         ConfigKeys.CRYPTO_CONFIG
     )
 ), HSMService {
-    interface Impl : AutoCloseable {
-        val service: HSMServiceImpl
-    }
-
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, storeProvider, schemeMetadata, opsProxyClient)
-
-    override fun createInactiveImpl(): Impl =
-        InactiveImpl()
+        Impl(coordinatorFactory, event, storeProvider, schemeMetadata, cryptoOpsClient)
 
     override fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray) =
         impl.service.putHSMConfig(info, serviceConfig)
@@ -85,25 +79,30 @@ class HSMServiceComponent @Activate constructor(
     override fun findHSMConfig(configId: String): HSMConfig? =
         impl.service.findHSMConfig(configId)
 
-    class InactiveImpl: Impl {
-        override val service: HSMServiceImpl
-            get() = throw IllegalStateException("Component is in illegal state.")
-        override fun close() = Unit
-    }
-
-    class ActiveImpl(
+    class Impl(
+        coordinatorFactory: LifecycleCoordinatorFactory,
         event: ConfigChangedEvent,
         storeProvider: HSMStoreProvider,
         schemeMetadata: CipherSchemeMetadata,
-        opsProxyClient: CryptoOpsProxyClient
-    ): Impl {
-        override val service: HSMServiceImpl = HSMServiceImpl(
+        cryptoOpsClient: CryptoOpsClient
+    ) : AbstractImpl {
+        val service: HSMServiceImpl = HSMServiceImpl(
             event.config.toCryptoConfig(),
             storeProvider.getInstance(),
             schemeMetadata,
-            opsProxyClient
+            cryptoOpsClient
         )
 
-        override fun close() = service.close()
+        private val _downstream = DependenciesTracker.AlwaysUp(
+            coordinatorFactory,
+            this
+        ).also { it.start() }
+
+        override val downstream: DependenciesTracker = _downstream
+
+        override fun close() {
+            _downstream.close()
+            service.close()
+        }
     }
 }

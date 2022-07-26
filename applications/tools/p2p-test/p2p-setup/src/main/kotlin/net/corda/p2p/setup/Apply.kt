@@ -3,14 +3,15 @@ package net.corda.p2p.setup
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException.Missing
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.COMPONENT_NAME
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PACKAGE_NAME
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.setup.AddGroup.Companion.toGroupRecord
 import net.corda.p2p.setup.AddIdentity.Companion.toIdentityRecord
 import net.corda.p2p.setup.AddKeyPair.Companion.toKeysRecord
 import net.corda.p2p.setup.AddMember.Companion.toMemberRecord
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
 import java.io.File
@@ -51,7 +52,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             listOf(
                 data
                     .getConfig("gatewayConfig")
-                    .toConfigurationRecord("p2p", "gateway")
+                    .toConfigurationRecord(ConfigKeys.P2P_GATEWAY_CONFIG)
             )
         } catch (_: Missing) {
             emptyList()
@@ -61,10 +62,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             listOf(
                 data
                     .getConfig("linkManagerConfig")
-                    .toConfigurationRecord(
-                        PACKAGE_NAME,
-                        COMPONENT_NAME,
-                    )
+                    .toConfigurationRecord(ConfigKeys.P2P_GATEWAY_CONFIG)
             )
         } catch (_: Missing) {
             emptyList()
@@ -73,7 +71,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
         val groupsToRemove = try {
             data.getStringList("groupsToRemove").map {
                 Record(
-                    TestSchema.GROUP_POLICIES_TOPIC,
+                    GROUP_POLICIES_TOPIC,
                     it,
                     null
                 )
@@ -116,7 +114,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             val groupId = it.getString("groupId")
             val x500Name = it.getString("x500name")
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 "$x500Name-$groupId",
                 null
             )
@@ -128,7 +126,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             val groupId = it.getString("groupId")
             val x500Name = it.getString("x500name")
             Record(
-                TestSchema.HOSTED_MAP_TOPIC,
+                P2P_HOSTED_IDENTITIES_TOPIC,
                 "$x500Name-$groupId",
                 null
             )

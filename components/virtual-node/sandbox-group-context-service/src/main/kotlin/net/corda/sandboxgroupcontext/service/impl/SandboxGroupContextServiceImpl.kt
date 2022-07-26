@@ -2,7 +2,6 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -15,6 +14,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
@@ -23,9 +23,13 @@ import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceObjects
+import org.osgi.framework.ServicePermission
+import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
+import java.security.AccessControlContext
+import java.security.AccessControlException
 import java.util.Hashtable
 
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
@@ -72,16 +76,17 @@ class SandboxGroupContextServiceImpl(
     }
 
     override fun getOrCreate(
+
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
         return cache.get(virtualNodeContext) {
-            val cpks = virtualNodeContext.cpkIdentifiers.mapNotNull(cpkReadService::get)
-            if (cpks.size != virtualNodeContext.cpkIdentifiers.size) {
+            val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
+            if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {
                 logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
-                logger.error("Wanted all of:  ${virtualNodeContext.cpkIdentifiers}")
+                logger.error("Wanted all of:  ${virtualNodeContext.cpkFileChecksums}")
                 val receivedIdentifiers = cpks.map { it.metadata.cpkId }
-                val missing = setOf(virtualNodeContext.cpkIdentifiers) - setOf(receivedIdentifiers)
+                val missing = setOf(virtualNodeContext.cpkFileChecksums) - setOf(receivedIdentifiers)
                 logger.error("Returned:  $receivedIdentifiers")
                 logger.error("Missing:  $missing")
                 throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)\"")
@@ -131,6 +136,9 @@ class SandboxGroupContextServiceImpl(
      * finding any pre-existing services inside the sandbox itself.
      */
     private fun fetchCommonServices(vnc: VirtualNodeContext, bundles: Iterable<Bundle>): List<ServiceDefinition> {
+        // Access control context for the sandbox's "main" bundles.
+        // All "main" bundles are assumed to have equal access rights.
+        val accessControlContext = bundles.first().adapt(AccessControlContext::class.java)
         val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
         val serviceMarkerTypeName = vnc.serviceMarkerType.name
         return bundleContext.getServiceReferences(vnc.serviceMarkerType, serviceFilter).mapNotNull { serviceRef ->
@@ -138,6 +146,7 @@ class SandboxGroupContextServiceImpl(
                 @Suppress("unchecked_cast")
                 (serviceRef.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray())
                     .filterNot(serviceMarkerTypeName::equals)
+                    .filter(accessControlContext::checkServicePermission)
                     .mapNotNullTo(ArrayList(), bundles::loadCommonService)
                     .takeIf(List<*>::isNotEmpty)
                     ?.let { injectables ->
@@ -266,8 +275,8 @@ class SandboxGroupContextServiceImpl(
         )
     }
 
-    override fun hasCpks(cpkIdentifiers: Set<CpkIdentifier>) =
-        cpkIdentifiers.all {
+    override fun hasCpks(cpkChecksums: Set<SecureHash>) =
+        cpkChecksums.all {
             cpkReadService.get(it) != null
         }
 
@@ -286,6 +295,21 @@ class SandboxGroupContextServiceImpl(
             runIgnoringExceptions { (serviceFactory as ServiceObjects<Any>).ungetService(serviceObj) }
         }
     }
+}
+
+/**
+ * Check whether this [AccessControlContext] is allowed to GET service [serviceType].
+ */
+private fun AccessControlContext.checkServicePermission(serviceType: String): Boolean {
+    val sm = System.getSecurityManager()
+    if (sm != null) {
+        try {
+            sm.checkPermission(ServicePermission(serviceType, GET), this)
+        } catch (ace: AccessControlException) {
+            return false
+        }
+    }
+    return true
 }
 
 /**

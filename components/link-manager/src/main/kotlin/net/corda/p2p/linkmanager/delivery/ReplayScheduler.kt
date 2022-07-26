@@ -7,14 +7,15 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
@@ -31,19 +32,18 @@ internal class ReplayScheduler<M>(
     private val configReadService: ConfigurationReadService,
     private val limitTotalReplays: Boolean,
     private val replayMessage: (message: M) -> Unit,
-    private val executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
     private val clock: Clock
     ) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        ::createResources,
+        onClose = { executorService.shutdownNow() },
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )
 
-    @Volatile
-    private lateinit var executorService: ScheduledExecutorService
+    private val executorService = executorServiceFactory()
 
     private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
@@ -102,7 +102,7 @@ internal class ReplayScheduler<M>(
             override val maxReplayingMessages: Int
         ): ReplaySchedulerConfig(maxReplayingMessages) {
             constructor(config: Config, innerConfig: Config): this(
-                innerConfig.getDuration(REPLAY_PERIOD_KEY),
+                innerConfig.getDuration(MESSAGE_REPLAY_PERIOD_KEY),
                 config.getInt(MAX_REPLAYING_MESSAGES_PER_PEER)
             )
         }
@@ -127,7 +127,7 @@ internal class ReplayScheduler<M>(
     }
 
     inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(configReadService,
-        LinkManagerConfiguration.CONFIG_KEY,
+        ConfigKeys.P2P_LINK_MANAGER_CONFIG,
         ::fromConfig) {
         override fun applyNewConfiguration(
             newConfiguration: ReplaySchedulerConfig,
@@ -139,7 +139,7 @@ internal class ReplayScheduler<M>(
                 is ReplaySchedulerConfig.ConstantReplaySchedulerConfig -> {
                     if (newConfiguration.replayPeriod.isNegative) {
                         configUpdateResult.completeExceptionally(
-                            IllegalArgumentException("The duration configurations (with key $REPLAY_PERIOD_KEY) must be positive.")
+                            IllegalArgumentException("The duration configurations (with key $MESSAGE_REPLAY_PERIOD_KEY) must be positive.")
                         )
                         return configUpdateResult
                     }
@@ -176,8 +176,8 @@ internal class ReplayScheduler<M>(
     @VisibleForTesting
     internal fun fromConfig(config: Config): ReplaySchedulerConfig {
         for (replayAlgorithm in LinkManagerConfiguration.ReplayAlgorithm.values()) {
-            if (config.hasPath(replayAlgorithm.configKeyName())) {
-                val innerConfig = config.getConfig(replayAlgorithm.configKeyName())
+            if (config.hasPath(REPLAY_ALGORITHM_KEY) && config.getConfig(REPLAY_ALGORITHM_KEY).hasPath(replayAlgorithm.configKeyName()) ) {
+                val innerConfig = config.getConfig(REPLAY_ALGORITHM_KEY).getConfig(replayAlgorithm.configKeyName())
                 return when (replayAlgorithm) {
                     LinkManagerConfiguration.ReplayAlgorithm.Constant -> {
                         ReplaySchedulerConfig.ConstantReplaySchedulerConfig(config, innerConfig)
@@ -190,14 +190,6 @@ internal class ReplayScheduler<M>(
         }
         throw ConfigException.Missing("Expected config to contain the one of the following paths: " +
                 "${LinkManagerConfiguration.ReplayAlgorithm.values().map { it.configKeyName() }}.")
-    }
-
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        executorService = executorServiceFactory()
-        resources.keep(AutoClosableExecutorService(executorService))
-        val future = CompletableFuture<Unit>()
-        future.complete(Unit)
-        return future
     }
 
     /**
@@ -273,22 +265,38 @@ internal class ReplayScheduler<M>(
     }
 
     private fun replay(message: M, messageId: MessageId) {
-        try {
-            replayMessage(message)
+        val sentReplay = try {
+            if (dominoTile.isRunning) {
+                replayMessage(message)
+                true
+            } else {
+                false
+            }
         } catch (exception: Exception) {
-            val nextReplayInterval =
-                replayInfoPerMessageId[messageId]?.let { replayCalculator.get().calculateReplayInterval(it.currentReplayPeriod).toMillis() }
-            logger.error("An exception was thrown when replaying a message. The task will be retried again in $nextReplayInterval ms." +
-                "\nException:",
-                exception
-            )
+            val nextReplayInterval = replayInfoPerMessageId[messageId]?.currentReplayPeriod?.toMillis()
+            if (nextReplayInterval != null) {
+                logger.error("An exception was thrown when replaying a message. The task will be retried again in $nextReplayInterval ms." +
+                    "\nException:",
+                    exception
+                )
+            } else {
+                logger.error("An exception was thrown when replaying a message. The task had already been removed from the replay " +
+                    "scheduler, so won't be retried.\nException:",
+                    exception
+                )
+            }
+            false
         }
-        reschedule(message, messageId)
+        reschedule(message, messageId, sentReplay)
     }
 
-    private fun reschedule(message: M, messageId: MessageId) {
+    private fun reschedule(message: M, messageId: MessageId, replayedBefore: Boolean) {
         replayInfoPerMessageId.computeIfPresent(messageId) { _, oldReplayInfo ->
-            val delay = replayCalculator.get().calculateReplayInterval(oldReplayInfo.currentReplayPeriod)
+            val delay = if (replayedBefore) {
+                replayCalculator.get().calculateReplayInterval(oldReplayInfo.currentReplayPeriod)
+            } else {
+                oldReplayInfo.currentReplayPeriod
+            }
             ReplayInfo(
                 delay,
                 executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)

@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description "P2P Testing tools - Application-level simulator"
@@ -21,6 +22,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
@@ -32,6 +34,7 @@ dependencies {
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
@@ -39,4 +42,5 @@ dependencies {
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+
 }

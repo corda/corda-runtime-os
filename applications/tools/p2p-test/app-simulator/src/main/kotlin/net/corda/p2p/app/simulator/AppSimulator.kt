@@ -3,7 +3,12 @@ package net.corda.p2p.app.simulator
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
@@ -11,6 +16,8 @@ import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
@@ -33,7 +40,9 @@ class AppSimulator @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger,
 ) : Application {
 
     companion object {
@@ -71,15 +80,31 @@ class AppSimulator @Activate constructor(
                 return
             }
 
+            val parsedMessagingParams = parameters.messagingParams.mapKeys { (key, _) ->
+                "${BootConfig.BOOT_KAFKA_COMMON}.${key.trim()}"
+            }.toMutableMap()
+            parsedMessagingParams.computeIfAbsent("${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers") {
+                System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+            }
+            val bootConfig = SmartConfigFactory.create(SmartConfigImpl.empty()).create(
+                ConfigFactory.parseMap(parsedMessagingParams)
+                    .withValue(
+                        BootConfig.TOPIC_PREFIX,
+                        ConfigValueFactory.fromAnyRef("")
+                    ).withValue(
+                        MessagingConfig.Bus.BUS_TYPE,
+                        ConfigValueFactory.fromAnyRef("KAFKA")
+                    )
+            )
             try {
-                runSimulator(parameters, parameters.kafkaServers)
+                runSimulator(parameters, bootConfig)
             } catch (e: Throwable) {
                 consoleLogger.error("Could not run: ${e.message}")
             }
         }
     }
 
-    private fun runSimulator(parameters: CliParameters, kafkaServers: String) {
+    private fun runSimulator(parameters: CliParameters, bootConfig: SmartConfig) {
         val sendTopic = parameters.sendTopic ?: P2P_OUT_TOPIC
         val receiveTopic = parameters.receiveTopic ?: P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
@@ -88,13 +113,13 @@ class AppSimulator @Activate constructor(
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, sendTopic, kafkaServers, clients, parameters.instanceId)
+                runSender(simulatorConfig, publisherFactory, sendTopic, bootConfig, clients, parameters.instanceId)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients, parameters.instanceId)
+                runReceiver(subscriptionFactory, receiveTopic, bootConfig, clients, parameters.instanceId)
             }
             SimulationMode.DB_SINK -> {
-                runSink(simulatorConfig, subscriptionFactory, kafkaServers, clients, parameters.instanceId)
+                runSink(simulatorConfig, subscriptionFactory, bootConfig, clients, parameters.instanceId)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -105,7 +130,7 @@ class AppSimulator @Activate constructor(
         simulatorConfig: Config,
         publisherFactory: PublisherFactory,
         sendTopic: String,
-        kafkaServers: String,
+        bootConfig: SmartConfig,
         clients: Int,
         instanceId: String,
     ) {
@@ -113,10 +138,11 @@ class AppSimulator @Activate constructor(
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
         val sender = Sender(
             publisherFactory,
+            configMerger,
             connectionDetails,
             loadGenerationParams,
             sendTopic,
-            kafkaServers,
+            bootConfig,
             clients,
             instanceId,
             clock
@@ -134,11 +160,19 @@ class AppSimulator @Activate constructor(
     private fun runReceiver(
         subscriptionFactory: SubscriptionFactory,
         receiveTopic: String,
-        kafkaServers: String,
+        bootConfig: SmartConfig,
         clients: Int,
         instanceId: String,
     ) {
-        val receiver = Receiver(subscriptionFactory, receiveTopic, APP_RECEIVED_MESSAGES_TOPIC, kafkaServers, clients, instanceId)
+        val receiver = Receiver(
+            subscriptionFactory,
+            configMerger,
+            receiveTopic,
+            APP_RECEIVED_MESSAGES_TOPIC,
+            bootConfig,
+            clients,
+            instanceId
+        )
         receiver.start()
         resources.add(receiver)
     }
@@ -146,7 +180,7 @@ class AppSimulator @Activate constructor(
     private fun runSink(
         simulatorConfig: Config,
         subscriptionFactory: SubscriptionFactory,
-        kafkaServers: String,
+        bootConfig: SmartConfig,
         clients: Int,
         instanceId: String,
     ) {
@@ -156,7 +190,7 @@ class AppSimulator @Activate constructor(
             shutdownOSGiFramework()
             return
         }
-        val sink = Sink(subscriptionFactory, connectionDetails, kafkaServers, clients, instanceId)
+        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, instanceId)
         sink.start()
         resources.add(sink)
     }
@@ -218,10 +252,10 @@ class AppSimulator @Activate constructor(
 
 class CliParameters {
     @CommandLine.Option(
-        names = ["-k", "--kafka-servers"],
-        description = ["A comma-separated list of addresses of Kafka brokers. Default to \${DEFAULT-VALUE}"]
+        names = ["-m", "--messagingParams"],
+        description = ["Messaging parameters for the simulator."]
     )
-    var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+    var messagingParams = emptyMap<String, String>()
 
     @CommandLine.Option(
         names = ["-i", "--instance-id"],

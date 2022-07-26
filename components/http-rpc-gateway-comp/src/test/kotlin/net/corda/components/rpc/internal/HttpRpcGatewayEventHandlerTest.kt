@@ -50,7 +50,7 @@ internal class HttpRpcGatewayEventHandlerTest {
         httpRpcServerFactory,
         rbacSecurityManagerService,
         sslCertReadServiceFactory,
-        rpcOps
+        ::rpcOps
     )
 
     @BeforeEach

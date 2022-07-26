@@ -1,12 +1,12 @@
 package net.corda.flow.pipeline.runner
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
@@ -30,6 +30,7 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -65,7 +66,7 @@ class FlowRunnerImplTest {
         flowFiberExecutionContext = FlowFiberExecutionContext(
             flowCheckpoint,
             sandboxGroupContext,
-            BOB_X500_HOLDING_IDENTITY,
+            BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock()
         )
     }

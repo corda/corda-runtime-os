@@ -1,6 +1,7 @@
 package net.corda.configuration.write.publish
 
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerWriter
@@ -14,10 +15,9 @@ import net.corda.reconciliation.ReconcilerWriter
  */
 interface ConfigPublishService : ReconcilerWriter<String, Configuration>, Lifecycle {
     /**
-     * Publishes a new [ConfigurationDto].
+     * Publishes a new Configuration.
      */
-    @Suppress("parameter_name_changed_on_override")
-    override fun put(configSection: String, config: Configuration)
+    fun put(section: String, value: String, version: Int, schemaVersion: ConfigurationSchemaVersion)
 
     /**
      * Provides boot configuration to config publish service.

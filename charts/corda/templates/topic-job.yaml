@@ -6,23 +6,32 @@ metadata:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: run-topic-script
-          image: {{ include "corda.kafkaClientImage" . }}
+        - name: create-topics
+          image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command:
-            - /bin/bash
-            - -c
-          args:
-            - |
-              set -e
-              bash "/tmp/working_dir/create-topics.sh"
+          args: [
+            'topic',
+            '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
+            '-k', '/tmp/working_dir/config.properties',
+            {{- if .Values.kafka.topicPrefix }}
+            '-n', '"{{ .Values.kafka.topicPrefix }}"',
+            {{- end }}
+            'create',
+            '-r', '{{ .Values.kafka.replicas }}',
+            '-p', '{{ .Values.kafka.partitions }}',
+            'connect'{{- if .Values.kafka.cleanup }},
+            '-d'
+            {{- end }}
+          ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
@@ -33,7 +42,7 @@ spec:
             {{- end }}
       initContainers:
         - name: create-trust-store
-          image: {{ include "corda.kafkaClientImage" . }}
+          image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
@@ -43,7 +52,17 @@ spec:
             - |
                 touch /tmp/working_dir/config.properties
                 {{- if .Values.kafka.tls.enabled }}
+                {{- if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+                echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- else }}
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
+                {{- else }}
                 echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
+                {{- end }}
                 {{- if .Values.kafka.tls.truststore.secretRef.name }}
                 echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/working_dir/config.properties
                 echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/working_dir/config.properties
@@ -51,70 +70,17 @@ spec:
                 echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/working_dir/config.properties
                 {{- end }}
                 {{- end }}
+                {{- else }}
+                {{- if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_PLAINTEXT\n" >> /tmp/working_dir/config.properties
+
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
                 {{- end }}
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
-            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
-            - mountPath: "/certs"
-              name: certs
-              readOnly: true
-            {{- end }}
-        - name: create-topic-script
-          image: {{ include "corda.bootstrapImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [
-            'topic',
-            'create',
-            '-a', '{{ include "corda.kafkaBootstrapServers" . }}',
-            {{- if .Values.kafka.topicPrefix }}
-            '-f', '"{{ .Values.kafka.topicPrefix }}"',
-            {{- end }}
-            '-r', '{{ .Values.kafka.replicas }}',
-            '-p', '{{ .Values.kafka.partitions }}',
-            '-l', '/tmp/working_dir/create-topics.sh'
-          ]
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-        {{- if .Values.kafka.cleanup }}
-        - name: delete-topic-script
-          image: {{ include "corda.bootstrapImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [
-            'topic',
-            'delete',
-            '-a', '{{ include "corda.kafkaBootstrapServers" . }}',
-            {{- if .Values.kafka.topicPrefix }}
-            '-f', '"{{ .Values.kafka.topicPrefix }}"',
-            {{- end }}
-            '-l', '/tmp/working_dir/delete-topics.sh'
-          ]
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-        - name: run-delete-script
-          image: bitnami/kafka:3.1.0-debian-10-r89
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command:
-            - /bin/bash
-            - -c
-          args:
-            - |
-              set -e
-              bash -x "/tmp/working_dir/delete-topics.sh"
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
-            - mountPath: "/certs"
-              name: certs
-              readOnly: true
-            {{- end }}
-        {{- end }}
       volumes:
         - name: working-volume
           emptyDir: {}

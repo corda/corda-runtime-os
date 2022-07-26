@@ -1,0 +1,79 @@
+import groovy.transform.CompileStatic
+import javax.inject.Inject
+
+plugins {
+    id 'java-library'
+}
+
+CliPluginPackagerExtension cliPlugin = extensions.create("cliPlugin", CliPluginPackagerExtension, project.name)
+
+configurations {
+    cliPluginContents {
+        shouldResolveConsistentlyWith runtimeClasspath
+        extendsFrom runtimeClasspath
+        canBeConsumed = false
+        visible = false
+
+        exclude group: 'net.corda.kotlin'
+        exclude group: 'org.jetbrains.kotlin'
+        exclude group: 'org.slf4j'
+        exclude group: 'com.fasterxml.jackson.module'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.databind'
+        exclude group: 'com.fasterxml.jackson.annotation'
+        exclude group: 'org.apache.servicemix.bundles'
+    }
+}
+
+def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
+    inputs.property('cliPluginId', cliPlugin.cliPluginId)
+    inputs.property('cliPluginClass', cliPlugin.cliPluginClass)
+    inputs.property('cliPluginProvider', cliPlugin.cliPluginProvider)
+    inputs.property('cliPluginDescription', cliPlugin.cliPluginDescription)
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    reproducibleFileOrder = true
+    includeEmptyDirs = false
+
+    archiveBaseName = "${cliPlugin.cliPluginId.get()}-cli-plugin"
+    from sourceSets.main.output
+
+    dependsOn configurations.cliPluginContents
+    from {
+        configurations.cliPluginContents.collect { zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "module-info.class"
+        exclude "META-INF/versions/*/module-info.class"
+    }
+    manifest {
+        attributes['Plugin-Class'] = cliPlugin.cliPluginClass
+        attributes['Plugin-Id'] = cliPlugin.cliPluginId
+        attributes['Plugin-Version'] = archiveVersion
+        attributes['Plugin-Provider'] = cliPlugin.cliPluginProvider
+        attributes['Plugin-Description'] = cliPlugin.cliPluginDescription
+    }
+}
+
+artifacts {
+    archives cliPluginPackager
+}
+
+@CompileStatic
+class CliPluginPackagerExtension {
+    @Inject
+    CliPluginPackagerExtension(ObjectFactory objects, String defaultPluginId) {
+        cliPluginId = objects.property(String).convention(defaultPluginId)
+        cliPluginClass = objects.property(String)
+        cliPluginProvider = objects.property(String).convention("R3 Ltd")
+        cliPluginDescription = objects.property(String)
+    }
+
+    final Property<String> cliPluginId
+    final Property<String> cliPluginClass
+    final Property<String> cliPluginProvider
+    final Property<String> cliPluginDescription
+}

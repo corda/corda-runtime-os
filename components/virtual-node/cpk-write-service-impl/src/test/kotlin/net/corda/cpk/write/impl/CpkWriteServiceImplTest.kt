@@ -17,9 +17,11 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -92,7 +95,7 @@ class CpkWriteServiceImplTest {
     }
 
     @Test
-    fun `on onConfigChangedEvent fully sets the component`() {
+    fun `on ConfigChangedEvent fully sets the component`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
         whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
         whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
@@ -118,7 +121,7 @@ class CpkWriteServiceImplTest {
     }
 
     @Test
-    fun `on onConfigChangedEvent with reconciliation config overwrites the config set in bootstrap`() {
+    fun `on ConfigChangedEvent with reconciliation config overwrites the config set in bootstrap`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(mock())
         whenever(subscriptionFactory.createCompactedSubscription<Any, Any>(any(), any(), any())).thenReturn(mock())
         whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(mock())
@@ -155,6 +158,20 @@ class CpkWriteServiceImplTest {
         val cpkStorage = mock<CpkStorage>()
         whenever(cpkStorage.getCpkIdsNotIn(emptyList())).thenReturn(listOf(cpkChecksum))
         whenever(cpkStorage.getCpkDataByCpkId(cpkChecksum)).thenReturn(CpkChecksumToData(cpkChecksum, cpkData))
+
+        val configChangedEvent = ConfigChangedEvent(
+            setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RECONCILIATION_CONFIG),
+            mapOf(
+                ConfigKeys.MESSAGING_CONFIG to mock() {
+                    on { getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) }.doReturn(10240 + 32)
+                },
+                ConfigKeys.RECONCILIATION_CONFIG to mock() {
+                    on { getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS) }.doReturn(1)
+                }
+            )
+        )
+        cpkWriteServiceImpl.processEvent(configChangedEvent, mock())
+
         cpkWriteServiceImpl.cpkStorage = cpkStorage
 
         val chunks = mutableListOf<Chunk>()
@@ -165,9 +182,18 @@ class CpkWriteServiceImplTest {
         cpkWriteServiceImpl.cpkChunksPublisher = cpkChunksPublisher
 
         cpkWriteServiceImpl.putMissingCpk()
-        assertTrue(chunks.size == 2)
+
+        // assert that we can publish multiple CPKs
+        cpkWriteServiceImpl.putMissingCpk()
+
+        assertTrue(chunks.size == 4)
         assertTrue(chunks[0].data.equals(ByteBuffer.wrap(cpkData)))
+        assertTrue(chunks[1].data.limit() == 0)
+        assertTrue(chunks[2].data.equals(ByteBuffer.wrap(cpkData)))
+        assertTrue(chunks[3].data.limit() == 0)
+
         assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[0].fileName)
+        assertEquals("${cpkChecksum.toHexString()}.cpk", chunks[2].fileName)
     }
 
     @Test
@@ -191,5 +217,11 @@ class CpkWriteServiceImplTest {
         assertNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNull(cpkWriteServiceImpl.cpkChunksPublisher)
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+    }
+
+    @Test
+    fun `on StopEvent cancels timer`() {
+        cpkWriteServiceImpl.processEvent(StopEvent(), coordinator)
+        verify(coordinator).cancelTimer(CpkWriteServiceImpl::class.simpleName!!)
     }
 }

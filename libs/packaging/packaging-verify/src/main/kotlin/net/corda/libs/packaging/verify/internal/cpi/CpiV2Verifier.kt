@@ -1,15 +1,13 @@
 package net.corda.libs.packaging.verify.internal.cpi
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FILE_EXTENSION
 import net.corda.libs.packaging.PackagingConstants.CPI_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
 import net.corda.libs.packaging.PackagingConstants.CPI_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.verify.internal.VerifierFactory
-import net.corda.libs.packaging.verify.internal.VerifierFactory.FORMAT_2
-import net.corda.libs.packaging.verify.internal.cpb.CpbVerifier
+import net.corda.libs.packaging.verify.internal.cpb.CpbV2Verifier
 import net.corda.libs.packaging.verify.internal.firstOrThrow
 import net.corda.libs.packaging.verify.internal.requireAttribute
 import net.corda.libs.packaging.verify.internal.requireAttributeValueIn
@@ -22,12 +20,12 @@ import java.util.jar.Manifest
 class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
-    private val cpbVerifier: CpbVerifier
+    private val cpbVerifier: CpbV2Verifier
     private val groupPolicy: GroupPolicy
 
     init {
         cpbVerifier = jarReader.entries.filter(::isCpb)
-            .map { VerifierFactory.createCpbVerifier(FORMAT_2, "$name/${it.name}", it.createInputStream(), jarReader.trustedCerts) }
+            .map { CpbV2Verifier(JarReader("$name/${it.name}", it.createInputStream(), jarReader.trustedCerts)) }
             .singleOrThrow(
                 PackagingException("CPB not found in CPI \"$name\""),
                 PackagingException("Multiple CPBs found in CPI \"$name\"")
@@ -44,7 +42,7 @@ class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
     }
 
     private fun isGroupPolicy(entry: JarReader.Entry): Boolean =
-        entry.name.equals(CPI_GROUP_POLICY_ENTRY, ignoreCase = true)
+        entry.name.equals("META-INF/$CPI_GROUP_POLICY_ENTRY", ignoreCase = true)
 
     private fun verifyManifest() {
         with (manifest) {

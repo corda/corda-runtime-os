@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -25,7 +25,7 @@ import java.util.concurrent.Callable
 )
 class AddKeyPair : Callable<Collection<Record<String, TenantKeys>>> {
     companion object {
-        fun Config.toKeysRecord(topic: String = TestSchema.CRYPTO_KEYS_TOPIC): Record<String, TenantKeys> {
+        fun Config.toKeysRecord(topic: String = CRYPTO_KEYS_TOPIC): Record<String, TenantKeys> {
             val publishAlias = try {
                 this.getString("publishAlias")
             } catch (_: Missing) {
@@ -60,7 +60,7 @@ class AddKeyPair : Callable<Collection<Record<String, TenantKeys>>> {
             "Topic to write the key pair records to."
         ]
     )
-    private var topic: String = TestSchema.CRYPTO_KEYS_TOPIC
+    private var topic: String = CRYPTO_KEYS_TOPIC
 
     @Parameters(
         description = [

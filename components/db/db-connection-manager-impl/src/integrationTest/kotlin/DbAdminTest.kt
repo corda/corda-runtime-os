@@ -1,6 +1,7 @@
 import com.typesafe.config.ConfigFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.impl.DbAdminImpl
 import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.core.DbPrivilege
@@ -17,14 +18,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.testing.bundles.cats.Cat
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -50,7 +49,6 @@ class DbAdminTest {
 
     /**
      * Creates database and run config db migration
-     * [entityManagerFactory].
      */
     init {
         // uncomment this to run the test against local Postgres
@@ -88,44 +86,57 @@ class DbAdminTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
-    @Test
-    fun `when createDbAndUser create schema and persist config`() {
+    private fun createDbAdmin(adminUser: String? = null, adminPassword: String? = null): DbAdmin {
         val entitiesRegistry = JpaEntitiesRegistryImpl()
         val dbm =
             DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
-        val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
             ConfigurationEntities.classes
         )
         dbm.initialise(config)
-        val dba = DbAdminImpl(dbm)
+        return DbAdminImpl(dbm)
+    }
+
+    @Test
+    fun `when createDbAndUser create schema`() {
+        val dba = createDbAdmin()
 
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         val random = Random.nextLong(Long.MAX_VALUE)
-        val persistenceUnitName = "test-$random"
         val schema = "test_schema_$random"
 
         // DDL
+        val ddlUser = "u_ddl_$random"
+        val ddlPassword = "test_password"
         dba.createDbAndUser(
-            persistenceUnitName,
             schema,
-            "u_ddl_$random",
-            "test_password",
-            config.getString(ConfigKeys.JDBC_URL),
-            DbPrivilege.DDL,
-            configFactory
+            ddlUser,
+            ddlPassword,
+            DbPrivilege.DDL
         )
-        val dbConfig = dbm.getDataSource(persistenceUnitName, DbPrivilege.DDL)
-        assertThat(dbConfig?.connection).isNotNull
-        assertDoesNotThrow { dbConfig?.connection?.close() }
+
+        // DML
+        val dmlUser = "u_dml_$random"
+        val dmlPassword = "test_DML_password"
+        dba.createDbAndUser(
+            schema,
+            dmlUser,
+            dmlPassword,
+            DbPrivilege.DML,
+            ddlUser
+        )
 
         // validate the DDL User can create a table
-        dbConfig!!.connection.use {
-            it.createStatement().execute("CREATE TABLE superhero(name VARCHAR(255))")
-            it.createStatement().execute("INSERT INTO superhero(name) VALUES('batman')")
-            it.commit()
+        val ddlDataSource = DbUtils.createPostgresDataSource(ddlUser, ddlPassword, schema)
+        ddlDataSource.use { dataSource ->
+            dataSource.connection.use {
+                it.createStatement().execute("CREATE TABLE superhero(name VARCHAR(255))")
+                it.createStatement().execute("INSERT INTO superhero(name) VALUES('batman')")
+                it.commit()
+            }
         }
 
         // validate the DDL user can run DB migrations
@@ -138,28 +149,21 @@ class DbAdminTest {
                 ),
             )
         )
-        LiquibaseSchemaMigratorImpl().updateDb(dbConfig.connection, cl)
-
-        // DML
-        dba.createDbAndUser(
-            persistenceUnitName,
-            schema,
-            "u_dml_$random",
-            "test_DML_password",
-            config.getString(ConfigKeys.JDBC_URL),
-            DbPrivilege.DML,
-            configFactory
-        )
+        val ddlConnection = DbUtils.createPostgresDataSource(ddlUser, ddlPassword, schema).connection
+        LiquibaseSchemaMigratorImpl().updateDb(ddlConnection, cl)
 
         // validate the DML User can query a table
-        dbConfig.connection.use {
-            it.createStatement().execute("INSERT INTO $schema.superhero(name) VALUES('hulk')")
-            it.commit()
-            val heros = it
-                .createStatement()
-                .executeQuery("SELECT COUNT(*) as count FROM $schema.superhero")
-            if (heros.next()) {
-                assertThat(heros.getInt("count")).isGreaterThanOrEqualTo(2)
+        val dmlDataSource = DbUtils.createPostgresDataSource(dmlUser, dmlPassword, schema)
+        dmlDataSource.use { dataSource ->
+            dataSource.connection.use {
+                it.createStatement().execute("INSERT INTO $schema.superhero(name) VALUES('hulk')")
+                it.commit()
+                val heros = it
+                    .createStatement()
+                    .executeQuery("SELECT COUNT(*) as count FROM $schema.superhero")
+                if (heros.next()) {
+                    assertThat(heros.getInt("count")).isGreaterThanOrEqualTo(2)
+                }
             }
         }
     }
@@ -190,17 +194,7 @@ class DbAdminTest {
      * @param adminPassword Admin password. If null, default value set in [DbUtils] will be used.
      */
     private fun testDmlUserCanUseTableCreatedByDdlUser(adminUser: String? = null, adminPassword: String? = null) {
-        // Create DbAdmin
-        val entitiesRegistry = JpaEntitiesRegistryImpl()
-        val dbm =
-            DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
-        val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
-        entitiesRegistry.register(
-            CordaDb.CordaCluster.persistenceUnitName,
-            ConfigurationEntities.classes
-        )
-        dbm.initialise(config)
-        val dba = DbAdminImpl(dbm)
+        val dba = createDbAdmin(adminUser, adminPassword)
 
         val random = Random.nextLong(Long.MAX_VALUE)
         val schema = "test_schema_$random"
@@ -217,7 +211,7 @@ class DbAdminTest {
         assertThat(dba.userExists(dmlUser)).isTrue
 
         // Validate that DDL user can create a table
-        val ddlDataSource = DbUtils.createPostgresDataSource(ddlUser, password)
+        val ddlDataSource = DbUtils.createPostgresDataSource(ddlUser, password, schema)
         ddlDataSource.use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("CREATE TABLE $schema.test_table (message VARCHAR(64))")
@@ -227,7 +221,7 @@ class DbAdminTest {
         }
 
         // Validate that DML user can select from table
-        val dmlDataSource = DbUtils.createPostgresDataSource(dmlUser, password)
+        val dmlDataSource = DbUtils.createPostgresDataSource(dmlUser, password, schema)
         dmlDataSource.use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("INSERT INTO $schema.test_table VALUES('test2')")
@@ -269,17 +263,7 @@ class DbAdminTest {
      * @param adminPassword Admin password. If null, default value set in [DbUtils] will be used.
      */
     private fun recreatedDdlUserCanCreateTable(adminUser: String? = null, adminPassword: String? = null) {
-        // Create DbAdmin
-        val entitiesRegistry = JpaEntitiesRegistryImpl()
-        val dbm =
-            DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
-        val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
-        entitiesRegistry.register(
-            CordaDb.CordaCluster.persistenceUnitName,
-            ConfigurationEntities.classes
-        )
-        dbm.initialise(config)
-        val dba = DbAdminImpl(dbm)
+        val dba = createDbAdmin(adminUser, adminPassword)
 
         val random = Random.nextLong(Long.MAX_VALUE)
         val schema = "test_schema_$random"
