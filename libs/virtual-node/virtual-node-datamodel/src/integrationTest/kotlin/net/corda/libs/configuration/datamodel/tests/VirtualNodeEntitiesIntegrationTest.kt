@@ -12,10 +12,13 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.libs.virtualnode.datamodel.findAllVirtualNodes
+import net.corda.libs.virtualnode.datamodel.findVirtualNode
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -96,7 +99,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val holdingIdentityEntity = entityManagerFactory.createEntityManager()
             .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityShortHash) }
 
-        val virtualNode = VirtualNodeEntity(entity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(entity, name, version, hash, "")
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
@@ -123,7 +126,7 @@ class VirtualNodeEntitiesIntegrationTest {
 
         // Now persist the virtual node but use the merge operation because we've
         // already persisted the holding identity (i.e. REST end-point - "create holding identity")
-        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash, "")
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
             em.merge(virtualNode)
@@ -164,14 +167,32 @@ class VirtualNodeEntitiesIntegrationTest {
         }
     }
 
-    private fun newVNode(name: String, version: String, hash: String) {
+    @Test
+    fun `lookup virtual node entity query test`() {
+        // "set up"
+        val numberOfVNodes = 5
+        val vnodes = (1..numberOfVNodes).map { i ->
+            newVNode("Test CPI $i", "1.0-${Generator.epochMillis()}", "hash$i")
+        }
+
+        // Now check the query - and also we should look at the console output for this
+        val virtualNode = entityManagerFactory.createEntityManager().use {
+            it.findVirtualNode(vnodes.last().holdingIdentity.holdingIdentityShortHash)
+        }!!
+
+        // Validate relation for holdingIdentity has been resolved
+        assertNotNull(virtualNode.holdingIdentity.x500Name)
+        assertEquals(virtualNode.holdingIdentity.x500Name, vnodes.last().holdingIdentity.x500Name)
+    }
+
+    private fun newVNode(name: String, version: String, hash: String): VirtualNodeEntity {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
         val holdingIdentity = newHoldingIdentityEntity(Generator.randomHoldingIdentityShortHash())
-        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash, "")
 
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentity) }
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
-        entityManagerFactory.createEntityManager().transaction { em -> em.merge(virtualNode) }
+        entityManagerFactory.createEntityManager().transaction { em -> return em.merge(virtualNode) }
     }
 
     private fun newHoldingIdentityEntity(holdingIdentityShortHash: String) = HoldingIdentityEntity(

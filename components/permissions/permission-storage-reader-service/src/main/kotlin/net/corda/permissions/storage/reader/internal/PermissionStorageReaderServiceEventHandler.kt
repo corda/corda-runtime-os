@@ -49,18 +49,23 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     @VisibleForTesting
+    @Volatile
     internal var registrationHandle: RegistrationHandle? = null
 
     @VisibleForTesting
+    @Volatile
     internal var permissionStorageReader: PermissionStorageReader? = null
 
     @VisibleForTesting
+    @Volatile
     internal var publisher: Publisher? = null
 
     @VisibleForTesting
+    @Volatile
     internal var crsSub: AutoCloseable? = null
 
     @VisibleForTesting
+    @Volatile
     internal var reconciliationTaskIntervalMs: Long? = null
 
     private val timerKey = PermissionStorageReaderServiceEventHandler::class.simpleName!!

@@ -28,12 +28,16 @@ internal class QueryGroupPolicyHandler(
         logger.info("Searching for group policy for identity ${context.holdingIdentity}.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val result = em.createQuery(
-                "SELECT * FROM ${GroupPolicyEntity::class.java.simpleName} ORDER BY version DESC LIMIT 1",
+                "SELECT g FROM ${GroupPolicyEntity::class.simpleName} g ORDER BY version DESC",
                 GroupPolicyEntity::class.java
             ).resultList
             if(result.isEmpty()) {
+                logger.warn("There was no persisted group policy found for identity ${context.holdingIdentity}. " +
+                        "Returning empty properties.")
                 GroupPolicyQueryResponse(KeyValuePairList(emptyList<KeyValuePair>()))
             } else {
+                logger.info("Persisted group policy was found for identity ${context.holdingIdentity}. " +
+                        "Returning properties.")
                 GroupPolicyQueryResponse(keyValuePairListDeserializer.deserialize(result.first().properties))
             }
         }

@@ -16,6 +16,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
  * @param vaultDmlConnectionId The ID of the connection for DML operations in virtual node's vault database.
  * @param cryptoDdlConnectionId The ID of the connection for DDL operations in virtual node's crypto database.
  * @param cryptoDmlConnectionId The ID of the connection for DML operations in virtual node's crypto database.
+ * @param virtualNodeState The state of the virtual node.
  */
 data class CreateVirtualNodeResponse(
     val x500Name: String,
@@ -26,5 +27,6 @@ data class CreateVirtualNodeResponse(
     val vaultDdlConnectionId: String? = null,
     val vaultDmlConnectionId: String,
     val cryptoDdlConnectionId: String? = null,
-    val cryptoDmlConnectionId: String
+    val cryptoDmlConnectionId: String,
+    val virtualNodeState: String
 )

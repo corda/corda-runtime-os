@@ -1,6 +1,5 @@
 package net.corda.messaging.utils
 
-import net.corda.v5.base.util.uncheckedCast
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
@@ -86,12 +85,10 @@ class WeakValueHashMap<K, V>: MutableMap<K, V> {
        whose values have been discarded.
      */
     private fun processQueue() {
-        var ref: WeakValueRef<K, V>?
-        while (queue.poll().also { ref = uncheckedCast(it) } != null) {
-            if (ref === map[ref!!.key]) {
-                // only remove if it is the *exact* same WeakValueRef
-                map.remove(ref!!.key)
-            }
+        while (true) {
+            val ref = (queue.poll() as? WeakValueRef<*,*>) ?: break
+            // only remove if it is the *exact* same WeakValueRef
+            map.remove(ref.key, ref)
         }
     }
 }

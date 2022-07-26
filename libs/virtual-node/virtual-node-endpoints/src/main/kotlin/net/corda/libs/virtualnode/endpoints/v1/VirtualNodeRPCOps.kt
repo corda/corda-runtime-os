@@ -11,8 +11,8 @@ import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
 
 /** RPC operations for virtual node management. */
 @HttpRpcResource(
-    name = "VirtualNodeRPCOps",
-    description = "Virtual node management endpoints",
+    name = "Virtual Node API",
+    description = "Virtual node management endpoints.",
     path = "virtualnode"
 )
 interface VirtualNodeRPCOps : RpcOps {

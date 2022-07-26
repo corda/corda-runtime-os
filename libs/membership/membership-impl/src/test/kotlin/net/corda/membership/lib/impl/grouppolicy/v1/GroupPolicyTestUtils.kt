@@ -113,7 +113,7 @@ fun buildGroupPolicyNode(
                 mgmInfoOverride?.let { put(MGM_INFO, it) }
                 cipherSuiteOverride?.let { put(CIPHER_SUITE, it) }
             }
-        ).also { println(it) }
+        )
     )
 }
 

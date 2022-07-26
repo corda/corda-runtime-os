@@ -19,6 +19,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
@@ -80,7 +81,8 @@ class VirtualNodeRPCOpsImplTests {
         vaultDmlConnectionId,
         cryptoDdlConnectionId,
         cryptoDmlConnectionId,
-        hsmConnectionId
+        hsmConnectionId,
+        VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
     )
 
     private val rpcRequestTimeoutDuration = 3000
@@ -136,8 +138,9 @@ class VirtualNodeRPCOpsImplTests {
     fun `createVirtualNode returns VirtualNodeCreationResponse if response is success`() {
         val successResponse =
             CreateVirtualNodeResponse(
-                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId, holdingIdentityShortHash,
-                vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId, cryptoDmlConnectionId
+                holdingId.x500Name, cpiId, httpCreateVNRequest.cpiFileChecksum, holdingId.groupId,
+                holdingIdentityShortHash, vaultDdlConnectionId, vaultDmlConnectionId, cryptoDdlConnectionId,
+                cryptoDmlConnectionId, VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )
         val (_, vnodeRPCOps) = getVirtualNodeRPCOps()
 

@@ -12,8 +12,8 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 
 /** RPC operations for cluster configuration management. */
 @HttpRpcResource(
-    name = "ConfigRPCOps",
-    description = "Cluster configuration management endpoints",
+    name = "Configuration API",
+    description = "Cluster configuration management endpoints.",
     path = "config"
 )
 interface ConfigRPCOps : RpcOps {

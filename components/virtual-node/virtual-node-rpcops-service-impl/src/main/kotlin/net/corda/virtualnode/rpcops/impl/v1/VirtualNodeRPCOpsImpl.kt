@@ -34,7 +34,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
-
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
@@ -113,7 +112,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     resolvedResponse.vaultDdlConnectionId,
                     resolvedResponse.vaultDmlConnectionId,
                     resolvedResponse.cryptoDdlConnectionId,
-                    resolvedResponse.cryptoDmlConnectionId
+                    resolvedResponse.cryptoDmlConnectionId,
+                    resolvedResponse.virtualNodeState
                 )
             }
             is VirtualNodeManagementResponseFailure -> {
@@ -142,6 +142,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             cryptoDdlConnectionId,
             cryptoDmlConnectionId,
             hsmConnectionId,
+            state.name,
             version,
             timestamp
         )

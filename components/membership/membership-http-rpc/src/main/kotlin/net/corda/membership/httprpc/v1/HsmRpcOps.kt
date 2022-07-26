@@ -8,8 +8,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.HsmInfo
 
 @HttpRpcResource(
-    name = "HsmRpcOps",
-    description = "HSM API",
+    name = "HSM API",
+    description = "Hardware Security Modules interaction endpoints.",
     path = "hsm"
 )
 interface HsmRpcOps : RpcOps {

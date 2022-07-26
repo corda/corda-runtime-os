@@ -7,6 +7,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManager
@@ -46,7 +47,8 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
                     vaultDdlConnectionId = entity.holdingIdentity.vaultDDLConnectionId,
                     cryptoDdlConnectionId = entity.holdingIdentity.cryptoDDLConnectionId,
                     version = entity.entityVersion,
-                    timestamp = entity.insertTimestamp.getOrNow()
+                    timestamp = entity.insertTimestamp.getOrNow(),
+                    state = VirtualNodeState.valueOf(entity.virtualNodeState),
                 )
             }
         }

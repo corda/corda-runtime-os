@@ -7,8 +7,8 @@ import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
 @HttpRpcResource(
-    name = "NetworkRpcOps",
-    description = "Network API",
+    name = "Network API",
+    description = "Network Management endpoints.",
     path = "network"
 )
 interface NetworkRpcOps : RpcOps {

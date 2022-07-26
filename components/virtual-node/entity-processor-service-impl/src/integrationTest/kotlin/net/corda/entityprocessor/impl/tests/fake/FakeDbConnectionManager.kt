@@ -35,7 +35,7 @@ class FakeDbConnectionManager(
 
     private val dbSources: List<NamedDataSources> = connections.map {
         val source = DbUtils.getEntityManagerConfiguration(
-            "fake-db-manager-db",
+            "fake-db-manager-db-$schemaName",
             schemaName = "$schemaName${it.second.replace("-","")}",
             createSchema = true).dataSource
         NamedDataSources(it.first, it.second, source)

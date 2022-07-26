@@ -227,3 +227,66 @@ order by time_window asc
 ```
 
 If you want to calculate latencies only for a specific sender, you can add a `where sender_id = '<your-sender-id>'` clause (replace `<sender-id>` with the right value).
+
+## Deploying in k8s using helm charts.
+
+The `charts` subfolder contains helm charts that can be used to deploy the required PostgreSQL database and app-simulator instances.
+
+## Download dependencies
+
+Before using these helm charts for the first time, ensure that all unique repositories declared in `charts/app-simulator-db` have been added via `help repo add <repo>`. To find these repos, you can run:
+```shell
+helm dep ls charts/app-simulator-db | awk 'NR>1 && NF > 1' | cut -f 3 | sort -u
+```
+
+To download these to the required directory, execute the following command:
+```shell
+helm dep build charts/app-simulator-db
+```
+
+## App-simulator DB helm charts
+
+The `app-simulator-db` chart contains a deployment of a postgreSQL database, which can be used by multiple app-simulator instances.
+
+To install the helm chart with the default values, run the following command:
+```shell
+helm upgrade -i "<RELEASE NAME>" charts/app-simulator-db --namespace "<RELEASE NAMESPACE>" --create-namespace --timeout 10m --wait
+```
+Optionally use the `--render-subchart-notes` for a brief overview of all connection details.
+
+### Execute test hook
+After the release has been installed, it may be tested via the following command:
+```shell
+helm test "<RELEASE NAME>" -n "<RELEASE NAMESPACE>"
+```
+
+### Externalise services
+
+As an alternative to port-forwarding services for accessing them outside the cluster, a non-default `values-external.yaml` has been crafted - intended to enrich the default parameters to expose postgreSQL via a NodePort service.
+
+It can be used by appending the following option to the `helm upgrade` command:
+```shell
+--values charts/app-simulator-db/values-external.yaml
+```
+The node port used is 30200.
+
+## Maintaining
+
+As new value fields are added to the default `values.yaml`, doc strings should be included.
+
+For objects prefer this style:
+```yaml
+# Doc string on an object, which won't show in README.md
+foo: {}
+```
+
+Whereas for primitive types prefer this style:
+```yaml
+# -- Doc string for a primitive, which will show in the README.md
+foo: "bar"
+```
+
+Then using [helm-docs](https://github.com/norwoodj/helm-docs), generate the README.md via:
+```shell
+helm-docs
+```

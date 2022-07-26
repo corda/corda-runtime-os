@@ -19,6 +19,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Ro
 import net.corda.membership.lib.impl.grouppolicy.BAD_MGM_GROUP_ID_ERROR
 import net.corda.membership.lib.impl.grouppolicy.getBlankValueError
 import net.corda.membership.lib.impl.grouppolicy.getMissingKeyError
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -27,6 +28,10 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 class MGMGroupPolicyImplTest {
 
@@ -54,9 +59,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
 
             assertSoftly {
@@ -94,9 +98,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    persistedProperties
-                )
+                    )
+                ) { persistedProperties }
             }
 
             assertSoftly {
@@ -119,6 +122,50 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
             }
         }
+
+        @Test
+        fun `persisted properties are not queried until they are needed`() {
+            val propertyQuery: () -> LayeredPropertyMap = mock {
+                on { invoke() } doReturn persistedProperties
+            }
+            val groupPolicy: GroupPolicy = assertDoesNotThrow {
+                MGMGroupPolicyImpl(
+                    holdingIdentity,
+                    buildGroupPolicyNode(
+                        groupIdOverride = MGM_DEFAULT_GROUP_ID,
+                        protocolParametersOverride = null,
+                        p2pParametersOverride = null,
+                        mgmInfoOverride = null,
+                        cipherSuiteOverride = null
+                    ),
+                    propertyQuery
+                )
+            }
+            verify(propertyQuery, never()).invoke()
+            assertSoftly {
+                it.assertThat(groupPolicy.fileFormatVersion).isEqualTo(TEST_FILE_FORMAT_VERSION)
+                it.assertThat(groupPolicy.groupId).isEqualTo(TEST_GROUP_ID)
+                it.assertThat(groupPolicy.registrationProtocol).isEqualTo(TEST_REG_PROTOCOL)
+                it.assertThat(groupPolicy.synchronisationProtocol).isEqualTo(TEST_SYNC_PROTOCOL)
+            }
+            verify(propertyQuery, never()).invoke()
+            assertSoftly {
+                it.assertThat(groupPolicy.protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
+                it.assertThat(groupPolicy.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
+                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots).isNotNull
+                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots?.size).isEqualTo(1)
+                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots?.first()).isEqualTo(TEST_CERT)
+                it.assertThat(groupPolicy.p2pParameters.tlsTrustRoots.size).isEqualTo(1)
+                it.assertThat(groupPolicy.p2pParameters.tlsTrustRoots.first()).isEqualTo(TEST_CERT)
+                it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
+                it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
+                it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
+
+                it.assertThat(groupPolicy.mgmInfo).isNull()
+                it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
+            }
+            verify(propertyQuery).invoke()
+        }
     }
 
     @Nested
@@ -135,9 +182,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(FILE_FORMAT_VERSION))
         }
@@ -153,9 +199,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(GROUP_ID))
         }
@@ -171,9 +216,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(GROUP_ID))
         }
@@ -189,9 +233,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(GROUP_ID))
         }
@@ -207,9 +250,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(BAD_MGM_GROUP_ID_ERROR)
         }
@@ -226,9 +268,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(REGISTRATION_PROTOCOL))
         }
@@ -245,9 +286,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(REGISTRATION_PROTOCOL))
         }
@@ -264,9 +304,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(REGISTRATION_PROTOCOL))
         }
@@ -283,9 +322,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(SYNC_PROTOCOL))
         }
@@ -302,9 +340,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getBlankValueError(SYNC_PROTOCOL))
         }
@@ -321,9 +358,8 @@ class MGMGroupPolicyImplTest {
                         p2pParametersOverride = null,
                         mgmInfoOverride = null,
                         cipherSuiteOverride = null
-                    ),
-                    emptyProperties
-                )
+                    )
+                ) { emptyProperties }
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(SYNC_PROTOCOL))
         }

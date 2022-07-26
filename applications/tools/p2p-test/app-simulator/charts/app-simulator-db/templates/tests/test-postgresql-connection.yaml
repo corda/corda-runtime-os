@@ -1,0 +1,61 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-postgresql-connection-test"
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  {{- include "postgresql.imagePullSecrets" .Subcharts.postgresql | nindent 2 }}
+  containers:
+    - name: {{ .Release.Name }}-postgresql-connection-test
+      image: {{ include "postgresql.image" .Subcharts.postgresql }}
+      imagePullPolicy: {{ .Values.postgresql.image.pullPolicy | quote }}
+      {{- if .Values.postgresql.primary.containerSecurityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.postgresql.primary.containerSecurityContext.runAsUser }}
+      {{- end }}
+      env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "postgresql.secretName" .Subcharts.postgresql }}
+              key: {{- if (include "postgresql.username" .Subcharts.postgresql) }}
+                     password
+              {{- else }}
+              postgres-password
+              {{- end }}
+        {{- if eq .Values.postgresql.tls.enabled true }}
+        - name: PGSSLMODE
+          value: "verify-full"
+        - name: PGSSLROOTCERT
+          value: /certs/ca.crt
+        {{- end }}
+      {{- if eq .Values.postgresql.tls.enabled true }}
+      volumeMounts:
+        - mountPath: "/certs"
+          name: certs
+          readOnly: true
+      {{- end }}
+      command:
+        - psql
+        - --host
+        - {{ include "postgresql.primary.fullname" .Subcharts.postgresql }}
+        - -U
+        -  {{ include "postgresql.username" .Subcharts.postgresql | default "postgres" }}
+        - -d
+        - {{ include "postgresql.database" .Subcharts.postgresql | default "postgres" }}
+        - -p
+        - {{ include "postgresql.service.port" .Subcharts.postgresql | quote }}
+  {{- if eq .Values.postgresql.tls.enabled true }}
+  volumes:
+    - name: certs
+      secret:
+        secretName: {{ printf "%s-crt" (include "common.names.fullname" .Subcharts.postgresql ) }}
+        items:
+          - key: ca.crt
+            path: ca.crt
+  {{- end }}
+  restartPolicy: Never
+  {{- end }}

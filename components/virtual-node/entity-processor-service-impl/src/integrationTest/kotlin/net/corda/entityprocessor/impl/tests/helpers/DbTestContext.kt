@@ -14,7 +14,8 @@ data class DbTestContext(
     val sandbox: SandboxGroupContext,
     private val entityManagerFactory: EntityManagerFactory,
     private val dogClass: Class<*>,
-    private val catClass: Class<*>
+    private val catClass: Class<*>,
+    val schemaName: String
 ) {
     fun findDog(dogId: UUID): Any? {
         return find(dogId, dogClass)
