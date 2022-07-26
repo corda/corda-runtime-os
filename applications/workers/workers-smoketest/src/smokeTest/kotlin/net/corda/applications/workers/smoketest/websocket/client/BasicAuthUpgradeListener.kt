@@ -1,8 +1,8 @@
-package net.corda.applications.workers.rpc.websocket
+package net.corda.applications.workers.smoketest.websocket.client
 
 import io.javalin.core.util.Header
 import java.util.Base64
-import net.corda.v5.base.util.contextLogger
+import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.UpgradeRequest
 import org.eclipse.jetty.websocket.api.UpgradeResponse
 import org.eclipse.jetty.websocket.client.io.UpgradeListener

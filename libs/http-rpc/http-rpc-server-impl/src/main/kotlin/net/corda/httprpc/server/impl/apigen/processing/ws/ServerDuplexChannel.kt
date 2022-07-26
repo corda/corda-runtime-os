@@ -29,6 +29,10 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
         close(CloseStatus(StatusCode.NORMAL, "Server closed"))
     }
 
+    override fun close(reason: String) {
+        close(CloseStatus(StatusCode.NORMAL, reason))
+    }
+
     fun close(closeStatus: CloseStatus) {
         closeHook?.let { it(closeStatus.code, closeStatus.phrase) }
         ctx.closeSession(closeStatus)

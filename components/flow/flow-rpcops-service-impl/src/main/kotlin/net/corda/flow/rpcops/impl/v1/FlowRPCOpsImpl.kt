@@ -28,6 +28,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -122,15 +123,28 @@ class FlowRPCOpsImpl @Activate constructor(
         holdingIdentityShortHash: String,
         clientRequestId: String
     ) {
-        val holdingIdentity = getVirtualNode(holdingIdentityShortHash).holdingIdentity
+        val holdingIdentity = try {
+            getVirtualNode(holdingIdentityShortHash).holdingIdentity
+        } catch (e: FlowRPCOpsServiceException) {
+            log.info("Could not find virtual node for req: $clientRequestId, holdingId: $holdingIdentityShortHash. Creating later.")
+            channel.close()
+            throw e
+        }
+        channel.incomingMessageType = WebSocketTerminateFlowStatusFeedType::class.java
+        channel.outgoingMessageType = FlowStatusResponse::class.java
         channel.onConnect = {
             log.info("onConnect called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
             val handler = WebSocketFlowStatusUpdateHandler(channel, clientRequestId, holdingIdentity) {
                 unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
             }
-            flowStatusCacheService.registerFlowStatusFeed(clientRequestId, holdingIdentity, handler)
+            try {
+                flowStatusCacheService.registerFlowStatusFeed(clientRequestId, holdingIdentity, handler)
+            } catch (e: Exception) {
+                channel.error(e)
+            }
         }
         channel.onClose = { statusCode, reason ->
+            // todo conal - close seems to be called twice (example the status feed has completed)
             log.info("onClose called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
             log.info("StatusCode: $statusCode, reason: $reason")
             unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
@@ -139,14 +153,17 @@ class FlowRPCOpsImpl @Activate constructor(
             log.info("onError called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash", e)
             unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
         }
-        channel.incomingMessageType = WebSocketTerminateFlowStatusFeedType::class.java
-        channel.outgoingMessageType = FlowStatusResponse::class.java
         channel.onTextMessage = { message ->
             log.info("onTextMessage called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-            when(message) {
+            when (message) {
                 is WebSocketTerminateFlowStatusFeedType -> {
                     log.info("Terminating feed for req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-                    this.close()
+                    channel.close()
+                    unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
+                }
+                else -> {
+                    log.info("Unknown message for req: $clientRequestId, holdingId: $holdingIdentityShortHash. Terminating connection.")
+                    channel.close()
                     unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
                 }
             }
@@ -154,9 +171,11 @@ class FlowRPCOpsImpl @Activate constructor(
     }
 
     private fun unregisterFlowStatusFeed(clientRequestId: String, holdingIdentity: HoldingIdentity) {
-        log.info("Unregistering flow status feed for request: $clientRequestId and identity: $holdingIdentity.")
+        log.info("Unregistering flow status feed for request: $clientRequestId and identity: ${holdingIdentity.shortHash()}.")
         flowStatusCacheService.unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
     }
+
+    private fun HoldingIdentity.shortHash() = this.toCorda().shortHash
 
     override fun start() = Unit
 
