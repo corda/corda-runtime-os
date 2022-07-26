@@ -5,9 +5,9 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 
 /** RPC operations for virtual node management. */
 @HttpRpcResource(
@@ -30,8 +30,8 @@ interface VirtualNodeRPCOps : RpcOps {
     )
     fun createVirtualNode(
         @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
-        request: CreateVirtualNodeParameters
-    ): CreateVirtualNodeResponse
+        request: VirtualNodeRequest
+    ): VirtualNodeInfo
 
     /**
      * Lists all virtual nodes onboarded to the cluster.
@@ -43,5 +43,5 @@ interface VirtualNodeRPCOps : RpcOps {
         description = "List all virtual nodes in the cluster.",
         responseDescription = "List details of the all virtual nodes in the cluster."
     )
-    fun getAllVirtualNodes(): GetVirtualNodesResponse
+    fun getAllVirtualNodes(): VirtualNodes
 }

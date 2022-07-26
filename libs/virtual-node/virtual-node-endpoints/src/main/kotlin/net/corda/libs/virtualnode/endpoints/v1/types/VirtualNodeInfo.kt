@@ -1,26 +1,27 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
-import net.corda.virtualnode.HoldingIdentity
-import java.time.Instant
-import java.util.UUID
 
+/**
+ * This class is serialized and returned as JSON in the REST api
+ *
+ * These field names are what the end-users see.
+ */
 data class VirtualNodeInfo(
+    /** The holding identity of this virtual node */
     val holdingIdentity: HoldingIdentity,
+    /** The CPI that this virtual node uses */
     val cpiIdentifier: CpiIdentifier,
     /** Vault DDL DB connection ID */
-    val vaultDdlConnectionId: UUID? = null,
+    val vaultDdlConnectionId: String? = null,
     /** Vault DML DB connection ID */
-    val vaultDmlConnectionId: UUID,
+    val vaultDmlConnectionId: String,
     /** Crypto DDL DB connection ID */
-    val cryptoDdlConnectionId: UUID? = null,
+    val cryptoDdlConnectionId: String? = null,
     /** Crypto DML DB connection ID */
-    val cryptoDmlConnectionId: UUID,
+    val cryptoDmlConnectionId: String,
     /** HSM connection ID */
-    val hsmConnectionId: UUID? = null,
+    val hsmConnectionId: String? = null,
+    /** The virtual node state */
     val state: String,
-    /** Version of this vnode */
-    val version: Int = -1,
-    /** Creation timestamp */
-    val timestamp: Instant,
 )
