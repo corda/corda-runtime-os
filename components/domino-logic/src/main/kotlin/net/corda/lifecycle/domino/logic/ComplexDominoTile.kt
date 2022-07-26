@@ -278,7 +278,7 @@ class ComplexDominoTile(
     }
 
     private fun handleChildStarted() {
-        if (!isRunning) {
+        if (internalState != Started) {
             if (shouldNotWaitForChildren()) {
                 logger.info("Starting resources, since all children are now up.")
                 startIfDependantChildrenAndConfigReady()
