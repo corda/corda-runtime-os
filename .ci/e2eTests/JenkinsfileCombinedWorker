@@ -128,7 +128,7 @@ pipeline {
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
                 sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.log &
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
                     export PROCNO=$!
                 '''
 
@@ -144,11 +144,11 @@ pipeline {
     post {
         always {
 	// remove Database see here https://github.com/corda/corda-shared-build-pipeline-steps/blob/5.0/vars/cordaPipeline.groovy#L487-L500
-            script {
-                       
+            
+            script {      
 
                     sh '''
-                        touch pod_logs.txt
+                        touch podLogs.txt
                         for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> pod_logs.txt; done
                     '''     
                     withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
@@ -160,6 +160,9 @@ pipeline {
                     }
 
             }
+
+            junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+            archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
         }
     }
 }
