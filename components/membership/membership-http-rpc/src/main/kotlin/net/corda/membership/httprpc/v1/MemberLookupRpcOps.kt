@@ -8,8 +8,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 
 @HttpRpcResource(
-    name = "MemberLookupRpcOps",
-    description = "Membership Lookup APIs",
+    name = "Member Lookup API",
+    description = "Network Membership Lookup endpoints.",
     path = "members"
 )
 interface MemberLookupRpcOps : RpcOps {

@@ -12,64 +12,64 @@
     "basicAuth" : [ ]
   } ],
   "tags" : [ {
-    "name" : "CertificatesRpcOps",
-    "description" : "Certificates API"
+    "name" : "CPI Upload API",
+    "description" : "CPI Upload management endpoints."
   }, {
-    "name" : "ConfigRPCOps",
-    "description" : "Cluster configuration management endpoints"
+    "name" : "Certificates API",
+    "description" : "Certificates management endpoints."
   }, {
-    "name" : "CpiUploadRPCOps",
-    "description" : "Cpi Upload management endpoints"
+    "name" : "Configuration API",
+    "description" : "Cluster configuration management endpoints."
   }, {
-    "name" : "FlowClassRPCOps",
-    "description" : "Startable flow classes endpoint"
+    "name" : "Flow Info API",
+    "description" : "Startable flow classes endpoints."
   }, {
-    "name" : "FlowRPCOps",
-    "description" : "Flow management endpoints"
+    "name" : "Flow Management API",
+    "description" : "Flow management endpoints."
+  }, {
+    "name" : "HSM API",
+    "description" : "Hardware Security Modules interaction endpoints."
   }, {
     "name" : "Hello RPC Ops",
     "description" : "Hello RPC Ops endpoints"
   }, {
-    "name" : "HsmRpcOps",
-    "description" : "HSM API"
+    "name" : "Keys Management API",
+    "description" : "Endpoints for public/private keys management."
   }, {
-    "name" : "KeysRpcOps",
-    "description" : "Keys API"
+    "name" : "MGM API",
+    "description" : "Membership Group Management endpoints."
   }, {
-    "name" : "MGMRpcOps",
-    "description" : "Membership Group Management APIs"
+    "name" : "Member Lookup API",
+    "description" : "Network Membership Lookup endpoints."
   }, {
-    "name" : "MemberLookupRpcOps",
-    "description" : "Membership Lookup APIs"
+    "name" : "Member Registration API",
+    "description" : "Membership Registration endpoints."
   }, {
-    "name" : "MemberRegistrationRpcOps",
-    "description" : "Membership Registration APIs"
+    "name" : "Network API",
+    "description" : "Network Management endpoints."
   }, {
-    "name" : "NetworkRpcOps",
-    "description" : "Network API"
+    "name" : "RBAC Permission API",
+    "description" : "Role Based Access Control Permissions Management endpoints."
   }, {
-    "name" : "PermissionEndpoint",
-    "description" : "Permissions Management APIs"
+    "name" : "RBAC Role API",
+    "description" : "Role Management endpoints for RBAC sub-system."
   }, {
-    "name" : "RoleEndpoint",
-    "description" : "Role Management APIs"
+    "name" : "RBAC User API",
+    "description" : "Role Based Access Control User Management endpoints."
   }, {
     "name" : "Stub rpc ops",
     "description" : "Stub rpc ops endpoints"
   }, {
-    "name" : "UserEndpoint",
-    "description" : "User Management APIs"
+    "name" : "Virtual Node API",
+    "description" : "Virtual node management endpoints."
   }, {
-    "name" : "VirtualNodeMaintenanceRPCOps",
-    "description" : "Virtual node maintenance endpoints"
-  }, {
-    "name" : "VirtualNodeRPCOps",
-    "description" : "Virtual node management endpoints"
+    "name" : "Virtual Node Maintenance API",
+    "description" : "Virtual node maintenance endpoints."
   } ],
   "paths" : {
     "/certificates/getprotocolversion" : {
       "get" : {
-        "tags" : [ "CertificatesRpcOps" ],
+        "tags" : [ "Certificates API" ],
         "description" : "",
         "operationId" : "get_certificates_getprotocolversion",
         "parameters" : [ ],
@@ -98,7 +98,7 @@
     },
     "/certificates/{tenantid}" : {
       "put" : {
-        "tags" : [ "CertificatesRpcOps" ],
+        "tags" : [ "Certificates API" ],
         "description" : "Import certificate.",
         "operationId" : "put_certificates__tenantid_",
         "parameters" : [ {
@@ -158,7 +158,7 @@
     },
     "/certificates/{tenantid}/{keyid}" : {
       "post" : {
-        "tags" : [ "CertificatesRpcOps" ],
+        "tags" : [ "Certificates API" ],
         "description" : "Generate certificate signing request (CSR).",
         "operationId" : "post_certificates__tenantid___keyid_",
         "parameters" : [ {
@@ -219,7 +219,7 @@
     },
     "/config" : {
       "put" : {
-        "tags" : [ "ConfigRPCOps" ],
+        "tags" : [ "Configuration API" ],
         "description" : "Updates a section of the cluster configuration.",
         "operationId" : "put_config",
         "parameters" : [ ],
@@ -256,7 +256,7 @@
     },
     "/config/getprotocolversion" : {
       "get" : {
-        "tags" : [ "ConfigRPCOps" ],
+        "tags" : [ "Configuration API" ],
         "description" : "",
         "operationId" : "get_config_getprotocolversion",
         "parameters" : [ ],
@@ -285,7 +285,7 @@
     },
     "/config/{section}" : {
       "get" : {
-        "tags" : [ "ConfigRPCOps" ],
+        "tags" : [ "Configuration API" ],
         "description" : "Get Configuration. Returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
         "operationId" : "get_config__section_",
         "parameters" : [ {
@@ -322,7 +322,7 @@
     },
     "/cpi" : {
       "get" : {
-        "tags" : [ "CpiUploadRPCOps" ],
+        "tags" : [ "CPI Upload API" ],
         "description" : "List all CPIs uploaded to the cluster.",
         "operationId" : "get_cpi",
         "parameters" : [ ],
@@ -346,8 +346,8 @@
         }
       },
       "post" : {
-        "tags" : [ "CpiUploadRPCOps" ],
-        "description" : "Uploads a CPI",
+        "tags" : [ "CPI Upload API" ],
+        "description" : "CPI management endpoints.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
         "requestBody" : {
@@ -392,7 +392,7 @@
     },
     "/cpi/getprotocolversion" : {
       "get" : {
-        "tags" : [ "CpiUploadRPCOps" ],
+        "tags" : [ "CPI Upload API" ],
         "description" : "",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
@@ -421,7 +421,7 @@
     },
     "/cpi/status/{id}" : {
       "get" : {
-        "tags" : [ "CpiUploadRPCOps" ],
+        "tags" : [ "CPI Upload API" ],
         "description" : "Check upload status for given requestId",
         "operationId" : "get_cpi_status__id_",
         "parameters" : [ {
@@ -458,7 +458,7 @@
     },
     "/flow/getprotocolversion" : {
       "get" : {
-        "tags" : [ "FlowRPCOps" ],
+        "tags" : [ "Flow Management API" ],
         "description" : "",
         "operationId" : "get_flow_getprotocolversion",
         "parameters" : [ ],
@@ -487,7 +487,7 @@
     },
     "/flow/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "FlowRPCOps" ],
+        "tags" : [ "Flow Management API" ],
         "description" : "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
         "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
@@ -522,7 +522,7 @@
         }
       },
       "post" : {
-        "tags" : [ "FlowRPCOps" ],
+        "tags" : [ "Flow Management API" ],
         "description" : "Instructs Corda to start a new instance of the specified flow",
         "operationId" : "post_flow__holdingidentityshorthash_",
         "parameters" : [ {
@@ -570,7 +570,7 @@
     },
     "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
       "get" : {
-        "tags" : [ "FlowRPCOps" ],
+        "tags" : [ "Flow Management API" ],
         "description" : "Gets the current status for a given flow.",
         "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
         "parameters" : [ {
@@ -618,7 +618,7 @@
     },
     "/flowclass/getprotocolversion" : {
       "get" : {
-        "tags" : [ "FlowClassRPCOps" ],
+        "tags" : [ "Flow Info API" ],
         "description" : "",
         "operationId" : "get_flowclass_getprotocolversion",
         "parameters" : [ ],
@@ -647,7 +647,7 @@
     },
     "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "FlowClassRPCOps" ],
+        "tags" : [ "Flow Info API" ],
         "description" : "Get all the flows that are startable for this holding identity.",
         "operationId" : "get_flowclass__holdingidentityshorthash_",
         "parameters" : [ {
@@ -759,7 +759,7 @@
     },
     "/hsm" : {
       "get" : {
-        "tags" : [ "HsmRpcOps" ],
+        "tags" : [ "HSM API" ],
         "description" : "Get list of available HSMs.",
         "operationId" : "get_hsm",
         "parameters" : [ ],
@@ -790,7 +790,7 @@
     },
     "/hsm/getprotocolversion" : {
       "get" : {
-        "tags" : [ "HsmRpcOps" ],
+        "tags" : [ "HSM API" ],
         "description" : "",
         "operationId" : "get_hsm_getprotocolversion",
         "parameters" : [ ],
@@ -819,7 +819,7 @@
     },
     "/hsm/soft/{tenantid}/{category}" : {
       "post" : {
-        "tags" : [ "HsmRpcOps" ],
+        "tags" : [ "HSM API" ],
         "description" : "Assign soft HSM",
         "operationId" : "post_hsm_soft__tenantid___category_",
         "parameters" : [ {
@@ -867,7 +867,7 @@
     },
     "/hsm/{tenantid}/{category}" : {
       "get" : {
-        "tags" : [ "HsmRpcOps" ],
+        "tags" : [ "HSM API" ],
         "description" : "Get list of assigned HSMs.",
         "operationId" : "get_hsm__tenantid___category_",
         "parameters" : [ {
@@ -916,7 +916,7 @@
         }
       },
       "post" : {
-        "tags" : [ "HsmRpcOps" ],
+        "tags" : [ "HSM API" ],
         "description" : "Assign HSM.",
         "operationId" : "post_hsm__tenantid___category_",
         "parameters" : [ {
@@ -964,7 +964,7 @@
     },
     "/keys/getprotocolversion" : {
       "get" : {
-        "tags" : [ "KeysRpcOps" ],
+        "tags" : [ "Keys Management API" ],
         "description" : "",
         "operationId" : "get_keys_getprotocolversion",
         "parameters" : [ ],
@@ -993,7 +993,7 @@
     },
     "/keys/{tenantid}" : {
       "get" : {
-        "tags" : [ "KeysRpcOps" ],
+        "tags" : [ "Keys Management API" ],
         "description" : "Get list of keys for members.",
         "operationId" : "get_keys__tenantid_",
         "parameters" : [ {
@@ -1148,7 +1148,7 @@
         }
       },
       "post" : {
-        "tags" : [ "KeysRpcOps" ],
+        "tags" : [ "Keys Management API" ],
         "description" : "Generate key pair.",
         "operationId" : "post_keys__tenantid_",
         "parameters" : [ {
@@ -1198,7 +1198,7 @@
     },
     "/keys/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
-        "tags" : [ "KeysRpcOps" ],
+        "tags" : [ "Keys Management API" ],
         "description" : "Get list of schemes for the cluster.",
         "operationId" : "get_keys__tenantid__schemes__hsmcategory_",
         "parameters" : [ {
@@ -1252,7 +1252,7 @@
     },
     "/keys/{tenantid}/{keyid}" : {
       "get" : {
-        "tags" : [ "KeysRpcOps" ],
+        "tags" : [ "Keys Management API" ],
         "description" : "GET key in PEM format.",
         "operationId" : "get_keys__tenantid___keyid_",
         "parameters" : [ {
@@ -1302,7 +1302,7 @@
     },
     "/maintenance/virtualnode" : {
       "put" : {
-        "tags" : [ "VirtualNodeMaintenanceRPCOps" ],
+        "tags" : [ "Virtual Node Maintenance API" ],
         "description" : "Updates the state of a new virtual node.",
         "operationId" : "put_maintenance_virtualnode",
         "parameters" : [ ],
@@ -1339,7 +1339,7 @@
     },
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
-        "tags" : [ "VirtualNodeMaintenanceRPCOps" ],
+        "tags" : [ "Virtual Node Maintenance API" ],
         "description" : "Uploads a CPI",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
         "parameters" : [ ],
@@ -1385,7 +1385,7 @@
     },
     "/maintenance/virtualnode/getprotocolversion" : {
       "get" : {
-        "tags" : [ "VirtualNodeMaintenanceRPCOps" ],
+        "tags" : [ "Virtual Node Maintenance API" ],
         "description" : "",
         "operationId" : "get_maintenance_virtualnode_getprotocolversion",
         "parameters" : [ ],
@@ -1414,7 +1414,7 @@
     },
     "/members/getprotocolversion" : {
       "get" : {
-        "tags" : [ "MemberLookupRpcOps" ],
+        "tags" : [ "Member Lookup API" ],
         "description" : "",
         "operationId" : "get_members_getprotocolversion",
         "parameters" : [ ],
@@ -1443,7 +1443,7 @@
     },
     "/members/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "MemberLookupRpcOps" ],
+        "tags" : [ "Member Lookup API" ],
         "description" : "Lists the active members in the membership group.",
         "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1546,7 +1546,7 @@
     },
     "/membership/getprotocolversion" : {
       "get" : {
-        "tags" : [ "MemberRegistrationRpcOps" ],
+        "tags" : [ "Member Registration API" ],
         "description" : "",
         "operationId" : "get_membership_getprotocolversion",
         "parameters" : [ ],
@@ -1575,7 +1575,7 @@
     },
     "/membership/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "MemberRegistrationRpcOps" ],
+        "tags" : [ "Member Registration API" ],
         "description" : "Checks the status of the registration request.",
         "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1610,7 +1610,7 @@
         }
       },
       "post" : {
-        "tags" : [ "MemberRegistrationRpcOps" ],
+        "tags" : [ "Member Registration API" ],
         "description" : "Start registration process for a virtual node.",
         "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1658,7 +1658,7 @@
     },
     "/mgm/getprotocolversion" : {
       "get" : {
-        "tags" : [ "MGMRpcOps" ],
+        "tags" : [ "MGM API" ],
         "description" : "",
         "operationId" : "get_mgm_getprotocolversion",
         "parameters" : [ ],
@@ -1687,7 +1687,7 @@
     },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
-        "tags" : [ "MGMRpcOps" ],
+        "tags" : [ "MGM API" ],
         "description" : "Fetches the requested group policy string",
         "operationId" : "get_mgm__holdingidentityshorthash__info",
         "parameters" : [ {
@@ -1726,7 +1726,7 @@
     },
     "/network/getprotocolversion" : {
       "get" : {
-        "tags" : [ "NetworkRpcOps" ],
+        "tags" : [ "Network API" ],
         "description" : "",
         "operationId" : "get_network_getprotocolversion",
         "parameters" : [ ],
@@ -1755,7 +1755,7 @@
     },
     "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
-        "tags" : [ "NetworkRpcOps" ],
+        "tags" : [ "Network API" ],
         "description" : "Set up the holding identity on the network.",
         "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1796,7 +1796,7 @@
     },
     "/permission" : {
       "post" : {
-        "tags" : [ "PermissionEndpoint" ],
+        "tags" : [ "RBAC Permission API" ],
         "description" : "Create a Permission",
         "operationId" : "post_permission",
         "parameters" : [ ],
@@ -1833,7 +1833,7 @@
     },
     "/permission/getprotocolversion" : {
       "get" : {
-        "tags" : [ "PermissionEndpoint" ],
+        "tags" : [ "RBAC Permission API" ],
         "description" : "",
         "operationId" : "get_permission_getprotocolversion",
         "parameters" : [ ],
@@ -1862,7 +1862,7 @@
     },
     "/permission/{id}" : {
       "get" : {
-        "tags" : [ "PermissionEndpoint" ],
+        "tags" : [ "RBAC Permission API" ],
         "description" : "Get a Permission by its ID",
         "operationId" : "get_permission__id_",
         "parameters" : [ {
@@ -1899,7 +1899,7 @@
     },
     "/role" : {
       "get" : {
-        "tags" : [ "RoleEndpoint" ],
+        "tags" : [ "RBAC Role API" ],
         "description" : "Get all the roles",
         "operationId" : "get_role",
         "parameters" : [ ],
@@ -1928,7 +1928,7 @@
         }
       },
       "post" : {
-        "tags" : [ "RoleEndpoint" ],
+        "tags" : [ "RBAC Role API" ],
         "description" : "Create a Role",
         "operationId" : "post_role",
         "parameters" : [ ],
@@ -1965,7 +1965,7 @@
     },
     "/role/addpermission" : {
       "put" : {
-        "tags" : [ "RoleEndpoint" ],
+        "tags" : [ "RBAC Role API" ],
         "description" : "Add a permission to a role",
         "operationId" : "put_role_addpermission",
         "parameters" : [ ],
@@ -2002,7 +2002,7 @@
     },
     "/role/getprotocolversion" : {
       "get" : {
-        "tags" : [ "RoleEndpoint" ],
+        "tags" : [ "RBAC Role API" ],
         "description" : "",
         "operationId" : "get_role_getprotocolversion",
         "parameters" : [ ],
@@ -2031,7 +2031,7 @@
     },
     "/role/removepermission" : {
       "put" : {
-        "tags" : [ "RoleEndpoint" ],
+        "tags" : [ "RBAC Role API" ],
         "description" : "Removes a permission from a role",
         "operationId" : "put_role_removepermission",
         "parameters" : [ ],
@@ -2068,7 +2068,7 @@
     },
     "/role/{id}" : {
       "get" : {
-        "tags" : [ "RoleEndpoint" ],
+        "tags" : [ "RBAC Role API" ],
         "description" : "Get a Role by its ID",
         "operationId" : "get_role__id_",
         "parameters" : [ {
@@ -2162,7 +2162,7 @@
     },
     "/user" : {
       "get" : {
-        "tags" : [ "UserEndpoint" ],
+        "tags" : [ "RBAC User API" ],
         "description" : "Get a User by Login Name",
         "operationId" : "get_user",
         "parameters" : [ {
@@ -2197,7 +2197,7 @@
         }
       },
       "post" : {
-        "tags" : [ "UserEndpoint" ],
+        "tags" : [ "RBAC User API" ],
         "description" : "Create a User",
         "operationId" : "post_user",
         "parameters" : [ ],
@@ -2234,7 +2234,7 @@
     },
     "/user/addrole" : {
       "put" : {
-        "tags" : [ "UserEndpoint" ],
+        "tags" : [ "RBAC User API" ],
         "description" : "Assign a Role to a User",
         "operationId" : "put_user_addrole",
         "parameters" : [ ],
@@ -2271,7 +2271,7 @@
     },
     "/user/getprotocolversion" : {
       "get" : {
-        "tags" : [ "UserEndpoint" ],
+        "tags" : [ "RBAC User API" ],
         "description" : "",
         "operationId" : "get_user_getprotocolversion",
         "parameters" : [ ],
@@ -2300,7 +2300,7 @@
     },
     "/user/permissionsummary/{loginname}" : {
       "get" : {
-        "tags" : [ "UserEndpoint" ],
+        "tags" : [ "RBAC User API" ],
         "description" : "Get a summary of a User's permissions",
         "operationId" : "get_user_permissionsummary__loginname_",
         "parameters" : [ {
@@ -2337,7 +2337,7 @@
     },
     "/user/removerole" : {
       "put" : {
-        "tags" : [ "UserEndpoint" ],
+        "tags" : [ "RBAC User API" ],
         "description" : "Un-assign a role from a user",
         "operationId" : "put_user_removerole",
         "parameters" : [ ],
@@ -2374,7 +2374,7 @@
     },
     "/virtualnode" : {
       "get" : {
-        "tags" : [ "VirtualNodeRPCOps" ],
+        "tags" : [ "Virtual Node API" ],
         "description" : "List all virtual nodes in the cluster.",
         "operationId" : "get_virtualnode",
         "parameters" : [ ],
@@ -2398,7 +2398,7 @@
         }
       },
       "post" : {
-        "tags" : [ "VirtualNodeRPCOps" ],
+        "tags" : [ "Virtual Node API" ],
         "description" : "Creates a new virtual node.",
         "operationId" : "post_virtualnode",
         "parameters" : [ ],
@@ -2435,7 +2435,7 @@
     },
     "/virtualnode/getprotocolversion" : {
       "get" : {
-        "tags" : [ "VirtualNodeRPCOps" ],
+        "tags" : [ "Virtual Node API" ],
         "description" : "",
         "operationId" : "get_virtualnode_getprotocolversion",
         "parameters" : [ ],

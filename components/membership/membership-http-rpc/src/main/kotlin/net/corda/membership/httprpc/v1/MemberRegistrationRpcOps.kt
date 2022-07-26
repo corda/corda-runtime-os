@@ -13,8 +13,8 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
  * RPC operations for registering a member (i.e. holding identity) within a group.
  */
 @HttpRpcResource(
-    name = "MemberRegistrationRpcOps",
-    description = "Membership Registration APIs",
+    name = "Member Registration API",
+    description = "Membership Registration endpoints.",
     path = "membership"
 )
 interface MemberRegistrationRpcOps : RpcOps {

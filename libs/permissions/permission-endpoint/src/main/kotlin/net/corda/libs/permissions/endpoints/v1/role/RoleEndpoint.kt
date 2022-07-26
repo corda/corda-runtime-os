@@ -11,11 +11,11 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 
 /**
- * Role endpoint exposes HTTP endpoints for management of Roles in the RBAC permission system.
+ * Role endpoint exposes HTTP operations for management of Roles in the RBAC permission system.
  */
 @HttpRpcResource(
-    name = "RoleEndpoint",
-    description = "Role Management APIs",
+    name = "RBAC Role API",
+    description = "Role Management endpoints for RBAC sub-system.",
     path = "role"
 )
 interface RoleEndpoint : RpcOps {
