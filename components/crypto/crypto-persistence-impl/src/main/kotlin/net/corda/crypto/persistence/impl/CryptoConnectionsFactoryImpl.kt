@@ -89,7 +89,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
             }
 
         private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
-            connectionId = vnodeInfo.getById(tenantId)?.cryptoDmlConnectionId
+            connectionId = vnodeInfo.getByHoldingIdentityShortHash(tenantId)?.cryptoDmlConnectionId
                 ?: throw throw IllegalStateException(
                     "virtual node for $tenantId is not registered."
                 ),
