@@ -28,16 +28,23 @@ class WebSocketFlowStatusUpdateHandler(
     // todo conal - not sure if FlowStatus Avro type is correct on this API.
     override fun onFlowStatusUpdate(status: FlowStatus) {
         // todo conal - make first log debug?
-        logger.info("Received flow status update for req: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}")
+        logger.info("Flow ${status.flowStatus.name} for req: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}")
         logger.info("Flow status: $status")
 
-        val statusResponse = createFlowStatusResponse(status)
-        channel.send(statusResponse)
+//        val statusResponse = createFlowStatusResponse(status)
+        // todo conal -sending string works but not objects, the client handler can't seem to pick up the objects
+        channel.send(status.flowStatus.name)
 
         if(status.flowStatus == FlowStates.COMPLETED || status.flowStatus == FlowStates.FAILED) {
             logger.info("WebSocket flow status update feed completed with flowStatus: $status")
-            close()
+            completeFeedAndClose()
         }
+    }
+
+    private fun completeFeedAndClose() {
+        logger.info("Flow completed, closing handler for req: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}")
+        channel.close("Flow complete.")
+        onCloseCallback.invoke()
     }
 
     private fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse {
