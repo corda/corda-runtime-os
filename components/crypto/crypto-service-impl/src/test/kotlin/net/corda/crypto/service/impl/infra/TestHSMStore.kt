@@ -3,24 +3,22 @@ package net.corda.crypto.service.impl.infra
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
-import net.corda.crypto.persistence.hsm.HSMUsage
-import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
+import net.corda.crypto.persistence.HSMUsage
+import net.corda.crypto.persistence.HSMStore
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class TestHSMStore(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    private val schemeMetadata: CipherSchemeMetadata
+    coordinatorFactory: LifecycleCoordinatorFactory
 ) : HSMStore {
     companion object {
         private val logger = contextLogger()
@@ -46,10 +44,10 @@ class TestHSMStore(
         lifecycleCoordinator.stop()
     }
 
-    override fun findTenantAssociation(tenantId: String, category: String): HSMTenantAssociation? = lock.withLock {
+    override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? = lock.withLock {
         categoryAssociations.firstOrNull {
             it.category == category && it.hsmAssociation.tenantId == tenantId
-        }?.toHSMTenantAssociation()
+        }?.toHSMAssociation()
     }
 
     override fun getHSMUsage(): List<HSMUsage> = lock.withLock {
@@ -66,7 +64,7 @@ class TestHSMStore(
         category: String,
         hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
-    ): HSMTenantAssociation = lock.withLock {
+    ): HSMAssociationInfo = lock.withLock {
         val association = associations.firstOrNull { it.tenantId == tenantId && it.hsmId == hsmId }
             ?: createAndPersistAssociation(tenantId, hsmId, masterKeyPolicy)
         val categoryAssociation = HSMCategoryAssociationEntity(
@@ -78,7 +76,7 @@ class TestHSMStore(
             deprecatedAt = 0
         )
         categoryAssociations.add(categoryAssociation)
-        categoryAssociation.toHSMTenantAssociation()
+        categoryAssociation.toHSMAssociation()
     }
 
     private fun createAndPersistAssociation(
@@ -86,8 +84,6 @@ class TestHSMStore(
         hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
     ): HSMAssociationEntity {
-        val aliasSecret = ByteArray(32)
-        schemeMetadata.secureRandom.nextBytes(aliasSecret)
         val association = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
@@ -97,8 +93,7 @@ class TestHSMStore(
                 generateRandomShortAlias()
             } else {
                 null
-            },
-            aliasSecret = aliasSecret
+            }
         )
         associations.add(association)
         return association
@@ -107,13 +102,12 @@ class TestHSMStore(
     private fun generateRandomShortAlias() =
         UUID.randomUUID().toString().toByteArray().toHex().take(12)
 
-    private fun HSMCategoryAssociationEntity.toHSMTenantAssociation() = HSMTenantAssociation(
-        id = id,
-        tenantId = hsmAssociation.tenantId,
-        category = category,
-        masterKeyAlias = hsmAssociation.masterKeyAlias,
-        aliasSecret = hsmAssociation.aliasSecret,
-        hsmId = hsmAssociation.hsmId,
-        deprecatedAt = deprecatedAt
+    private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
+        id,
+        hsmAssociation.tenantId,
+        hsmAssociation.hsmId,
+        category,
+        hsmAssociation.masterKeyAlias,
+        deprecatedAt
     )
 }

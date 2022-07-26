@@ -26,7 +26,9 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
 
    interface AbstractImpl: AutoCloseable {
         val downstream: DependenciesTracker
-        override fun close() = Unit
+        override fun close() {
+            downstream.clear()
+        }
         fun onUpstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
         fun onDownstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
     }
@@ -51,8 +53,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
 
     @Volatile
     private var _impl: IMPL? = null
-
-    private val downstream: DependenciesTracker? get() = _impl?.downstream
 
     val impl: IMPL get() {
         val tmp = _impl
@@ -89,7 +89,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             is RegistrationStatusChangeEvent -> {
                 if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     onUpstreamRegistrationStatusChange(coordinator)
-                } else if(downstream?.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
+                } else if(_impl?.downstream?.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     onDownstreamRegistrationStatusChange(coordinator)
                 }
             }
@@ -104,7 +104,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
 
     private fun onStop() {
         upstream.clear()
-        downstream?.clear()
+        _impl?.downstream?.clear()
         configHandle?.close()
         configHandle = null
         _impl?.close()
@@ -112,8 +112,12 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onUpstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        logger.info("onUpstreamRegistrationStatusChange(upstream={}, downstream={}).", upstream.isUp, downstream?.isUp)
-        updateStatus(coordinator)
+        logger.info(
+            "onUpstreamRegistrationStatusChange(upstream={}, downstream={}).",
+            upstream.isUp,
+            _impl?.downstream?.isUp
+        )
+        updateLifecycleStatus(coordinator)
         configHandle?.close()
         configHandle = if (upstream.isUp) {
             logger.info("Registering for configuration updates.")
@@ -121,18 +125,22 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         } else {
             null
         }
-        _impl?.onUpstreamRegistrationStatusChange(upstream.isUp, downstream?.isUp)
+        _impl?.onUpstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
     }
 
     private fun onDownstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        logger.info("onDownstreamRegistrationStatusChange(upstream={}, downstream={}).", upstream.isUp, downstream?.isUp)
-        updateStatus(coordinator)
-        _impl?.onDownstreamRegistrationStatusChange(upstream.isUp, downstream?.isUp)
+        logger.info(
+            "onDownstreamRegistrationStatusChange(upstream={}, downstream={}).",
+            upstream.isUp,
+            _impl?.downstream?.isUp
+        )
+        updateLifecycleStatus(coordinator)
+        _impl?.onDownstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         doActivation(event, coordinator)
-        updateStatus(coordinator)
+        updateLifecycleStatus(coordinator)
     }
 
     private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
@@ -145,16 +153,16 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             return
         }
         doActivation(event, coordinator)
-        updateStatus(coordinator)
+        updateLifecycleStatus(coordinator)
     }
 
     private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Activating {}", myName)
         try {
-            downstream?.clear()
+            _impl?.downstream?.clear()
             _impl?.close()
             _impl = createActiveImpl(event)
-            downstream?.follow(coordinator)
+            _impl?.downstream?.follow(coordinator)
             activationFailureCounter.set(0)
             logger.debug("Activated {}", myName)
         } catch (e: FatalActivationException) {
@@ -171,27 +179,22 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         }
     }
 
-    private fun updateStatus(coordinator: LifecycleCoordinator) {
-        if (upstream.isUp && downstream?.isUp == true && _impl != null) {
-            setUp(coordinator)
-        } else {
-            if(coordinator.status != LifecycleStatus.ERROR) {
-                setDown(coordinator)
-            }
-        }
-    }
-
-    private fun setUp(coordinator: LifecycleCoordinator) {
-        if(coordinator.status != LifecycleStatus.UP) {
+    private fun updateLifecycleStatus(coordinator: LifecycleCoordinator) {
+        logger.debug(
+            "updateStatus(self={},upstream={}, downstream={}, _impl={}).",
+            coordinator.status,
+            upstream.isUp,
+            _impl?.downstream?.isUp,
+            _impl
+        )
+        if (upstream.isUp && _impl?.downstream?.isUp == true && _impl != null) {
             logger.info("Setting the status of {} UP", myName)
             coordinator.updateStatus(LifecycleStatus.UP)
-        }
-    }
-
-    private fun setDown(coordinator: LifecycleCoordinator) {
-        if(coordinator.status != LifecycleStatus.DOWN) {
-            logger.info("Setting the status of {} DOWN", myName)
-            coordinator.updateStatus(LifecycleStatus.DOWN)
+        } else {
+            if(coordinator.status != LifecycleStatus.ERROR) {
+                logger.info("Setting the status of {} DOWN", myName)
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            }
         }
     }
 

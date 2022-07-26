@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.impl
 
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
-import net.corda.crypto.persistence.signing.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningKeyOrderBy
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate

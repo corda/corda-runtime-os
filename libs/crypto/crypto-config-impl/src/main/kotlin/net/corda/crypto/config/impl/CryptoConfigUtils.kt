@@ -3,7 +3,7 @@ package net.corda.crypto.config.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_WORKER_SET_ID
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -160,14 +160,14 @@ private const val HSM_SERVICE_OBJ = "hsmService"
 private const val HSM_ID = "hsmId"
 private const val HSM_MAP = "hsmMap"
 private const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
-private val DEFAULT_HSM_OBJ = String.format(HSM_MAP_ITEM_OBJ, SOFT_HSM_WORKER_SET_ID)
+private val DEFAULT_HSM_OBJ = String.format(HSM_MAP_ITEM_OBJ, SOFT_HSM_ID)
 private val MASTER_WRAPPING_KEY_SALT = DEFAULT_HSM_OBJ +
-        CryptoWorkerSetConfig::hsm.name +
-        CryptoWorkerSetConfig.HSMConfig::cfg.name +
+        CryptoHSMConfig::hsm.name +
+        CryptoHSMConfig.HSMConfig::cfg.name +
         "wrappingKeyMap.salt"
 private val MASTER_WRAPPING_KEY_PASSPHRASE = DEFAULT_HSM_OBJ +
-        CryptoWorkerSetConfig::hsm.name +
-        CryptoWorkerSetConfig.HSMConfig::cfg.name +
+        CryptoHSMConfig::hsm.name +
+        CryptoHSMConfig.HSMConfig::cfg.name +
         "wrappingKeyMap.passphrase"
 private const val BUS_PROCESSORS_OBJ = "bus.processors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
@@ -203,26 +203,26 @@ fun SmartConfig.hsmId(): String =
         throw IllegalStateException("Failed to get $HSM_ID.", e)
     }
 
-fun SmartConfig.hsmMap(): Map<String, CryptoWorkerSetConfig> =
+fun SmartConfig.hsmMap(): Map<String, CryptoHSMConfig> =
     try {
         val set = getConfig(HSM_MAP)
         set.root().keys.associateWith {
-            CryptoWorkerSetConfig(set.getConfig(it))
+            CryptoHSMConfig(set.getConfig(it))
         }
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $HSM_MAP.", e)
     }
 
-fun SmartConfig.hsm(id: String): CryptoWorkerSetConfig {
+fun SmartConfig.hsm(id: String): CryptoHSMConfig {
     val path = String.format(HSM_MAP_ITEM_OBJ, id)
     return try {
-        CryptoWorkerSetConfig(getConfig(path))
+        CryptoHSMConfig(getConfig(path))
     } catch (e: Throwable) {
         throw IllegalStateException("Failed to get $path.", e)
     }
 }
 
-fun SmartConfig.hsm(): CryptoWorkerSetConfig = hsm(hsmId())
+fun SmartConfig.hsm(): CryptoHSMConfig = hsm(hsmId())
 
 fun SmartConfig.hsmService(): CryptoHSMServiceConfig =
     try {
@@ -339,27 +339,27 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                 )
             )
             .withValue(
-                HSM_ID, ConfigValueFactory.fromAnyRef(SOFT_HSM_WORKER_SET_ID)
+                HSM_ID, ConfigValueFactory.fromAnyRef(SOFT_HSM_ID)
             )
             .withValue(
                 DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        CryptoWorkerSetConfig::workerSuffix.name to "",
-                        CryptoWorkerSetConfig::retry.name to mapOf(
-                            CryptoWorkerSetConfig.RetryConfig::maxAttempts.name to "3",
-                            CryptoWorkerSetConfig.RetryConfig::attemptTimeoutMills.name to "20000",
+                        CryptoHSMConfig::workerSuffix.name to "",
+                        CryptoHSMConfig::retry.name to mapOf(
+                            CryptoHSMConfig.RetryConfig::maxAttempts.name to "3",
+                            CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to "20000",
                         ),
-                        CryptoWorkerSetConfig::hsm.name to mapOf(
-                            CryptoWorkerSetConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
-                            CryptoWorkerSetConfig.HSMConfig::categories.name to listOf(
+                        CryptoHSMConfig::hsm.name to mapOf(
+                            CryptoHSMConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
+                            CryptoHSMConfig.HSMConfig::categories.name to listOf(
                                 mapOf(
-                                    CryptoWorkerSetConfig.CategoryConfig::category.name to "*",
-                                    CryptoWorkerSetConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
+                                    CryptoHSMConfig.CategoryConfig::category.name to "*",
+                                    CryptoHSMConfig.CategoryConfig::policy.name to PrivateKeyPolicy.WRAPPED.name,
                                 )
                             ),
-                            CryptoWorkerSetConfig.HSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                            CryptoWorkerSetConfig.HSMConfig::capacity.name to "-1",
-                            CryptoWorkerSetConfig.HSMConfig::supportedSchemes.name to listOf(
+                            CryptoHSMConfig.HSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
+                            CryptoHSMConfig.HSMConfig::capacity.name to "-1",
+                            CryptoHSMConfig.HSMConfig::supportedSchemes.name to listOf(
                                 "CORDA.RSA",
                                 "CORDA.ECDSA.SECP256R1",
                                 "CORDA.ECDSA.SECP256K1",
@@ -369,7 +369,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                                 "CORDA.GOST3410.GOST3411",
                                 "CORDA.SPHINCS-256"
                             ),
-                            CryptoWorkerSetConfig.HSMConfig::cfg.name to mapOf(
+                            CryptoHSMConfig.HSMConfig::cfg.name to mapOf(
                                 "keyMap" to mapOf(
                                     "name" to "CACHING",
                                     "cache" to mapOf(

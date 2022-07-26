@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.wrapping
+package net.corda.crypto.persistence
 
 import net.corda.lifecycle.Lifecycle
 

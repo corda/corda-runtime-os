@@ -1,6 +1,5 @@
 package net.corda.crypto.service
 
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.Lifecycle
 
@@ -21,5 +20,5 @@ interface HSMService : Lifecycle {
     /**
      * Returns information about assigned HSM by tenant and category.
      */
-    fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation?
+    fun findAssignedHSM(tenantId: String, category: String): HSMAssociationInfo?
 }

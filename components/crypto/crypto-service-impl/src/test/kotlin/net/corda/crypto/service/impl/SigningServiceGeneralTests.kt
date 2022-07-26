@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
@@ -10,14 +10,13 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyOrderBy
-import net.corda.crypto.persistence.signing.SigningKeyStatus
-import net.corda.crypto.persistence.signing.SigningKeyStore
-import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningKeyStatus
+import net.corda.crypto.persistence.SigningKeyStore
+import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
@@ -28,9 +27,11 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import java.security.PublicKey
@@ -52,29 +53,10 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when the lookup by ids keys is passed more than 20 items`() {
-        val signingService = SigningServiceImpl(
-            store = mock(),
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val keys = (0 until 21).map {
-            publicKeyIdFromBytes(
-                mock<PublicKey> {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-                }.encoded
-            )
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            signingService.lookup(UUID.randomUUID().toString(), keys)
-        }
-    }
-
-    @Test
     fun `Should throw original exception failing signing`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStore>(any(), any()) } doThrow exception
+            on { find(any(), any<PublicKey>()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -93,17 +75,13 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
+        Mockito.verify(store, times(1)).find(any(), any<PublicKey>())
     }
 
     @Test
     fun `Should throw IllegalArgumentException when key is not found for signing`() {
-        val actions = mock<SigningKeyStore> {
-            on { find(any<PublicKey>()) } doReturn null
-        }
         val store = mock<SigningKeyStore> {
-            on { act(any()) } doReturn actions
-            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
+            on { find(any(), any<PublicKey>()) } doReturn null
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -127,7 +105,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original exception failing derivation`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStore>(any(), any()) } doThrow exception
+            on { find(any(), any<PublicKey>()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -147,17 +125,13 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
+        Mockito.verify(store, times(1)).find(any(), any<PublicKey>())
     }
 
     @Test
     fun `Should throw IllegalArgumentException when key is not found for deriving`() {
-        val actions = mock<SigningKeyStore> {
-            on { find(any<PublicKey>()) } doReturn null
-        }
         val store = mock<SigningKeyStore> {
-            on { act(any()) } doReturn actions
-            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
+            on { find(any(), any<PublicKey>()) } doReturn null
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -192,16 +166,12 @@ class SigningServiceGeneralTests {
             externalId = null,
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
             encodingVersion = 1,
-            associationId = UUID.randomUUID().toString(),
+            hsmId = UUID.randomUUID().toString(),
             timestamp = Instant.now(),
             status = SigningKeyStatus.NORMAL
         )
-        val actions = mock<SigningKeyStore> {
-            on { find(any<String>()) } doReturn existingKey
-        }
         val store = mock<SigningKeyStore> {
-            on { act(any()) } doReturn actions
-            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
+            on { find(any(), any<String>()) } doReturn existingKey
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -233,7 +203,7 @@ class SigningServiceGeneralTests {
     fun `Should throw original when failing key generation with alias`() {
         val exception = RuntimeException("")
         val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStore>(any(), any()) } doThrow exception
+            on { find(any(), any<String>()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -261,52 +231,7 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(store, times(2)).act<SigningKeyStore>(any(), any())
-    }
-
-    @Test
-    fun `Should throw original exception when failing fresh key generation`() {
-        val exception = RuntimeException("")
-        val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStore>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            store = store,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows(exception::class.java) {
-            signingService.freshKey(
-                tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.Categories.CI,
-                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
-            )
-        }
-        assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
-    }
-
-    @Test
-    fun `Should throw original exception when failing fresh key generation with external id`() {
-        val exception = RuntimeException("")
-        val store = mock<SigningKeyStore> {
-            on { act<SigningKeyStore>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            store = store,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows(exception::class.java) {
-            signingService.freshKey(
-                tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.Categories.CI,
-                externalId = UUID.randomUUID().toString(),
-                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
-            )
-        }
-        assertSame(exception, thrown)
-        Mockito.verify(store, times(1)).act<SigningKeyStore>(any(), any())
+        Mockito.verify(store, times(2)).find(any(), any<String>())
     }
 
     @Test
@@ -321,10 +246,8 @@ class SigningServiceGeneralTests {
         val masterKeyAlias: String = UUID.randomUUID().toString()
         val createdAfter: Instant = Instant.now().plusSeconds(-5)
         val createdBefore: Instant = Instant.now()
-        val actions = mock<SigningKeyStore>()
         val store = mock<SigningKeyStore> {
-            on { act(tenantId) } doReturn actions
-            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
+            on { lookup(any(), any(), any(), any(), any()) } doReturn emptyList()
         }
         val signingService = SigningServiceImpl(
             store = store,
@@ -348,7 +271,8 @@ class SigningServiceGeneralTests {
         )
         assertNotNull(result)
         assertEquals(0, result.size)
-        Mockito.verify(actions, times(1)).lookup(
+        Mockito.verify(store, times(1)).lookup(
+            tenantId,
             skip,
             take,
             SigningKeyOrderBy.ALIAS,
@@ -362,10 +286,8 @@ class SigningServiceGeneralTests {
             val skip = 17
             val take = 21
             val tenantId: String = UUID.randomUUID().toString()
-            val actions = mock<SigningKeyStore>()
             val store = mock<SigningKeyStore> {
-                on { act(tenantId) } doReturn actions
-                on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
+                on { lookup(any(), any(), any(), any(), any()) } doReturn emptyList()
             }
             val signingService = SigningServiceImpl(
                 store = store,
@@ -382,7 +304,8 @@ class SigningServiceGeneralTests {
             )
             assertNotNull(result)
             assertEquals(0, result.size)
-            Mockito.verify(actions, times(1)).lookup(
+            Mockito.verify(store, times(1)).lookup(
+                tenantId,
                 skip,
                 take,
                 SigningKeyOrderBy.valueOf(orderBy.toString()),
@@ -400,18 +323,13 @@ class SigningServiceGeneralTests {
         )
         val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
-        val actions = mock<SigningKeyStore>()
-        val store = mock<SigningKeyStore> {
-            on { act(tenantId) } doReturn actions
-            on { act<SigningKeyStore>(any(), any()) }.thenCallRealMethod()
-        }
+        val store = mock<SigningKeyStore>()
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
-            aliasSecret = UUID.randomUUID().toString().toByteArray(),
-            associationId = UUID.randomUUID().toString(),
+            hsmId = UUID.randomUUID().toString(),
             instance = mock {
                 on { generateKeyPair(any(), any()) } doReturn generatedKey
             }
@@ -439,25 +357,27 @@ class SigningServiceGeneralTests {
             alias = expectedAlias
         )
         assertSame(generatedKey.publicKey, result)
-        Mockito.verify(actions, times(1)).save(
+        Mockito.verify(store, times(1)).save(
+            eq(tenantId),
             argThat {
                 this as SigningPublicKeySaveContext
                 key == generatedKey &&
                         alias == expectedAlias &&
                         externalId == null &&
                         keyScheme == scheme &&
-                        associationId == ref.associationId &&
+                        hsmId == ref.hsmId &&
                         category == ref.category
             }
         )
-        Mockito.verify(actions, times(1)).save(
+        Mockito.verify(store, times(1)).save(
+            eq(tenantId),
             argThat {
                 this as SigningPublicKeySaveContext
                 key == generatedKey &&
                         alias == expectedAlias &&
                         externalId == expectedExternalId &&
                         keyScheme == scheme &&
-                        associationId == ref.associationId &&
+                        hsmId == ref.hsmId &&
                         category == ref.category
             }
         )

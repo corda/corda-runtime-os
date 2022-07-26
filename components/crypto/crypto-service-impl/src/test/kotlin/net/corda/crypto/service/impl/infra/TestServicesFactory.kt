@@ -6,9 +6,15 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.service.SigningService
+import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
+import net.corda.crypto.service.impl.SigningServiceImpl
+import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.crypto.softhsm.impl.DefaultSoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.TransientSoftKeyMap
@@ -20,8 +26,10 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
+import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SharedSecretSpec
@@ -36,17 +44,75 @@ import kotlin.test.assertEquals
 class TestServicesFactory {
     companion object {
         const val CTX_TRACKING = "ctxTrackingId"
+        const val CUSTOM1_HSM_ID = "CUSTOM1"
+        const val CUSTOM2_HSM_ID = "CUSTOM2"
     }
-
-    val wrappingKeyAlias = "wrapping-key-alias"
 
     val recordedCryptoContexts = ConcurrentHashMap<String, Map<String, String>>()
 
     val emptyConfig: SmartConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    val cryptoConfig: SmartConfig =
-        createDefaultCryptoConfig(KeyCredentials("salt", "passphrase"))
+    val cryptoConfig: SmartConfig = createDefaultCryptoConfig(
+        KeyCredentials("salt", "passphrase")
+    ).withFallback(
+        ConfigFactory.parseString(
+            """
+{
+    "hsmMap": {
+        "CUSTOM1": {
+            "retry": {
+                "maxAttempts": 3,
+                "attemptTimeoutMills": 20000
+            },
+            "hsm": {
+                "name": "CUSTOM",
+                "categories": [
+                    {
+                        "category": "*",
+                        "policy": "ALIASED"
+                    }
+                ],
+                "masterKeyPolicy": "SHARED",
+                "masterKeyAlias": "cordawrappingkey",
+                "capacity": "2",
+                "supportedSchemes": [
+                    "CORDA.ECDSA.SECP256R1"
+                ],
+                "config": {
+                    "username": "user1"
+                }
+            },
+        },
+        "CUSTOM2": {
+            "retry": {
+                "maxAttempts": 3,
+                "attemptTimeoutMills": 20000
+            },
+            "hsm": {
+                "name": "CUSTOM",
+                "categories": [
+                    {
+                        "category": "*",
+                        "policy": "WRAPPED"
+                    }
+                ],
+                "masterKeyPolicy": "SHARED",
+                "masterKeyAlias": "cordawrappingkey",
+                "capacity": "2",
+                "supportedSchemes": [
+                    "CORDA.ECDSA.SECP256R1"
+                ],
+                "config": {
+                    "username": "user2"
+                }
+            }
+        }
+    }
+}                
+""".trimIndent()
+        )
+    )
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
@@ -85,7 +151,7 @@ class TestServicesFactory {
     }
 
     val hsmStore: TestHSMStore by lazy {
-        TestHSMStore(coordinatorFactory, schemeMetadata).also {
+        TestHSMStore(coordinatorFactory).also {
             it.start()
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
@@ -138,6 +204,35 @@ class TestServicesFactory {
                 digest
             ),
             recordedCryptoContexts
+        )
+    }
+
+    val cryptoServiceFactory: CryptoServiceFactory by lazy {
+        CryptoServiceFactoryImpl(
+            coordinatorFactory,
+            configurationReadService,
+            hsmService,
+            object : CryptoServiceProvider<SoftCryptoServiceConfig> {
+                override val name: String = CryptoConsts.SOFT_HSM_SERVICE_NAME
+                override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
+                override fun getInstance(
+                    config: SoftCryptoServiceConfig,
+                    secrets: ConfigurationSecrets
+                ): CryptoService = cryptoService
+            }
+        ).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+            }
+        }
+    }
+
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            signingKeyStore,
+            cryptoServiceFactory,
+            schemeMetadata
         )
     }
 

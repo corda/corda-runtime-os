@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.signing
+package net.corda.crypto.persistence
 
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER

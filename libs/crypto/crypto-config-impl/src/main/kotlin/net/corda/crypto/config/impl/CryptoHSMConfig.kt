@@ -3,7 +3,7 @@ package net.corda.crypto.config.impl
 import com.typesafe.config.Config
 import net.corda.libs.configuration.SmartConfig
 
-class CryptoWorkerSetConfig(private val config: SmartConfig) {
+class CryptoHSMConfig(private val config: SmartConfig) {
 
     class RetryConfig(private val config: SmartConfig) {
         val maxAttempts: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {

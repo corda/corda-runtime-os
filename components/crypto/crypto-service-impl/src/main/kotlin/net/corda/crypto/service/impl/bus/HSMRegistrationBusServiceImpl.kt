@@ -78,6 +78,7 @@ class HSMRegistrationBusServiceImpl @Activate constructor(
 
         override fun close() {
             subscription.close()
+            super.close()
         }
     }
 }

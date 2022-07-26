@@ -20,19 +20,19 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
-import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.impl.tests.infra.CryptoConfigurationSetup
 import net.corda.crypto.persistence.impl.tests.infra.CryptoDBSetup
 import net.corda.crypto.persistence.impl.tests.infra.TestDependenciesTracker
-import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyOrderBy
-import net.corda.crypto.persistence.signing.SigningKeyStatus
-import net.corda.crypto.persistence.signing.SigningKeyStore
-import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.wrapping.WrappingKeyInfo
-import net.corda.crypto.persistence.wrapping.WrappingKeyStore
+import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningKeyStatus
+import net.corda.crypto.persistence.SigningKeyStore
+import net.corda.crypto.persistence.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -183,8 +183,7 @@ class PersistenceTests {
                     UUID.randomUUID().toString().toByteArray().toHex().take(30)
                 } else {
                     null
-                },
-                aliasSecret = "Hello World!".toByteArray()
+                }
             )
             cryptoDbEmf().transaction { em ->
                 em.persist(association)
@@ -244,7 +243,7 @@ class PersistenceTests {
 
         private fun assertAssociation(
             expected: HSMCategoryAssociationEntity,
-            actual: HSMTenantAssociation?
+            actual: HSMAssociationInfo?
         ) {
             assertNotNull(actual)
             assertEquals(expected.category, actual!!.category)
@@ -253,7 +252,6 @@ class PersistenceTests {
             assertEquals(expected.hsmAssociation.hsmId, actual.hsmId)
             assertEquals(expected.hsmAssociation.tenantId, actual.tenantId)
             assertEquals(expected.hsmAssociation.masterKeyAlias, actual.masterKeyAlias)
-            assertArrayEquals(expected.hsmAssociation.aliasSecret, actual.aliasSecret)
         }
 
         private fun assertSigningCachedKey(
@@ -389,8 +387,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
-            aliasSecret = "Hello World!".toByteArray()
+            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
         )
         cryptoDbEmf().transaction { em ->
             em.persist(association)
@@ -416,7 +413,6 @@ class PersistenceTests {
             assertEquals(associationId, retrieved.hsmAssociation.id)
             assertEquals(tenantId, retrieved.hsmAssociation.tenantId)
             assertEquals(association.masterKeyAlias, retrieved.hsmAssociation.masterKeyAlias)
-            assertArrayEquals(association.aliasSecret, retrieved.hsmAssociation.aliasSecret)
         }
     }
 
@@ -429,8 +425,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
-            aliasSecret = UUID.randomUUID().toString().toByteArray()
+            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
         )
         cryptoDbEmf().transaction { em ->
             em.persist(association1)
@@ -440,8 +435,7 @@ class PersistenceTests {
             tenantId = tenantId,
             hsmId = hsmId,
             timestamp = Instant.now(),
-            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
-            aliasSecret = UUID.randomUUID().toString().toByteArray()
+            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30)
         )
         assertThrows(PersistenceException::class.java) {
             cryptoDbEmf().transaction { em ->
@@ -578,7 +572,6 @@ class PersistenceTests {
         assertEquals(0, association1.deprecatedAt)
         assertEquals(hsmId1, association1.hsmId)
         assertNull(association1.masterKeyAlias)
-        assertNotNull(association1.aliasSecret)
 
         val association2 = hsmStore.findTenantAssociation(tenantId2, CryptoConsts.Categories.LEDGER)
         assertNotNull(association2)
@@ -587,7 +580,6 @@ class PersistenceTests {
         assertEquals(0, association2.deprecatedAt)
         assertEquals(hsmId2, association2.hsmId)
         assertNotNull(association2.masterKeyAlias)
-        assertNotNull(association2.aliasSecret)
     }
 
     @Test

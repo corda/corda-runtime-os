@@ -1,71 +1,75 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
-import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_WORKER_SET_ID
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CUSTOM1_HSM_ID
+import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CUSTOM2_HSM_ID
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class HSMServiceTests {
     companion object {
-        private fun assertHSMAssociation(tenantId: String, category: String, association: HSMTenantAssociation?) {
+        private fun assertHSMAssociation(
+            association: HSMAssociationInfo?,
+            tenantId: String,
+            category: String,
+            hsmId: String = SOFT_HSM_ID
+        ) {
             assertNotNull(association)
             assertThat(association.id).isNotBlank
-            assertEquals(SOFT_HSM_WORKER_SET_ID, association.worhsmIdkerSetId)
-            assertEquals(0, association.deprecatedAt)
             assertEquals(tenantId, association.tenantId)
+            assertEquals(hsmId, association.hsmId)
             assertEquals(category, association.category)
-            assertNotNull(association.masterKeyAlias)
             assertThat(association.masterKeyAlias).isNotBlank
-            assertThat(association.aliasSecret).isNotEmpty
+            assertEquals(0, association.deprecatedAt)
         }
     }
+
     private lateinit var factory: TestServicesFactory
-    private lateinit var service: HSMServiceImpl
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        service = factory.hsmService
     }
 
     @Test
-    fun `Should assign SOFT HSM with new master key alias and retrieves assignment`() {
+    fun `Should assign SOFT HSM and retrieves assignment`() {
         val tenantId1 = UUID.randomUUID().toString()
         val tenantId2 = UUID.randomUUID().toString()
-        val association11 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association11.hsmId)
-        assertEquals(0, association11.deprecatedAt)
-        val foundAssociation11 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertHSMAssociation(tenantId1, CryptoConsts.Categories.LEDGER, foundAssociation11)
-        assertNull(service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS))
-        assertNull(service.findAssignedHSM(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER))
-        val association12 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association12.hsmId)
-        assertEquals(0, association12.deprecatedAt)
-        val foundAssociation12 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
-        assertHSMAssociation(tenantId1, CryptoConsts.Categories.TLS, foundAssociation12)
+
+        val association11 = factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
+        assertHSMAssociation(association11, tenantId1, CryptoConsts.Categories.LEDGER)
+        val foundAssociation11 = factory.hsmService.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
+        assertHSMAssociation(foundAssociation11, tenantId1, CryptoConsts.Categories.LEDGER)
+
+        assertNull(factory.hsmService.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS))
+        assertNull(factory.hsmService.findAssignedHSM(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER))
+
+        val association12 = factory.hsmService.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
+        assertHSMAssociation(association12, tenantId1, CryptoConsts.Categories.TLS)
+        val foundAssociation12 = factory.hsmService.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
+        assertHSMAssociation(foundAssociation12, tenantId1, CryptoConsts.Categories.TLS)
         assertEquals(
             foundAssociation11!!.masterKeyAlias,
             foundAssociation12!!.masterKeyAlias,
             "The master key alias must stay the same for the same tenant, even if categories are different"
         )
-        val association21 = service.assignSoftHSM(tenantId2, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association21.hsmId)
-        assertEquals(0, association21.deprecatedAt)
-        val foundAssociation21 = service.findAssignedHSM(tenantId2, CryptoConsts.Categories.LEDGER)
-        assertHSMAssociation(tenantId2, CryptoConsts.Categories.TLS, foundAssociation21)
+
+        val association21 = factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.LEDGER)
+        assertHSMAssociation(association21, tenantId2, CryptoConsts.Categories.LEDGER)
+        val foundAssociation21 = factory.hsmService.findAssignedHSM(tenantId2, CryptoConsts.Categories.LEDGER)
+        assertHSMAssociation(foundAssociation21, tenantId2, CryptoConsts.Categories.LEDGER)
         assertNotEquals(
             foundAssociation11.masterKeyAlias,
             foundAssociation21!!.masterKeyAlias,
@@ -75,129 +79,106 @@ class HSMServiceTests {
 
     @Test
     fun `Should not fail assigning SOFT HSM twice`() {
-        val tenantId1 = UUID.randomUUID().toString()
-        val association1 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association1.hsmId)
-        assertEquals(0, association1.deprecatedAt)
-        val association2 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertEquals(SOFT_HSM_WORKER_SET_ID, association2.hsmId)
-        assertEquals(0, association2.deprecatedAt)
+        val tenantId = UUID.randomUUID().toString()
+        val association1 = factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER)
+        assertHSMAssociation(association1, tenantId, CryptoConsts.Categories.LEDGER)
+        val association2 = factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER)
+        assertHSMAssociation(association2, tenantId, CryptoConsts.Categories.LEDGER)
     }
 
     @Test
-    fun `Should assign HSM with new master key alias and then retrieve assignment`() {
-        val info = HSMInfo(
-            "",
-            Instant.now(),
-            UUID.randomUUID().toString(),
-            "Some HSM configuration",
-            MasterKeyPolicy.NEW,
-            null,
-            7,
-            57,
-            factory.softHSMSupportedSchemas,
-            UUID.randomUUID().toString(),
-            42
-        )
-        val serviceConfig = "{}".toByteArray()
-        val configId = service.putHSMConfig(info, serviceConfig)
-        service.linkCategories(
-            configId,
-            CryptoConsts.Categories.all.map {
-                HSMCategoryInfo(it, PrivateKeyPolicy.ALIASED)
-            }
-        )
+    fun `Should assign HSM and retrieve assignment`() {
         val tenantId1 = UUID.randomUUID().toString()
-        val hsm1 = service.assignHSM(
-            tenantId1, CryptoConsts.Categories.LEDGER, mapOf(
-                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
-            )
-        )
-        assert(configId, info, hsm1)
-        val association1 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assert(configId, tenantId1, hsm1,  association1)
-        val hsm2 = service.assignHSM(
-            tenantId1, CryptoConsts.Categories.TLS, mapOf(
-                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
-            )
-        )
-        assert(configId, hsm1, hsm2)
-        val association2 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
-        assertNotNull(association2)
-        assertEquals(tenantId1, association2.tenantId)
-        assertEquals(CryptoConsts.Categories.TLS, association2.category)
-        assertNotNull(association2.aliasSecret)
-        assertNotNull(association2.masterKeyAlias)
-        assertEquals(
-            association1!!.masterKeyAlias,
-            association2.masterKeyAlias,
-            "The master key alias must stay the same for the same tenant, even if categories are different"
-        )
-        assertThat(factory.softCache.keys).containsKey(association2.masterKeyAlias)
-        assert(configId, hsm1, "{}".toByteArray(), association2.config)
         val tenantId2 = UUID.randomUUID().toString()
-        val hsm3 = service.assignHSM(
-            tenantId2, CryptoConsts.Categories.TLS, mapOf(
-                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+
+        factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.LEDGER, emptyMap())
+        val usage1 = factory.hsmStore.getHSMUsage()
+        assertThat(usage1).hasSize(1)
+        assertThat(usage1.first().usages).isEqualTo(1)
+        assertThat(usage1.first().hsmId).isIn(CUSTOM1_HSM_ID, CUSTOM2_HSM_ID)
+
+        factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.TLS, emptyMap())
+        val usage2 = factory.hsmStore.getHSMUsage()
+        assertThat(usage2).hasSize(2)
+        assertThat(usage2).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 1 }
+        assertThat(usage2).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
+
+        factory.hsmService.assignHSM(tenantId2, CryptoConsts.Categories.LEDGER, emptyMap())
+        val usage3 = factory.hsmStore.getHSMUsage()
+        assertThat(usage3).hasSize(2)
+        assertThat(usage3).anyMatch { it.hsmId == CUSTOM1_HSM_ID }
+        assertThat(usage3).anyMatch { it.hsmId == CUSTOM2_HSM_ID }
+        assertTrue(
+            (usage3[0].usages == 2 && usage3[1].usages == 1) ||
+                    (usage3[0].usages == 1 && usage3[1].usages == 2)
+        )
+    }
+
+    @Test
+    fun `Should assign HSM with preference to use ALIASED and retrieve assignment`() {
+        val tenantId1 = UUID.randomUUID().toString()
+        val tenantId2 = UUID.randomUUID().toString()
+
+        factory.hsmService.assignHSM(
+            tenantId1, CryptoConsts.Categories.LEDGER, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_ALIASED
             )
         )
-        assert(configId, hsm1, hsm3)
-        val association3 = service.findAssignedHSM(tenantId2, CryptoConsts.Categories.TLS)
-        assertNotNull(association3)
-        assertEquals(tenantId2, association3.tenantId)
-        assertEquals(CryptoConsts.Categories.TLS, association3.category)
-        assertNotNull(association3.aliasSecret)
-        assertNotNull(association3.masterKeyAlias)
-        assertNotEquals(
-            association1.masterKeyAlias,
-            association3.masterKeyAlias,
-            "The master key alias must be different for the different tenants"
-        )
-        assertThat(factory.softCache.keys).containsKey(association3.masterKeyAlias)
-        assert(configId, hsm1, "{}".toByteArray(), association3.config)
+        val usage1 = factory.hsmStore.getHSMUsage()
+        assertThat(usage1).hasSize(1)
+        assertThat(usage1.first().usages).isEqualTo(1)
+        assertThat(usage1.first().hsmId).isEqualTo(CUSTOM1_HSM_ID)
 
-        // next one to the one which has less associated tenants
-
-        val info2 = HSMInfo(
-            "",
-            Instant.now(),
-            UUID.randomUUID().toString(),
-            "Some HSM configuration",
-            MasterKeyPolicy.NEW,
-            null,
-            7,
-            57,
-            factory.softHSMSupportedSchemas,
-            UUID.randomUUID().toString(),
-            42
-        )
-        val serviceConfig2 = "{}".toByteArray()
-        val configId2 = service.putHSMConfig(info2, serviceConfig2)
-        service.linkCategories(
-            configId2,
-            CryptoConsts.Categories.all.map {
-                HSMCategoryInfo(it, PrivateKeyPolicy.ALIASED)
-            }
-        )
-        val tenantId3 = UUID.randomUUID().toString()
-        val hsm4 = service.assignHSM(
-            tenantId3, CryptoConsts.Categories.TLS, mapOf(
-                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+        factory.hsmService.assignHSM(
+            tenantId1, CryptoConsts.Categories.TLS, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_ALIASED
             )
         )
-        assert(configId2, info2, hsm4)
-        val association4 = service.findAssignedHSM(tenantId3, CryptoConsts.Categories.TLS)
-        assertNotNull(association4)
-        assertEquals(tenantId3, association4.tenantId)
-        assertEquals(CryptoConsts.Categories.TLS, association4.category)
-        assertNotNull(association4.aliasSecret)
-        assertNotNull(association4.masterKeyAlias)
-        assertNotEquals(
-            association1.masterKeyAlias,
-            association4.masterKeyAlias,
-            "The master key alias must be different for the different tenants"
+        val usage2 = factory.hsmStore.getHSMUsage()
+        assertThat(usage2).hasSize(1)
+        assertThat(usage2).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 2 }
+
+        // should fall back to use another one as the exact match already full
+        factory.hsmService.assignHSM(
+            tenantId2, CryptoConsts.Categories.LEDGER, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_ALIASED
+            )
         )
-        assertThat(factory.softCache.keys).containsKey(association4.masterKeyAlias)
-        assert(configId2, info2, "{}".toByteArray(), association4.config)
+        val usage3 = factory.hsmStore.getHSMUsage()
+        assertThat(usage3).hasSize(2)
+        assertThat(usage3).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 2 }
+        assertThat(usage3).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
+    }
+
+    @Test
+    fun `Should assign HSM ignoring SOFT HSM stats and retrieve assignment`() {
+        factory.hsmService.assignSoftHSM(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER)
+
+        val tenantId1 = UUID.randomUUID().toString()
+        val tenantId2 = UUID.randomUUID().toString()
+
+        factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.LEDGER, emptyMap())
+        val usage1 = factory.hsmStore.getHSMUsage()
+        assertThat(usage1).hasSize(2)
+        assertThat(usage1).anyMatch { it.hsmId == SOFT_HSM_ID && it.usages == 1 }
+        assertThat(usage1).anyMatch { (it.hsmId == CUSTOM1_HSM_ID || it.hsmId == CUSTOM2_HSM_ID) && it.usages == 1 }
+
+        factory.hsmService.assignHSM(tenantId1, CryptoConsts.Categories.TLS, emptyMap())
+        val usage2 = factory.hsmStore.getHSMUsage()
+        assertThat(usage2).hasSize(3)
+        assertThat(usage1).anyMatch { it.hsmId == SOFT_HSM_ID && it.usages == 1 }
+        assertThat(usage2).anyMatch { it.hsmId == CUSTOM1_HSM_ID && it.usages == 1 }
+        assertThat(usage2).anyMatch { it.hsmId == CUSTOM2_HSM_ID && it.usages == 1 }
+
+        factory.hsmService.assignHSM(tenantId2, CryptoConsts.Categories.LEDGER, emptyMap())
+        val usage3 = factory.hsmStore.getHSMUsage()
+        assertThat(usage3).hasSize(3)
+        assertThat(usage1).anyMatch { it.hsmId == SOFT_HSM_ID && it.usages == 1 }
+        assertThat(usage3).anyMatch { it.hsmId == CUSTOM1_HSM_ID }
+        assertThat(usage3).anyMatch { it.hsmId == CUSTOM2_HSM_ID }
+        assertTrue(
+            (usage3[0].usages == 2 && usage3[1].usages == 1) ||
+                    (usage3[0].usages == 1 && usage3[1].usages == 2)
+        )
     }
 }

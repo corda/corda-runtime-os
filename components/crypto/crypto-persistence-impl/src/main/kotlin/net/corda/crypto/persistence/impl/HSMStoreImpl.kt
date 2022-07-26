@@ -7,15 +7,14 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
-import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
-import net.corda.crypto.persistence.hsm.HSMUsage
+import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.persistence.HSMUsage
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.toHex
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,9 +27,7 @@ class HSMStoreImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CryptoConnectionsFactory::class)
-    private val connectionsFactory: CryptoConnectionsFactory,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val schemaMetadata: CipherSchemeMetadata
+    private val connectionsFactory: CryptoConnectionsFactory
 ) : AbstractComponent<HSMStoreImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMStore>(),
@@ -39,9 +36,9 @@ class HSMStoreImpl @Activate constructor(
     )
 ), HSMStore {
 
-    override fun createActiveImpl(): Impl = Impl(connectionsFactory, schemaMetadata)
+    override fun createActiveImpl(): Impl = Impl(connectionsFactory)
 
-    override fun findTenantAssociation(tenantId: String, category: String): HSMTenantAssociation? =
+    override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
         impl.findTenantAssociation(tenantId, category)
 
     override fun getHSMUsage(): List<HSMUsage> = impl.getHSMUsage()
@@ -51,15 +48,12 @@ class HSMStoreImpl @Activate constructor(
         category: String,
         hsmId: String,
         masterKeyPolicy: MasterKeyPolicy
-    ): HSMTenantAssociation = impl.associate(tenantId, category, hsmId, masterKeyPolicy)
+    ): HSMAssociationInfo = impl.associate(tenantId, category, hsmId, masterKeyPolicy)
 
     class Impl(
-        private val connectionsFactory: CryptoConnectionsFactory,
-        schemaMetadata: CipherSchemeMetadata
+        private val connectionsFactory: CryptoConnectionsFactory
     ) : AbstractImpl {
-        private val secureRandom = schemaMetadata.secureRandom
-
-        fun findTenantAssociation(tenantId: String, category: String): HSMTenantAssociation? =
+        fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
             entityManagerFactory().use {
                 val result = it.createQuery(
                     """
@@ -75,7 +69,7 @@ class HSMStoreImpl @Activate constructor(
                 if (result.isEmpty()) {
                     null
                 } else {
-                    result[0].toHSMTenantAssociation()
+                    result[0].toHSMAssociation()
                 }
             }
 
@@ -100,7 +94,7 @@ class HSMStoreImpl @Activate constructor(
             category: String,
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
-        ): HSMTenantAssociation {
+        ): HSMAssociationInfo {
             val association = findHSMAssociationEntity(tenantId, hsmId)
                 ?: createAndPersistAssociation(tenantId, hsmId, masterKeyPolicy)
             val categoryAssociation = HSMCategoryAssociationEntity(
@@ -114,7 +108,7 @@ class HSMStoreImpl @Activate constructor(
             entityManagerFactory().transaction {
                 it.persist(categoryAssociation)
             }
-            return categoryAssociation.toHSMTenantAssociation()
+            return categoryAssociation.toHSMAssociation()
         }
 
         private fun findHSMAssociationEntity(
@@ -136,8 +130,6 @@ class HSMStoreImpl @Activate constructor(
             hsmId: String,
             masterKeyPolicy: MasterKeyPolicy
         ): HSMAssociationEntity {
-            val aliasSecret = ByteArray(32)
-            secureRandom.nextBytes(aliasSecret)
             val association = HSMAssociationEntity(
                 id = UUID.randomUUID().toString(),
                 tenantId = tenantId,
@@ -147,8 +139,7 @@ class HSMStoreImpl @Activate constructor(
                     generateRandomShortAlias()
                 } else {
                     null
-                },
-                aliasSecret = aliasSecret
+                }
             )
             entityManagerFactory().transaction {
                 it.persist(association)
@@ -159,14 +150,13 @@ class HSMStoreImpl @Activate constructor(
         private fun generateRandomShortAlias() =
             UUID.randomUUID().toString().toByteArray().toHex().take(12)
 
-        private fun HSMCategoryAssociationEntity.toHSMTenantAssociation() = HSMTenantAssociation(
-            id = id,
-            tenantId = hsmAssociation.tenantId,
-            category = category,
-            masterKeyAlias = hsmAssociation.masterKeyAlias,
-            aliasSecret = hsmAssociation.aliasSecret,
-            hsmId = hsmAssociation.hsmId,
-            deprecatedAt = deprecatedAt
+        private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
+            id,
+            hsmAssociation.tenantId,
+            hsmAssociation.hsmId,
+            category,
+            hsmAssociation.masterKeyAlias,
+            deprecatedAt
         )
 
         private fun entityManagerFactory() = connectionsFactory.getEntityManagerFactory(CryptoTenants.CRYPTO)

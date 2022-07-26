@@ -4,7 +4,7 @@ import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.persistence.wrapping.WrappingKeyStore
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.KEY_MAP_CACHING_NAME
 import net.corda.crypto.softhsm.KEY_MAP_TRANSIENT_NAME
 import net.corda.crypto.softhsm.SoftCryptoServiceConfig

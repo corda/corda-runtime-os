@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl
 
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
@@ -16,26 +16,19 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
-import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CustomSignatureSpec
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.failures.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
@@ -64,31 +57,6 @@ import kotlin.test.assertTrue
  */
 class CryptoOperationsTests {
     companion object {
-        private lateinit var schemeMetadata: CipherSchemeMetadata
-        private lateinit var verifier: SignatureVerificationService
-        private lateinit var tenantId: String
-        private lateinit var category: String
-        private lateinit var wrappingKeyAlias: String
-        private lateinit var cryptoService: CryptoService
-
-        private val zeroBytes = ByteArray(100)
-
-        private val UNSUPPORTED_KEY_SCHEME = KeyScheme(
-            codeName = "UNSUPPORTED_SIGNATURE_SCHEME",
-            algorithmOIDs = listOf(
-                AlgorithmIdentifier(OID_COMPOSITE_KEY_IDENTIFIER)
-            ),
-            providerName = "SUN",
-            algorithmName = CompositeKey.KEY_ALGORITHM,
-            algSpec = null,
-            keySize = null,
-            capabilities = setOf(KeySchemeCapability.SIGN)
-        )
-
-        private lateinit var softAliasedKeys: Map<KeyScheme, GeneratedWrappedKey>
-
-        private lateinit var softFreshKeys: Map<KeyScheme, GeneratedWrappedKey>
-
         class SigningAliasedKeyInfo(
             val alias: String,
             val publicKey: PublicKey,
@@ -101,6 +69,10 @@ class CryptoOperationsTests {
             val signingService: SigningService
         )
 
+        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var verifier: SignatureVerificationService
+        private lateinit var tenantId: String
+        private lateinit var category: String
         private lateinit var factory: TestServicesFactory
         private lateinit var signingAliasedKeys: Map<KeyScheme, SigningAliasedKeyInfo>
         private lateinit var signingFreshKeys: Map<KeyScheme, SigningFreshKeyInfo>
@@ -115,43 +87,15 @@ class CryptoOperationsTests {
             verifier = factory.verifier
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
-            wrappingKeyAlias = factory.wrappingKeyAlias
-            cryptoService = factory.cryptoService
-            softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
-                cryptoService.generateKeyPair(
-                    KeyGenerationSpec(
-                        keyScheme = it,
-                        alias = UUID.randomUUID().toString(),
-                        masterKeyAlias = wrappingKeyAlias,
-                        secret = null
-                    ),
-                    mapOf(
-                        CRYPTO_TENANT_ID to tenantId,
-                        CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
-                    )
-                ) as GeneratedWrappedKey
+            CryptoConsts.Categories.all.forEach {
+                factory.hsmService.assignSoftHSM(tenantId, it)
             }
-            softFreshKeys = cryptoService.supportedSchemes.keys.associateWith {
-                cryptoService.generateKeyPair(
-                    KeyGenerationSpec(
-                        keyScheme = it,
-                        alias = null,
-                        masterKeyAlias = wrappingKeyAlias,
-                        secret = null
-                    ),
-                    mapOf(
-                        CRYPTO_TENANT_ID to tenantId,
-                        CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
-                    )
-                ) as GeneratedWrappedKey
-            }
-            signingAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
-                val signingService = factory.createSigningService()
+            signingAliasedKeys = factory.cryptoService.supportedSchemes.keys.associateWith {
                 val alias = UUID.randomUUID().toString()
                 SigningAliasedKeyInfo(
                     alias = alias,
-                    signingService = signingService,
-                    publicKey = signingService.generateKeyPair(
+                    signingService = factory.signingService,
+                    publicKey = factory.signingService.generateKeyPair(
                         tenantId = tenantId,
                         category = CryptoConsts.Categories.LEDGER,
                         alias = alias,
@@ -159,13 +103,12 @@ class CryptoOperationsTests {
                     )
                 )
             }
-            signingFreshKeys = cryptoService.supportedSchemes.keys.associateWith {
-                val signingService = factory.createSigningService()
+            signingFreshKeys = factory.cryptoService.supportedSchemes.keys.associateWith {
                 val externalId = UUID.randomUUID().toString()
                 SigningFreshKeyInfo(
                     externalId = externalId,
-                    signingService = signingService,
-                    publicKey = signingService.freshKey(
+                    signingService = factory.signingService,
+                    publicKey = factory.signingService.freshKey(
                         tenantId = tenantId,
                         category = CryptoConsts.Categories.CI,
                         externalId = externalId,
@@ -173,33 +116,32 @@ class CryptoOperationsTests {
                     )
                 )
             }
-            signingFreshKeysWithoutExternalId = cryptoService.supportedSchemes.keys.associateWith {
-                val signingService = factory.createSigningService()
+            signingFreshKeysWithoutExternalId = factory.cryptoService.supportedSchemes.keys.associateWith {
                 SigningFreshKeyInfo(
                     externalId = null,
-                    signingService = signingService,
-                    publicKey = signingService.freshKey(
+                    signingService = factory.signingService,
+                    publicKey = factory.signingService.freshKey(
                         tenantId = tenantId,
                         category = CryptoConsts.Categories.CI,
                         scheme = it
                     )
                 )
             }
-            unknownKeyPairs = cryptoService.supportedSchemes.keys.associateWith {
+            unknownKeyPairs = factory.cryptoService.supportedSchemes.keys.associateWith {
                 generateKeyPair(schemeMetadata, it.codeName)
             }
         }
 
         @JvmStatic
         fun derivingSchemes(): List<KeyScheme> =
-            cryptoService.supportedSchemes.keys.filter {
+            factory.cryptoService.supportedSchemes.keys.filter {
                 it.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)
             }
 
         @JvmStatic
         fun signingSchemes(): List<Arguments> {
             val list = mutableListOf<Arguments>()
-            cryptoService.supportedSchemes.forEach { entry ->
+            factory.cryptoService.supportedSchemes.forEach { entry ->
                 entry.value.forEach { spec ->
                     list.add(Arguments.of(entry.key, spec))
                 }
@@ -209,13 +151,13 @@ class CryptoOperationsTests {
 
         @JvmStatic
         fun keySchemes(): Collection<KeyScheme> =
-            cryptoService.supportedSchemes.keys
+            factory.cryptoService.supportedSchemes.keys
 
         private fun getInferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
             schemeMetadata.inferableDigestNames(scheme)
 
         private fun getAllStandardSignatureSpecs(scheme: KeyScheme): List<SignatureSpec> =
-            cryptoService.supportedSchemes[scheme] ?: emptyList()
+            factory.cryptoService.supportedSchemes[scheme] ?: emptyList()
 
         private fun getAllCustomSignatureSpecs(scheme: KeyScheme): List<SignatureSpec> =
             schemeMetadata.digests.mapNotNull { digest ->
@@ -238,7 +180,7 @@ class CryptoOperationsTests {
             uuid: String?,
             scheme: KeyScheme
         ) {
-            val generatedKeyData = factory.getSigningCachedKey(tenantId, publicKey)
+            val generatedKeyData = factory.signingKeyStore.find(tenantId, publicKey)
             assertNotNull(generatedKeyData)
             assertEquals(tenantId, generatedKeyData.tenantId)
             if (generatedKeyData.alias == null) {
@@ -269,7 +211,7 @@ class CryptoOperationsTests {
                 assertEquals(category, key.category)
             }
             assertEquals(scheme.codeName, key.schemeCodeName)
-            assertEquals(wrappingKeyAlias, key.masterKeyAlias)
+            assertThat(key.masterKeyAlias).isNotBlank()
             assertEquals(1, key.encodingVersion)
             assertArrayEquals(publicKey.encoded, key.publicKey)
         }

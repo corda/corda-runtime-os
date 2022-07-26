@@ -13,7 +13,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
-import net.corda.crypto.config.impl.CryptoWorkerSetConfig
+import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.config.impl.hsm
@@ -55,7 +55,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMService::class)
-    private val hsmRegistrar: HSMService,
+    private val hsmService: HSMService,
     @Reference(service = CryptoServiceProvider::class)
     private val cryptoServiceProvider: CryptoServiceProvider<*>
 ) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
@@ -63,8 +63,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
     myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
     configurationReadService = configurationReadService,
     upstream = DependenciesTracker.Default(
-        setOf(LifecycleCoordinatorName.forComponent<HSMService>()) +
-                ((cryptoServiceProvider as? LifecycleNameProvider)?.lifecycleNameAsSet() ?: emptySet())
+        setOf(
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+            LifecycleCoordinatorName.forComponent<HSMService>()
+        ) + ((cryptoServiceProvider as? LifecycleNameProvider)?.lifecycleNameAsSet() ?: emptySet())
     ),
     configKeys = setOf(CRYPTO_CONFIG)
 ), CryptoServiceFactory {
@@ -86,7 +88,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     @Suppress("UNCHECKED_CAST")
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
         event,
-        hsmRegistrar,
+        hsmService,
         cryptoServiceProvider as CryptoServiceProvider<Any>
     )
 
@@ -98,7 +100,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     class Impl(
         event: ConfigChangedEvent,
-        private val hsmRegistrar: HSMService,
+        private val hsmService: HSMService,
         private val cryptoServiceProvider: CryptoServiceProvider<Any>
     ) : DownstreamAlwaysUpAbstractImpl() {
 
@@ -106,22 +108,22 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         private val cryptoConfig: SmartConfig
 
-        private val workerSetConfig: CryptoWorkerSetConfig
+        private val hsmConfig: CryptoHSMConfig
 
         init {
             cryptoConfig = event.config.toCryptoConfig()
             hsmId = cryptoConfig.hsmId()
-            workerSetConfig = cryptoConfig.hsm(hsmId)
-            if(workerSetConfig.hsm.name != cryptoServiceProvider.name) {
+            hsmConfig = cryptoConfig.hsm(hsmId)
+            if(hsmConfig.hsm.name != cryptoServiceProvider.name) {
                 throw FatalActivationException(
-                    "Expected to handle ${workerSetConfig.hsm.name} but provided with ${cryptoServiceProvider.name}."
+                    "Expected to handle ${hsmConfig.hsm.name} but provided with ${cryptoServiceProvider.name}."
                 )
             }
         }
 
         private val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            val retry = workerSetConfig.retry
-            val hsm = workerSetConfig.hsm
+            val retry = hsmConfig.retry
+            val hsm = hsmConfig.hsm
             val cryptoService = cryptoServiceProvider.getInstance(
                 objectMapper.convertValue(hsm.cfg.root().unwrapped(), cryptoServiceProvider.configType),
                 cryptoConfig.toConfigurationSecrets()
@@ -135,7 +137,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         fun findInstance(tenantId: String, category: String): CryptoServiceRef {
             logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
-            val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+            val association = hsmService.findAssignedHSM(tenantId, category)
                 ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
             if(association.hsmId != hsmId) {
                 throw IllegalStateException(
@@ -148,7 +150,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 tenantId = association.tenantId,
                 category = association.category,
                 masterKeyAlias = association.masterKeyAlias,
-                aliasSecret = association.aliasSecret,
                 hsmId = association.hsmId,
                 instance = cryptoService
             )

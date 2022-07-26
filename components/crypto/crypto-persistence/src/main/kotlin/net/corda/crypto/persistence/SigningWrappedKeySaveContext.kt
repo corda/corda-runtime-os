@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.signing
+package net.corda.crypto.persistence
 
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.schemes.KeyScheme

@@ -4,7 +4,7 @@ package net.corda.crypto.core
  * Common crypto constants.
  */
 object CryptoConsts {
-    const val SOFT_HSM_WORKER_SET_ID = "SOFT"
+    const val SOFT_HSM_ID = "SOFT"
     const val SOFT_HSM_SERVICE_NAME = "SOFT"
 
     /**

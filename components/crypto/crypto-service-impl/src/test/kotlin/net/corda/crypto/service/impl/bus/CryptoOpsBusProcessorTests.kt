@@ -2,13 +2,13 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.impl.toWire
-import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
@@ -51,6 +51,7 @@ import net.corda.v5.crypto.X25519_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -76,7 +77,6 @@ class CryptoOpsBusProcessorTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
     private lateinit var schemeMetadata: CipherSchemeMetadata
-    private lateinit var signingService: SigningService
     private lateinit var signingFactory: SigningServiceFactory
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsBusProcessor
@@ -85,12 +85,14 @@ class CryptoOpsBusProcessorTests {
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
         schemeMetadata = factory.schemeMetadata
-        signingService = factory.createSigningService()
         verifier = factory.verifier
         signingFactory = mock {
-            on { getInstance() }.thenReturn(signingService)
+            on { getInstance() } doReturn factory.signingService
         }
         processor = CryptoOpsBusProcessor(signingFactory, configEvent)
+        CryptoConsts.Categories.all.forEach {
+            factory.hsmService.assignSoftHSM(tenantId, it)
+        }
     }
 
     private fun newAlias(): String = UUID.randomUUID().toString()
@@ -207,7 +209,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = factory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
@@ -301,7 +303,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = factory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
@@ -410,7 +412,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = factory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertNull(info.externalId)
@@ -453,7 +455,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = factory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertEquals(externalId, UUID.fromString(info.externalId))
@@ -470,14 +472,13 @@ class CryptoOpsBusProcessorTests {
             KeyValuePair("reason", "Hello World!"),
             KeyValuePair(CRYPTO_TENANT_ID, tenantId)
         )
-        val hsmId = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         val future1 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context1,
                 GenerateWrappingKeyRpcCommand(
-                    hsmId,
+                    SOFT_HSM_ID,
                     masterKeyAlias,
                     true,
                     KeyValuePairList(operationContext)
@@ -494,7 +495,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoNoContentValue::class.java)
-        assertThat(factory.softCache.keys).containsKey(masterKeyAlias)
+        assertThat(factory.wrappingKeyStore.keys).containsKey(masterKeyAlias)
     }
 
     @Test
@@ -507,7 +508,7 @@ class CryptoOpsBusProcessorTests {
             KeyValuePair(CRYPTO_TENANT_ID, tenantId)
         )
         val otherKeyPair = generateKeyPair(schemeMetadata, X25519_CODE_NAME)
-        val publicKey = signingService.generateKeyPair(
+        val publicKey = factory.signingService.generateKeyPair(
             tenantId,
             CryptoConsts.Categories.SESSION_INIT,
             "ecd-key",
@@ -573,7 +574,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = factory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.signingKeyStore.find(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // sign using invalid custom scheme
@@ -639,7 +640,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context, result.context)
         assertThat(result.response).isInstanceOf(CryptoKeySchemes::class.java)
         val actualSchemes = result.response as CryptoKeySchemes
-        val expectedSchemes = signingService.getSupportedSchemes(
+        val expectedSchemes = factory.signingService.getSupportedSchemes(
             tenantId,
             CryptoConsts.Categories.LEDGER
         )
@@ -667,7 +668,7 @@ class CryptoOpsBusProcessorTests {
         assertResponseContext(context, result.context)
         assertThat(result.response).isInstanceOf(CryptoKeySchemes::class.java)
         val actualSchemes = result.response as CryptoKeySchemes
-        val expectedSchemes = signingService.getSupportedSchemes(
+        val expectedSchemes = factory.signingService.getSupportedSchemes(
             tenantId,
             CryptoConsts.Categories.LEDGER
         )

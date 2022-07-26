@@ -1,8 +1,8 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyOrderBy
-import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
@@ -242,8 +242,7 @@ class SigningServiceImpl(
             KeyGenerationSpec(
                 keyScheme = scheme,
                 alias = alias,
-                masterKeyAlias = ref.masterKeyAlias,
-                secret = ref.aliasSecret
+                masterKeyAlias = ref.masterKeyAlias
             ),
             context + mapOf(
                 CRYPTO_TENANT_ID to tenantId,

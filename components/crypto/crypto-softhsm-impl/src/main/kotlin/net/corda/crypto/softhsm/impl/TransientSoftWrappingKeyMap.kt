@@ -1,8 +1,8 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.persistence.wrapping.WrappingKeyInfo
-import net.corda.crypto.persistence.wrapping.WrappingKeyStore
+import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
 import net.corda.crypto.softhsm.WRAPPING_KEY_ENCODING_VERSION
 

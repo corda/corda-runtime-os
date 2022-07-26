@@ -5,7 +5,6 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.JoinColumn
 import javax.persistence.Table
 
 /**
@@ -42,12 +41,4 @@ class HSMAssociationEntity(
      */
     @Column(name = "master_key_alias", nullable = true, updatable = false, length = 30)
     var masterKeyAlias: String?,
-
-    /**
-     * The secret which can be used when calculating an HSM alias based on the tenant's id and alias using HMAC,
-     * the field is provided only in order to prevent tenants to guess each other aliases,
-     * it's encrypted using system key.
-     */
-    @Column(name = "alias_secret", nullable = true, updatable = false, columnDefinition="BLOB")
-    var aliasSecret: ByteArray?
 )

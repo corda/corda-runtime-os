@@ -5,8 +5,8 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
-import net.corda.crypto.persistence.wrapping.WrappingKeyStore
-import net.corda.crypto.persistence.wrapping.WrappingKeyInfo
+import net.corda.crypto.persistence.WrappingKeyStore
+import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.utils.transaction

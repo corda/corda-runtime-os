@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.persistence.wrapping.WrappingKeyInfo
-import net.corda.crypto.persistence.wrapping.WrappingKeyStore
+import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus

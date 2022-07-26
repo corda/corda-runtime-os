@@ -10,7 +10,6 @@ import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
@@ -75,29 +74,21 @@ class HSMRegistrationBusProcessor(
     private class AssignHSMCommandHandler(
         private val hsmService: HSMService
     ) : Handler<AssignHSMCommand> {
-        override fun handle(context: CryptoRequestContext, request: AssignHSMCommand): Any {
-            return hsmService.assignHSM(context.tenantId, request.category, request.context.toMap())
-        }
+        override fun handle(context: CryptoRequestContext, request: AssignHSMCommand): Any =
+            hsmService.assignHSM(context.tenantId, request.category, request.context.toMap())
     }
 
     private class AssignSoftHSMCommandHandler(
         private val hsmService: HSMService
     ) : Handler<AssignSoftHSMCommand> {
-        override fun handle(context: CryptoRequestContext, request: AssignSoftHSMCommand): Any {
-            return hsmService.assignSoftHSM(context.tenantId, request.category)
-        }
+        override fun handle(context: CryptoRequestContext, request: AssignSoftHSMCommand): Any =
+            hsmService.assignSoftHSM(context.tenantId, request.category)
     }
 
     private class AssignedHSMQueryHandler(
         private val hsmService: HSMService
     ) : Handler<AssignedHSMQuery> {
-        override fun handle(context: CryptoRequestContext, request: AssignedHSMQuery): Any {
-            val result = hsmService.findAssignedHSM(context.tenantId, request.category)
-            return if(result == null) {
-                CryptoNoContentValue()
-            } else {
-                HSMAssociationInfo(result.hsmId, result.deprecatedAt)
-            }
-        }
+        override fun handle(context: CryptoRequestContext, request: AssignedHSMQuery): Any =
+            hsmService.findAssignedHSM(context.tenantId, request.category) ?: CryptoNoContentValue()
     }
 }

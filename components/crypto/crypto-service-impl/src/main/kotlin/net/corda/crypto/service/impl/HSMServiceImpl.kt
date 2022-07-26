@@ -10,10 +10,9 @@ import net.corda.crypto.config.impl.PrivateKeyPolicy
 import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_WORKER_SET_ID
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.persistence.hsm.HSMStore
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.HSMService
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -59,7 +58,7 @@ class HSMServiceImpl @Activate constructor(
     override fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo =
         impl.assignSoftHSM(tenantId, category)
 
-    override fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? =
+    override fun findAssignedHSM(tenantId: String, category: String): HSMAssociationInfo? =
         impl.findAssignedHSM(tenantId, category)
 
     class Impl(
@@ -77,7 +76,7 @@ class HSMServiceImpl @Activate constructor(
 
         private val hsmConfig = config.hsmService()
 
-        private val workerSets = WorkerSets(config, store)
+        private val hsmMap = HSMMap(config, store)
 
         private val executor = CryptoRetryingExecutor(
             logger,
@@ -86,7 +85,7 @@ class HSMServiceImpl @Activate constructor(
 
         fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
             logger.info("assignHSM(tenant={}, category={})", tenantId, category)
-            if(workerSets.isOnlySoftHSM) {
+            if(hsmMap.isOnlySoftHSM) {
                 logger.warn("There is only SOFT HSM configured, will assign that.")
                 return assignSoftHSM(tenantId, category)
             }
@@ -97,9 +96,9 @@ class HSMServiceImpl @Activate constructor(
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
-                return HSMAssociationInfo(existing.hsmId, existing.deprecatedAt)
+                return existing
             }
-            val stats = workerSets.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
+            val stats = hsmMap.getHSMStats(category).filter { s -> s.allUsages < s.capacity }
             val chosen = if (context.isPreferredPrivateKeyPolicy(CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
                 tryChooseAliased(stats)
             } else {
@@ -109,10 +108,10 @@ class HSMServiceImpl @Activate constructor(
                 tenantId = tenantId,
                 category = category,
                 hsmId = chosen.hsmId,
-                masterKeyPolicy = workerSets.getMasterKeyPolicy(chosen.hsmId)
+                masterKeyPolicy = hsmMap.getMasterKeyPolicy(chosen.hsmId)
             )
             ensureWrappingKey(association)
-            return HSMAssociationInfo(association.hsmId, association.deprecatedAt)
+            return association
         }
 
         fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo {
@@ -124,25 +123,25 @@ class HSMServiceImpl @Activate constructor(
                     tenantId,
                     category)
                 ensureWrappingKey(existing)
-                return HSMAssociationInfo(existing.hsmId, existing.deprecatedAt)
+                return existing
             }
             val association = store.associate(
                 tenantId = tenantId,
                 category = category,
-                hsmId = SOFT_HSM_WORKER_SET_ID,
-                masterKeyPolicy = workerSets.getMasterKeyPolicy(SOFT_HSM_WORKER_SET_ID)
+                hsmId = SOFT_HSM_ID,
+                masterKeyPolicy = hsmMap.getMasterKeyPolicy(SOFT_HSM_ID)
             )
             ensureWrappingKey(association)
-            return HSMAssociationInfo(association.hsmId, association.deprecatedAt)
+            return association
         }
 
-        fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
+        fun findAssignedHSM(tenantId: String, category: String): HSMAssociationInfo? {
             logger.debug { "findAssignedHSM(tenant=$tenantId, category=$category)"  }
             return store.findTenantAssociation(tenantId, category)
         }
 
-        private fun ensureWrappingKey(association: HSMTenantAssociation) {
-            if (workerSets.getMasterKeyPolicy(association.hsmId) == MasterKeyPolicy.UNIQUE) {
+        private fun ensureWrappingKey(association: HSMAssociationInfo) {
+            if (hsmMap.getMasterKeyPolicy(association.hsmId) == MasterKeyPolicy.UNIQUE) {
                 require(!association.masterKeyAlias.isNullOrBlank()) {
                     "The master key alias is not specified."
                 }

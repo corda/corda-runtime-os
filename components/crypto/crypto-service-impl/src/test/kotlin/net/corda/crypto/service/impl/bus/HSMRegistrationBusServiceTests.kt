@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.crypto.service.impl.bus.HSMRegistrationBusServiceImpl
 import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
@@ -8,6 +7,8 @@ import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -36,7 +37,7 @@ class HSMRegistrationBusServiceTests {
         }
         component = HSMRegistrationBusServiceImpl(
             factory.coordinatorFactory,
-            factory.readService,
+            factory.configurationReadService,
             subscriptionFactory,
             factory.hsmService
         )
@@ -88,11 +89,11 @@ class HSMRegistrationBusServiceTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertSame(subscription, component.impl.subscription)
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
@@ -135,18 +136,18 @@ class HSMRegistrationBusServiceTests {
         }
         val originalImpl = component.impl
         assertNotNull(component.impl.subscription)
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        factory.readService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        factory.readService.reissueConfigChangedEvent(component.lifecycleCoordinator)
+        factory.configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
         eventually {
             assertNotSame(originalImpl, component.impl)
         }
-        assertEquals(1, subscription.stopped.get())
+        assertThat(subscription.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 }

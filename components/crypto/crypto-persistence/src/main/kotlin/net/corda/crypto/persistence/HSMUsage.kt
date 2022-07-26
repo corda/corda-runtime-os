@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.hsm
+package net.corda.crypto.persistence
 
 data class HSMUsage(
     val hsmId: String,

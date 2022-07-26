@@ -1,27 +1,24 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.createDefaultCryptoConfig
-import net.corda.crypto.persistence.hsm.HSMConfig
-import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.hsm.configuration.commands.PutHSMCommand
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.sha256Bytes
@@ -36,7 +33,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
-import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -87,7 +83,7 @@ class HSMRegistrationBusProcessorTests {
 
     @Test
     fun `Should handle AssignHSMCommand`() {
-        val info = HSMInfo()
+        val info = HSMAssociationInfo()
         val hsmService = mock<HSMService> {
             on { assignHSM(any(), any(), any()) } doReturn info
         }
@@ -110,7 +106,7 @@ class HSMRegistrationBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(HSMInfo::class.java)
+        assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
         assertSame(info, result.response)
         Mockito.verify(hsmService, times(1)).assignHSM(
             eq(tenantId),
@@ -123,9 +119,9 @@ class HSMRegistrationBusProcessorTests {
 
     @Test
     fun `Should execute handle AssignSoftHSMCommand`() {
-        val info = HSMInfo()
+        val info = HSMAssociationInfo()
         val hsmService = mock<HSMService> {
-            on { assignSoftHSM(any(), any(), any()) } doReturn info
+            on { assignSoftHSM(any(), any()) } doReturn info
         }
         val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
         val context = createRequestContext()
@@ -134,42 +130,30 @@ class HSMRegistrationBusProcessorTests {
             HSMRegistrationRequest(
                 context,
                 AssignSoftHSMCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(NOT_FAIL_IF_ASSOCIATION_EXISTS, "YES")
-                        )
-                    )
+                    CryptoConsts.Categories.LEDGER
                 )
             ),
             future
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(HSMInfo::class.java)
+        assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
         assertSame(info, result.response)
         Mockito.verify(hsmService, times(1)).assignSoftHSM(
             eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER),
-            argThat {
-                this[NOT_FAIL_IF_ASSOCIATION_EXISTS] == "YES"
-            }
+            eq(CryptoConsts.Categories.LEDGER)
         )
     }
 
     @Test
     fun `Should handle AssignedHSMQuery`() {
-        val association =  HSMTenantAssociation(
-            id = UUID.randomUUID().toString(),
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            masterKeyAlias = null,
-            aliasSecret = null,
-            config = HSMConfig(
-                info = HSMInfo(),
-                serviceConfig = "{}".toByteArray()
-            ),
-            deprecatedAt = 0
+        val association = HSMAssociationInfo(
+            UUID.randomUUID().toString(),
+            tenantId,
+            UUID.randomUUID().toString(),
+            CryptoConsts.Categories.LEDGER,
+            null,
+            0
         )
         val hsmService = mock<HSMService> {
             on { findAssignedHSM(any(), any()) } doReturn association
@@ -186,8 +170,8 @@ class HSMRegistrationBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(HSMInfo::class.java)
-        assertSame(association.config.info, result.response)
+        assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
+        assertSame(association, result.response)
         Mockito.verify(hsmService, times(1)).findAssignedHSM(tenantId, CryptoConsts.Categories.LEDGER)
     }
 
@@ -219,7 +203,7 @@ class HSMRegistrationBusProcessorTests {
         processor.onNext(
             HSMRegistrationRequest(
                 context,
-                PutHSMCommand(HSMInfo(), ByteBuffer.wrap("{}".toByteArray()))
+                GenerateWrappingKeyRpcCommand()
             ),
             future
         )

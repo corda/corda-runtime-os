@@ -1,10 +1,9 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl
 
 import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -25,41 +24,35 @@ class SigningServiceFactoryTests {
             factory.coordinatorFactory,
             factory.schemeMetadata,
             factory.signingKeyStore,
-            factory.createCryptoServiceFactory()
+            factory.cryptoServiceFactory
         )
     }
 
     @Test
     fun `Should start component and use active implementation only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance()
+            component.impl
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
-        assertNotNull(
-            component.getInstance()
-        )
+        assertNotNull(component.impl)
     }
 
     @Test
     fun `getInstance should return same instance each time`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance()
+            component.impl
         }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance()
         val i2 = component.getInstance()
         val i3 = component.getInstance()
@@ -71,40 +64,40 @@ class SigningServiceFactoryTests {
     @Test
     fun `Should deactivate implementation when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.impl
+        }
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         factory.signingKeyStore.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.impl
+        }
         factory.signingKeyStore.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        assertNotNull(component.impl)
     }
 }

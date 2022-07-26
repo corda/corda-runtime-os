@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.impl.tests
 
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.impl.HSMStoreImpl
 import net.corda.crypto.persistence.impl.tests.infra.TestCryptoConnectionsFactory
@@ -38,8 +37,7 @@ class HSMStoreTests {
         )
         component = HSMStoreImpl(
             coordinatorFactory,
-            connectionsFactory,
-            CipherSchemeMetadataImpl()
+            connectionsFactory
         )
     }
 

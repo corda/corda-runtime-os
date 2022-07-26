@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.signing
+package net.corda.crypto.persistence
 
 import java.time.Instant
 

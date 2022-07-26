@@ -1,8 +1,8 @@
 package net.corda.crypto.service
 
-import net.corda.crypto.persistence.signing.SigningKeySaveContext
-import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.SigningKeySaveContext
+import net.corda.crypto.persistence.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -17,7 +17,6 @@ class CryptoServiceRef(
     val tenantId: String,
     val category: String,
     val masterKeyAlias: String?,
-    val aliasSecret: ByteArray?,
     val hsmId: String,
     val instance: CryptoService
 ) {
