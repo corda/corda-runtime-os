@@ -60,9 +60,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         }
     }
 
-    override val protocolVersion: Int = 1
-
     override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java
+    override val protocolVersion: Int = 1
 
     override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")

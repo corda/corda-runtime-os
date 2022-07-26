@@ -72,7 +72,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         }
     }
 
-    override val targetInterface = VirtualNodeRPCOps::class.java
+    override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
 
     override fun createVirtualNode(request: VirtualNodeRequest): VirtualNodeInfo {
