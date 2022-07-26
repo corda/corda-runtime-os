@@ -1,17 +1,10 @@
 package net.corda.crypto.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.impl.MemberContextImpl
-import net.corda.v5.base.exceptions.ValueNotFoundException
-import net.corda.v5.base.util.parse
-import net.corda.v5.base.util.parseOrNull
-import net.corda.v5.base.util.parseSet
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.crypto.PublicKeyHash
 import org.junit.jupiter.api.Test
-import java.security.PublicKey
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class PublicKeyHashConverterTest {
@@ -23,52 +16,46 @@ class PublicKeyHashConverterTest {
 
     @Test
     fun `converting hash should work for single element`() {
-        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeyHash" to LEDGER_KEY_HASH),
-            converters
+        val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            sortedMapOf(
+                "corda.ledger.keys" to LEDGER_KEY_HASH
+            ),
+            converters,
+            "corda.ledger.keys"
         )
-        val result = memberContext.parse<PublicKeyHash>("corda.ledgerKeyHash")
+        val result = converters[0].convert(conversionContext)
         assertEquals(ledgerKeyHash, result)
     }
 
     @Test
-    fun `converting list of hashes should work`() {
-        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeyHashes.0" to LEDGER_KEY_HASH),
-            converters
-        )
-        val result = memberContext.parseSet<PublicKeyHash>("corda.ledgerKeyHashes")
-        assertEquals(1, result.size)
-        assertTrue(result.contains(ledgerKeyHash))
-    }
-
-    @Test
     fun `converting hash fails when the keys is null`() {
-        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeyHash" to null),
-            converters
+        val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            sortedMapOf(
+                "corda.ledger.keys" to LEDGER_KEY_HASH
+            ),
+            converters,
+            ""
         )
-        assertFailsWith<ValueNotFoundException> { memberContext.parse<PublicKey>("corda.ledgerKeyHash") }
-    }
-
-    @Test
-    fun `converting list of hashes fails when the keys is null`() {
-        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeyHashes.0" to null),
-            converters
-        )
-        assertFailsWith<ValueNotFoundException> {
-            memberContext.parseSet<PublicKey>("corda.ledgerKeyHashes")
-        }
+        val result = converters[0].convert(conversionContext)
+        assertNull(result)
     }
 
     @Test
     fun `converting to nullable hash works`() {
-        val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
-            sortedMapOf("corda.ledgerKeyHash" to null),
-            converters
+        val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            sortedMapOf(
+                "corda.ledger.keys" to null
+            ),
+            converters,
+            "corda.ledger.keys"
         )
-        val result = memberContext.parseOrNull<PublicKey>("corda.ledgerKeyHash")
+        val result = converters[0].convert(conversionContext)
         assertNull(result)
     }
+
+    interface LayeredContext : LayeredPropertyMap
+
+    class LayeredContextImpl(
+        private val map: LayeredPropertyMap
+    ) : LayeredPropertyMap by map, LayeredContext
 }
