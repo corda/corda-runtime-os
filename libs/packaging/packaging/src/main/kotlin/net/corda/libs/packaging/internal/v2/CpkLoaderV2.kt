@@ -9,6 +9,7 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
@@ -17,11 +18,9 @@ import net.corda.libs.packaging.internal.v1.SignatureCollector
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.util.Collections
 import java.util.jar.JarInputStream
@@ -115,12 +114,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         )
     }
 
-    private fun calculateFileHash(bytes: ByteArray): SecureHash {
-        val cpkDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        cpkDigest.update(bytes)
-        val cpkHash = cpkDigest.digest()
-        return SecureHash(DigestAlgorithmName.SHA2_256.name, cpkHash)
-    }
+    private fun calculateFileHash(bytes: ByteArray) = bytes.hash(DigestAlgorithmName.SHA2_256)
 
     private fun readCpkDependencies(bytes: List<JarEntryAndBytes>): ByteArray =
         bytes.single {it.entry.name == CPK_DEPENDENCIES_FILE_ENTRY}
