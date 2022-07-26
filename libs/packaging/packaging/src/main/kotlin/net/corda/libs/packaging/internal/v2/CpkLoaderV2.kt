@@ -31,7 +31,7 @@ private const val LIB_FOLDER = "META-INF/privatelib/"
 class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
     override fun loadCPK(
-        source: InputStream,
+        source: ByteArray,
         cacheDir: Path?,
         cpkLocation: String?,
         verifySignature: Boolean,
@@ -40,19 +40,16 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
         if (cacheDir == null) throw IllegalStateException("cacheDir is null")
 
-        // Read CPK
-        val bytes = source.readAllBytes()
-
         // Calculate file hash
-        val hash = calculateFileHash(bytes)
+        val hash = calculateFileHash(source)
 
         // Create cache dir
         Files.createDirectories(cacheDir)
         val finalCpkFile = cacheDir.parent.resolve(hash.toHexString()).toFile()
-        finalCpkFile.writeBytes(bytes)
+        finalCpkFile.writeBytes(source)
 
         return CpkImpl(
-            metadata = readCpkMetadata(bytes),
+            metadata = readCpkMetadata(source),
             jarFile = finalCpkFile,
             verifySignature = false,
             path = finalCpkFile.toPath(),
@@ -60,8 +57,8 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         )
     }
 
-    override fun loadMetadata(source: InputStream, cpkLocation: String?, verifySignature: Boolean): CpkMetadata =
-        readCpkMetadata(source.readAllBytes())
+    override fun loadMetadata(source: ByteArray, cpkLocation: String?, verifySignature: Boolean): CpkMetadata =
+        readCpkMetadata(source)
 
     private fun readCpkMetadata(bytes: ByteArray): CpkMetadata {
 

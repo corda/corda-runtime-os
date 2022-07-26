@@ -2,7 +2,6 @@ package net.corda.libs.packaging.internal.v1
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.CpkReader
 import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
@@ -58,10 +57,9 @@ internal object CpiLoaderV1 : CpiLoader {
                 if(verifySignature) signatureCollector.addEntry(entry)
                 when {
                     isCpk(entry) -> {
-                        /** We need to do this as [Cpk.from] closes the stream, while we still need it afterward **/
-                        val uncloseableInputStream = UncloseableInputStream(jarInputStream)
+                        val source = jarInputStream.readAllBytes()
                         if(expansionLocation != null) {
-                            val cpk = CpkReader.readCpk(uncloseableInputStream,
+                            val cpk = CpkLoaderV1.loadCPK(source,
                                 expansionLocation,
                                 cpkLocation = cpiLocation.plus("/${entry.name}"),
                                 verifySignature = verifySignature,
@@ -70,7 +68,7 @@ internal object CpiLoaderV1 : CpiLoader {
                             cpks += cpk
                             cpkMetadata += cpk.metadata
                         } else {
-                            cpkMetadata += CpkLoaderV1.loadMetadata(uncloseableInputStream,
+                            cpkMetadata += CpkLoaderV1.loadMetadata(source,
                                 cpkLocation = cpiLocation?.plus("/${entry.name}"),
                                 verifySignature = verifySignature)
                         }

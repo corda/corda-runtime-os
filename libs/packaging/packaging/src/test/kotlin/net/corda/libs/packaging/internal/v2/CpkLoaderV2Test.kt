@@ -18,7 +18,7 @@ class CpkLoaderV2Test {
             .build()
 
         val cpk = CpkLoaderV2().loadCPK(
-            inMemoryCpk.inputStream(),
+            inMemoryCpk.toByteArray(),
             tmp,
             "in-memory",
             false,

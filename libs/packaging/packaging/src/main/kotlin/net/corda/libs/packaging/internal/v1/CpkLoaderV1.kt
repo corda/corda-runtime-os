@@ -295,9 +295,13 @@ internal object CpkLoaderV1 : CpkLoader {
         return ctx
     }
 
-    override fun loadCPK(source: InputStream, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean, cpkFileName: String?) =
-        createContext(source, cacheDir, cpkLocation, verifySignature, cpkFileName).buildCpk()
+    override fun loadCPK(source: ByteArray, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean, cpkFileName: String?) =
+        source.inputStream().use {
+            createContext(it, cacheDir, cpkLocation, verifySignature, cpkFileName).buildCpk()
+        }
 
-    override fun loadMetadata(source: InputStream, cpkLocation: String?, verifySignature: Boolean) =
-        createContext(source, null, cpkLocation, verifySignature, null).buildMetadata()
+    override fun loadMetadata(source: ByteArray, cpkLocation: String?, verifySignature: Boolean) =
+        source.inputStream().use {
+            createContext(it, null, cpkLocation, verifySignature, null).buildMetadata()
+        }
 }
