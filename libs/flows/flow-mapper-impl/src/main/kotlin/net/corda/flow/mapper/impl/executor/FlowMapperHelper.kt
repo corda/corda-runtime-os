@@ -14,6 +14,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
+import java.time.Instant
 
 /**
  * Generate and return random ID for flowId
@@ -65,7 +66,7 @@ fun generateAppMessage(
     val header = AuthenticatedMessageHeader(
         destinationIdentity,
         sourceIdentity,
-        sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(SESSION_P2P_TTL),
+        Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(SESSION_P2P_TTL)),
         sessionEvent.sessionId + "-" + UUID.randomUUID(),
         "",
         FLOW_SESSION_SUBSYSTEM
