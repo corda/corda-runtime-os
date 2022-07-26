@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
@@ -259,7 +258,7 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun assignSoftHsm(memberId: String) {
         CryptoConsts.Categories.all.forEach {
             if(hsmRegistrationClient.findHSM(memberId, it) == null) {
-                hsmRegistrationClient.assignSoftHSM(memberId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+                hsmRegistrationClient.assignSoftHSM(memberId, it)
             }
         }
     }

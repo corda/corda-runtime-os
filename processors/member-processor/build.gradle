@@ -66,6 +66,7 @@ dependencies {
     integrationTestImplementation project(":libs:configuration:configuration-datamodel")
     integrationTestImplementation project(":libs:crypto:crypto-core")
     integrationTestImplementation project(':libs:crypto:cipher-suite-impl')
+    integrationTestImplementation project(":libs:crypto:crypto-config-impl")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-core")
