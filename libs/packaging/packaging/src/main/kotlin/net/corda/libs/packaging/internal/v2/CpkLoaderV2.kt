@@ -18,7 +18,6 @@ import net.corda.libs.packaging.internal.v1.SignatureCollector
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.Certificate
@@ -60,9 +59,9 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
     override fun loadMetadata(source: ByteArray, cpkLocation: String?, verifySignature: Boolean): CpkMetadata =
         readCpkMetadata(source)
 
-    private fun readCpkMetadata(bytes: ByteArray): CpkMetadata {
+    private fun readCpkMetadata(cpkBytes: ByteArray): CpkMetadata {
 
-        val (manifest, cpkEntries) = JarInputStream(bytes.inputStream(), false).use {
+        val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), false).use {
             val manifest = it.manifest
             val jarEntries = readJar(it).toList()
             Pair(manifest, jarEntries)
@@ -74,7 +73,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         val cpkType = manifest.mainAttributes.getValue(CpkLoaderV1.CPK_TYPE)?.let { CpkType.parse(it) } ?: CpkType.UNKNOWN
 
         // Calculate file hash
-        val fileChecksum = calculateFileHash(bytes)
+        val fileChecksum = calculateFileHash(cpkBytes)
 
         // Get code signers
         val cordappCertificates = readCodeSigners(cpkEntries)
