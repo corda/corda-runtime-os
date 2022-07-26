@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
@@ -12,6 +14,7 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.crypto.failures.CryptoException
 import java.util.UUID
+
 
 /*
 {

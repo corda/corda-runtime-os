@@ -21,6 +21,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -52,7 +53,8 @@ class CryptoOpsClientComponent @Activate constructor(
         setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
         )
-    )
+    ),
+    configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc.client"

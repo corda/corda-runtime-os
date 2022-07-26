@@ -47,6 +47,7 @@ class StableKeyPairDecryptorImpl @Activate constructor(
         private val schemeMetadata: CipherSchemeMetadata,
         private val cryptoOpsClient: CryptoOpsClient
     ) : AbstractImpl {
+        @Suppress("LongParameterList")
         fun decrypt(
             tenantId: String,
             salt: ByteArray,

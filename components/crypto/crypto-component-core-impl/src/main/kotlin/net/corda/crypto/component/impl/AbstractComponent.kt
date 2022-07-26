@@ -54,6 +54,7 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("LifecycleEvent received: $event")
         when (event) {

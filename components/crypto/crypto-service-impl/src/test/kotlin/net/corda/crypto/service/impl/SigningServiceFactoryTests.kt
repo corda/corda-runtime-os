@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl
 
-import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually

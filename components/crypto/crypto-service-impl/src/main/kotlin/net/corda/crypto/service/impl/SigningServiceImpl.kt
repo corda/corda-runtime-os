@@ -253,6 +253,7 @@ class SigningServiceImpl(
         return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
     }
 
+    @Suppress("NestedBlockDepth")
     private fun getOwnedKeyRecord(tenantId: String, publicKey: PublicKey): OwnedKeyRecord {
         if (publicKey is CompositeKey) {
             val leafKeysIdsChunks = publicKey.leafKeys.map {

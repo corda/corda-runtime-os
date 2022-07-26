@@ -2,23 +2,22 @@ package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.createDefaultCryptoConfig
+import net.corda.crypto.persistence.CryptoConnectionsFactory
+import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.persistence.SigningKeyStore
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.persistence.hsm.HSMStoreProvider
-import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
-import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.HSMConfigurationBusService
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.softhsm.SoftCryptoServiceProvider
+import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
@@ -58,10 +57,14 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = SoftCryptoKeyStoreProvider::class)
-    private val softCryptoKeyStoreProvider: SoftCryptoKeyStoreProvider,
-    @Reference(service = SigningKeyStoreProvider::class)
-    private val signingKeyStoreProvider: SigningKeyStoreProvider,
+    @Reference(service = CryptoConnectionsFactory::class)
+    private val cryptoConnectionsFactory: CryptoConnectionsFactory,
+    @Reference(service = WrappingKeyStore::class)
+    private val wrappingKeyStore: WrappingKeyStore,
+    @Reference(service = SigningKeyStore::class)
+    private val signingKeyStore: SigningKeyStore,
+    @Reference(service = HSMStore::class)
+    private val hsmStore: HSMStore,
     @Reference(service = SigningServiceFactory::class)
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
@@ -76,12 +79,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
-    @Reference(service = HSMConfigurationBusService::class)
-    private val hsmConfiguration: HSMConfigurationBusService,
     @Reference(service = HSMRegistrationBusService::class)
     private val hsmRegistration: HSMRegistrationBusService,
-    @Reference(service = HSMStoreProvider::class)
-    private val hsmStoreProvider: HSMStoreProvider,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -107,8 +106,10 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::softCryptoKeyStoreProvider,
-        ::signingKeyStoreProvider,
+        ::cryptoConnectionsFactory,
+        ::wrappingKeyStore,
+        ::signingKeyStore,
+        ::hsmStore,
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
@@ -116,9 +117,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
-        ::hsmConfiguration,
         ::hsmRegistration,
-        ::hsmStoreProvider,
         ::dbConnectionManager,
         ::vnodeInfo
     )
@@ -210,7 +209,6 @@ class CryptoProcessorImpl @Activate constructor(
                 event.config.getConfig(CRYPTO_CONFIG)
             } else {
                 event.config.factory.createDefaultCryptoConfig(
-                    cryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
                     masterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
                 )
             }.root().render()
@@ -244,11 +242,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
         logger.info("Assigning SOFT HSM for $tenantId:$category")
-        hsmService.assignSoftHSM(
-            tenantId, category, mapOf(
-                NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-            )
-        )
+        hsmService.assignSoftHSM(tenantId, category)
         logger.info("Assigned SOFT HSM for $tenantId:$category")
         true
     } catch (e: Throwable) {

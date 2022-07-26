@@ -1,6 +1,7 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.crypto.DigestService
@@ -23,6 +24,6 @@ class AllAliasedKeysHSMProvider @Activate constructor(
 
     override val name: String = NAME
 
-    override fun getInstance(config: AllAliasedKeysHSMConfiguration): CryptoService =
+    override fun getInstance(config: AllAliasedKeysHSMConfiguration, secrets: ConfigurationSecrets): CryptoService =
         AllAliasedKeysHSM(config, schemeMetadata, digestService)
 }

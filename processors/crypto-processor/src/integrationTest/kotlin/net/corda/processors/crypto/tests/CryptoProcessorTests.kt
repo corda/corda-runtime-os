@@ -102,9 +102,6 @@ class CryptoProcessorTests {
         lateinit var subscriptionFactory: SubscriptionFactory
 
         @InjectService(timeout = 5000L)
-        lateinit var cryptoProcessor: CryptoProcessor
-
-        @InjectService(timeout = 5000L)
         lateinit var ephemeralEncryptor: EphemeralKeyPairEncryptor
 
         @InjectService(timeout = 5000L)
@@ -136,6 +133,9 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000)
         lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
+
+        @InjectService(timeout = 5000L)
+        lateinit var cryptoProcessor: CryptoProcessor
 
         private lateinit var publisher: Publisher
 
@@ -315,7 +315,7 @@ class CryptoProcessorTests {
             CryptoConsts.Categories.all.forEach {
                 // cluster is assigned in the crypto processor
                 if(hsmRegistrationClient.findHSM(vnodeId, it) == null) {
-                    hsmRegistrationClient.assignSoftHSM(vnodeId, it, emptyMap())
+                    hsmRegistrationClient.assignSoftHSM(vnodeId, it)
                 }
             }
         }

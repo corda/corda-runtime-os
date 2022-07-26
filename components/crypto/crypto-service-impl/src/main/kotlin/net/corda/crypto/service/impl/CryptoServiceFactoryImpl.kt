@@ -82,7 +82,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
             .registerModule(KotlinModule.Builder().build())
             .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-
     }
 
     @Suppress("UNCHECKED_CAST")

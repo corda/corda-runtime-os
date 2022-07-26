@@ -7,7 +7,6 @@ import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

@@ -93,6 +93,7 @@ class TestSigningKeyStore(
         keys[Pair(tenantId, publicKey.publicKeyId())]
     }
 
+    @Suppress("ComplexMethod")
     override fun lookup(
         tenantId: String,
         skip: Int,

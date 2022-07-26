@@ -6,7 +6,6 @@ import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.crypto.softhsm.SoftKeyMap
 import net.corda.crypto.softhsm.SoftPrivateKeyWrapping
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
@@ -114,8 +113,7 @@ class SoftCryptoServiceOperationsTests {
                     KeyGenerationSpec(
                         keyScheme = it,
                         alias = UUID.randomUUID().toString(),
-                        masterKeyAlias = wrappingKeyAlias,
-                        secret = null
+                        masterKeyAlias = wrappingKeyAlias
                     ),
                     mapOf(
                         CRYPTO_TENANT_ID to tenantId,
@@ -128,8 +126,7 @@ class SoftCryptoServiceOperationsTests {
                     KeyGenerationSpec(
                         keyScheme = it,
                         alias = null,
-                        masterKeyAlias = wrappingKeyAlias,
-                        secret = null
+                        masterKeyAlias = wrappingKeyAlias
                     ),
                     mapOf(
                         CRYPTO_TENANT_ID to tenantId,
@@ -447,8 +444,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
                     alias = UUID.randomUUID().toString(),
-                    masterKeyAlias = wrappingKeyAlias,
-                    secret = null
+                    masterKeyAlias = wrappingKeyAlias
                 ),
                 mapOf(
                     CRYPTO_TENANT_ID to tenantId,
@@ -461,8 +457,7 @@ class SoftCryptoServiceOperationsTests {
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
                     alias = null,
-                    masterKeyAlias = wrappingKeyAlias,
-                    secret = null
+                    masterKeyAlias = wrappingKeyAlias
                 ),
                 mapOf(
                     CRYPTO_TENANT_ID to tenantId,

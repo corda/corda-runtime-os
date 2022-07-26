@@ -35,8 +35,7 @@ interface HSMRegistrationClient : Lifecycle {
      */
     fun assignSoftHSM(
         tenantId: String,
-        category: String,
-        context: Map<String, String>
+        category: String
     ): HSMAssociationInfo
 
     /**

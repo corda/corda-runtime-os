@@ -88,8 +88,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
-                    keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
-                    secret = null
+                    keyScheme = UNSUPPORTED_SIGNATURE_SCHEME
                 ),
                 mapOf(
                     CRYPTO_TENANT_ID to UUID.randomUUID().toString(),

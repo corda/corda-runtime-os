@@ -151,6 +151,7 @@ class HSMServiceTests {
     }
 
     @Test
+    @Suppress("ComplexMethod")
     fun `Should assign HSM ignoring SOFT HSM stats and retrieve assignment`() {
         factory.hsmService.assignSoftHSM(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER)
 
