@@ -22,6 +22,8 @@ import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.registration.dummy.TestGroupPolicy
 import net.corda.membership.impl.registration.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -229,6 +231,8 @@ class MemberRegistrationIntegrationTest {
                 with(deserializedContext.items) {
                     it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)
                     it.assertThat(first { pair -> pair.key == PROTOCOL_KEY }.value).isEqualTo(PROTOCOL_VALUE)
+                    it.assertThat(first { pair -> pair.key == PARTY_NAME }.value).isEqualTo(memberName.toString())
+                    it.assertThat(first { pair -> pair.key == GROUP_ID }.value).isEqualTo(groupId)
                 }
             }
         }
