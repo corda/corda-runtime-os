@@ -1,4 +1,4 @@
-package net.corda.membership.lib.impl.converter
+package net.corda.crypto.impl.converter
 
 import java.security.PublicKey
 import net.corda.layeredpropertymap.ConversionContext

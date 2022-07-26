@@ -10,6 +10,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     api project(":libs:crypto:crypto-core")
+    api project(':libs:layered-property-map')
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -20,9 +21,11 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation 'net.corda:corda-serialization'
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:utilities")
+    testImplementation project(":testing:layered-property-map-testkit")
 
     testImplementation "javax.persistence:javax.persistence-api"
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"

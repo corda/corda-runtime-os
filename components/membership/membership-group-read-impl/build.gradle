@@ -35,6 +35,7 @@ dependencies {
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
     testImplementation "net.corda:corda-serialization"
+    testImplementation project(":libs:crypto:crypto-impl")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
