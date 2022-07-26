@@ -128,13 +128,13 @@ pipeline {
                 //somehow ensure this runs in background and execute smoke tests , we may need some paramaters specific to combined worker
                 
                 sh '''
-                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.log &
                     export PROCNO=$!
                 '''
 
                 checkConnection()    
 
-                sh './gradlew smoketest -PcombinedWorkerHealthHttp=http://localhost:7000/'
+                sh './gradlew smoketest -PisCombinedWorker=true'
     
             }
             // we need the DB credetals here also
@@ -159,8 +159,6 @@ pipeline {
                         
                     }
 
-                writeFile file: "workerLogs.log", text: "${env.BUILD_URL}"
-                //archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
         }
     }
