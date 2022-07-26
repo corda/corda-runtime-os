@@ -1,38 +1,35 @@
 package net.corda.ledger.consensual.impl.transactions
 
 import net.corda.ledger.common.impl.transactions.PrivacySaltImpl
+import net.corda.ledger.common.impl.transactions.TransactionMetaDataImpl
 import net.corda.ledger.common.impl.transactions.WireTransactionImpl
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_MODEL_KEY
+import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_VERSION_KEY
+import net.corda.v5.ledger.common.transactions.TransactionMetaData
 import net.corda.v5.ledger.common.transactions.WireTransaction
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
-import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionMetaData
 import java.security.SecureRandom
 import java.time.Instant
 
 class ConsensualTransactionBuilderImpl(
-    override val metadata: ConsensualTransactionMetaData? = null,
     override val timeStamp: Instant? = null,
     override val consensualStates: List<ConsensualState> = emptyList()
 ) : ConsensualTransactionBuilder {
 
     private fun copy(
-        metadata: ConsensualTransactionMetaData? = this.metadata,
         timeStamp: Instant? = this.timeStamp,
         consensualStates: List<ConsensualState> = this.consensualStates
 
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
-            metadata,
             timeStamp,
             consensualStates,
         )
     }
-
-    override fun withMetadata(metadata: ConsensualTransactionMetaData): ConsensualTransactionBuilder =
-        this.copy(metadata = metadata)
 
     override fun withTimeStamp(timeStamp: Instant): ConsensualTransactionBuilder =
         this.copy(timeStamp = timeStamp)
@@ -40,9 +37,16 @@ class ConsensualTransactionBuilderImpl(
     override fun withConsensualState(consensualState: ConsensualState): ConsensualTransactionBuilder =
         this.copy(consensualStates = consensualStates + consensualState)
 
+    private fun calculateMetaData(): TransactionMetaData {
+        return mapOf(
+            TRANSACTION_META_DATA_LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java,
+            TRANSACTION_META_DATA_LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+            // TODO(CPK identifier/etc)
+        ) as TransactionMetaDataImpl
+    }
+
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
-        require(metadata != null){"Null metadata is not allowed"}
         require(timeStamp != null){"Null timeStamp is not allowed"}
 
         val requiredSigners = consensualStates.map{it.participants}.flatten()   // TODO(unique? ordering?)
@@ -50,7 +54,7 @@ class ConsensualTransactionBuilderImpl(
         val componentGroupLists = mutableListOf<List<ByteArray>>()
         for (componentGroupIndex in ConsensualComponentGroups.values()) {
             componentGroupLists += when (componentGroupIndex) {
-                ConsensualComponentGroups.METADATA -> listOf(serializer.serialize(metadata).bytes)
+                ConsensualComponentGroups.METADATA -> listOf(serializer.serialize(calculateMetaData()).bytes)
                 ConsensualComponentGroups.TIMESTAMP -> listOf(serializer.serialize(timeStamp).bytes)
                 ConsensualComponentGroups.REQUIRED_SIGNERS -> requiredSigners.map{serializer.serialize(it).bytes}
                 ConsensualComponentGroups.OUTPUT_STATES -> consensualStates.map{serializer.serialize(it).bytes}

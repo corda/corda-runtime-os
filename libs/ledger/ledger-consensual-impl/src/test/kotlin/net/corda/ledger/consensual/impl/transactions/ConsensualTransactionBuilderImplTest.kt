@@ -30,7 +30,6 @@ internal class ConsensualTransactionBuilderImplTest{
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
 
-        val testMetadata = ConsensualTransactionMetaDataImpl("ConsensualLedger", "v0.01", emptyList())
         private val testMemberX500Name = MemberX500Name("R3", "London", "GB")
 
         class TestConsensualState(
@@ -61,28 +60,15 @@ internal class ConsensualTransactionBuilderImplTest{
     @Test
     fun `can build a simple Transaction`() {
         ConsensualTransactionBuilderImpl()
-            .withMetadata(testMetadata)
             .withTimeStamp(Instant.now())
             .withConsensualState(testConsensualState)
             .build(merkleTreeFactory, digestService, secureRandom, serializer)
     }
 
     @Test
-    fun `cannot build Transaction without Metadata`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl()
-                .withTimeStamp(Instant.now())
-                .withConsensualState(testConsensualState)
-                .build(merkleTreeFactory, digestService, secureRandom, serializer)
-        }
-        assertEquals("Null metadata is not allowed", exception.message)
-    }
-
-    @Test
     fun `cannot build Transaction without TimeStamp`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl()
-                .withMetadata(testMetadata)
                 .withConsensualState(testConsensualState)
                 .build(merkleTreeFactory, digestService, secureRandom, serializer)
         }
@@ -93,7 +79,6 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl()
-                .withMetadata(testMetadata)
                 .withTimeStamp(Instant.now())
                 .build(merkleTreeFactory, digestService, secureRandom, serializer)
         }
@@ -104,7 +89,6 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction with Consensual States without participants`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl()
-                .withMetadata(testMetadata)
                 .withTimeStamp(Instant.now())
                 .withConsensualState(testConsensualState)
                 .withConsensualState(TestConsensualState("test", emptyList()))
@@ -112,6 +96,4 @@ internal class ConsensualTransactionBuilderImplTest{
         }
         assertEquals("All consensual states needs to have participants", exception.message)
     }
-
-
 }

@@ -3,11 +3,11 @@ package net.corda.ledger.consensual.impl.transactions
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transactions.PrivacySalt
+import net.corda.v5.ledger.common.transactions.TransactionMetaData
 import net.corda.v5.ledger.common.transactions.WireTransaction
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionMetaData
 import java.time.Instant
 
 class ConsensualLedgerTransactionImpl(
@@ -20,9 +20,9 @@ class ConsensualLedgerTransactionImpl(
     override val privacySalt: PrivacySalt
         get() = wireTransaction.privacySalt
 
-    override val metadata: ConsensualTransactionMetaData by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val metadata: TransactionMetaData by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val metadataBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroups.METADATA.ordinal).first()
-        serializer.deserialize(metadataBytes, ConsensualTransactionMetaDataImpl::class.java)
+        serializer.deserialize(metadataBytes, TransactionMetaData::class.java)
     }
     override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroups.TIMESTAMP.ordinal).first()

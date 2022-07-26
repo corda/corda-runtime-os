@@ -31,7 +31,6 @@ internal class ConsensualLedgerTransactionImplTest{
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
 
-        val testMetadata = ConsensualTransactionMetaDataImpl("ConsensualLedger", "v0.01", emptyList())
         private val testMemberX500Name = MemberX500Name("R3", "London", "GB")
 
         class TestConsensualState(
@@ -66,12 +65,10 @@ internal class ConsensualLedgerTransactionImplTest{
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
         val wireTransaction = ConsensualTransactionBuilderImpl()
-            .withMetadata(testMetadata)
             .withTimeStamp(testTimestamp)
             .withConsensualState(testConsensualState)
             .build(merkleTreeFactory, digestService, secureRandom, serializer)
         val ledgerTransaction = ConsensualLedgerTransactionImpl(wireTransaction, serializer)
-        // assertEquals(testMetadata, ledgerTransaction.metadata)
         assertEquals(testTimestamp, ledgerTransaction.timestamp)
         assertIs<List<ConsensualState>>(ledgerTransaction.consensualStates)
         assertEquals(1, ledgerTransaction.consensualStates.size)
