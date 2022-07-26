@@ -13,8 +13,10 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.ledger.common.transactions.LedgerTransaction
 import net.corda.v5.ledger.common.transactions.PrivacySalt
 import net.corda.v5.ledger.common.transactions.WireTransaction
+import kotlin.reflect.KClass
 
 internal const val ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
@@ -35,6 +37,11 @@ class WireTransactionImpl(
 
     override fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
+
+    override fun getWrapperLedgerTransactionClass(): String {
+        // TODO(implement this)
+        return "net.corda.ledger.consensual.impl.transactions.ConsensualLedgerTransactionImpl"
+    }
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
         ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME,
@@ -79,4 +86,6 @@ class WireTransactionImpl(
 
         merkleTreeFactory.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
+
+
 }
