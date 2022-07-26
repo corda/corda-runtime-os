@@ -13,6 +13,7 @@ import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,6 +50,7 @@ class FlowClassRPCOpsImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
+            VirtualNodeState.ACTIVE,
             0,
             Instant.now()
         )

@@ -10,8 +10,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 
 @HttpRpcResource(
-    name = "KeysRpcOps",
-    description = "Keys API",
+    name = "Keys Management API",
+    description = "Endpoints for public/private keys management.",
     path = "keys"
 )
 interface KeysRpcOps : RpcOps {

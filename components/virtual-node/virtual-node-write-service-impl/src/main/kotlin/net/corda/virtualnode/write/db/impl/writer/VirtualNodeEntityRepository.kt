@@ -5,14 +5,20 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
+import net.corda.libs.virtualnode.datamodel.findVirtualNode
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+
+class VirtualNodeNotFoundException(holdingIdentityShortHash: String) :
+    Exception("Could not find a virtual node with Id of $holdingIdentityShortHash")
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(private val entityManagerFactory: EntityManagerFactory) {
@@ -23,7 +29,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadata(cpiFileChecksum: String): CpiMetadataLite? {
+    internal fun getCPIMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null
@@ -37,7 +43,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val cpiMetadataEntity = entityManagerFactory.transaction {
             val foundCpi = it.createQuery(
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
-                        "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
+                    "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
                 CpiMetadataEntity::class.java
             )
                 .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
@@ -53,6 +59,30 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
+    /** Reads CPI metadata from the database. */
+    internal fun getCPIMetadataByNameAndVersion(name: String, version: String): CpiMetadataLite? {
+        val cpiMetadataEntity = entityManagerFactory.use {
+            it.transaction {
+                it.createQuery(
+                    "SELECT cpi FROM CpiMetadataEntity cpi " +
+                            "WHERE cpi.name = :cpiName "+
+                            "AND cpi.version = :cpiVersion ",
+                    CpiMetadataEntity::class.java
+                )
+                    .setParameter("cpiName", name)
+                    .setParameter("cpiVersion", version)
+                    .singleResult
+            }
+        }
+
+        val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
+            if (it.isBlank()) null else SecureHash.create(it)
+        }
+        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
+        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+    }
+
     /**
      * Reads a holding identity from the database.
      * @param holdingIdentityShortHash Holding identity ID (short hash)
@@ -61,7 +91,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     internal fun getHoldingIdentity(holdingIdentityShortHash: String): HoldingIdentity? {
         return entityManagerFactory
             .transaction { entityManager ->
-                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash) ?: return null
+                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash)
+                    ?: return null
                 HoldingIdentity(hidEntity.x500Name, hidEntity.mgmGroupId)
             }
     }
@@ -105,13 +136,14 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @return true if virtual node exists in database, false otherwise
      */
     internal fun virtualNodeExists(holdingId: HoldingIdentity, cpiId: CpiIdentifier): Boolean {
-        return entityManagerFactory
-            .transaction {
+        return entityManagerFactory.use { em ->
+            em.transaction {
                 val signerSummaryHash = if (cpiId.signerSummaryHash != null) cpiId.signerSummaryHash.toString() else ""
                 val hie = it.find(HoldingIdentityEntity::class.java, holdingId.shortHash) ?: return false // TODO throw?
                 val key = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
                 it.find(VirtualNodeEntity::class.java, key) != null
             }
+        }
     }
 
     /**
@@ -127,12 +159,31 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val virtualNodeEntityKey = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
         val foundVNode = entityManager.find(VirtualNodeEntity::class.java, virtualNodeEntityKey)
         if (foundVNode == null) {
-            entityManager.persist(VirtualNodeEntity(hie, cpiId.name, cpiId.version, signerSummaryHash))
+            entityManager.persist(
+                VirtualNodeEntity(
+                    hie,
+                    cpiId.name,
+                    cpiId.version,
+                    signerSummaryHash,
+                    VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
+                )
+            )
         } else {
             log.debug { "vNode for key already exists: $virtualNodeEntityKey" }
         }
     }
 
+    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: String): VirtualNodeEntity {
+        entityManager.transaction {
+            // Lookup virtual node and grab the latest one based on the cpi Version.
+            val latestVirtualNodeInstance = it.findVirtualNode(holdingIdentityShortHash)
+                ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+            val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
+                update(newState)
+            }
+            return it.merge(updatedVirtualNodeInstance)
+        }
+    }
 
     fun HoldingIdentity.toEntity(connections: VirtualNodeDbConnections?) = HoldingIdentityEntity(
         this.shortHash,
