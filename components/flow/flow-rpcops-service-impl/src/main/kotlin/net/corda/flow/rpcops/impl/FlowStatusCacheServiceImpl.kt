@@ -102,7 +102,6 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     override fun unregisterFlowStatusFeed(clientRequestId: String, holdingIdentity: HoldingIdentity) {
         log.info("Unregistering flow status feed ")
         val key = FlowKey(clientRequestId, holdingIdentity)
-        flowStatusUpdateHandlers[key]?.close()
         flowStatusUpdateHandlers.remove(key)
     }
 
@@ -119,10 +118,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         }
 
         if (cache[flowKey] == null) {
-            errors.add(
-                "Cannot register for flow status updates because flow for identity $holdingIdentity and request " +
-                        "$clientRequestId does not exist."
-            )
+            log.info("Registering for flow status updates for unstarted flow req $clientRequestId, holdingId $holdingIdentity.")
         }
         return errors
     }

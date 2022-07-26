@@ -26,6 +26,11 @@ interface DuplexChannel : AutoCloseable {
     override fun close()
 
     /**
+     * Close this connection with a reason.
+     */
+    fun close(reason: String)
+
+    /**
      * Allows to close this communication channel with exception
      */
     fun error(e: Exception)

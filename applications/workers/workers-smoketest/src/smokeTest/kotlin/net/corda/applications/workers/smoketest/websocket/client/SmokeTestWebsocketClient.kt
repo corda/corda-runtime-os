@@ -1,9 +1,9 @@
-package net.corda.applications.workers.rpc.websocket
+package net.corda.applications.workers.smoketest.websocket.client
 
 import java.net.URI
 import java.time.Duration
-import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.contextLogger
+import net.corda.applications.workers.smoketest.contextLogger
+import net.corda.applications.workers.smoketest.getOrThrow
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.api.Session
@@ -11,8 +11,8 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
 
-class E2eWebsocketClient(
-    private val wsHandler: WebSocketAdapter = NoOpWebsocketHandler(),
+class SmokeTestWebsocketClient(
+    private val wsHandler: WebSocketAdapter,
     private val username: String = "admin",
     private val password: String = "admin",
     private val connectTimeout: Duration = Duration.ofSeconds(10),

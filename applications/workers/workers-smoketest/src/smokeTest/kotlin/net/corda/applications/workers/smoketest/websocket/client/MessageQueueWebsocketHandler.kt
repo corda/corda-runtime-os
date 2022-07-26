@@ -1,14 +1,13 @@
-package net.corda.applications.workers.rpc.websocket
+package net.corda.applications.workers.smoketest.websocket.client
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.util.Queue
-import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
-import net.corda.v5.base.util.contextLogger
+import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 
-class FlowStatusWebsocketHandler(
-    private val messages: Queue<FlowStatusResponse>
+class MessageQueueWebsocketHandler/*<T : Any>*/(
+    private val messageQueue: Queue<String>,
+//    private val messageType: Class<T>
 ): NoOpEndpoint() {
 
     private companion object {
@@ -26,7 +25,7 @@ class FlowStatusWebsocketHandler(
 
     override fun onWebSocketText(message: String) {
         log.info("Received message: $message")
-        val responseObject = jacksonObjectMapper().readValue(message, FlowStatusResponse::class.java)
-        messages.add(responseObject)
+//        messageQueue.add(jacksonObjectMapper().readValue(message, messageType))
+        messageQueue.add(message)
     }
 }
