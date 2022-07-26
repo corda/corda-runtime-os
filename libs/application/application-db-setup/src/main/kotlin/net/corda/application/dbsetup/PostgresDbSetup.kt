@@ -65,6 +65,8 @@ class PostgresDbSetup(
             initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
+        } else {
+            log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
     }
 
@@ -76,7 +78,6 @@ class PostgresDbSetup(
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
                 .use {
                     if (it.next()) {
-                        log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
                         return it.getBoolean(1)
                     }
                 }
