@@ -351,6 +351,20 @@ class MGMRegistrationServiceTest {
     }
 
     @Test
+    fun `if session PKI mode is NoPKI, session trust root is optional`() {
+        postConfigChangedEvent()
+        val testProperties = properties.toMutableMap()
+        testProperties["corda.group.pki.session"] = "NoPKI"
+        testProperties.remove("corda.group.truststore.session.0")
+        registrationService.start()
+        val result = registrationService.register(mgm, testProperties)
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+        }
+        registrationService.stop()
+    }
+
+    @Test
     fun `component handle created on start and closed on stop`() {
         postStartEvent()
 
