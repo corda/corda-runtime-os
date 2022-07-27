@@ -95,6 +95,10 @@ allprojects {
             if (System.getenv().containsKey("JENKINS_URL")) {
                 maxRetries = 2
                 maxFailures = 10
+
+                // do not retry smoke tests
+                excludeClasses.add("*.smoketest.*")
+
             }
         }
     }
