@@ -1,3 +1,4 @@
+{{- if .Values.bootstrap.kafka.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -26,9 +27,9 @@ spec:
             '-n', '{{ .Values.kafka.topicPrefix }}',
             {{- end }}
             'create',
-            '-r', '{{ .Values.kafka.replicas }}',
-            '-p', '{{ .Values.kafka.partitions }}',
-            'connect'{{- if .Values.kafka.cleanup }},
+            '-r', '{{ .Values.bootstrap.kafka.replicas }}',
+            '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
             '-d'
             {{- end }}
           ]
@@ -94,3 +95,4 @@ spec:
         {{- end }}
       restartPolicy: Never
   backoffLimit: 0
+{{- end }}
