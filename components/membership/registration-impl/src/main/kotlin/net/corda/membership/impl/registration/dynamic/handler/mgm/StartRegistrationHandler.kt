@@ -19,7 +19,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -146,7 +145,7 @@ class StartRegistrationHandler(
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
         val memberContext = keyValuePairListDeserializer
             .deserialize(registrationRequest.memberContext.array())
-            ?.toSortedMap()
+            ?.items?.associate { it.key to it.value }?.toSortedMap()
             ?: emptyMap()
 
         validateRegistrationRequest(memberContext.entries.isNotEmpty()) {

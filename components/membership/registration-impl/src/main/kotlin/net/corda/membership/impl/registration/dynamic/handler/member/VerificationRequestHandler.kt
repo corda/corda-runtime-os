@@ -38,7 +38,7 @@ internal class VerificationRequestHandler(
             // we need to switch here the source and destination
             mgm,
             member,
-            responseTimestamp.plusMillis(TTL)?.toEpochMilli(),
+            responseTimestamp.plusMillis(TTL),
             UUID.randomUUID().toString(),
             null,
             MEMBERSHIP_P2P_SUBSYSTEM

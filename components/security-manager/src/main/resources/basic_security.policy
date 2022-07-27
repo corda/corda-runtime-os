@@ -4,6 +4,10 @@
 # Higher position of ALLOW/DENY block has higher priority.
 #
 
+#
+# Permissions for FLOW Sandbox
+#
+
 ALLOW {
 [org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
 
@@ -20,7 +24,7 @@ ALLOW {
 (java.lang.RuntimePermission "accessClassInPackage.net.corda.testing.*" "")
 (org.osgi.framework.PackagePermission "net.corda.testing.*" "exportonly,import")
 
-} "Allow public packages and services"
+} "Allow public packages and services for FLOW Sandbox"
 
 DENY {
 [org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
@@ -717,7 +721,806 @@ DENY {
 #
 (javax.xml.ws.WebServicePermission "publishEndpoint" "")
 
-} "Basic security profile"
+} "Basic security profile for FLOW Sandbox"
+
+#
+# Permissions for PERSISTENCE Sandbox
+#
+
+ALLOW {
+[org.osgi.service.condpermadmin.BundleLocationCondition "PERSISTENCE/*"]
+
+#
+# Allows accessing platform's public packages and services
+#
+(java.lang.RuntimePermission "accessClassInPackage.net.corda.v5.*" "")
+(org.osgi.framework.PackagePermission "net.corda.v5.*" "import")
+(org.osgi.framework.PackagePermission "net.corda.testing.*" "exportonly,import")
+(org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
+(org.osgi.framework.ServicePermission "(location=PERSISTENCE/*)" "get")
+
+} "Allow public packages and services for PERSISTENCE Sandbox"
+
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "PERSISTENCE/*"]
+
+#
+# Denies accessing platform's internal OSGi packages and services
+#
+(org.osgi.framework.AdminPermission "*" "*")
+(org.osgi.framework.PackagePermission "org.osgi.framework" "import")
+(org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
+(org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
+(org.osgi.framework.PackagePermission "net.corda.*" "exportonly,import")
+(org.osgi.framework.ServicePermission "*" "get")
+
+#
+# Allows implementing a subclass of ObjectOutputStream or ObjectInputStream to override the default serialization or
+# deserialization, respectively, of objects.
+#
+# Code can use this to serialize or deserialize classes in a purposefully malfeasant manner. For example, during
+# serialization, malicious code can use this to purposefully store confidential private field data in a way easily
+# accessible to attackers. Or, during deserialization it could, for example, deserialize a class with all its private
+# fields zeroed out.
+#
+(java.io.SerializablePermission "enableSubclassImplementation" "")
+
+#
+# Allows substitution of one object for another during serialization or deserialization.
+#
+# Code can use this to serialize or deserialize classes in a purposefully malfeasant manner. For example, during
+# serialization, malicious code can use this to purposefully store confidential private field data in a way easily
+# accessible to attackers. Or, during deserialization it could, for example, deserialize a class with all its private
+# fields zeroed out.
+#
+# This is dangerous because malicious code can replace the actual object with one which has incorrect or malignant data.
+#
+(java.io.SerializablePermission "enableSubstitution" "")
+
+#
+# Ability to control the runtime characteristics of the Java virtual machine, for example, enabling and disabling the
+# verbose output for the class loading or memory system, setting the threshold of a memory pool, and enabling and
+# disabling the thread contention monitoring support.
+#
+# This allows an attacker to control the runtime characteristics of the Java virtual machine and cause the system to
+# misbehave. An attacker can also access some information related to the running application.
+#
+(java.lang.management.ManagementPermission "control" "")
+
+#
+# Ability to retrieve runtime information about the Java virtual machine such as thread stack trace, a list of all
+# loaded class names, and input arguments to the Java virtual machine.
+#
+# This allows malicious code to monitor runtime information and uncover vulnerabilities.
+#
+(java.lang.management.ManagementPermission "monitor" "")
+
+#
+# Creation of a class loader
+#
+# This is an extremely dangerous permission to grant. Malicious applications that can instantiate their own class
+# loaders could then load their own rogue classes into the system. These newly loaded classes could be placed into any
+# protection domain by the class loader, thereby automatically granting the classes the permissions for that domain.
+#
+(java.lang.RuntimePermission "createClassLoader" "")
+
+#
+# Retrieval of a class loader (e.g., the class loader for the calling class)
+#
+# This would grant an attacker permission to get the class loader for a particular class. This is dangerous because
+# having access to a class's class loader allows the attacker to load other classes available to that class loader. The
+# attacker would typically otherwise not have access to those classes.
+#
+(java.lang.RuntimePermission "getClassLoader" "")
+
+#
+# Setting of the context class loader used by a thread
+#
+# The context class loader is used by system code and extensions when they need to lookup resources that might not exist
+# in the system class loader. Granting setContextClassLoader permission would allow code to change which context class
+# loader is used for a particular thread, including system threads.
+#
+(java.lang.RuntimePermission "setContextClassLoader" "")
+
+#
+# Subclass implementation of the thread context class loader methods
+#
+# The context class loader is used by system code and extensions when they need to lookup resources that might not exist
+# in the system class loader. Granting enableContextClassLoaderOverride permission would allow a subclass of Thread to
+# override the methods that are used to get or set the context class loader for a particular thread.
+#
+(java.lang.RuntimePermission "enableContextClassLoaderOverride" "")
+
+#
+# Closing of a ClassLoader
+#
+# Granting this permission allows code to close any URLClassLoader that it has a reference to.
+#
+(java.lang.RuntimePermission "closeClassLoader" "")
+
+#
+# Setting of the security manager (possibly replacing an existing one)
+#
+# The security manager is a class that allows applications to implement a security policy. Granting the
+# setSecurityManager permission would allow code to change which security manager is used by installing a different,
+# possibly less restrictive security manager, thereby bypassing checks that would have been enforced by the original
+# security manager.
+#
+(java.lang.RuntimePermission "setSecurityManager" "")
+
+#
+# Creation of a new security manager
+#
+# This gives code access to protected, sensitive methods that may disclose information about other classes or the
+# execution stack.
+#
+(java.lang.RuntimePermission "createSecurityManager"  "")
+
+#
+# Reading of the value of the specified environment variable
+#
+# This would allow code to read the value, or determine the existence, of a particular environment variable. This is
+# dangerous if the variable contains confidential data.
+#
+(java.lang.RuntimePermission "getenv.*" "")
+
+#
+# Halting of the Java Virtual Machine with the specified exit status
+#
+# This allows an attacker to mount a denial-of-service attack by automatically forcing the virtual machine to halt.
+#
+(java.lang.RuntimePermission "exitVM" "")
+
+#
+# Registration and cancellation of virtual-machine shutdown hooks
+#
+# This allows an attacker to register a malicious shutdown hook that interferes with the clean shutdown of the virtual
+# machine.
+#
+(java.lang.RuntimePermission "shutdownHooks" "")
+
+#
+# Setting of the socket factory used by ServerSocket or Socket, or of the stream handler factory used by URL
+#
+# This allows code to set the actual implementation for the socket, server socket, stream handler, or RMI socket
+# factory. An attacker may set a faulty implementation which mangles the data stream.
+#
+(java.lang.RuntimePermission "setFactory" "")
+
+#
+# Setting of System.out, System.in, and System.err
+#
+# This allows changing the value of the standard system streams. An attacker may change System.in to monitor and steal
+# user input, or may set System.err to a "null" OutputSteam, which would hide any error messages sent to System.err.
+#
+(java.lang.RuntimePermission "setIO" "")
+
+#
+# Modification of threads, e.g., via calls to Thread interrupt, stop, suspend, resume, setDaemon, setPriority, setName
+# and setUncaughtExceptionHandler methods
+#
+# This allows an attacker to modify the behavior of any thread in the system.
+#
+(java.lang.RuntimePermission "modifyThread" "")
+
+#
+# Stopping of threads via calls to the Thread stop method
+#
+# This allows code to stop any thread in the system provided that it is already granted permission to access that
+# thread. This poses as a threat, because that code may corrupt the system by killing existing threads.
+#
+(java.lang.RuntimePermission "stopThread" "")
+
+#
+# Modification of thread groups, e.g., via calls to ThreadGroup destroy, getParent, resume, setDaemon, setMaxPriority,
+# stop, and suspend methods
+#
+# This allows an attacker to create thread groups and set their run priority.
+#
+(java.lang.RuntimePermission "modifyThreadGroup" "")
+
+#
+# Retrieval of the ProtectionDomain for a class
+#
+# This allows code to obtain policy information for a particular code source. While obtaining policy information does
+# not compromise the security of the system, it does give attackers additional information, such as local file names for
+# example, to better aim an attack.
+#
+(java.lang.RuntimePermission "getProtectionDomain" "")
+
+#
+# Dynamic linking of the specified library
+#
+# It is dangerous to allow an applet permission to load native code libraries, because the Java security architecture is
+# not designed to and does not prevent malicious behavior at the level of native code.
+#
+(java.lang.RuntimePermission "loadLibrary.*" "")
+
+#
+# Access to the specified package via a class loader's loadClass method when that class loader calls the SecurityManager
+# checkPackageAcesss method
+#
+# This gives code access to classes in packages to which it normally does not have access. Malicious code may use these
+# classes to help in its attempt to compromise security in the system.
+#
+(java.lang.RuntimePermission "accessClassInPackage.net.corda.*" "")
+
+#
+# Definition of classes in the specified package, via a class loader's defineClass method when that class loader calls
+# the SecurityManager checkPackageDefinition method.
+#
+# This grants code permission to define a class in a particular package. This is dangerous because malicious code with
+# this permission may define rogue classes in trusted packages like java.security or java.lang, for example.
+#
+(java.lang.RuntimePermission "defineClassInPackage.*" "")
+
+#
+# Initiation of a print job request
+#
+# his could print sensitive information to a printer, or simply waste paper.
+#
+(java.lang.RuntimePermission "queuePrintJob" "")
+
+#
+# Retrieval of the stack trace information of another thread.
+#
+# This allows retrieval of the stack trace information of another thread. This might allow malicious code to monitor the
+# execution of threads and discover vulnerabilities in applications.
+#
+(java.lang.RuntimePermission "getStackTrace" "")
+
+#
+# Setting the default handler to be used when a thread terminates abruptly due to an uncaught exception.
+#
+# This allows an attacker to register a malicious uncaught exception handler that could interfere with termination of a
+# thread.
+#
+(java.lang.RuntimePermission "setDefaultUncaughtExceptionHandler" "")
+
+#
+# Represents the permission required to get access to the java.util.prefs.Preferences implementations user or system
+# root which in turn allows retrieval or update operations within the Preferences persistent backing store.
+#
+# This permission allows the user to read from or write to the preferences backing store if the user running the code
+# has sufficient OS privileges to read/write to that backing store. The actual backing store may reside within a
+# traditional filesystem directory or within a registry depending on the platform OS.
+#
+(java.lang.RuntimePermission "preferences" "")
+
+#
+# The ability to set the way authentication information is retrieved when a proxy or HTTP server asks for authentication
+#
+# Malicious code can set an authenticator that monitors and steals user authentication input as it retrieves the input
+# from the user.
+#
+(java.net.NetPermission "setDefaultAuthenticator" "")
+
+#
+# The ability to ask the authenticator registered with the system for a password
+#
+# Malicious code may steal this password.
+#
+(java.net.NetPermission "requestPasswordAuthentication" "")
+
+#
+# The ability to specify a stream handler when constructing a URL
+#
+# Malicious code may create a URL with resources that it would normally not have access to (like file:/foo/fum/),
+# specifying a stream handler that gets the actual bytes from someplace it does have access to. Thus it might be able to
+# trick the system into creating a ProtectionDomain/CodeSource for a class even though that class really didn't come
+# from that location.
+#
+(java.net.NetPermission "specifyStreamHandler" "")
+
+#
+# The ability to set the proxy selector used to make decisions on which proxies to use when making network connections.
+#
+# Malicious code can set a ProxySelector that directs network traffic to an arbitrary network host.
+#
+(java.net.NetPermission "setProxySelector" "")
+
+#
+# The ability to get the proxy selector used to make decisions on which proxies to use when making network connections.
+#
+# Malicious code can get a ProxySelector to discover proxy hosts and ports on internal networks, which could then become
+# targets for attack.
+#
+(java.net.NetPermission "getProxySelector" "")
+
+#
+# The ability to set the cookie handler that processes highly security sensitive cookie information for an Http session.
+#
+# Malicious code can set a cookie handler to obtain access to highly security sensitive cookie information. Some web
+# servers use cookies to save user private information such as access control information, or to track user browsing
+# habit.
+#
+(java.net.NetPermission "setCookieHandler" "")
+
+#
+# The ability to get the cookie handler that processes highly security sensitive cookie information for an Http session.
+#
+# Malicious code can get a cookie handler to obtain access to highly security sensitive cookie information. Some web
+# servers use cookies to save user private information such as access control information, or to track user browsing
+# habit.
+#
+(java.net.NetPermission "getCookieHandler" "")
+
+#
+# The ability to set the response cache that provides access to a local response cache.
+#
+# Malicious code getting access to the local response cache could access security sensitive information, or create false
+# entries in the response cache.
+#
+(java.net.NetPermission "setResponseCache" "")
+
+#
+# The ability to get the response cache that provides access to a local response cache.
+#
+# Malicious code getting access to the local response cache could access security sensitive information.
+#
+(java.net.NetPermission "getResponseCache" "")
+
+#
+# Ability to add an existing file to a directory. This is sometimes known as creating a link, or hard link.
+#
+# It allows linking to any file or directory in the file system thus allowing the attacker access to all files.
+#
+(java.nio.file.LinkPermission "hard" "")
+
+#
+# Ability to create symbolic links.
+#
+# It allows linking to any file or directory in the file system thus allowing the attacker to access to all files.
+#
+(java.nio.file.LinkPermission "symbolic" "")
+
+#
+# Creation of an AccessControlContext
+#
+# This allows someone to instantiate an AccessControlContext with a DomainCombiner. Extreme care must be taken when
+# granting this permission. Malicious code could create a DomainCombiner that augments the set of permissions granted to
+# code, and even grant the code AllPermission.
+#
+(java.security.SecurityPermission "createAccessControlContext" "")
+
+#
+# Retrieval of an AccessControlContext's DomainCombiner
+#
+# This allows someone to query the policy via the getPermissions call, which discloses which permissions would be
+# granted to a given CodeSource. While revealing the policy does not compromise the security of the system, it does
+# provide malicious code with additional information which it may use to better aim an attack. It is wise not to divulge
+# more information than necessary.
+#
+(java.security.SecurityPermission "getDomainCombiner" "")
+
+#
+# Retrieval of the system-wide security policy (specifically, of the currently-installed Policy object)
+#
+# This allows someone to query the policy via the getPermissions call, which discloses which permissions would be
+# granted to a given CodeSource. While revealing the policy does not compromise the security of the system, it does
+# provide malicious code with additional information which it may use to better aim an attack. It is wise not to divulge
+# more information than necessary.
+#
+(java.security.SecurityPermission "getPolicy" "")
+
+#
+# Setting of the system-wide security policy (specifically, the Policy object)
+#
+# Granting this permission is extremely dangerous, as malicious code may grant itself all the necessary permissions it
+# needs to successfully mount an attack on the system.
+#
+(java.security.SecurityPermission "setPolicy" "")
+
+#
+# Getting an instance of a Policy via Policy.getInstance
+#
+# Granting this permission enables code to obtain a Policy object. Malicious code may query the Policy object to
+# determine what permissions have been granted to code other than itself.
+#
+(java.security.SecurityPermission "createPolicy.*" "")
+
+#
+# Retrieval of the security property with the specified key
+#
+# Depending on the particular key for which access has been granted, the code may have access to the list of security
+# providers, as well as the location of the system-wide and user security policies. while revealing this information
+# does not compromise the security of the system, it does provide malicious code with additional information which it
+# may use to better aim an attack.
+#
+(java.security.SecurityPermission "getProperty.*" "")
+
+#
+# Setting of the security property with the specified key
+#
+# This could include setting a security provider or defining the location of the system-wide security policy. Malicious
+# code that has permission to set a new security provider may set a rogue provider that steals confidential information
+# such as cryptographic private keys. In addition, malicious code with permission to set the location of the system-wide
+# security policy may point it to a security policy that grants the attacker all the necessary permissions it requires
+# to successfully mount an attack on the system.
+#
+(java.security.SecurityPermission "setProperty.*" "")
+
+#
+# Addition of a new provider
+#
+# This would allow somebody to introduce a possibly malicious provider (e.g., one that discloses the private keys passed
+# to it) as the highest-priority provider. This would be possible because the Security object (which manages the
+# installed providers) currently does not check the integrity or authenticity of a provider before attaching it. The
+# "insertProvider" permission subsumes the "insertProvider.{provider name}" permission (see the section below for more
+# information).
+#
+(java.security.SecurityPermission "insertProvider" "")
+
+#
+# Removal of the specified provider
+#
+# This may change the behavior or disable execution of other parts of the program. If a provider subsequently requested
+# by the program has been removed, execution may fail. Also, if the removed provider is not explicitly requested by the
+# rest of the program, but it would normally be the provider chosen when a cryptography service is requested (due to its
+# previous order in the list of providers), a different provider will be chosen instead, or no suitable provider will be
+# found, thereby resulting in program failure.
+#
+(java.security.SecurityPermission "removeProvider.*" "")
+
+#
+# "Clearing" of a Provider so that it no longer contains the properties used to look up services implemented by the
+# provider
+#
+# This disables the lookup of services implemented by the provider. This may thus change the behavior or disable
+# execution of other parts of the program that would normally utilize the Provider, as described under the
+# "removeProvider.{provider name}" permission.
+#
+(java.security.SecurityPermission "clearProviderProperties.*" "")
+
+#
+# Setting of properties for the specified Provider
+#
+# The provider properties each specify the name and location of a particular service implemented by the provider. By
+# granting this permission, you let code replace the service specification with another one, thereby specifying a
+# different implementation.
+#
+(java.security.SecurityPermission "putProviderProperty.*" "")
+
+#
+# Removal of properties from the specified Provider
+#
+# This disables the lookup of services implemented by the provider. They are no longer accessible due to removal of the
+# properties specifying their names and locations. This may change the behavior or disable execution of other parts of
+# the program that would normally utilize the Provider, as described under the "removeProvider.{provider name}"
+# permission.
+#
+(java.security.SecurityPermission "removeProviderProperty.*" "")
+
+#
+# Setting of the logging stream
+#
+# The contents of the log can contain usernames and passwords, SQL statements, and SQL data.
+#
+(java.sql.SQLPermission "setLog" "")
+
+#
+# Invocation of the Connection method abort
+#
+# Permits an application to terminate a physical connection to a database.
+#
+(java.sql.SQLPermission "callAbort" "")
+
+#
+# Invocation of the SyncFactory methods setJNDIContext and setLogger
+#
+# Permits an application to specify the JNDI context from which the SyncProvider implementations can be retrieved from
+# and the logging object to be used by the SyncProvider implementation.
+#
+(java.sql.SQLPermission "setSyncFactory" "")
+
+#
+# Invocation of the Connection method setNetworkTimeout
+#
+# Permits an application to specify the maximum period a Connection or objects created from the Connection object will
+# wait for the database to reply to any one request.
+#
+(java.sql.SQLPermission "setNetworkTimeout" "")
+
+#
+# Allows the invocation of the DriverManager method deregisterDriver.
+#
+# Permits an application to remove a JDBC driver from the list of registered Drivers and release its resources.
+#
+(java.sql.SQLPermission "deregisterDriver" "")
+
+#
+# Access system properties
+#
+# Care should be taken before granting code permission to access certain system properties. For example, granting
+# permission to access the "java.home" system property gives potentially malevolent code sensitive information about the
+# system environment (the location of the runtime environment's directory). Also, granting permission to access the
+# "user.name" and "user.home" system properties gives potentially malevolent code sensitive information about the user
+# environment (the user's account name and home directory).
+#
+(java.util.PropertyPermission "*" "read,write")
+
+#
+# Permission controlling access to MBeanServer operations.
+#
+(javax.management.MBeanPermission "*" "*")
+
+#
+# A Permission to perform actions related to MBeanServers.
+#
+(javax.management.MBeanServerPermission "*" "")
+
+#
+# This permission represents "trust" in a signer or codebase.
+#
+(javax.management.MBeanTrustPermission "*" "")
+
+#
+# Permission required by an authentication identity to perform operations on behalf of an authorization identity.
+#
+(javax.management.remote.SubjectDelegationPermission "*" "")
+
+#
+# The ability to set a callback which can decide whether to allow a mismatch between the host being connected to by an
+# HttpsURLConnection and the common name field in server certificate.
+#
+# Malicious code can set a verifier that monitors host names visited by HttpsURLConnection requests or that allows
+# server certificates with invalid common names.
+#
+(javax.net.ssl.SSLPermission "setHostnameVerifier" "")
+
+#
+# The ability to get the SSLSessionContext of an SSLSession.
+#
+# Malicious code may monitor sessions which have been established with SSL peers or might invalidate sessions to slow
+# down performance.
+#
+(javax.net.ssl.SSLPermission "getSSLSessionContext" "")
+
+#
+# The ability to set the default SSL context.
+#
+# When applications use default SSLContext, by setting the default SSL context, malicious code may use unproved trust
+# material, key material and random generator, or use dangerous SSL socket factory and SSL server socket factory.
+#
+(javax.net.ssl.SSLPermission "setDefaultSSLContext" "")
+
+#
+# Invocation of the Subject.doAs methods
+#
+# This enables an application to invoke code (Actions) under the identity of any Subject specified to the doAs method.
+#
+(javax.security.auth.AuthPermission "doAs" "")
+
+#
+# Invocation of the Subject.doAsPrivileged methods
+#
+# This enables an application to invoke code (Actions) under the identity of any Subject specified to the doAsPrivileged
+# method. Additionally, the caller may remove itself from the call stack (and hence from subsequent security decisions)
+# if it passes null as the AccessControlContext.
+#
+(javax.security.auth.AuthPermission "doAsPrivileged" "")
+
+#
+# Retrieving the Subject from the provided AccessControlContext
+#
+# This permits an application to gain access to an authenticated Subject. The application can then access the Subject's
+# authenticated Principals and public credentials.
+#
+(javax.security.auth.AuthPermission "getSubject" "")
+
+#
+# Retrieving the Subject from a SubjectDomainCombiner
+#
+# This permits an application to gain access to the authenticated Subject associated with a SubjectDomainCombiner. The
+# application can then access the Subject's authenticated Principals and public credentials.
+#
+(javax.security.auth.AuthPermission "getSubjectFromDomainCombiner" "")
+
+#
+# Setting a Subject read-only	This permits an application to set a Subject's Principal, public credential and private credential sets to be read-only.
+#
+# This can be potentially used as a type of denial of service attack.
+#
+(javax.security.auth.AuthPermission "setReadOnly" "")
+
+#
+# Make modifications to a Subject's Principal set	Access control decisions are based on the Principals associated with a Subject.
+#
+# This permission permits an application to make any modifications to a Subject's Principal set, thereby affecting subsequent security decisions.
+#
+(javax.security.auth.AuthPermission "modifyPrincipals" "")
+
+#
+# Make modifications to a Subject's public credential set	This permission permits an application to add or remove public credentials from a Subject.
+#
+# This may affect code that relies on the proper set of private credentials to exist in that Subject.
+#
+(javax.security.auth.AuthPermission "modifyPublicCredentials" "")
+
+#
+# Make modifications to a Subject's private credential set
+#
+# This permission permits an application to add or remove private credentials from a Subject. This may affect code that
+# relies on the proper set of private credentials to exist in that Subject.
+#
+(javax.security.auth.AuthPermission "modifyPrivateCredentials" "")
+
+#
+# Refresh a credential Object that implements the Refreshable interface
+#
+# This permission permits an application to refresh a credential that is intended to expire.
+#
+(javax.security.auth.AuthPermission "refreshCredential" "")
+
+#
+# Destroy a credential Object that implements the Destroyable interface
+#
+# This permission permits an application to potentially destroy a credential as a denial of service attack.
+#
+(javax.security.auth.AuthPermission "destroyCredential" "")
+
+#
+# Instantiate a LoginContext with the specified name
+#
+# For security purposes, an administrator might not want an application to be able to authenticate to any LoginModule.
+# This permission permits an application to authenticate to the LoginModules configured for the specified name.
+#
+(javax.security.auth.AuthPermission "createLoginContext.*" "")
+
+#
+# Retrieve the system-wide login Configuration
+#
+# Allows an application to determine all the LoginModules that are configured for every application in the system.
+#
+(javax.security.auth.AuthPermission "getLoginConfiguration" "")
+
+#
+# Set the system-wide login Configuration
+#
+# Allows an application to configure the LoginModules for every application in the system.
+#
+(javax.security.auth.AuthPermission "setLoginConfiguration" "")
+
+#
+# Obtain a Configuration object via Configuration.getInstance
+#
+# Allows an application to see all the LoginModules that are specified in the configuration.
+#
+(javax.security.auth.AuthPermission "createLoginConfiguration.*" "")
+
+#
+# Refresh the system-wide login Configuration
+#
+# Allows an application to refresh the login Configuration.
+#
+(javax.security.auth.AuthPermission "refreshLoginConfiguration" "")
+
+#
+# This is used to protect access to private Credentials belonging to a particular Subject
+#
+(javax.security.auth.PrivateCredentialPermission "*" "")
+
+#
+# Audio playback through the audio device or devices on the system.
+#
+# Allows the application to obtain and manipulate lines and mixers for audio playback (rendering).	In some cases use of
+# this permission may affect other applications because the audio from one line may be mixed with other audio being
+# played on the system, or because manipulation of a mixer affects the audio for all lines using that mixer.
+#
+(javax.sound.sampled.AudioPermission "play" "")
+
+#
+# Audio recording through the audio device or devices on the system.
+#
+# Allows the application to obtain and manipulate lines and mixers for audio recording (capture).	In some cases use of
+# this permission may affect other applications because manipulation of a mixer affects the audio for all lines using
+# that mixer. This permission can enable an applet or application to eavesdrop on a user.
+#
+(javax.sound.sampled.AudioPermission "record" "")
+
+#
+# Allows the code to set VM-wide DatatypeConverterInterface via the setDatatypeConverter method that all the methods on
+# DatatypeConverter uses.
+#
+# Malicious code can set DatatypeConverterInterface, which has VM-wide singleton semantics, before a genuine JAXB
+# implementation sets one. This allows malicious code to gain access to objects that it may otherwise not have access
+# to, such as Frame.getFrames() that belongs to another application running in the same JVM.
+#
+(javax.xml.bind.JAXBPermission "setDatatypeConverter" "")
+
+#
+# Allows publishing a web service endpoint using the publish methods defined by the javax.xml.ws.Endpoint class.
+#
+# Depending on the security of the runtime and the security of the application, this may introduce a security hole that
+# is remotely exploitable.
+#
+(javax.xml.ws.WebServicePermission "publishEndpoint" "")
+
+#
+# Access to a file or directory
+#
+# Think about the implications of granting read and especially write access to various files and directories.
+# The "<<ALL FILES>>" permission with write action is especially dangerous. This grants permission to write to the
+# entire file system. One thing this effectively allows is replacement of the system binary, including the JVM runtime
+# environment.
+#
+(java.io.FilePermission "<<ALL FILES>>" "read,write,delete,execute,readLink")
+
+#
+# Retrieval of file system attributes
+#
+# This allows code to obtain file system information such as disk usage or disk space available to the caller. This is
+# potentially dangerous because it discloses information about the system hardware configuration and some information
+# about the caller's privilege to write files.
+#
+(java.lang.RuntimePermission "getFileSystemAttributes" "")
+
+#
+# Reading of file descriptors
+#
+# This would allow code to read the particular file associated with the file descriptor read. This is dangerous if the
+# file contains confidential data.
+#
+(java.lang.RuntimePermission "readFileDescriptor" "")
+
+#
+# Writing to file descriptors
+#
+# This allows code to write to a particular file associated with the descriptor. This is dangerous because it may allow
+# malicous code to plant viruses or at the very least, fill up your entire disk.
+#
+(java.lang.RuntimePermission "writeFileDescriptor" "")
+
+#
+# Access to a network via sockets
+#
+# Granting code permission to accept or make connections to remote hosts may be dangerous because malevolent code can
+# then more easily transfer and share confidential data among parties who may not otherwise have access to the data.
+#
+(java.net.SocketPermission "*:1−" "accept,listen,connect,resolve")
+
+#
+# Access a resource or set of resources defined by a given url, for a given set of request methods and request headers.
+#
+# Granting code permission to access resources on remote hosts may be dangerous because malevolent code can then more
+# easily transfer and share confidential data among parties who may not otherwise have access to the data.
+#
+(java.net.URLPermission "http://*:*" "*:*")
+(java.net.URLPermission "https://*:*" "*:*")
+
+#
+# Provides access to the declared members of a class.
+#
+# This grants code permission to query a class for its public, protected, default (package) access, and private fields
+# and/or methods. Although the code would have access to the private and protected field and method names, it would not
+# have access to the private/protected field data and would not be able to invoke any private methods. Nevertheless,
+# malicious code may use this information to better aim an attack. Additionally, it may invoke any public methods and/or
+# access public fields in the class. This could be dangerous if the code would normally not be able to invoke those
+# methods and/or access the fields because it can't cast the object to the class/interface with those methods and fields.
+#
+(java.lang.RuntimePermission "accessDeclaredMembers" "")
+
+#
+# It provides the ability to access fields and invoke methods in a class. This includes not only public, but protected
+# and private fields and methods as well.
+#
+# This is dangerous in that information (possibly confidential) and methods normally unavailable would be accessible to
+# malicious code.
+#
+(java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
+
+#
+# Ability to create a proxy instance in the specified package of which the non-public interface that the proxy class
+# implements.
+#
+# This gives code access to classes in packages to which it normally does not have access and the dynamic proxy class is
+# in the system protection domain. Malicious code may use these classes to help in its attempt to compromise security in
+# the system.
+#
+(java.lang.reflect.ReflectPermission "newProxyInPackage.*" "")
+
+} "Basic security profile for PERSISTENCE Sandbox"
+
 
 ALLOW {
 #

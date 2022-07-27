@@ -1,12 +1,12 @@
 package net.corda.session.mapper.service
 
-import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -34,6 +34,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
@@ -54,7 +55,12 @@ class FlowMapperService @Activate constructor(
         private const val CONSUMER_GROUP = "FlowMapperConsumer"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
+    private val closeableResources = CloseableResources.of(
+        this::stateAndEventSub,
+        this::scheduledTaskState
+    )
+
+    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(closeableResources, ::eventHandler)
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private var stateAndEventSub: StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>? = null
@@ -107,9 +113,6 @@ class FlowMapperService @Activate constructor(
         try {
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
-
-            scheduledTaskState?.close()
-            stateAndEventSub?.close()
 
             val newScheduledTaskState = ScheduledTaskState(
                 Executors.newSingleThreadScheduledExecutor(),

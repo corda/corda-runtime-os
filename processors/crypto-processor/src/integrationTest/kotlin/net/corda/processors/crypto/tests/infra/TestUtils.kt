@@ -2,11 +2,10 @@ package net.corda.processors.crypto.tests.infra
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
 import java.time.Instant
-import java.util.UUID
 import kotlin.random.Random
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
@@ -15,8 +14,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
-import net.corda.v5.base.types.toHexString
-import net.corda.v5.crypto.sha256Bytes
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -86,8 +83,7 @@ fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
                 ConfigFactory.parseString(BOOT_CONFIGURATION)
             )
     ).addDefaultBootCryptoConfig(
-        fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-        fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
     )
     extra.forEach {
         cfg = cfg.withFallback(cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped())))

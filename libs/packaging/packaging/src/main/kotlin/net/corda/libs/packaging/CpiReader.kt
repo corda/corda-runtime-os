@@ -5,6 +5,7 @@ import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.internal.v1.CpiLoaderV1
 import net.corda.libs.packaging.internal.FormatVersionReader
+import net.corda.libs.packaging.internal.v2.CpiLoaderV2
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path
@@ -41,12 +42,10 @@ class CpiReader {
             val formatVersion = FormatVersionReader.readCpiFormatVersion(manifest)
 
             // Choose correct implementation to read this version
-            ByteArrayInputStream(buffer).use {
-                return when (formatVersion) {
-                    version1 -> CpiLoaderV1.loadCpi(it, expansionLocation, cpiLocation, verifySignature)
-                    version2 -> TODO("Implement format version 2")
-                    else -> throw UnknownFormatVersionException("Unknown Corda-CPI-Format - \"$formatVersion\"")
-                }
+            return when (formatVersion) {
+                version1 -> CpiLoaderV1.loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
+                version2 -> CpiLoaderV2().loadCpi(buffer, expansionLocation, cpiLocation, verifySignature)
+                else -> throw UnknownFormatVersionException("Unknown Corda-CPI-Format - \"$formatVersion\"")
             }
         }
     }

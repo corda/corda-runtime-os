@@ -6,12 +6,14 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.KeyStore
-import java.security.PrivateKey
-import java.security.cert.CertPath
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.util.jar.JarInputStream
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 import java.util.zip.ZipFile
 import jdk.security.jarsigner.JarSigner
+import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
 internal object CpxSigner {
     /**
@@ -21,8 +23,9 @@ internal object CpxSigner {
     fun sign(
         unsignedInputCpx: Path,
         signedOutputCpx: Path,
-        privateKey: PrivateKey,
-        certPath: CertPath,
+        keyStoreFileName: String,
+        keyStorePass: String,
+        keyAlias: String,
         signerName: String,
         tsaUrl: String?
     ) {
@@ -31,6 +34,14 @@ internal object CpxSigner {
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE_NEW
             ).use { signedCpi ->
+
+                val privateKeyEntry = getPrivateKeyEntry(
+                    keyStoreFileName,
+                    keyStorePass,
+                    keyAlias
+                )
+                val privateKey = privateKeyEntry.privateKey
+                val certPath = buildCertPath(privateKeyEntry.certificateChain.asList())
 
                 // Create JarSigner
                 val builder = JarSigner.Builder(privateKey, certPath)
@@ -47,10 +58,30 @@ internal object CpxSigner {
         }
     }
 
+    @Suppress("NestedBlockDepth")
+    fun removeSignatures(signedCpx: Path, removedSignaturesCpx: Path) {
+        JarInputStream(Files.newInputStream(signedCpx, StandardOpenOption.READ)).use { inputJar ->
+            val manifest = Manifest()
+            // Leave out manifest signature entries, so only get main attributes.
+            manifest.mainAttributes.putAll(inputJar.manifest.mainAttributes)
+            JarOutputStream(Files.newOutputStream(removedSignaturesCpx, StandardOpenOption.WRITE), manifest).use { outputJar ->
+                var nextEntry = inputJar.nextJarEntry
+                while (nextEntry != null) {
+                    if (!isSigningRelated(nextEntry)) {
+                        outputJar.putNextEntry(nextEntry)
+                        inputJar.copyTo(outputJar)
+                        outputJar.closeEntry()
+                    }
+                    nextEntry = inputJar.nextJarEntry
+                }
+            }
+        }
+    }
+
     /**
      * Reads PrivateKeyEntry from key store
      */
-    fun getPrivateKeyEntry(keyStoreFileName: String, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
+    private fun getPrivateKeyEntry(keyStoreFileName: String, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
         val passwordCharArray = keyStorePass.toCharArray()
         val keyStore = KeyStore.getInstance(File(keyStoreFileName), passwordCharArray)
 
@@ -68,7 +99,7 @@ internal object CpxSigner {
     /**
      * Builds CertPath from certificate chain
      */
-    fun buildCertPath(certificateChain: List<Certificate>) =
+    private fun buildCertPath(certificateChain: List<Certificate>) =
         CertificateFactory
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertPath(certificateChain)

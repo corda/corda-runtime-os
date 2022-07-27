@@ -1,7 +1,5 @@
 package net.corda.libs.configuration.endpoints.v1.types
 
-import net.corda.v5.base.versioning.Version
-
 /**
  * The data object sent via HTTP to request a cluster configuration update.
  *
@@ -11,5 +9,5 @@ import net.corda.v5.base.versioning.Version
  * @property schemaVersion Schema version of the configuration.
  */
 data class UpdateConfigParameters(
-    val section: String, val version: Int, val config: String, val schemaVersion: Version
+    val section: String, val version: Int, val config: String, val schemaVersion: ConfigSchemaVersion
 )

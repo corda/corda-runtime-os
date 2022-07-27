@@ -10,7 +10,11 @@ import java.nio.file.StandardOpenOption.WRITE
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.CpxSigner
+import net.corda.cli.plugins.packaging.signing.SigningOptions
+import picocli.CommandLine
 
 /**
  * Filename of group policy within jar file
@@ -49,17 +53,8 @@ class CreateCpi : Runnable {
     )
     var outputFileName: String? = null
 
-    @Option(names = ["--keystore", "-s"], required = true, description = ["Keystore holding signing keys"])
-    lateinit var keyStoreFileName: String
-
-    @Option(names = ["--storepass", "--password", "-p"], required = true, description = ["Keystore password"])
-    lateinit var keyStorePass: String
-
-    @Option(names = ["--key", "-k"], required = true, description = ["Key alias"])
-    lateinit var keyAlias: String
-
-    @Option(names = ["--tsa", "-t"], description = ["Time Stamping Authority (TSA) URL"])
-    var tsaUrl: String? = null
+    @CommandLine.Mixin
+    var signingOptions = SigningOptions()
 
     /**
      * Represents option to read group policy from file or stdin
@@ -82,8 +77,8 @@ class CreateCpi : Runnable {
     override fun run() {
 
         // Check input files exist, output file does not exist
-        val cpbPath = checkFileExists(cpbFileName)
-        checkFileExists(keyStoreFileName)
+        val cpbPath = requireFileExists(cpbFileName)
+        requireFileExists(signingOptions.keyStoreFileName)
 
         // Create output filename if none specified
         var outputName = outputFileName
@@ -92,33 +87,15 @@ class CreateCpi : Runnable {
             val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
             outputName = Path.of(cpbDirectory, cpiFilename).toString()
         }
-        val outputFilePath = checkFileDoesNotExist(outputName)
+        val outputFilePath = requireFileDoesNotExist(outputName)
 
         // Allow piping group policy file into stdin
         val groupPolicy = if (groupPolicyFileName == "-")
             GroupPolicySource.StdIn
         else
-            GroupPolicySource.File(checkFileExists(groupPolicyFileName))
+            GroupPolicySource.File(requireFileExists(groupPolicyFileName))
 
         buildAndSignCpi(cpbPath, outputFilePath, groupPolicy)
-    }
-
-    /**
-     * Check file exists and returns a Path object pointing to the file, throws error if file does not exist
-     */
-    private fun checkFileExists(fileName: String): Path {
-        val path = Path.of(fileName)
-        require(Files.isReadable(path)) { "\"$fileName\" does not exist or is not readable" }
-        return path
-    }
-
-    /**
-     * Check that file does not exist and returns a Path object pointing to the filename, throws error if file exists
-     */
-    private fun checkFileDoesNotExist(fileName: String): Path {
-        val path = Path.of(fileName)
-        require(Files.notExists(path)) { "\"$fileName\" already exists" }
-        return path
     }
 
     /**
@@ -133,10 +110,15 @@ class CreateCpi : Runnable {
             buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
 
             // Sign CPI jar
-            val privateKeyEntry = CpxSigner.getPrivateKeyEntry(keyStoreFileName, keyStorePass, keyAlias)
-            val privateKey = privateKeyEntry.privateKey
-            val certPath = CpxSigner.buildCertPath(privateKeyEntry.certificateChain.asList())
-            CpxSigner.sign(unsignedCpi, outputFilePath, privateKey, certPath, SIGNER_NAME, tsaUrl)
+            CpxSigner.sign(
+                unsignedCpi,
+                outputFilePath,
+                signingOptions.keyStoreFileName,
+                signingOptions.keyStorePass,
+                signingOptions.keyAlias,
+                SIGNER_NAME,
+                signingOptions.tsaUrl
+            )
         } finally {
             // Delete temp file
             Files.deleteIfExists(unsignedCpi)

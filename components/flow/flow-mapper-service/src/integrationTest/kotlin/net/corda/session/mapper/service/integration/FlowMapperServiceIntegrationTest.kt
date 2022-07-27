@@ -2,11 +2,6 @@ package net.corda.session.mapper.service.integration
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.lang.System.currentTimeMillis
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -49,6 +44,11 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -226,12 +226,70 @@ class FlowMapperServiceIntegrationTest {
         p2pOutSub.stop()
     }
 
+    @Test
+    fun `flow mapper still works after config update`() {
+        val testId = "test4"
+        val versions = listOf(1)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
+
+        //send 2 session init, 1 is duplicate
+        val sessionInitEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                    testId, versions, testId, testId,null
+                ))
+            )
+        )
+
+        publisher.publish(listOf(sessionInitEvent))
+
+        //validate p2p receives the init
+        val p2pLatch = CountDownLatch(1)
+        val p2pOutSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            TestP2POutProcessor(testId, p2pLatch, 1), messagingConfig, null
+        )
+        p2pOutSub.start()
+        assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
+        p2pOutSub.stop()
+
+        // Publish the config again to trigger the update logic
+        publishConfig(publisher)
+
+        //send data back
+        val sessionDataEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray())))
+            )
+        )
+        publisher.publish(listOf(sessionDataEvent))
+
+        //validate flow event topic
+        val flowEventLatch = CountDownLatch(1)
+        val testProcessor = TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
+        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
+            testProcessor,
+            messagingConfig,
+            null
+        )
+
+        flowEventSub.start()
+        assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
+        flowEventSub.stop()
+    }
+
+
     private fun setupConfig(publisher: Publisher) {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, flowConf, 0, schemaVersion))))
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
+        publishConfig(publisher)
         configService.start()
         configService.bootstrapConfig(bootConfig)
+    }
+
+    private fun publishConfig(publisher: Publisher) {
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, flowConf, 0, schemaVersion))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
     }
 
     private val bootConf = """
