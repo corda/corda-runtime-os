@@ -7,48 +7,47 @@ plugins {
 description 'Membership data read services implementation'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly "org.osgi:osgi.annotation"
 
-    implementation project(":libs:membership:membership-impl")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:membership:membership-group-read")
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-topic-schema"
-    implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-membership"
-    implementation "net.corda:corda-base"
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:membership:membership-impl")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-topic-schema"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
+
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
 
     testImplementation "net.corda:corda-serialization"
-
-    integrationTestImplementation project(":testing:db-message-bus-testkit")
-
-    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
-    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

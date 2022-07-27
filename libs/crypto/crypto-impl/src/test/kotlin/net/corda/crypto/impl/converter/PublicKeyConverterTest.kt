@@ -48,7 +48,7 @@ class PublicKeyConverterTest {
     fun `converting PublicKey fails when the keys is null`() {
         val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
             sortedMapOf(
-                "corda.ledger.keys" to null
+                "corda.ledger.keys" to LEDGER_KEY
             ),
             converters,
             ""
