@@ -37,7 +37,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [ConfigRPCOpsImpl]. */
+/**
+ * Tests of [ConfigRPCOpsImpl].
+ */
 class ConfigRPCOpsImplTests {
     companion object {
         private const val actor = "test_principal"
