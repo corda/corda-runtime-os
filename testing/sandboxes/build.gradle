@@ -13,8 +13,9 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     api project(':libs:sandbox')
-    api project(':libs:virtual-node:virtual-node-info')
     api project(":libs:packaging:packaging")
+    api project(':libs:packaging:packaging-core')
+    api project(':libs:virtual-node:virtual-node-info')
     api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -23,10 +24,6 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
-    implementation "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    implementation "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
-
-    implementation project(':libs:packaging:packaging-core')
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')
@@ -36,6 +33,9 @@ tasks.named('jar', Jar) {
     bundle {
         bnd '''\
 Bundle-SymbolicName: \${project.group}.sandbox-testing
+Import-Package: \
+    org.junit.jupiter.api.extension;resolution:=optional,\
+    *
 '''
     }
 }
