@@ -22,4 +22,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
+    // Test
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

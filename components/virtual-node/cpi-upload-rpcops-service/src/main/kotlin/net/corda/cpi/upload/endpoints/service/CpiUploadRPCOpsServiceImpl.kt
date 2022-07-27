@@ -3,7 +3,6 @@ package net.corda.cpi.upload.endpoints.service
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.createCoordinator

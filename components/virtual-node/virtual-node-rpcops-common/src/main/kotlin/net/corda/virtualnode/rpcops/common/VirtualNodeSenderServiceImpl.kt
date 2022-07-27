@@ -34,9 +34,10 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    var sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null,
+    var timeout: Duration? = null
 ) : VirtualNodeSenderService {
-
     private companion object {
         private const val GROUP_NAME = "virtual.node.management"
         private const val CLIENT_NAME_HTTP = "virtual.node.manager.http"
@@ -45,9 +46,6 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
     }
     private var configReadServiceRegistrationHandle: AutoCloseable? = null
     private var configUpdateHandle: AutoCloseable? = null
-
-    var sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
-    var timeout: Duration? = null
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeSenderService>()
