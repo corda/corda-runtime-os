@@ -58,6 +58,9 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         val logger = contextLogger()
     }
 
+    override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
+    override val protocolVersion = 1
+
     private val dependentComponents = DependentComponents.of(
         ::virtualNodeInfoReadService,
         ::virtualNodeSenderService
@@ -66,21 +69,22 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     private val coordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeRPCOps>()
     ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
-        logger.info(event.toString())
-        logger.info(coordinator.toString())
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
+                logger.info("${this::javaClass.name} is now Up")
             }
         }
     }
-
-    override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
-    override val protocolVersion = 1
+    
+    override fun getAllVirtualNodes(): VirtualNodes {
+        return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
+    }
 
     override fun createVirtualNode(request: VirtualNodeRequest): VirtualNodeInfo {
         val instant = clock.instant()
+        if (!isRunning) throw IllegalStateException("${this.javaClass.simpleName} is not running! Its status is: ${coordinator.status}")
         validateX500Name(request.x500Name)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -125,10 +129,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             }
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
-    }
-
-    override fun getAllVirtualNodes(): VirtualNodes {
-        return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =

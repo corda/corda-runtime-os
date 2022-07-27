@@ -67,6 +67,7 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
                 when (event.status) {
                     LifecycleStatus.ERROR -> coordinator.postEvent(StopEvent(errored = true))
                     LifecycleStatus.UP -> {
+                        // Receive updates to the RPC and Messaging config
                         configUpdateHandle?.close()
                         configUpdateHandle =
                             configurationReadService.registerComponentForUpdates(coordinator, requiredKeys)
@@ -74,6 +75,7 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
                     else -> Unit
                 }
                 coordinator.updateStatus(event.status)
+                logger.info("${this::javaClass.name} is now ${event.status}")
             }
             is ConfigChangedEvent -> onConfigChange(coordinator, event.config, event.keys)
         }
@@ -98,6 +100,7 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
                     ),
                     messagingConfig
                 ).apply {
+                    // Report as back up post start
                     start()
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
@@ -112,7 +115,7 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
     /**
      * Sends the [request] to the configuration management topic on bus.
      *
-     * @throws VirtualNodeRPCOpsServiceException If the updated configuration could not be published.
+     * @throws CordaRuntimeException If the updated configuration could not be published.
      */
     @Suppress("ThrowsCount")
     override fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {

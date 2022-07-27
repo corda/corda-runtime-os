@@ -45,6 +45,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         private val logger = contextLogger()
     }
 
+    override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java
+    override val protocolVersion: Int = 1
+
     private val clock = UTCClock()
     private val dependentComponents = DependentComponents.of(
         ::cpiUploadRPCOpsService,
@@ -54,18 +57,14 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeMaintenanceRPCOps>()
     ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
-        logger.info(event.toString())
-        logger.info(coordinator.toString())
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
+                logger.info("${this::javaClass.name} is now Up")
             }
         }
     }
-
-    override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java
-    override val protocolVersion: Int = 1
 
     override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")

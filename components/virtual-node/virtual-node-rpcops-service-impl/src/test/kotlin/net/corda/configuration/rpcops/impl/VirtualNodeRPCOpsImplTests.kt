@@ -6,11 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
-<<<<<<< HEAD
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
-=======
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
->>>>>>> Fixup some detekt issues
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
@@ -23,8 +19,8 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
 
-@Disabled("Needs an equivalent test for CORE-5907")
 /** Tests of [VirtualNodeRPCOpsImpl]. */
+@Disabled("Needs an equivalent test for CORE-5907")
 class VirtualNodeRPCOpsImplTests {
     companion object {
         private const val actor = "test_principal"
