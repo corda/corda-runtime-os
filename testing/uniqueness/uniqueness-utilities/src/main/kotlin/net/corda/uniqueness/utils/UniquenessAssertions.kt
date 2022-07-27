@@ -1,5 +1,5 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
-package net.corda.uniqueness
+package net.corda.uniqueness.utils
 
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock

@@ -1,4 +1,4 @@
-package net.corda.uniqueness.checker.impl
+package net.corda.uniqueness.checker.impl.fake
 
 import net.corda.data.uniqueness.*
 import net.corda.lifecycle.*
@@ -9,6 +9,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import java.time.Instant
 
@@ -16,10 +17,11 @@ import java.time.Instant
  * An in-memory implementation of the uniqueness checker component, which does not persist any data,
  * and therefore loses any history of previous requests when a class instance is destroyed.
  *
- * Intended for testing purposes only - DO NOT USE ON A REAL SYSTEM
+ * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
+@ServiceRanking(Int.MAX_VALUE)
 @Component(service = [UniquenessChecker::class])
-class InMemoryUniquenessCheckerImpl(
+class UniquenessCheckerImplFake(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val clock: Clock
 ) : UniquenessChecker {
