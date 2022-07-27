@@ -6,12 +6,13 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class StableKeyPairDecryptorTests {
@@ -24,59 +25,64 @@ class StableKeyPairDecryptorTests {
     fun setup() {
         coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         schemeMetadata = CipherSchemeMetadataImpl()
-        cryptoOpsClient = TestCryptoOpsClient(coordinatorFactory, mock()).also { it.start() }
+        cryptoOpsClient = TestCryptoOpsClient(coordinatorFactory, mock()).also {
+            it.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
+            }
+        }
         component = StableKeyPairDecryptorImpl(coordinatorFactory, schemeMetadata, cryptoOpsClient)
     }
 
     @Test
     fun `Should start component and use active implementation only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(StableKeyPairDecryptorImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> { component.impl }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(StableKeyPairDecryptorImpl.ActiveImpl::class.java, component.impl)
+        assertNotNull(component.impl)
     }
 
     @Test
     fun `Should deactivate implementation when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(StableKeyPairDecryptorImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> { component.impl }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(StableKeyPairDecryptorImpl.ActiveImpl::class.java, component.impl)
+        assertNotNull(component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(StableKeyPairDecryptorImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> { component.impl }
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(StableKeyPairDecryptorImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> { component.impl }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(StableKeyPairDecryptorImpl.ActiveImpl::class.java, component.impl)
+        assertNotNull(component.impl)
         cryptoOpsClient.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(StableKeyPairDecryptorImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> { component.impl }
         cryptoOpsClient.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(StableKeyPairDecryptorImpl.ActiveImpl::class.java, component.impl)
+        assertNotNull(component.impl)
     }
 }

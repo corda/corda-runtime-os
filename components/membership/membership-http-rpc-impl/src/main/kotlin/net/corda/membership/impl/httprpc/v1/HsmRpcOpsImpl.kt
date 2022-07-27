@@ -1,10 +1,8 @@
 package net.corda.membership.impl.httprpc.v1
 
-import net.corda.crypto.client.hsm.HSMConfigurationClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.data.crypto.wire.hsm.HSMInfo
-import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
@@ -12,20 +10,14 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.HsmRpcOps
-import net.corda.membership.httprpc.v1.types.response.HsmInfo
-import net.corda.membership.httprpc.v1.types.response.New
-import net.corda.membership.httprpc.v1.types.response.None
-import net.corda.membership.httprpc.v1.types.response.Shared
+import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 @Component(service = [PluggableRPCOps::class])
 class HsmRpcOpsImpl @Activate constructor(
-    @Reference(service = HSMConfigurationClient::class)
-    private val hsmConfigurationClient: HSMConfigurationClient,
     @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -33,29 +25,13 @@ class HsmRpcOpsImpl @Activate constructor(
 ) : HsmRpcOps, PluggableRPCOps<HsmRpcOps>, Lifecycle {
 
     companion object {
-        private fun HSMInfo.expose() =
-            HsmInfo(
+        private fun HSMAssociationInfo.expose() =
+            HsmAssociationInfo(
                 id = this.id,
-                workerLabel = this.workerLabel,
-                description = this.description,
-                supportedSchemes = this.supportedSchemes,
-                capacity = this.capacity.let {
-                    if (it < 0) {
-                        null
-                    } else {
-                        it
-                    }
-                },
-                masterKeyPolicy = when (this.masterKeyPolicy) {
-                    MasterKeyPolicy.NONE -> None
-                    MasterKeyPolicy.NEW -> New
-                    MasterKeyPolicy.SHARED -> Shared(this.masterKeyAlias)
-                    else -> None
-                },
-                createdAt = this.timestamp,
-                maxAttempts = this.maxAttempts,
-                serviceName = this.serviceName,
-                attemptTimeout = Duration.ofMillis(this.attemptTimeoutMills)
+                hsmId = this.hsmId,
+                category = this.category,
+                masterKeyAlias = this.masterKeyAlias,
+                deprecatedAt = this.deprecatedAt
             )
 
         private fun String.toCategory() = this.uppercase().also {
@@ -65,17 +41,11 @@ class HsmRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun listHsms(): Collection<HsmInfo> {
-        return hsmConfigurationClient.lookup(emptyMap()).map {
-            it.expose()
-        }
-    }
-
     override fun assignedHsm(tenantId: String, category: String) =
         hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
 
     override fun assignSoftHsm(tenantId: String, category: String) = hsmRegistrationClient.assignSoftHSM(
-        tenantId, category.toCategory(), emptyMap()
+        tenantId, category.toCategory()
     ).expose()
 
     override fun assignHsm(tenantId: String, category: String) = hsmRegistrationClient.assignHSM(
@@ -105,7 +75,6 @@ class HsmRpcOpsImpl @Activate constructor(
         ::activate,
         ::deactivate,
         setOf(
-            LifecycleCoordinatorName.forComponent<HSMConfigurationClient>(),
             LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
         )
     )

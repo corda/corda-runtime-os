@@ -15,7 +15,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
@@ -88,9 +87,10 @@ fun FileInfo.validateAndGetCpi(cpiPartsDir: Path): Cpi {
  *
  * @throws ValidationException if there is an error
  */
-@Suppress("ThrowsCount", "ComplexMethod")
+@Suppress("ThrowsCount", "ComplexMethod", "LongParameterList")
 fun CpiPersistence.persistCpiToDatabase(
     cpi: Cpi,
+    groupId: String,
     fileInfo: FileInfo,
     requestId: RequestId,
     cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
@@ -101,8 +101,6 @@ fun CpiPersistence.persistCpiToDatabase(
     // We'll publish to the database using the de-chunking checksum.
 
     try {
-        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::getOrCreateGroupId)
-
         val cpiExists = this.cpiExists(
             cpi.metadata.cpiId.name,
             cpi.metadata.cpiId.version,
