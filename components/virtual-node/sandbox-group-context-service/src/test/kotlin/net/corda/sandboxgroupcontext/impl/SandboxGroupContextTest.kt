@@ -50,7 +50,7 @@ class SandboxGroupContextTest {
     private lateinit var sandboxGroupContext: SandboxGroupContextImpl
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         sandboxGroupContext = SandboxGroupContextImpl(virtualNodeContext, mock())
     }
 
