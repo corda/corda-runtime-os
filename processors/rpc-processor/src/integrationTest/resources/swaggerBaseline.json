@@ -757,37 +757,6 @@
         }
       }
     },
-    "/hsm" : {
-      "get" : {
-        "tags" : [ "HSM API" ],
-        "description" : "Get list of available HSMs.",
-        "operationId" : "get_hsm",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "$ref" : "#/components/schemas/HsmInfo"
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/hsm/getprotocolversion" : {
       "get" : {
         "tags" : [ "HSM API" ],
@@ -851,7 +820,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }
@@ -901,7 +870,7 @@
                 "schema" : {
                   "nullable" : true,
                   "allOf" : [ {
-                    "$ref" : "#/components/schemas/HsmInfo"
+                    "$ref" : "#/components/schemas/HsmAssociationInfo"
                   } ]
                 }
               }
@@ -948,7 +917,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }
@@ -3049,31 +3018,24 @@
           }
         }
       },
-      "HsmInfo" : {
-        "required" : [ "attemptTimeout", "createdAt", "id", "masterKeyPolicy", "maxAttempts", "serviceName", "supportedSchemes" ],
+      "HsmAssociationInfo" : {
+        "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
         "type" : "object",
         "properties" : {
-          "attemptTimeout" : {
+          "category" : {
             "type" : "string",
-            "format" : "duration",
             "nullable" : false,
-            "example" : "PT15M"
+            "example" : "string"
           },
-          "capacity" : {
+          "deprecatedAt" : {
             "type" : "integer",
-            "format" : "int32",
-            "nullable" : true,
+            "format" : "int64",
+            "nullable" : false,
             "example" : 0
           },
-          "createdAt" : {
+          "hsmId" : {
             "type" : "string",
-            "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "description" : {
-            "type" : "string",
-            "nullable" : true,
             "example" : "string"
           },
           "id" : {
@@ -3081,30 +3043,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "masterKeyPolicy" : {
-            "$ref" : "#/components/schemas/MasterKeyPolicy"
-          },
-          "maxAttempts" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "serviceName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "supportedSchemes" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "string",
-              "example" : "string"
-            }
-          },
-          "workerLabel" : {
+          "masterKeyAlias" : {
             "type" : "string",
             "nullable" : true,
             "example" : "string"
@@ -3142,17 +3081,6 @@
             "example" : "string"
           },
           "scheme" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "MasterKeyPolicy" : {
-        "required" : [ "type" ],
-        "type" : "object",
-        "properties" : {
-          "type" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"

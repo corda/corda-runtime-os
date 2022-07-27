@@ -1,5 +1,6 @@
 package net.corda.crypto.tck
 
+import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.file.Path
@@ -18,7 +19,17 @@ import java.time.Duration
  * @property sessionComplianceTimeout the session timeout to test, must exceed the login session timeout.
  * @property maxAttempts number of retries when the call to the HSM fails.
  * @property attemptTimeout the HSM call execution timeout for each try.
+ * @property secrets the service which resolves the secrets in the configuration, as the Cord configuration subsystem
+ * is not available for the TCK, the tests must supply it, the default implementation in the TCK will return the
+ * value as it's in the "encryptedSecret" (see bellow) or throw [IllegalArgumentException] if the secret's structure
+ * doesn't conform.
  * @property tests which test suites to execute.
+ *
+ * "passphrase": {
+ *      "configSecret": {
+ *          "encryptedSecret": "<encrypted-value>"
+ *      }
+ *  }
  */
 @Suppress("LongParameterList")
 class ExecutionOptions(
@@ -30,6 +41,7 @@ class ExecutionOptions(
     val sessionComplianceTimeout: Duration = Duration.ofMinutes(20),
     val maxAttempts: Int = 2,
     val attemptTimeout: Duration = Duration.ofSeconds(10),
+    val secrets: ConfigurationSecrets,
     val tests: List<ComplianceTestType> = listOf(
         ComplianceTestType.CRYPTO_SERVICE
     )

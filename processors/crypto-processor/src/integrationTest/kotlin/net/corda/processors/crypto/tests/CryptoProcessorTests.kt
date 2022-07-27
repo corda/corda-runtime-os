@@ -36,7 +36,7 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.infra.DependenciesTracker
+import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
@@ -102,9 +102,6 @@ class CryptoProcessorTests {
         lateinit var subscriptionFactory: SubscriptionFactory
 
         @InjectService(timeout = 5000L)
-        lateinit var cryptoProcessor: CryptoProcessor
-
-        @InjectService(timeout = 5000L)
         lateinit var ephemeralEncryptor: EphemeralKeyPairEncryptor
 
         @InjectService(timeout = 5000L)
@@ -136,6 +133,9 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000)
         lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
+
+        @InjectService(timeout = 5000L)
+        lateinit var cryptoProcessor: CryptoProcessor
 
         private lateinit var publisher: Publisher
 
@@ -202,7 +202,12 @@ class CryptoProcessorTests {
                     Record(
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
-                        Configuration(messagingConfig.root().render(), messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
+                        Configuration(
+                            messagingConfig.root().render(),
+                            messagingConfig.root().render(),
+                            0,
+                            ConfigurationSchemaVersion(1, 0)
+                        )
                     )
                 )
             )
@@ -284,7 +289,7 @@ class CryptoProcessorTests {
             hsmRegistrationClient.startAndWait()
             cryptoProcessor.startAndWait(boostrapConfig)
             stableDecryptor.startAndWait()
-            val tracker = DependenciesTracker(
+            val tracker = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
                 lifecycleRegistry,
@@ -310,7 +315,7 @@ class CryptoProcessorTests {
             CryptoConsts.Categories.all.forEach {
                 // cluster is assigned in the crypto processor
                 if(hsmRegistrationClient.findHSM(vnodeId, it) == null) {
-                    hsmRegistrationClient.assignSoftHSM(vnodeId, it, emptyMap())
+                    hsmRegistrationClient.assignSoftHSM(vnodeId, it)
                 }
             }
         }
