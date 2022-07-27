@@ -25,6 +25,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestService
@@ -115,6 +116,9 @@ class RegistrationProcessor(
             }
         } catch(e: MissingRegistrationStateException) {
             logger.error("RegistrationState was null during dynamic registration.")
+            createEmptyResult()
+        } catch (e: CordaRuntimeException) {
+            logger.error("Unexpected error in handling registration.", e)
             createEmptyResult()
         }
         return StateAndEventProcessor.Response(
