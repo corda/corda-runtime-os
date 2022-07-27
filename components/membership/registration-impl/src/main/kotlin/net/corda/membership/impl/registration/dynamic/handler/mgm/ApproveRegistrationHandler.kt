@@ -118,7 +118,7 @@ internal class ApproveRegistrationHandler(
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationId, approvedMember, approvedBy),
+            null,
             memberToAllMembers + memberRecord + allMembersToNewMember
         )
     }
