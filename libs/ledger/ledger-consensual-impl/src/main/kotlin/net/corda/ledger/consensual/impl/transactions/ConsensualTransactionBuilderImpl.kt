@@ -38,11 +38,11 @@ class ConsensualTransactionBuilderImpl(
         this.copy(consensualStates = consensualStates + consensualState)
 
     private fun calculateMetaData(): TransactionMetaData {
-        return mapOf(
+        return TransactionMetaDataImpl(mapOf(
             TRANSACTION_META_DATA_LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java,
             TRANSACTION_META_DATA_LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
             // TODO(CPK identifier/etc)
-        ) as TransactionMetaDataImpl
+        ))
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
