@@ -1775,7 +1775,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/SetupHostedIdentitiesWrapperRequest"
+                "$ref" : "#/components/schemas/HostedIdentitySetupRequest"
               }
             }
           },
@@ -3049,6 +3049,28 @@
           }
         }
       },
+      "HostedIdentitySetupRequest" : {
+        "required" : [ "certificateChainAlias" ],
+        "type" : "object",
+        "properties" : {
+          "certificateChainAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sessionKeyId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "tlsTenantId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "Additional parameters for setting up the hosted identity."
+      },
       "HsmInfo" : {
         "required" : [ "attemptTimeout", "createdAt", "id", "masterKeyPolicy", "maxAttempts", "serviceName", "supportedSchemes" ],
         "type" : "object",
@@ -3461,31 +3483,6 @@
             }
           }
         }
-      },
-      "SetupHostedIdentitiesWrapperRequest" : {
-        "required" : [ "certificateChainAlias" ],
-        "properties" : {
-          "certificateChainAlias" : {
-            "type" : "string",
-            "description" : "The certificates chain alias.",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "sessionKeyId" : {
-            "type" : "string",
-            "description" : "The session key ID (will use the first session one by default).",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "tlsTenantId" : {
-            "type" : "string",
-            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityShortHash, default to the holdingIdentityShortHash).",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
-        "description" : "SetupHostedIdentitiesWrapperRequest",
-        "nullable" : false
       },
       "StartFlowParameters" : {
         "required" : [ "clientRequestId", "flowClassName", "requestData" ],
