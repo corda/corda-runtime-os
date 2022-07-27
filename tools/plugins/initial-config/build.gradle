@@ -14,7 +14,7 @@ dependencies {
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli-codegen:$picocliVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
 
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-password')
