@@ -1,22 +1,22 @@
 package net.corda.v5.cipher.suite
 
 /**
- * Factory to create new instances of the [CryptoService].
+ * Factory to create new instances of the [EncryptionService].
  */
-interface CryptoServiceProvider<T : Any> {
+interface EncryptionServiceProvider<T : Any> {
     /**
      * The name used to resolve current provider by crypto service factory.
      */
     val name: String
 
     /**
-     * Class for crypto service specific configuration which must be defined together with particular [CryptoService]
+     * Class for encryption service specific configuration which must be defined together with particular [CryptoService]
      * implementation.
      */
     val configType: Class<T>
 
     /**
-     * Returns an instance of the [CryptoService].
+     * Returns an instance of the [EncryptionService].
      * @param config crypto service configuration
      * @param secrets provides access to decrypting the secrets
      *

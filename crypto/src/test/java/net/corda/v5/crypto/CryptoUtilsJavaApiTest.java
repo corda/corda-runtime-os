@@ -94,4 +94,10 @@ public class CryptoUtilsJavaApiTest {
         assertTrue(result.contains(signature1.getBy()));
         assertTrue(result.contains(signature2.getBy()));
     }
+
+    @Test
+    public void publicConstsShouldLookNiceInJava() {
+        assertEquals(20, CryptoUtils.KEY_LOOKUP_INPUT_ITEMS_LIMIT);
+        assertEquals(10, CryptoUtils.COMPOSITE_KEY_CHILDREN_LIMIT);
+    }
 }

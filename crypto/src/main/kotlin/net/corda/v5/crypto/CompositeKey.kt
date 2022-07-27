@@ -86,8 +86,13 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
         // If we want PublicKey we only keep one key, otherwise it will lead to semantically equivalent trees
         // but having different structures.
         require(children.size > 1) { "CompositeKey must consist of two or more child nodes." }
+        require(children.size <= COMPOSITE_KEY_CHILDREN_LIMIT) {
+            "CompositeKey must consist of less or equal than $COMPOSITE_KEY_CHILDREN_LIMIT child nodes."
+        }
         // We should ensure threshold is positive, because smaller allowable weight for a node key is 1.
-        require(threshold > 0) { "CompositeKey threshold is set to $threshold, but it should be a positive integer." }
+        require(threshold > 0) {
+            "CompositeKey threshold is set to $threshold, but it should be a positive integer."
+        }
         // If threshold is bigger than total weight, then it will never be satisfied.
         val totalWeight = totalWeight()
         require(threshold <= totalWeight) {

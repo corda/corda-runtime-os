@@ -24,48 +24,6 @@
                         tableName="crypto_wrapping_key"
                         constraintName="crypto_wrapping_key_pk"/>
 
-        <createTable tableName="crypto_hsm_config">
-            <column name="id" type="VARCHAR(36)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="timestamp" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="worker_label" type="VARCHAR(512)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="description" type="VARCHAR(1024)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="master_key_policy" type="VARCHAR(16)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="master_key_alias" type="VARCHAR(30)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="supported_schemes" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="max_attempts" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="attempt_timeout_mills" type="BIGINT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="service_name" type="VARCHAR(512)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="service_config" type="VARBINARY(1048576)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="capacity" type="INT">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-        <addPrimaryKey  columnNames="id"
-                        tableName="crypto_hsm_config"
-                        constraintName="crypto_hsm_config_pk"/>
-
         <createTable tableName="crypto_hsm_association">
             <column name="id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
@@ -73,7 +31,7 @@
             <column name="tenant_id" type="VARCHAR(12)">
                 <constraints nullable="false"/>
             </column>
-            <column name="config_id" type="VARCHAR(36)">
+            <column name="hsm_id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
             <column name="timestamp" type="TIMESTAMP">
@@ -82,21 +40,13 @@
             <column name="master_key_alias" type="VARCHAR(30)">
                 <constraints nullable="true"/>
             </column>
-            <column name="alias_secret" type="VARBINARY(1048576)">
-                <constraints nullable="true"/>
-            </column>
         </createTable>
         <addPrimaryKey  columnNames="id"
                         tableName="crypto_hsm_association"
                         constraintName="crypto_hsm_association_pk"/>
-        <addUniqueConstraint columnNames="tenant_id, config_id"
+        <addUniqueConstraint columnNames="tenant_id, hsm_id"
                              tableName="crypto_hsm_association"
                              constraintName="crypto_hsm_association_uc"/>
-        <addForeignKeyConstraint  baseColumnNames="config_id"
-                                  baseTableName="crypto_hsm_association"
-                                  referencedColumnNames="id"
-                                  referencedTableName="crypto_hsm_config"
-                                  constraintName="crypto_hsm_association_fk"/>
 
         <createTable tableName="crypto_hsm_category_association">
             <column name="id" type="VARCHAR(36)">
@@ -129,34 +79,5 @@
                                   referencedColumnNames="id"
                                   referencedTableName="crypto_hsm_association"
                                   constraintName="crypto_hsm_category_association_fk1"/>
-
-        <createTable tableName="crypto_hsm_category_map">
-            <column name="id" type="VARCHAR(36)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="category" type="VARCHAR(20)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="config_id" type="VARCHAR(36)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="key_policy" type="VARCHAR(16)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="timestamp" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-        <addPrimaryKey  columnNames="id"
-                        tableName="crypto_hsm_category_map"
-                        constraintName="crypto_hsm_category_map_pk"/>
-        <addUniqueConstraint columnNames="category, config_id"
-                             tableName="crypto_hsm_category_map"
-                             constraintName="crypto_hsm_category_map_uc"/>
-        <addForeignKeyConstraint  baseColumnNames="config_id"
-                                  baseTableName="crypto_hsm_category_map"
-                                  referencedColumnNames="id"
-                                  referencedTableName="crypto_hsm_config"
-                                  constraintName="crypto_hsm_category_map_fk"/>
     </changeSet>
 </databaseChangeLog>

@@ -40,7 +40,7 @@
             <column name="external_id" type="VARCHAR(64)">
                 <constraints nullable="true"/>
             </column>
-            <column name="association_id" type="VARCHAR(36)">
+            <column name="hsm_id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
             <column name="status" type="VARCHAR(16)">

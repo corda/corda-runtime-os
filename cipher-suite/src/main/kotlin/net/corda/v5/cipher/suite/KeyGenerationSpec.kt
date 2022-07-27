@@ -14,7 +14,6 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
  * then the implementation will have to generate some unique value by itself, or always generate wrapped keys.
  * @property masterKeyAlias The wrapping key alias which can be used when generating the wrapped keys, the value
  * could be null for HSMs which use built-in wrapping keys.
- * @property secret The configured secret that can be used to generate the unique HSM alias.
  *
  * Note about key aliases. Corda always uses single alias to identify a key pair however some HSMs need separate
  * aliases for public and private keys, in such cases their names have to be derived from the single key pair alias.
@@ -23,8 +22,7 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 class KeyGenerationSpec(
     val keyScheme: KeyScheme,
     val alias: String?,
-    val masterKeyAlias: String?,
-    val secret: ByteArray?
+    val masterKeyAlias: String?
 ) {
     override fun toString(): String {
         return "$keyScheme,alias=$alias,masterKeyAlias=$masterKeyAlias"

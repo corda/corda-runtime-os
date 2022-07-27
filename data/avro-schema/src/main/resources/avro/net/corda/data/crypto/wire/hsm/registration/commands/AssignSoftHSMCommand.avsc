@@ -8,11 +8,6 @@
       "name": "category",
       "type": "string",
       "doc": "The category, like TLS, LEDGER, etc., which needs assignment."
-    },
-    {
-      "name": "context",
-      "type": "net.corda.data.KeyValuePairList",
-      "doc": "The optional key/value operation specific context"
     }
   ]
 }
