@@ -15,7 +15,6 @@ import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
@@ -415,32 +414,5 @@ internal class VirtualNodeEntityRepositoryTest {
         entityManagerFactory.transaction {
             repository.putVirtualNode(it, holdingIdentity, cpiId)
         }
-    }
-
-    @Test
-    fun `group ID is generated when not defined for MGM`() {
-        val hexFileChecksum = "123456ABCDEF"
-        val fileChecksum = "TEST:$hexFileChecksum"
-        val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI 4", "1.0", SecureHash.create(signerSummaryHash))
-
-        val cpiMetadataEntity = CpiMetadataEntity(
-            cpiId.name,
-            cpiId.version,
-            signerSummaryHash,
-            "TestFile",
-            fileChecksum,
-            "Test Group Policy",
-            MGM_DEFAULT_GROUP_ID,
-            "Request ID",
-            emptySet(),
-        )
-
-        entityManagerFactory.transaction {
-            it.persist(cpiMetadataEntity)
-        }
-
-        Assertions.assertThat(repository.getCPIMetadataByChecksum(fileChecksum)?.mgmGroupId)
-            .isNotEqualTo(MGM_DEFAULT_GROUP_ID)
     }
 }

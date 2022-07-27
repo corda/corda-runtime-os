@@ -6,7 +6,6 @@ import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.libs.virtualnode.datamodel.findVirtualNode
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -15,7 +14,6 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -53,15 +51,12 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
 
-        val groupId = cpiMetadataEntity.groupId.let {
-            if (it == MGM_DEFAULT_GROUP_ID) UUID.randomUUID().toString() else it
-        }
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
             if (it == "") null else SecureHash.create(it)
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
         val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
-        return CpiMetadataLite(cpiId, fileChecksum, groupId, cpiMetadataEntity.groupPolicy)
+        return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
     /** Reads CPI metadata from the database. */
