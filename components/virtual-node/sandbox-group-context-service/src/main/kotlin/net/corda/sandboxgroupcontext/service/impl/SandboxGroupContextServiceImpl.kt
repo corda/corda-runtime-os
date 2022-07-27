@@ -31,6 +31,7 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 import java.security.AccessControlContext
 import java.security.AccessControlException
+import java.util.Collections.singleton
 import java.util.Hashtable
 
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
