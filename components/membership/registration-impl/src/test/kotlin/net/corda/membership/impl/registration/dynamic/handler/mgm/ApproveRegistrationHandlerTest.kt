@@ -126,11 +126,11 @@ class ApproveRegistrationHandlerTest {
         } doReturn record
     }
     private val checkHash = mock<SecureHash>()
-    private val marketTree = mock<MerkleTree>() {
+    private val merkleTree = mock<MerkleTree>() {
         on { root } doReturn checkHash
     }
     private val merkleTreeFactory = mock<MerkleTreeFactory> {
-        on { buildTree(activeMembersWithoutMgm) } doReturn marketTree
+        on { buildTree(activeMembersWithoutMgm) } doReturn merkleTree
     }
     private val membershipPackage = mock<MembershipPackage>()
     private val membershipPackageFactory = mock<MembershipPackageFactory> {
