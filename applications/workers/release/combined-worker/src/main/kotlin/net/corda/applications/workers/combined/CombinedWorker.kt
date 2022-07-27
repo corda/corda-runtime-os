@@ -19,6 +19,8 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
+import net.corda.processors.p2p.gateway.GatewayProcessor
+import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
@@ -45,6 +47,10 @@ class CombinedWorker @Activate constructor(
     private val rpcProcessor: RPCProcessor,
     @Reference(service = MemberProcessor::class)
     private val memberProcessor: MemberProcessor,
+    @Reference(service = LinkManagerProcessor::class)
+    private val linkManagerProcessor: LinkManagerProcessor,
+    @Reference(service = GatewayProcessor::class)
+    private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -90,6 +96,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.start(config)
         memberProcessor.start(config)
         rpcProcessor.start(config)
+        linkManagerProcessor.start(config, false)
+        gatewayProcessor.start(config, false)
     }
 
     override fun shutdown() {
@@ -101,6 +109,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.stop()
         memberProcessor.stop()
         rpcProcessor.stop()
+        linkManagerProcessor.stop()
+        gatewayProcessor.stop()
 
         healthMonitor.stop()
     }
