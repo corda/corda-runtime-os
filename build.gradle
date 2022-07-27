@@ -97,7 +97,7 @@ allprojects {
                 maxFailures = 10
 
                 // do not retry smoke tests
-                excludeClasses.add("*.smoketest.*")
+                exclude '*.smoketest.*'
 
             }
         }
