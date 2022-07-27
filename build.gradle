@@ -90,17 +90,6 @@ allprojects {
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
         }
-
-        retry {
-            if (System.getenv().containsKey("JENKINS_URL")) {
-                maxRetries = 2
-                maxFailures = 10
-
-                // do not retry smoke tests
-                exclude '*.smoketest.*'
-
-            }
-        }
     }
 
     pluginManager.withPlugin('biz.aQute.bnd.builder') {
