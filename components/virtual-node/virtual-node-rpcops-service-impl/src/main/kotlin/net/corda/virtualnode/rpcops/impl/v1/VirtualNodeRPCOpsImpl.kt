@@ -19,6 +19,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -68,7 +69,10 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         logger.info(event.toString())
         logger.info(coordinator.toString())
         when (event) {
-            is StartEvent -> dependentComponents.registerAndStartAll(coordinator)
+            is StartEvent -> {
+                dependentComponents.registerAndStartAll(coordinator)
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
         }
     }
 
