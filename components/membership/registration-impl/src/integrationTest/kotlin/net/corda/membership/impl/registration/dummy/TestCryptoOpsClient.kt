@@ -168,7 +168,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
     }
 
     override fun createWrappingKey(
-        configId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>

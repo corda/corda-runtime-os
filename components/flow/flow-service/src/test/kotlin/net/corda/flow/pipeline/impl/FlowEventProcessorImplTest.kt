@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.flow.EMPTY_SMART_CONFIG
+import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -47,7 +47,7 @@ class FlowEventProcessorImplTest {
 
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
-        whenever(runOrContinue()).thenReturn(this)
+        whenever(runOrContinue(any())).thenReturn(this)
         whenever(setCheckpointSuspendedOn()).thenReturn(this)
         whenever(setWaitingFor()).thenReturn(this)
         whenever(requestPostProcessing()).thenReturn(this)
@@ -72,7 +72,7 @@ class FlowEventProcessorImplTest {
         flowEventPipelineFactory,
         flowEventExceptionProcessor,
         flowEventContextConverter,
-        EMPTY_SMART_CONFIG
+        MINIMUM_SMART_CONFIG
     )
 
     @Test
@@ -100,7 +100,7 @@ class FlowEventProcessorImplTest {
         processor.onNext(Checkpoint(), getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
         inOrder(flowEventPipeline) {
             verify(flowEventPipeline).eventPreProcessing()
-            verify(flowEventPipeline).runOrContinue()
+            verify(flowEventPipeline).runOrContinue(any())
             verify(flowEventPipeline).setCheckpointSuspendedOn()
             verify(flowEventPipeline).setWaitingFor()
             verify(flowEventPipeline).requestPostProcessing()

@@ -15,6 +15,10 @@ configurations {
         visible = false
 
         exclude group: 'net.corda.kotlin'
+        exclude group: 'net.corda', module: 'corda-http-rpc-client'
+        exclude group: 'net.corda', module: 'corda-http-rpc'
+        exclude group: 'net.corda', module: 'http-rpc'
+        exclude group: 'net.corda', module: 'corda-api'
         exclude group: 'org.jetbrains.kotlin'
         exclude group: 'org.slf4j'
         exclude group: 'com.fasterxml.jackson.module'

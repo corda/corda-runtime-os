@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
 import net.corda.v5.base.util.contextLogger
 
 class FlowEventProcessorImpl(
@@ -29,7 +30,7 @@ class FlowEventProcessorImpl(
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 
-    init{
+    init {
         // This works for now, but we should consider introducing a provider we could then inject it into
         // the classes that need it rather than passing it through all the layers.
         flowEventExceptionProcessor.configure(config)
@@ -55,14 +56,15 @@ class FlowEventProcessorImpl(
         }
 
         return try {
-            flowEventContextConverter.convert(pipeline
-                .eventPreProcessing()
-                .runOrContinue()
-                .setCheckpointSuspendedOn()
-                .setWaitingFor()
-                .requestPostProcessing()
-                .globalPostProcessing()
-                .context
+            flowEventContextConverter.convert(
+                pipeline
+                    .eventPreProcessing()
+                    .runOrContinue(config.getInt(PROCESSING_MAX_FLOW_EXECUTION_DURATION).toLong())
+                    .setCheckpointSuspendedOn()
+                    .setWaitingFor()
+                    .requestPostProcessing()
+                    .globalPostProcessing()
+                    .context
             )
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e, pipeline.context)

@@ -621,9 +621,18 @@ class FlowCheckpointImplTest {
         flowCheckpoint.markDeleted()
 
         assertThrows<IllegalStateException> { flowCheckpoint.putSessionState(SessionState()) }
-        assertThrows<IllegalStateException> { flowCheckpoint.markForRetry(FlowEvent(), RuntimeException()) }
-        assertThrows<IllegalStateException> { flowCheckpoint.markRetrySuccess() }
-        assertThrows<IllegalStateException> { flowCheckpoint.setFlowSleepDuration(1) }
+    }
+
+    @Test
+    fun `checkpoint pipeline state can be modified even if the checkpoint is marked for deletion`() {
+        val checkpoint = setupAvroCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+        flowCheckpoint.markDeleted()
+        flowCheckpoint.markForRetry(FlowEvent(), RuntimeException())
+        assertThat(flowCheckpoint.inRetryState).isTrue
+        flowCheckpoint.markRetrySuccess()
+        assertThat(flowCheckpoint.inRetryState).isFalse
+        flowCheckpoint.setFlowSleepDuration(1)
     }
 
     @Test

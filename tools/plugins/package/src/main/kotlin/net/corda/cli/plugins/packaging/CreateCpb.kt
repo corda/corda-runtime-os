@@ -10,7 +10,10 @@ import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
+import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.CpxSigner
+import net.corda.cli.plugins.packaging.signing.SigningOptions
 import picocli.CommandLine
 
 @Command(
@@ -34,64 +37,41 @@ class CreateCpb : Runnable {
     @Option(names = ["--file", "-f"], required = true, description = ["Output CPB file name"])
     lateinit var outputCpbFileName: String
 
-    @Option(names = ["--keystore", "-s"], required = true, description = ["Keystore holding signing keys"])
-    lateinit var keyStoreFileName: String
+    @CommandLine.Mixin
+    var signingOptions = SigningOptions()
 
-    @Option(names = ["--storepass", "--password", "-p"], required = true, description = ["Keystore password"])
-    lateinit var keyStorePass: String
+    internal companion object {
+        private const val MANIFEST_VERSION = "1.0"
 
-    @Option(names = ["--key", "-k"], required = true, description = ["Key alias"])
-    lateinit var keyAlias: String
+        private const val CPB_CURRENT_FORMAT_VERSION = "2.0"
 
-    @Option(names = ["--tsa", "-t"], description = ["Time Stamping Authority (TSA) URL"])
-    var tsaUrl: String? = null
+        /** Name of signature within Cpb file */
+        const val CPB_SIGNER_NAME = "CPB-SIG"
 
-    companion object {
         private val CPB_NAME_ATTRIBUTE = Attributes.Name("Corda-CPB-Name")
 
         private val CPB_VERSION_ATTRIBUTE = Attributes.Name("Corda-CPB-Version")
 
         private val CPB_FORMAT_VERSION = Attributes.Name("Corda-CPB-Format")
 
-        const val CPB_CURRENT_FORMAT_VERSION = "2.0"
-
         private val CPB_UPGRADE = Attributes.Name("Corda-CPB-Upgrade")
-
-        const val CPB_FILE_EXTENSION = "cpb"
-
-        /**
-         * Name of signature within Cpb file
-         */
-        private const val CPB_SIGNER_NAME = "CPB-SIG"
-
-        /**
-         * Check file exists and returns a Path object pointing to the file, throws error if file does not exist
-         */
-        private fun requireFileExists(fileName: String): Path {
-            val path = Path.of(fileName)
-            require(Files.isReadable(path)) { "\"$fileName\" does not exist or is not readable" }
-            return path
-        }
-
-        /**
-         * Check that file does not exist and returns a Path object pointing to the filename, throws error if file exists
-         */
-        private fun requireFileDoesNotExist(fileName: String): Path {
-            val path = Path.of(fileName)
-            require(Files.notExists(path)) { "\"$fileName\" already exists" }
-            return path
-        }
     }
 
     override fun run() {
-        val unsignedCpb = Files.createTempFile("buildCPB", ".$CPB_FILE_EXTENSION")
+        val unsignedCpb = Files.createTempFile("buildCPB", null)
         try {
             buildUnsignedCpb(unsignedCpb, cpks)
             val cpbPath = requireFileDoesNotExist(outputCpbFileName)
-            val privateKeyEntry = CpxSigner.getPrivateKeyEntry(keyStoreFileName, keyStorePass, keyAlias)
-            val privateKey = privateKeyEntry.privateKey
-            val certPath = CpxSigner.buildCertPath(privateKeyEntry.certificateChain.asList())
-            CpxSigner.sign(unsignedCpb, cpbPath, privateKey, certPath, CPB_SIGNER_NAME, tsaUrl)
+
+            CpxSigner.sign(
+                unsignedCpb,
+                cpbPath,
+                signingOptions.keyStoreFileName,
+                signingOptions.keyStorePass,
+                signingOptions.keyAlias,
+                CPB_SIGNER_NAME,
+                signingOptions.tsaUrl
+            )
         } finally {
             Files.deleteIfExists(unsignedCpb)
         }
@@ -104,7 +84,7 @@ class CreateCpb : Runnable {
 
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
-        manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = "1.0"
+        manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
         manifestMainAttributes[CPB_FORMAT_VERSION] = CPB_CURRENT_FORMAT_VERSION
         manifestMainAttributes[CPB_NAME_ATTRIBUTE] = cpbName
         manifestMainAttributes[CPB_VERSION_ATTRIBUTE] = cpbVersion

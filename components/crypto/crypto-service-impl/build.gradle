@@ -15,6 +15,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
@@ -22,22 +23,20 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-component-core-impl")
-    implementation project(":components:crypto:crypto-ecies")
-    implementation project(":components:crypto:crypto-ecies-core-impl")
     implementation project(":components:crypto:crypto-persistence")
-    implementation project(":components:crypto:crypto-service")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-flow')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
-    testImplementation project(":components:crypto:crypto-ecies-core-impl")
-    testImplementation project(":components:crypto:crypto-ecies-impl")
 
-    testImplementation project(":components:crypto:crypto-db-persistence-model")
+    testImplementation project(":components:crypto:crypto-persistence-model")
+    testImplementation project(":components:crypto:crypto-ecies-impl")
+    testImplementation project(":components:crypto:crypto-softhsm-impl")
     testImplementation project(":libs:layered-property-map")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
