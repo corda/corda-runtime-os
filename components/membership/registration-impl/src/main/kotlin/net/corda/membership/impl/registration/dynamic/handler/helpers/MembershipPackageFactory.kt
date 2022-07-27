@@ -11,6 +11,7 @@ import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
+import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -46,8 +47,8 @@ internal class MembershipPackageFactory(
             )
             .build()
 
-    private val serializer: CordaAvroSerializer<LayeredPropertyMap> by lazy {
-        cordaAvroSerializationFactory.createAvroSerializer<LayeredPropertyMap> {
+    private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
             logger.warn("Serialization failed")
         }
     }
@@ -64,8 +65,8 @@ internal class MembershipPackageFactory(
             val memberSignature = membersSignatures[it.holdingIdentity]
                 ?: throw CordaRuntimeException("Could not find member signature for ${it.name}")
             SignedMemberInfo.newBuilder()
-                .setMemberContext(ByteBuffer.wrap(serializer.serialize(it.memberProvidedContext)))
-                .setMgmContext(ByteBuffer.wrap(serializer.serialize(it.mgmProvidedContext)))
+                .setMemberContext(ByteBuffer.wrap(serializer.serialize(it.memberProvidedContext.toAvro())))
+                .setMgmContext(ByteBuffer.wrap(serializer.serialize(it.mgmProvidedContext.toAvro())))
                 .setMemberSignature(memberSignature)
                 .setMgmSignature(mgmSignature)
                 .build()

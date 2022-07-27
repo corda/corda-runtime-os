@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.layeredpropertymap.toAvro
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
@@ -21,14 +23,16 @@ internal class MerkleTreeFactory(
 ) {
     private val LayeredPropertyMap.inputStream
         get() =
-            serializer.serialize(this)?.inputStream() ?: throw CordaRuntimeException("Could not serialize context")
+            serializer.serialize(
+                this.toAvro()
+            )?.inputStream() ?: throw CordaRuntimeException("Could not serialize context")
 
     private companion object {
         val logger = contextLogger()
     }
 
-    private val serializer: CordaAvroSerializer<LayeredPropertyMap> by lazy {
-        cordaAvroSerializationFactory.createAvroSerializer<LayeredPropertyMap> {
+    private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
             logger.warn("Serialization failed")
         }
     }
