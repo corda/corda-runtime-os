@@ -16,8 +16,13 @@
     {
       "doc": "A (time-to-live) unix timestamp (in milliseconds) after which this message will be dropped from the p2p layer. If no ttl is specified, the p2p layer will continue replaying this message infinitely until it is delivered.",
       "name": "ttl",
-      "logicalType": "timestamp-millis",
-      "type": ["null", "long"]
+      "type": [
+            "null",
+            {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            }
+        ]
     },
     {
       "doc": "A unique identifier for this message. This will be used by the p2p layer to track the delivery of this specific message.",
