@@ -2,6 +2,7 @@ package net.corda.ledger.common.impl.transactions
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -13,10 +14,9 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.ledger.common.transactions.LedgerTransaction
 import net.corda.v5.ledger.common.transactions.PrivacySalt
+import net.corda.v5.ledger.common.transactions.TransactionMetaData
 import net.corda.v5.ledger.common.transactions.WireTransaction
-import kotlin.reflect.KClass
 
 internal const val ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
@@ -24,6 +24,8 @@ internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_2
 internal const val COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_NONCE_NAME
 internal val COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
 internal val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
+
+const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
 class WireTransactionImpl(
     private val merkleTreeFactory: MerkleTreeFactory,
@@ -41,6 +43,11 @@ class WireTransactionImpl(
     override fun getWrappedLedgerTransactionClassName(): String {
         // TODO(implement this)
         return "net.corda.ledger.consensual.impl.transactions.ConsensualLedgerTransactionImpl"
+    }
+
+    override fun getMetadata(serializer: SerializationService): TransactionMetaData {
+        val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
+        return serializer.deserialize(metadataBytes, TransactionMetaData::class.java)
     }
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(

@@ -20,10 +20,9 @@ class ConsensualLedgerTransactionImpl(
     override val privacySalt: PrivacySalt
         get() = wireTransaction.privacySalt
 
-    override val metadata: TransactionMetaData by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val metadataBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroups.METADATA.ordinal).first()
-        serializer.deserialize(metadataBytes, TransactionMetaData::class.java)
-    }
+    override val metadata: TransactionMetaData
+        get() = wireTransaction.getMetadata(serializer)
+
     override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroups.TIMESTAMP.ordinal).first()
         serializer.deserialize(timeStampBytes, Instant::class.java)
