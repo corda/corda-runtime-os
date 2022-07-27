@@ -41,7 +41,7 @@ class ConsensualTransactionBuilderImpl(
         return TransactionMetaDataImpl(mapOf(
             TRANSACTION_META_DATA_LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java,
             TRANSACTION_META_DATA_LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
-            // TODO(CPK identifier/etc)
+            // TODO(CORE-5940 CPK identifier/etc)
         ))
     }
 
@@ -72,7 +72,7 @@ class ConsensualTransactionBuilderImpl(
         serializer: SerializationService
     ): WireTransaction {
         // TODO(more verifications)
-        // TODO(metadata verifications: nulls, order of CPKs, at least one CPK?)
+        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
         require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
         require(consensualStates.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
         val componentGroupLists = calculateComponentGroupLists(serializer)
