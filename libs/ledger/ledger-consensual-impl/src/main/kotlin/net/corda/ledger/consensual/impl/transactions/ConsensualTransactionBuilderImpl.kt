@@ -49,15 +49,22 @@ class ConsensualTransactionBuilderImpl(
     {
         require(timeStamp != null){"Null timeStamp is not allowed"}
 
-        val requiredSigners = consensualStates.map{it.participants}.flatten()   //TODO: unique? ordering?
+        val requiredSigningKeys = consensualStates //TODO: unique? ordering
+            .map{it.participants}
+            .flatten()
+            .map{it.owningKey}
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()
         for (componentGroupIndex in ConsensualComponentGroups.values()) {
             componentGroupLists += when (componentGroupIndex) {
-                ConsensualComponentGroups.METADATA -> listOf(serializer.serialize(calculateMetaData()).bytes)
-                ConsensualComponentGroups.TIMESTAMP -> listOf(serializer.serialize(timeStamp).bytes)
-                ConsensualComponentGroups.REQUIRED_SIGNING_KEYS -> requiredSigners.map{serializer.serialize(it.owningKey).bytes}
-                ConsensualComponentGroups.OUTPUT_STATES -> consensualStates.map{serializer.serialize(it).bytes}
+                ConsensualComponentGroups.METADATA ->
+                    listOf(serializer.serialize(calculateMetaData()).bytes)
+                ConsensualComponentGroups.TIMESTAMP ->
+                    listOf(serializer.serialize(timeStamp).bytes)
+                ConsensualComponentGroups.REQUIRED_SIGNING_KEYS ->
+                    requiredSigningKeys.map{serializer.serialize(it).bytes}
+                ConsensualComponentGroups.OUTPUT_STATES ->
+                    consensualStates.map{serializer.serialize(it).bytes}
                 ConsensualComponentGroups.OUTPUT_STATE_TYPES ->
                     consensualStates.map{serializer.serialize(it::class.java.name).bytes}
             }
