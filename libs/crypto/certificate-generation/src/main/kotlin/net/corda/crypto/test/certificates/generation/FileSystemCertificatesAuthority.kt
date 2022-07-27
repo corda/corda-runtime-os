@@ -1,8 +1,5 @@
 package net.corda.crypto.test.certificates.generation
 
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import java.security.cert.Certificate
-
 /**
  * A file system based certificate authority
  */
