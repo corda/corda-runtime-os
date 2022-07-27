@@ -1,4 +1,4 @@
-package net.corda.uniqueness.datamodel
+package net.corda.uniqueness.common.datamodel
 
 import java.time.Instant
 

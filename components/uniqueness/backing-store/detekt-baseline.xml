@@ -3,6 +3,6 @@
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>NoWildcardImports:net.corda.uniqueness.backingstore.BackingStore.kt:4</ID>
-    <ID>WildcardImport:BackingStore.kt$import net.corda.uniqueness.datamodel.*</ID>
+    <ID>WildcardImport:BackingStore.kt$import net.corda.uniqueness.common.datamodel.datamodel.*</ID>
   </CurrentIssues>
 </SmellBaseline>

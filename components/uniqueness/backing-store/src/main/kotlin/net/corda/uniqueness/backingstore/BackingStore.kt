@@ -1,7 +1,7 @@
 package net.corda.uniqueness.backingstore
 
 import net.corda.uniqueness.backingstore.BackingStore.Session
-import net.corda.uniqueness.datamodel.*
+import net.corda.uniqueness.common.datamodel.*
 import net.corda.v5.crypto.SecureHash
 
 /**

@@ -8,7 +8,7 @@ import net.corda.lifecycle.*
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.impl.InMemoryBackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.datamodel.*
+import net.corda.uniqueness.common.datamodel.*
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger

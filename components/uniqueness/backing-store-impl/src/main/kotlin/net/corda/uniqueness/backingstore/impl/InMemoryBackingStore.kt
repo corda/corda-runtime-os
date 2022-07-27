@@ -7,7 +7,7 @@ package net.corda.uniqueness.backingstore.impl
  * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.datamodel.*
+import net.corda.uniqueness.common.datamodel.*
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("ForbiddenComment")

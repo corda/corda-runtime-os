@@ -17,7 +17,7 @@ dependencies {
     implementation project(":components:uniqueness:uniqueness-checker")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:uniqueness:backing-store-impl")
-    implementation project(":libs:uniqueness")
+    implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
