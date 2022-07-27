@@ -17,8 +17,8 @@ dependencies {
     kapt "org.pf4j:pf4j:$pf4jVersion"
     kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-topic-schema'
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     compileOnly "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
