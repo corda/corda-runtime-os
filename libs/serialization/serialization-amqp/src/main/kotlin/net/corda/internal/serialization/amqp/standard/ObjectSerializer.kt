@@ -1,5 +1,22 @@
 package net.corda.internal.serialization.amqp.standard
 
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.ComposableTypePropertySerializer
+import net.corda.internal.serialization.amqp.CompositeType
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.EvolutionObjectBuilder
+import net.corda.internal.serialization.amqp.Field
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.ObjectBuilder
+import net.corda.internal.serialization.amqp.PropertySerializer
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.TypeNotationGenerator
+import net.corda.internal.serialization.amqp.ifThrowsAppend
+import net.corda.internal.serialization.amqp.withDescribed
+import net.corda.internal.serialization.amqp.withList
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -7,25 +24,8 @@ import net.corda.internal.serialization.model.PropertyName
 import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.PropertySerializer
-import net.corda.internal.serialization.amqp.Field
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
-import net.corda.internal.serialization.amqp.TypeNotationGenerator
-import net.corda.internal.serialization.amqp.CompositeType
-import net.corda.internal.serialization.amqp.ObjectBuilder
-import net.corda.internal.serialization.amqp.ComposableTypePropertySerializer
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.withDescribed
-import net.corda.internal.serialization.amqp.withList
-import net.corda.internal.serialization.amqp.ifThrowsAppend
-import net.corda.internal.serialization.amqp.EvolutionObjectBuilder
-import net.corda.serialization.SerializationContext
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
@@ -118,6 +118,7 @@ interface ObjectSerializer : AMQPSerializer<Any> {
     }
 }
 
+@Suppress("LongParameterList")
 class ComposableObjectSerializer(
         override val type: Type,
         override val typeDescriptor: Symbol,
