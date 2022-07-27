@@ -1,17 +1,18 @@
-package net.corda.libs.packaging.verify.internal.cpk
+package net.corda.libs.packaging.testutils.cpk
 
-import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
-import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.addFile
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.TestUtils.toBase64
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.addFile
-import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.TestUtils.toBase64
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
-internal class TestCpkV2Builder {
-    var name = "testCpkV2-1.0.0.0.cpk"
+const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
+const val CPK_BUNDLE_VERSION_ATTRIBUTE = "Bundle-Version"
+
+class TestCpkV2Builder {
+    var name = "testCpkV2-1.0.0.0.jar"
         private set
     var bundleName = "test.cpk"
         private set

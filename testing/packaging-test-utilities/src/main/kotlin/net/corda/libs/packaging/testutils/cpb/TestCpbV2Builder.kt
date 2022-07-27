@@ -1,18 +1,15 @@
-package net.corda.libs.packaging.verify.internal.cpb
+package net.corda.libs.packaging.testutils.cpb
 
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.addFile
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.addFile
-import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.internal.cpk.TestCpkV1Builder
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
-internal class TestCpbV1Builder {
-    companion object {
-        val POLICY_FILE = "META-INF/GroupPolicy.json"
-    }
-    var name = "testCpbV1.cpb"
+class TestCpbV2Builder {
+    var name = "testCpbV2.cpb"
         private set
     var version = "1.0.0.0"
         private set
@@ -20,9 +17,9 @@ internal class TestCpbV1Builder {
         private set
     var policy = "{\"groupId\":\"test\"}"
         private set
-    var cpks = arrayOf<TestCpkV1Builder>(
-            TestCpkV1Builder().name("testCpk1-1.0.0.0.cpk").bundleName("test.cpk1").bundleVersion("1.0.0.0"),
-            TestCpkV1Builder().name("testCpk2-2.0.0.0.cpk").bundleName("test.cpk2").bundleVersion("2.0.0.0")
+    var cpks = arrayOf<TestCpkV2Builder>(
+            TestCpkV2Builder().name("testCpk1-1.0.0.0.jar").bundleName("test.cpk1").bundleVersion("1.0.0.0"),
+            TestCpkV2Builder().name("testCpk2-2.0.0.0.jar").bundleName("test.cpk2").bundleVersion("2.0.0.0")
                 .dependencies(TestUtils.Dependency("test.cpk1", "1.0.0.0"))
         )
         private set
@@ -32,13 +29,11 @@ internal class TestCpbV1Builder {
     fun name(name: String) = apply { this.name = name }
     fun version(version: String) = apply { this.version = version }
     fun manifest(manifest: Manifest) = apply { this.manifest = manifest }
-    fun policy(policy: String) = apply { this.policy = policy }
-    fun cpks(vararg cpks: TestCpkV1Builder) = apply { this.cpks = arrayOf(*cpks) }
+    fun cpks(vararg cpks: TestCpkV2Builder) = apply { this.cpks = arrayOf(*cpks) }
     fun signers(vararg signers: TestUtils.Signer) = apply { this.signers = arrayOf(*signers) }
     fun build() =
         InMemoryZipFile().apply {
-            setManifest(manifest ?: cpbV1Manifest())
-            addFile(POLICY_FILE, policy)
+            setManifest(manifest ?: cpbV2Manifest())
             cpks.forEach {
                 if (it.signers.isEmpty()) it.signers(signers = signers)
                 it.build().use { cpk ->
@@ -47,12 +42,12 @@ internal class TestCpbV1Builder {
             }
         }.signedBy(signers = signers)
 
-    private fun cpbV1Manifest() =
+    private fun cpbV2Manifest() =
         Manifest().apply {
             read(
                 ByteArrayInputStream("""
                 Manifest-Version: 1.0
-                Corda-CPB-Format: 1.0
+                Corda-CPB-Format: 2.0
                 Corda-CPB-Name: $name
                 Corda-CPB-Version: $version
                 """.trimIndent().plus("\n").toByteArray())

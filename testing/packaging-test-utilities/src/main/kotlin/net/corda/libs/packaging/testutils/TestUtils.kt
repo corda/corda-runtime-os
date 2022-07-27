@@ -1,13 +1,14 @@
-package net.corda.libs.packaging.verify
+package net.corda.libs.packaging.testutils
 
-import net.corda.libs.packaging.hash
 import net.corda.test.util.InMemoryZipFile
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.security.CodeSigner
 import java.security.KeyStore
 import java.security.KeyStore.PasswordProtection
+import java.security.MessageDigest
 import java.security.Timestamp
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
@@ -15,15 +16,24 @@ import java.security.cert.X509Certificate
 import java.util.Base64
 import java.util.Date
 
-internal object TestUtils {
+object TestUtils {
     private val KEY_PASSWORD = "cordadevpass".toCharArray()
     private val KEY_STORE_PASSWORD = KEY_PASSWORD
-    internal val ALICE = Signer("alice", privateKeyEntry("alice", resourceInputStream("alice.p12")))
-    internal val BOB = Signer("bob", privateKeyEntry("bob", resourceInputStream("bob.p12")))
-    internal val ROOT_CA = certificate("rootca", resourceInputStream("rootca.p12"))
+    val ALICE = Signer("alice", privateKeyEntry("alice", resourceInputStream("alice.p12")))
+    val BOB = Signer("bob", privateKeyEntry("bob", resourceInputStream("bob.p12")))
+    val ROOT_CA = certificate("rootca", resourceInputStream("rootca.p12"))
     internal val CA1 = certificate("ca1", resourceInputStream("ca1.p12"))
     internal val CA2 = certificate("ca2", resourceInputStream("ca2.p12"))
     internal val CODE_SIGNER_ALICE = codeSigner("alice", resourceInputStream("alice.p12"))
+
+    /**
+     * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
+     */
+    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME) : SecureHash {
+        val md = MessageDigest.getInstance(algo.name)
+        md.update(this)
+        return SecureHash(algo.name, md.digest())
+    }
 
     private fun resourceInputStream(fileName: String): InputStream =
         this::class.java.classLoader.getResourceAsStream(fileName)
@@ -61,7 +71,7 @@ internal object TestUtils {
         return CodeSigner(certPath, Timestamp(Date(), certPath))
     }
 
-    internal fun InMemoryZipFile.addFile(name: String, content: ByteArray) {
+    fun InMemoryZipFile.addFile(name: String, content: ByteArray) {
         addEntry(name, content)
     }
 
@@ -70,7 +80,7 @@ internal object TestUtils {
         addFile(name, contentBytes)
     }
 
-    internal fun InMemoryZipFile.signedBy(vararg signers: Signer): InMemoryZipFile {
+    fun InMemoryZipFile.signedBy(vararg signers: Signer): InMemoryZipFile {
         if (signers.isEmpty()) return this
         // Sets zip entry attributes required for signing
         var zipFile = InMemoryZipFile(this.toByteArray())
@@ -82,7 +92,7 @@ internal object TestUtils {
         return zipFile
     }
 
-    internal fun base64ToBytes(base64: String) =
+    fun base64ToBytes(base64: String) =
         Base64.getDecoder().decode(base64)
 
     internal fun SecureHash.toBase64() =
