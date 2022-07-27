@@ -38,7 +38,7 @@ class WireTransactionImpl(
     override fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 
-    override fun getWrapperLedgerTransactionClass(): String {
+    override fun getWrappedLedgerTransactionClassName(): String {
         // TODO(implement this)
         return "net.corda.ledger.consensual.impl.transactions.ConsensualLedgerTransactionImpl"
     }
