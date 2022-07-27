@@ -94,7 +94,7 @@ class FlowFilterServiceIntegrationTest {
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
         val identity = HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
+        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
         val version = listOf(1)
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
@@ -121,7 +121,7 @@ class FlowFilterServiceIntegrationTest {
             )
         )
 
-        val invalidHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "other")
+        val invalidHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "other")
         val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
             P2P_IN_TOPIC,
