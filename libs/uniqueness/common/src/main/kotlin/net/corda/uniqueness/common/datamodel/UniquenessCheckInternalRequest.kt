@@ -1,4 +1,4 @@
-package net.corda.uniqueness.datamodel
+package net.corda.uniqueness.common.datamodel
 
 import net.corda.data.uniqueness.UniquenessCheckRequest
 import net.corda.v5.crypto.SecureHash

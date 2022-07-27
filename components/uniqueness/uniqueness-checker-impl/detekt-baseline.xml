@@ -38,7 +38,7 @@
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:928</ID>
     <ID>WildcardImport:BatchedUniquenessCheckerImpl.kt$import net.corda.data.uniqueness.*</ID>
     <ID>WildcardImport:BatchedUniquenessCheckerImpl.kt$import net.corda.lifecycle.*</ID>
-    <ID>WildcardImport:BatchedUniquenessCheckerImpl.kt$import net.corda.uniqueness.datamodel.*</ID>
+    <ID>WildcardImport:BatchedUniquenessCheckerImpl.kt$import net.corda.uniqueness.common.datamodel.datamodel.*</ID>
     <ID>WildcardImport:InMemoryUniquenessCheckerImpl.kt$import net.corda.data.uniqueness.*</ID>
     <ID>WildcardImport:InMemoryUniquenessCheckerImpl.kt$import net.corda.lifecycle.*</ID>
     <ID>Wrapping:net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl.kt:125</ID>
