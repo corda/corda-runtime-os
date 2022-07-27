@@ -23,6 +23,7 @@ import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -35,6 +36,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
+@Disabled
 class MembershipPackageFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
     private val serializer = mock<CordaAvroSerializer<LayeredPropertyMap>>()
