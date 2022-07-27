@@ -41,7 +41,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:2.13.0"
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
