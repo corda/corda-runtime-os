@@ -128,14 +128,15 @@ internal class ApproveRegistrationHandler(
             it.isMgm
         } ?: throw FailToFindMgm
         val mgmSigner = signerFactory.createSigner(mgm)
+        val membersWithoutMgm = members.filterNot { it.isMgm }
         val signatures = membershipQueryClient
             .queryMembersSignatures(
                 owner,
-                members.map {
+                membersWithoutMgm.map {
                     it.holdingIdentity
                 }
             ).getOrThrow()
-        val membersTree = merkleTreeFactory.buildTree(members)
+        val membersTree = merkleTreeFactory.buildTree(membersWithoutMgm)
 
         return {
             membershipPackageFactory.createMembershipPackage(

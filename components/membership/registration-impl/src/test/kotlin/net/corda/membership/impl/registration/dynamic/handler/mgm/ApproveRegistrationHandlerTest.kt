@@ -73,6 +73,7 @@ class ApproveRegistrationHandlerTest {
     private val allActiveMembers = (1..3).map {
         mockMemberInfo(createHoldingIdentity("member-$it"))
     } + memberInfo + mgm
+    private val activeMembersWithoutMgm = allActiveMembers - mgm
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             setMemberAndRegistrationRequestAsApproved(
@@ -82,7 +83,7 @@ class ApproveRegistrationHandlerTest {
             )
         } doReturn MembershipPersistenceResult.Success(memberInfo)
     }
-    private val signatures = allActiveMembers.associate {
+    private val signatures = activeMembersWithoutMgm.associate {
         val name = it.name.toString()
         it.holdingIdentity to CryptoSignatureWithKey(
             ByteBuffer.wrap("pk-$name".toByteArray()),
@@ -99,7 +100,7 @@ class ApproveRegistrationHandlerTest {
         on {
             queryMembersSignatures(
                 owner,
-                allActiveMembers.map { it.holdingIdentity },
+                activeMembersWithoutMgm.map { it.holdingIdentity },
             )
         } doReturn MembershipQueryResult.Success(
             signatures
@@ -129,7 +130,7 @@ class ApproveRegistrationHandlerTest {
         on { root } doReturn checkHash
     }
     private val merkleTreeFactory = mock<MerkleTreeFactory> {
-        on { buildTree(allActiveMembers) } doReturn marketTree
+        on { buildTree(activeMembersWithoutMgm) } doReturn marketTree
     }
     private val membershipPackage = mock<MembershipPackage>()
     private val membershipPackageFactory = mock<MembershipPackageFactory> {
