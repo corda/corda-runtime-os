@@ -1,33 +1,47 @@
 package net.corda.ledger.consensual.impl.transactions
 
 import net.corda.ledger.common.impl.transactions.PrivacySaltImpl
+import net.corda.ledger.common.impl.transactions.SignedTransactionImpl
 import net.corda.ledger.common.impl.transactions.TransactionMetaDataImpl
 import net.corda.ledger.common.impl.transactions.WireTransactionImpl
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.ledger.common.transactions.SignedTransaction
 import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_MODEL_KEY
 import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_VERSION_KEY
 import net.corda.v5.ledger.common.transactions.TransactionMetaData
 import net.corda.v5.ledger.common.transactions.WireTransaction
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
 
 class ConsensualTransactionBuilderImpl(
+    override val merkleTreeFactory: MerkleTreeFactory,
+    override val digestService: DigestService,
+    override val secureRandom: SecureRandom,
+    override val serializer: SerializationService,
+    override val signingService: SigningService,
+
     override val timeStamp: Instant? = null,
-    override val consensualStates: List<ConsensualState> = emptyList()
+    override val consensualStates: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
     private fun copy(
         timeStamp: Instant? = this.timeStamp,
         consensualStates: List<ConsensualState> = this.consensualStates
-
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
-            timeStamp,
-            consensualStates,
+            merkleTreeFactory, digestService, secureRandom, serializer, signingService,
+            timeStamp, consensualStates,
         )
     }
 
@@ -72,12 +86,16 @@ class ConsensualTransactionBuilderImpl(
         return componentGroupLists
     }
 
-    override fun build(
-        merkleTreeFactory: MerkleTreeFactory,
-        digestService: DigestService,
-        secureRandom: SecureRandom,
-        serializer: SerializationService
-    ): WireTransaction {
+    override fun sign(publicKey: PublicKey): SignedTransaction {
+        val wireTransaction = buildWireTransaction()
+        // TODO(WIP area...)
+        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
+        val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //TODO(populate this properly...)
+        val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
+        return SignedTransactionImpl(wireTransaction, listOf(signatureWithMetaData))
+    }
+
+    private fun buildWireTransaction() : WireTransaction{
         // TODO(more verifications)
         // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
         require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
