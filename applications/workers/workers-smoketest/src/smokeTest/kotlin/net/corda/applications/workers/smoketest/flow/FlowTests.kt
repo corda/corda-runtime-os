@@ -32,6 +32,7 @@ import org.junit.jupiter.api.TestMethodOrder
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
+@Disabled
 class FlowTests {
 
     companion object {

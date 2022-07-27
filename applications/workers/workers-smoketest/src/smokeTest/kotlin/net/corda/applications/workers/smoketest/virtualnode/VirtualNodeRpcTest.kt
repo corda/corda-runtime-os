@@ -20,6 +20,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -34,6 +35,7 @@ fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
  * Any 'unordered' tests are run *last*
  */
 @Order(10)
+@Disabled
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class VirtualNodeRpcTest {
     companion object {
