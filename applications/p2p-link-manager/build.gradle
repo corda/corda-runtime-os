@@ -25,7 +25,7 @@ dependencies {
     implementation project(":components:membership:group-policy")
     implementation project(":components:crypto:crypto-client")
 
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:2.13.0"
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
