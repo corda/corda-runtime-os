@@ -17,7 +17,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 @Suppress("Unused")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [FlowFactory::class, FakeFlowFactory::class])
-class FakeFlowFactory: FlowFactory {
+class FakeFlowFactory : FlowFactory {
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return RPCStartedFlow(FakeFlow(), FakeRPCRequestData())
     }
@@ -29,7 +29,7 @@ class FakeFlowFactory: FlowFactory {
         return InitiatedFlow(FakeInitiatedFlow(), FakeFlowSession())
     }
 
-    private class FakeFlowSession: FlowSession {
+    private class FakeFlowSession : FlowSession {
         override val counterparty: MemberX500Name
             get() = TODO("Not yet implemented")
 

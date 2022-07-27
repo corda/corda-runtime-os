@@ -10,6 +10,14 @@ package net.corda.lifecycle
 interface LifecycleEvent
 
 /**
+ * Any events which inherit from this event will cause the coordinator to close any resources.
+ *
+ * These resources must be registered in a [CloseableResources] object on the coordinator and should be
+ * owned by the component of that coordinator.  They should also be recreated if necessary.
+ */
+interface CloseableResourceEvent: LifecycleEvent
+
+/**
  * An event representing any error that occurred during the processing of another lifecycle event.
  *
  * The user event handler will be delivered this event immediately on encountering an error, to give the user a chance

@@ -23,6 +23,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 internal class OutboundMessageProcessor(
@@ -72,9 +73,9 @@ internal class OutboundMessageProcessor(
         return records
     }
 
-    private fun ttlExpired(ttl: Long?): Boolean {
+    private fun ttlExpired(ttl: Instant?): Boolean {
         if (ttl == null) return false
-        val currentTimeInTimeMillis = clock.instant().toEpochMilli()
+        val currentTimeInTimeMillis = clock.instant()
         return currentTimeInTimeMillis >= ttl
     }
 

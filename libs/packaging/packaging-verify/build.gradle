@@ -20,5 +20,6 @@ dependencies {
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
 
     testImplementation project(':testing:test-utilities')
+    testImplementation project(':testing:packaging-test-utilities')
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -104,11 +104,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -164,11 +164,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -2519,6 +2519,24 @@
           }
         }
       },
+      "ConfigSchemaVersion" : {
+        "required" : [ "major", "minor" ],
+        "type" : "object",
+        "properties" : {
+          "major" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "minor" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
       "CpiIdentifier" : {
         "required" : [ "cpiName", "cpiVersion" ],
         "type" : "object",
@@ -2971,7 +2989,7 @@
             "example" : "string"
           },
           "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
           "section" : {
             "type" : "string",
@@ -3532,7 +3550,7 @@
             "example" : "string"
           },
           "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
           "section" : {
             "type" : "string",
@@ -3558,7 +3576,7 @@
             "example" : "string"
           },
           "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
           "section" : {
             "type" : "string",
@@ -3696,24 +3714,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        }
-      },
-      "Version" : {
-        "required" : [ "major", "minor" ],
-        "type" : "object",
-        "properties" : {
-          "major" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "minor" : {
             "type" : "integer",
             "format" : "int32",
             "nullable" : false,

@@ -45,7 +45,7 @@ class VerifyMemberHandler(
         val authenticatedMessageHeader = AuthenticatedMessageHeader(
             member,
             mgm,
-            requestTimestamp.plusMillis(TTL)?.toEpochMilli(),
+            requestTimestamp.plusMillis(TTL),
             UUID.randomUUID().toString(),
             null,
             MEMBERSHIP_P2P_SUBSYSTEM
