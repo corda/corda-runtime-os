@@ -25,9 +25,10 @@
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-client-hsm-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
-    bnd.identity;id='net.corda.crypto-db-persistence-impl',\
+    bnd.identity;id='net.corda.crypto-persistence-impl',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.crypto-service-impl',\
+    bnd.identity;id='net.corda.crypto-softhsm-impl',\
     bnd.identity;id='net.corda.db-connection-manager-impl',\
     bnd.identity;id='net.corda.db-orm-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\

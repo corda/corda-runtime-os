@@ -101,8 +101,7 @@ abstract class AbstractCompliance {
             spec = KeyGenerationSpec(
                 keyScheme = keyScheme,
                 alias = alias,
-                masterKeyAlias = masterKeyAlias,
-                secret = compliance.generateRandomIdentifier().toByteArray()
+                masterKeyAlias = masterKeyAlias
             ),
             context = mapOf(
                 CRYPTO_TENANT_ID to tenantId,
@@ -123,7 +122,8 @@ abstract class AbstractCompliance {
     ): List<SigningExperiment> {
         val spec = if (key is GeneratedWrappedKey) {
             SigningWrappedSpec(
-                KeyMaterialSpec(
+                publicKey = key.publicKey,
+                keyMaterialSpec = KeyMaterialSpec(
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = masterKeyAlias,
                     encodingVersion = key.encodingVersion
@@ -134,6 +134,7 @@ abstract class AbstractCompliance {
         } else {
             key as GeneratedPublicKey
             val spec = SigningAliasSpec(
+                publicKey = key.publicKey,
                 hsmAlias = key.hsmAlias,
                 keyScheme = keyScheme,
                 signatureSpec = signatureSpec
@@ -143,6 +144,7 @@ abstract class AbstractCompliance {
             ) {
                 service.sign(
                     SigningAliasSpec(
+                        publicKey = key.publicKey,
                         hsmAlias = compliance.generateRandomIdentifier(),
                         keyScheme = keyScheme,
                         signatureSpec = signatureSpec

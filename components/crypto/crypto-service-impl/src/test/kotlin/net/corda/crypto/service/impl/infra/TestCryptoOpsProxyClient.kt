@@ -11,23 +11,23 @@ class TestCryptoOpsProxyClient(
     private val factory: TestServicesFactory,
     private val impl: CryptoOpsProxyClient = mock()
 ) : CryptoOpsProxyClient by impl {
-    val coordinator = factory.coordinatorFactory.createCoordinator(
+    val lifecycleCoordinator = factory.coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 
     override fun createWrappingKey(
-        configId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>
