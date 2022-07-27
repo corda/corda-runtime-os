@@ -74,13 +74,12 @@ internal class ApproveRegistrationHandler(
         )
         val memberInfo = persistState.getOrThrow()
 
-        val allMembers = getAllMembers(approvedBy.toCorda()).filter {
-            it.status == MEMBER_STATUS_ACTIVE
+        val allMembers = getAllMembers(approvedBy.toCorda())
+        val members = allMembers.filter {
+            it.status == MEMBER_STATUS_ACTIVE && !it.isMgm
         }
-        val membershipPackageFactory = createMembershipPackageFactory(
-            approvedBy.toCorda(),
-            allMembers,
-        )
+        val mgm = allMembers.firstOrNull { it.isMgm } ?: throw FailToFindMgm
+        val membershipPackageFactory = createMembershipPackageFactory(mgm, members)
 
         // Push member to member list kafka topic
         val persistentMemberInfo = PersistentMemberInfo.newBuilder()
@@ -95,7 +94,7 @@ internal class ApproveRegistrationHandler(
         )
 
         // Send all approved members from the same group to the newly approved member over P2P
-        val allMembersPackage = membershipPackageFactory.invoke(allMembers)
+        val allMembersPackage = membershipPackageFactory.invoke(members)
         val allMembersToNewMember = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = approvedBy,
             destination = approvedMember,
@@ -104,7 +103,7 @@ internal class ApproveRegistrationHandler(
 
         // Send the newly approved member to all other members in the same group over P2P
         val memberPackage = membershipPackageFactory.invoke(listOf(memberInfo))
-        val memberToAllMembers = allMembers.filter {
+        val memberToAllMembers = members.filter {
             it.holdingIdentity != approvedMember.toCorda()
         }.map { memberToSendUpdateTo ->
             p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -121,22 +120,18 @@ internal class ApproveRegistrationHandler(
     }
 
     private fun createMembershipPackageFactory(
-        owner: HoldingIdentity,
+        mgm: MemberInfo,
         members: Collection<MemberInfo>
     ): (Collection<MemberInfo>) -> MembershipPackage {
-        val mgm = members.firstOrNull {
-            it.isMgm
-        } ?: throw FailToFindMgm
         val mgmSigner = signerFactory.createSigner(mgm)
-        val membersWithoutMgm = members.filterNot { it.isMgm }
         val signatures = membershipQueryClient
             .queryMembersSignatures(
-                owner,
-                membersWithoutMgm.map {
+                mgm.holdingIdentity,
+                members.map {
                     it.holdingIdentity
                 }
             ).getOrThrow()
-        val membersTree = merkleTreeFactory.buildTree(membersWithoutMgm)
+        val membersTree = merkleTreeFactory.buildTree(members)
 
         return {
             membershipPackageFactory.createMembershipPackage(

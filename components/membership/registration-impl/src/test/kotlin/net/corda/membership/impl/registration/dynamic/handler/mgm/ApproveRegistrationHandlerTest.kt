@@ -17,10 +17,10 @@ import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRec
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.Signer
 import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -54,7 +54,9 @@ import java.nio.ByteBuffer
 import java.time.Instant
 
 class ApproveRegistrationHandlerTest {
-    private val groupId = "group"
+    private companion object {
+        const val GROUP_ID = "group"
+    }
     private val owner = createHoldingIdentity("owner")
     private val member = createHoldingIdentity("member")
     private val registrationId = "registrationID"
@@ -99,7 +101,7 @@ class ApproveRegistrationHandlerTest {
         on { queryMemberInfo(owner) } doReturn MembershipQueryResult.Success(allActiveMembers + inactiveMember)
         on {
             queryMembersSignatures(
-                owner,
+                mgm.holdingIdentity,
                 activeMembersWithoutMgm.map { it.holdingIdentity },
             )
         } doReturn MembershipQueryResult.Success(
@@ -192,7 +194,7 @@ class ApproveRegistrationHandlerTest {
             membershipPackageFactory.createMembershipPackage(
                 signer,
                 signatures,
-                allActiveMembers,
+                activeMembersWithoutMgm,
                 checkHash,
             )
         ).doReturn(allMembershipPackage)
@@ -223,7 +225,7 @@ class ApproveRegistrationHandlerTest {
                 eq(checkHash),
             )
         ).doReturn(memberPackage)
-        val membersRecord = allActiveMembers.map {
+        val membersRecord = activeMembersWithoutMgm.map {
             val record = mock<Record<String, AppMessage>>()
             whenever(
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -253,7 +255,7 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `Error is thrown when there is no MGM`() {
-        whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(allActiveMembers - mgm))
+        whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(activeMembersWithoutMgm))
 
         assertThrows<ApproveRegistrationHandler.FailToFindMgm> {
             handler.invoke(state, key, command)
@@ -278,19 +280,20 @@ class ApproveRegistrationHandlerTest {
             on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name).entries
         }
         val memberContext = mock<MemberContext> {
-            on { parse(eq(GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
+            on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
             on { entries } doReturn mapOf("member" to holdingIdentity.x500Name).entries
         }
         return mock {
             on { mgmProvidedContext } doReturn mgmContext
             on { memberProvidedContext } doReturn memberContext
             on { name } doReturn MemberX500Name.Companion.parse(holdingIdentity.x500Name)
+            on { groupId } doReturn holdingIdentity.groupId
         }
     }
 
     private fun createHoldingIdentity(name: String): HoldingIdentity {
         return HoldingIdentity(
-            groupId = groupId,
+            groupId = GROUP_ID,
             x500Name = "C=GB,L=London,O=$name"
         )
     }
