@@ -7,6 +7,7 @@ import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.utils.mapTo
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.net.URLDecoder
 import java.util.function.Function
@@ -115,11 +116,20 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
         try {
             log.trace { "Cast \"${parameter.name}\" to body parameter." }
 
+            // Outside of empty/null parameter there can be multiple options here:
+            // Given Json:
+            // { "prop1": "foo", "prop2": "bar"} it may correspond to a method:
+            // doStuff(prop1: String, prop2: String)
+            // or to a method:
+            // doStuff(request: MyRequest), where MyRequest is `data class MyRequest(prop1: String, prop2: String)`
+
             val node = if (ctx.body().isBlank()) null else ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name)
 
-            if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
+            if (node == null) {
+                return tryParsingComplexType(ctx)
+            }
 
-            val field = node?.toString() ?: "null"
+            val field = node.toString()
             return ctx.fromJsonString(field, parameter.classType)
                 .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
         } catch (e: Exception) {
@@ -128,6 +138,16 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
                 throw e
             }
         }
+    }
+
+    private fun tryParsingComplexType(ctx: ParametersRetrieverContext): Any? = try {
+        // Try parsing parameter class as broken down properties - MyRequest case above.
+        ctx.bodyAsClass(parameter.classType)
+    } catch (ex: Exception) {
+        log.debug { "Unable to parse body: ${ctx.body()} as ${parameter.classType}, ${ex.message}" }
+        if (parameter.required) {
+            throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
+        } else null
     }
 }
 

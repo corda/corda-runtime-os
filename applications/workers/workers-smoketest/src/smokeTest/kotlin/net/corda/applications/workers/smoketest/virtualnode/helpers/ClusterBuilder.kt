@@ -59,7 +59,7 @@ class ClusterBuilder {
     fun cpiList() = client!!.get("/api/v1/cpi")
 
     private fun vNodeBody(cpiHash: String, x500Name: String) =
-        """{ "request": { "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"} }"""
+        """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
     private fun registerMemberBody() =
         """{ "memberRegistrationRequest": { "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }""".trimMargin()
@@ -119,8 +119,8 @@ class ClusterBuilder {
     }
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
-        """{ "startFlow" : { "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
-            |"$requestData"} }""".trimMargin()
+        """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
+            |"$requestData" }""".trimMargin()
 
 }
 

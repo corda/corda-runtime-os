@@ -89,8 +89,8 @@ This should yield are result similar to this
 ```
 3) Create a virtual node using the checksum returned from the step above
 ```shell
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice"  } }' https://localhost:8888/api/v1/virtualnode
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob"  } }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice" }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob" }' https://localhost:8888/api/v1/virtualnode
 ```
 
 This should yield a result similar to this for first request:
@@ -125,11 +125,9 @@ curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "r
 curl --insecure -u admin:admin -X 'POST' \
   'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
   -d '{
-  "startFlow": {
     "clientRequestId": "request1",
     "flowClassName": "net.cordapp.flowworker.development.flows.MessagingFlow",
     "requestData": "{\"counterparty\": \"C=GB, L=London, O=Bob\"}"
-  }
 }'
 ```
 The holding ID is taken from the output of the 'create virtual node' step
