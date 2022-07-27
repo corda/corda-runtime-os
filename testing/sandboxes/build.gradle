@@ -23,6 +23,8 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
+    implementation "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    implementation "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
 
     implementation project(':libs:packaging:packaging-core')
 
