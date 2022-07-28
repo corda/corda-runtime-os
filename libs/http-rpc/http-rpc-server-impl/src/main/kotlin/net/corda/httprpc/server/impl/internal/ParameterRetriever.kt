@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import java.io.InputStream
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
+import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.utils.mapTo
 import net.corda.v5.base.util.contextLogger
@@ -19,7 +20,7 @@ internal interface ParameterRetriever : Function<ParametersRetrieverContext, Any
 private fun String.decodeRawString(): String = URLDecoder.decode(this, "UTF-8")
 
 internal object ParameterRetrieverFactory {
-    fun create(parameter: Parameter, multipartFileUpload: Boolean): ParameterRetriever =
+    fun create(parameter: Parameter, routeInfo: RouteInfo): ParameterRetriever =
         when (parameter.type) {
             ParameterType.PATH -> PathParameterRetriever(parameter)
             ParameterType.QUERY -> {
@@ -27,8 +28,8 @@ internal object ParameterRetrieverFactory {
                 else QueryParameterRetriever(parameter)
             }
             ParameterType.BODY -> {
-                if (multipartFileUpload) MultipartParameterRetriever(parameter)
-                else BodyParameterRetriever(parameter)
+                if (routeInfo.isMultipartFileUpload) MultipartParameterRetriever(parameter)
+                else BodyParameterRetriever(parameter, routeInfo)
             }
         }
 }
@@ -106,10 +107,15 @@ private class QueryParameterRetriever(private val parameter: Parameter) : Parame
 }
 
 @Suppress("TooGenericExceptionThrown")
-private class BodyParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
+private class BodyParameterRetriever(private val parameter: Parameter, private val routeInfo: RouteInfo) : ParameterRetriever {
     private companion object {
         private val log = contextLogger()
     }
+
+    private val RouteInfo.isSingleBodyParam: Boolean
+        get() {
+            return parameters.filter { it.type == ParameterType.BODY }.size == 1
+        }
 
     override fun apply(ctx: ParametersRetrieverContext): Any? {
         try {
@@ -122,10 +128,11 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
             // or to a method:
             // doStuff(request: MyRequest), where MyRequest is `data class MyRequest(prop1: String, prop2: String)`
 
-            var node = if (ctx.body().isBlank()) null else ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name)
-
-            if (node == null && ctx.isSingleFormParam) {
-                node = ctx.bodyAsClass(ObjectNode::class.java)
+            val node = if (ctx.body().isBlank()) null
+            else {
+                ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name) ?: if (routeInfo.isSingleBodyParam) {
+                    ctx.bodyAsClass(ObjectNode::class.java)
+                } else null
             }
 
             if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
