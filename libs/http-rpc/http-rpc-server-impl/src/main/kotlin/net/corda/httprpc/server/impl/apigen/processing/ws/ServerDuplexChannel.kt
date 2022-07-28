@@ -11,11 +11,9 @@ import java.util.concurrent.Future
 internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexChannel {
 
     private var errorHook: ((Throwable?) -> Unit)? = null
-    private var textMessageHook: ((message: Any) -> Unit)? = null
+    private var textMessageHook: ((message: String) -> Unit)? = null
     private var connectHook: (() -> Unit)? = null
     private var closeHook: ((statusCode: Int, reason: String?) -> Unit)? = null
-    private var incomingMessageTypeHook: Class<*>? = null
-    private var outgoingMessageTypeHook: Class<*>? = null
 
     override fun send(message: String): Future<Void> {
         return ctx.send(message)
@@ -33,6 +31,14 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
         close(CloseStatus(StatusCode.NORMAL, reason))
     }
 
+    override fun error(e: Exception) {
+        when (e) {
+            is IllegalArgumentException -> close(CloseStatus(StatusCode.BAD_DATA, e.message))
+            // todo conal - add some more here?
+            else -> close(CloseStatus(StatusCode.UNDEFINED, e.message))
+        }
+    }
+
     fun close(closeStatus: CloseStatus) {
         closeHook?.let { it(closeStatus.code, closeStatus.phrase) }
         ctx.closeSession(closeStatus)
@@ -44,7 +50,7 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
             connectHook = value
         }
 
-    override var onTextMessage: ((message: Any) -> Unit)?
+    override var onTextMessage: ((message: String) -> Unit)?
         get() = textMessageHook
         set(value) {
             textMessageHook = value
@@ -61,24 +67,4 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
         set(value) {
             closeHook = value
         }
-
-    override var incomingMessageType: Class<*>?
-        get() = incomingMessageTypeHook
-        set(value) {
-            incomingMessageTypeHook = value
-        }
-
-    override var outgoingMessageType: Class<*>?
-        get() = outgoingMessageTypeHook
-        set(value) {
-            outgoingMessageTypeHook = value
-        }
-
-    override fun error(e: Exception) {
-        when (e) {
-            is IllegalArgumentException -> close(CloseStatus(StatusCode.BAD_DATA, e.message))
-            // todo conal - add some more here?
-            else -> close(CloseStatus(StatusCode.UNDEFINED, e.message))
-        }
-    }
 }

@@ -1,20 +1,18 @@
 package net.corda.flow.rpcops.flowstatus
 
+import java.util.UUID
 import net.corda.data.flow.output.FlowStatus
 
 /**
  * Handle flow status updates.
  */
-interface FlowStatusUpdateHandler : AutoCloseable {
+interface FlowStatusUpdateListener : AutoCloseable {
+
+    val id: UUID
 
     // todo conal - not sure if FlowStatus Avro type is correct on this API.
     /**
      * Update received for flow status.
      */
-    fun onFlowStatusUpdate(status: FlowStatus)
-
-    /**
-     * Error(s) occurred.
-     */
-    fun onError(errors: List<String>)
+    fun updateReceived(status: FlowStatus)
 }

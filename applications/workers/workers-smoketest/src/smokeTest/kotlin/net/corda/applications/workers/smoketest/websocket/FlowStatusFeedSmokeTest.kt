@@ -10,6 +10,7 @@ import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebsocketHandler
 import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
+import net.corda.flow.rpcops.v1.types.request.WebSocketTerminateFlowStatusFeedType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.MethodOrderer
@@ -67,19 +68,92 @@ class FlowStatusFeedSmokeTest {
         startFlow(clientRequestId)
 
         eventually(Duration.ofSeconds(10)) {
-            assertThat(messageQueue).hasSize(2)
-//            assertThat(messageQueue[0]).isEqualTo(FlowStates.RUNNING.name)
-//            assertThat(messageQueue[1]).isEqualTo(FlowStates.COMPLETED.name)
+            assertThat(messageQueue).hasSize(3)
+            assertThat(messageQueue[0]).isEqualTo(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue[1]).isEqualTo(FlowStates.RUNNING.name)
+            assertThat(messageQueue[2]).isEqualTo(FlowStates.COMPLETED.name)
         }
 
-//        waitOnNextMessage(messageQueue) { flowStatus ->
-//            assertThat(flowStatus.flowStatus).isEqualTo(FlowStates.RUNNING)
-//        }
-//        waitOnNextMessage(messageQueue) { flowStatus ->
-//            assertThat(flowStatus.flowStatus).isEqualTo(FlowStates.COMPLETED)
-//        }
         // should the connection automatically get closed when the server closes the connection?
-//        client.close()
+        client.close()
+        eventually {
+            assertThat(wsHandler.isNotConnected)
+        }
+    }
+
+    @Order(30)
+    @Test
+    fun `multiple websocket connections can be open for one flow from one holding identity and request id`() {
+        val clientRequestId = UUID.randomUUID().toString()
+        val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
+
+        val messageQueue1 = LinkedList<String>()
+        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
+
+        val client1 = SmokeTestWebsocketClient(wsHandler1)
+        client1.start()
+        client1.connect(flowStatusFeedPath)
+
+        eventually {
+            assertThat(wsHandler1.isConnected)
+        }
+
+        val messageQueue2 = LinkedList<String>()
+        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
+
+        val client2 = SmokeTestWebsocketClient(wsHandler2)
+        client2.start()
+        client2.connect(flowStatusFeedPath)
+
+        eventually {
+            assertThat(wsHandler2.isConnected)
+        }
+
+        startFlow(clientRequestId)
+
+        eventually(Duration.ofSeconds(10)) {
+            assertThat(messageQueue1).hasSize(3)
+            assertThat(messageQueue1[0]).isEqualTo(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue1[1]).isEqualTo(FlowStates.RUNNING.name)
+            assertThat(messageQueue1[2]).isEqualTo(FlowStates.COMPLETED.name)
+            assertThat(messageQueue2).hasSize(3)
+            assertThat(messageQueue2[0]).isEqualTo(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue2[1]).isEqualTo(FlowStates.RUNNING.name)
+            assertThat(messageQueue2[2]).isEqualTo(FlowStates.COMPLETED.name)
+        }
+
+        // should the connection automatically get closed when the server closes the connection?
+        client1.close()
+        client2.close()
+        eventually {
+            assertThat(wsHandler1.isNotConnected)
+            assertThat(wsHandler2.isNotConnected)
+        }
+    }
+
+//    @Order(40)
+//    @Test
+    fun `flow status update feed can be terminated by sending WebSocketTerminateFlowStatusFeedType`() {
+        val clientRequestId = UUID.randomUUID().toString()
+        val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
+
+        val wsHandler = MessageQueueWebsocketHandler(LinkedList())
+
+        val client = SmokeTestWebsocketClient(wsHandler)
+        client.start()
+        client.connect(flowStatusFeedPath)
+
+        eventually {
+            assertThat(wsHandler.isConnected)
+        }
+
+        val terminateRequest = WebSocketTerminateFlowStatusFeedType(clientRequestId, bobHoldingId)
+
+        // todo conal - obviously we want to send json payloads
+        wsHandler.send(terminateRequest.toString())
+
+        // should the connection automatically get closed when the server closes the connection?
+        client.close()
         eventually {
             assertThat(wsHandler.isNotConnected)
         }

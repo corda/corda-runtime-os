@@ -7,10 +7,9 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.impl.flowstatus.websocket.WebSocketFlowStatusUpdateHandler
+import net.corda.flow.rpcops.impl.flowstatus.websocket.FlowStatusDuplexChannelEventHandler
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
-import net.corda.flow.rpcops.v1.types.request.WebSocketTerminateFlowStatusFeedType
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
@@ -141,52 +140,8 @@ class FlowRPCOpsImpl @Activate constructor(
             channel.close()
             throw e
         }
-        channel.incomingMessageType = WebSocketTerminateFlowStatusFeedType::class.java
-        channel.outgoingMessageType = FlowStatusResponse::class.java
-        channel.onConnect = {
-            log.info("onConnect called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-            val handler = WebSocketFlowStatusUpdateHandler(channel, clientRequestId, holdingIdentity) {
-                unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-            }
-            try {
-                flowStatusCacheService.registerFlowStatusFeed(clientRequestId, holdingIdentity, handler)
-            } catch (e: Exception) {
-                channel.error(e)
-            }
-        }
-        channel.onClose = { statusCode, reason ->
-            // todo conal - close seems to be called twice (example the status feed has completed)
-            log.info("onClose called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-            log.info("StatusCode: $statusCode, reason: $reason")
-            unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-        }
-        channel.onError = { e ->
-            log.info("onError called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash", e)
-            unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-        }
-        channel.onTextMessage = { message ->
-            log.info("onTextMessage called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-            when (message) {
-                is WebSocketTerminateFlowStatusFeedType -> {
-                    log.info("Terminating feed for req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-                    channel.close()
-                    unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-                }
-                else -> {
-                    log.info("Unknown message for req: $clientRequestId, holdingId: $holdingIdentityShortHash. Terminating connection.")
-                    channel.close()
-                    unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-                }
-            }
-        }
+        FlowStatusDuplexChannelEventHandler(flowStatusCacheService, channel, clientRequestId, holdingIdentity)
     }
-
-    private fun unregisterFlowStatusFeed(clientRequestId: String, holdingIdentity: HoldingIdentity) {
-        log.info("Unregistering flow status feed for request: $clientRequestId and identity: ${holdingIdentity.shortHash()}.")
-        flowStatusCacheService.unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-    }
-
-    private fun HoldingIdentity.shortHash() = this.toCorda().shortHash
 
     override fun start() = Unit
 
