@@ -6,7 +6,6 @@ global:
 
 kafka:
   auth:
-    enabled: true
     clientProtocol: sasl_tls
   replicaCount: 3
   resources:

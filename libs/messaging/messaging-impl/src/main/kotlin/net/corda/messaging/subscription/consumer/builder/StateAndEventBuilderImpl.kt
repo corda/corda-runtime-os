@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
-internal class StateAndEventBuilderImpl @Activate constructor(
+class StateAndEventBuilderImpl @Activate constructor(
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = CordaProducerBuilder::class)

@@ -7,7 +7,7 @@ import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 
 @Suppress("LongParameterList")
-internal interface StateAndEventBuilder {
+interface StateAndEventBuilder {
     fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer
     fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(
         config: ResolvedSubscriptionConfig,

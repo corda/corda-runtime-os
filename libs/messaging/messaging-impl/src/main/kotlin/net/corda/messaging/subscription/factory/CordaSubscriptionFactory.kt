@@ -44,7 +44,7 @@ import org.osgi.service.component.annotations.Reference
  */
 @Suppress("LongParameterList")
 @Component(service = [SubscriptionFactory::class])
-internal class CordaSubscriptionFactory @Activate constructor(
+class CordaSubscriptionFactory @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
