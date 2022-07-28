@@ -6,7 +6,7 @@ import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
 import net.corda.data.uniqueness.UniquenessCheckResultSuccess
 import net.corda.lifecycle.*
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.backingstore.impl.InMemoryBackingStore
+import net.corda.uniqueness.backingstore.impl.JPABackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.common.datamodel.*
 import net.corda.utilities.time.Clock
@@ -35,7 +35,7 @@ class BatchedUniquenessCheckerImpl(
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory
-    ) : this(coordinatorFactory, UTCClock(), InMemoryBackingStore())
+    ) : this(coordinatorFactory, UTCClock(), JPABackingStore())
 
     private companion object {
         private val log: Logger = contextLogger()

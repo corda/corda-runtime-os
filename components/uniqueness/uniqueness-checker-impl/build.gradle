@@ -25,5 +25,6 @@ dependencies {
 
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
 }

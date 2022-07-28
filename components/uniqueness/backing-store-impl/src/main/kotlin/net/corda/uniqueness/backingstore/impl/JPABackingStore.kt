@@ -11,8 +11,7 @@ import net.corda.uniqueness.common.datamodel.*
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("ForbiddenComment")
-// TODO: Move to testkit once we have the real implementation
-open class InMemoryBackingStore : BackingStore {
+open class JPABackingStore : BackingStore {
 
     // Data persisted across different transactions
     private val persistedStateData =

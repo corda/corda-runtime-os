@@ -5,7 +5,7 @@ import net.corda.crypto.testkit.SecureHashUtils.randomBytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.InMemoryBackingStore
+import net.corda.uniqueness.backingstore.impl.fake.InMemoryBackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
@@ -27,26 +27,28 @@ import java.time.*
 import java.util.*
 
 /**
- * Tests for uniqueness checker implementations. Currently, this is hard-coded to use the in-memory
- * uniqueness checker. At some point in future this will be enhanced to support different
- * implementations.
+ * Unit tests for uniqueness checker implementations. Currently, this tests our single batched
+ * uniqueness checker implementation, using a "fake" backing store.
+ *
+ * These tests also serve as the foundation for integration tests which use a real backing
+ * store implementation.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessCheckerImplTests {
+open class UniquenessCheckerImplTests {
 
-    private val baseTime = Instant.EPOCH
+    protected val baseTime: Instant = Instant.EPOCH
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
-    private val defaultTimeWindowUpperBound =
+    protected val defaultTimeWindowUpperBound: Instant =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
-    private lateinit var testClock: AutoTickTestClock
+    protected lateinit var testClock: AutoTickTestClock
 
-    private lateinit var uniquenessChecker: UniquenessChecker
+    protected lateinit var uniquenessChecker: UniquenessChecker
 
-    private fun currentTime(): Instant = testClock.peekTime()
+    protected fun currentTime(): Instant = testClock.peekTime()
 
-    private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
+    protected fun newRequestBuilder(txId: SecureHash = randomSecureHash())
     : UniquenessCheckRequest.Builder =
         UniquenessCheckRequest.newBuilder(
             UniquenessCheckRequest(
@@ -59,10 +61,10 @@ class UniquenessCheckerImplTests {
             )
         )
 
-    private fun processRequests(vararg requests: UniquenessCheckRequest) =
+    protected fun processRequests(vararg requests: UniquenessCheckRequest) =
         uniquenessChecker.processRequests(requests.asList())
 
-    private fun generateUnspentStates(numOutputStates: Int): List<String> {
+    protected fun generateUnspentStates(numOutputStates: Int): List<String> {
         val issueTxId = randomSecureHash()
         val unspentStateRefs = LinkedList<String>()
 
@@ -85,17 +87,16 @@ class UniquenessCheckerImplTests {
     }
 
     @BeforeEach
-    fun init() {
+    open fun init() {
         /*
          * Specific clock values are important to our testing in some cases, so we use a mock time
-         * facilities service  which provides a clock starting at a known point in time (baseTime)
+         * facilities service which provides a clock starting at a known point in time (baseTime)
          * and will increment its current time by one second on each call. The current time can also
          * be  manipulated by tests directly via [MockTimeFacilities.advanceTime] to change this
          * between calls (e.g. to manipulate time window behavior)
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
-        // TODO: Make tests parameterised so we can also test the in memory implementation
         uniquenessChecker = BatchedUniquenessCheckerImpl(mock(), testClock, InMemoryBackingStore())
     }
 
