@@ -43,17 +43,7 @@ interface DuplexChannel : AutoCloseable {
     /**
      * Callback to be invoked when text message received from remote side
      */
-    var onTextMessage: ((message: Any) -> Unit)?
-
-    /**
-     * Type for incoming messages.
-     */
-    var incomingMessageType: Class<*>?
-
-    /**
-     * Type for outgoing messages.
-     */
-    var outgoingMessageType: Class<*>?
+    var onTextMessage: ((message: String) -> Unit)?
 
     /**
      * Callback to be invoked in case of an error

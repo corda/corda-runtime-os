@@ -28,4 +28,9 @@ class MessageQueueWebsocketHandler/*<T : Any>*/(
 //        messageQueue.add(jacksonObjectMapper().readValue(message, messageType))
         messageQueue.add(message)
     }
+
+    fun send(message: String) {
+        log.info("Sending message: $message")
+        super.getRemote().sendString(message)
+    }
 }

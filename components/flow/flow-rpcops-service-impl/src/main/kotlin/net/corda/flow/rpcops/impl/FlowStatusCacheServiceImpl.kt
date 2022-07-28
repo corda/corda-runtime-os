@@ -1,12 +1,16 @@
 package net.corda.flow.rpcops.impl
 
+import com.google.common.collect.ArrayListMultimap
+import com.google.common.collect.Multimap
 import java.util.Collections
+import java.util.UUID
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateHandler
+import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateException
+import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -37,11 +41,15 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
     private companion object {
         val log = contextLogger()
+        const val MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY = 10
     }
 
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
-    private val flowStatusUpdateHandlers = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatusUpdateHandler>())
     private val cache = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatus>())
+
+    private val statusListenerByUuid = Collections.synchronizedMap(mutableMapOf<UUID, FlowStatusUpdateListener>())
+    private val statusListenerIdsPerFlowKey: Multimap<FlowKey, UUID> = ArrayListMultimap.create()
+
     private var subReg: RegistrationHandle? = null
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
 
@@ -77,50 +85,9 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
-         return cache.entries.filter { it.key.identity == holdingIdentity }.map {
-             it.value
-         }
-    }
-
-    override fun registerFlowStatusFeed(
-        clientRequestId: String,
-        holdingIdentity: HoldingIdentity,
-        flowStatusUpdateHandler: FlowStatusUpdateHandler
-    ) {
-        val flowKey = FlowKey(clientRequestId, holdingIdentity)
-
-        val errors = validateRegistrationForFlowStatusUpdates(flowKey, holdingIdentity, clientRequestId)
-
-        if (errors.isNotEmpty()) {
-            flowStatusUpdateHandler.onError(errors)
-            return
+        return cache.entries.filter { it.key.identity == holdingIdentity }.map {
+            it.value
         }
-
-        flowStatusUpdateHandlers[flowKey] = flowStatusUpdateHandler
-    }
-
-    override fun unregisterFlowStatusFeed(clientRequestId: String, holdingIdentity: HoldingIdentity) {
-        log.info("Unregistering flow status feed ")
-        val key = FlowKey(clientRequestId, holdingIdentity)
-        flowStatusUpdateHandlers.remove(key)
-    }
-
-    private fun validateRegistrationForFlowStatusUpdates(
-        flowKey: FlowKey,
-        holdingIdentity: HoldingIdentity,
-        clientRequestId: String
-    ): List<String> {
-        val errors = mutableListOf<String>()
-        if (flowStatusUpdateHandlers[flowKey] != null) {
-            errors.add(
-                "Identity $holdingIdentity has already registered for flow status feed for request $clientRequestId."
-            )
-        }
-
-        if (cache[flowKey] == null) {
-            log.info("Registering for flow status updates for unstarted flow req $clientRequestId, holdingId $holdingIdentity.")
-        }
-        return errors
     }
 
     override fun onSnapshot(currentData: Map<FlowKey, FlowStatus>) {
@@ -138,16 +105,77 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         oldValue: FlowStatus?,
         currentData: Map<FlowKey, FlowStatus>
     ) {
+        val flowKey = newRecord.key
         if (newRecord.value == null) {
-            cache.remove(newRecord.key)
-            // delete any listeners for this key
-            flowStatusUpdateHandlers[newRecord.key]?.close()
-            flowStatusUpdateHandlers.remove(newRecord.key)
+            cache.remove(flowKey)
+            closeAndRemoveAllStatusListeners(flowKey)
         } else {
-            cache[newRecord.key] = newRecord.value
-            // update any listeners for this key
-            flowStatusUpdateHandlers[newRecord.key]?.onFlowStatusUpdate(newRecord.value!!)
+            cache[flowKey] = newRecord.value
+            updateAllStatusListenersForFlowKey(flowKey, newRecord.value!!)
         }
+    }
+
+    override fun registerFlowStatusUpdatesHandler(
+        clientRequestId: String,
+        holdingIdentity: HoldingIdentity,
+        handler: FlowStatusUpdateListener
+    ) {
+        val flowKey = FlowKey(clientRequestId, holdingIdentity)
+        val errors = mutableListOf<String>()
+
+        validateHandlerNotAlreadyRegistered(handler.id, errors)
+        validateMaxConnections(flowKey, errors)
+
+        if (errors.isNotEmpty()) {
+            throw FlowStatusUpdateException("${errors.size} errors during registration for flow status updates.", errors)
+        }
+
+        if (cache[flowKey] == null) {
+            log.info("Registering FlowStatusUpdateHandler ${handler.id} for un-started flow for flowKey: $flowKey.")
+        }
+
+        statusListenerByUuid[handler.id] = handler
+        statusListenerIdsPerFlowKey.put(flowKey, handler.id)
+    }
+
+    override fun unregisterFlowStatusFeed(handlerId: UUID) {
+        statusListenerByUuid.remove(handlerId)?.let {
+            log.info("Unregistered flow status feed for req: $it")
+        }
+    }
+
+    private fun validateMaxConnections(flowKey: FlowKey, errors: MutableList<String>) {
+        val existingHandlers = statusListenerIdsPerFlowKey[flowKey]
+        val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
+        if (handlersForRequestAndHoldingIdAlreadyExist) {
+            if (existingHandlers.size > MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
+                errors.add("Max websocket connections per flowkey has been reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
+            }
+            log.info(
+                "There already exists ${existingHandlers.size} FlowStatusUpdateHandlers for flowKey: $flowKey. " +
+                        "Adding another handler."
+            )
+        }
+    }
+
+    private fun validateHandlerNotAlreadyRegistered(handlerId: UUID, errors: MutableList<String>) {
+        if (statusListenerByUuid[handlerId] != null) {
+            errors.add("FlowStatusUpdateHandler with id $handlerId has already registered.")
+        }
+    }
+
+    private fun updateAllStatusListenersForFlowKey(flowKey: FlowKey, flowStatus: FlowStatus) {
+        statusListenerIdsPerFlowKey[flowKey].map { id ->
+            statusListenerByUuid[id]?.updateReceived(flowStatus)
+        }
+    }
+
+    private fun closeAndRemoveAllStatusListeners(flowKey: FlowKey) {
+        statusListenerIdsPerFlowKey[flowKey].map { id ->
+            statusListenerByUuid[id]?.close()
+            statusListenerByUuid.remove(id)
+        }
+        statusListenerIdsPerFlowKey.removeAll(flowKey)
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
