@@ -131,6 +131,25 @@ interface LifecycleCoordinator : Lifecycle {
     fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle
 
     /**
+     * Create a resource which can be closed and recreated as necessary.
+     *
+     * @param name a unique identifier for the resource
+     * @param generator the lambda for creating the resource
+     *
+     * @return the resource generated.  This is still tracked by the [LifecycleCoordinator] and will be closed
+     * as necessary
+     */
+    fun <T: AutoCloseable> createManagedResource(name: String, generator: () -> T) : T
+
+    /**
+     * Closes _only_ the given resources.  If no resources are provided then all managed resources are
+     * closed.
+     *
+     * @param resources the set of resources which should be closed
+     */
+    fun closeManagedResources(resources: Set<String> = emptySet())
+
+    /**
      * Flag indicating whether this coordinator has been closed.
      *
      * A closed coordinator is stopped and can no longer be restarted. If a component has its coordinator closed, it

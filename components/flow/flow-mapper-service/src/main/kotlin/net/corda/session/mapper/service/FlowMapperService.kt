@@ -2,25 +2,20 @@ package net.corda.session.mapper.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
@@ -53,55 +48,51 @@ class FlowMapperService @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val CONSUMER_GROUP = "FlowMapperConsumer"
+
+        private const val SUB = "SUB"
+        private const val TASK = "TASK"
+        private const val REGISTRATION = "REGISTRATION"
+        private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
-    private val closeableResources = CloseableResources.of(
-        this::stateAndEventSub,
-        this::scheduledTaskState
-    )
-
-    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(closeableResources, ::eventHandler)
-    private var registration: RegistrationHandle? = null
-    private var configHandle: AutoCloseable? = null
-    private var stateAndEventSub: StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>? = null
-    private var scheduledTaskState: ScheduledTaskState? = null
+    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
                 logger.info("Starting flow mapper processor component.")
-                registration?.close()
                 configurationReadService.start()
-                registration =
+                coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                         )
                     )
+                }
             }
+
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        setOf(FLOW_CONFIG, MESSAGING_CONFIG)
-                    )
+                    coordinator.createManagedResource(CONFIG_HANDLE) {
+                        configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG)
+                        )
+                    }
                 } else {
-                    configHandle?.close()
+                    coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                     coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
+
             is ConfigChangedEvent -> {
                 logger.info("Flow mapper processor component configuration received")
                 restartFlowMapperService(event)
             }
+
             is StopEvent -> {
                 logger.info("Stopping flow mapper component.")
-                stateAndEventSub?.close()
-                stateAndEventSub = null
-                scheduledTaskState?.close()
-                scheduledTaskState = null
-                registration?.close()
-                registration = null
+                coordinator.closeManagedResources()
             }
         }
     }
@@ -114,19 +105,27 @@ class FlowMapperService @Activate constructor(
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
 
-            val newScheduledTaskState = ScheduledTaskState(
-                Executors.newSingleThreadScheduledExecutor(),
-                publisherFactory.createPublisher(PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"), messagingConfig),
-                mutableMapOf()
-            )
-            scheduledTaskState = newScheduledTaskState
-            stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
-                FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
-                messagingConfig,
-                FlowMapperListener(newScheduledTaskState)
-            )
-            stateAndEventSub?.start()
+            val newScheduledTaskState = coordinator.createManagedResource(TASK) {
+                ScheduledTaskState(
+                    Executors.newSingleThreadScheduledExecutor(),
+                    publisherFactory.createPublisher(
+                        PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"),
+                        messagingConfig
+                    ),
+                    mutableMapOf()
+                )
+            }
+
+            coordinator.createManagedResource(SUB) {
+                subscriptionFactory.createStateAndEventSubscription(
+                    SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
+                    FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
+                    messagingConfig,
+                    FlowMapperListener(newScheduledTaskState)
+                ).also {
+                    it.start()
+                }
+            }
             coordinator.updateStatus(LifecycleStatus.UP)
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"
