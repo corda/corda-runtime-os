@@ -101,7 +101,7 @@ class TestGroupReader @Activate constructor(
         )
     )
 
-    override fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

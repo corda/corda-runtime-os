@@ -46,7 +46,7 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
             throw IllegalStateException("TEST MODULE: Membership not supported")
         }
 
-        override fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo? {
+        override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
             return null
         }
 
