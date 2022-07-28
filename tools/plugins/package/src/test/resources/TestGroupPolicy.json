@@ -14,7 +14,7 @@
       "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
     ],
     "tlsPki" : "C5",
-    "p2pProtocolMode" : "AUTHENTICATED_ENCRYPTION",
+    "p2pProtocolMode" : "AUTHENTICATION_ENCRYPTION",
     "mgmInfo" : {
       "name" : "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
       "sessionKey" : "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",

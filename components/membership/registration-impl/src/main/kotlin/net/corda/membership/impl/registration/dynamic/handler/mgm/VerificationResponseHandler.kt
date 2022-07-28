@@ -33,7 +33,7 @@ class VerificationResponseHandler(
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
-                    member,
+                    key,
                     RegistrationCommand(ApproveRegistration())
                 )
             )

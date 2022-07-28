@@ -11,6 +11,7 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -22,6 +23,7 @@ import org.mockito.kotlin.whenever
 import java.io.InputStream
 
 // Implementation should change with once https://github.com/corda/corda-runtime-os/pull/1550 is merged
+@Disabled
 class MerkleTreeFactoryTest {
     private val serializer = mock<CordaAvroSerializer<LayeredPropertyMap>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {

@@ -74,12 +74,15 @@ internal class ApproveRegistrationHandler(
         )
         val memberInfo = persistState.getOrThrow()
 
-        val allMembers = getAllMembers(approvedBy.toCorda()).filter {
+        val groupMembers = getAllMembers(approvedBy.toCorda()).filter {
             it.status == MEMBER_STATUS_ACTIVE
         }
+        val allMembers = groupMembers.filter { !it.isMgm }
+        val mgm = groupMembers.firstOrNull { it.isMgm } ?: throw FailToFindMgm
         val membershipPackageFactory = createMembershipPackageFactory(
             approvedBy.toCorda(),
             allMembers,
+            mgm
         )
 
         // Push member to member list kafka topic
@@ -115,18 +118,16 @@ internal class ApproveRegistrationHandler(
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationId, approvedMember, approvedBy),
+            null,
             memberToAllMembers + memberRecord + allMembersToNewMember
         )
     }
 
     private fun createMembershipPackageFactory(
         owner: HoldingIdentity,
-        members: Collection<MemberInfo>
+        members: Collection<MemberInfo>,
+        mgm: MemberInfo
     ): (Collection<MemberInfo>) -> MembershipPackage {
-        val mgm = members.firstOrNull {
-            it.isMgm
-        } ?: throw FailToFindMgm
         val mgmSigner = signerFactory.createSigner(mgm)
         val signatures = membershipQueryClient
             .queryMembersSignatures(

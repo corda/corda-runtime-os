@@ -24,6 +24,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.eq
@@ -33,6 +34,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
+@Disabled
 class MembershipP2PProcessorTest {
 
     private companion object {
