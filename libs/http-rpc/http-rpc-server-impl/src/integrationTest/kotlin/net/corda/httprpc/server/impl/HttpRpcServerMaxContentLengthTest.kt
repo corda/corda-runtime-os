@@ -4,6 +4,7 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.WebResponse
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
@@ -56,8 +57,23 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
     @Test
     fun `Content length below maxContentLength returns 200`() {
 
-        val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
-        assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
-        assertEquals("Pong for str = stringdata", pingResponse.body)
+        fun WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_OK, responseStatus)
+            assertEquals("Pong for str = stringdata", body)
+        }
+
+        // Call with explicit "pingPongData" in the root JSON
+        client.call(
+            HttpVerb.POST,
+            WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""),
+            userName,
+            password
+        ).doAssert()
+
+        // Call without explicit "pingPongData" in the root JSON
+        client.call(
+            HttpVerb.POST,
+            WebRequest("health/ping", """{"str": "stringdata"}"""), userName, password)
+            .doAssert()
     }
 }
