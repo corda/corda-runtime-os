@@ -12,6 +12,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
@@ -35,7 +36,9 @@ internal class ConsensualTransactionBuilderImplTest{
         class TestConsensualState(
             val testField: String,
             override val participants: List<Party>
-        ) : ConsensualState
+        ) : ConsensualState {
+            override fun verify(consensualLedgerTransaction: ConsensualLedgerTransaction): Boolean = true
+        }
 
         @BeforeAll
         @JvmStatic
