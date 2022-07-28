@@ -78,20 +78,20 @@ class MemberRegistrationRpcOpsTest {
         memberRegistrationRpcOps.stop()
     }
 
-    @Test
-    fun `checking registration progress calls the client svc`() {
-        memberRegistrationRpcOps.start()
-        memberRegistrationRpcOps.activate("")
-        memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
-        verify(memberOpsClient).checkRegistrationProgress(eq(HOLDING_IDENTITY_ID))
-        memberRegistrationRpcOps.deactivate("")
-        memberRegistrationRpcOps.stop()
-    }
+//    @Test
+//    fun `checking registration progress calls the client svc`() {
+//        memberRegistrationRpcOps.start()
+//        memberRegistrationRpcOps.activate("")
+//        memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
+//        verify(memberOpsClient).checkRegistrationProgress(eq(HOLDING_IDENTITY_ID))
+//        memberRegistrationRpcOps.deactivate("")
+//        memberRegistrationRpcOps.stop()
+//    }
 
     @Test
     fun `operation fails when svc is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
-            memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
+            memberRegistrationRpcOps.startRegistration(HOLDING_IDENTITY_ID, registrationRequest)
         }
         assertEquals("MemberRegistrationRpcOpsImpl is not running. Operation cannot be fulfilled.", ex.message)
     }
