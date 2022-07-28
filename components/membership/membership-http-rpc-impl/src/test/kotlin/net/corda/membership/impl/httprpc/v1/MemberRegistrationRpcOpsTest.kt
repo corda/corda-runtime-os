@@ -78,6 +78,7 @@ class MemberRegistrationRpcOpsTest {
         memberRegistrationRpcOps.stop()
     }
 
+//    TODO Registration status endpoint will be implemented in CORE-5957.
 //    @Test
 //    fun `checking registration progress calls the client svc`() {
 //        memberRegistrationRpcOps.start()
