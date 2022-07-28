@@ -14,9 +14,9 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.common.transactions.SignedTransaction
-import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_MODEL_KEY
-import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_VERSION_KEY
 import net.corda.v5.ledger.common.transactions.TransactionMetaData
+import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_MODEL_KEY
+import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.v5.ledger.common.transactions.WireTransaction
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -53,8 +53,8 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaDataImpl(mapOf(
-            TRANSACTION_META_DATA_LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java,
-            TRANSACTION_META_DATA_LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+            LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java,
+            LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
             // TODO(CORE-5940 CPK identifier/etc)
         ))
     }

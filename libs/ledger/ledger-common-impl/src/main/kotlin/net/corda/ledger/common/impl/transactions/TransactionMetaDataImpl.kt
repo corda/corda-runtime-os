@@ -1,9 +1,9 @@
 package net.corda.ledger.common.impl.transactions
 
-import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_CPK_IDENTIFIERS_KEY
-import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_MODEL_KEY
-import net.corda.v5.ledger.common.transactions.TRANSACTION_META_DATA_LEDGER_VERSION_KEY
 import net.corda.v5.ledger.common.transactions.TransactionMetaData
+import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
+import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_MODEL_KEY
+import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 
 //TODO(guarantee its serialization is deterministic)
 class TransactionMetaDataImpl(
@@ -24,12 +24,12 @@ class TransactionMetaDataImpl(
     override fun hashCode(): Int = properties.hashCode()
 
     fun getLedgerModel(){
-        this[TRANSACTION_META_DATA_LEDGER_MODEL_KEY]
+        this[LEDGER_MODEL_KEY]
     }
     fun getLedgerVersion(){
-        this[TRANSACTION_META_DATA_LEDGER_VERSION_KEY]
+        this[LEDGER_VERSION_KEY]
     }
     fun cpkIdentifiers(){
-        this[TRANSACTION_META_DATA_CPK_IDENTIFIERS_KEY]
+        this[CPK_IDENTIFIERS_KEY]
     }
 }
