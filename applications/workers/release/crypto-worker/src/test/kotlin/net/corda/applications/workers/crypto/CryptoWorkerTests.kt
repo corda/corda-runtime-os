@@ -66,7 +66,7 @@ class CryptoWorkerTests {
         assertEquals(CryptoConsts.SOFT_HSM_ID, config.hsmId())
         Assertions.assertThat(config.hsmMap()).hasSize(1)
         val softWorker = config.hsm()
-        assertEquals("", softWorker.workerSuffix)
+        assertEquals("", softWorker.workerTopicSuffix)
         assertEquals(20000L, softWorker.retry.attemptTimeoutMills)
         assertEquals(3, softWorker.retry.maxAttempts)
         assertEquals(CryptoConsts.SOFT_HSM_SERVICE_NAME, softWorker.hsm.name)
