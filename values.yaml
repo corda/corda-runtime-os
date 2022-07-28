@@ -18,6 +18,8 @@ image:
   tag: latest-local
 
 bootstrap:
+  initialAdminUser:
+    password: "admin"
   kafka:
     replicas: 1
 
