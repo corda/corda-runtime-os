@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.internal
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.JsonNode
 import java.io.InputStream
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
@@ -10,6 +10,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.net.URLDecoder
 import java.util.function.Function
+import net.corda.httprpc.JsonObject
 
 /**
  * Retrieve the Parameter(s) from the context
@@ -113,17 +114,22 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
 
     override fun apply(ctx: ParametersRetrieverContext): Any? {
         try {
-            log.trace { "Cast \"${parameter.name}\" to body parameter." }
+            log.trace { "Unmarshalling \"${parameter.name}\" from JSON body." }
 
-            val node = if (ctx.body().isBlank()) null else ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name)
+            val obj = if (ctx.body().isBlank()) {
+                null
+            } else if (parameter.classType == JsonObject::class.java) {
+                ctx.bodyAsClass(JsonNode::class.java)
+            } else {
+                ctx.bodyAsClass(parameter.classType)
+            }
 
-            if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
+            if (parameter.required && obj == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
 
-            val field = node?.toString() ?: "null"
-            return ctx.fromJsonString(field, parameter.classType)
-                .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
+            return obj
+                .also { log.trace { "Unmarshalling of \"${parameter.name}\" from JSON body completed." } }
         } catch (e: Exception) {
-            "Error during Cast \"${parameter.name}\" to body parameter".let {
+            "Error during unmarshalling of \"${parameter.name}\" from JSON.".let {
                 log.error("$it: ${e.message}")
                 throw e
             }
