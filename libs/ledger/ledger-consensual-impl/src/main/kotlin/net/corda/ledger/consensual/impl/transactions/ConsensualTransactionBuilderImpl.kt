@@ -84,7 +84,7 @@ class ConsensualTransactionBuilderImpl(
         return componentGroupLists
     }
 
-    override fun sign(publicKey: PublicKey): SignedTransaction {
+    override fun signInitial(publicKey: PublicKey): SignedTransaction {
         val wireTransaction = buildWireTransaction()
         // TODO(we just fake the signature for now...)
 //        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
