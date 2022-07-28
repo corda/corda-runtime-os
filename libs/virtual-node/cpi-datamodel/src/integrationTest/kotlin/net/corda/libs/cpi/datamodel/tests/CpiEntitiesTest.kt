@@ -46,7 +46,7 @@ class CpiEntitiesIntegrationTest {
     }
 
     @AfterAll
-    private fun cleanUp() {
+    fun cleanUp() {
         dbConfig.close()
     }
 
