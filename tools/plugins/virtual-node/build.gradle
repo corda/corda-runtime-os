@@ -18,7 +18,7 @@ dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli-codegen:$picocliVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
