@@ -66,6 +66,7 @@ class VerificationResponseHandlerTest {
         )
 
         assertThat(result.outputStates).hasSize(1)
+        assertThat(result.outputStates.first().key).isEqualTo(REGISTRATION_ID + "-" + mgm.toCorda().shortHash)
         val registrationCommand = result.outputStates.first().value as RegistrationCommand
         assertThat(registrationCommand.command).isInstanceOf(ApproveRegistration::class.java)
         with(result.updatedState) {
