@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl.internal
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import java.io.InputStream
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
@@ -128,12 +129,7 @@ private class BodyParameterRetriever(private val parameter: Parameter, private v
             // or to a method:
             // doStuff(request: MyRequest), where MyRequest is `data class MyRequest(prop1: String, prop2: String)`
 
-            val node = if (ctx.body().isBlank()) null
-            else {
-                ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name) ?: if (routeInfo.isSingleBodyParam) {
-                    ctx.bodyAsClass(ObjectNode::class.java)
-                } else null
-            }
+            val node = if (ctx.body().isBlank()) null else retrieveNodeFromBody(ctx)
 
             if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
 
@@ -146,6 +142,13 @@ private class BodyParameterRetriever(private val parameter: Parameter, private v
                 throw e
             }
         }
+    }
+
+    private fun retrieveNodeFromBody(ctx: ParametersRetrieverContext): JsonNode? {
+        val rootNode = ctx.bodyAsClass(ObjectNode::class.java)
+        return rootNode.get(parameter.name) ?: if (routeInfo.isSingleBodyParam) {
+            rootNode
+        } else null
     }
 }
 
