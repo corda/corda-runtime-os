@@ -35,6 +35,11 @@ class FlowMapperMessageProcessor(
         val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
         val result = executor.execute()
 
+        //propagate context
+        result.outputEvents.forEach {
+            it.context = event.context
+        }
+
         return StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
     }
 

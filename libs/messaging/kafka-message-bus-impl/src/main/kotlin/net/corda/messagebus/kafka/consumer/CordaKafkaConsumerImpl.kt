@@ -1,5 +1,11 @@
 package net.corda.messagebus.kafka.consumer
 
+import io.opentelemetry.context.Context
+import io.opentelemetry.context.propagation.TextMapGetter
+import java.nio.charset.StandardCharsets
+import java.time.Duration
+import java.util.stream.Collectors
+import java.util.stream.StreamSupport
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
@@ -10,11 +16,13 @@ import net.corda.messagebus.kafka.utils.toCordaTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.otel.service.OpenTelemetryService
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.InvalidOffsetException
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.KafkaException
@@ -26,8 +34,9 @@ import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
+import org.apache.kafka.common.header.Header
 import org.slf4j.Logger
-import java.time.Duration
+
 
 /**
  * Wrapper for a Kafka Consumer.
@@ -36,6 +45,7 @@ import java.time.Duration
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val config: ResolvedConsumerConfig,
     private val consumer: Consumer<K, V>,
+    private val opentelemetryService: OpenTelemetryService,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
 ) : CordaConsumer<K, V> {
 
@@ -75,7 +85,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             }
         }
 
+        val openTelemetry = opentelemetryService.getOpenTelemetryInstance()
+        openTelemetry.propagators
+
         return consumerRecords.map {
+            val context = opentelemetryService.getTextMapPropagator().extract(Context.current(), it, opentelemetryService.getKafkaHeaderGetter())
             CordaConsumerRecord(
                 it.topic().removePrefix(config.topicPrefix),
                 it.partition(),
@@ -83,6 +97,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 it.key(),
                 it.value(),
                 it.timestamp(),
+                context
             )
         }.sortedBy { it.timestamp }
     }
@@ -531,5 +546,21 @@ fun CordaConsumerRebalanceListener.toKafkaListener(): ConsumerRebalanceListener 
                 partitions.map { CordaTopicPartition(it.topic(), it.partition()) }
             )
         }
+    }
+}
+
+enum class KafkaConsumerRecordGetter : TextMapGetter<ConsumerRecord<*, *>> {
+    INSTANCE;
+
+    override fun keys(carrier: ConsumerRecord<*, *>): Iterable<String> {
+        return StreamSupport.stream(carrier.headers().spliterator(), false)
+            .map { obj: Header -> obj.key() }
+            .collect(Collectors.toList())
+    }
+
+    override fun get(carrier: ConsumerRecord<*, *>?, key: String): String? {
+        val header = carrier!!.headers().lastHeader(key) ?: return null
+        val value = header.value() ?: return null
+        return String(value, StandardCharsets.UTF_8)
     }
 }

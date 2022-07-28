@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.consumer.builder
 
+import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -10,6 +11,7 @@ import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
+import net.corda.otel.service.OpenTelemetryService
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -19,7 +21,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
 
 /**
  * Generate a Kafka Consumer.
@@ -28,6 +29,8 @@ import java.util.*
 class CordaKafkaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = OpenTelemetryService::class)
+    private val opentelemetryService: OpenTelemetryService
 ) : CordaConsumerBuilder {
 
     companion object {
@@ -48,7 +51,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
         return executeKafkaActionWithRetry(
             action = {
                 val consumer = createKafkaConsumer(kafkaProperties, kClazz, vClazz, onSerializationError)
-                CordaKafkaConsumerImpl(resolvedConfig, consumer, listener)
+                CordaKafkaConsumerImpl(resolvedConfig, consumer, opentelemetryService, listener)
             },
             errorMessage = { "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}, " +
                     "with configuration: $messageBusConfig" },

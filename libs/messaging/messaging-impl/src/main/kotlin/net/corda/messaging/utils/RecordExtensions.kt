@@ -6,15 +6,15 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
 fun <K : Any, V : Any> CordaConsumerRecord<K, V>.toRecord(): Record<K, V> {
-    return Record(this.topic, this.key, this.value)
+    return Record(this.topic, this.key, this.value, this.context)
 }
 
 fun <K : Any, V : Any> CordaConsumerRecord<K, V>.toEventLogRecord(): EventLogRecord<K, V> {
-    return EventLogRecord(this.topic, this.key, this.value, this.partition, this.offset)
+    return EventLogRecord(this.topic, this.key, this.value, this.partition, this.offset, this.context)
 }
 
 fun Record<*, *>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
-    return CordaProducerRecord(this.topic, this.key, this.value)
+    return CordaProducerRecord(this.topic, this.key, this.value, this.context)
 }
 
 fun List<Record<*, *>>.toCordaProducerRecords(): List<CordaProducerRecord<*, *>> {

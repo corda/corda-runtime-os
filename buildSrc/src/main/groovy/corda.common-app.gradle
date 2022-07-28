@@ -52,6 +52,8 @@ configurations {
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
         }
     }
+
+    guavas
     applyDependencySubstitution(systemPackages)
     applyDependencySubstitution(bootstrapClasspath)
     applyDependencySubstitution(runtimeClasspath)
@@ -72,8 +74,19 @@ dependencies {
     systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    //OpenTelem transitive libs with osgi resolution issues
+    systemPackages "org.apache.servicemix.bundles:org.apache.servicemix.bundles.grpc:1.47.0_1"
+    //no sure if these 3 are actually used
+    systemPackages 'io.netty:netty-handler:4.1.0.Final'
+    systemPackages 'com.squareup.okhttp3:okhttp:3.11.0'
+    systemPackages 'com.squareup.okio:okio:1.15.0'
+
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages project(":osgi-framework-api")
+
+    //OpenTelem requires guava 31 and our quasar requires 30
+    guavas "com.google.guava:guava:31.1-jre"
 }
 
 TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
@@ -131,6 +144,39 @@ private def addSystemPackagesExtra(
             "javax.xml.stream.util;version=1.0"
     ]
     jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
+
+    final opentelemTransitiveDependencies = [
+            //added io.grpc apache servicemix bundle to systempackages config instead
+           /* "io.grpc;version=\"1.47.0\"",
+            "io.grpc.stub;version=\"1.47.0\"",
+            "io.grpc.netty;version=\"1.47.0\"",
+            "io.grpc.stub;version=\"1.47.0\"",
+            "io.grpc.inprocess;version=\"1.47.0\"",
+            "io.grpc.netty.shaded.io.grpc.netty;version=\"1.47.0\"",
+            "io.grpc.netty.shaded.io.netty.handler.ssl;version=\"1.47.0\"",
+            "io.grpc.okhttp;version=\"1.47.0\"",*/
+            //also added to system packages config but specific version is needed to resolve.
+            // systempackages config autogenerates extras file without versions if they are not osgified
+            "io.netty.handler.ssl;version=\"4.1.0\"",
+            "okhttp3;version=\"3.11.0\"",
+            "okio;version=\"1.15.0\"",
+    ]
+
+    opentelemTransitiveDependencies.each { export -> systemBundleExtraSet.add(export) }
+
+/*    final apacheIoGRPCPackages = [
+            //hack - these are transitive dependencies of by apaches OSGi wrapping of io.grpc-all
+            "android.net",
+            "android.net.ssl",
+            "com.aayushatharva.brotli4j",
+            "com.aayushatharva.brotli4j.decoder",
+            "com.aayushatharva.brotli4j.encoder",
+            "com.google.api",
+            "com.google.auth",
+            "com.google.auth.oauth2",
+            "com.google.protobuf.*"
+    ]
+    apacheIoGRPCPackages.each { export -> systemBundleExtraSet.add(export) }*/
 }
 
 @CompileStatic
@@ -219,7 +265,7 @@ class CreateApplicationBundlesFile extends DefaultTask {
 }
 
 def defineApplicationBundles = tasks.register('defineApplicationBundles', DefineApplicationBundles) {
-    includeBundles.from jarTask, configurations.runtimeClasspath
+    includeBundles.from jarTask, configurations.runtimeClasspath, configurations.guavas
     excludeBundles.from configurations.systemPackages
 }
 

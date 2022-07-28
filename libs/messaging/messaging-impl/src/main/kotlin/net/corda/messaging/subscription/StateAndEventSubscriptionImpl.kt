@@ -1,5 +1,12 @@
 package net.corda.messaging.subscription
 
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.time.Duration
+import java.util.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -29,13 +36,6 @@ import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.time.Duration
-import java.util.*
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(

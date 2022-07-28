@@ -1,5 +1,9 @@
 package net.corda.flow.pipeline.impl
 
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.context.Context
+import java.time.Instant
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
@@ -12,12 +16,14 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.otel.service.OpenTelemetryService
 import net.corda.v5.base.util.contextLogger
 
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
+    private val opentelemetryService: OpenTelemetryService,
     private val config: SmartConfig
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
@@ -29,6 +35,8 @@ class FlowEventProcessorImpl(
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 
+    private var counter = 0
+
     init{
         // This works for now, but we should consider introducing a provider we could then inject it into
         // the classes that need it rather than passing it through all the layers.
@@ -39,6 +47,19 @@ class FlowEventProcessorImpl(
         state: Checkpoint?,
         event: Record<String, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
+        val openTelemetry = opentelemetryService.getOpenTelemetryInstance()
+        val tracer: Tracer = openTelemetry.getTracer("flow-service")
+
+        val parentContext = event.context?: Context.current()
+        val span: Span = tracer.spanBuilder("Flow Service Span $counter: ${event.value!!.payload::class.java}")
+            .setParent(parentContext)
+            .setStartTimestamp(Instant.now())
+            .setAttribute("Event Type", event.value!!.payload::class.java.toString())
+            .startSpan()
+        counter++
+
+        span.makeCurrent()
+
         val flowEvent = event.value
 
         if (flowEvent == null) {
@@ -55,7 +76,7 @@ class FlowEventProcessorImpl(
         }
 
         return try {
-            flowEventContextConverter.convert(pipeline
+            val response = flowEventContextConverter.convert(pipeline
                 .eventPreProcessing()
                 .runOrContinue()
                 .setCheckpointSuspendedOn()
@@ -64,6 +85,10 @@ class FlowEventProcessorImpl(
                 .globalPostProcessing()
                 .context
             )
+            response.responseEvents.forEach {
+                it.context = Context.current()
+            }
+            response
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowEventException) {
@@ -74,6 +99,8 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
+        } finally {
+            span.end()
         }
     }
 }

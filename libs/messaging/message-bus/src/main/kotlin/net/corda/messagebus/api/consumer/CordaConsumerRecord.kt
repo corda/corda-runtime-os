@@ -1,5 +1,7 @@
 package net.corda.messagebus.api.consumer;
 
+import io.opentelemetry.context.Context
+
 /**
  * A key/value pair to be received from the message bus. This also consists of a topic name and
  * a partition number from which the record is being received, an offset that points 
@@ -36,4 +38,6 @@ data class CordaConsumerRecord<K, V>(
      * The timestamp of this record.
      */
     val timestamp: Long,
+
+    val context: Context? = null
 )

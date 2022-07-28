@@ -9,6 +9,7 @@ import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.otel.service.OpenTelemetryService
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -36,7 +37,8 @@ import org.slf4j.Logger
 @Suppress("TooManyFunctions")
 class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
-    private val producer: Producer<Any, Any>
+    private val producer: Producer<Any, Any>,
+    private val openTelemetryService: OpenTelemetryService,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
@@ -58,24 +60,52 @@ class CordaKafkaProducerImpl(
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         val prefixedRecord =
             ProducerRecord(topicPrefix + record.topic, record.key, record.value)
+        if (record.context != null) {
+            openTelemetryService.getTextMapPropagator().inject(
+                record.context!!, prefixedRecord.headers(), openTelemetryService
+                    .getKafkaHeaderSetter()
+            )
+        }
         producer.send(prefixedRecord, callback?.toKafkaCallback())
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
         val prefixedRecord =
             ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)
+        if (record.context != null) {
+            openTelemetryService.getTextMapPropagator().inject(
+                record.context!!, prefixedRecord.headers(), openTelemetryService
+                    .getKafkaHeaderSetter()
+            )
+        }
         producer.send(prefixedRecord, callback?.toKafkaCallback())
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
         for (record in records) {
-            producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+            val prefixedRecord =
+                ProducerRecord(topicPrefix + record.topic, record.key, record.value)
+            if (record.context != null) {
+                openTelemetryService.getTextMapPropagator().inject(
+                    record.context!!, prefixedRecord.headers(), openTelemetryService
+                        .getKafkaHeaderSetter()
+                )
+            }
+            producer.send(prefixedRecord)
         }
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
         for ((partition, record) in recordsWithPartitions) {
-            producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value))
+            val prefixedRecord =
+                ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)
+            if (record.context != null) {
+                openTelemetryService.getTextMapPropagator().inject(
+                    record.context!!, prefixedRecord.headers(), openTelemetryService
+                        .getKafkaHeaderSetter()
+                )
+            }
+            producer.send(prefixedRecord)
         }
     }
 

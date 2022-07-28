@@ -71,7 +71,7 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
      */
     class ForwardingEventLogProcessor<K: Any, V: Any>(private val durableProcessor: DurableProcessor<K, V>): EventLogProcessor<K, V> {
         override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
-            val records = events.map { Record(it.topic, it.key, it.value) }
+            val records = events.map { Record(it.topic, it.key, it.value, it.context) }
             return durableProcessor.onNext(records)
         }
 

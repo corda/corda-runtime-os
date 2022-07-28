@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
+import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
@@ -10,6 +11,7 @@ import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.otel.service.OpenTelemetryService
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -18,7 +20,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
 
 /**
  * Builder for a Kafka Producer.
@@ -30,7 +31,9 @@ import java.util.*
 @Component(service = [CordaProducerBuilder::class])
 class KafkaCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = OpenTelemetryService::class)
+    private val openTelemetryService: OpenTelemetryService
 ) : CordaProducerBuilder {
 
     companion object {
@@ -44,7 +47,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
         return executeKafkaActionWithRetry(
             action = {
                 val producer = createKafkaProducer(kafkaProperties)
-                CordaKafkaProducerImpl(resolvedConfig, producer)
+                CordaKafkaProducerImpl(resolvedConfig, producer, openTelemetryService)
             },
             errorMessage = { "SubscriptionProducerBuilderImpl failed to producer with clientId ${producerConfig.clientId}, " +
                     "with configuration: $messageBusConfig" },

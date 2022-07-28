@@ -32,7 +32,8 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-api', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-context', version: '1.17.0-SNAPSHOT'
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 

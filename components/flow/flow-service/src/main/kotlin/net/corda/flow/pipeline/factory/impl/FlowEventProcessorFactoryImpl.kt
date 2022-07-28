@@ -9,6 +9,7 @@ import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.otel.service.OpenTelemetryService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -21,8 +22,9 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
     @Reference(service = FlowEventExceptionProcessor::class)
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     @Reference(service = FlowEventContextConverter::class)
-    private val flowEventContextConverter: FlowEventContextConverter
-
+    private val flowEventContextConverter: FlowEventContextConverter,
+    @Reference(service = OpenTelemetryService::class)
+    private val opentelemetryService: OpenTelemetryService
 ) : FlowEventProcessorFactory {
 
     override fun create(config: SmartConfig): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
@@ -30,6 +32,7 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
             flowEventPipelineFactory,
             flowEventExceptionProcessor,
             flowEventContextConverter,
+            opentelemetryService,
             config
         )
     }

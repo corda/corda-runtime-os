@@ -1,9 +1,13 @@
 package net.corda.cpi.upload.endpoints.v1
 
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.context.Context
 import net.corda.chunking.toCorda
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
@@ -11,12 +15,12 @@ import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.otel.service.OpenTelemetryService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.httprpc.HttpFileUpload
 
 @Component(service = [PluggableRPCOps::class])
 class CpiUploadRPCOpsImpl @Activate constructor(
@@ -25,7 +29,9 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
     @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = OpenTelemetryService::class)
+    private val opentelemetryService: OpenTelemetryService
 ) : CpiUploadRPCOps, PluggableRPCOps<CpiUploadRPCOps>, Lifecycle {
     companion object {
         val logger = contextLogger()

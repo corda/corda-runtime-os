@@ -11,12 +11,12 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
-import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.Component
 import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
@@ -67,7 +67,9 @@ internal class OutboundMessageProcessor(
     override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
         val records = mutableListOf<Record<String, *>>()
         for (event in events) {
-            records += processEvent(event)
+            val eventrecords = processEvent(event)
+            eventrecords.forEach { it.context = event.context }
+            records += eventrecords
         }
         return records
     }

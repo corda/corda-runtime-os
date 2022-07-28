@@ -51,7 +51,7 @@ internal class InboundMessageProcessor(
                 logger.error("Received null message. The message was discarded.")
                 continue
             }
-            records += when (val payload = message.payload) {
+            val eventrecords = when (val payload = message.payload) {
                 is AuthenticatedDataMessage -> processDataMessage(
                     payload.header.sessionId,
                     AvroSealedClasses.DataMessage.Authenticated(payload)
@@ -71,6 +71,8 @@ internal class InboundMessageProcessor(
                     emptyList()
                 }
             }
+            eventrecords.forEach { it.context = event.context }
+            records += eventrecords
         }
         return records
     }

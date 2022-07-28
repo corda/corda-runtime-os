@@ -1,0 +1,31 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-api', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-context', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-sdk', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-sdk-metrics', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-sdk-extension-autoconfigure-spi', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-sdk-extension-autoconfigure', version: '1.17.0-alpha-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-jaeger', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-logging', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-otlp', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-otlp-common', version: '1.17.0-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-otlp-logs', version: '1.17.0-alpha-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-prometheus', version: '1.17.0-alpha-SNAPSHOT'
+    implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-zipkin', version: '1.17.0-SNAPSHOT'
+
+}
+
+description 'Otel service'

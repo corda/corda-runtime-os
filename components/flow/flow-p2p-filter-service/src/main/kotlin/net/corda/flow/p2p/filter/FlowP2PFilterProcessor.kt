@@ -1,5 +1,6 @@
 package net.corda.flow.p2p.filter
 
+import java.nio.ByteBuffer
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
@@ -14,7 +15,6 @@ import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.nio.ByteBuffer
 
 /**
  * Processes events from the P2P.in topic.
@@ -38,6 +38,8 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
             val authMessage = appMessage.value?.message
             if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == FLOW_SESSION_SUBSYSTEM) {
                 getOutputRecord(authMessage.payload, appMessage.key)?.let { outputRecord ->
+                    //propagate context
+                    outputRecord.context = appMessage.context
                     outputEvents.add(outputRecord)
                 }
             }
