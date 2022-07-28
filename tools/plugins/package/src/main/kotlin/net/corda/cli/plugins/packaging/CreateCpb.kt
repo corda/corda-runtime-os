@@ -45,9 +45,6 @@ class CreateCpb : Runnable {
 
         private const val CPB_CURRENT_FORMAT_VERSION = "2.0"
 
-        /** Name of signature within Cpb file */
-        const val CPB_SIGNER_NAME = "CPB-SIG"
-
         private val CPB_NAME_ATTRIBUTE = Attributes.Name("Corda-CPB-Name")
 
         private val CPB_VERSION_ATTRIBUTE = Attributes.Name("Corda-CPB-Version")
@@ -69,7 +66,7 @@ class CreateCpb : Runnable {
                 signingOptions.keyStoreFileName,
                 signingOptions.keyStorePass,
                 signingOptions.keyAlias,
-                CPB_SIGNER_NAME,
+                signingOptions.sigFile,
                 signingOptions.tsaUrl
             )
         } finally {
