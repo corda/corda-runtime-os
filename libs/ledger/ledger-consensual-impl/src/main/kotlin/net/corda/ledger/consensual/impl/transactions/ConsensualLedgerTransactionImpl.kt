@@ -17,8 +17,6 @@ class ConsensualLedgerTransactionImpl(
 
     override val id: SecureHash
         get() = wireTransaction.id
-    override val privacySalt: PrivacySalt
-        get() = wireTransaction.privacySalt
 
     override val metadata: TransactionMetaData
         get() = wireTransaction.getMetadata(serializer)
