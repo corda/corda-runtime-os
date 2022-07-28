@@ -8,10 +8,8 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.common.transactions.SignedTransaction
 import net.corda.v5.ledger.common.transactions.TransactionMetaData
@@ -88,8 +86,9 @@ class ConsensualTransactionBuilderImpl(
 
     override fun sign(publicKey: PublicKey): SignedTransaction {
         val wireTransaction = buildWireTransaction()
-        // TODO(WIP area...)
-        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
+        // TODO(we just fake the signature for now...)
+//        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
+        val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
         val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //TODO(populate this properly...)
         val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
         return SignedTransactionImpl(wireTransaction, listOf(signatureWithMetaData))

@@ -32,4 +32,5 @@ dependencies {
     testImplementation project(":libs:serialization:serialization-internal")
     testImplementation project(":libs:virtual-node:sandbox-group-context")
     testImplementation project(':libs:virtual-node:virtual-node-info')
+    testImplementation project(":components:flow:flow-service") // For FlowFiberServiceImpl
 }

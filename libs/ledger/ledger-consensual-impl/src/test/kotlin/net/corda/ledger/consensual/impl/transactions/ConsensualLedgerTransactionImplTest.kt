@@ -3,8 +3,11 @@ package net.corda.ledger.consensual.impl.transactions
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.MerkleTreeFactoryImpl
+import net.corda.flow.application.crypto.SigningServiceImpl
+import net.corda.flow.fiber.FlowFiberServiceImpl
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.TestSerializationService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -29,6 +32,7 @@ internal class ConsensualLedgerTransactionImplTest{
         private lateinit var merkleTreeFactory: MerkleTreeFactory
         private lateinit var secureRandom: SecureRandom
         private lateinit var serializer: SerializationService
+        private lateinit var signingService: SigningService
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
 
@@ -55,6 +59,9 @@ internal class ConsensualLedgerTransactionImplTest{
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
             serializer = TestSerializationService.getTestSerializationService(schemeMetadata)
 
+            val flowFiberService = FlowFiberServiceImpl()
+            signingService = SigningServiceImpl(flowFiberService, schemeMetadata)
+
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
             testPublicKey = kpg.genKeyPair().public
@@ -66,11 +73,11 @@ internal class ConsensualLedgerTransactionImplTest{
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
-        val wireTransaction = ConsensualTransactionBuilderImpl()
+        val signedTransaction = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
             .withTimeStamp(testTimestamp)
             .withConsensualState(testConsensualState)
-            .build(merkleTreeFactory, digestService, secureRandom, serializer)
-        val ledgerTransaction = ConsensualLedgerTransactionImpl(wireTransaction, serializer)
+            .sign(testPublicKey)
+        val ledgerTransaction = ConsensualLedgerTransactionImpl(signedTransaction.wireTransaction, serializer)
         assertEquals(testTimestamp, ledgerTransaction.timestamp)
         assertIs<List<ConsensualState>>(ledgerTransaction.consensualStates)
         assertEquals(1, ledgerTransaction.consensualStates.size)
