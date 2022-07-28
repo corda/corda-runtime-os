@@ -59,6 +59,10 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
 
     fun formParams(key: String): List<String> = formParamsMap[key.lowercase()] ?: emptyList()
 
+    val isSingleFormParam: Boolean get() {
+        return formParamsMap.size == 1
+    }
+
     fun uploadedFiles(paramName: String): List<HttpFileUpload> {
         val files = ctx.uploadedFiles(paramName)
         return files.map { file -> HttpFileUpload(file.content, file.contentType, file.extension, file.filename, file.size) }

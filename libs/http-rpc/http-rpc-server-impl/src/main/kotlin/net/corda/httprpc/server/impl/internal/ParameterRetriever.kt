@@ -7,7 +7,6 @@ import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.utils.mapTo
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.net.URLDecoder
 import java.util.function.Function
@@ -123,13 +122,15 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
             // or to a method:
             // doStuff(request: MyRequest), where MyRequest is `data class MyRequest(prop1: String, prop2: String)`
 
-            val node = if (ctx.body().isBlank()) null else ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name)
+            var node = if (ctx.body().isBlank()) null else ctx.bodyAsClass(ObjectNode::class.java).get(parameter.name)
 
-            if (node == null) {
-                return tryParsingComplexType(ctx)
+            if (node == null && ctx.isSingleFormParam) {
+                node = ctx.bodyAsClass(ObjectNode::class.java)
             }
 
-            val field = node.toString()
+            if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
+
+            val field = node?.toString() ?: "null"
             return ctx.fromJsonString(field, parameter.classType)
                 .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
         } catch (e: Exception) {
@@ -138,16 +139,6 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
                 throw e
             }
         }
-    }
-
-    private fun tryParsingComplexType(ctx: ParametersRetrieverContext): Any? = try {
-        // Try parsing parameter class as broken down properties - MyRequest case above.
-        ctx.bodyAsClass(parameter.classType)
-    } catch (ex: Exception) {
-        log.debug { "Unable to parse body: ${ctx.body()} as ${parameter.classType}, ${ex.message}" }
-        if (parameter.required) {
-            throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
-        } else null
     }
 }
 

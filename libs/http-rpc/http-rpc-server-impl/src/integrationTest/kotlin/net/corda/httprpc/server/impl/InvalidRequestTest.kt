@@ -27,7 +27,6 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         const val JSON_PROCESSING_ERROR_TITLE = "Error during processing of request JSON."
         const val MISSING_JSON_FIELD_TITLE = "Missing or invalid field in JSON request body."
         const val MISSING_VALUE_ERROR = "value failed for JSON property str due to missing (therefore NULL) value"
-        const val DATE_PARSE_ERROR = "Cannot deserialize value of type `java.util.Date` from String"
 
         @BeforeAll
         @JvmStatic
@@ -165,8 +164,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
-            assertTrue(responseBody.contains(JSON_PROCESSING_ERROR_TITLE))
-            assertTrue(responseBody.contains(DATE_PARSE_ERROR))
+            assertThat(responseBody).contains(JSON_PROCESSING_ERROR_TITLE)
         }
 
         // With "date" at the root of JSON
@@ -193,8 +191,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             assertEquals(HttpStatus.SC_BAD_REQUEST, responseStatus)
             val responseBody = body
             assertNotNull(responseBody)
-            assertTrue(responseBody.contains(JSON_PROCESSING_ERROR_TITLE))
-            assertTrue(responseBody.contains(DATE_PARSE_ERROR))
+            assertThat(responseBody).contains(JSON_PROCESSING_ERROR_TITLE)
 
             //CORE-2404 case #1 exception contains line break, this is invalid in a json string
             val json = JsonParser.parseString(responseBody) as JsonObject
