@@ -33,7 +33,7 @@ class VerificationResponseHandler(
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
-                    registrationId + "-" + mgm.toCorda().shortHash,
+                    "$registrationId-${mgm.toCorda().shortHash}",
                     RegistrationCommand(ApproveRegistration())
                 )
             )

@@ -28,7 +28,7 @@ internal class VerificationRequestHandler(
         val registrationId = request.registrationId
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            registrationId + "-" + header.destination.toCorda().shortHash,
+            "$registrationId-${header.destination.toCorda().shortHash}",
             RegistrationCommand(
                 ProcessMemberVerificationRequest(
                     header.destination,

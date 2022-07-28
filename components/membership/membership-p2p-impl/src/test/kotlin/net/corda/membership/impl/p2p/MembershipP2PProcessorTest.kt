@@ -106,7 +106,7 @@ class MembershipP2PProcessorTest {
             .hasSize(1)
         assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
         assertThat(result.first().value).isInstanceOf(RegistrationCommand::class.java)
-        assertThat(result.first().key).isEqualTo(registrationId+ "-" + mgm.toCorda().shortHash)
+        assertThat(result.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
 
         val value = result.first().value as RegistrationCommand
         assertThat(value.command).isInstanceOf(StartRegistration::class.java)
@@ -164,7 +164,7 @@ class MembershipP2PProcessorTest {
         assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
         val command = result.first().value as? RegistrationCommand
         assertThat(command?.command).isInstanceOf(ProcessMemberVerificationRequest::class.java)
-        assertThat(result.first().key).isEqualTo(registrationId+ "-" + member.toCorda().shortHash)
+        assertThat(result.first().key).isEqualTo("$registrationId-${member.toCorda().shortHash}")
         val request = command?.command as ProcessMemberVerificationRequest
         assertThat(request.verificationRequest).isEqualTo(verificationRequest)
         assertThat(request.destination).isEqualTo(member)
@@ -196,7 +196,7 @@ class MembershipP2PProcessorTest {
         assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
         val command = result.first().value as? RegistrationCommand
         assertThat(command?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
-        assertThat(result.first().key).isEqualTo(registrationId+ "-" + mgm.toCorda().shortHash)
+        assertThat(result.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
         val response = command?.command as ProcessMemberVerificationResponse
         assertThat(response.verificationResponse).isEqualTo(verificationResponse)
     }

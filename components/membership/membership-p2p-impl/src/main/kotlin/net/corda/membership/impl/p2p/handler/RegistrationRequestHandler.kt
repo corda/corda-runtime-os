@@ -28,7 +28,7 @@ internal class RegistrationRequestHandler(
         val registrationId = registrationRequest.registrationId
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            registrationId + "-" + header.destination.toCorda().shortHash,
+            "$registrationId-${header.destination.toCorda().shortHash}",
             RegistrationCommand(
                 StartRegistration(
                     header.destination,
