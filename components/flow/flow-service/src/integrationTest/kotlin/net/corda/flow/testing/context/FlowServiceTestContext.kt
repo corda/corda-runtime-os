@@ -94,7 +94,8 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
-        FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000
+        FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
+        FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION to 60000
     )
 
     private val testRuns = mutableListOf<TestRun>()
@@ -189,8 +190,16 @@ class FlowServiceTestContext @Activate constructor(
         testConfig[key] = value
     }
 
-    override fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
-        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(protocol, initiatingFlowClassName, initiatedFlowClassName)
+    override fun initiatingToInitiatedFlow(
+        protocol: String,
+        initiatingFlowClassName: String,
+        initiatedFlowClassName: String
+    ) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(
+            protocol,
+            initiatingFlowClassName,
+            initiatedFlowClassName
+        )
     }
 
     override fun startFlowEventReceived(
@@ -340,7 +349,12 @@ class FlowServiceTestContext @Activate constructor(
             .setOther(otherContext)
             .build()
 
-        context.other.items.add(KeyValuePair(CryptoFlowOpsTransformer.REQUEST_OP_KEY, SignFlowCommand::class.java.simpleName))
+        context.other.items.add(
+            KeyValuePair(
+                CryptoFlowOpsTransformer.REQUEST_OP_KEY,
+                SignFlowCommand::class.java.simpleName
+            )
+        )
 
         return addTestRun(
             createFlowEventRecord(
@@ -354,7 +368,11 @@ class FlowServiceTestContext @Activate constructor(
                         .setTenantId(tenantId)
                         .setOther(otherContext)
                         .build(),
-                    CryptoSignatureWithKey(ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(bytes), KeyValuePairList(mutableListOf())),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(publicKey.encoded),
+                        ByteBuffer.wrap(bytes),
+                        KeyValuePairList(mutableListOf())
+                    ),
                     exceptionEnvelope
                 )
             )

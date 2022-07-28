@@ -37,7 +37,7 @@ class P2pRecordsFactory(
         val header = AuthenticatedMessageHeader.newBuilder()
             .setDestination(destination)
             .setSource(source)
-            .setTtl(clock.instant().plus(TTL).toEpochMilli())
+            .setTtl(clock.instant().plus(TTL))
             .setMessageId(UUID.randomUUID().toString())
             .setTraceId(null)
             .setSubsystem(MEMBERSHIP_P2P_SUBSYSTEM)

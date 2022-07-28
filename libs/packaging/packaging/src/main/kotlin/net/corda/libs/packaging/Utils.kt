@@ -74,4 +74,3 @@ internal fun jarSignatureVerificationEnabledByDefault() = System.getProperty(DEF
 
 fun signerInfo(jarEntry: JarEntry) =
     jarEntry.codeSigners.mapTo(LinkedHashSet()) { (it.signerCertPath.certificates[0]).publicKey }
-

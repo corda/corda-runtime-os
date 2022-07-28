@@ -30,7 +30,7 @@ class MembershipGroupReaderImpl(
 
     override fun lookup(): Collection<MemberInfo> = memberList.filter { it.isActive }
 
-    override fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo? =
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActive && ledgerKeyHash in it.ledgerKeyHashes }
 
     override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =

@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -43,7 +44,11 @@ class FlowP2PFilterService @Activate constructor(
         private const val CONSUMER_GROUP = "FlowSessionFilterConsumer"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowP2PFilterService>(::eventHandler)
+    private val closeableResources = CloseableResources.of(
+        this::durableSub
+    )
+
+    private val coordinator = coordinatorFactory.createCoordinator<FlowP2PFilterService>(closeableResources, ::eventHandler)
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private var durableSub: Subscription<String, AppMessage>? = null
@@ -89,8 +94,6 @@ class FlowP2PFilterService @Activate constructor(
      */
     private fun restartFlowP2PFilterService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-
-        durableSub?.close()
 
         durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),

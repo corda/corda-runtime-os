@@ -83,7 +83,7 @@ class P2pRecordsFactoryTest {
                 )
             )
             it.assertThat(header?.ttl).isEqualTo(
-                2000 + 5 * 60 * 1000
+                Instant.ofEpochMilli(2000 + 5 * 60 * 1000)
             )
             it.assertThat(header?.subsystem).isEqualTo(
                 MEMBERSHIP_P2P_SUBSYSTEM

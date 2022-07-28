@@ -104,11 +104,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -164,11 +164,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+          "description" : "'p2p', 'rpc-api', or holding identity ID.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity identity ID.",
+            "description" : "'p2p', 'rpc-api', or holding identity ID.",
             "nullable" : false,
             "example" : "string"
           }
@@ -757,37 +757,6 @@
         }
       }
     },
-    "/hsm" : {
-      "get" : {
-        "tags" : [ "HSM API" ],
-        "description" : "Get list of available HSMs.",
-        "operationId" : "get_hsm",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "$ref" : "#/components/schemas/HsmInfo"
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/hsm/getprotocolversion" : {
       "get" : {
         "tags" : [ "HSM API" ],
@@ -851,7 +820,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }
@@ -901,7 +870,7 @@
                 "schema" : {
                   "nullable" : true,
                   "allOf" : [ {
-                    "$ref" : "#/components/schemas/HsmInfo"
+                    "$ref" : "#/components/schemas/HsmAssociationInfo"
                   } ]
                 }
               }
@@ -948,7 +917,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HsmInfo"
+                  "$ref" : "#/components/schemas/HsmAssociationInfo"
                 }
               }
             }
@@ -1574,41 +1543,6 @@
       }
     },
     "/membership/{holdingidentityshorthash}" : {
-      "get" : {
-        "tags" : [ "Member Registration API" ],
-        "description" : "Checks the status of the registration request.",
-        "operationId" : "get_membership__holdingidentityshorthash_",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RegistrationRequestProgress"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      },
       "post" : {
         "tags" : [ "Member Registration API" ],
         "description" : "Start registration process for a virtual node.",
@@ -1775,7 +1709,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/SetupHostedIdentitiesWrapperRequest"
+                "$ref" : "#/components/schemas/HostedIdentitySetupRequest"
               }
             }
           },
@@ -2519,6 +2453,24 @@
           }
         }
       },
+      "ConfigSchemaVersion" : {
+        "required" : [ "major", "minor" ],
+        "type" : "object",
+        "properties" : {
+          "major" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "minor" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
       "CpiIdentifier" : {
         "required" : [ "cpiName", "cpiVersion" ],
         "type" : "object",
@@ -2971,7 +2923,7 @@
             "example" : "string"
           },
           "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
           "section" : {
             "type" : "string",
@@ -3031,31 +2983,46 @@
           }
         }
       },
-      "HsmInfo" : {
-        "required" : [ "attemptTimeout", "createdAt", "id", "masterKeyPolicy", "maxAttempts", "serviceName", "supportedSchemes" ],
+      "HostedIdentitySetupRequest" : {
+        "required" : [ "certificateChainAlias" ],
         "type" : "object",
         "properties" : {
-          "attemptTimeout" : {
+          "certificateChainAlias" : {
             "type" : "string",
-            "format" : "duration",
             "nullable" : false,
-            "example" : "PT15M"
+            "example" : "string"
           },
-          "capacity" : {
-            "type" : "integer",
-            "format" : "int32",
+          "sessionKeyId" : {
+            "type" : "string",
             "nullable" : true,
+            "example" : "string"
+          },
+          "tlsTenantId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "Additional parameters for setting up the hosted identity."
+      },
+      "HsmAssociationInfo" : {
+        "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "deprecatedAt" : {
+            "type" : "integer",
+            "format" : "int64",
+            "nullable" : false,
             "example" : 0
           },
-          "createdAt" : {
+          "hsmId" : {
             "type" : "string",
-            "format" : "datetime",
             "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
-          "description" : {
-            "type" : "string",
-            "nullable" : true,
             "example" : "string"
           },
           "id" : {
@@ -3063,30 +3030,7 @@
             "nullable" : false,
             "example" : "string"
           },
-          "masterKeyPolicy" : {
-            "$ref" : "#/components/schemas/MasterKeyPolicy"
-          },
-          "maxAttempts" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "serviceName" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "supportedSchemes" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "string",
-              "example" : "string"
-            }
-          },
-          "workerLabel" : {
+          "masterKeyAlias" : {
             "type" : "string",
             "nullable" : true,
             "example" : "string"
@@ -3124,17 +3068,6 @@
             "example" : "string"
           },
           "scheme" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "MasterKeyPolicy" : {
-        "required" : [ "type" ],
-        "type" : "object",
-        "properties" : {
-          "type" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3444,31 +3377,6 @@
           }
         }
       },
-      "SetupHostedIdentitiesWrapperRequest" : {
-        "required" : [ "certificateChainAlias" ],
-        "properties" : {
-          "certificateChainAlias" : {
-            "type" : "string",
-            "description" : "The certificates chain alias.",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "sessionKeyId" : {
-            "type" : "string",
-            "description" : "The session key ID (will use the first session one by default).",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "tlsTenantId" : {
-            "type" : "string",
-            "description" : "The TLS tenant ID (either 'p2p' or the holdingIdentityShortHash, default to the holdingIdentityShortHash).",
-            "nullable" : true,
-            "example" : "string"
-          }
-        },
-        "description" : "SetupHostedIdentitiesWrapperRequest",
-        "nullable" : false
-      },
       "StartFlowParameters" : {
         "required" : [ "clientRequestId", "flowClassName", "requestData" ],
         "type" : "object",
@@ -3532,7 +3440,7 @@
             "example" : "string"
           },
           "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
           "section" : {
             "type" : "string",
@@ -3558,7 +3466,7 @@
             "example" : "string"
           },
           "schemaVersion" : {
-            "$ref" : "#/components/schemas/Version"
+            "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
           "section" : {
             "type" : "string",
@@ -3696,24 +3604,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "version" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          }
-        }
-      },
-      "Version" : {
-        "required" : [ "major", "minor" ],
-        "type" : "object",
-        "properties" : {
-          "major" : {
-            "type" : "integer",
-            "format" : "int32",
-            "nullable" : false,
-            "example" : 0
-          },
-          "minor" : {
             "type" : "integer",
             "format" : "int32",
             "nullable" : false,

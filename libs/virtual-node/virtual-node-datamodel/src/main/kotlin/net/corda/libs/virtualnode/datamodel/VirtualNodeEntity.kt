@@ -89,7 +89,7 @@ data class VirtualNodeEntity(
 /** The composite primary key for a virtual node instance. */
 @Embeddable
 @Suppress("Unused")
-class VirtualNodeEntityKey(
+data class VirtualNodeEntityKey(
     private val holdingIdentity: HoldingIdentityEntity,
     private val cpiName: String,
     private val cpiVersion: String,

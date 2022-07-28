@@ -17,6 +17,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -97,7 +98,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
 
         return if (response.success) {
             UpdateConfigResponse(
-                response.section, response.config, Version(
+                response.section, response.config, ConfigSchemaVersion(
                     response.schemaVersion.majorVersion,
                     response.schemaVersion.minorVersion
                 ), response.version
@@ -127,7 +128,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             section,
             config.source,
             config.value,
-            Version(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            ConfigSchemaVersion(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
             config.version
         )
     }
@@ -139,7 +140,11 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
         val config = request.config
         val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
-        val updatedConfig = validator.validate(request.section, request.schemaVersion, smartConfig)
+        val updatedConfig = validator.validate(
+            request.section,
+            Version(request.schemaVersion.major, request.schemaVersion.minor),
+            smartConfig
+        )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
         val message = "Configuration \"${request.config}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"

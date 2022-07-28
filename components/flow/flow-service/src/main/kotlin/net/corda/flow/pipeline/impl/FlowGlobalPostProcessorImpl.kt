@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.crypto.manager.CryptoManager
-import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -19,6 +18,7 @@ import net.corda.v5.base.util.minutes
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
@@ -95,10 +95,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
          * If a platform error was previously reported to the user the error should now be cleared. If we have reached
          * the post-processing step we can assume the pending error has been processed.
          */
-        val checkpoint = context.checkpoint
-        if (checkpoint.doesExist) {
-            checkpoint.clearPendingPlatformError()
-        }
+        context.checkpoint.clearPendingPlatformError()
     }
 
     /**
