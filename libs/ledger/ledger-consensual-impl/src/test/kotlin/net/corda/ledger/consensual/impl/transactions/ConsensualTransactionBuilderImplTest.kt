@@ -4,7 +4,6 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowFiberServiceImpl
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.TestSerializationService
@@ -21,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
