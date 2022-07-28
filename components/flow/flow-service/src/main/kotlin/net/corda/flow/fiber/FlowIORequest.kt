@@ -41,7 +41,12 @@ interface FlowIORequest<out R> {
         override fun toString() = "SendAndReceive(${sessionToPayload.mapValues { (key, value) -> "$key=$value" }})"
     }
 
-    data class InitiateFlow(val x500Name: MemberX500Name, val sessionId: String) : FlowIORequest<Unit>
+    data class InitiateFlow(
+        val x500Name: MemberX500Name,
+        val sessionId: String,
+        val contextPlatformProperties: Map<String, String>,
+        val contextUserProperties: Map<String, String>
+    ) : FlowIORequest<Unit>
 
     /**
      * Closes the specified sessions.
@@ -95,9 +100,11 @@ interface FlowIORequest<out R> {
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
      */
-    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) : FlowIORequest<Unit>
+    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) :
+        FlowIORequest<Unit>
 
-    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) : FlowIORequest<ByteBuffer?>
+    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) :
+        FlowIORequest<ByteBuffer?>
 
     data class FindAll(val requestId: String, val className: String) : FlowIORequest<ByteBuffer?>
 

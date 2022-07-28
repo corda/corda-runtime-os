@@ -26,6 +26,8 @@ interface FlowSessionManager {
      * @param protocolName The name of the protocol to use in this session
      * @param protocolVersions The versions of the protocol supported by the initiating side
      * @param instant The [Instant] used within the created [SessionEvent].
+     * @param contextPlatformProperties The platform properties of the context of the initiating flow
+     * @param contextUserProperties The user properties of the context of the initiating flow
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
      */
@@ -36,7 +38,9 @@ interface FlowSessionManager {
         x500Name: MemberX500Name,
         protocolName: String,
         protocolVersions: List<Int>,
-        instant: Instant
+        instant: Instant,
+        contextPlatformProperties: Map<String, String>,
+        contextUserProperties: Map<String, String>
     ): SessionState
 
     /**
@@ -84,7 +88,12 @@ interface FlowSessionManager {
      *
      * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendErrorMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, throwable: Throwable, instant: Instant): List<SessionState>
+    fun sendErrorMessages(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        throwable: Throwable,
+        instant: Instant
+    ): List<SessionState>
 
     /**
      * Gets the next received session event for each passed in session id.
@@ -130,7 +139,11 @@ interface FlowSessionManager {
      *
      * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun getSessionsWithStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): List<SessionState>
+    fun getSessionsWithStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState>
 
     /**
      * Are all the specified sessions have a [SessionStateType] of [status]?

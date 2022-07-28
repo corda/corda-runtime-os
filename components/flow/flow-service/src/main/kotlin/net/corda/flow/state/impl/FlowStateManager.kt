@@ -29,6 +29,10 @@ class FlowStateManager(private val initialState: FlowState) {
 
     val startContext: FlowStartContext = state.flowStartContext
 
+    val contextUserProperties = state.contextUserProperties
+
+    val contextPlatformProperties = state.contextPlatformProperties
+
     val holdingIdentity: HoldingIdentity = state.flowStartContext.identity.toCorda()
 
     val fiber: ByteBuffer

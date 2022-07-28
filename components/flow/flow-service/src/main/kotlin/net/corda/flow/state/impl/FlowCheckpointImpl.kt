@@ -11,6 +11,7 @@ import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowContextPropertiesImpl
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.HoldingIdentity
@@ -122,7 +123,9 @@ class FlowCheckpointImpl(
     override val pendingPlatformError: ExceptionEnvelope?
         get() = checkpoint.pipelineState.pendingPlatformError
 
-    override fun initFlowState(flowStartContext: FlowStartContext) {
+    override lateinit var flowContextProperties: FlowContextPropertiesImpl
+
+    override fun initFlowState(flowStartContext: FlowStartContext, initialContextUserProperties: Map<String, String>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -140,9 +143,17 @@ class FlowCheckpointImpl(
             waitingFor = null
             suspendCount = 0
             suspendedOn = null
+            // The context platform properties are always initialised from whichever start event created the flow
+            contextPlatformProperties = flowStartContext.contextPlatformProperties
+            contextUserProperties = initialContextUserProperties
         }.build()
 
-        flowStateManager = FlowStateManager(flowState)
+        flowStateManager = FlowStateManager(flowState).also { manager ->
+            flowContextProperties = FlowContextPropertiesImpl(
+                platformProperties = manager.contextPlatformProperties,
+                userProperties = manager.contextUserProperties
+            )
+        }
         nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
     }
 

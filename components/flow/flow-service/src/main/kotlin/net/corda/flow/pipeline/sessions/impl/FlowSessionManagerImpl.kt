@@ -35,7 +35,9 @@ class FlowSessionManagerImpl @Activate constructor(
         x500Name: MemberX500Name,
         protocolName: String,
         protocolVersions: List<Int>,
-        instant: Instant
+        instant: Instant,
+        contextPlatformProperties: Map<String, String>,
+        contextUserProperties: Map<String, String>
     ): SessionState {
         val payload = SessionInit.newBuilder()
             .setProtocol(protocolName)
@@ -43,6 +45,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            .setContextPlatformProperties(contextPlatformProperties)
+            .setContextUserProperties(contextUserProperties)
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -164,8 +168,10 @@ class FlowSessionManagerImpl @Activate constructor(
         val sessionsToReport = missingSessionStates.map { "'${it}'=MISSING" } +
                 invalidSessions.map { "'${it.sessionId}'=${it.status}" }
 
-        throw FlowSessionStateException("${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
-                "sessions are invalid [${sessionsToReport.joinToString(", ")}]")
+        throw FlowSessionStateException(
+            "${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
+                    "sessions are invalid [${sessionsToReport.joinToString(", ")}]"
+        )
     }
 
     private fun sendSessionMessageToExistingSession(

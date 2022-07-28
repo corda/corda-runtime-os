@@ -76,7 +76,17 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val flowClassName = startFlow.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, startFlow.requestData)
+        // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
+        // This is a placeholder which indicates access to everything
+        val flowContextPlatformProperties = mapOf("account" to "account-zero")
+        val startEvent =
+            messageFactory.createStartFlowEvent(
+                clientRequestId,
+                vNode,
+                flowClassName,
+                startFlow.requestData,
+                flowContextPlatformProperties
+            )
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(

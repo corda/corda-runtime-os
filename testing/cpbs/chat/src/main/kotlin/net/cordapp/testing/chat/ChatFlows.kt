@@ -48,6 +48,13 @@ class ChatOutgoingFlow : RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
+        val account = flowEngine.flowContextProperties.get("account")
+        log.error("@@@ rpc flow: account from context:${account}")
+
+        flowEngine.flowContextProperties.set("user", "user-set")
+        val user = flowEngine.flowContextProperties.get("user")
+        log.error("@@@ rpc flow: user from context:${user}")
+
         log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
         val inputs = requestBody.getRequestBodyAs<ChatOutgoingFlowParameter>(jsonMarshallingService)
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
@@ -90,6 +97,12 @@ class ChatIncomingFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
+        val account = flowEngine.flowContextProperties.get("account")
+        log.error("@@@ initiated flow: account from context:${account}")
+
+        val user = flowEngine.flowContextProperties.get("user")
+        log.error("@@@ initiated flow: user from context:${user}")
+
         val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
         log.info("Chat incoming flow starting in {$thisVirtualNodeName}...")
 

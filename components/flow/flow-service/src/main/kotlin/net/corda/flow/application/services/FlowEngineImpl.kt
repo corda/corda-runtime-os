@@ -1,6 +1,7 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
@@ -38,6 +39,9 @@ class FlowEngineImpl @Activate constructor(
     override val virtualNodeName: MemberX500Name
         get() = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
 
+    override val flowContextProperties: FlowContextProperties
+        get() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContextProperties
+
     @Suspendable
     override fun sleep(duration: Duration) {
         TODO("Not yet implemented")
@@ -60,9 +64,13 @@ class FlowEngineImpl @Activate constructor(
         getFiberExecutionContext().flowStackService.push(subFlow)
 
         try {
+            val flowContextProperties =
+                flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContextProperties
+            flowContextProperties.pushStackMarker()
             log.debug { "Calling sub-flow('$subFlowClassName')..." }
             val result = subFlow.call()
             log.debug { "Sub-flow('$subFlowClassName') call completed ..." }
+            flowContextProperties.popStackMarker()
             /*
              * TODOs:
              * Once the session management has been implemented we can look at optimising this, only calling

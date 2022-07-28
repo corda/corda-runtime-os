@@ -11,7 +11,8 @@ interface MessageFactory {
         clientRequestId: String,
         virtualNode: VirtualNodeInfo,
         flowClassName: String,
-        flowStartArgs: String
+        flowStartArgs: String,
+        flowContextPlatformProperties: Map<String, String>,
     ): FlowMapperEvent
 
     fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse
