@@ -137,4 +137,13 @@ internal object TestUtils {
             }
         }
     }
+
+    fun jarEntriesExistInCpx(cpxPath: Path, expectedEntries: List<String>): Boolean {
+        JarInputStream(Files.newInputStream(cpxPath)).use {
+            val actualEntries = generateSequence { it.nextJarEntry?.name }.toList()
+            return expectedEntries.all {
+                actualEntries.contains(it)
+            }
+        }
+    }
 }
