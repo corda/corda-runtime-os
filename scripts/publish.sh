@@ -22,7 +22,15 @@
 
 #wait
 
-kubectl port-forward service/buildkit-chart 8080:4376 &
+
+kubectl get pods -n default 
+kubectl get svc -n default 
+kubectl describe service/buildkit-chart
+
+kubectl get pods
+kubectl get svc 
+
+kubectl port-forward -n default service/buildkit-chart 4376
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
