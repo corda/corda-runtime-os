@@ -131,23 +131,46 @@ interface LifecycleCoordinator : Lifecycle {
     fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle
 
     /**
-     * Create a resource which can be closed and recreated as necessary.
+     * Create a resource which can be closed and recreated as necessary.  This resource will be managed by
+     * the [LifecycleCoordinator].  If you need to access the resource for any reason then use
+     * [getManagedResource].
+     *
+     * Any subsequent calls to [createManagedResource] with the same [name] will result in the previous
+     * resource being closed and a new one taking its place.  Therefore, you do not need to close the
+     * former resource yourself.
+     *
+     * @see getManagedResource
      *
      * @param name a unique identifier for the resource
      * @param generator the lambda for creating the resource
-     *
-     * @return the resource generated.  This is still tracked by the [LifecycleCoordinator] and will be closed
-     * as necessary
      */
-    fun <T: AutoCloseable> createManagedResource(name: String, generator: () -> T) : T
+    fun <T: AutoCloseable> createManagedResource(name: String, generator: () -> T)
 
     /**
-     * Closes _only_ the given resources.  If no resources are provided then all managed resources are
-     * closed.
+     * Retrieve (by [name]) a managed resource from this coordinator.  The resource will have been
+     * created by [createManagedResource]
+     *
+     * @see createManagedResource
+     *
+     * @param name the name of the resource.  Must match the name given in [createManagedResource]
+     *
+     * @return the resource associated by [name] or null if not available
+     */
+    fun <T: AutoCloseable> getManagedResource(name: String) : T?
+
+    /**
+     * Closes _only_ the given resources.  If no resources are provided (i.e. [resources] is null)
+     * then all managed resources are closed.
+     *
+     * It is not expected that you will often need to close resources yourself.  When generating a
+     * new resource for a given [name] the former resource will be closed for you.
+     *
+     * Additionally, all managed resources will be closed by the [LifecycleCoordinator] when
+     * [LifecycleCoordinator.stop] or [LifecycleCoordinator.close] is called.
      *
      * @param resources the set of resources which should be closed
      */
-    fun closeManagedResources(resources: Set<String> = emptySet())
+    fun closeManagedResources(resources: Set<String>? = null)
 
     /**
      * Flag indicating whether this coordinator has been closed.

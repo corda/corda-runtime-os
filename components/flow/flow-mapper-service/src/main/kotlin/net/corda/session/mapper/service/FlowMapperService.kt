@@ -16,6 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
@@ -104,7 +105,7 @@ class FlowMapperService @Activate constructor(
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
 
-            val newScheduledTaskState = coordinator.createManagedResource(CLEANUP_TASK) {
+            coordinator.createManagedResource(CLEANUP_TASK) {
                 ScheduledTaskState(
                     Executors.newSingleThreadScheduledExecutor(),
                     publisherFactory.createPublisher(
@@ -114,6 +115,7 @@ class FlowMapperService @Activate constructor(
                     mutableMapOf()
                 )
             }
+            val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
 
             coordinator.createManagedResource(SUBSCRIPTION) {
                 subscriptionFactory.createStateAndEventSubscription(
@@ -121,10 +123,9 @@ class FlowMapperService @Activate constructor(
                     FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
                     messagingConfig,
                     FlowMapperListener(newScheduledTaskState)
-                ).also {
-                    it.start()
-                }
+                )
             }
+            coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()
             coordinator.updateStatus(LifecycleStatus.UP)
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"

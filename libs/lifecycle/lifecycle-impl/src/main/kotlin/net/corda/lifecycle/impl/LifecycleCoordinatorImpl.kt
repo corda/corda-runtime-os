@@ -16,6 +16,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledFuture
@@ -208,13 +209,15 @@ class LifecycleCoordinatorImpl(
         return followStatusChanges(coordinators)
     }
 
-    override fun <T : AutoCloseable> createManagedResource(name: String, generator: () -> T): T {
-        return generator.invoke().also {
-            processor.addManagedResource(name, it)
-        }
+    override fun <T : AutoCloseable> createManagedResource(name: String, generator: () -> T) {
+        processor.addManagedResource(name, generator)
     }
 
-    override fun closeManagedResources(resources: Set<String>) = processor.closeManagedResources(resources)
+    override fun <T: AutoCloseable> getManagedResource(name: String) : T? {
+        return uncheckedCast(processor.getManagedResource(name))
+    }
+
+    override fun closeManagedResources(resources: Set<String>?) = processor.closeManagedResources(resources)
 
     /**
      * See [LifecycleCoordinator].

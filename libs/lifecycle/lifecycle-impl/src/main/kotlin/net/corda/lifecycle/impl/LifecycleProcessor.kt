@@ -250,13 +250,17 @@ internal class LifecycleProcessor(
         }
     }
 
-    fun addManagedResource(name: String, resource: AutoCloseable) {
+    fun addManagedResource(name: String, generator: () -> AutoCloseable) {
         managedResources[name]?.close()
-        managedResources[name] = resource
+        managedResources[name] = generator.invoke()
     }
 
-    internal fun closeManagedResources(resources: Set<String>) {
-        if (resources.isNotEmpty()) {
+    fun getManagedResource(name: String): AutoCloseable? {
+        return managedResources[name]
+    }
+
+    internal fun closeManagedResources(resources: Set<String>?) {
+        if (resources != null) {
             managedResources.filter { it.key in resources }.values
         } else {
             managedResources.values
