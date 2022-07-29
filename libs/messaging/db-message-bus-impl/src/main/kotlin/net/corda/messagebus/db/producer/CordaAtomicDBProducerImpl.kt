@@ -11,6 +11,8 @@ import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
@@ -19,6 +21,10 @@ class CordaAtomicDBProducerImpl(
     private val dbAccess: DBAccess,
     private val writeOffsets: WriteOffsets
 ) : CordaProducer {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+    }
 
     init {
         dbAccess.writeAtomicTransactionRecord()
@@ -70,6 +76,7 @@ class CordaAtomicDBProducerImpl(
     private fun doSendRecordsToTopicAndDB(
         dbRecords: List<TopicRecordEntry>
     ) {
+        log.info ( "Writing record $dbRecords" )
         dbAccess.writeRecords(dbRecords)
     }
 
