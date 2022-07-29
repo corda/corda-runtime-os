@@ -7,7 +7,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transactions.LedgerTransaction
 import net.corda.v5.ledger.common.transactions.SignedTransaction
 import net.corda.v5.ledger.common.transactions.WireTransaction
-import java.security.PublicKey
 
 class SignedTransactionImpl(
     override val wireTransaction: WireTransaction,
@@ -21,9 +20,6 @@ class SignedTransactionImpl(
         }
     }
 
-    /** Specifies all the public keys that require signatures for the transaction to be valid. */
-    override val requiredSigningKeys: List<PublicKey>
-        get() = ledgerTransaction.requiredSigningKeys
     override val id: SecureHash
         get() = wireTransaction.id
 
