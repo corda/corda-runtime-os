@@ -49,8 +49,8 @@ class FlowMapperService @Activate constructor(
         private val logger = contextLogger()
         private const val CONSUMER_GROUP = "FlowMapperConsumer"
 
-        private const val SUB = "SUB"
-        private const val TASK = "TASK"
+        private const val SUBSCRIPTION = "SUBSCRIPTION"
+        private const val CLEANUP_TASK = "TASK"
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
@@ -104,7 +104,7 @@ class FlowMapperService @Activate constructor(
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
 
-            val newScheduledTaskState = coordinator.createManagedResource(TASK) {
+            val newScheduledTaskState = coordinator.createManagedResource(CLEANUP_TASK) {
                 ScheduledTaskState(
                     Executors.newSingleThreadScheduledExecutor(),
                     publisherFactory.createPublisher(
@@ -115,7 +115,7 @@ class FlowMapperService @Activate constructor(
                 )
             }
 
-            coordinator.createManagedResource(SUB) {
+            coordinator.createManagedResource(SUBSCRIPTION) {
                 subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
                     FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),

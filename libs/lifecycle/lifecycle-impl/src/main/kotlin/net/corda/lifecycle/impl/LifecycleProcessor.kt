@@ -172,7 +172,7 @@ internal class LifecycleProcessor(
                 logger.debug { "Could not update status as coordinator is closing" }
             }
             runUserEventHandler(event, coordinator)
-            managedResources.values.forEach { it.close() }
+            closeManagedResources(emptySet())
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
         }
