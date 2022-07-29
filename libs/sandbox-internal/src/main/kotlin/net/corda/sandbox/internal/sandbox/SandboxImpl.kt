@@ -1,6 +1,9 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor.PrivateBundle
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor.PublicBundle
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.Bundle
 import java.util.UUID
@@ -67,5 +70,11 @@ internal open class SandboxImpl(
 
     override fun toString(): String {
         return "Sandbox[ID: $id, PUBLIC: ${publicBundles.joinToString()}, PRIVATE: ${privateBundles.joinToString()}]"
+    }
+
+    override fun accept(visitor: SandboxVisitor) {
+        visitor.visit(this)
+        this.publicBundles.forEach { visitor.visit(PublicBundle(id, it)) }
+        this.privateBundles.forEach { visitor.visit(PrivateBundle(id, it)) }
     }
 }

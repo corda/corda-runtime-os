@@ -1,6 +1,7 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.utilities.dot.SandboxVisitor
 import org.osgi.framework.Bundle
 import java.util.UUID
 
@@ -42,4 +43,7 @@ internal interface Sandbox {
      * whereas the bundles for `false` are still installed.
      */
     fun unload(): Map<Boolean, List<Bundle>>
+
+    /** Visit sandboxes */
+    fun accept(visitor: SandboxVisitor)
 }
