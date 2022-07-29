@@ -11,8 +11,6 @@ class SignedTransactionImpl(
     override val sigs: List<DigitalSignatureAndMetadata>
     ) :SignedTransaction
 {
-    override val ledgerTransaction: LedgerTransaction
-        get() = TODO("Not yet implemented")
 
     init {
         require(sigs.isNotEmpty()) {
