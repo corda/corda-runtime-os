@@ -114,7 +114,6 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
             whenever(virtualNodeState) doReturn "someState"
         }
         private val mockVirtualNodeFailedResponse = mock<VirtualNodeManagementResponseFailure>()
-//        private val mockVirtualNodeBadResponse = mock<DummyResponse>()
         private val mockFailedVirtualNodeManagementResponse = mock<VirtualNodeManagementResponse>().apply {
             whenever(responseType) doReturn mockVirtualNodeFailedResponse
         }
