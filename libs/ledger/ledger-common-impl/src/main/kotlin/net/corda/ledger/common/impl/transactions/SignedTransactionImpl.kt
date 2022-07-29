@@ -3,6 +3,7 @@ package net.corda.ledger.common.impl.transactions
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transactions.LedgerTransaction
 import net.corda.v5.ledger.common.transactions.SignedTransaction
 import net.corda.v5.ledger.common.transactions.WireTransaction
@@ -23,6 +24,8 @@ class SignedTransactionImpl(
     /** Specifies all the public keys that require signatures for the transaction to be valid. */
     override val requiredSigningKeys: List<PublicKey>
         get() = ledgerTransaction.requiredSigningKeys
+    override val id: SecureHash
+        get() = wireTransaction.id
 
     // TODO(WIP)
     override fun <T: LedgerTransaction>toLedgerTransaction(serializer: SerializationService): T {
