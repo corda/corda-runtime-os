@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-app'
 }
 
-description "Bootstrapping Tools"
+description "Bootstrapping Tools" 
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

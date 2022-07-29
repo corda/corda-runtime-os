@@ -1,5 +1,5 @@
 plugins {
-    id 'corda.common-publishing'
+    id 'corda.common-publishing'//jhv
     id 'corda.common-library'
 }
 
