@@ -22,7 +22,7 @@
 
 #wait
 
-kubectl port-forward service/buildkit-chart 4376 &
+kubectl port-forward service/buildkit-chart 8080:4376 &
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
