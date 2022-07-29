@@ -529,9 +529,9 @@ class LifecycleProcessorTest {
         val resource2 = mock<AutoCloseable>()
         val resource3 = mock<AutoCloseable>()
 
-        processor.addManagedResource("TEST1", resource1)
-        processor.addManagedResource("TEST2", resource2)
-        processor.addManagedResource("TEST3", resource3)
+        processor.addManagedResource("TEST1") { resource1 }
+        processor.addManagedResource("TEST2") { resource2 }
+        processor.addManagedResource("TEST3") { resource3 }
 
         processor.closeManagedResources(emptySet())
         verify(resource1).close()
@@ -548,9 +548,9 @@ class LifecycleProcessorTest {
         val resource2 = mock<AutoCloseable>()
         val resource3 = mock<AutoCloseable>()
 
-        processor.addManagedResource("TEST1", resource1)
-        processor.addManagedResource("TEST2", resource2)
-        processor.addManagedResource("TEST3", resource3)
+        processor.addManagedResource("TEST1") { resource1 }
+        processor.addManagedResource("TEST2") { resource2 }
+        processor.addManagedResource("TEST3") { resource3 }
 
         processor.closeManagedResources(setOf("TEST1", "TEST2"))
 
@@ -567,8 +567,8 @@ class LifecycleProcessorTest {
         val resource1 = mock<AutoCloseable>()
         val resource2 = mock<AutoCloseable>()
 
-        processor.addManagedResource("TEST", resource1)
-        processor.addManagedResource("TEST", resource2)
+        processor.addManagedResource("TEST") { resource1 }
+        processor.addManagedResource("TEST") { resource2 }
 
         verify(resource1).close()
     }
