@@ -83,7 +83,7 @@ class VerifyMemberHandlerTest {
         with(appMessage.message as AuthenticatedMessage) {
             assertThat(this.header.source).isEqualTo(mgm)
             assertThat(this.header.destination).isEqualTo(member)
-            assertThat(this.header.ttl).isNotNull
+            assertThat(this.header.ttl).isNull()
             assertThat(this.header.messageId).isNotNull
             assertThat(this.header.traceId).isNull()
             assertThat(this.header.subsystem).isEqualTo("membership")
