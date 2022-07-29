@@ -99,11 +99,11 @@ class CryptoHSMConfig(private val config: SmartConfig) {
         }
     }
 
-    val workerSuffix: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val workerTopicSuffix: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
-            config.getString(this::workerSuffix.name)
+            config.getString(this::workerTopicSuffix.name)
         } catch (e: Throwable) {
-            throw IllegalStateException("Failed to get ${this::workerSuffix.name}", e)
+            throw IllegalStateException("Failed to get ${this::workerTopicSuffix.name}", e)
         }
     }
 

@@ -105,8 +105,7 @@ class RegistrationProcessorTest {
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var verificationResponseSerializer: CordaAvroSerializer<Any>
-    lateinit var verificationRequestSerializer: CordaAvroSerializer<Any>
+    lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
@@ -145,15 +144,13 @@ class RegistrationProcessorTest {
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
         }
-        verificationResponseSerializer = mock {
-            on { serialize(verificationResponse) } doReturn "RESPONSE".toByteArray()
-        }
-        verificationRequestSerializer = mock {
-            on { serialize(verificationRequest) } doReturn "REQUEST".toByteArray()
+        verificationRequestResponseSerializer = mock {
+            on { serialize(eq(verificationRequest)) } doReturn "REQUEST".toByteArray()
+            on { serialize(eq(verificationResponse)) } doReturn "RESPONSE".toByteArray()
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-            on { createAvroSerializer<Any>(any()) }.thenReturn(verificationResponseSerializer, verificationRequestSerializer)
+            on { createAvroSerializer<Any>(any()) }.thenReturn(verificationRequestResponseSerializer)
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()

@@ -3,8 +3,8 @@ package net.corda.chunking.db.impl.tests
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
-import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -38,7 +38,7 @@ internal class ChunkWriteToDbProcessorTest {
     private fun randomString() = UUID.randomUUID().toString()
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         val checksum = SecureHash("SHA-256", ByteArray(16))
         val validator = { _: RequestId -> checksum }
         publisher = mock<StatusPublisher>()

@@ -1,6 +1,5 @@
 package net.corda.libs.configuration.datamodel.tests
 
-import javax.persistence.EntityManagerFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeVaultEntitiesIntegrationTest {
@@ -49,7 +49,7 @@ class VirtualNodeVaultEntitiesIntegrationTest {
 
     @Suppress("Unused")
     @AfterAll
-    private fun cleanup() {
+    fun cleanup() {
         dbConfig.close()
         entityManagerFactory.close()
     }

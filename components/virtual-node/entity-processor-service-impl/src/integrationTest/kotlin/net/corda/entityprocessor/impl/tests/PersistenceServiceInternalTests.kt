@@ -1,13 +1,5 @@
 package net.corda.entityprocessor.impl.tests
 
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
-import java.util.Calendar
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntity
@@ -70,6 +62,14 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.nio.file.Path
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
+import java.util.UUID
 
 
 /**
@@ -121,7 +121,7 @@ class PersistenceServiceInternalTests {
     }
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         ctx = createDbTestContext()
         // Each test is likely to leave junk lying around in the tables before the next test.
         // We can't trust deleting the tables because tests can run concurrently.

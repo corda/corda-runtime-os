@@ -6,8 +6,8 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putUniqueObject
-import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCache
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
+import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCache
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -80,7 +80,7 @@ class SandboxGroupContextServiceImplTest {
     private val cpkServiceImpl = CpkReadServiceFake(cpks)
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         service = SandboxGroupContextServiceImpl(
             Helpers.mockSandboxCreationService(listOf(cpks)),
             cpkServiceImpl,

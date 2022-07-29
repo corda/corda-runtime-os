@@ -127,6 +127,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - A flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup ✅
 - An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup ✅
 - Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then finishing the flow schedules flow and session cleanup ✅
+- A flow finishing when previously in a retry state publishes a completed flow status and schedules flow cleanup ✅
 
 ## Flow failing
 

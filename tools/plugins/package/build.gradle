@@ -10,8 +10,8 @@ group 'net.corda.cli.deployment'
 dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
+    implementation project(':libs:packaging:packaging-verify')
     implementation "org.pf4j:pf4j:${pf4jVersion}"
-    implementation project(":libs:packaging:packaging-verify")
     kapt "org.pf4j:pf4j:${pf4jVersion}"
 
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"

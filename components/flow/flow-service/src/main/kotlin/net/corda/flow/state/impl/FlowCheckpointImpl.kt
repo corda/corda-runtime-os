@@ -174,12 +174,10 @@ class FlowCheckpointImpl(
     }
 
     override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
-        checkFlowNotDeleted()
         pipelineStateManager.retry(flowEvent, exception)
     }
 
     override fun markRetrySuccess() {
-        checkFlowNotDeleted()
         pipelineStateManager.markRetrySuccess()
     }
 
@@ -188,7 +186,6 @@ class FlowCheckpointImpl(
     }
 
     override fun setFlowSleepDuration(sleepTimeMs: Int) {
-        checkFlowNotDeleted()
         pipelineStateManager.setFlowSleepDuration(sleepTimeMs)
     }
 

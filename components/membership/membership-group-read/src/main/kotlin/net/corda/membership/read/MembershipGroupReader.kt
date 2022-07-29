@@ -45,7 +45,7 @@ interface MembershipGroupReader {
      *
      * @param ledgerKeyHash Hash of the ledger key belonging to the member to be looked up.
      */
-    fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo?
+    fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo?
 
     /**
      * Looks up a group member matching the [MemberX500Name] as visible by the member represented

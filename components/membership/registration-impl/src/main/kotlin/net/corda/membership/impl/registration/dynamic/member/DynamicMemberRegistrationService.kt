@@ -321,6 +321,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             if (specFromContext != null) {
                 return SignatureSpec(specFromContext)
             }
+            logger.info("Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
+                    "for ${key.schemeCodeName}.")
             return defaultCodeNameToSpec[key.schemeCodeName]
                 ?: throw IllegalArgumentException(
                     "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
@@ -334,10 +336,21 @@ class DynamicMemberRegistrationService @Activate constructor(
                     LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it.key)
                 }.values.toList(), tenantId)
             val ledgerPublicKeys = ledgerKeys.map { keyEncodingService.decodePublicKey(it.publicKey.array()) }
-            return KeyValuePairList(
-                ledgerPublicKeys.mapIndexed { index, ledgerKey ->
-                    KeyValuePair(String.format(LEDGER_KEYS_KEY, index), keyEncodingService.encodeAsString(ledgerKey))
-                    KeyValuePair(String.format(LEDGER_KEY_HASHES_KEY, index), ledgerKey.calculateHash().value)
+            val ledgerKeyInfo = mutableListOf<KeyValuePair>()
+            ledgerPublicKeys.forEachIndexed { index, ledgerKey ->
+                ledgerKeyInfo.add(
+                    KeyValuePair(
+                        String.format(LEDGER_KEYS_KEY, index),
+                        keyEncodingService.encodeAsString(ledgerKey)
+                    )
+                )
+                ledgerKeyInfo.add(
+                    KeyValuePair(
+                        String.format(LEDGER_KEY_HASHES_KEY, index),
+                        ledgerKey.calculateHash().value
+                    )
+                )
+                ledgerKeyInfo.add(
                     KeyValuePair(
                         String.format(LEDGER_KEY_SIGNATURE_SPEC, index),
                         getSignatureSpec(
@@ -345,8 +358,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                             context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
                         ).signatureName
                     )
-                }
-            )
+                )
+            }
+            return KeyValuePairList(ledgerKeyInfo)
         }
 
         private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): KeyValuePairList {

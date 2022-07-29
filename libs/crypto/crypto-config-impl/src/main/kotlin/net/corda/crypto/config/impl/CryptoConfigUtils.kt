@@ -38,14 +38,14 @@ import java.util.UUID
     "hsmId": "SOFT",
     "hsmMap": {
         "SOFT": {
-            "workerSuffix": "",
-            "retry" : {
+            "workerTopicSuffix": "",
+            "retry": {
                 "maxAttempts": 3,
                 "attemptTimeoutMills": 20000
             },
             "hsm": {
                 "name": "SOFT",
-                "categories" : [
+                "categories": [
                     {
                         "category": "*",
                         "policy": "WRAPPED"
@@ -88,28 +88,29 @@ import java.util.UUID
                         "name": "DEFAULT",
                         "hsm": {
                             "name": "..",
-                            "config": {
-                            }
+                            "config": {}
                         }
                     }
                 }
             }
         },
         "AWS": {
-            "retry" : {
+            "retry": {
                 "maxAttempts": 3,
                 "attemptTimeoutMills": 20000
             },
             "hsm": {
                 "name": "AWS",
-                "categories" : [
+                "categories": [
                     {
                         "category": "ACCOUNTS",
                         "policy": "WRAPPED"
-                    }, {
+                    },
+                    {
                         "category": "CI",
                         "policy": "WRAPPED"
-                    }, {
+                    },
+                    {
                         "category": "*",
                         "policy": "ALIASED"
                     }
@@ -132,25 +133,34 @@ import java.util.UUID
                     },
                     "partition": "whatever"
                 }
-        }
-    },
-    "bus": {
-        "processors": {
-            "ops": {
-                "maxAttempts": 3,
-                "waitBetweenMills": [200]
-            },
-            "flow": {
-                "maxAttempts": 3,
-                "waitBetweenMills": [200]
-            },
-            "config": {
-                "maxAttempts": 3,
-                "waitBetweenMills": [200]
-            },
-            "registration": {
-                "maxAttempts": 3,
-                "waitBetweenMills": [200]
+            }
+        },
+        "bus": {
+            "processors": {
+                "ops": {
+                    "maxAttempts": 3,
+                    "waitBetweenMills": [
+                        200
+                    ]
+                },
+                "flow": {
+                    "maxAttempts": 3,
+                    "waitBetweenMills": [
+                        200
+                    ]
+                },
+                "config": {
+                    "maxAttempts": 3,
+                    "waitBetweenMills": [
+                        200
+                    ]
+                },
+                "registration": {
+                    "maxAttempts": 3,
+                    "waitBetweenMills": [
+                        200
+                    ]
+                }
             }
         }
     }
@@ -347,7 +357,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
             .withValue(
                 DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        CryptoHSMConfig::workerSuffix.name to "",
+                        CryptoHSMConfig::workerTopicSuffix.name to "",
                         CryptoHSMConfig::retry.name to mapOf(
                             CryptoHSMConfig.RetryConfig::maxAttempts.name to "3",
                             CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to "20000",

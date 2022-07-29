@@ -1,19 +1,21 @@
 package net.corda.libs.packaging.verify.internal
 
+import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.core.exception.CordappManifestException
-import net.corda.libs.packaging.verify.internal.cpb.CpbVerifier
+import net.corda.libs.packaging.verify.Verifier
 import net.corda.libs.packaging.verify.internal.cpb.CpbV1Verifier
 import net.corda.libs.packaging.verify.internal.cpb.CpbV2Verifier
-import net.corda.libs.packaging.verify.internal.cpi.CpiVerifier
+import net.corda.libs.packaging.verify.internal.cpb.CpbVerifier
 import net.corda.libs.packaging.verify.internal.cpi.CpiV1Verifier
 import net.corda.libs.packaging.verify.internal.cpi.CpiV2Verifier
-import net.corda.libs.packaging.verify.internal.cpk.CpkVerifier
+import net.corda.libs.packaging.verify.internal.cpi.CpiVerifier
 import net.corda.libs.packaging.verify.internal.cpk.CpkV1Verifier
 import net.corda.libs.packaging.verify.internal.cpk.CpkV2Verifier
+import net.corda.libs.packaging.verify.internal.cpk.CpkVerifier
 import java.io.InputStream
 import java.security.cert.X509Certificate as X509Certificate1
 
@@ -24,17 +26,17 @@ object VerifierFactory {
     const val FORMAT_1 = "1.0"
     const val FORMAT_2 = "2.0"
 
+    fun createCpVerifier(type: PackageType, format: String?, jarReader: JarReader): Verifier =
+        when (type) {
+            PackageType.CPK -> createCpkVerifier(format, jarReader)
+            PackageType.CPB -> createCpbVerifier(format, jarReader)
+            PackageType.CPI -> createCpiVerifier(format, jarReader)
+        }
+
     /** Creates CPK verifier for format specified in the Manifest of the package */
     fun createCpkVerifier(name: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate1>): CpkVerifier {
         val jarReader = JarReader(name, inputStream, trustedCerts)
-        val format = jarReader.manifest.mainAttributes.getValue(CPK_FORMAT_ATTRIBUTE)
-        return createCpkVerifier(format, jarReader)
-    }
-
-    /** Creates CPK verifier for specified format */
-    fun createCpkVerifier(
-        format: String?, name: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate1>): CpkVerifier {
-        val jarReader = JarReader(name, inputStream, trustedCerts)
+        val format = jarReader.manifest.mainAttributes.getValue(CPK_FORMAT_ATTRIBUTE) ?: FORMAT_1
         return createCpkVerifier(format, jarReader)
     }
 

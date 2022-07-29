@@ -52,8 +52,10 @@ import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
@@ -113,6 +115,15 @@ class PersistenceTests {
             setupDependencies()
             waitForVirtualNodeInfoReady()
         }
+
+        @JvmStatic
+        @AfterAll
+        fun cleanup() {
+            // cleanup the connections
+            cryptoConnectionsFactory.stop()
+            eventually { assertFalse(cryptoConnectionsFactory.isRunning) }
+        }
+
 
         @JvmStatic
         fun signingTenants() = CryptoTenants.allClusterTenants + CryptoDBSetup.vNodeHoldingIdentity.shortHash

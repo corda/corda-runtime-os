@@ -2,6 +2,7 @@ package net.corda.membership.impl.p2p.handler
 
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
@@ -23,14 +24,16 @@ internal class VerificationRequestHandler(
         payload: ByteBuffer
     ): Record<String, RegistrationCommand> {
         logger.info("Received verification request from ${header.source}. Sending it to RegistrationManagementService to process.")
+        val request = avroSchemaRegistry.deserialize<VerificationRequest>(payload)
+        val registrationId = request.registrationId
         return Record(
             REGISTRATION_COMMAND_TOPIC,
-            header.destination.toCorda().shortHash,
+            "$registrationId-${header.destination.toCorda().shortHash}",
             RegistrationCommand(
                 ProcessMemberVerificationRequest(
                     header.destination,
                     header.source,
-                    avroSchemaRegistry.deserialize(payload)
+                    request
                 )
             )
         )

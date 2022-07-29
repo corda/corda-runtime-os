@@ -65,6 +65,7 @@ import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -189,6 +190,8 @@ class CryptoProcessorTests {
             if (::flowOpsResponses.isInitialized) {
                 flowOpsResponses.close()
             }
+            cryptoProcessor.stop()
+            eventually { assertFalse(cryptoProcessor.isRunning) }
         }
 
         private fun setupPrerequisites() {
