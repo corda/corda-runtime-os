@@ -112,7 +112,7 @@ internal object ContextUtils {
     fun RouteInfo.retrieveParameters(ctx: ClientRequestContext): List<Any?> {
         val parametersRetrieverContext = ParametersRetrieverContext(ctx)
         val paramValues = parameters.map {
-            val parameterRetriever = ParameterRetrieverFactory.create(it, this.isMultipartFileUpload)
+            val parameterRetriever = ParameterRetrieverFactory.create(it, this)
             parameterRetriever.apply(parametersRetrieverContext)
         }
         return paramValues
