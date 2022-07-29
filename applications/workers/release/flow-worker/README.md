@@ -89,8 +89,8 @@ This should yield are result similar to this
 ```
 3) Create a virtual node using the checksum returned from the step above
 ```shell
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice"  } }' https://localhost:8888/api/v1/virtualnode
-curl --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob"  } }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice" }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob" }' https://localhost:8888/api/v1/virtualnode
 ```
 
 This should yield a result similar to this for first request:
@@ -114,8 +114,8 @@ This should yield a result similar to this for first request:
 4) Register the members to the network
 
 ```shell
-curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
-curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }' https://localhost:8888/api/v1/membership/44D0F817B592
+curl --insecure -u admin:admin -d '{ "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
+curl --insecure -u admin:admin -d '{ "action": "requestJoin",  "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v1/membership/44D0F817B592
 ```
 
 ### Calling the flow and testing for a result
@@ -125,11 +125,9 @@ curl --insecure -u admin:admin -d '{ "memberRegistrationRequest": { "action": "r
 curl --insecure -u admin:admin -X 'POST' \
   'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
   -d '{
-  "startFlow": {
     "clientRequestId": "request1",
     "flowClassName": "net.cordapp.flowworker.development.flows.MessagingFlow",
     "requestData": "{\"counterparty\": \"C=GB, L=London, O=Bob\"}"
-  }
 }'
 ```
 The holding ID is taken from the output of the 'create virtual node' step

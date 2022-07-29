@@ -21,11 +21,6 @@ import picocli.CommandLine
  */
 private const val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
 
-/**
- * Name of signature within jar file
- */
-private const val SIGNER_NAME = "CPI-SIG"
-
 private const val CPI_EXTENSION = ".cpi"
 
 /**
@@ -116,7 +111,7 @@ class CreateCpi : Runnable {
                 signingOptions.keyStoreFileName,
                 signingOptions.keyStorePass,
                 signingOptions.keyAlias,
-                SIGNER_NAME,
+                signingOptions.sigFile,
                 signingOptions.tsaUrl
             )
         } finally {

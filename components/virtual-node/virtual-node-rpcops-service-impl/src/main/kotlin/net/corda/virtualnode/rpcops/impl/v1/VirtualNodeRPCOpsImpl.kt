@@ -12,9 +12,8 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.GetVirtualNodesResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -26,6 +25,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
@@ -34,6 +34,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
+import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
+
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
@@ -85,7 +87,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun createVirtualNode(request: CreateVirtualNodeParameters): CreateVirtualNodeResponse {
+    override fun createVirtualNode(request: VirtualNodeRequest): VirtualNodeInfo {
         val instant = clock.instant()
         validateX500Name(request.x500Name)
 
@@ -103,17 +105,15 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeCreateResponse -> {
-                CreateVirtualNodeResponse(
-                    resolvedResponse.x500Name,
+                VirtualNodeInfo(
+                    HoldingIdentity(resolvedResponse.x500Name, resolvedResponse.mgmGroupId).toEndpointType(),
                     CpiIdentifier.fromAvro(resolvedResponse.cpiIdentifier),
-                    resolvedResponse.cpiFileChecksum,
-                    resolvedResponse.mgmGroupId,
-                    resolvedResponse.holdingIdentifierHash,
                     resolvedResponse.vaultDdlConnectionId,
                     resolvedResponse.vaultDmlConnectionId,
                     resolvedResponse.cryptoDdlConnectionId,
                     resolvedResponse.cryptoDmlConnectionId,
-                    resolvedResponse.virtualNodeState
+                    resolvedResponse.hsmConnectionId,
+                    resolvedResponse.virtualNodeState,
                 )
             }
             is VirtualNodeManagementResponseFailure -> {
@@ -129,22 +129,23 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         }
     }
 
-    override fun getAllVirtualNodes(): GetVirtualNodesResponse {
-        return GetVirtualNodesResponse(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
+    override fun getAllVirtualNodes(): VirtualNodes {
+        return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
+
+    private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =
+        HoldingIdentityEndpointType(x500Name, groupId, shortHash, fullHash)
 
     private fun net.corda.virtualnode.VirtualNodeInfo.toEndpointType(): VirtualNodeInfo =
         VirtualNodeInfo(
-            holdingIdentity,
+            holdingIdentity.toEndpointType(),
             cpiIdentifier.toEndpointType(),
-            vaultDdlConnectionId,
-            vaultDmlConnectionId,
-            cryptoDdlConnectionId,
-            cryptoDmlConnectionId,
-            hsmConnectionId,
+            vaultDdlConnectionId?.toString(),
+            vaultDmlConnectionId.toString(),
+            cryptoDdlConnectionId?.toString(),
+            cryptoDmlConnectionId.toString(),
+            hsmConnectionId.toString(),
             state.name,
-            version,
-            timestamp
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =

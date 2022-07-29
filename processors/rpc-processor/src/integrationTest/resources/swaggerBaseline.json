@@ -2318,7 +2318,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/GetVirtualNodesResponse"
+                  "$ref" : "#/components/schemas/VirtualNodes"
                 }
               }
             }
@@ -2341,7 +2341,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateVirtualNodeParameters"
+                "$ref" : "#/components/schemas/VirtualNodeRequest"
               }
             }
           },
@@ -2353,7 +2353,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/CreateVirtualNodeResponse"
+                  "$ref" : "#/components/schemas/VirtualNodeInfo"
                 }
               }
             }
@@ -2493,10 +2493,15 @@
         }
       },
       "CpiMetadata" : {
-        "required" : [ "cpiFileChecksum", "cpks", "id", "timestamp" ],
+        "required" : [ "cpiFileChecksum", "cpiFileFullChecksum", "cpks", "id", "timestamp" ],
         "type" : "object",
         "properties" : {
           "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "cpiFileFullChecksum" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2675,97 +2680,6 @@
         },
         "description" : "Details of the user to be created"
       },
-      "CreateVirtualNodeParameters" : {
-        "required" : [ "cpiFileChecksum", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "cryptoDdlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cryptoDmlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDdlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDmlConnection" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "Details of the virtual node to be created"
-      },
-      "CreateVirtualNodeResponse" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentityShortHash", "mgmGroupId", "vaultDmlConnectionId", "virtualNodeState", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cpiIdentifier" : {
-            "$ref" : "#/components/schemas/CpiIdentifier"
-          },
-          "cryptoDdlConnectionId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "cryptoDmlConnectionId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "holdingIdentityShortHash" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "mgmGroupId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "vaultDdlConnectionId" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
-          },
-          "vaultDmlConnectionId" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "virtualNodeState" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "x500Name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
         "type" : "object",
@@ -2940,20 +2854,6 @@
             "format" : "int32",
             "nullable" : false,
             "example" : 0
-          }
-        }
-      },
-      "GetVirtualNodesResponse" : {
-        "required" : [ "virtualNodes" ],
-        "type" : "object",
-        "properties" : {
-          "virtualNodes" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/VirtualNodeInfo"
-            }
           }
         }
       },
@@ -3612,7 +3512,7 @@
         }
       },
       "VirtualNodeInfo" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "timestamp", "vaultDmlConnectionId", "version" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "vaultDmlConnectionId" ],
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
@@ -3620,53 +3520,87 @@
           },
           "cryptoDdlConnectionId" : {
             "type" : "string",
-            "format" : "uuid",
             "nullable" : true,
-            "example" : "No example available for this type"
+            "example" : "string"
           },
           "cryptoDmlConnectionId" : {
             "type" : "string",
-            "format" : "uuid",
             "nullable" : false,
-            "example" : "No example available for this type"
+            "example" : "string"
           },
           "holdingIdentity" : {
             "$ref" : "#/components/schemas/HoldingIdentity"
           },
           "hsmConnectionId" : {
             "type" : "string",
-            "format" : "uuid",
             "nullable" : true,
-            "example" : "No example available for this type"
+            "example" : "string"
           },
           "state" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
           },
-          "timestamp" : {
-            "type" : "string",
-            "format" : "datetime",
-            "nullable" : false,
-            "example" : "2022-06-24T10:15:30Z"
-          },
           "vaultDdlConnectionId" : {
             "type" : "string",
-            "format" : "uuid",
             "nullable" : true,
-            "example" : "No example available for this type"
+            "example" : "string"
           },
           "vaultDmlConnectionId" : {
             "type" : "string",
-            "format" : "uuid",
             "nullable" : false,
-            "example" : "No example available for this type"
+            "example" : "string"
+          }
+        }
+      },
+      "VirtualNodeRequest" : {
+        "required" : [ "cpiFileChecksum", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           },
-          "version" : {
-            "type" : "integer",
-            "format" : "int32",
+          "cryptoDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
             "nullable" : false,
-            "example" : 0
+            "example" : "string"
+          }
+        },
+        "description" : "Details of the virtual node to be created"
+      },
+      "VirtualNodes" : {
+        "required" : [ "virtualNodes" ],
+        "type" : "object",
+        "properties" : {
+          "virtualNodes" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/VirtualNodeInfo"
+            }
           }
         }
       }

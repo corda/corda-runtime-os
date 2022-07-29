@@ -1,7 +1,8 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
+package net.corda.membership.impl.registration.dynamic.handler.mgm.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.RSA_CODE_NAME

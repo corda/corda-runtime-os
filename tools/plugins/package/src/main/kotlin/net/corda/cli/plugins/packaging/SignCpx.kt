@@ -15,10 +15,6 @@ class SignCpx : Runnable {
     @CommandLine.Parameters(index = "0", paramLabel = "CPI or CPB or CPK", description=["path of the input CPI or CPB or CPK"])
     lateinit var cpxFile: String
 
-    // TODO check how jarsigner works so that we have the equivalent. If overwriting it at least just log something.
-    @CommandLine.Option(names = ["--sig-file"], description = ["Signature file name"])
-    var sigFile: String = CPx_SIGNER_NAME
-
     @CommandLine.Option(
         names = ["--multiple-signatures"],
         arity = "1",
@@ -31,11 +27,6 @@ class SignCpx : Runnable {
     @CommandLine.Mixin
     var signingOptions = SigningOptions()
 
-    internal companion object {
-        /** Name of signature within Cpx file */
-         const val CPx_SIGNER_NAME = "CPX-SIG"
-    }
-
     override fun run() {
         val cpxFilePath = requireFileExists(cpxFile)
         val signedCpxPath = requireFileDoesNotExist(outputSignedCpxFile)
@@ -47,7 +38,7 @@ class SignCpx : Runnable {
                 signingOptions.keyStoreFileName,
                 signingOptions.keyStorePass,
                 signingOptions.keyAlias,
-                sigFile,
+                signingOptions.sigFile,
                 signingOptions.tsaUrl
             )
         } else {
@@ -60,7 +51,7 @@ class SignCpx : Runnable {
                     signingOptions.keyStoreFileName,
                     signingOptions.keyStorePass,
                     signingOptions.keyAlias,
-                    sigFile,
+                    signingOptions.sigFile,
                     signingOptions.tsaUrl
                 )
             } finally {

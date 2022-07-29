@@ -23,6 +23,8 @@ class CreateCpbTest {
     private val app = CreateCpb()
 
     internal companion object {
+        const val CPB_SIGNER_NAME = "CPB-SIG"
+
         const val CREATED_CPB_NAME = "cpb-test-outcome.cpb"
 
         private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
@@ -70,7 +72,8 @@ class CreateCpbTest {
                 "--file=$outcomeCpb",
                 "--keystore=$testKeyStore",
                 "--storepass=keystore password",
-                "--key=signing key 1"
+                "--key=signing key 1",
+                "--sig-file=$CPB_SIGNER_NAME"
             )
 
         checkCpbContainsEntries(
@@ -102,7 +105,8 @@ class CreateCpbTest {
                     "--file=never-generated-cpb.cpb",
                     "--keystore=$testKeyStore",
                     "--storepass=keystore password",
-                    "--key=signing key 1"
+                    "--key=signing key 1",
+                    "--sig-file=$CPB_SIGNER_NAME"
                 )
         }
 
@@ -135,12 +139,13 @@ class CreateCpbTest {
                 "--file=$outcomeCpb",
                 "--keystore=$testKeyStore",
                 "--storepass=keystore password",
-                "--key=signing key 1"
+                "--key=signing key 1",
+                "--sig-file=$CPB_SIGNER_NAME"
             )
 
         checkCpbContainsEntries(
             outcomeCpb,
-            listOf("META-INF/CPB-SIG.SF", "META-INF/CPB-SIG.RSA")
+            listOf("META-INF/$CPB_SIGNER_NAME.SF", "META-INF/$CPB_SIGNER_NAME.RSA")
         )
     }
 }

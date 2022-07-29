@@ -1,9 +1,9 @@
 package net.corda.cli.plugins.packaging
 
 import java.nio.file.Path
-import net.corda.cli.plugins.packaging.CreateCpb.Companion.CPB_SIGNER_NAME
-import net.corda.cli.plugins.packaging.SignCpx.Companion.CPx_SIGNER_NAME
+import net.corda.cli.plugins.packaging.CreateCpbTest.Companion.CPB_SIGNER_NAME
 import net.corda.cli.plugins.packaging.TestUtils.jarEntriesContentIsEqualInCpxs
+import net.corda.cli.plugins.packaging.TestUtils.jarEntriesExistInCpx
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -18,6 +18,8 @@ class SignCpbTest {
     private lateinit var app: SignCpx
 
     private companion object {
+        const val CPx_SIGNER_NAME = "CPX-SIG"
+
         const val SIGNED_CPB_NAME = "signed-cpb-output.cpb"
 
         const val SIG_NAME = CPB_SIGNER_NAME
@@ -49,7 +51,8 @@ class SignCpbTest {
             "--file=$signedCpb",
             "--keystore=${testKeyStore}",
             "--storepass=keystore password",
-            "--key=signing key 2"
+            "--key=signing key 2",
+            "--sig-file=$CPx_SIGNER_NAME"
         )
 
         // check Manifest attributes and entries are same
@@ -113,12 +116,12 @@ class SignCpbTest {
         app = SignCpx()
         CommandLine(app).execute(
             createdCpb.toString(),
-            "--sig-file=$SIG_NAME_2",
             "--multiple-signatures=true",
             "--file=$signedCpb",
             "--keystore=${testKeyStore}",
             "--storepass=keystore password",
-            "--key=signing key 2"
+            "--key=signing key 2",
+            "--sig-file=$SIG_NAME_2",
         )
 
         val createdCpbSignatureRelatedFiles =
@@ -167,5 +170,38 @@ class SignCpbTest {
                 newSignatureBlockFile to signedCpb
             )
         }
+    }
+
+    @Test
+    fun `signing without specifying sig file option uses key alias`() {
+        // build a signed CPB
+        val createCpbTest = CreateCpbTest()
+        createCpbTest.tempDir = tempDir
+        createCpbTest.`packs CPKs into CPB`()
+        val createdCpb = Path.of("$tempDir/${CreateCpbTest.CREATED_CPB_NAME}")
+
+        val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
+        app = SignCpx()
+        CommandLine(app).execute(
+            createdCpb.toString(),
+            "--multiple-signatures=true",
+            "--file=$signedCpb",
+            "--keystore=${testKeyStore}",
+            "--storepass=keystore password",
+            "--key=signing key 2"
+        )
+
+        // Since sig file option is missing it will
+        // use 8 first chars of key alias (i.e. "signing "), make it uppercase and replace not valid chars with '_'.
+        assertTrue(
+            jarEntriesExistInCpx(
+                signedCpb,
+                listOf(
+                    "META-INF/SIGNING_.SF",
+                    "META-INF/SIGNING_.RSA",
+                )
+            )
+        )
+
     }
 }

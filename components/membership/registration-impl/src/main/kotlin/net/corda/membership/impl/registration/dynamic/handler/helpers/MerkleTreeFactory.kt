@@ -1,8 +1,10 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
+package net.corda.membership.impl.registration.dynamic.handler.helpers
+
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.layeredpropertymap.toAvro
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
@@ -19,7 +21,7 @@ internal class MerkleTreeFactory(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val digestService: DigestService
 ) {
-    private val LayeredPropertyMap.inputStream
+    private val KeyValuePairList.inputStream
         get() =
             serializer.serialize(this)?.inputStream() ?: throw CordaRuntimeException("Could not serialize context")
 
@@ -27,8 +29,8 @@ internal class MerkleTreeFactory(
         val logger = contextLogger()
     }
 
-    private val serializer: CordaAvroSerializer<LayeredPropertyMap> by lazy {
-        cordaAvroSerializationFactory.createAvroSerializer<LayeredPropertyMap> {
+    private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
             logger.warn("Serialization failed")
         }
     }
@@ -51,8 +53,8 @@ internal class MerkleTreeFactory(
                     override fun nextElement(): InputStream {
                         val member = iterator.next()
                         return SequenceInputStream(
-                            member.memberProvidedContext.inputStream,
-                            member.mgmProvidedContext.inputStream,
+                            member.memberProvidedContext.toAvro().inputStream,
+                            member.mgmProvidedContext.toAvro().inputStream,
                         )
                     }
                 }
