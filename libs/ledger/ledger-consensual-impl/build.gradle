@@ -1,4 +1,5 @@
 plugins {
+    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle)
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
@@ -7,12 +8,29 @@ description 'Corda consensual ledger - implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    // TODO: review dependencies
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:membership:membership-common")
+    implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-consensual"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
+    implementation project(":libs:ledger:ledger-common-impl")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:crypto-serialization-impl") // For PublicKeySerializer
+    testImplementation project(":libs:crypto:merkle")
+    testImplementation project(":libs:serialization:serialization-amqp")
+    testImplementation project(":libs:serialization:serialization-internal")
+    testImplementation project(":libs:virtual-node:sandbox-group-context")
+    testImplementation project(':libs:virtual-node:virtual-node-info')
+    testImplementation project(":components:flow:flow-service") // For FlowFiberServiceImpl
 }
