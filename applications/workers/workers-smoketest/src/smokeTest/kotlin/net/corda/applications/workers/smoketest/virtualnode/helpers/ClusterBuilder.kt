@@ -62,7 +62,7 @@ class ClusterBuilder {
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
     private fun registerMemberBody() =
-        """{ "memberRegistrationRequest": { "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } } }""".trimMargin()
+        """{ "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
     private fun vNodeUpdateBody(virtualNodeShortId: String, newState: String) =
         """{ "virtualNodeShortId" : "$virtualNodeShortId", "newState" : "$newState"}"""
