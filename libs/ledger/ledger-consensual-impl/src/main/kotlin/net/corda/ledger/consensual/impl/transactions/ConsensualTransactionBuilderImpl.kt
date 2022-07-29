@@ -51,7 +51,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaDataImpl(mapOf(
-            LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java,
+            LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
             LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
             // TODO(CORE-5940 CPK identifier/etc)
         ))
