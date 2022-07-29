@@ -7,6 +7,7 @@ import net.corda.httprpc.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.util.concurrent.Future
+import net.corda.httprpc.ws.WebSocketProtocolViolationException
 
 internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexChannel {
 
@@ -34,8 +35,8 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
     override fun error(e: Exception) {
         when (e) {
             is IllegalArgumentException -> close(CloseStatus(StatusCode.BAD_DATA, e.message))
-            // todo conal - add some more here?
-            else -> close(CloseStatus(StatusCode.UNDEFINED, e.message))
+            is WebSocketProtocolViolationException -> close(CloseStatus(StatusCode.POLICY_VIOLATION, e.message))
+            else -> close(CloseStatus(StatusCode.NORMAL, e.message))
         }
     }
 

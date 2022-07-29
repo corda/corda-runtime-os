@@ -2,14 +2,40 @@ package net.corda.applications.workers.smoketest.websocket.client
 
 import java.net.URI
 import java.time.Duration
+import java.util.LinkedList
+import java.util.Queue
 import net.corda.applications.workers.smoketest.contextLogger
 import net.corda.applications.workers.smoketest.getOrThrow
+import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
+
+fun runWithWebsocketConnection(
+    path: String,
+    messageQueue: Queue<String> = LinkedList(),
+    block: (messageQueue: Queue<String>) -> Unit
+) {
+    val wsHandler = MessageQueueWebsocketHandler(messageQueue)
+    val client = SmokeTestWebsocketClient(wsHandler)
+    client.start()
+    client.connect(path)
+
+    eventually {
+        Assertions.assertThat(wsHandler.isConnected)
+    }
+
+    block.invoke(messageQueue)
+    client.close()
+
+    eventually {
+        Assertions.assertThat(wsHandler.isNotConnected)
+    }
+}
 
 class SmokeTestWebsocketClient(
     private val wsHandler: WebSocketAdapter,

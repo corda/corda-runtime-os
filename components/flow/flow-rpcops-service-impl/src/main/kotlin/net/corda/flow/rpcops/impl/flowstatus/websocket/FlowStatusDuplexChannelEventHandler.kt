@@ -4,7 +4,9 @@ import java.util.UUID
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.httprpc.ws.DuplexChannel
+import net.corda.httprpc.ws.WebSocketProtocolViolationException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 
 class FlowStatusDuplexChannelEventHandler(
@@ -20,40 +22,28 @@ class FlowStatusDuplexChannelEventHandler(
 
     init {
         val holdingIdentityShortHash = holdingIdentity.toCorda().shortHash
-        val handlerId = UUID.randomUUID()
+        val id = UUID.randomUUID()
         channel.onConnect = {
-            log.info("Websocket onConnect received for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-            val handler = WebSocketFlowStatusUpdateListener(handlerId, channel, clientRequestId, holdingIdentity)
+            log.debug { "Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)." }
+            val listener = WebSocketFlowStatusUpdateListener(id, channel, clientRequestId, holdingIdentity)
             try {
-                flowStatusCacheService.registerFlowStatusUpdatesHandler(clientRequestId, holdingIdentity, handler)
+                flowStatusCacheService.registerFlowStatusFeed(clientRequestId, holdingIdentity, listener)
             } catch (e: Exception) {
                 channel.error(e)
             }
         }
         channel.onClose = { statusCode, reason ->
-            log.info("onClose called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash with status $statusCode " +
-                    "and reason: $reason")
-            unregisterFlowStatusFeed(handlerId)
+            log.debug { "Closing flow status feed $id with status $statusCode, reason: $reason. " +
+                    "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)" }
+            unregisterFlowStatusFeed(id)
         }
         channel.onError = { e ->
-            log.info("onError called for websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash", e)
+            log.info("Flow status feed $id received an error. " +
+                    "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)", e)
         }
-        channel.onTextMessage = { message ->
-            log.info("onTextMessage called for message: $message websocket req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-            // just closing for now assuming the message is a termination request
-            channel.close()
-//            when (message) {
-//                is WebSocketTerminateFlowStatusFeedType -> {
-//                    log.info("Terminating feed for req: $clientRequestId, holdingId: $holdingIdentityShortHash")
-//                    channel.close()
-//                    unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-//                }
-//                else -> {
-//                    log.info("Unknown message for req: $clientRequestId, holdingId: $holdingIdentityShortHash. Terminating connection.")
-//                    channel.close()
-//                    unregisterFlowStatusFeed(clientRequestId, holdingIdentity)
-//                }
-//            }
+        channel.onTextMessage = {
+            log.debug { "Flow status feed $id does not support receiving messages. Terminating connection." }
+            channel.error(WebSocketProtocolViolationException("Inbound messages are not permitted."))
         }
     }
 
