@@ -27,6 +27,10 @@ class CreateCpiTest {
     lateinit var tempDir: Path
     private lateinit var testCpb: Path
 
+    companion object {
+        private const val SIGNER_NAME = "CPI-SIG"
+    }
+
     private val app = CreateCpi()
     private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
         ?: error("TestGroupPolicy.json not found"))
@@ -109,6 +113,7 @@ class CreateCpiTest {
                 "--keystore=${testKeyStore}",
                 "--storepass=keystore password",
                 "--key=signing key 1",
+                "--sig-file=$SIGNER_NAME"
             )
         }
 
@@ -130,6 +135,7 @@ class CreateCpiTest {
                 "-s=${testKeyStore}",
                 "-p=keystore password",
                 "-k=signing key 1",
+                "--sig-file=$SIGNER_NAME"
             )
         }
 
@@ -151,6 +157,7 @@ class CreateCpiTest {
                 "-s=${testKeyStore}",
                 "-p=keystore password",
                 "-k=signing key 1",
+                "--sig-file=$SIGNER_NAME"
             )
         }
 
@@ -216,7 +223,7 @@ class CreateCpiTest {
         assertEquals("""Missing required options: '--cpb=<cpbFileName>', '--group-policy=<groupPolicyFileName>', '--keystore=<keyStoreFileName>', '--storepass=<keyStorePass>', '--key=<keyAlias>'
 Usage: create -c=<cpbFileName> [-f=<outputFileName>] -g=<groupPolicyFileName>
               -k=<keyAlias> -p=<keyStorePass> -s=<keyStoreFileName>
-              [-t=<tsaUrl>]
+              [--sig-file=<_sigFile>] [-t=<tsaUrl>]
 Creates a CPI from a CPB and GroupPolicy.json file.
   -c, --cpb=<cpbFileName>   CPB file to convert into CPI
   -f, --file=<outputFileName>
@@ -231,6 +238,7 @@ Creates a CPI from a CPB and GroupPolicy.json file.
                             Keystore password
   -s, --keystore=<keyStoreFileName>
                             Keystore holding signing keys
+      --sig-file=<_sigFile> Base file name for signature related files
   -t, --tsa=<tsaUrl>        Time Stamping Authority (TSA) URL
 """, errText)
     }

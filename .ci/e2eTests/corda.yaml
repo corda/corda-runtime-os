@@ -1,6 +1,10 @@
 imagePullSecrets:
   - docker-registry-cred
 
+bootstrap:
+  initialAdminUser:
+    password: "admin"
+
 kafka:
   bootstrapServers: prereqs-kafka:9092
   tls:

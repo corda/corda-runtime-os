@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import java.util.UUID
@@ -27,12 +28,16 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
         flowId: String,
         logic: FlowLogicAndArgs
     ): FiberFuture {
+        val id = try {
+            UUID.fromString(flowId)
+        } catch (e: IllegalArgumentException) {
+            throw FlowFatalException("Expected the flow key to have a UUID id found '${flowId}' instead.", e)
+        }
         try {
-            val id = UUID.fromString(flowId)
             val flowFiber = FlowFiberImpl(id, logic, currentScheduler)
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
-            throw IllegalArgumentException("Expected the flow key to have a UUID id found '${flowId}' instead.", e)
+            throw FlowFatalException("Unable to execute flow fiber: ${e.message}", e)
         }
     }
 

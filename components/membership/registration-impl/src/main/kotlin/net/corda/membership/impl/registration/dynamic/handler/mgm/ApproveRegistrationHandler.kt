@@ -11,10 +11,10 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -74,13 +74,12 @@ internal class ApproveRegistrationHandler(
         )
         val memberInfo = persistState.getOrThrow()
 
-        val allMembers = getAllMembers(approvedBy.toCorda()).filter {
-            it.status == MEMBER_STATUS_ACTIVE
+        val allMembers = getAllMembers(approvedBy.toCorda())
+        val members = allMembers.filter {
+            it.status == MEMBER_STATUS_ACTIVE && !it.isMgm
         }
-        val membershipPackageFactory = createMembershipPackageFactory(
-            approvedBy.toCorda(),
-            allMembers,
-        )
+        val mgm = allMembers.firstOrNull { it.isMgm } ?: throw FailToFindMgm
+        val membershipPackageFactory = createMembershipPackageFactory(mgm, members)
 
         // Push member to member list kafka topic
         val persistentMemberInfo = PersistentMemberInfo.newBuilder()
@@ -95,7 +94,7 @@ internal class ApproveRegistrationHandler(
         )
 
         // Send all approved members from the same group to the newly approved member over P2P
-        val allMembersPackage = membershipPackageFactory.invoke(allMembers)
+        val allMembersPackage = membershipPackageFactory.invoke(members)
         val allMembersToNewMember = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = approvedBy,
             destination = approvedMember,
@@ -104,7 +103,7 @@ internal class ApproveRegistrationHandler(
 
         // Send the newly approved member to all other members in the same group over P2P
         val memberPackage = membershipPackageFactory.invoke(listOf(memberInfo))
-        val memberToAllMembers = allMembers.filter {
+        val memberToAllMembers = members.filter {
             it.holdingIdentity != approvedMember.toCorda()
         }.map { memberToSendUpdateTo ->
             p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -121,16 +120,13 @@ internal class ApproveRegistrationHandler(
     }
 
     private fun createMembershipPackageFactory(
-        owner: HoldingIdentity,
+        mgm: MemberInfo,
         members: Collection<MemberInfo>
     ): (Collection<MemberInfo>) -> MembershipPackage {
-        val mgm = members.firstOrNull {
-            it.isMgm
-        } ?: throw FailToFindMgm
         val mgmSigner = signerFactory.createSigner(mgm)
         val signatures = membershipQueryClient
             .queryMembersSignatures(
-                owner,
+                mgm.holdingIdentity,
                 members.map {
                     it.holdingIdentity
                 }

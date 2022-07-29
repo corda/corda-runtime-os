@@ -1,7 +1,5 @@
 package net.corda.internal.serialization.model
 
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import net.corda.internal.serialization.NotSerializableDetailedException
 import net.corda.internal.serialization.amqp.PropertyDescriptor
 import net.corda.internal.serialization.amqp.TransformsAnnotationProcessor
@@ -25,6 +23,8 @@ import net.corda.internal.serialization.model.LocalTypeInformation.Top
 import net.corda.internal.serialization.model.LocalTypeInformation.Unknown
 import net.corda.kotlin.reflect.kotlinClass
 import net.corda.utilities.reflection.kotlinObjectInstance
+import net.corda.v5.serialization.annotations.ConstructorForDeserialization
+import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -48,6 +48,7 @@ import kotlin.reflect.jvm.javaType
  * this is not a [MutableSet], as we want to be able to backtrack while traversing through the graph of related types, and
  * will find it useful to revert to earlier states of knowledge about which types have been visited on a given branch.
  */
+@Suppress("ComplexMethod")
 internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                                                 var resolutionContext: Type? = null,
                                                 var visited: Set<TypeIdentifier> = emptySet(),

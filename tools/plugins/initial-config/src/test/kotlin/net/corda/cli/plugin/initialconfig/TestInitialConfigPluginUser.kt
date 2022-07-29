@@ -9,24 +9,6 @@ import picocli.CommandLine
 class TestInitialConfigPluginUser {
 
     @Test
-    fun testDevSetupScript() {
-        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
-
-        val outText = tapSystemOutNormalized {
-            CommandLine(
-                app
-            ).setColorScheme(colorScheme).execute("create-user-config", "create-dev-config")
-        }
-
-        // can only compare the first bit as timestamp and salted hash will change.
-        assertThat(outText).startsWith(
-            "insert into RPC_RBAC.rpc_user (enabled, full_name, hashed_password, id, login_name, " +
-                "salt_value, update_ts, version) values (true, 'Default Admin',"
-        )
-    }
-
-    @Test
     fun testSetupScript() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
