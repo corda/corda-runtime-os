@@ -19,6 +19,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -28,16 +29,23 @@ import org.osgi.service.component.annotations.Reference
 import java.time.Duration
 
 @Component(service = [VirtualNodeSenderService::class])
-class VirtualNodeSenderServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
+class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     var sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null,
     var timeout: Duration? = null
 ) : VirtualNodeSenderService {
+
+    @Activate constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory,
+    ) : this(coordinatorFactory, configurationReadService, publisherFactory, null, null)
+
     private companion object {
         private const val GROUP_NAME = "virtual.node.management"
         private const val CLIENT_NAME_HTTP = "virtual.node.manager.http"

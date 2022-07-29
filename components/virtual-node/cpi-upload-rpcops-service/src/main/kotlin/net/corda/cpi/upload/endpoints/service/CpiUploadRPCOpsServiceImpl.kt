@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * This service is used for creating a new [CpiUploadManager] on new configuration through [CpiUploadRPCOpsServiceHandler].
  */
-@Component(service = [CpiUploadRPCOpsServiceImpl::class])
+@Component(service = [CpiUploadRPCOpsService::class])
 class CpiUploadRPCOpsServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configReadService: ConfigurationReadService,
@@ -36,7 +36,7 @@ class CpiUploadRPCOpsServiceImpl @Activate constructor(
         subscriptionFactory
     )
 
-    private val coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOpsServiceImpl>(
+    private val coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOpsService>(
         handler
     )
 

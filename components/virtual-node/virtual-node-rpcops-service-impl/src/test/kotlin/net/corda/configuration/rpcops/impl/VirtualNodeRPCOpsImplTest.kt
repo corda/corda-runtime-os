@@ -8,7 +8,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeParameters
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -109,9 +109,11 @@ class VirtualNodeRPCOpsImplTest {
     inner class ServiceAPITests {
         // Fake response to trigger else branch
         inner class DummyResponse
+
         // Real data classes
         private val cpiIdAvro = CpiIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
         private val holdingId = HoldingIdentity("o=test,l=test,c=GB", "mgmGroupId")
+
         // Mocks
         private val mockVirtualNodeCreateResponse = mock<VirtualNodeCreateResponse>().apply {
             whenever(x500Name) doReturn holdingId.x500Name
@@ -158,7 +160,7 @@ class VirtualNodeRPCOpsImplTest {
         @Test
         fun `verify createVirtualNode performs call to sendAndReceive on read service`() {
             val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mockVirtualNodeSenderService)
-            val mockRequest = mock<CreateVirtualNodeParameters>().apply {
+            val mockRequest = mock<VirtualNodeRequest>().apply {
                 whenever(x500Name) doReturn "o=test,l=test,c=GB"
             }
             vnodeRpcOps.createVirtualNode(mockRequest)
@@ -169,7 +171,7 @@ class VirtualNodeRPCOpsImplTest {
         @Test
         fun `verify createVirtualNode throws an exception on a failure response`() {
             val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mockFailVirtualNodeSenderService)
-            val mockRequest = mock<CreateVirtualNodeParameters>().apply {
+            val mockRequest = mock<VirtualNodeRequest>().apply {
                 whenever(x500Name) doReturn "o=test,l=test,c=GB"
             }
 
@@ -181,7 +183,7 @@ class VirtualNodeRPCOpsImplTest {
         @Test
         fun `verify createVirtualNode throws an exception on an unknown response`() {
             val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mockBadVirtualNodeSenderService)
-            val mockRequest = mock<CreateVirtualNodeParameters>().apply {
+            val mockRequest = mock<VirtualNodeRequest>().apply {
                 whenever(x500Name) doReturn "o=test,l=test,c=GB"
             }
 

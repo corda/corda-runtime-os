@@ -77,8 +77,9 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             }
         }
     }
-    
+
     override fun getAllVirtualNodes(): VirtualNodes {
+        if (!isRunning) throw IllegalStateException("${this.javaClass.simpleName} is not running! Its status is: ${coordinator.status}")
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
