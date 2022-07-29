@@ -40,14 +40,13 @@ class WireTransactionImpl(
     override fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 
-    override fun getWrappedLedgerTransactionClassName(): String {
-        // TODO(implement this)
-        return "net.corda.ledger.consensual.impl.transactions.ConsensualLedgerTransactionImpl"
+    override fun getWrappedLedgerTransactionClassName(serializer: SerializationService): String {
+        return this.getMetadata(serializer).getLedgerModel()
     }
 
-    override fun getMetadata(serializer: SerializationService): TransactionMetaData {
+    override fun getMetadata(serializer: SerializationService): TransactionMetaDataImpl {
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        return serializer.deserialize(metadataBytes, TransactionMetaData::class.java)
+        return serializer.deserialize(metadataBytes, TransactionMetaDataImpl::class.java)
     }
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
