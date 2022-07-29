@@ -153,6 +153,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         def buildBaseDir = temporaryDir.toPath()
         def containerizationDir = Paths.get("$buildBaseDir/containerization/")
 
+        logger.quiet("$buildBaseDir")
+
         String gitRevision = gitTask.flatMap { it.revision }.get()
         def jiraTicket = hasJiraTicket()
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
