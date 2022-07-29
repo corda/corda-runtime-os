@@ -17,6 +17,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.FlowConfig
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -37,13 +38,17 @@ internal class FlowMapperServiceTest {
 
     @Test
     fun `flow mapper service correctly responds to dependencies changes`() {
+        val subscriptionFactory = mock<SubscriptionFactory>().also {
+            doAnswer { mock<StateAndEventSubscription<String, String, String>>() }
+                .whenever(it).createStateAndEventSubscription<String, String, String>(any(), any(), any(), any())
+        }
         LifecycleTest<FlowMapperService>{
             addDependency<ConfigurationReadService>()
 
             FlowMapperService(
                 coordinatorFactory,
                 configReadService,
-                mock(),
+                subscriptionFactory,
                 mock(),
                 mock()
             )

@@ -1,7 +1,7 @@
 package net.corda.configuration.read
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.CloseableResourceEvent
+import net.corda.lifecycle.LifecycleEvent
 
 /**
  * Lifecycle event indicating that the configuration has changed.
@@ -15,4 +15,4 @@ import net.corda.lifecycle.CloseableResourceEvent
  * @property config Map of top-level key to config section. This is populated for all keys a component has registered on
  *                  in all cases.
  */
-data class ConfigChangedEvent(val keys: Set<String>, val config: Map<String, SmartConfig>) : CloseableResourceEvent
+data class ConfigChangedEvent(val keys: Set<String>, val config: Map<String, SmartConfig>) : LifecycleEvent

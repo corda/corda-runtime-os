@@ -1,6 +1,5 @@
 package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -1202,7 +1201,6 @@ internal class LifecycleCoordinatorImplTest {
         val coordinator2 = createTestCoordinator { _, _ -> }
         val coordinator3 = createTestCoordinator { _, _ -> }
 
-        @Suppress("UNUSED_VARIABLE")
         val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
 
         coordinator1.close()
@@ -1249,7 +1247,6 @@ internal class LifecycleCoordinatorImplTest {
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
         scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(executor, timerExecutor),
-        closeableResources: CloseableResources = mock(),
         processor: LifecycleEventHandler
     ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
@@ -1257,7 +1254,6 @@ internal class LifecycleCoordinatorImplTest {
             BATCH_SIZE,
             registry,
             scheduler,
-            closeableResources,
             processor
         )
     }
@@ -1265,7 +1261,6 @@ internal class LifecycleCoordinatorImplTest {
     private fun createTestCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
         scheduler: LifecycleCoordinatorScheduler = TestLifecycleCoordinatorScheduler(),
-        closeableResources: CloseableResources = mock(),
         processor: LifecycleEventHandler
     ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
@@ -1273,7 +1268,6 @@ internal class LifecycleCoordinatorImplTest {
             BATCH_SIZE,
             registry,
             scheduler,
-            closeableResources,
             processor
         )
     }
