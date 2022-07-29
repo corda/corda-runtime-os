@@ -3,6 +3,7 @@ package net.corda.cpi.upload.endpoints.v1
 import net.corda.chunking.ChunkWriter
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.chunking.UploadStatus
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,6 +20,9 @@ import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.util.UUID
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.exception.InvalidInputDataException
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {
     private lateinit var cpiUploadRPCOpsImpl: CpiUploadRPCOpsImpl
@@ -29,6 +33,8 @@ class CpiUploadRPCOpsImplTest {
 
     companion object {
         const val DUMMY_FILE_NAME = "dummyFileName"
+        const val UNKNOWN_REQUEST = "UNKNOWN_REQUEST"
+        const val EXPECTED_MESSAGE = "EXPECTED_MESSAGE"
     }
 
     @BeforeEach
@@ -43,6 +49,10 @@ class CpiUploadRPCOpsImplTest {
         cpiInfoReadService = mock()
         cpiUploadRPCOpsImpl = CpiUploadRPCOpsImpl(coordinatorFactory, cpiUploadRPCOpsService, cpiInfoReadService)
         cpiUploadManager = mock()
+        val mockStatus = mock<UploadStatus>()
+        whenever(mockStatus.message).thenReturn(EXPECTED_MESSAGE)
+        whenever(cpiUploadManager.status(any())).thenReturn(mockStatus)
+        whenever(cpiUploadManager.status(UNKNOWN_REQUEST)).thenReturn(null)
         whenever(cpiUploadRPCOpsService.cpiUploadManager).thenReturn(cpiUploadManager)
     }
 
@@ -64,5 +74,13 @@ class CpiUploadRPCOpsImplTest {
     fun `getAllCpis calls CpiInfoReadService to retrieve all CPIs`() {
         cpiUploadRPCOpsImpl.getAllCpis()
         verify(cpiInfoReadService).getAll()
+    }
+
+    @Test
+    fun `status returns 400 if invalid id is passed`() {
+        cpiUploadRPCOpsImpl.status("not unknown")
+        assertThrows<InvalidInputDataException> {
+            cpiUploadRPCOpsImpl.status(UNKNOWN_REQUEST)
+        }
     }
 }

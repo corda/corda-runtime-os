@@ -275,6 +275,18 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(65)
+    fun `cpi status returns 400 for unknown request id`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertWithRetry {
+                command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
+                condition { it.code == 400 }
+            }
+        }
+    }
+
+    @Test
     @Order(80)
     fun `can force upload same CPI`() {
         cluster {
