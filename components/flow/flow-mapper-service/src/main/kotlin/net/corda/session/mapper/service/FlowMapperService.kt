@@ -92,7 +92,6 @@ class FlowMapperService @Activate constructor(
 
             is StopEvent -> {
                 logger.info("Stopping flow mapper component.")
-                coordinator.closeManagedResources()
             }
         }
     }

@@ -38,7 +38,7 @@ class FlowP2PFilterService @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val CONSUMER_GROUP = "FlowSessionFilterConsumer"
-        private const val SUB = "SUB"
+        private const val SUBSCRIPTION = "SUBSCRIPTION"
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
@@ -75,7 +75,6 @@ class FlowP2PFilterService @Activate constructor(
             }
             is StopEvent -> {
                 logger.info("Stopping flow p2p filter component.")
-                coordinator.closeManagedResources()
             }
         }
     }
@@ -86,7 +85,7 @@ class FlowP2PFilterService @Activate constructor(
     private fun restartFlowP2PFilterService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
-        coordinator.createManagedResource(SUB) {
+        coordinator.createManagedResource(SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
                 FlowP2PFilterProcessor(cordaAvroSerializationFactory),
