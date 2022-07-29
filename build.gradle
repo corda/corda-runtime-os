@@ -1,3 +1,4 @@
+import groovy.transform.Field
 import static org.gradle.api.JavaVersion.VERSION_11
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
@@ -76,10 +77,8 @@ allprojects {
         }
     }
 
-    configurations {
-        [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
-            configureKotlinForOSGi(cfg)
-        }
+    configurations.matching { Configuration cfg -> isKotlinClasspath(cfg) }.configureEach { Configuration cfg ->
+        configureKotlinForOSGi(cfg)
     }
 
     tasks.withType(Test).configureEach {
@@ -221,10 +220,6 @@ allprojects {
                     integrationTestApi.extendsFrom testApi
                     integrationTestImplementation.extendsFrom testImplementation
                     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
-
-                    [ integrationTestCompileClasspath, integrationTestRuntimeClasspath ].forEach { cfg ->
-                        configureKotlinForOSGi(cfg)
-                    }
                 }
             }
         }
@@ -234,14 +229,16 @@ allprojects {
         description = "Runs integration tests."
         group = "verification"
 
-        testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-        classpath = project.sourceSets["integrationTest"].runtimeClasspath
+        testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+        classpath = sourceSets["integrationTest"].runtimeClasspath
 
-        systemProperty "postgresHost", project.getProperty("postgresHost")
-        systemProperty "postgresDb", project.getProperty("postgresDb")
-        systemProperty "postgresPort", project.getProperty("postgresPort")
-        systemProperty "postgresUser", project.getProperty("postgresUser")
-        systemProperty "postgresPassword", project.getProperty("postgresPassword")
+        doFirst {
+            systemProperty "postgresHost", postgresHost
+            systemProperty "postgresDb", postgresDb
+            systemProperty "postgresPort", postgresPort
+            systemProperty "postgresUser", postgresUser
+            systemProperty "postgresPassword", postgresPassword
+        }
 
         shouldRunAfter tasks.named('test')
     }
@@ -256,7 +253,7 @@ allprojects {
 
 // Ensure that we both compile and run using Kotlin OSGi bundles.
 // We must ONLY invoke this for Kotlin's classpath configurations.
-void configureKotlinForOSGi(Configuration configuration) {
+private void configureKotlinForOSGi(Configuration configuration) {
     configuration.resolutionStrategy {
         dependencySubstitution {
             substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
@@ -266,6 +263,16 @@ void configureKotlinForOSGi(Configuration configuration) {
             substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
         }
     }
+}
+
+@Field
+private static final Set<String> KOTLIN_CLASSPATHS = [
+    'compileClasspath', 'testCompileClasspath', 'integrationTestCompileClasspath',
+    'runtimeClasspath', 'testRuntimeClasspath', 'integrationTestRuntimeClasspath'
+]
+
+private static boolean isKotlinClasspath(Configuration cfg) {
+    return cfg.name in KOTLIN_CLASSPATHS && cfg.canBeResolved
 }
 
 logger.quiet("********************** CORDA FLOW WORKER BUILD **********************")
