@@ -18,6 +18,8 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -44,8 +46,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.SortedMap
-import java.util.UUID
+import java.util.*
 
 class RegistrationProcessorTest {
 
@@ -114,9 +115,13 @@ class RegistrationProcessorTest {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
+    val memberMgmContext: MGMContext = mock {
+        on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
+    }
     val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
         on { memberProvidedContext } doReturn memberMemberContext
+        on { mgmProvidedContext } doReturn memberMgmContext
     }
 
     val mgmMemberContext: MemberContext = mock {
@@ -126,6 +131,7 @@ class RegistrationProcessorTest {
         on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn true
     }
     val mgmMemberInfo: MemberInfo = mock {
+        on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
@@ -195,7 +201,7 @@ class RegistrationProcessorTest {
     fun `start registration command - onNext can be called for start registration command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         assertThat(result.updatedState).isNotNull
-        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
+        assertThat(result.responseEvents).isNotEmpty.hasSize(2)
         assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
             .isNotNull
             .isInstanceOf(VerifyMember::class.java)
