@@ -5,6 +5,6 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  *
  * @param virtualNodes List of virtual nodes.
  */
-data class GetVirtualNodesResponse(
+data class VirtualNodes(
     val virtualNodes: List<VirtualNodeInfo>
 )
