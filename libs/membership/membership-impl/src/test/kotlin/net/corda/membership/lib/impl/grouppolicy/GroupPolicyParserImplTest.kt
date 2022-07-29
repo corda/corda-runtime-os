@@ -18,8 +18,8 @@ import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
-import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_CERT
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_FILE_FORMAT_VERSION
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_GROUP_ID

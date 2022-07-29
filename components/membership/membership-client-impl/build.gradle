@@ -9,27 +9,28 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-base"
-    implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-topic-schema"
-
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:membership:membership-client")
+    implementation project(":components:membership:membership-group-read")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
-
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":components:membership:membership-group-read")
-    testImplementation project(":testing:test-utilities")
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
+    testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(":testing:layered-property-map-testkit")
-    testImplementation ("net.corda:corda-serialization")
+    testImplementation project(":testing:test-utilities")
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "net.corda:corda-serialization"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
