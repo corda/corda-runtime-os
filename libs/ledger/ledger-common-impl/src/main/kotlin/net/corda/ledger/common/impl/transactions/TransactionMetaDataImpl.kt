@@ -23,8 +23,8 @@ class TransactionMetaDataImpl(
 
     override fun hashCode(): Int = properties.hashCode()
 
-    fun getLedgerModel(){
-        this[LEDGER_MODEL_KEY]
+    fun getLedgerModel(): String{
+        return this[LEDGER_MODEL_KEY].toString()
     }
     fun getLedgerVersion(){
         this[LEDGER_VERSION_KEY]
