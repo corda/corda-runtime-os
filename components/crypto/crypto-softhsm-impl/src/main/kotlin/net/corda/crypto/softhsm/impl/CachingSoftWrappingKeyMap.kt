@@ -20,7 +20,7 @@ class CachingSoftWrappingKeyMap(
         .maximumSize(config.maximumSize)
         .build()
 
-    override fun getWrappingKey(alias: String): WrappingKey {
+    override fun getWrappingKey(alias: String): WrappingKey = cache.get(alias) {
         val wrappingKeyInfo = store.findWrappingKey(alias)
             ?: throw IllegalStateException("The $alias is not created yet.")
         require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
@@ -29,18 +29,19 @@ class CachingSoftWrappingKeyMap(
         require(master.algorithm == wrappingKeyInfo.algorithmName) {
             "Expected algorithm is ${master.algorithm} but was ${wrappingKeyInfo.algorithmName}"
         }
-        return cache.get(alias) { master.unwrapWrappingKey(wrappingKeyInfo.keyMaterial) }
+        master.unwrapWrappingKey(wrappingKeyInfo.keyMaterial)
     }
 
     override fun putWrappingKey(alias: String, wrappingKey: WrappingKey) {
         val wrappingKeyInfo = WrappingKeyInfo(
             encodingVersion = WRAPPING_KEY_ENCODING_VERSION,
-            algorithmName =  wrappingKey.algorithm,
+            algorithmName = wrappingKey.algorithm,
             keyMaterial = master.wrap(wrappingKey)
         )
         store.saveWrappingKey(alias, wrappingKeyInfo)
         cache.put(alias, wrappingKey)
     }
 
-    override fun exists(alias: String): Boolean = store.findWrappingKey(alias) != null
+    override fun exists(alias: String): Boolean =
+        cache.getIfPresent(alias) != null || store.findWrappingKey(alias) != null
 }

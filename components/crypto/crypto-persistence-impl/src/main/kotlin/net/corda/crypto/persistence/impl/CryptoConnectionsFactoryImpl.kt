@@ -23,6 +23,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
@@ -56,6 +57,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
 ), CryptoConnectionsFactory {
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
+        logger,
         event.config.toCryptoConfig().cryptoConnectionFactory(),
         dbConnectionManager,
         jpaEntitiesRegistry,
@@ -66,6 +68,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
         impl.getEntityManagerFactory(tenantId)
 
     class Impl(
+        private val logger: Logger,
         private val config: CryptoConnectionsFactoryConfig,
         private val dbConnectionOps: DbConnectionOps,
         private val jpaEntitiesRegistry: JpaEntitiesRegistry,
@@ -76,8 +79,22 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
         private var connections: Cache<String, EntityManagerFactory> = createConnectionsCache()
 
         override fun onUpstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) {
-            if(!isUpstreamUp) {
+            if (!isUpstreamUp) {
                 connections = createConnectionsCache()
+            }
+        }
+
+        override fun close() {
+            super.close()
+            val values = connections.asMap().values
+            connections.invalidateAll()
+            connections.cleanUp()
+            values.forEach {
+                try {
+                    it.close()
+                } catch (e: Throwable) {
+                    // intentional
+                }
             }
         }
 
@@ -99,11 +116,17 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 )
         )
 
-        private fun createConnectionsCache(): Cache<String, EntityManagerFactory> =
-            Caffeine.newBuilder()
+        private fun createConnectionsCache(): Cache<String, EntityManagerFactory> {
+            logger.info(
+                "Building connections cache, maximumSize={}, expireAfterAccessMins={}",
+                config.maximumSize,
+                config.expireAfterAccessMins
+            )
+            return Caffeine.newBuilder()
                 .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(config.maximumSize)
                 .evictionListener<String, EntityManagerFactory> { _, value, _ -> value?.close() }
                 .build()
+        }
     }
 }

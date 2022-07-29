@@ -94,12 +94,12 @@ class RecreateBinaryTest {
     lateinit var fs: FileSystem
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         fs = Jimfs.newFileSystem()
     }
 
     @AfterEach
-    private fun afterEach() {
+    fun afterEach() {
         fs.close()
     }
 
