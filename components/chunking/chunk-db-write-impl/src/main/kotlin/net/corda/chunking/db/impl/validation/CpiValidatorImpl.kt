@@ -6,6 +6,7 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.data.ExceptionEnvelope
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
@@ -32,6 +33,14 @@ class CpiValidatorImpl constructor(
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
+    }
+
+    override fun notifyChunkReceived(requestId: RequestId) {
+        publisher.initialStatus(requestId)
+    }
+
+    override fun notifyChunkError(requestId: RequestId, e: Exception) {
+        publisher.error(requestId, ExceptionEnvelope(e::class.java.name, e.message), "Error")
     }
 
     override fun validate(requestId: RequestId): SecureHash {
@@ -94,6 +103,7 @@ class CpiValidatorImpl constructor(
         )
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
+        publisher.complete(requestId, fileInfo.checksum)
         return fileInfo.checksum
     }
 

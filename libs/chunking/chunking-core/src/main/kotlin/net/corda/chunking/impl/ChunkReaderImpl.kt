@@ -72,7 +72,9 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         if (chunksReceived.expectedCount == chunksReceived.chunks.size) {
             val actualChecksum = Checksum.digestForPath(path)
             if (actualChecksum != chunksReceived.expectedChecksum) {
-                throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
+                throw IllegalArgumentException(
+                        "Checksum actual $actualChecksum does not match expected checksum ${chunksReceived.expectedChecksum},"+
+                            "one or more of the chunks may be corrupt")
             }
 
             chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum, chunk.properties?.fromAvro())

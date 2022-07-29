@@ -1,8 +1,7 @@
 package net.corda.chunking.db.impl
 
-import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.chunking.db.impl.persistence.StatusPublisher
+import net.corda.chunking.db.impl.validation.CpiValidator
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
@@ -11,23 +10,26 @@ import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.util.UUID
 
 class ChunkWriteToDbProcessorSimpleTest {
+
     companion object {
         private const val topic = "unused"
         private const val fileName = "unused.txt"
-        val validator = { _: RequestId -> SecureHash.create("SHA-256:1234567890") }
+        val validator =  mock<CpiValidator> {
+            on { validate(any()) } doReturn SecureHash.create("SHA-256:1234567890")
+        }
     }
 
     @Test
     fun `chunk processor onNext calls persist`() {
         val persistence = mock<ChunkPersistence>()
-        val statusPublisher = mock<StatusPublisher>()
-        val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
+        val processor = ChunkWriteToDbProcessor(persistence, validator)
         val requestId = UUID.randomUUID().toString()
 
         val chunk = Chunk(
@@ -51,8 +53,7 @@ class ChunkWriteToDbProcessorSimpleTest {
         val persistence = mock<ChunkPersistence>().apply {
             `when`(persistChunk(any())).thenThrow(CordaRuntimeException(exceptionMessage))
         }
-        val publisher = mock<StatusPublisher>()
-        val processor = ChunkWriteToDbProcessor(publisher, persistence, validator)
+        val processor = ChunkWriteToDbProcessor(persistence, validator)
         val requestId = UUID.randomUUID().toString()
 
         val chunk = Chunk(

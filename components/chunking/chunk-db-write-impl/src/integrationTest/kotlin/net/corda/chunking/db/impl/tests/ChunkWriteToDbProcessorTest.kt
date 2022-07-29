@@ -5,16 +5,14 @@ import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.ChunkWriteToDbProcessor
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
+import net.corda.chunking.db.impl.validation.CpiValidator
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -24,7 +22,7 @@ internal class ChunkWriteToDbProcessorTest {
     }
 
     private lateinit var processor: ChunkWriteToDbProcessor
-    private lateinit var publisher: StatusPublisher
+    private lateinit var validator: CpiValidator
 
     private val persistence = mock<DatabaseChunkPersistence>().apply {
         whenever(checksumIsValid(any())).thenReturn(true)
@@ -40,9 +38,10 @@ internal class ChunkWriteToDbProcessorTest {
     @BeforeEach
     fun beforeEach() {
         val checksum = SecureHash("SHA-256", ByteArray(16))
-        val validator = { _: RequestId -> checksum }
-        publisher = mock<StatusPublisher>()
-        processor = ChunkWriteToDbProcessor(publisher, persistence, validator)
+        validator = mock<CpiValidator> {
+            on { validate(any()) } doReturn checksum
+        }
+        processor = ChunkWriteToDbProcessor(persistence, validator)
     }
 
     @Test
@@ -54,8 +53,9 @@ internal class ChunkWriteToDbProcessorTest {
 
     @Test
     fun `processor calls through to publisher`() {
-        processRequest(processor, Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)), null))
+        val requestId = randomString()
+        processRequest(processor, Chunk(requestId, randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)), null))
         verify(persistence).persistChunk(any())
-        verify(publisher).initialStatus(any())
+        verify(validator).notifyChunkReceived(requestId)
     }
 }

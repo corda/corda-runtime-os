@@ -109,7 +109,7 @@ class ChunkDbWriterFactoryImpl(
             cpiPartsDir,
             UTCClock()
         )
-        val processor = ChunkWriteToDbProcessor(statusPublisher, chunkPersistence, validator)
+        val processor = ChunkWriteToDbProcessor(chunkPersistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
             Pair(publisher, subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null))

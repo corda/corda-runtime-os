@@ -2,9 +2,7 @@ package net.corda.chunking.db.impl
 
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.validation.CpiValidator
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.messaging.api.processor.DurableProcessor
@@ -12,10 +10,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 
 /**
- * Persist a [Chunk] to the database and send an [UploadStatus] message
+ * Persist a [Chunk] to the database and let the validator know what's going on
  */
 class ChunkWriteToDbProcessor(
-    private val publisher: StatusPublisher,
     private val persistence: ChunkPersistence,
     private val validator: CpiValidator
 ) : DurableProcessor<RequestId, Chunk> {
@@ -24,10 +21,10 @@ class ChunkWriteToDbProcessor(
     }
 
     private fun processChunk(request: Chunk) {
-        log.debug("Processing chunk request id=${request.requestId} part=${request.partNumber}")
+        log.debug("Processing chunk request id=${request.requestId} part=${request.partNumber} offset=${request.offset}")
 
         try {
-            publisher.initialStatus(request.requestId)
+            validator.notifyChunkReceived(request.requestId)
 
             val allChunksReceived = persistence.persistChunk(request)
 
@@ -40,12 +37,10 @@ class ChunkWriteToDbProcessor(
             // We validate the CPI, persist it to the database, and publish CPI info.
             // Exceptions are used to communicate failure.
             // If we fail for any reason, we never send an OK message.
-            val checksum = validator.validate(request.requestId)
-
-            publisher.complete(request.requestId, checksum)
+            validator.validate(request.requestId)
         } catch (e: Exception) {
             log.error("Could not persist chunk $request", e)
-            publisher.error(request.requestId, ExceptionEnvelope(e::class.java.name, e.message), e.message ?: "Error")
+            validator.notifyChunkError(request.requestId, e)
         }
     }
 

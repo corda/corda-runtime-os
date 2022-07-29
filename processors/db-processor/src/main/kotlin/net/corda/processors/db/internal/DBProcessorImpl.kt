@@ -132,7 +132,6 @@ class DBProcessorImpl @Activate constructor(
         ::cpkWriteService,
         ::cpkReadService,
         ::flowPersistenceService,
-        ::cpkReadService,
         ::cpiInfoReadService,
         ::cpiInfoWriteService,
         ::certificatesService,
