@@ -208,7 +208,7 @@ internal class LifecycleProcessor(
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
-        closeManagedResources()
+        closeManagedResources(emptySet())
         managedResources.clear()
         return true
     }
