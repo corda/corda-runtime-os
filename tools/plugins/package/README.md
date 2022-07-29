@@ -40,8 +40,28 @@ jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -cer
     --key "signing key 1" \
     --tsa https://freetsa.org/tsr
 
-# Pipe group policy into application package
+# Pipe group policy into CPI
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create \
+    --cpb mycpb.cpb \
+    --group-policy - \
+    --file output.cpi \
+    --keystore signingkeys.pfx \
+    --storepass "keystore password" \
+    --key "signing key 1" \
+    --tsa https://freetsa.org/tsr
+    
+# Build a CPI v2
+./corda-cli.sh package create-cpi \
+    --cpb mycpb.cpb \
+    --group-policy TestGroupPolicy.json \
+    --file output.cpi \
+    --keystore signingkeys.pfx \
+    --storepass "keystore password" \
+    --key "signing key 1" \
+    --tsa https://freetsa.org/tsr    
+    
+# Pipe group policy into CPI v2
+./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy - \
     --file output.cpi \

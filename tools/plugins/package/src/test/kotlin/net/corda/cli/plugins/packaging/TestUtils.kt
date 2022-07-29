@@ -139,8 +139,15 @@ internal object TestUtils {
     }
 
     fun jarEntriesExistInCpx(cpxPath: Path, expectedEntries: List<String>): Boolean {
-        JarInputStream(Files.newInputStream(cpxPath)).use {
-            val actualEntries = generateSequence { it.nextJarEntry?.name }.toList()
+        JarInputStream(Files.newInputStream(cpxPath)).use { jarStream ->
+            val actualEntries = generateSequence {
+                jarStream.nextJarEntry?.name
+            }.toMutableList()
+
+            jarStream.manifest?.let {
+                actualEntries += "META-INF/MANIFEST.MF"
+            }
+
             return expectedEntries.all {
                 actualEntries.contains(it)
             }
