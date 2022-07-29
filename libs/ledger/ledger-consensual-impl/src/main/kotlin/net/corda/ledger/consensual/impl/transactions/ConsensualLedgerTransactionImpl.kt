@@ -11,7 +11,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 class ConsensualLedgerTransactionImpl(
-    override val wireTransaction: WireTransaction,
+    private val wireTransaction: WireTransaction,
     private val serializer: SerializationService
     ) : ConsensualLedgerTransaction {
 
