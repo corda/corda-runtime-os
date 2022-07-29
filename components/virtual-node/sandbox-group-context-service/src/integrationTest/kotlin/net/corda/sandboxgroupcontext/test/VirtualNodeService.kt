@@ -48,13 +48,13 @@ class VirtualNodeService @Activate constructor(
         sandboxGroupContextComponent.close()
     }
 
-    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
+    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo, type: SandboxGroupType): SandboxGroupContext {
         val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,
             cpi.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
-            SandboxGroupType.FLOW,
+            type,
             SingletonSerializeAsToken::class.java,
             null
         )
@@ -63,9 +63,9 @@ class VirtualNodeService @Activate constructor(
         }
     }
 
-    fun loadSandbox(resourceName: String): SandboxGroupContext {
+    fun loadSandbox(resourceName: String, type: SandboxGroupType): SandboxGroupContext {
         val vnodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
-        return getOrCreateSandbox(vnodeInfo).also { ctx ->
+        return getOrCreateSandbox(vnodeInfo, type).also { ctx ->
             vnodes[ctx] = vnodeInfo
         }
     }
