@@ -73,18 +73,8 @@ class ForwardingGroupPolicyProviderTest {
     }
 
     @Test
-    fun `dependent and managed children are set properly when using stub policy provider`() {
-        createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.STUB)
-
-        assertThat(dependentChildren).hasSize(1)
-        assertThat(dependentChildren).containsExactlyInAnyOrder(stubGroupPolicyProviderCoordinatorName)
-        assertThat(managedChildren).hasSize(1)
-        assertThat(managedChildren).containsExactlyInAnyOrder(stubGroupPolicyProviderNamedLifecycle)
-    }
-
-    @Test
     fun `dependent and managed children are set properly when using the real policy provider`() {
-        createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        createForwardingGroupPolicyProvider()
 
         assertThat(dependentChildren).hasSize(4)
         assertThat(dependentChildren).containsExactlyInAnyOrder(
@@ -106,16 +96,8 @@ class ForwardingGroupPolicyProviderTest {
     }
 
     @Test
-    fun `get group info delegates to the stub policy provider properly`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.STUB)
-
-        whenever(stubGroupPolicyProvider.constructed().first().getGroupInfo(alice)).thenReturn(groupInfo)
-        assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo)
-    }
-
-    @Test
     fun `get group info delegates to the real policy provider properly`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo)
@@ -123,7 +105,7 @@ class ForwardingGroupPolicyProviderTest {
 
     @Test
     fun `get group info delegates to the real policy provider properly for c4 network`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
         whenever(groupPolicy.p2pParameters.tlsPki).thenReturn(P2PParameters.TlsPkiMode.CORDA_4)
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
@@ -132,7 +114,7 @@ class ForwardingGroupPolicyProviderTest {
 
     @Test
     fun `get group info delegates to the real policy provider properly for network with authentication only mode`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
         whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
@@ -142,7 +124,7 @@ class ForwardingGroupPolicyProviderTest {
 
     @Test
     fun `get group info returns null if real group policy provider fails to find a group policy for the holding identity`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
         whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(null)
@@ -150,17 +132,8 @@ class ForwardingGroupPolicyProviderTest {
     }
 
     @Test
-    fun `register listener delegates to the stub policy provider properly`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.STUB)
-
-        val listener = mock<GroupPolicyListener>()
-        forwardingGroupPolicyProvider.registerListener(listener)
-        verify(stubGroupPolicyProvider.constructed().first()).registerListener(listener)
-    }
-
-    @Test
     fun `register listener delegates to the real policy provider properly`() {
-        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider(ThirdPartyComponentsMode.REAL)
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
 
         val listener = mock<GroupPolicyListener>()
         forwardingGroupPolicyProvider.registerListener(listener)
@@ -171,10 +144,9 @@ class ForwardingGroupPolicyProviderTest {
         verify(listener).groupAdded(groupInfo)
     }
 
-    private fun createForwardingGroupPolicyProvider(mode: ThirdPartyComponentsMode): ForwardingGroupPolicyProvider {
+    private fun createForwardingGroupPolicyProvider(): ForwardingGroupPolicyProvider {
         return ForwardingGroupPolicyProvider(
-            mock(), mock(), mock(),
-            realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, mode, membershipQueryClient
+            mock(), realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient
         )
     }
 

@@ -48,10 +48,11 @@ class LinkManager(
         }
     }
 
-    private val forwardingGroupPolicyProvider =
-        ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration, groupPolicyProvider,
-            virtualNodeInfoReadService, cpiInfoReadService, thirdPartyComponentsMode, membershipQueryClient)
-
+    private val forwardingGroupPolicyProvider: LinkManagerGroupPolicyProvider = when (thirdPartyComponentsMode) {
+        ThirdPartyComponentsMode.REAL -> ForwardingGroupPolicyProvider(lifecycleCoordinatorFactory, groupPolicyProvider,
+            virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient)
+        ThirdPartyComponentsMode.STUB -> StubGroupPolicyProvider(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
+    }
     private val linkManagerCryptoProcessor: CryptoProcessor = when(thirdPartyComponentsMode) {
         ThirdPartyComponentsMode.REAL -> DelegatingCryptoService(cryptoOpsClient)
         ThirdPartyComponentsMode.STUB -> StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, messagingConfiguration)
