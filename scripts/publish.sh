@@ -25,7 +25,7 @@
 
 kubectl get pods -n default 
 kubectl get svc -n default 
-kubectl describe service/buildkit-chart
+kubectl describe service/buildkit
 
 kubectl get pods
 kubectl get svc 
@@ -47,7 +47,7 @@ cp -v ./tools/plugins/virtual-node/build/libs/*plugin-virtual-node* ./tools/plug
 
 
 buildctl \
-    --addr tcp://127.0.0.1:3476 \
+    --addr tcp://10.100.164.84:3476 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -63,7 +63,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-plugins-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:3476 \
+    --addr tcp://10.100.164.84:3476 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -79,7 +79,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-crypto-worker-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:3476 \
+    --addr tcp://10.100.164.84:3476 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -96,7 +96,7 @@ build --frontend=dockerfile.v0 \
     
     
 buildctl \
-    --addr tcp://127.0.0.1:3476 \
+    --addr tcp://10.100.164.84:3476 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -112,7 +112,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-db-worker-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:3476 \
+    --addr tcp://10.100.164.84:3476 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -128,7 +128,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-member-worker-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:3476 \
+    --addr tcp://10.100.164.84:3476 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
