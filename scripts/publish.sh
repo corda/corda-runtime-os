@@ -22,7 +22,7 @@
 
 #wait
 
-kubectl port-forward service/buildkit-chart 1234 &
+kubectl port-forward service/buildkit-chart 4376 &
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
@@ -39,7 +39,7 @@ cp -v ./tools/plugins/virtual-node/build/libs/*plugin-virtual-node* ./tools/plug
 
 
 buildctl \
-    --addr tcp://127.0.0.1:1234 \
+    --addr tcp://127.0.0.1:4376 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -55,7 +55,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-plugins-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:1234 \
+    --addr tcp://127.0.0.1:4376 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -71,7 +71,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-crypto-worker-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:1234 \
+    --addr tcp://127.0.0.1:4376 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -88,7 +88,7 @@ build --frontend=dockerfile.v0 \
     
     
 buildctl \
-    --addr tcp://127.0.0.1:1234 \
+    --addr tcp://127.0.0.1:4376 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -104,7 +104,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-db-worker-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:1234 \
+    --addr tcp://127.0.0.1:4376 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
@@ -120,7 +120,7 @@ build --frontend=dockerfile.v0 \
     --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-member-worker-cache &
 
 buildctl \
-    --addr tcp://127.0.0.1:1234 \
+    --addr tcp://127.0.0.1:4376 \
     --tlscacert .certs/client/ca.pem \
     --tlscert .certs/client/cert.pem \
     --tlskey .certs/client/key.pem \
