@@ -123,7 +123,14 @@ class FlowCheckpointImpl(
     override val pendingPlatformError: ExceptionEnvelope?
         get() = checkpoint.pipelineState.pendingPlatformError
 
-    override lateinit var flowContextProperties: FlowContextPropertiesImpl
+    override val flowContextProperties: FlowContextPropertiesImpl by lazy {
+        flowStateManager?.let { manager ->
+            FlowContextPropertiesImpl(
+                platformProperties = manager.contextPlatformProperties,
+                userProperties = manager.contextUserProperties
+            )
+        } ?: throw IllegalStateException("Attempt to access context before flow state has been created")
+    }
 
     override fun initFlowState(flowStartContext: FlowStartContext, initialContextUserProperties: Map<String, String>) {
         if (flowStateManager != null) {
@@ -148,12 +155,7 @@ class FlowCheckpointImpl(
             contextUserProperties = initialContextUserProperties
         }.build()
 
-        flowStateManager = FlowStateManager(flowState).also { manager ->
-            flowContextProperties = FlowContextPropertiesImpl(
-                platformProperties = manager.contextPlatformProperties,
-                userProperties = manager.contextUserProperties
-            )
-        }
+        flowStateManager = FlowStateManager(flowState)
         nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
     }
 

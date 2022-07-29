@@ -30,20 +30,24 @@ class FlowContextPropertiesImpl(
      * Any properties set after this point will be popped off the context when the corresponding call to popStackMarker
      * is made.
      */
-    fun pushStackMarker(): Unit = TODO()
+    fun pushStackMarker() {
+        // TODO
+    }
 
     /**
      * Pop all properties that were added since the last call to pushStackMarker off the context.
      */
-    fun popStackMarker(): Unit = TODO()
+    fun popStackMarker() {
+        // TODO
+    }
 
     /**
      * Returns all platfrom properties in the form of a map
      */
-    fun flattenPlatformProperties(): Map<String, String> = TODO()
+    fun flattenPlatformProperties(): Map<String, String> = platformProperties
 
     /**
      * Returns all user properties in the form of a map
      */
-    fun flattenUserProperties(): Map<String, String> = TODO()
+    fun flattenUserProperties(): Map<String, String> = userProperties
 }

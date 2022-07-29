@@ -60,7 +60,7 @@ class InitiateFlowRequestHandler @Activate constructor(
                 protocolVersions = protocolVersions,
                 instant = Instant.now(),
                 contextPlatformProperties = request.contextPlatformProperties,
-                contextUserProperties = request.contextPlatformProperties
+                contextUserProperties = request.contextUserProperties
             )
         )
 
