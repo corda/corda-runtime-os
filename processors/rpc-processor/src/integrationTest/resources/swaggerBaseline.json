@@ -376,7 +376,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/UploadResponse"
+                  "$ref" : "#/components/schemas/CpiUploadResponse"
                 }
               }
             }
@@ -442,7 +442,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/Status"
+                  "$ref" : "#/components/schemas/CpiUploadStatus"
                 }
               }
             }
@@ -1338,7 +1338,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/UploadResponse"
+                  "$ref" : "#/components/schemas/CpiUploadResponse"
                 }
               }
             }
@@ -2530,6 +2530,33 @@
           }
         }
       },
+      "CpiUploadResponse" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "CpiUploadStatus" : {
+        "required" : [ "cpiFileChecksum", "status" ],
+        "type" : "object",
+        "properties" : {
+          "cpiFileChecksum" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "CpkIdentifier" : {
         "required" : [ "name", "version" ],
         "type" : "object",
@@ -3314,22 +3341,6 @@
           }
         }
       },
-      "Status" : {
-        "required" : [ "cpiFileChecksum", "status" ],
-        "type" : "object",
-        "properties" : {
-          "cpiFileChecksum" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "status" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
       "UpdateConfigParameters" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
         "type" : "object",
@@ -3399,17 +3410,6 @@
         },
         "description" : "UpdatevirtualnodestateWrapperRequest",
         "nullable" : false
-      },
-      "UploadResponse" : {
-        "required" : [ "id" ],
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
       },
       "UserPermissionSummaryResponseType" : {
         "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
