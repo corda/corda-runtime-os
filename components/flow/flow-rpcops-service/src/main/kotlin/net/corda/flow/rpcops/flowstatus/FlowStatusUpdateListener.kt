@@ -8,9 +8,11 @@ import net.corda.data.flow.output.FlowStatus
  */
 interface FlowStatusUpdateListener : AutoCloseable {
 
+    /**
+     * Identifier for this listener.
+     */
     val id: UUID
 
-    // todo conal - not sure if FlowStatus Avro type is correct on this API.
     /**
      * Update received for flow status.
      */

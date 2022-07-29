@@ -71,7 +71,7 @@ interface FlowRpcOps : RpcOps {
         description = "Gets a stream of flow status updates for a given flow.",
         responseDescription = "Updates about the status of the given flow."
     )
-    fun flowStatusUpdatesFeed(
+    fun registerFlowStatusUpdatesFeed(
         channel: DuplexChannel,
         @HttpRpcPathParameter(description = "Short hash of the holding identity")
         holdingIdentityShortHash: String,

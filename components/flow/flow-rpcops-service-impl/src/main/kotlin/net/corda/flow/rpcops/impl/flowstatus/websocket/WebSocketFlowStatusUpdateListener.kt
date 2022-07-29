@@ -10,6 +10,7 @@ import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 
 /**
@@ -26,22 +27,21 @@ class WebSocketFlowStatusUpdateListener(
         val logger = contextLogger()
     }
 
-    // todo conal - not sure if FlowStatus Avro type is correct on this API.
     override fun updateReceived(status: FlowStatus) {
-        // todo conal - make first log debug?
-        logger.info("Flow ${status.flowStatus.name} for req: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}")
-        logger.info("Flow status: $status")
+        logger.debug { "Flow status update: ${status.flowStatus.name} for listener $id, " +
+                "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId." }
 
-//        val statusResponse = createFlowStatusResponse(status)
-        // todo conal -sending string works but not objects, the client handler can't seem to pick up the objects
-        channel.send(status.flowStatus.name)
+        val statusResponse = createFlowStatusResponse(status)
+        channel.send(statusResponse)
 
-        if(status.flowStatus == FlowStates.COMPLETED || status.flowStatus == FlowStates.FAILED) {
-            logger.info("Flow ${status.flowStatus}. " +
-                    "Closing WebSocket connection(s) for req: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}")
-            channel.close("Flow complete.")
+        if(flowFinished(status.flowStatus)) {
+            logger.debug { "Flow ${status.flowStatus}. Closing WebSocket connection(s) for " +
+                    "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId" }
+            channel.close("Flow ${status.flowStatus.name}.")
         }
     }
+
+    private fun flowFinished(status: FlowStates) = status == FlowStates.COMPLETED || status == FlowStates.FAILED
 
     private fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse {
 
@@ -60,7 +60,6 @@ class WebSocketFlowStatusUpdateListener(
     }
 
     override fun close() {
-        logger.info("Handler closing for req: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}")
         channel.close()
     }
 }

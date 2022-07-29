@@ -117,7 +117,7 @@ class FlowRPCOpsImpl @Activate constructor(
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
 
-    override fun flowStatusUpdatesFeed(
+    override fun registerFlowStatusUpdatesFeed(
         channel: DuplexChannel,
         holdingIdentityShortHash: String,
         clientRequestId: String
@@ -125,7 +125,7 @@ class FlowRPCOpsImpl @Activate constructor(
         val holdingIdentity = try {
             getVirtualNode(holdingIdentityShortHash).holdingIdentity
         } catch (e: FlowRPCOpsServiceException) {
-            log.info("Could not find virtual node for req: $clientRequestId, holdingId: $holdingIdentityShortHash. Creating later.")
+            log.info("Exception during registering flow status update feed.", e)
             channel.close()
             throw e
         }

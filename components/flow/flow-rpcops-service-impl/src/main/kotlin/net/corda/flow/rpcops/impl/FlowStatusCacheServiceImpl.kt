@@ -27,6 +27,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -108,53 +109,51 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val flowKey = newRecord.key
         if (newRecord.value == null) {
             cache.remove(flowKey)
-            closeAndRemoveAllStatusListeners(flowKey)
+            closeAndRemoveStatusListeners(flowKey)
         } else {
             cache[flowKey] = newRecord.value
             updateAllStatusListenersForFlowKey(flowKey, newRecord.value!!)
         }
     }
 
-    override fun registerFlowStatusUpdatesHandler(
+    override fun registerFlowStatusFeed(
         clientRequestId: String,
         holdingIdentity: HoldingIdentity,
-        handler: FlowStatusUpdateListener
+        listener: FlowStatusUpdateListener
     ) {
         val flowKey = FlowKey(clientRequestId, holdingIdentity)
         val errors = mutableListOf<String>()
 
-        validateHandlerNotAlreadyRegistered(handler.id, errors)
-        validateMaxConnections(flowKey, errors)
+        validateHandlerNotAlreadyRegistered(listener.id, errors)
+        validateMaxConnectionsPerFlowKey(flowKey, errors)
 
         if (errors.isNotEmpty()) {
             throw FlowStatusUpdateException("${errors.size} errors during registration for flow status updates.", errors)
         }
 
-        if (cache[flowKey] == null) {
-            log.info("Registering FlowStatusUpdateHandler ${handler.id} for un-started flow for flowKey: $flowKey.")
-        }
+        statusListenerByUuid[listener.id] = listener
+        statusListenerIdsPerFlowKey.put(flowKey, listener.id)
 
-        statusListenerByUuid[handler.id] = handler
-        statusListenerIdsPerFlowKey.put(flowKey, handler.id)
+        log.info("Registered flow status listener ${listener.id} " +
+                "(clientRequestId: $clientRequestId, holdingIdentity: ${holdingIdentity.toCorda().shortHash}). " +
+                "Total number of open listeners: ${statusListenerByUuid.size}.")
+
+        cache[flowKey]?.let { listener.updateReceived(it) }
     }
 
-    override fun unregisterFlowStatusFeed(handlerId: UUID) {
-        statusListenerByUuid.remove(handlerId)?.let {
-            log.info("Unregistered flow status feed for req: $it")
+    override fun unregisterFlowStatusFeed(listenerId: UUID) {
+        statusListenerByUuid.remove(listenerId)?.let {
+            log.info("Unregistered flow status feed listener: $listenerId. Total number of open listeners: ${statusListenerByUuid.size}.")
         }
     }
 
-    private fun validateMaxConnections(flowKey: FlowKey, errors: MutableList<String>) {
+    private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey, errors: MutableList<String>) {
         val existingHandlers = statusListenerIdsPerFlowKey[flowKey]
         val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
         if (handlersForRequestAndHoldingIdAlreadyExist) {
             if (existingHandlers.size > MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
-                errors.add("Max websocket connections per flowkey has been reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
+                errors.add("Max WebSocket connections per flowkey has been reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
             }
-            log.info(
-                "There already exists ${existingHandlers.size} FlowStatusUpdateHandlers for flowKey: $flowKey. " +
-                        "Adding another handler."
-            )
         }
     }
 
@@ -170,7 +169,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         }
     }
 
-    private fun closeAndRemoveAllStatusListeners(flowKey: FlowKey) {
+    private fun closeAndRemoveStatusListeners(flowKey: FlowKey) {
         statusListenerIdsPerFlowKey[flowKey].map { id ->
             statusListenerByUuid[id]?.close()
             statusListenerByUuid.remove(id)

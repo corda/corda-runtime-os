@@ -5,9 +5,8 @@ import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 
-class MessageQueueWebsocketHandler/*<T : Any>*/(
+class MessageQueueWebsocketHandler(
     private val messageQueue: Queue<String>,
-//    private val messageType: Class<T>
 ): NoOpEndpoint() {
 
     private companion object {
@@ -25,7 +24,6 @@ class MessageQueueWebsocketHandler/*<T : Any>*/(
 
     override fun onWebSocketText(message: String) {
         log.info("Received message: $message")
-//        messageQueue.add(jacksonObjectMapper().readValue(message, messageType))
         messageQueue.add(message)
     }
 

@@ -63,12 +63,9 @@ internal class WebsocketRouteAdaptor(
     }
 
     override fun handleMessage(ctx: WsMessageContext) {
-        // todo conal - should we probably be trying handle the type of the protocol?
-        //  maybe protocol stuff come later
-        requireNotNull(channel).onTextMessage?.let {
-            it(ctx.message())
-//            it(ctx.messageAsClass(channel!!.incomingMessageType))
-        }
+        // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage hook has been defined. The
+        // hook will be responsible for ensuring the messages respect the protocol and terminate connections when malicious messages arrive.
+        requireNotNull(channel).onTextMessage?.invoke(ctx.message()) ?: log.info("Inbound messages are not supported.")
     }
 
     override fun handleError(ctx: WsErrorContext) {
