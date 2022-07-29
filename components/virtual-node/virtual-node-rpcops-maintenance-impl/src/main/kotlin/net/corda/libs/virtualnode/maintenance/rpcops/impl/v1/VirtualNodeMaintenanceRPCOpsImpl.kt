@@ -105,14 +105,14 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
+    override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")
         requireRunning()
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(
             upload.fileName, upload.content,
             mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
         )
-        return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId)
+        return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
     // Lookup and update the virtual node for the given virtual node short ID.
