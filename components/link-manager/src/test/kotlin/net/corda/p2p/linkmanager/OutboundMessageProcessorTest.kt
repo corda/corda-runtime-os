@@ -34,6 +34,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Instant
 
 class OutboundMessageProcessorTest {
     private val myIdentity = HoldingIdentity("PartyA", "Group")
@@ -590,7 +591,7 @@ class OutboundMessageProcessorTest {
             authenticatedMsg,
             "key"
         )
-        authenticatedMessageAndKey.message.header.ttl = 0L
+        authenticatedMessageAndKey.message.header.ttl = Instant.ofEpochMilli(0)
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
@@ -614,7 +615,7 @@ class OutboundMessageProcessorTest {
             AuthenticatedMessageHeader(
                 remoteIdentity,
                 localIdentity,
-                0, "MessageId", "trace-id", "system-1"
+                Instant.ofEpochMilli(0), "MessageId", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
         )

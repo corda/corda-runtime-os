@@ -15,7 +15,7 @@ internal class UploadStatusProcessorTest {
     private val topic = "don't care"
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         processor = UploadStatusProcessor()
     }
 

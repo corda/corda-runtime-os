@@ -133,11 +133,11 @@ class Sender(private val publisherFactory: PublisherFactory,
         }
     }
 
-    private fun calculateTtl(expireAfterTime: Duration?): Long? {
+    private fun calculateTtl(expireAfterTime: Duration?): Instant? {
         return if(expireAfterTime == null) {
             null
         } else {
-            expireAfterTime.toMillis() + clock.instant().toEpochMilli()
+            Instant.ofEpochMilli(expireAfterTime.toMillis() + clock.instant().toEpochMilli())
         }
     }
 

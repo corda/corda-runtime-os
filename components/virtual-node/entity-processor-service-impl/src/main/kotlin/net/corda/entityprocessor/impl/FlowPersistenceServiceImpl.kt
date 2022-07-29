@@ -6,6 +6,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.FlowPersistenceProcessor
 import net.corda.entityprocessor.FlowPersistenceService
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,7 +16,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG

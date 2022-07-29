@@ -39,7 +39,7 @@ class FlowP2PFilterProcessorTest {
     fun `validate flow session filter logic transforms sessionId and ignores other subsystems`() {
         val testValue = "test"
         val identity = HoldingIdentity(testValue, testValue)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, testValue, testValue, "flowSession")
+        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession")
         val version = listOf(1)
         val flowEvent = SessionEvent(
             MessageDirection.OUTBOUND,
@@ -61,7 +61,7 @@ class FlowP2PFilterProcessorTest {
         val flowRecord = Record(
             Schemas.P2P.P2P_IN_TOPIC, testValue, AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(flowEventMockData)))
         )
-        val otherHeader = AuthenticatedMessageHeader(identity, identity, 1, testValue, testValue, "other")
+        val otherHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other")
         val otherRecord = Record(
             Schemas.P2P.P2P_IN_TOPIC, testValue, AppMessage(AuthenticatedMessage(otherHeader, ByteBuffer.wrap("other".toByteArray())))
         )

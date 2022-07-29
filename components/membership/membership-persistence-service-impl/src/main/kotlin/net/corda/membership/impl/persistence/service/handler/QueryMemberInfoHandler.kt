@@ -26,8 +26,17 @@ internal class QueryMemberInfoHandler(
     override fun invoke(context: MembershipRequestContext, request: QueryMemberInfo): MemberInfoQueryResponse {
         logger.info("Querying for ${request.queryIdentities.size} identities")
         return if (request.queryIdentities.isEmpty()) {
-            logger.info("Query list is empty. Skipping DB query and returning empty list.")
-            MemberInfoQueryResponse(emptyList())
+            logger.info("Query filter list is empty. Returning full member list.")
+            MemberInfoQueryResponse(
+                transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+                    em.createQuery(
+                        "SELECT m FROM ${MemberInfoEntity::class.simpleName} m",
+                        MemberInfoEntity::class.java
+                    ).resultList
+                }.map {
+                    it.toPersistentMemberInfo(context.holdingIdentity)
+                }
+            )
         } else {
             logger.info("Querying for ${request.queryIdentities.size} MemberInfo(s).")
             MemberInfoQueryResponse(
@@ -41,14 +50,17 @@ internal class QueryMemberInfoHandler(
                             )
                         )
                     }.map {
-                        PersistentMemberInfo(
-                            context.holdingIdentity,
-                            keyValuePairListDeserializer.deserialize(it.memberContext),
-                            keyValuePairListDeserializer.deserialize(it.mgmContext)
-                        )
+                        it.toPersistentMemberInfo(context.holdingIdentity)
                     }
                 }
             )
         }
     }
+
+    private fun MemberInfoEntity.toPersistentMemberInfo(viewOwningMember: net.corda.data.identity.HoldingIdentity) =
+        PersistentMemberInfo(
+            viewOwningMember,
+            keyValuePairListDeserializer.deserialize(this.memberContext),
+            keyValuePairListDeserializer.deserialize(this.mgmContext)
+        )
 }

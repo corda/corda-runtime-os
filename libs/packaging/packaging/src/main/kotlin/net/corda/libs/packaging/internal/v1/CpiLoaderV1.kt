@@ -2,15 +2,14 @@ package net.corda.libs.packaging.internal.v1
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.CpkReader
 import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_VERSION_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
+import net.corda.libs.packaging.certSummaryHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.libs.packaging.certSummaryHash
 import net.corda.libs.packaging.internal.CpiImpl
 import net.corda.libs.packaging.internal.CpiLoader
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -30,8 +29,8 @@ internal object CpiLoaderV1 : CpiLoader {
     private fun isCpk(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(cpkFileExtension)
     private fun isGroupPolicy(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(CPI_GROUP_POLICY_ENTRY)
 
-    override fun loadCpi(inputStream : InputStream, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : Cpi {
-        val ctx = load(inputStream, expansionLocation, cpiLocation, verifySignature)
+    override fun loadCpi(byteArray : ByteArray, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : Cpi {
+        val ctx = byteArray.inputStream().use{ load(it, expansionLocation, cpiLocation, verifySignature) }
         return CpiImpl(ctx.metadata, ctx.cpks)
     }
 
@@ -58,10 +57,9 @@ internal object CpiLoaderV1 : CpiLoader {
                 if(verifySignature) signatureCollector.addEntry(entry)
                 when {
                     isCpk(entry) -> {
-                        /** We need to do this as [Cpk.from] closes the stream, while we still need it afterward **/
-                        val uncloseableInputStream = UncloseableInputStream(jarInputStream)
+                        val source = jarInputStream.readAllBytes()
                         if(expansionLocation != null) {
-                            val cpk = CpkReader.readCpk(uncloseableInputStream,
+                            val cpk = CpkLoaderV1.loadCPK(source,
                                 expansionLocation,
                                 cpkLocation = cpiLocation.plus("/${entry.name}"),
                                 verifySignature = verifySignature,
@@ -70,7 +68,7 @@ internal object CpiLoaderV1 : CpiLoader {
                             cpks += cpk
                             cpkMetadata += cpk.metadata
                         } else {
-                            cpkMetadata += CpkLoaderV1.loadMetadata(uncloseableInputStream,
+                            cpkMetadata += CpkLoaderV1.loadMetadata(source,
                                 cpkLocation = cpiLocation?.plus("/${entry.name}"),
                                 verifySignature = verifySignature)
                         }

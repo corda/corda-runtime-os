@@ -9,8 +9,8 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -80,8 +80,7 @@ class CombinedWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig, cryptoConfig)
         ).addDefaultBootCryptoConfig(
-            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
         cryptoProcessor.start(config)

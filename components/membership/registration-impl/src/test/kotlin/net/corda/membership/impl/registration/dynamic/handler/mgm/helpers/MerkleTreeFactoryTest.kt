@@ -2,8 +2,10 @@ package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -23,9 +25,9 @@ import java.io.InputStream
 
 // Implementation should change with once https://github.com/corda/corda-runtime-os/pull/1550 is merged
 class MerkleTreeFactoryTest {
-    private val serializer = mock<CordaAvroSerializer<LayeredPropertyMap>>()
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<LayeredPropertyMap>(any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
     private val hash = mock<SecureHash>()
     private val data = argumentCaptor<InputStream>()
@@ -40,8 +42,16 @@ class MerkleTreeFactoryTest {
         val members = (1..3).map {
             val memberContext = mock<MemberContext>()
             val mgmContext = mock<MGMContext>()
-            whenever(serializer.serialize(memberContext)).thenReturn("m$it".toByteArray())
-            whenever(serializer.serialize(mgmContext)).thenReturn("m$it".toByteArray())
+
+            whenever(memberContext.entries).thenReturn(
+                mapOf("MGM" to "No+$it").entries
+            )
+            whenever(mgmContext.entries).thenReturn(
+                mapOf("MGM" to "Yes+$it").entries
+            )
+
+            whenever(serializer.serialize(memberContext.toAvro())).thenReturn("m$it".toByteArray())
+            whenever(serializer.serialize(mgmContext.toAvro())).thenReturn("m$it".toByteArray())
             mock<MemberInfo> {
                 on { memberProvidedContext } doReturn memberContext
                 on { mgmProvidedContext } doReturn mgmContext
@@ -58,8 +68,16 @@ class MerkleTreeFactoryTest {
         val members = (1..3).map {
             val memberContext = mock<MemberContext>()
             val mgmContext = mock<MGMContext>()
-            whenever(serializer.serialize(memberContext)).thenReturn("m$it".toByteArray())
-            whenever(serializer.serialize(mgmContext)).thenReturn("g$it".toByteArray())
+
+            whenever(memberContext.entries).thenReturn(
+                mapOf("MGM" to "No+$it").entries
+            )
+            whenever(mgmContext.entries).thenReturn(
+                mapOf("MGM" to "Yes+$it").entries
+            )
+
+            whenever(serializer.serialize(memberContext.toAvro())).thenReturn("m$it".toByteArray())
+            whenever(serializer.serialize(mgmContext.toAvro())).thenReturn("g$it".toByteArray())
             mock<MemberInfo> {
                 on { memberProvidedContext } doReturn memberContext
                 on { mgmProvidedContext } doReturn mgmContext
@@ -76,8 +94,16 @@ class MerkleTreeFactoryTest {
         val members = (1..3).map {
             val memberContext = mock<MemberContext>()
             val mgmContext = mock<MGMContext>()
-            whenever(serializer.serialize(memberContext)).thenReturn(null)
-            whenever(serializer.serialize(mgmContext)).thenReturn(null)
+
+            whenever(memberContext.entries).thenReturn(
+                mapOf("MGM" to "No+$it").entries
+            )
+            whenever(mgmContext.entries).thenReturn(
+                mapOf("MGM" to "Yes+$it").entries
+            )
+
+            whenever(serializer.serialize(memberContext.toAvro())).thenReturn(null)
+            whenever(serializer.serialize(mgmContext.toAvro())).thenReturn(null)
             mock<MemberInfo> {
                 on { memberProvidedContext } doReturn memberContext
                 on { mgmProvidedContext } doReturn mgmContext

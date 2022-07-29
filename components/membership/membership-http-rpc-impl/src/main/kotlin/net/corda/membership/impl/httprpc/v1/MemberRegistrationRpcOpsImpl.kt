@@ -76,8 +76,9 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
     ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationRequest)
 
 
-    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
-        impl.checkRegistrationProgress(holdingIdentityShortHash)
+//    TODO Registration status endpoint will be implemented in CORE-5957.
+//    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+//        impl.checkRegistrationProgress(holdingIdentityShortHash)
 
     fun activate(reason: String) {
         impl = ActiveImpl()

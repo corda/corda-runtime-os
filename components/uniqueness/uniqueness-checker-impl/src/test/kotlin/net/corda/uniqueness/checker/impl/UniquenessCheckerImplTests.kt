@@ -5,15 +5,16 @@ import net.corda.crypto.testkit.SecureHashUtils.randomBytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.UniquenessAssertions.assertInputStateConflictResponse
-import net.corda.uniqueness.UniquenessAssertions.assertMalformedRequestResponse
-import net.corda.uniqueness.UniquenessAssertions.assertReferenceStateConflictResponse
-import net.corda.uniqueness.UniquenessAssertions.assertStandardSuccessResponse
-import net.corda.uniqueness.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
-import net.corda.uniqueness.UniquenessAssertions.assertUniqueCommitTimestamps
-import net.corda.uniqueness.UniquenessAssertions.assertUnknownInputStateResponse
-import net.corda.uniqueness.UniquenessAssertions.assertUnknownReferenceStateResponse
+import net.corda.uniqueness.backingstore.impl.InMemoryBackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertReferenceStateConflictResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertStandardSuccessResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
@@ -93,7 +94,9 @@ class UniquenessCheckerImplTests {
          * between calls (e.g. to manipulate time window behavior)
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
-        uniquenessChecker = InMemoryUniquenessCheckerImpl(mock(), testClock)
+
+        // TODO: Make tests parameterised so we can also test the in memory implementation
+        uniquenessChecker = BatchedUniquenessCheckerImpl(mock(), testClock, InMemoryBackingStore())
     }
 
     @Nested

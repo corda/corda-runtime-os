@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.membership.httprpc.v1.types.response.HsmInfo
+import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
 
 @HttpRpcResource(
     name = "HSM API",
@@ -13,15 +13,6 @@ import net.corda.membership.httprpc.v1.types.response.HsmInfo
     path = "hsm"
 )
 interface HsmRpcOps : RpcOps {
-    /**
-     * GET endpoint which list the available HSMs.
-     *
-     * @return A list of available HSMs.
-     */
-    @HttpRpcGET(
-        description = "Get list of available HSMs."
-    )
-    fun listHsms(): Collection<HsmInfo>
 
     /**
      * GET endpoint which list the assigned HSMs.
@@ -37,7 +28,7 @@ interface HsmRpcOps : RpcOps {
         tenantId: String,
         @HttpRpcPathParameter(description = "Category of the HSM.  E.g. LEDGER, TLS, etc.")
         category: String
-    ): HsmInfo?
+    ): HsmAssociationInfo?
 
     /**
      * POST endpoint which assign soft HSM.
@@ -53,7 +44,7 @@ interface HsmRpcOps : RpcOps {
         tenantId: String,
         @HttpRpcPathParameter(description = "Category of the HSM.  E.g. LEDGER, TLS, etc.")
         category: String
-    ): HsmInfo
+    ): HsmAssociationInfo
 
     /**
      * POST endpoint which assign HSM.
@@ -69,5 +60,5 @@ interface HsmRpcOps : RpcOps {
         tenantId: String,
         @HttpRpcPathParameter(description = "Category of the HSM.  E.g. LEDGER, TLS, etc.")
         category: String
-    ): HsmInfo
+    ): HsmAssociationInfo
 }

@@ -6,7 +6,6 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.hsm.HSMConfigurationClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
@@ -69,8 +68,6 @@ class RPCProcessorImpl @Activate constructor(
     private val configMerger: ConfigMerger,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = HSMConfigurationClient::class)
-    private val hsmConfigurationClient: HSMConfigurationClient,
     @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = CertificatesClient::class)
@@ -101,7 +98,6 @@ class RPCProcessorImpl @Activate constructor(
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,
-        ::hsmConfigurationClient,
         ::hsmRegistrationClient,
         ::certificatesClient,
         ::groupPolicyProvider,

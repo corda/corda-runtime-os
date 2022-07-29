@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.component.impl.DependenciesTracker
-import net.corda.data.crypto.wire.hsm.HSMInfo
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.libs.configuration.helper.getConfig
@@ -15,6 +15,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -36,7 +37,8 @@ class HSMRegistrationClientComponent @Activate constructor(
         setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
         )
-    )
+    ),
+    configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), HSMRegistrationClient {
     companion object {
         const val GROUP_NAME = "crypto.hsm.registration.client"
@@ -45,13 +47,13 @@ class HSMRegistrationClientComponent @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(publisherFactory, event)
 
-    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo =
         impl.registrar.assignHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
-        impl.registrar.assignSoftHSM(tenantId, category, context)
+    override fun assignSoftHSM(tenantId: String, category: String): HSMAssociationInfo =
+        impl.registrar.assignSoftHSM(tenantId, category)
 
-    override fun findHSM(tenantId: String, category: String): HSMInfo? =
+    override fun findHSM(tenantId: String, category: String): HSMAssociationInfo? =
         impl.registrar.findHSM(tenantId, category)
 
     class Impl(

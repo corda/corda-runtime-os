@@ -22,12 +22,12 @@ class ChunkReadingTest {
     private val chunkReaderFactory = ChunkReaderFactoryImpl
     
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         fs = Jimfs.newFileSystem()
     }
 
     @AfterEach
-    private fun afterEach() {
+    fun afterEach() {
         fs.close()
     }
 

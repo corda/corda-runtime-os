@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -21,10 +22,27 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
 
     ) : LifecycleCoordinatorFactory {
 
+    override fun createCoordinator(
+        name: LifecycleCoordinatorName,
+        batchSize: Int,
+        handler: LifecycleEventHandler
+    ): LifecycleCoordinator {
+        return internalCreateCoordinator(name, batchSize, null, handler)
+    }
 
     override fun createCoordinator(
         name: LifecycleCoordinatorName,
         batchSize: Int,
+        closeableResources: CloseableResources,
+        handler: LifecycleEventHandler
+    ): LifecycleCoordinator {
+        return internalCreateCoordinator(name, batchSize, closeableResources, handler)
+    }
+
+    fun internalCreateCoordinator(
+        name: LifecycleCoordinatorName,
+        batchSize: Int,
+        closeableResources: CloseableResources?,
         handler: LifecycleEventHandler
     ): LifecycleCoordinator {
         if (batchSize <= 0) {
@@ -34,7 +52,7 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
             )
         }
 
-        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, schedulerFactory.create(), handler )
+        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, schedulerFactory.create(), closeableResources, handler)
         registry.registerCoordinator(name, coordinator)
         return coordinator
     }

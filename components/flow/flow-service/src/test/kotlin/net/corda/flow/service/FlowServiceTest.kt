@@ -3,7 +3,7 @@ package net.corda.flow.service
 import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.flow.EMPTY_SMART_CONFIG
+import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
@@ -22,7 +22,7 @@ import org.mockito.kotlin.verify
 
 class FlowServiceTest {
 
-    companion object{
+    companion object {
         @JvmStatic
         fun dependants(): Stream<Arguments> {
             return Stream.of(
@@ -34,13 +34,14 @@ class FlowServiceTest {
             )
         }
     }
+
     private val flowExecutor = mock<FlowExecutor>()
     private val flowWakeUpScheduler = mock<FlowWakeUpScheduler>()
 
     private val exampleConfig = mapOf(
-        ConfigKeys.BOOT_CONFIG to EMPTY_SMART_CONFIG,
-        ConfigKeys.MESSAGING_CONFIG to EMPTY_SMART_CONFIG,
-        ConfigKeys.FLOW_CONFIG to EMPTY_SMART_CONFIG
+        ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
+        ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,
+        ConfigKeys.FLOW_CONFIG to MINIMUM_SMART_CONFIG
     )
 
     @Test
@@ -114,7 +115,7 @@ class FlowServiceTest {
 
     @ParameterizedTest(name = "on component {0} going down the flow service should go down")
     @MethodSource("dependants")
-    fun `on any dependent going down the flow service should go down`(name:LifecycleCoordinatorName) {
+    fun `on any dependent going down the flow service should go down`(name: LifecycleCoordinatorName) {
         val context = getFlowServiceTestContext()
 
         context.run {
@@ -132,7 +133,7 @@ class FlowServiceTest {
 
     @ParameterizedTest(name = "on component {0} going down the flow service should go to error")
     @MethodSource("dependants")
-    fun `on any dependent going to error the flow service should go down`(name:LifecycleCoordinatorName) {
+    fun `on any dependent going to error the flow service should go down`(name: LifecycleCoordinatorName) {
         val context = getFlowServiceTestContext()
 
         context.run {

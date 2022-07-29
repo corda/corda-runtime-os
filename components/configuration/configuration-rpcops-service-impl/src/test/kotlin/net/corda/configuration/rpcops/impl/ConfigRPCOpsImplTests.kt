@@ -15,6 +15,7 @@ import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -36,7 +37,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [ConfigRPCOpsImpl]. */
+/**
+ * Tests of [ConfigRPCOpsImpl].
+ */
 class ConfigRPCOpsImplTests {
     companion object {
         private const val actor = "test_principal"
@@ -53,7 +56,7 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val req = UpdateConfigParameters("section", 999, "a=b", Version(888, 0))
+    private val req = UpdateConfigParameters("section", 999, "a=b", ConfigSchemaVersion(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
         ConfigurationManagementResponse(
             true, null, req.section, req.config, ConfigurationSchemaVersion(
@@ -62,7 +65,7 @@ class ConfigRPCOpsImplTests {
         )
     }
     private val successResponse = UpdateConfigResponse(
-        req.section, req.config, Version(
+        req.section, req.config, ConfigSchemaVersion(
             req.schemaVersion.major,
             req.schemaVersion.minor
         ), req.version
@@ -282,7 +285,7 @@ class ConfigRPCOpsImplTests {
             configSection,
             config.source,
             config.value,
-            Version(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            ConfigSchemaVersion(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
             config.version
         )).isEqualTo(configRPCOps.get(configSection))
     }

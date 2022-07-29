@@ -178,9 +178,14 @@ class CryptoServiceCompliance : AbstractCompliance() {
         )
         assertThrows(UnsupportedOperationException::class.java) {
             service.deriveSharedSecret(SharedSecretAliasSpec(
-                "alias",
-                ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"),
-                object : PublicKey {
+                publicKey =  object : PublicKey {
+                    override fun getAlgorithm(): String = "EC"
+                    override fun getFormat(): String = ASN1Encoding.DER
+                    override fun getEncoded(): ByteArray = "key".toByteArray()
+                },
+                hsmAlias = "alias",
+                keyScheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"),
+                otherPublicKey = object : PublicKey {
                     override fun getAlgorithm(): String = "EC"
                     override fun getFormat(): String = ASN1Encoding.DER
                     override fun getEncoded(): ByteArray = "key".toByteArray()
@@ -284,8 +289,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                 KeyGenerationSpec(
                     keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
                     alias = compliance.generateRandomIdentifier(),
-                    masterKeyAlias = masterKeyAlias,
-                    secret = compliance.generateRandomIdentifier().toByteArray()
+                    masterKeyAlias = masterKeyAlias
                 ),
                 context = mapOf(
                     CRYPTO_TENANT_ID to tenantId,
@@ -298,8 +302,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                 KeyGenerationSpec(
                     keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
                     alias = null,
-                    masterKeyAlias = masterKeyAlias,
-                    secret = compliance.generateRandomIdentifier().toByteArray()
+                    masterKeyAlias = masterKeyAlias
                 ),
                 context = mapOf(
                     CRYPTO_TENANT_ID to tenantId,
@@ -326,7 +329,8 @@ class CryptoServiceCompliance : AbstractCompliance() {
         )
         val spec = if (key is GeneratedWrappedKey) {
             SharedSecretWrappedSpec(
-                KeyMaterialSpec(
+                publicKey = key.publicKey,
+                keyMaterialSpec = KeyMaterialSpec(
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = masterKeyAlias,
                     encodingVersion = key.encodingVersion
@@ -337,6 +341,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
         } else {
             key as GeneratedPublicKey
             val spec = SharedSecretAliasSpec(
+                publicKey = key.publicKey,
                 hsmAlias = key.hsmAlias,
                 keyScheme = keyScheme,
                 otherPublicKey = encryptedData.publicKey
@@ -346,6 +351,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
             ) {
                 service.deriveSharedSecret(
                     SharedSecretAliasSpec(
+                        publicKey = key.publicKey,
                         hsmAlias = compliance.generateRandomIdentifier(),
                         keyScheme = keyScheme,
                         otherPublicKey = encryptedData.publicKey

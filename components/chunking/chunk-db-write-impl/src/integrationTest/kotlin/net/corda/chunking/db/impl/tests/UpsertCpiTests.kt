@@ -79,12 +79,12 @@ class UpsertCpiTests {
     lateinit var fs: FileSystem
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         fs = Jimfs.newFileSystem()
     }
 
     @AfterEach
-    private fun afterEach() = fs.close()
+    fun afterEach() = fs.close()
 
     private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
 

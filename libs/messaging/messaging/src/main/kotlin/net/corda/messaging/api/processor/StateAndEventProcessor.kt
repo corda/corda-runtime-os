@@ -22,7 +22,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      * This class encapsulates the responses that will be returned (from [onNext]) to the subscription for
      * further publishing.
      */
-    data class Response<S: Any> (
+    data class Response<S : Any>(
         /**
          * The updated state in response to an incoming event from [onNext].
          */

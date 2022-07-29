@@ -18,8 +18,9 @@ import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -60,7 +61,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.sql.Connection
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -73,6 +74,7 @@ class VirtualNodeWriterProcessorTests {
 
         private const val dummyGroupPolicy = "{\"groupId\": \"efc27942-9d2a-4f72-ac39-320d38743173\"}"
         private const val dummyGroupPolicyWithMGMInfo = "{\"groupId\": \"da1623ea-e6d4-4314-84f8-6e3b84a869cd\"}"
+        private const val mgmGroupPolicy = "{\"groupId\": \"$MGM_DEFAULT_GROUP_ID\"}"
     }
 
     private val groupId = "f3676687-ab69-4ca1-a17b-ab20b7bc6d03"
@@ -180,6 +182,7 @@ class VirtualNodeWriterProcessorTests {
     private val groupPolicyParser: GroupPolicyParser = mock {
         on { getMgmInfo(any(), eq(dummyGroupPolicy)) } doReturn null
         on { getMgmInfo(any(), eq(dummyGroupPolicyWithMGMInfo)) } doReturn mgmMemberInfo
+        on { getMgmInfo(any(), eq(mgmGroupPolicy)) } doReturn mgmMemberInfo
     }
 
     private val defaultKey: PublicKey = mock {
@@ -335,6 +338,51 @@ class VirtualNodeWriterProcessorTests {
             it.assertThat(publishedVirtualNode.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
             it.assertThat((publishedVirtualNode.value as VirtualNodeInfo).holdingIdentity.toCorda())
                 .isEqualTo(holdingIdentity)
+        }
+    }
+
+    @Test
+    fun `generates group ID during MGM virtual node creation`() {
+        val mgmVnodeCreationReq =
+            VirtualNodeCreateRequest(
+                mgmName.toString(), CPI_ID_SHORT_HASH,
+                "dummy_vault_ddl_config", "dummy_vault_dml_config",
+                "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            )
+        val vNodeRepo = mock<VirtualNodeEntityRepository> {
+            on { getCPIMetadataByChecksum(any()) }.doReturn(
+                CpiMetadataLite(
+                    cpiId,
+                    CPI_ID_SHORT_HASH,
+                    MGM_DEFAULT_GROUP_ID,
+                    mgmGroupPolicy
+                )
+            )
+        }
+
+        val publisher = getPublisher()
+        val processor = VirtualNodeWriterProcessor(
+            publisher,
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            groupPolicyParser,
+            clock
+        )  { _, _ ->
+            listOf()
+        }
+
+        processRequest(processor, VirtualNodeManagementRequest(clock.instant(), mgmVnodeCreationReq))
+
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+        verify(publisher, times(2)).publish(capturedPublishedList.capture())
+        val publishedVirtualNodeList = capturedPublishedList.firstValue
+        assertSoftly {
+            val publishedVirtualNode = publishedVirtualNodeList.first()
+            with ((publishedVirtualNode.value as VirtualNodeInfo).holdingIdentity.toCorda()) {
+                it.assertThat(x500Name).isEqualTo(mgmName.toString())
+                it.assertThat(groupId).isNotEqualTo(MGM_DEFAULT_GROUP_ID)
+            }
         }
     }
 

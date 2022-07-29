@@ -4,8 +4,8 @@ package net.corda.crypto.core
  * Common crypto constants.
  */
 object CryptoConsts {
-    const val SOFT_HSM_CONFIG_ID = "soft-hsm-config"
-    const val SOFT_HSM_SERVICE_NAME = "soft"
+    const val SOFT_HSM_ID = "SOFT"
+    const val SOFT_HSM_SERVICE_NAME = "SOFT"
 
     /**
      * Constants defining HSM categories.
@@ -90,12 +90,5 @@ object CryptoConsts {
         const val PREFERRED_PRIVATE_KEY_POLICY_KEY = "preferredPrivateKeyPolicy"
         const val PREFERRED_PRIVATE_KEY_POLICY_NONE = "NONE"
         const val PREFERRED_PRIVATE_KEY_POLICY_ALIASED = "ALIASED"
-
-        /**
-         * The optional hint to ignore if the association tenantId/category already exists (but the
-         * master wrapping key generation will still go ahead if the master key is required for that
-         * association). If that is specified then the value should be YES.
-         */
-        const val NOT_FAIL_IF_ASSOCIATION_EXISTS = "notFailIfAssociationExists"
     }
 }

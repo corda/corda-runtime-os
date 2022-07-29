@@ -20,7 +20,7 @@ dependencies {
     api project(':libs:crypto:cipher-suite-impl')
     api project(':libs:crypto:crypto-serialization-impl')
 
-    api "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     api "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     api "org.assertj:assertj-core:$assertjVersion"

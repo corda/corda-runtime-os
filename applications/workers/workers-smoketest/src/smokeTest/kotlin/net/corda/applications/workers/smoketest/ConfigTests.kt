@@ -24,7 +24,7 @@ class ConfigTests {
                 condition { it.code == 200 }
             }
 
-            val expectedConfig = getConfigValue(payload.toJson()["request"].toString())
+            val expectedConfig = getConfigValue(payload)
             val actualConfig = getConfigValue(response.body)
             assertThat(actualConfig).isEqualTo(expectedConfig)
         }
@@ -45,7 +45,6 @@ class ConfigTests {
 
     private fun getReconConfig(version: String) = """
     {
-      "request": {
         "config": "{\"configIntervalMs\":15000}",
         "schemaVersion": {
           "major": 1,
@@ -53,7 +52,6 @@ class ConfigTests {
         },
         "section": "corda.reconciliation",
         "version": $version
-      }
     }
     """.trimIndent()
 

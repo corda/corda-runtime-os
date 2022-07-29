@@ -20,6 +20,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -97,7 +98,11 @@ internal class VirtualNodeWriterProcessor(
                 return
             }
 
-            val holdingId = HoldingIdentity(create.getX500CanonicalName(), cpiMetadata.mgmGroupId)
+            // Generate group ID for MGM
+            val groupId = cpiMetadata.mgmGroupId.let {
+                if (it == MGM_DEFAULT_GROUP_ID) UUID.randomUUID().toString() else it
+            }
+            val holdingId = HoldingIdentity(create.getX500CanonicalName(), groupId)
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
                 handleException(
                     respFuture,

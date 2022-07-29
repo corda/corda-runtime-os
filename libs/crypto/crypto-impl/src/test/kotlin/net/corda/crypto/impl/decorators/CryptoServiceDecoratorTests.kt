@@ -306,7 +306,6 @@ class CryptoServiceDecoratorTests {
         val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
-        val aliasSecret = ByteArray(1)
         val expected = mock<GeneratedKey>()
         val context = mapOf(
             CRYPTO_TENANT_ID to tenantId,
@@ -315,8 +314,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = expectedAlias,
             masterKeyAlias = expectedMasterKeyAlias,
-            keyScheme = scheme,
-            secret = aliasSecret
+            keyScheme = scheme
         )
         whenever(
             cryptoService.generateKeyPair(
@@ -329,8 +327,7 @@ class CryptoServiceDecoratorTests {
             argThat {
                 keyScheme == scheme &&
                         alias == expectedAlias &&
-                        masterKeyAlias == expectedMasterKeyAlias &&
-                        secret.contentEquals(aliasSecret)
+                        masterKeyAlias == expectedMasterKeyAlias
             },
             argThat {
                 size == 2 &&
@@ -353,8 +350,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            keyScheme = scheme,
-            secret = null
+            keyScheme = scheme
         )
         whenever(
             cryptoService.generateKeyPair(spec, context)
@@ -380,8 +376,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            keyScheme = scheme,
-            secret = null
+            keyScheme = scheme
         )
         whenever(
             cryptoService.generateKeyPair(spec, context)
@@ -408,8 +403,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            keyScheme = scheme,
-            secret = null
+            keyScheme = scheme
         )
         whenever(
             cryptoService.generateKeyPair(spec, context)

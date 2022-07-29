@@ -4,6 +4,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
+import java.time.Instant
 
 /**
  * Virtual node database types
@@ -30,15 +31,17 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
     fun getSchemaName(holdingIdentityShortHash: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityShortHash".lowercase()
 
     /**
-     * Returns DB user for given DB privilege
+     * Create a DB username for given DB privilege
      * @param dbPrivilege DB privilege
      * @param holdingIdentityShortHash Holding identity ID (short hash)
-     * @return DB user for given DB privilege
      */
-    fun getUserName(dbPrivilege: DbPrivilege, holdingIdentityShortHash: String) =
+    fun createUsername(dbPrivilege: DbPrivilege, holdingIdentityShortHash: String) =
         when (dbPrivilege) {
-            DDL -> "vnode_${infix}_${holdingIdentityShortHash}_ddl".lowercase()
-            DML -> "vnode_${infix}_${holdingIdentityShortHash}_dml".lowercase()
+            // NOTE: we add an epoch timestamp here for uniqueness. This should not be important within a Corda
+            //  cluster, but in case a shared DB use used, it is possible that multiple DBs will have the same VNodes
+            //  (in a test instance, for example)
+            DDL -> "vnode_${infix}_${holdingIdentityShortHash}_${Instant.now().epochSecond}_ddl".lowercase()
+            DML -> "vnode_${infix}_${holdingIdentityShortHash}_${Instant.now().epochSecond}_dml".lowercase()
         }
 
     /**

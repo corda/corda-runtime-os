@@ -1,5 +1,11 @@
 package net.corda.crypto.tck.impl
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.tck.ExecutionOptions
 import net.corda.v5.base.types.toHexString
@@ -10,13 +16,32 @@ import java.util.UUID
 class ComplianceSpec(
     val options: ExecutionOptions
 ) {
-    fun createService(providers: CryptoServiceProviderMap): CryptoService =
-        CryptoServiceDecorator.create(
-            provider = providers.get(options.serviceName),
-            serviceConfig = CryptoServiceDecorator.objectMapper.writeValueAsBytes(options.serviceConfig),
+    companion object {
+        private val jsonMapper = JsonMapper
+            .builder()
+            .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
+            .build()
+        private val objectMapper: ObjectMapper = jsonMapper
+            .registerModule(JavaTimeModule())
+            .registerModule(KotlinModule.Builder().build())
+            .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    }
+
+    fun createService(providers: CryptoServiceProviderMap): CryptoService {
+        // round trip config to ensure that the deserialization can be done
+        val serialized = objectMapper.writeValueAsBytes(options.serviceConfig)
+        val config = objectMapper.readValue(serialized, options.serviceConfig::class.java)
+        val cryptoService = providers.get(options.serviceName).getInstance(
+            config,
+            options.secrets
+        )
+        return CryptoServiceDecorator.create(
+            cryptoService = cryptoService,
             maxAttempts = options.maxAttempts,
             attemptTimeout = options.attemptTimeout
         )
+    }
 
     fun generateRandomIdentifier(len: Int = 12) =
         UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(len)

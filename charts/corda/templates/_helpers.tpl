@@ -195,6 +195,27 @@ Kafka bootstrap servers
 {{- end }}
 
 {{/*
+Initial admin user secret name
+*/}}
+{{- define "corda.initialAdminUserSecretName" -}}
+{{ .Values.bootstrap.initialAdminUser.secretRef.name | default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{- end }}
+
+{{/*
+Initial admin user secret username key
+*/}}
+{{- define "corda.initialAdminUserSecretUsernameKey" -}}
+{{ .Values.bootstrap.initialAdminUser.secretRef.usernameKey }}
+{{- end }}
+
+{{/*
+Initial admin user secret password key
+*/}}
+{{- define "corda.initialAdminUserSecretPasswordKey" -}}
+{{ .Values.bootstrap.initialAdminUser.secretRef.passwordKey }}
+{{- end }}
+
+{{/*
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}

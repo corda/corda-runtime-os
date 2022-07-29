@@ -7,9 +7,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.io.StringWriter
 import java.security.Key
 import java.security.KeyPairGenerator
+import java.security.PublicKey
 
 class PublicKeyReaderTest {
     @Test
@@ -49,8 +52,17 @@ class PublicKeyReaderTest {
     }
 
     @Test
-    fun `toKeyAlgorithm return EC for ECDSA key`() {
+    fun `toKeyAlgorithm return ECDSA for EC key`() {
         val key = KeyPairGenerator.getInstance("EC").genKeyPair().public
+
+        assertThat(key.toKeyAlgorithm()).isEqualTo(KeyAlgorithm.ECDSA)
+    }
+
+    @Test
+    fun `toKeyAlgorithm return ECDSA for ECDSA key`() {
+        val key = mock<PublicKey> {
+            on { algorithm } doReturn "ECDSA"
+        }
 
         assertThat(key.toKeyAlgorithm()).isEqualTo(KeyAlgorithm.ECDSA)
     }

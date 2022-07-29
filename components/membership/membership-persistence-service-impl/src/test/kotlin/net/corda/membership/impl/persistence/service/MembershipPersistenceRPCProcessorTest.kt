@@ -22,6 +22,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupPolicyEntity
+import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -41,6 +42,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
@@ -223,6 +225,10 @@ class MembershipPersistenceRPCProcessorTest {
      */
     @Test
     fun `query member info returns success`() {
+        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>>()
+        whenever(entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))).thenReturn(memberInfoQuery)
+        whenever(memberInfoQuery.resultList).thenReturn(emptyList())
+
         val rq = MembershipPersistenceRequest(
             rqContext,
             QueryMemberInfo(emptyList())

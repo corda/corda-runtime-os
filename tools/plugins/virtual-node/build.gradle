@@ -8,16 +8,17 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    implementation project(":libs:http-rpc:http-rpc-client")
+
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
-    implementation project(":libs:http-rpc:http-rpc")
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
+    compileOnly project(":libs:http-rpc:http-rpc-client")
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli-codegen:$picocliVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

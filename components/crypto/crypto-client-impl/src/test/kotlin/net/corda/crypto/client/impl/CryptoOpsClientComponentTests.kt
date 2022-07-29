@@ -713,14 +713,14 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val configId = UUID.randomUUID().toString()
+        val hsmId = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         setupCompletedResponse {
             CryptoNoContentValue()
         }
         val result = sender.act {
             component.createWrappingKey(
-                configId = configId,
+                hsmId = hsmId,
                 failIfExists = true,
                 masterKeyAlias = masterKeyAlias,
                 context = knownOperationContext
@@ -728,7 +728,7 @@ class CryptoOpsClientComponentTests {
         }
         assertNotNull(result.value)
         val command = assertOperationType<GenerateWrappingKeyRpcCommand>()
-        assertEquals(configId, command.configId)
+        assertEquals(hsmId, command.hsmId)
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
         assertOperationContext(command.context)
@@ -1043,7 +1043,7 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
-    fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
+    fun `Should go UP and DOWN as its config reader goes UP and DOWN`() {
         assertFalse(component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             component.impl.ops
@@ -1063,7 +1063,7 @@ class CryptoOpsClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(component.impl.ops)
-        assertEquals(0, sender.stopped.get())
+        assertThat(sender.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 
     @Test
@@ -1116,6 +1116,6 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertNotSame(originalImpl, component.impl)
         }
-        assertEquals(1, sender.stopped.get())
+        assertThat(sender.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 }

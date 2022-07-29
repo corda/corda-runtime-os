@@ -20,7 +20,7 @@ class FlowFiberImpl(
     override val flowId: UUID,
     override val flowLogic: FlowLogicAndArgs,
     scheduler: FiberScheduler
-) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber {
+) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber, Interruptable {
 
     private fun interface SerializableFiberWriter : FiberWriter, Serializable
 
@@ -51,28 +51,41 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun run() {
-        initialiseThreadContext()
-        setLoggingContext()
-        log.info("Flow starting.")
-
-        val outcomeOfFlow = try {
-            suspend(FlowIORequest.InitialCheckpoint)
-
-            FlowIORequest.FlowFinished(flowLogic.invoke())
-        } catch (e: Exception) {
-            log.error("Flow failed", e)
-            FlowIORequest.FlowFailed(e)
+        // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
+        // the flow event pipeline. Note that this is executed in a Quasar concurrent executor thread and Throwables are
+        // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
+        // of critical error handling for free, only undefined behaviour.
+        try {
+            runFlow()
+        } catch (t: Throwable) {
+            log.error("FlowFiber failed due to internal Throwable being thrown", t)
+            failTopLevelSubFlow(t)
         }
 
-        try {
-            when (outcomeOfFlow) {
-                is FlowIORequest.FlowFinished -> finishTopLevelSubFlow()
-                is FlowIORequest.FlowFailed -> failTopLevelSubFlow(outcomeOfFlow.exception)
-            }
-            flowCompletion.complete(outcomeOfFlow)
-        } catch (e: CordaRuntimeException) {
-            failTopLevelSubFlow(e)
-            flowCompletion.complete(FlowIORequest.FlowFailed(e))
+        if (!flowCompletion.isDone) {
+            log.error("runFlow failed to complete normally, forcing a failure")
+            failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
+        }
+    }
+
+    @Suspendable
+    private fun runFlow() {
+        initialiseThreadContext()
+        setLoggingContext()
+        suspend(FlowIORequest.InitialCheckpoint)
+
+        val outcomeOfFlow = try {
+            log.info("Flow starting.")
+            FlowIORequest.FlowFinished(flowLogic.invoke())
+        } catch (t: Throwable) {
+            log.error("Flow failed", t)
+            FlowIORequest.FlowFailed(t)
+        }
+
+        when (outcomeOfFlow) {
+            is FlowIORequest.FlowFinished -> finishTopLevelSubFlow(outcomeOfFlow)
+            is FlowIORequest.FlowFailed -> failTopLevelSubFlow(outcomeOfFlow.exception)
+            else -> throw IllegalStateException("Unexpected Flow outcome")
         }
     }
 
@@ -110,7 +123,7 @@ class FlowFiberImpl(
     }
 
     @Suspendable
-    private fun finishTopLevelSubFlow() {
+    private fun <T : FlowIORequest<*>> finishTopLevelSubFlow(outcomeOfFlow: T) {
         // We close the sessions here, which delegates to the subFlow finished request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
@@ -118,6 +131,7 @@ class FlowFiberImpl(
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFinished(flowStackItem))
         }
+        flowCompletion.complete(outcomeOfFlow)
     }
 
     @Suspendable
@@ -129,6 +143,7 @@ class FlowFiberImpl(
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem))
         }
+        flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
     }
 
     @Suppress("ThrowsCount")
@@ -175,5 +190,10 @@ class FlowFiberImpl(
         MDC.put("flow-id", flowId.toString())
         MDC.put("fiber-id", id.toString())
         MDC.put("thread-id", Thread.currentThread().id.toString())
+    }
+
+    override fun attemptInterrupt() {
+        // Contract of Interruptable is that this method should be thread safe, do not call anything here that isn't
+        interrupt()
     }
 }

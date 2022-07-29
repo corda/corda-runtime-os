@@ -63,7 +63,7 @@ class CpiValidatorImpl constructor(
         val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir)
 
         publisher.update(requestId, "Checking group id in CPI")
-        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::getOrCreateGroupId)
+        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
@@ -79,7 +79,8 @@ class CpiValidatorImpl constructor(
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity = cpiPersistence.persistCpiToDatabase(cpi, fileInfo, requestId, cpkDbChangeLogEntities, log)
+        val cpiMetadataEntity =
+            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(

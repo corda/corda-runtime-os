@@ -5,7 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
@@ -205,7 +204,7 @@ class StaticMemberRegistrationServiceTest {
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
-            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it)
         }
         registrationService.stop()
 

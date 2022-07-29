@@ -1,10 +1,9 @@
 package net.corda.flow.pipeline.runner
 
+import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import java.util.concurrent.Future
 
 /**
  * [FlowRunner] starts or resumes [FlowFiber]s.
@@ -17,8 +16,8 @@ interface FlowRunner {
      * @param context The [FlowEventContext] contains contextual information used for starting or resuming a flow.
      * @param flowContinuation [FlowContinuation] Specifies whether a new fiber should be started or an existing fiber is resumed.
      *
-     * @return The running [FlowFiber].
+     * @return A future representing the executing FlowFiber.
      */
-    fun runFlow(context: FlowEventContext<Any>, flowContinuation: FlowContinuation): Future<FlowIORequest<*>>
+    fun runFlow(context: FlowEventContext<Any>, flowContinuation: FlowContinuation): FiberFuture
 }
 

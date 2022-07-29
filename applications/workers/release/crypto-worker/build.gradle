@@ -14,6 +14,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':processors:crypto-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'

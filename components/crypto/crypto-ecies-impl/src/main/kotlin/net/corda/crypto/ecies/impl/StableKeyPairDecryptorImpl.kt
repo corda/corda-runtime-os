@@ -2,6 +2,7 @@ package net.corda.crypto.ecies.impl
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.component.impl.AbstractComponent
+import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,28 +22,16 @@ class StableKeyPairDecryptorImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient
 ) : AbstractComponent<StableKeyPairDecryptorImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
-    InactiveImpl(),
-    setOf(
-        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
+    upstream = DependenciesTracker.Default(
+        setOf(
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+        )
     )
 ), StableKeyPairDecryptor {
-    interface Impl : AutoCloseable {
-        @Suppress("LongParameterList")
-        fun decrypt(
-            tenantId: String,
-            salt: ByteArray,
-            publicKey: PublicKey,
-            otherPublicKey: PublicKey,
-            cipherText: ByteArray,
-            aad: ByteArray?
-        ): ByteArray
-    }
 
-    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, cryptoOpsClient)
-
-    override fun createInactiveImpl(): Impl = InactiveImpl()
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, cryptoOpsClient)
 
     override fun decrypt(
         tenantId: String,
@@ -54,26 +43,12 @@ class StableKeyPairDecryptorImpl @Activate constructor(
     ): ByteArray =
         impl.decrypt(tenantId, salt, publicKey, otherPublicKey, cipherText, aad)
 
-    class InactiveImpl : Impl {
-        override fun decrypt(
-            tenantId: String,
-            salt: ByteArray,
-            publicKey: PublicKey,
-            otherPublicKey: PublicKey,
-            cipherText: ByteArray,
-            aad: ByteArray?
-        ): ByteArray {
-            throw IllegalStateException("The component is in invalid state.")
-        }
-
-        override fun close() = Unit
-    }
-
-    class ActiveImpl(
+    class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val cryptoOpsClient: CryptoOpsClient
-    ) : Impl {
-        override fun decrypt(
+    ) : AbstractImpl {
+        @Suppress("LongParameterList")
+        fun decrypt(
             tenantId: String,
             salt: ByteArray,
             publicKey: PublicKey,
@@ -88,7 +63,5 @@ class StableKeyPairDecryptorImpl @Activate constructor(
             cipherText = cipherText,
             aad = aad
         ) { cryptoOpsClient.deriveSharedSecret(tenantId, it, otherPublicKey) }
-
-        override fun close() = Unit
     }
 }

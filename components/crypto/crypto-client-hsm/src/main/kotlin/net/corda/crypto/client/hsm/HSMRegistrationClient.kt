@@ -1,6 +1,6 @@
 package net.corda.crypto.client.hsm
 
-import net.corda.data.crypto.wire.hsm.HSMInfo
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.Lifecycle
 
 /**
@@ -12,8 +12,7 @@ interface HSMRegistrationClient : Lifecycle {
      *
      * @param tenantId the tenant which HSM should be assigned to.
      * @param category which category the assignment should be done.
-     * @param context optional operation context, which may advise on how the assignment should be done, see
-     * [CryptoConsts.HSMContext] for available parameters.
+     * @param context optional operation context, which may advise on how the assignment should be done.
      *
      * @return info object about the assigned HSM.
      *
@@ -23,28 +22,26 @@ interface HSMRegistrationClient : Lifecycle {
         tenantId: String,
         category: String,
         context: Map<String, String>
-    ): HSMInfo
+    ): HSMAssociationInfo
 
     /**
      * Assigns soft HSM to the given tenant.
      *
      * @param tenantId the tenant which HSM should be assigned to.
      * @param category which category the assignment should be done.
-     * @param context optional operation context, which may advise on how the assignment should be done, see
-     * [CryptoConsts.HSMContext] for available parameters.
+     * @param context optional operation context, which may advise on how the assignment should be done.
      * *
      * @return info object about the assigned HSM.
      */
     fun assignSoftHSM(
         tenantId: String,
-        category: String,
-        context: Map<String, String>
-    ): HSMInfo
+        category: String
+    ): HSMAssociationInfo
 
     /**
      * Looks up information about the assigned HSM.
      *
      * @return The HSM's info if it's assigned otherwise null.
      */
-    fun findHSM(tenantId: String, category: String) : HSMInfo?
+    fun findHSM(tenantId: String, category: String) : HSMAssociationInfo?
 }

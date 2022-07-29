@@ -73,9 +73,6 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1)))
-
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.FlowFailed(Exception()))
         }
 
         then {
@@ -83,7 +80,14 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                 hasPendingUserException()
                 wakeUpEvent()
             }
+        }
 
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.FlowFailed(Exception()))
+        }
+
+        then {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<FlowException>()
                 noPendingUserException()

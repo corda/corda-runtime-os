@@ -7,13 +7,12 @@ import net.corda.crypto.component.test.utils.TestRPCSender
 import net.corda.crypto.component.test.utils.act
 import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.data.KeyValuePair
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.hsm.HSMInfo
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
@@ -122,7 +121,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val response = HSMInfo()
+        val response = HSMAssociationInfo()
         setupCompletedResponse {
             response
         }
@@ -152,26 +151,19 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val response = HSMInfo()
+        val response = HSMAssociationInfo()
         setupCompletedResponse {
             response
         }
         val result = sender.act {
             component.assignSoftHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.Categories.LEDGER,
-                context = mapOf(
-                    NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-                )
+                category = CryptoConsts.Categories.LEDGER
             )
         }
         assertSame(response, result.value)
         val command = assertOperationType<AssignSoftHSMCommand>()
         assertEquals (CryptoConsts.Categories.LEDGER, command.category)
-        assertThat(command.context.items).contains(KeyValuePair(
-            NOT_FAIL_IF_ASSOCIATION_EXISTS,
-            "YES"
-        ))
         assertRequestContext(result)
     }
 
@@ -181,7 +173,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val expectedValue = HSMInfo()
+        val expectedValue = HSMAssociationInfo()
         setupCompletedResponse {
             expectedValue
         }
@@ -234,7 +226,7 @@ class HSMRegistrationClientComponentTests {
                         Instant.now(),
                         UUID.randomUUID().toString(), //req.context.tenantId
                         req.context.other
-                    ), HSMInfo()
+                    ), HSMAssociationInfo()
                 )
         }
         assertThrows(IllegalStateException::class.java) {
@@ -257,7 +249,7 @@ class HSMRegistrationClientComponentTests {
                         Instant.now(),
                         req.context.tenantId,
                         req.context.other
-                    ), HSMInfo()
+                    ), HSMAssociationInfo()
                 )
         }
         assertThrows(IllegalStateException::class.java) {
@@ -365,7 +357,7 @@ class HSMRegistrationClientComponentTests {
     }
 
     @Test
-    fun `Should go UP and DOWN as its upstream dependencies go UP and DOWN`() {
+    fun `Should go UP and DOWN as its config reader service goes UP and DOWN`() {
         assertFalse(component.isRunning)
         assertThrows(IllegalStateException::class.java) {
             component.impl.registrar
@@ -385,7 +377,7 @@ class HSMRegistrationClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertNotNull(component.impl.registrar)
-        assertEquals(0, sender.stopped.get())
+        assertThat(sender.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 
     @Test
@@ -438,7 +430,7 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertNotSame(originalImpl, component.impl)
         }
-        assertEquals(1, sender.stopped.get())
+        assertThat(sender.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 }
 

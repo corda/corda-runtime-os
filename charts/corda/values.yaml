@@ -70,14 +70,8 @@ db:
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
   bootstrapServers: ""
-  # -- Kafka topic partitions
-  partitions: 10
-  # -- Kafka topic replicas
-  replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
-  # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
-  cleanup: false
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
@@ -105,21 +99,54 @@ kafka:
     # -- enable/disable SASL for client connection to Kafka 
     enabled: false
 
-# Configuration for the bootstrapper
+# Configuration for cluster bootstrap
 bootstrap:
-  auto: true
+
+  # Configuration for the initial user created with admin permissions
+  initialAdminUser:
+    # -- Username for the initial admin user
+    username: "admin"
+    # -- Password for the initial admin user; generated if not specified
+    password: ""
+    # Reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password
+    secretRef:
+      # -- If specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password
+      name: ""
+      # -- The key name for the secret entry containing the initial admin user's username
+      usernameKey: "username"
+      # -- The key name for the secret entry containing the initial admin user's password
+      passwordKey: "password"
+
+  # Configuration for database bootstrap
+  db:
+    # -- Indicates whether DB bootstrap is enabled as part of installation
+    enabled: true
+
+  # Configuration for Kafka bootstrap
+  kafka:
+    # -- Indicates whether Kafka bootstrap is enabled as part of installation
+    enabled: true
+    # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
+    cleanup: false
+    # -- Kafka topic partitions
+    partitions: 10
+    # -- Kafka topic replicas
+    replicas: 3
+
+  # Configuration for CLI image used for bootstrap
   image:
-    # -- cli image registry
+    # -- CLI image registry; defaults to image.registry
     registry: ""
-    # -- cli image repository
+    # -- CLI image repository
     repository: "corda-os-plugins"
-    # -- cli default tag
+    # -- CLI default tag; defaults to image.tag
     tag: ""
-  # resource limits and requests configuration for the bootstrapper
+
+  # resource limits and requests configuration for the bootstrap containers
   resources:
-    # -- the CPU/memory resource requests for the bootstrapper
+    # -- the CPU/memory resource requests for the bootstrap containers
     requests: { }
-    # -- the CPU/memory resource limits for the bootstrapper
+    # -- the CPU/memory resource limits for the bootstrap containers
     limits: { }
 
 # worker configuration

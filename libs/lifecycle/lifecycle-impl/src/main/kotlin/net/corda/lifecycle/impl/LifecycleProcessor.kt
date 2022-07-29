@@ -1,5 +1,7 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.CloseableResourceEvent
+import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,6 +33,7 @@ internal class LifecycleProcessor(
     private val name: LifecycleCoordinatorName,
     private val state: LifecycleStateManager,
     private val registry: LifecycleRegistryCoordinatorAccess,
+    private val closeableResources: CloseableResources?,
     private val userEventHandler: LifecycleEventHandler
 ) {
 
@@ -58,11 +61,16 @@ internal class LifecycleProcessor(
     /**
      * Process an individual event.
      */
+    @Suppress("ComplexMethod")
     private fun processEvent(
         event: LifecycleEvent,
         coordinator: LifecycleCoordinatorInternal,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
+        if (event is CloseableResourceEvent) {
+            closeableResources?.closeResources()
+        }
+
         return when (event) {
             is StartEvent -> {
                 processStartEvent(event, coordinator)

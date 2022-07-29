@@ -8,6 +8,7 @@ description 'Crypto persistence internal API'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
+    api 'javax.persistence:javax.persistence-api'
     api "net.corda:corda-cipher-suite"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
@@ -19,6 +20,7 @@ dependencies {
 
     implementation project(":libs:layered-property-map")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-config-impl")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
 

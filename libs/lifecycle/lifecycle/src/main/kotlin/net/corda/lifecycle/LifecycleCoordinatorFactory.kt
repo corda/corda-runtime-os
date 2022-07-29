@@ -28,6 +28,13 @@ interface LifecycleCoordinatorFactory {
         handler: LifecycleEventHandler
     ): LifecycleCoordinator
 
+    fun createCoordinator(
+        name: LifecycleCoordinatorName,
+        batchSize: Int,
+        closeableResources: CloseableResources,
+        handler: LifecycleEventHandler
+    ): LifecycleCoordinator
+
     /**
      * Create a new lifecycle coordinator with the default batch size.
      *
@@ -37,7 +44,16 @@ interface LifecycleCoordinatorFactory {
     fun createCoordinator(name: LifecycleCoordinatorName, handler: LifecycleEventHandler): LifecycleCoordinator {
         return createCoordinator(name, DEFAULT_BATCH_SIZE, handler)
     }
+
+    fun createCoordinator(
+        name: LifecycleCoordinatorName,
+        closeableResources: CloseableResources,
+        handler: LifecycleEventHandler
+    ): LifecycleCoordinator {
+        return createCoordinator(name, DEFAULT_BATCH_SIZE, closeableResources, handler)
+    }
 }
+
 
 /**
  * Create a new lifecycle coordinator.
@@ -54,4 +70,10 @@ inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
     handler: LifecycleEventHandler
 ): LifecycleCoordinator {
     return this.createCoordinator(LifecycleCoordinatorName.forComponent<T>(), handler)
+}
+inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
+    closeableResources: CloseableResources,
+    handler: LifecycleEventHandler
+): LifecycleCoordinator {
+    return this.createCoordinator(LifecycleCoordinatorName.forComponent<T>(), closeableResources, handler)
 }

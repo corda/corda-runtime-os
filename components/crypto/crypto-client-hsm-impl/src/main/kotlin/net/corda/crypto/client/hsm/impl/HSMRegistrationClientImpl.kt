@@ -5,7 +5,7 @@ import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toWire
 import net.corda.data.crypto.wire.CryptoNoContentValue
-import net.corda.data.crypto.wire.hsm.HSMInfo
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
@@ -26,7 +26,7 @@ class HSMRegistrationClientImpl(
         private val logger = contextLogger()
     }
 
-    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
+    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMAssociationInfo {
         logger.info(
             "Sending {}(tenant={},category={})",
             AssignHSMCommand::class.java.simpleName,
@@ -39,16 +39,15 @@ class HSMRegistrationClientImpl(
         )
         val response = request.execute(
             Duration.ofSeconds(60),
-            HSMInfo::class.java
+            HSMAssociationInfo::class.java
         )
         return response!!
     }
 
     fun assignSoftHSM(
         tenantId: String,
-        category: String,
-        context: Map<String, String>
-    ): HSMInfo {
+        category: String
+    ): HSMAssociationInfo {
         logger.info(
             "Sending {}(tenant={},category={})",
             AssignSoftHSMCommand::class.java.simpleName,
@@ -57,16 +56,16 @@ class HSMRegistrationClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = AssignSoftHSMCommand(category, context.toWire())
+            request = AssignSoftHSMCommand(category)
         )
         val response = request.execute(
             Duration.ofSeconds(60),
-            HSMInfo::class.java
+            HSMAssociationInfo::class.java
         )
         return response!!
     }
 
-    fun findHSM(tenantId: String, category: String): HSMInfo? {
+    fun findHSM(tenantId: String, category: String): HSMAssociationInfo? {
         logger.info(
             "Sending {}(tenant={},category={})",
             AssignedHSMQuery::class.java.simpleName,
@@ -79,7 +78,7 @@ class HSMRegistrationClientImpl(
         )
         return request.execute(
             Duration.ofSeconds(60),
-            HSMInfo::class.java,
+            HSMAssociationInfo::class.java,
             allowNoContentValue = true
         )
     }

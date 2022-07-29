@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
+package net.corda.membership.impl.registration.dynamic.handler.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.membership.lib.MemberInfoExtension.Companion.id

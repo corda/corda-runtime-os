@@ -22,10 +22,12 @@ interface FlowEventPipeline {
 
     /**
      * Runs the pipeline's flow (starts or resumes) if required and waits for it to suspend.
+     * @param timeoutMilliseconds the maximum amount of time to wait for the pipeline's Flow to execute until it
+     * completes, fails or suspends.
      *
      * @return The updated pipeline instance.
      */
-    fun runOrContinue(): FlowEventPipeline
+    fun runOrContinue(timeoutMilliseconds: Long): FlowEventPipeline
 
     /**
      * Sets the pipeline's [Checkpoint]'s suspendedOn property.

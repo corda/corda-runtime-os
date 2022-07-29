@@ -25,6 +25,7 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":components:membership:membership-p2p")
     implementation project(':components:membership:registration')
+    implementation project(':components:membership:synchronisation')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
 
@@ -39,6 +40,7 @@ dependencies {
     runtimeOnly project(":components:membership:membership-service-impl")
     runtimeOnly project(":components:membership:membership-p2p-impl")
     runtimeOnly project(":components:membership:registration-impl")
+    runtimeOnly project(":components:membership:synchronisation-impl")
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
@@ -59,12 +61,12 @@ dependencies {
 
     integrationTestImplementation 'net.corda:corda-db-schema'
 
-    integrationTestImplementation project(":components:crypto:crypto-db-persistence-model")
-    integrationTestImplementation project(':components:crypto:crypto-service')
+    integrationTestImplementation project(":components:crypto:crypto-persistence-model")
     integrationTestImplementation project(":components:db:db-connection-manager")
     integrationTestImplementation project(":libs:configuration:configuration-datamodel")
     integrationTestImplementation project(":libs:crypto:crypto-core")
     integrationTestImplementation project(':libs:crypto:cipher-suite-impl')
+    integrationTestImplementation project(":libs:crypto:crypto-config-impl")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-core")

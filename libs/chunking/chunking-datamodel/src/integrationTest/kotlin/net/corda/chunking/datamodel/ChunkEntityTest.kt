@@ -48,7 +48,7 @@ internal class ChunkEntityTest {
 
     @Suppress("Unused")
     @AfterAll
-    private fun cleanup() {
+    fun cleanup() {
         emConfig.close()
         entityManagerFactory.close()
     }

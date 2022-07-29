@@ -13,7 +13,7 @@ class GroupPolicyParserTest {
         val groupId = "fc651419-b507-4c3f-845d-7286c5f03b15"
         val groupPolicyJson = """{ "groupId" : "$groupId"}"""
 
-        val actualGroupId = GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
+        val actualGroupId = GroupPolicyParser.groupIdFromJson(groupPolicyJson)
 
         assertThat(actualGroupId).isEqualTo(groupId)
     }
@@ -23,17 +23,8 @@ class GroupPolicyParserTest {
         val groupPolicyJson = "{}"
 
         assertThrows<CordaRuntimeException> {
-            GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
+            GroupPolicyParser.groupIdFromJson(groupPolicyJson)
         }
-    }
-
-    @Test
-    fun `group policy parser generates group id when not defined for MGM`() {
-        val groupPolicyJson = """{ "groupId" : "$MGM_DEFAULT_GROUP_ID"}"""
-
-        val groupId = GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
-
-        assertThat(groupId).isNotEqualTo(MGM_DEFAULT_GROUP_ID)
     }
 
     @Test
@@ -41,7 +32,7 @@ class GroupPolicyParserTest {
         val groupPolicyJson = """{ "groupIds" : "$MGM_DEFAULT_GROUP_ID"}"""
 
         assertThrows<CordaRuntimeException> {
-            GroupPolicyParser.getOrCreateGroupId(groupPolicyJson)
+            GroupPolicyParser.groupIdFromJson(groupPolicyJson)
         }
     }
 }

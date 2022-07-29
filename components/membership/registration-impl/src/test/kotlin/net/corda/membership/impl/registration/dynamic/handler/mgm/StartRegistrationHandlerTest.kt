@@ -63,7 +63,13 @@ class StartRegistrationHandlerTest {
         const val testTopic = "topic"
         const val testTopicKey = "key"
 
-        val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value")))
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("key", "value"),
+                KeyValuePair("dummy", "test"),
+                KeyValuePair("apple", "pear"),
+            )
+        )
 
         val startRegistrationCommand = getStartRegistrationCommand(holdingIdentity, memberContext)
 

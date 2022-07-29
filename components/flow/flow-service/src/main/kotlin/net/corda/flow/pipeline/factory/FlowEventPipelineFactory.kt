@@ -15,6 +15,7 @@ interface FlowEventPipelineFactory {
      *
      * @param checkpoint The [Checkpoint] passed through the pipeline.
      * @param event The [FlowEvent] passed through the pipeline.
+     * @param config The [SmartConfig] containing the settings used in the pipeline factory.
      *
      * @return A new [FlowEventPipeline] instance.
      */
