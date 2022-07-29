@@ -10,6 +10,7 @@ import java.time.Instant
 data class CpiMetadata(
     val id : CpiIdentifier,
     val cpiFileChecksum : String,
+    val cpiFileFullChecksum : String,
     val cpks : List<CpkMetadata>,
     val groupPolicy : String?,
     val timestamp: Instant

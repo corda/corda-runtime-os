@@ -10,12 +10,12 @@ import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MerkleTreeFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.Signer
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
+import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
