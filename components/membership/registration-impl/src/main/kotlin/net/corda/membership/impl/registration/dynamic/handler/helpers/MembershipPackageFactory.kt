@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
+package net.corda.membership.impl.registration.dynamic.handler.helpers
 
 import net.corda.chunking.toAvro
 import net.corda.data.CordaAvroSerializationFactory
@@ -12,7 +12,6 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.layeredpropertymap.toAvro
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException

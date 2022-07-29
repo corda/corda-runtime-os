@@ -11,10 +11,10 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.mgm.handler.helpers.SignerFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
