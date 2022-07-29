@@ -533,7 +533,7 @@ class LifecycleProcessorTest {
         processor.addManagedResource("TEST2") { resource2 }
         processor.addManagedResource("TEST3") { resource3 }
 
-        processor.closeManagedResources(emptySet())
+        processor.closeManagedResources(null)
         verify(resource1).close()
         verify(resource2).close()
         verify(resource3).close()
