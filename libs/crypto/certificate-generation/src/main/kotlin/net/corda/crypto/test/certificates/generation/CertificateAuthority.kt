@@ -1,5 +1,6 @@
 package net.corda.crypto.test.certificates.generation
 
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.security.PublicKey
 import java.security.cert.Certificate
 
@@ -44,4 +45,12 @@ interface CertificateAuthority {
      * @return The generated certificate.
      */
     fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate
+
+    /**
+     * Sign a certificate from a certificate signing request.
+     *
+     * @param csr - The request.
+     * @return The sign certificate.
+     */
+    fun signCsr(csr: PKCS10CertificationRequest): Certificate
 }

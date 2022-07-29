@@ -1,6 +1,7 @@
 package net.corda.crypto.test.certificates.generation
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.util.io.pem.PemReader
 import java.net.URI
 import java.net.URLEncoder
@@ -209,6 +210,10 @@ internal class TinyCertCertificatesAuthority(
 
     override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
         throw CertificateAuthorityException("TinyCert does not support generating a certificate with a specified public key.")
+    }
+
+    override fun signCsr(csr: PKCS10CertificationRequest): Certificate {
+        throw UnsupportedOperationException("Function not implemented.")
     }
 
     override fun close() {

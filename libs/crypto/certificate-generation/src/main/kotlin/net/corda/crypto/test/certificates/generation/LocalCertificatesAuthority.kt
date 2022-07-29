@@ -9,6 +9,7 @@ import org.bouncycastle.asn1.x509.Extension
 import org.bouncycastle.asn1.x509.Extensions
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralNames
+import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
@@ -31,7 +32,7 @@ import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
-import java.util.Date
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
 internal open class LocalCertificatesAuthority(
@@ -70,6 +71,16 @@ internal open class LocalCertificatesAuthority(
             true,
             basicConstraints
         )
+        certBuilder.addExtension(
+            Extension.keyUsage, false, KeyUsage(
+                KeyUsage.digitalSignature
+                        or KeyUsage.keyEncipherment
+                        or KeyUsage.keyAgreement
+                        or KeyUsage.keyCertSign
+                        or KeyUsage.cRLSign
+            )
+        )
+
         val signatureAlgorithm = when (keysFactoryDefinitions.algorithm) {
             Algorithm.RSA -> SignatureSpec.RSA_SHA256
             Algorithm.EC -> SignatureSpec.ECDSA_SHA256
@@ -146,7 +157,7 @@ internal open class LocalCertificatesAuthority(
     }
 
     @Suppress("ThrowsCount", "ComplexMethod")
-    fun signCsr(csr: PKCS10CertificationRequest): Certificate {
+    override fun signCsr(csr: PKCS10CertificationRequest): Certificate {
         val verifier = JcaContentVerifierProviderBuilder()
             .setProvider(BouncyCastleProvider())
             .build(csr.subjectPublicKeyInfo)

@@ -48,6 +48,8 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
 
+    e2eTestImplementation project(":libs:configuration:configuration-endpoints")
+    e2eTestImplementation project(":libs:crypto:certificate-generation")
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
     e2eTestImplementation project(":testing:test-utilities")
@@ -56,6 +58,7 @@ dependencies {
     e2eTestImplementation project(':components:membership:membership-http-rpc')
     e2eTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     e2eTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    e2eTestImplementation 'net.corda:corda-cipher-suite'
 
     dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
