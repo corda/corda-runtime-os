@@ -82,5 +82,6 @@ internal class ConsensualLedgerTransactionImplTest{
         assertIs<List<ConsensualState>>(ledgerTransaction.consensualStates)
         assertEquals(1, ledgerTransaction.consensualStates.size)
         assertEquals(testConsensualState, ledgerTransaction.consensualStates.first())
+        assertIs<TestConsensualState>(ledgerTransaction.consensualStates.first())
     }
 }
