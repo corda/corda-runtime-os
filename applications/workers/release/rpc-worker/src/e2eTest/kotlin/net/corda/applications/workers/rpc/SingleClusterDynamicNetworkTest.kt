@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test
 
 class SingleClusterDynamicNetworkTest {
     companion object {
-        // If running locally, switch this to true to use default testToolKit config.
-        private const val IS_REMOTE_CLUSTER = true
+        // If running remote deployment, ensure this is set to true to use correct endpoint information.
+        private const val IS_REMOTE_CLUSTER = false
     }
 
     private val remoteRpcHost = "$RPC_WORKER.$SINGLE_CLUSTER_NS"
@@ -118,10 +118,9 @@ class SingleClusterDynamicNetworkTest {
         )
 
         val memberGroupPolicy = mgm.genGroupPolicy(mgmHoldingId)
-        println(memberGroupPolicy)
 
+        val memberCpiChecksum = members[0].uploadCpi(toByteArray(memberGroupPolicy))
         members.forEach { member ->
-            val memberCpiChecksum = member.uploadCpi(toByteArray(memberGroupPolicy))
             val memberHoldingId = member.createVirtualNode(member.name, memberCpiChecksum)
             holdingIds[member.name] = memberHoldingId
             println("${member.name} holding ID: $memberHoldingId")
