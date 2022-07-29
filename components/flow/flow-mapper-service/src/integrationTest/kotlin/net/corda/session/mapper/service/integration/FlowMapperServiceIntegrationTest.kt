@@ -36,6 +36,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.test.flow.util.buildSessionEvent
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -192,12 +193,13 @@ class FlowMapperServiceIntegrationTest {
 
         //assert duplicate start rpc didn't get processed (and also give Execute cleanup time to run)
         assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
+        println(" ** ** ** latch: ${flowEventLatch.count}")
 
         //send same key start rpc again
         publisher.publish(listOf(startRPCEvent))
 
         //validate went through and not a duplicate
-        assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
+        assertThat(flowEventLatch.await(5, TimeUnit.SECONDS)).withFailMessage("latch was ${flowEventLatch.count}").isTrue
 
         flowEventSub.stop()
     }
