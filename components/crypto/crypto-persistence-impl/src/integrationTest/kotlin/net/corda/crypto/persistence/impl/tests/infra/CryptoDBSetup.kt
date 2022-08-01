@@ -10,6 +10,7 @@ import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.orm.utils.transaction
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.framework.FrameworkUtil
 import java.time.Instant
@@ -18,7 +19,7 @@ import javax.persistence.EntityManagerFactory
 
 object CryptoDBSetup {
     val vNodeHoldingIdentity = HoldingIdentity(
-        "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+        MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"),
         UUID.randomUUID().toString()
     )
 

@@ -1,6 +1,7 @@
 package net.corda.virtualnode.read.fake
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import java.time.Instant
@@ -10,15 +11,15 @@ object TestCatalogue {
 
     object Identity {
         fun alice(groupId: String): HoldingIdentity {
-            return HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
+            return HoldingIdentity(MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"), groupId)
         }
 
         fun bob(groupId: String): HoldingIdentity {
-            return HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+            return HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), groupId)
         }
 
         fun carol(groupId: String): HoldingIdentity {
-            return HoldingIdentity("CN=Carol, O=Carol Corp, L=LDN, C=GB", groupId)
+            return HoldingIdentity(MemberX500Name.parse("CN=Carol, O=Carol Corp, L=LDN, C=GB"), groupId)
         }
     }
 

@@ -45,6 +45,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.apache.commons.text.StringEscapeUtils
@@ -126,7 +127,8 @@ class SynchronisationProxyImplTest {
     }
     private lateinit var synchronisationProxy: SynchronisationProxy
 
-    private fun createHoldingIdentity() = HoldingIdentity("O=Alice, L=London, C=GB", DUMMY_GROUP_ID)
+    private fun createHoldingIdentity() = HoldingIdentity(
+        MemberX500Name.parse("O=Alice, L=London, C=GB"), DUMMY_GROUP_ID)
 
     private fun createGroupPolicy(synchronisationProtocol: String): GroupPolicy {
         val r3comCert = StringEscapeUtils.escapeJson(

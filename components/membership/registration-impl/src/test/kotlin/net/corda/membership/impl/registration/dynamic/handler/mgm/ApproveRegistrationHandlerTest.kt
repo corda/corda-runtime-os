@@ -176,12 +176,12 @@ class ApproveRegistrationHandlerTest {
                 assertThat(value?.viewOwningMember).isEqualTo(owner.toAvro())
                 assertThat(value?.memberContext?.items).contains(
                     KeyValuePair(
-                        "member", member.x500Name
+                        "member", member.x500Name.toString()
                     )
                 )
                 assertThat(value?.mgmContext?.items).contains(
                     KeyValuePair(
-                        "mgm", member.x500Name
+                        "mgm", member.x500Name.toString()
                     )
                 )
             }
@@ -225,7 +225,7 @@ class ApproveRegistrationHandlerTest {
                 eq(checkHash),
             )
         ).doReturn(memberPackage)
-        val membersRecord = activeMembersWithoutMgm.map {
+        val membersRecord = (activeMembersWithoutMgm - memberInfo).map {
             val record = mock<Record<String, AppMessage>>()
             whenever(
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -277,16 +277,16 @@ class ApproveRegistrationHandlerTest {
         val mgmContext = mock<MGMContext> {
             on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn isMgm
             on { parse(eq(STATUS), any<Class<String>>()) } doReturn status
-            on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name).entries
+            on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name.toString()).entries
         }
         val memberContext = mock<MemberContext> {
             on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
-            on { entries } doReturn mapOf("member" to holdingIdentity.x500Name).entries
+            on { entries } doReturn mapOf("member" to holdingIdentity.x500Name.toString()).entries
         }
         return mock {
             on { mgmProvidedContext } doReturn mgmContext
             on { memberProvidedContext } doReturn memberContext
-            on { name } doReturn MemberX500Name.Companion.parse(holdingIdentity.x500Name)
+            on { name } doReturn holdingIdentity.x500Name
             on { groupId } doReturn holdingIdentity.groupId
         }
     }
@@ -294,7 +294,7 @@ class ApproveRegistrationHandlerTest {
     private fun createHoldingIdentity(name: String): HoldingIdentity {
         return HoldingIdentity(
             groupId = GROUP_ID,
-            x500Name = "C=GB,L=London,O=$name"
+            x500Name = MemberX500Name.parse("C=GB,L=London,O=$name")
         )
     }
 }

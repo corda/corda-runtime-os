@@ -124,13 +124,13 @@ class MemberProcessorIntegrationTest {
 
         lateinit var publisher: Publisher
 
-        private val invalidHoldingIdentity = HoldingIdentity("", groupId)
+        private val invalidHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), groupId)
 
-        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName).toString(), groupId).shortHash
+        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName), groupId).shortHash
 
-        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName).toString(), groupId).shortHash
+        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName), groupId).shortHash
 
-        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName).toString(), groupId).shortHash
+        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName), groupId).shortHash
 
         private lateinit var testDependencies: TestDependenciesTracker
 

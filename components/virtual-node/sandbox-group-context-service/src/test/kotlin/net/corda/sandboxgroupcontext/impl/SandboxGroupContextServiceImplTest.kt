@@ -9,6 +9,7 @@ import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCache
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
@@ -41,7 +42,8 @@ class StubSandboxGroupContextCache: SandboxGroupContextCache {
 class SandboxGroupContextServiceImplTest {
 
     private lateinit var service: SandboxGroupContextServiceImpl
-    private val holdingIdentity = HoldingIdentity("foo", "bar")
+    private val holdingIdentity = HoldingIdentity(
+        MemberX500Name.parse("CN=Foo, O=Foo Corp, L=LDN, C=GB"), "bar")
     private val mainBundle = "MAIN BUNDLE"
 
     private val scr = mock<ServiceComponentRuntime>()
@@ -141,9 +143,9 @@ class SandboxGroupContextServiceImplTest {
 
     @Test
     fun `can create objects with same keys in different VirtualNodeContexts`() {
-        val holdingIdentity1 = HoldingIdentity("OU=1", "bar")
-        val holdingIdentity2 = HoldingIdentity("OU=2", "bar")
-        val holdingIdentity3 = HoldingIdentity("OU=3", "bar")
+        val holdingIdentity1 = HoldingIdentity(MemberX500Name.parse("CN=Foo-1, O=Foo Corp, L=LDN, C=GB"), "bar")
+        val holdingIdentity2 = HoldingIdentity(MemberX500Name.parse("CN=Foo-2, O=Foo Corp, L=LDN, C=GB"), "bar")
+        val holdingIdentity3 = HoldingIdentity(MemberX500Name.parse("CN=Foo-3, O=Foo Corp, L=LDN, C=GB"), "bar")
 
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "apple", "1.0.0"))
         val cpks2 = setOf(Helpers.mockTrivialCpk("MAIN2", "banana", "2.0.0"))
@@ -211,7 +213,7 @@ class SandboxGroupContextServiceImplTest {
 
     @Test
     fun `remove removes from cache`() {
-        val holdingIdentity1 = HoldingIdentity("OU=1", "bar")
+        val holdingIdentity1 = HoldingIdentity(MemberX500Name.parse("CN=Foo, O=Foo Corp, L=LDN, C=GB"), "bar")
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,

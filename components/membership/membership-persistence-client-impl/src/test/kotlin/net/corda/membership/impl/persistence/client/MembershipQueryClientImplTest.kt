@@ -65,7 +65,7 @@ class MembershipQueryClientImplTest {
 
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = "Group ID 1"
-    private val ourHoldingIdentity = HoldingIdentity(ourX500Name.toString(), ourGroupId)
+    private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
     private val ourMemberInfo: MemberInfo = mock()
     private val registrationId = "Group ID 2"
 
@@ -476,15 +476,15 @@ class MembershipQueryClientImplTest {
 
         @Test
         fun `it will returns the correct data in case of successful result`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
             postConfigChangedEvent()
-            val holdingId1 = HoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
+            val holdingId1 = HoldingIdentity(MemberX500Name.parse("O=Alice ,L=London, C=GB"), ourGroupId)
             val signature1 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk1".toByteArray()),
                 ByteBuffer.wrap("ct1".toByteArray()),
                 KeyValuePairList(emptyList()),
             )
-            val holdingId2 = HoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
+            val holdingId2 = HoldingIdentity(MemberX500Name.parse("O=Donald ,L=London, C=GB"), ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
                 ByteBuffer.wrap("ct2".toByteArray()),
@@ -528,7 +528,7 @@ class MembershipQueryClientImplTest {
 
         @Test
         fun `it will return error for failure`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -553,7 +553,7 @@ class MembershipQueryClientImplTest {
         }
         @Test
         fun `it will return error for invalid reply`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {

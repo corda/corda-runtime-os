@@ -40,7 +40,7 @@ public class FlowSessionImplJavaTest {
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
             mock(FlowCheckpoint.class),
             flowSandboxGroupContext,
-            new HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
+            new HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "group1"),
             mock(MembershipGroupReader.class)
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);

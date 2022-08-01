@@ -50,6 +50,7 @@ import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
@@ -145,7 +146,7 @@ class CryptoProcessorTests {
         private lateinit var transformer: CryptoFlowOpsTransformer
 
         private val vnodeIdentity = HoldingIdentity(
-            "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+            MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"),
             UUID.randomUUID().toString()
         )
 

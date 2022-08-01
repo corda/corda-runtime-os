@@ -43,6 +43,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -73,7 +74,7 @@ class MemberLookupRpcOpsTest {
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
-    private val holdingIdentity = HoldingIdentity("test", "0")
+    private val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey

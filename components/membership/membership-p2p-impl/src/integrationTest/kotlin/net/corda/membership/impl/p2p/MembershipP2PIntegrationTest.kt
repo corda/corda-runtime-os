@@ -193,8 +193,8 @@ class MembershipP2PIntegrationTest {
     @Test
     fun `membership p2p service reads registration requests from the p2p topic and puts them on a membership topic for further processing`() {
         val groupId = UUID.randomUUID().toString()
-        val source = MemberX500Name.parse("O=Alice,C=GB,L=London").toString()
-        val destination = MemberX500Name.parse("O=MGM,C=GB,L=London").toString()
+        val source = MemberX500Name.parse("O=Alice,C=GB,L=London")
+        val destination = MemberX500Name.parse("O=MGM,C=GB,L=London")
         val destinationHoldingIdentity = net.corda.virtualnode.HoldingIdentity(destination, groupId)
         val registrationId = UUID.randomUUID().toString()
         val fakeKey = "fakeKey"
@@ -219,8 +219,8 @@ class MembershipP2PIntegrationTest {
             KeyValuePairList(emptyList())
         )
         val messageHeader = UnauthenticatedMessageHeader(
-            HoldingIdentity(destination, groupId),
-            HoldingIdentity(source, groupId),
+            HoldingIdentity(destination.toString(), groupId),
+            HoldingIdentity(source.toString(), groupId),
             MEMBERSHIP_P2P_SUBSYSTEM
         )
         val message = MembershipRegistrationRequest(
@@ -265,9 +265,9 @@ class MembershipP2PIntegrationTest {
                 .isInstanceOf(StartRegistration::class.java)
 
             with(value!!.command as StartRegistration) {
-                assertThat(this.destination.x500Name).isEqualTo(destination)
+                assertThat(this.destination.x500Name).isEqualTo(destination.toString())
                 assertThat(this.destination.groupId).isEqualTo(groupId)
-                assertThat(this.source.x500Name).isEqualTo(source)
+                assertThat(this.source.x500Name).isEqualTo(source.toString())
                 assertThat(this.source.groupId).isEqualTo(groupId)
                 assertThat(memberRegistrationRequest).isNotNull
                 with(memberRegistrationRequest) {

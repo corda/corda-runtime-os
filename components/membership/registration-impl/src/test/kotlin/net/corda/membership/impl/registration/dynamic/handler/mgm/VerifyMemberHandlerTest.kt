@@ -14,6 +14,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -38,8 +39,9 @@ class VerifyMemberHandlerTest {
         val clock = TestClock(Instant.ofEpochSecond(0))
     }
 
-    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
-    private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
+    private val mgm = HoldingIdentity(
+        MemberX500Name.parse("C=GB, L=London, O=MGM"), GROUP_ID).toAvro()
+    private val member = HoldingIdentity(MemberX500Name.parse("C=GB, L=London, O=Alice"), GROUP_ID).toAvro()
     private val command = VerifyMember()
 
     val state = RegistrationState(

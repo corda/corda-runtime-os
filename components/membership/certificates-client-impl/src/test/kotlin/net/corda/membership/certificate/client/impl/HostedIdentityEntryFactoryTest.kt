@@ -12,6 +12,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -34,7 +35,7 @@ import java.security.cert.CertificateFactory
 class HostedIdentityEntryFactoryTest {
     private companion object {
         val validHoldingId = HoldingIdentity(
-            x500Name = "x500node",
+            x500Name = MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"),
             groupId = "group-1"
         )
         val publicKeyBytes = "123".toByteArray()

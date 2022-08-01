@@ -37,7 +37,7 @@ import javax.persistence.TypedQuery
 class QueryGroupPolicyHandlerTest {
     private val x500Name = MemberX500Name.parse("O=MGM,L=London,C=GB").toString()
     private val groupId = UUID.randomUUID().toString()
-    private val holdingIdentity = HoldingIdentity(x500Name, groupId)
+    private val holdingIdentity = HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
 
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val cryptoDmlConnectionId = UUID.randomUUID()

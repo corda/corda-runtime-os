@@ -92,7 +92,7 @@ class MembershipPersistenceClientImplTest {
 
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = "Group ID"
-    private val ourHoldingIdentity = HoldingIdentity(ourX500Name.toString(), ourGroupId)
+    private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
 
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
@@ -477,7 +477,7 @@ class MembershipPersistenceClientImplTest {
     inner class SetMemberAndRegistrationRequestAsApprovedTests {
         @Test
         fun `it returns the correct member info`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
             val persistentMemberInfo = PersistentMemberInfo(
                 bob.toAvro(),
                 KeyValuePairList(emptyList()),
@@ -504,7 +504,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `it returns error when there was an issue`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(false)
@@ -520,7 +520,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `it returns error when the return data has the wrong type`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(payload = "This should not be a string!")

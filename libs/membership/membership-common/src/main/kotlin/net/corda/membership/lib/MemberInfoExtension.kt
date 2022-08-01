@@ -107,7 +107,7 @@ class MemberInfoExtension {
         /** Member holding identity. */
         @JvmStatic
         val MemberInfo.holdingIdentity: HoldingIdentity
-            get() = HoldingIdentity(groupId = groupId, x500Name = name.toString())
+            get() = HoldingIdentity(groupId = groupId, x500Name = name)
 
         /** Member ID. */
         @JvmStatic

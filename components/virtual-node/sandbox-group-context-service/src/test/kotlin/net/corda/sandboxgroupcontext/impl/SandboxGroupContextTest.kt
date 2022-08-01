@@ -8,6 +8,7 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
@@ -35,7 +36,8 @@ class Cat(override val name: String, private val noise: String) : Animal {
 inline fun <reified T : Any> SandboxGroupContext.getUniqueObject() = this.get(T::class.java.name, T::class.java)
 
 class SandboxGroupContextTest {
-    private val holdingIdentity = HoldingIdentity("foo", "bar")
+    private val holdingIdentity = HoldingIdentity(
+        MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "bar")
     private val cpkMetadata: CpkMetadata = Helpers.mockTrivialCpk("MAIN_BUNDLE", "example", "1.0.0").metadata
 
     private val cpksMetadata = setOf(cpkMetadata)

@@ -63,7 +63,10 @@ import java.util.*
 
 class MGMOpsClientTest {
     companion object {
-        private val holdingIdentity = HoldingIdentity("CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB", "DEFAULT_MEMBER_GROUP_ID")
+        private val holdingIdentity = HoldingIdentity(
+            MemberX500Name.parse("CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB"),
+            "DEFAULT_MEMBER_GROUP_ID"
+        )
         private const val HOLDING_IDENTITY_STRING = "test"
         private const val KNOWN_KEY = "12345"
 

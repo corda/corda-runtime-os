@@ -40,7 +40,6 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -192,7 +191,7 @@ class MemberOpsServiceProcessor(
             val mgm = membershipGroupReaderProvider
                 .getGroupReader(holdingIdentity)
                 .lookup(
-                    MemberX500Name.parse(holdingIdentity.x500Name)
+                    holdingIdentity.x500Name
                 )?.also {
                     if (!it.isMgm) {
                         throw GroupPolicyGenerationException(

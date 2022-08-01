@@ -17,6 +17,7 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
@@ -164,11 +165,11 @@ internal class VirtualNodeEntityRepositoryTest {
 
     @Test
     fun `can read holding identity`() {
-        val expectedHoldingIdentity = HoldingIdentity("X500 Name", "Group ID")
+        val expectedHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "Group ID")
 
         val holdingIdentityEntity = with(expectedHoldingIdentity) {
             HoldingIdentityEntity(
-                shortHash, fullHash, x500Name, groupId, null, null,
+                shortHash, fullHash, x500Name.toString(), groupId, null, null,
                 null, null, null
             )
         }
@@ -190,7 +191,7 @@ internal class VirtualNodeEntityRepositoryTest {
     fun `can save holding identity`() {
         val entityManager = entityManagerFactory.createEntityManager()
 
-        val expectedHoldingIdentity = HoldingIdentity("X500 Name 2", "Group ID")
+        val expectedHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-2, O=Bob Corp, L=LDN, C=GB"), "Group ID")
 
         // Save holding identity and DB connections
 
@@ -229,7 +230,7 @@ internal class VirtualNodeEntityRepositoryTest {
         with(holdingIdentityEntity) {
             Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash)
             Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.fullHash)
-            Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name)
+            Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name.toString())
             Assertions.assertThat(mgmGroupId).isEqualTo(expectedHoldingIdentity.groupId)
             Assertions.assertThat(vaultDDLConnectionId).isEqualTo(expectedConnections.vaultDdlConnectionId)
             Assertions.assertThat(vaultDMLConnectionId).isEqualTo(expectedConnections.vaultDmlConnectionId)
@@ -240,7 +241,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
     @Test
     fun `can update holding identity`() {
-        val expectedHoldingIdentity = HoldingIdentity("X500 Name 3", "Group ID")
+        val expectedHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-3, O=Bob Corp, L=LDN, C=GB"), "Group ID")
 
         // Save holding identity and DB connections
 
@@ -306,7 +307,7 @@ internal class VirtualNodeEntityRepositoryTest {
         with(holdingIdentityEntity) {
             Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash)
             Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.fullHash)
-            Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name)
+            Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name.toString())
             Assertions.assertThat(mgmGroupId).isEqualTo(expectedHoldingIdentity.groupId)
             Assertions.assertThat(vaultDDLConnectionId).isEqualTo(expectedConnections.vaultDdlConnectionId)
             Assertions.assertThat(vaultDMLConnectionId).isEqualTo(expectedConnections.vaultDmlConnectionId)
@@ -322,7 +323,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.create(signerSummaryHash))
         val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
-        val holdingIdentity = HoldingIdentity("X500 Name 4", "Group ID")
+        val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-4, O=Bob Corp, L=LDN, C=GB"), "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
@@ -339,7 +340,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                shortHash, fullHash, x500Name, groupId, null, null,
+                shortHash, fullHash, x500Name.toString(), groupId, null, null,
                 null, null, null
             )
         }
@@ -366,7 +367,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.create(signerSummaryHash))
         val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
-        val holdingIdentity = HoldingIdentity("X500 Name 5", "Group ID")
+        val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-5, O=Bob Corp, L=LDN, C=GB"), "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
@@ -383,7 +384,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                shortHash, fullHash, x500Name, groupId, null, null,
+                shortHash, fullHash, x500Name.toString(), groupId, null, null,
                 null, null, null
             )
         }

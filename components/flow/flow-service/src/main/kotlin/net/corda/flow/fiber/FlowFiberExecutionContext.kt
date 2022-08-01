@@ -15,18 +15,7 @@ class FlowFiberExecutionContext(
     val holdingIdentity: HoldingIdentity,
     val membershipGroupReader: MembershipGroupReader
 ) : NonSerializable {
-    val memberX500Name: MemberX500Name = holdingIdentity.getMemberX500Name()
+    val memberX500Name: MemberX500Name = holdingIdentity.x500Name
     val flowStackService: FlowStack = flowCheckpoint.flowStack
-
-    private fun HoldingIdentity.getMemberX500Name() : MemberX500Name {
-        try {
-            return MemberX500Name.parse(x500Name)
-        } catch (e: Exception) {
-            throw IllegalStateException(
-                "Failed to convert Holding Identity x500 name '${x500Name}' to MemberX500Name",
-                e
-            )
-        }
-    }
 }
 
