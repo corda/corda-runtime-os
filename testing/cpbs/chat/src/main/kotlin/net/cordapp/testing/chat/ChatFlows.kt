@@ -7,6 +7,7 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
@@ -72,6 +73,40 @@ class ChatOutgoingFlow : RPCStartableFlow {
         )
 
         log.info("Sent message from ${flowEngine.virtualNodeName} to ${inputs.recipientX500Name}")
+
+        flowEngine.subFlow(ChatSubFlow("1"))
+
+        val user2 = flowEngine.flowContextProperties.get("user2") ?: "was null"
+        log.error("@@@ rpc flow: user2 from context:${user2}")
+
+        return ""
+    }
+}
+
+class ChatSubFlow(
+    val tag: String
+) : SubFlow<String> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
+
+    @Suspendable
+    override fun call(): String {
+
+        val account = flowEngine.flowContextProperties.get("account")
+        log.error("@@@ sub flow {$tag}: account from context:${account}")
+
+        flowEngine.flowContextProperties.set("user2", "user-set-2")
+
+        val user = flowEngine.flowContextProperties.get("user")
+        log.error("@@@ sub flow {$tag}: user from context:${user}")
+        val user2 = flowEngine.flowContextProperties.get("user2")
+        log.error("@@@ sub flow {$tag}: user2 from context:${user2}")
+
         return ""
     }
 }
@@ -112,6 +147,11 @@ class ChatIncomingFlow : ResponderFlow {
         storeIncomingMessage(persistenceService, sender, message)
 
         log.info("Added incoming message from ${sender} to message store")
+
+        flowEngine.subFlow(ChatSubFlow("2"))
+
+        val user2 = flowEngine.flowContextProperties.get("user2") ?: "was null"
+        log.error("@@@ initiated flow: user2 from context:${user2}")
     }
 }
 

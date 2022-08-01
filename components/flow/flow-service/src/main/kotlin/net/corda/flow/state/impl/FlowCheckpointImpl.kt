@@ -11,7 +11,6 @@ import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.state.FlowContextPropertiesImpl
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.HoldingIdentity
@@ -28,9 +27,6 @@ class FlowCheckpointImpl(
     private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState, config, instantProvider)
     private var flowStateManager = checkpoint.flowState?.let {
         FlowStateManager(it)
-    }
-    private var nullableFlowStack: FlowStackImpl? = checkpoint.flowState?.let {
-        FlowStackImpl(it.flowStackItems)
     }
 
     private var deleted = false
@@ -123,16 +119,11 @@ class FlowCheckpointImpl(
     override val pendingPlatformError: ExceptionEnvelope?
         get() = checkpoint.pipelineState.pendingPlatformError
 
-    override val flowContextProperties: FlowContextPropertiesImpl by lazy {
-        flowStateManager?.let { manager ->
-            FlowContextPropertiesImpl(
-                platformProperties = manager.contextPlatformProperties,
-                userProperties = manager.contextUserProperties
-            )
-        } ?: throw IllegalStateException("Attempt to access context before flow state has been created")
-    }
+    override val flowContextProperties: FlowContextImpl
+        get() = checkNotNull(flowStateManager)
+        { "Attempt to access context before flow state has been created" }.flowContextProperties
 
-    override fun initFlowState(flowStartContext: FlowStartContext, initialContextUserProperties: Map<String, String>) {
+    override fun initFlowState(flowStartContext: FlowStartContext, contextUserProperties: Map<String, String>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -150,13 +141,11 @@ class FlowCheckpointImpl(
             waitingFor = null
             suspendCount = 0
             suspendedOn = null
-            // The context platform properties are always initialised from whichever start event created the flow
-            contextPlatformProperties = flowStartContext.contextPlatformProperties
-            contextUserProperties = initialContextUserProperties
+            initialContextPlatformProperties = flowStartContext.contextPlatformProperties
+            initialContextUserProperties = contextUserProperties
         }.build()
 
         flowStateManager = FlowStateManager(flowState)
-        nullableFlowStack = FlowStackImpl(flowState.flowStackItems)
     }
 
     override fun getSessionState(sessionId: String): SessionState? {

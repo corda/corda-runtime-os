@@ -64,13 +64,9 @@ class FlowEngineImpl @Activate constructor(
         getFiberExecutionContext().flowStackService.push(subFlow)
 
         try {
-            val flowContextProperties =
-                flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContextProperties
-            flowContextProperties.pushStackMarker()
             log.debug { "Calling sub-flow('$subFlowClassName')..." }
             val result = subFlow.call()
             log.debug { "Sub-flow('$subFlowClassName') call completed ..." }
-            flowContextProperties.popStackMarker()
             /*
              * TODOs:
              * Once the session management has been implemented we can look at optimising this, only calling

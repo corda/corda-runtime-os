@@ -50,9 +50,9 @@ interface FlowCheckpoint : NonSerializable {
 
     val pendingPlatformError: ExceptionEnvelope?
 
-    val flowContextProperties: FlowContextPropertiesImpl
+    val flowContextProperties: FlowContext
 
-    fun initFlowState(flowStartContext: FlowStartContext, initialContextUserProperties: Map<String, String>)
+    fun initFlowState(flowStartContext: FlowStartContext, contextUserProperties: Map<String, String>)
 
     fun getSessionState(sessionId: String): SessionState?
 

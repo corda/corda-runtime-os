@@ -18,20 +18,21 @@ import java.nio.ByteBuffer
  * or a request out the fiber.
  */
 class FlowStateManager(private val initialState: FlowState) {
-
     private var state = FlowState.newBuilder(initialState).build()
 
     private var sessionMap = validateAndCreateSessionMap(initialState.sessions)
 
-    var stack = FlowStackImpl(state.flowStackItems)
+    var stack = FlowStackImpl(
+        flowStackItems = state.flowStackItems,
+        initialContextPlatformProperties = state.initialContextPlatformProperties,
+        initialContextUserProperties = state.initialContextUserProperties
+    )
 
     val flowKey: FlowKey = state.flowStartContext.statusKey
 
     val startContext: FlowStartContext = state.flowStartContext
 
-    val contextUserProperties = state.contextUserProperties
-
-    val contextPlatformProperties = state.contextPlatformProperties
+    var flowContextProperties = FlowContextImpl(stack)
 
     val holdingIdentity: HoldingIdentity = state.flowStartContext.identity.toCorda()
 
@@ -81,7 +82,12 @@ class FlowStateManager(private val initialState: FlowState) {
     fun rollback() {
         state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
-        stack = FlowStackImpl(initialState.flowStackItems)
+        stack = FlowStackImpl(
+            initialState.flowStackItems,
+            initialContextPlatformProperties = initialState.initialContextPlatformProperties,
+            initialContextUserProperties = initialState.initialContextUserProperties
+        )
+        flowContextProperties = FlowContextImpl(stack)
     }
 
     fun toAvro(): FlowState {
