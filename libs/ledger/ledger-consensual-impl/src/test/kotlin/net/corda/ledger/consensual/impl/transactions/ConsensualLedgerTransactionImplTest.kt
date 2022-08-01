@@ -77,7 +77,7 @@ internal class ConsensualLedgerTransactionImplTest{
             .withTimeStamp(testTimestamp)
             .withState(testConsensualState)
             .signInitial(testPublicKey)
-        val ledgerTransaction = signedTransaction.toLedgerTransaction<ConsensualLedgerTransaction>(serializer)
+        val ledgerTransaction = signedTransaction.toLedgerTransaction(serializer)
         assertEquals(testTimestamp, ledgerTransaction.timestamp)
         assertIs<List<ConsensualState>>(ledgerTransaction.states)
         assertEquals(1, ledgerTransaction.states.size)
