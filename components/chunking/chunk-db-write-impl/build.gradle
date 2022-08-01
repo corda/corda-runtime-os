@@ -35,6 +35,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:virtual-node:cpi-datamodel")
+    implementation project(':libs:virtual-node:cpi-upload-manager')
     implementation project(":libs:packaging:packaging")
     implementation project(":libs:packaging:packaging-core")
     implementation project(":libs:packaging:packaging-verify")

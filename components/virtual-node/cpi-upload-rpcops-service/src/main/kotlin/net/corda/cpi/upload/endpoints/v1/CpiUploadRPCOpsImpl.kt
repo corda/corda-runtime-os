@@ -17,7 +17,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.libs.cpiupload.ValidationException
 
 @Component(service = [PluggableRPCOps::class])
 class CpiUploadRPCOpsImpl @Activate constructor(
@@ -59,15 +61,27 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     override fun status(id: String): CpiUploadRPCOps.CpiUploadStatus {
         logger.info("Upload status request for CPI id: $id")
         requireRunning()
-        val status = cpiUploadManager.status(id) ?: throw InvalidInputDataException("No such requestId=$id")
+        val uploadStatus = cpiUploadManager.status(id) ?: throw InvalidInputDataException("No such requestId=$id")
 
-        // Errors are passed back to the Javalin code via exceptions.
-        if (status.exception != null) {
-            throw InternalServerException(status.exception.toString(), mapOf("message" to status.message))
+        // HTTP response status values are passed back via exceptions.
+        if (uploadStatus.exception != null) {
+            val excp = uploadStatus.exception!!
+            // These keys *are* returned to the client, and are visible in JSON
+            val details = mapOf(
+                "errorType" to excp.errorType,
+                "errorMessage" to excp.errorMessage,
+                "message" to uploadStatus.message
+            )
+
+            if (excp.errorType == ValidationException::class.java.name) {
+                throw BadRequestException(excp.errorMessage, details)
+            } else {
+                throw InternalServerException(excp.toString(), details)
+            }
         }
 
-        val checksum = if (status.checksum != null) toShortHash(status.checksum.toCorda()) else ""
-        return CpiUploadRPCOps.CpiUploadStatus(status.message, checksum)
+        val checksum = if (uploadStatus.checksum != null) toShortHash(uploadStatus.checksum.toCorda()) else ""
+        return CpiUploadRPCOps.CpiUploadStatus(uploadStatus.message, checksum)
     }
 
     override fun getAllCpis(): GetCPIsResponse {

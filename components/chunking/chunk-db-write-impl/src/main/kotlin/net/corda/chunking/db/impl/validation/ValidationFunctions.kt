@@ -1,10 +1,6 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.ChunkReaderFactory
-import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import javax.persistence.PersistenceException
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
@@ -12,12 +8,17 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import javax.persistence.PersistenceException
 
 /**
  * Assembles the CPI from chunks in the database, and returns the temporary path
@@ -74,6 +75,7 @@ fun FileInfo.validateAndGetCpi(cpiPartsDir: Path): Cpi {
                 is PackagingException -> {
                     throw ValidationException("Invalid CPI.  ${ex.message}", ex)
                 }
+
                 else -> {
                     throw ValidationException("Unexpected exception when unpacking CPI.  ${ex.message}", ex)
                 }
@@ -109,10 +111,24 @@ fun CpiPersistence.persistCpiToDatabase(
 
         return if (cpiExists && fileInfo.forceUpload) {
             log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-            this.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
+            this.updateMetadataAndCpks(
+                cpi,
+                fileInfo.name,
+                fileInfo.checksum,
+                requestId,
+                groupId,
+                cpkDbChangeLogEntities
+            )
         } else if (!cpiExists) {
             log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-            this.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
+            this.persistMetadataAndCpks(
+                cpi,
+                fileInfo.name,
+                fileInfo.checksum,
+                requestId,
+                groupId,
+                cpkDbChangeLogEntities
+            )
         } else {
             throw ValidationException(
                 "CPI has already been inserted with cpks for " +
