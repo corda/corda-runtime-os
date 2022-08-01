@@ -47,22 +47,22 @@ interface RoleEndpoint : RpcOps {
     /**
      * Associates a role with a permission
      */
-    @HttpRpcPUT(path = "addPermission", description = "Add a permission to a role")
+    @HttpRpcPUT(path = "addPermission/{roleId}/{permissionId}", description = "Add a permission to a role")
     fun addPermission(
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
+        @HttpRpcPathParameter(description = "Identifier for an existing role")
         roleId: String,
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission")
+        @HttpRpcPathParameter(description = "Identifier for an existing permission")
         permissionId: String
     ): RoleResponseType
 
     /**
      * Removes Association between a role and a permission
      */
-    @HttpRpcPUT(path = "removePermission", description = "Removes a permission from a role")
+    @HttpRpcPUT(path = "removePermission/{roleId}/{permissionId}", description = "Removes a permission from a role")
     fun removePermission(
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing role")
+        @HttpRpcPathParameter(description = "Identifier for an existing role")
         roleId: String,
-        @HttpRpcRequestBodyParameter(description = "Identifier for an existing permission")
+        @HttpRpcPathParameter(description = "Identifier for an existing permission")
         permissionId: String
     ): RoleResponseType
 }

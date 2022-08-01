@@ -43,29 +43,29 @@ interface UserEndpoint : RpcOps {
     /**
      * Assign a Role to a User in the RBAC permission system.
      */
-    @HttpRpcPUT(path = "addRole", description = "Assign a Role to a User")
+    @HttpRpcPUT(path = "addRole/{loginName}/{roleId}", description = "Assign a Role to a User")
     fun addRole(
-        @HttpRpcRequestBodyParameter(description = "User login name to be changed")
+        @HttpRpcPathParameter(description = "User login name to be changed")
         loginName: String,
-        @HttpRpcRequestBodyParameter(description = "Id of the role to associate with this user")
+        @HttpRpcPathParameter(description = "Id of the role to associate with this user")
         roleId: String
     ): UserResponseType
 
     /**
      * Un-assign a Role from a User in the RBAC permission system.
      */
-    @HttpRpcPUT(path = "removeRole", description = "Un-assign a role from a user")
+    @HttpRpcPUT(path = "removeRole/{loginName}/{roleId}", description = "Un-assign a role from a user")
     fun removeRole(
-        @HttpRpcRequestBodyParameter(description = "User login name to be changed")
+        @HttpRpcPathParameter(description = "User login name to be changed")
         loginName: String,
-        @HttpRpcRequestBodyParameter(description = "Id of the role to un-assign from this user")
+        @HttpRpcPathParameter(description = "Id of the role to un-assign from this user")
         roleId: String
     ): UserResponseType
 
     /**
      * Get a summary of a user's permissions.
      */
-    @HttpRpcGET(path = "permissionSummary/{loginName}", description = "Get a summary of a User's permissions")
+    @HttpRpcGET(path = "{loginName}/permissionSummary", description = "Get a summary of a User's permissions")
     fun getPermissionSummary(
         @HttpRpcPathParameter(description = "Login Name of the user.")
         loginName: String
