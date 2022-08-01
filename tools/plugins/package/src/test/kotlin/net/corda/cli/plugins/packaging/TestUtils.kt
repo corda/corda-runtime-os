@@ -5,9 +5,13 @@ import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
+import java.util.zip.ZipInputStream
 import kotlin.math.min
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 
 internal object TestUtils {
 
@@ -29,8 +33,8 @@ internal object TestUtils {
         return outText
     }
 
-    fun getManifestMainAttributesAndEntries(cpbFile: Path) =
-        JarInputStream(Files.newInputStream(cpbFile, StandardOpenOption.READ)).use {
+    fun getManifestMainAttributesAndEntries(cpxFile: Path) =
+        JarInputStream(Files.newInputStream(cpxFile, StandardOpenOption.READ)).use {
             val manifest = it.manifest
             manifest.mainAttributes to manifest.entries
         }
@@ -139,10 +143,33 @@ internal object TestUtils {
     }
 
     fun jarEntriesExistInCpx(cpxPath: Path, expectedEntries: List<String>): Boolean {
-        JarInputStream(Files.newInputStream(cpxPath)).use {
-            val actualEntries = generateSequence { it.nextJarEntry?.name }.toList()
+        ZipInputStream(Files.newInputStream(cpxPath)).use { zipStream ->
+            val actualEntries = generateSequence {
+                zipStream.nextEntry?.name
+            }.toMutableList()
+
             return expectedEntries.all {
                 actualEntries.contains(it)
+            }
+        }
+    }
+
+    fun assertContainsAllManifestAttributes(
+        cpxFile: Path,
+        expectedManifestAttributes: Map<Attributes.Name, String>
+    ) {
+        JarInputStream(Files.newInputStream(cpxFile)).use { stream ->
+            val actualManifestAttributes = stream.manifest.mainAttributes
+            expectedManifestAttributes.forEach {
+                val attributeName = it.key
+                val attributeValue = it.value
+                val actualAttributeValue = actualManifestAttributes[attributeName]
+                assertNotNull(actualAttributeValue) {
+                    "Missing attribute $attributeName"
+                }
+                assertEquals(attributeValue, actualAttributeValue) {
+                    "Value mismatch for attribute $attributeName"
+                }
             }
         }
     }
