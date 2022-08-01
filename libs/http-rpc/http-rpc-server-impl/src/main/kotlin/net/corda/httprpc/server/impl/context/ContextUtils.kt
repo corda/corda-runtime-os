@@ -4,11 +4,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
-import net.corda.httprpc.security.Actor
-import net.corda.httprpc.security.AuthorizingSubject
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.security.InvocationContext
-import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.*
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
@@ -83,6 +79,7 @@ internal object ContextUtils {
         return { ctx ->
             MDC.put("http.method", ctx.method())
             MDC.put("http.path", ctx.path())
+            MDC.put("http.user", rpcContext().principal)
             log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
@@ -107,6 +104,7 @@ internal object ContextUtils {
             } finally {
                 MDC.remove("http.method")
                 MDC.remove("http.path")
+                MDC.remove("http.user")
                 if(ctx.isMultipartFormData()) {
                     cleanUpMultipartRequest(ctx)
                 }
