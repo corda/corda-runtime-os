@@ -41,7 +41,7 @@ internal class ConsensualTransactionBuilderImplTest{
             val testField: String,
             override val participants: List<Party>
         ) : ConsensualState {
-            override fun verify(consensualLedgerTransaction: ConsensualLedgerTransaction): Boolean = true
+            override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
         }
 
         @BeforeAll
@@ -71,7 +71,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `can build a simple Transaction`() {
         ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
             .withTimeStamp(Instant.now())
-            .withConsensualState(testConsensualState)
+            .withState(testConsensualState)
             .signInitial(testPublicKey)
     }
 
@@ -79,7 +79,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction without TimeStamp`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withConsensualState(testConsensualState)
+                .withState(testConsensualState)
                 .signInitial(testPublicKey)
         }
         assertEquals("Null timeStamp is not allowed", exception.message)
@@ -100,8 +100,8 @@ internal class ConsensualTransactionBuilderImplTest{
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
                 .withTimeStamp(Instant.now())
-                .withConsensualState(testConsensualState)
-                .withConsensualState(TestConsensualState("test", emptyList()))
+                .withState(testConsensualState)
+                .withState(TestConsensualState("test", emptyList()))
                 .signInitial(testPublicKey)
         }
         assertEquals("All consensual states needs to have participants", exception.message)

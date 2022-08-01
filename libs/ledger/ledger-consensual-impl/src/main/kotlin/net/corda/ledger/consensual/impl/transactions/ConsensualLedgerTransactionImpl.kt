@@ -30,7 +30,7 @@ class ConsensualLedgerTransactionImpl(
             .getComponentGroupList(ConsensualComponentGroups.OUTPUT_STATE_TYPES.ordinal)
             .map{serializer.deserialize(it, String::class.java)}
     }
-    override val consensualStates: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroups.OUTPUT_STATES.ordinal)
             .mapIndexed{

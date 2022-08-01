@@ -29,24 +29,24 @@ class ConsensualTransactionBuilderImpl(
     override val signingService: SigningService,
 
     override val timeStamp: Instant? = null,
-    override val consensualStates: List<ConsensualState> = emptyList(),
+    override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
     private fun copy(
         timeStamp: Instant? = this.timeStamp,
-        consensualStates: List<ConsensualState> = this.consensualStates
+        states: List<ConsensualState> = this.states
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
             merkleTreeFactory, digestService, secureRandom, serializer, signingService,
-            timeStamp, consensualStates,
+            timeStamp, states,
         )
     }
 
     override fun withTimeStamp(timeStamp: Instant): ConsensualTransactionBuilder =
         this.copy(timeStamp = timeStamp)
 
-    override fun withConsensualState(consensualState: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(consensualStates = consensualStates + consensualState)
+    override fun withState(state: ConsensualState): ConsensualTransactionBuilder =
+        this.copy(states = states + state)
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaDataImpl(mapOf(
@@ -60,7 +60,7 @@ class ConsensualTransactionBuilderImpl(
     {
         require(timeStamp != null){"Null timeStamp is not allowed"}
 
-        val requiredSigningKeys = consensualStates //TODO: unique? ordering
+        val requiredSigningKeys = states //TODO: unique? ordering
             .map{it.participants}
             .flatten()
             .map{it.owningKey}
@@ -75,9 +75,9 @@ class ConsensualTransactionBuilderImpl(
                 ConsensualComponentGroups.REQUIRED_SIGNING_KEYS ->
                     requiredSigningKeys.map{serializer.serialize(it).bytes}
                 ConsensualComponentGroups.OUTPUT_STATES ->
-                    consensualStates.map{serializer.serialize(it).bytes}
+                    states.map{serializer.serialize(it).bytes}
                 ConsensualComponentGroups.OUTPUT_STATE_TYPES ->
-                    consensualStates.map{serializer.serialize(it::class.java.name).bytes}
+                    states.map{serializer.serialize(it::class.java.name).bytes}
             }
         }
         return componentGroupLists
@@ -96,8 +96,8 @@ class ConsensualTransactionBuilderImpl(
     private fun buildWireTransaction() : WireTransaction{
         // TODO(more verifications)
         // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
-        require(consensualStates.isNotEmpty()){"At least one Consensual State is required"}
-        require(consensualStates.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
+        require(states.isNotEmpty()){"At least one Consensual State is required"}
+        require(states.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
         val componentGroupLists = calculateComponentGroupLists(serializer)
 
         val entropy = ByteArray(32)

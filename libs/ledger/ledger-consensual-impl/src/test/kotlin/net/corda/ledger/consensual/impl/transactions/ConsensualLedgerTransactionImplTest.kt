@@ -42,7 +42,7 @@ internal class ConsensualLedgerTransactionImplTest{
             val testField: String,
             override val participants: List<Party>
         ) : ConsensualState {
-            override fun verify(consensualLedgerTransaction: ConsensualLedgerTransaction): Boolean = true
+            override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
             override fun equals(other: Any?): Boolean =
                 other === this ||
                         other is TestConsensualState &&
@@ -75,13 +75,13 @@ internal class ConsensualLedgerTransactionImplTest{
         val testTimestamp = Instant.now()
         val signedTransaction = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
             .withTimeStamp(testTimestamp)
-            .withConsensualState(testConsensualState)
+            .withState(testConsensualState)
             .signInitial(testPublicKey)
         val ledgerTransaction = signedTransaction.toLedgerTransaction<ConsensualLedgerTransaction>(serializer)
         assertEquals(testTimestamp, ledgerTransaction.timestamp)
-        assertIs<List<ConsensualState>>(ledgerTransaction.consensualStates)
-        assertEquals(1, ledgerTransaction.consensualStates.size)
-        assertEquals(testConsensualState, ledgerTransaction.consensualStates.first())
-        assertIs<TestConsensualState>(ledgerTransaction.consensualStates.first())
+        assertIs<List<ConsensualState>>(ledgerTransaction.states)
+        assertEquals(1, ledgerTransaction.states.size)
+        assertEquals(testConsensualState, ledgerTransaction.states.first())
+        assertIs<TestConsensualState>(ledgerTransaction.states.first())
     }
 }
