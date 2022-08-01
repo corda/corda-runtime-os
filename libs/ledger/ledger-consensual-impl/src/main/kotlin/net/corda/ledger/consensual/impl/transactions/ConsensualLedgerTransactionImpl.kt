@@ -39,4 +39,17 @@ class ConsensualLedgerTransactionImpl(
             serializer.deserialize(state, Class.forName(consensualStateTypes[index])) as ConsensualState
         }
     }
+
+    /**
+     * WIP CORE-5982
+     */
+    fun verify(){
+        val requiredSigningKeysFromStates = states
+            .map{it.participants}
+            .flatten()
+            .map{it.owningKey}
+        require(requiredSigningKeys == requiredSigningKeysFromStates) {
+            "Deserialized required signing keys from WireTx does not match with the ones derived from the states!"
+        }
+    }
 }
