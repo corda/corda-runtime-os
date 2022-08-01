@@ -3,8 +3,6 @@ package net.corda.ledger.consensual.impl.transactions
 import net.corda.ledger.common.impl.transactions.WireTransaction
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transactions.PrivacySalt
-import net.corda.v5.ledger.common.transactions.TransactionMetaData
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
