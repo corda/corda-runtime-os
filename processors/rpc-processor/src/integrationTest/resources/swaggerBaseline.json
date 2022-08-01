@@ -1131,18 +1131,40 @@
             "nullable" : false,
             "example" : "string"
           }
+        }, {
+          "name" : "alias",
+          "in" : "query",
+          "description" : "The key alias",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The key alias",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "hsmcategory",
+          "in" : "query",
+          "description" : "The HSM Category",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The HSM Category",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "scheme",
+          "in" : "query",
+          "description" : "The scheme",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The scheme",
+            "nullable" : false,
+            "example" : "string"
+          }
         } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/GenerateKeyPairWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
         "responses" : {
           "200" : {
             "description" : "The ID of the newly generated key pair.",
@@ -2813,31 +2835,6 @@
           }
         },
         "description" : "GenerateCsrWrapperRequest",
-        "nullable" : false
-      },
-      "GenerateKeyPairWrapperRequest" : {
-        "required" : [ "alias", "hsmCategory", "scheme" ],
-        "properties" : {
-          "alias" : {
-            "type" : "string",
-            "description" : "The key alias",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "hsmCategory" : {
-            "type" : "string",
-            "description" : "The HSM Category",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "scheme" : {
-            "type" : "string",
-            "description" : "The scheme",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "GenerateKeyPairWrapperRequest",
         "nullable" : false
       },
       "GetCPIsResponse" : {
