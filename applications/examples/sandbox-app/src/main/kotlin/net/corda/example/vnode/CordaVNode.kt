@@ -20,6 +20,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
@@ -80,6 +81,7 @@ class CordaVNode @Activate constructor(
             val config = ConfigFactory.empty()
                 .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5))
                 .withValue(PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(5000L))
+                .withValue(PROCESSING_MAX_FLOW_EXECUTION_DURATION, ConfigValueFactory.fromAnyRef(60000L))
                 .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
                 .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             smartConfig = configFactory.create(config)
