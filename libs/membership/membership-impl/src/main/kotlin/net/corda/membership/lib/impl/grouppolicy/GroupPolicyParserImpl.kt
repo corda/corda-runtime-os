@@ -2,6 +2,11 @@ package net.corda.membership.lib.impl.grouppolicy
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -9,12 +14,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -38,8 +39,14 @@ class GroupPolicyParserImpl @Activate constructor(
     private val clock = UTCClock()
 
     private val mgmVersions = mapOf(
-        1 to { holdingIdentity: HoldingIdentity, root: JsonNode ->
-            net.corda.membership.lib.impl.grouppolicy.v1.MGMGroupPolicyImpl(holdingIdentity, root)
+        1 to { holdingIdentity: HoldingIdentity,
+               root: JsonNode,
+               groupPolicyPropertiesQuery: () -> LayeredPropertyMap? ->
+            net.corda.membership.lib.impl.grouppolicy.v1.MGMGroupPolicyImpl(
+                holdingIdentity,
+                root,
+                groupPolicyPropertiesQuery
+            )
         }
     )
 
@@ -52,7 +59,8 @@ class GroupPolicyParserImpl @Activate constructor(
     @Suppress("ThrowsCount")
     override fun parse(
         holdingIdentity: HoldingIdentity,
-        groupPolicy: String?
+        groupPolicy: String?,
+        groupPolicyPropertiesQuery: () -> LayeredPropertyMap?
     ): GroupPolicy {
         val node = when {
             groupPolicy == null -> {
@@ -75,11 +83,13 @@ class GroupPolicyParserImpl @Activate constructor(
         val version = node.getFileFormatVersion()
 
         return if (MGM_DEFAULT_GROUP_ID == node.getGroupId()) {
-            mgmVersions[version]?.invoke(holdingIdentity, node)
+            mgmVersions[version]?.invoke(holdingIdentity, node, groupPolicyPropertiesQuery)
         } else {
             memberVersions[version]?.invoke(node)
         }
-            ?: throw BadGroupPolicyException("No supported version of the group policy file available for version $version")
+            ?: throw BadGroupPolicyException(
+                "No supported version of the group policy file available for version $version"
+            )
     }
 
     private fun JsonNode.getFileFormatVersion() = this[FILE_FORMAT_VERSION]?.let {
@@ -89,7 +99,9 @@ class GroupPolicyParserImpl @Activate constructor(
             throw BadGroupPolicyException("File format version is not an integer value.")
         }
     }
-        ?: throw BadGroupPolicyException("Could not find $FILE_FORMAT_VERSION at the root level of the group policy file.")
+        ?: throw BadGroupPolicyException(
+            "Could not find $FILE_FORMAT_VERSION at the root level of the group policy file."
+        )
 
     private fun JsonNode.getGroupId() = this[GROUP_ID]?.let {
         if (it.isTextual) {
@@ -105,7 +117,10 @@ class GroupPolicyParserImpl @Activate constructor(
         groupPolicy: String
     ): MemberInfo? {
         val parsedGroupPolicy = try {
-            parse(holdingIdentity, groupPolicy)
+            parse(holdingIdentity, groupPolicy) {
+                logger.debug("Tried to query for MGM group policy, which is inaccessible for member.")
+                null
+            }
         } catch (e: BadGroupPolicyException) {
             logger.error("Unable to parse group policy file.", e)
             null

@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
+    id 'corda.docker-app'
 }
 
 description 'Combined Worker'
@@ -29,6 +30,7 @@ dependencies {
     implementation project(':libs:application:application-db-setup')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':processors:crypto-processor')
@@ -37,6 +39,8 @@ dependencies {
     implementation project(':processors:member-processor')
     implementation project(':processors:rpc-processor')
     implementation project(':processors:uniqueness-processor')
+    implementation project(':processors:link-manager-processor')
+    implementation project(':processors:gateway-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'

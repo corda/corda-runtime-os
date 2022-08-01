@@ -24,6 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
@@ -66,11 +67,21 @@ internal class DynamicKeyStore(
 
     private val ready = CompletableFuture<Unit>()
 
-    private val stubSigner = StubCryptoProcessor(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration,
-    )
+    private val signer: CryptoProcessor = if (signingMode == SigningMode.REAL) {
+      object: CryptoProcessor {
+          override fun sign(tenantId: String, publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
+              return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
+          }
+
+          override val namedLifecycle = NamedLifecycle(cryptoOpsClient, LifecycleCoordinatorName.forComponent<CryptoOpsClient>())
+      }
+    } else {
+        StubCryptoProcessor(
+            lifecycleCoordinatorFactory,
+            subscriptionFactory,
+            messagingConfiguration,
+        )
+    }
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -78,28 +89,17 @@ internal class DynamicKeyStore(
         ready
     )
 
-    private val signerCoordinatorName = if (signingMode == SigningMode.REAL) {
-        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
-    } else {
-        stubSigner.namedLifecycle.name
-    }
-    private val signerNamedLifecycle = if (signingMode == SigningMode.REAL) {
-        NamedLifecycle(cryptoOpsClient, signerCoordinatorName)
-    } else {
-        stubSigner.namedLifecycle
-    }
-
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
             subscriptionTile.coordinatorName,
-            signerCoordinatorName,
+            signer.namedLifecycle.name,
             blockingDominoTile.coordinatorName
         ),
         managedChildren = listOf(
             subscriptionTile.toNamedLifecycle(),
-            signerNamedLifecycle,
+            signer.namedLifecycle,
             blockingDominoTile.toNamedLifecycle()
         ),
     )
@@ -156,11 +156,7 @@ internal class DynamicKeyStore(
 
     override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
         val tenantId = publicKeyToTenantId[publicKey] ?: throw InvalidKeyException("Unknown public key")
-        return if (signingMode == SigningMode.REAL) {
-            cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
-        } else {
-            stubSigner.sign(tenantId, publicKey, spec, data)
-        }
+        return signer.sign(tenantId, publicKey, spec, data)
     }
 }
 

@@ -31,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
+import org.apache.commons.text.StringEscapeUtils
 import org.mockito.kotlin.mock
 
 class TestUtils {
@@ -56,9 +57,12 @@ class TestUtils {
         val daisyName = MemberX500Name("Daisy", "London", "GB")
         val ericName = MemberX500Name("Eric", "London", "GB")
 
-        val r3comCert = ClassLoader.getSystemResource("r3Com.pem")
-            .readText()
-            .replace(System.getProperty("line.separator"), "\\n" )
+
+        val r3comCert = StringEscapeUtils.escapeJson(
+            TestUtils::class.java.getResource("/r3Com.pem")!!.readText()
+            .replace("\r", "")
+            .replace("\n", System.lineSeparator())
+        )
 
         private val staticMemberTemplate = """
             [

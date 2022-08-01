@@ -175,11 +175,11 @@ style:
   ForbiddenComment:
     active: true
     excludes: "**/buildSrc/**"
-    values: 'TODO:,FIXME:,STOPSHIP:'
+    values: ['TODO:','FIXME:','STOPSHIP:']
   MagicNumber:
     active: false
     excludes: "**/test/**,**/integration-test/**,**/integration-test-slow/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
-    ignoreNumbers: '-1,0,1,2'
+    ignoreNumbers: ['-1','0','1','2']
     ignoreHashCodeFunction: true
     ignorePropertyDeclaration: false
     ignoreConstantDeclaration: true
@@ -209,6 +209,6 @@ style:
   WildcardImport:
     active: true
     excludes: "**/buildSrc/**"
-    excludeImports: 'java.util.*,kotlinx.android.synthetic.*'
+    excludeImports: ['java.util.*','kotlinx.android.synthetic.*']
   UnusedImports:
     active: true

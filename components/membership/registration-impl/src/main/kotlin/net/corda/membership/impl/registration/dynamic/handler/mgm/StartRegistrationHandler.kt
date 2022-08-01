@@ -19,7 +19,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -58,7 +57,7 @@ class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
-    override fun invoke(key: String, command: StartRegistration): RegistrationHandlerResult {
+    override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
                 Triple(
@@ -127,7 +126,7 @@ class StartRegistrationHandler(
         )
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro()),
+            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro()),
             listOf(Record(REGISTRATION_COMMAND_TOPIC, key, outputCommand))
         )
     }
@@ -146,7 +145,7 @@ class StartRegistrationHandler(
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
         val memberContext = keyValuePairListDeserializer
             .deserialize(registrationRequest.memberContext.array())
-            ?.toSortedMap()
+            ?.items?.associate { it.key to it.value }?.toSortedMap()
             ?: emptyMap()
 
         validateRegistrationRequest(memberContext.entries.isNotEmpty()) {

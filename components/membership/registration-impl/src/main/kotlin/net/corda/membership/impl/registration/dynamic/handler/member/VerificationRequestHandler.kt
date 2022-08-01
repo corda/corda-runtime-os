@@ -8,59 +8,32 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.messaging.api.records.Record
-import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
-import net.corda.utilities.time.UTCClock
-import java.nio.ByteBuffer
-import java.util.UUID
+import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
+import net.corda.utilities.time.Clock
 
 internal class VerificationRequestHandler(
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    clock: Clock,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    )
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
-    private companion object {
-        val clock = UTCClock()
-        const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val TTL = 1000L
-    }
-
-    private val responseSerializer = cordaAvroSerializationFactory.createAvroSerializer<VerificationResponse> {  }
-
     override val commandType = ProcessMemberVerificationRequest::class.java
 
-    override fun invoke(key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
-        val responseTimestamp = clock.instant()
+    override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
         val mgm = command.source
         val member = command.destination
-        val authenticatedMessageHeader = AuthenticatedMessageHeader(
-            // we need to switch here the source and destination
-            mgm,
-            member,
-            responseTimestamp.plusMillis(TTL)?.toEpochMilli(),
-            UUID.randomUUID().toString(),
+        return RegistrationHandlerResult(
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM
-        )
-        val authenticatedMessage = AuthenticatedMessage(
-            authenticatedMessageHeader,
-            ByteBuffer.wrap(
-                responseSerializer.serialize(
+            listOf(
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    member,
+                    mgm,
                     VerificationResponse(
                         command.verificationRequest.registrationId,
                         KeyValuePairList(emptyList<KeyValuePair>())
                     )
-                )
-            )
-        )
-        return RegistrationHandlerResult(
-            RegistrationState(command.verificationRequest.registrationId, command.destination),
-            listOf(
-                Record(
-                    P2P_OUT_TOPIC,
-                    member,
-                    AppMessage(authenticatedMessage)
                 )
             )
         )

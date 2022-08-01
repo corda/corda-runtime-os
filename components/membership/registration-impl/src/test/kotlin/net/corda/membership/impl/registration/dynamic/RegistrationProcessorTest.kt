@@ -80,7 +80,7 @@ class RegistrationProcessorTest {
 
         val verificationRequest = VerificationRequest(
             registrationId,
-            KeyValuePairList(listOf(KeyValuePair("key", "value")))
+            KeyValuePairList(emptyList<KeyValuePair>())
         )
 
         val verificationResponse = VerificationResponse(
@@ -91,6 +91,10 @@ class RegistrationProcessorTest {
         val verificationRequestCommand = RegistrationCommand(
             ProcessMemberVerificationRequest(holdingIdentity, mgmHoldingIdentity, verificationRequest)
         )
+
+        val verifyMemberCommand = RegistrationCommand(VerifyMember())
+
+        val state = RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity)
     }
 
     // Class under test
@@ -101,7 +105,7 @@ class RegistrationProcessorTest {
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var verificationSerializer: CordaAvroSerializer<VerificationResponse>
+    lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
@@ -140,12 +144,13 @@ class RegistrationProcessorTest {
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
         }
-        verificationSerializer = mock {
-            on { serialize(verificationResponse) } doReturn "RESPONSE".toByteArray()
+        verificationRequestResponseSerializer = mock {
+            on { serialize(eq(verificationRequest)) } doReturn "REQUEST".toByteArray()
+            on { serialize(eq(verificationResponse)) } doReturn "RESPONSE".toByteArray()
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-            on { createAvroSerializer<VerificationResponse>(any()) } doReturn verificationSerializer
+            on { createAvroSerializer<Any>(any()) }.thenReturn(verificationRequestResponseSerializer)
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
@@ -177,7 +182,7 @@ class RegistrationProcessorTest {
     fun `Bad command - onNext called returns no follow on records and an unchanged state`() {
         listOf(
             null,
-            RegistrationState(registrationId, holdingIdentity)
+            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity)
         ).forEach { state ->
             with(processor.onNext(state, Record(testTopic, testTopicKey, RegistrationCommand(Any())))) {
                 assertThat(updatedState).isEqualTo(state)
@@ -199,9 +204,25 @@ class RegistrationProcessorTest {
     @Test
     fun `process member verification request command - onNext can be called for command`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, verificationRequestCommand))
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
+        assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
+            .isNotNull
+    }
+
+    @Test
+    fun `verify member command - onNext can be called for command`() {
+        val result = processor.onNext(state, Record(testTopic, testTopicKey, verifyMemberCommand))
         assertThat(result.updatedState).isNotNull
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
         assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
             .isNotNull
+    }
+
+    @Test
+    fun `missing RegistrationState results in empty response`() {
+        val result = processor.onNext(null, Record(testTopic, testTopicKey, verifyMemberCommand))
+        assertThat(result.updatedState).isNull()
+        assertThat(result.responseEvents).isEmpty()
     }
 }

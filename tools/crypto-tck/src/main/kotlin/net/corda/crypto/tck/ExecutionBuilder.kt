@@ -1,5 +1,6 @@
 package net.corda.crypto.tck
 
+import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -39,11 +40,26 @@ class ExecutionBuilder(
 
     private var tests = listOf<ComplianceTestType>()
 
+    private var secrets: ConfigurationSecrets = object : ConfigurationSecrets {
+        @Suppress("UNCHECKED_CAST")
+        override fun getSecret(secret: Map<String, Any>): String =
+            ((secret["configSecret"] as? Map<String, Any>)?.get("encryptedSecret") as? String)
+                ?: throw IllegalArgumentException("The map doesn't conform to the secret's structure.")
+    }
+
     /**
      * Sets the path where to output the test results. The default value is `Path.of("", serviceName).toAbsolutePath()`
      */
     fun withResultsDirectory(directory: Path): ExecutionBuilder {
         testResultsDirectory = directory
+        return this
+    }
+
+    /**
+     * Sets the custom secret's implementation.
+     */
+    fun withSecrets(secrets: ConfigurationSecrets): ExecutionBuilder {
+        this.secrets = secrets
         return this
     }
 
@@ -130,6 +146,7 @@ class ExecutionBuilder(
                 sessionComplianceTimeout = sessionComplianceTimeout,
                 maxAttempts = retries,
                 attemptTimeout = timeout,
+                secrets = secrets,
                 tests = tests
             )
         )

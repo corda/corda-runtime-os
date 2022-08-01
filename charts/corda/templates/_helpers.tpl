@@ -163,6 +163,9 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
+    {{- if ( get .Values.workers .worker ).profiling.enabled }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+    {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
     {{- end -}}
@@ -189,6 +192,27 @@ Kafka bootstrap servers
 */}}
 {{- define "corda.kafkaBootstrapServers" -}}
 {{ required "Must specify kafka.bootstrapServers" .Values.kafka.bootstrapServers }}
+{{- end }}
+
+{{/*
+Initial admin user secret name
+*/}}
+{{- define "corda.initialAdminUserSecretName" -}}
+{{ .Values.bootstrap.initialAdminUser.secretRef.name | default (printf "%s-initial-admin-user" (include "corda.fullname" .)) }}
+{{- end }}
+
+{{/*
+Initial admin user secret username key
+*/}}
+{{- define "corda.initialAdminUserSecretUsernameKey" -}}
+{{ .Values.bootstrap.initialAdminUser.secretRef.usernameKey }}
+{{- end }}
+
+{{/*
+Initial admin user secret password key
+*/}}
+{{- define "corda.initialAdminUserSecretPasswordKey" -}}
+{{ .Values.bootstrap.initialAdminUser.secretRef.passwordKey }}
 {{- end }}
 
 {{/*

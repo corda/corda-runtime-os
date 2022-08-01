@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.flow
 
+import java.util.UUID
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
@@ -7,9 +8,6 @@ import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
-import net.corda.applications.workers.smoketest.X500_SESSION_USER1
-import net.corda.applications.workers.smoketest.X500_SESSION_USER2
-import net.corda.applications.workers.smoketest.addSoftHsmFor
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
@@ -17,6 +15,7 @@ import net.corda.applications.workers.smoketest.createVirtualNodeFor
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getRpcFlowResult
+import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.UUID
 
 @Suppress("Unused")
 @Order(20)
@@ -48,7 +46,8 @@ class FlowTests {
             "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
             "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
             "net.cordapp.flowworker.development.flows.TestFlow",
-            "net.cordapp.flowworker.development.flows.BrokenProtocolFlow"
+            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
         )
 
         /*
@@ -69,10 +68,8 @@ class FlowTests {
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
-            createVirtualNodeFor(X500_SESSION_USER1)
-            createVirtualNodeFor(X500_SESSION_USER2)
-
-            addSoftHsmFor(bobHoldingId, "LEDGER")
+            registerMember(bobHoldingId)
+            registerMember(charlieHoldingId)
         }
     }
 
@@ -101,11 +98,9 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(charlieHoldingId, requestBody)
         startRpcFlow(davidHoldingId, requestBody)
         startRpcFlow(davidHoldingId, requestBody)
 
-        awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
         awaitMultipleRpcFlowFinished(davidHoldingId, 2)
     }
 
@@ -146,7 +141,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "start_sessions"
             data = mapOf(
-                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "sessions" to "${X500_BOB};${X500_CHARLIE}",
                 "messages" to "m1;m2"
             )
         }
@@ -161,7 +156,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("start_sessions")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
     /**
@@ -173,7 +168,7 @@ class FlowTests {
     fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
-            data = mapOf("x500" to X500_SESSION_USER1)
+            data = mapOf("x500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -184,6 +179,13 @@ class FlowTests {
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
         assertThat(flowResult.result).isEqualTo("type")
+    }
+
+    @Test
+    fun `Pipeline error results in flow marked as failed`() {
+        val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
     }
 
     @Test
@@ -300,7 +302,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "subflow_passed_in_initiated_session"
             data = mapOf(
-                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "sessions" to "${X500_BOB};${X500_CHARLIE}",
                 "messages" to "m1;m2"
             )
         }
@@ -315,7 +317,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
     @Test
@@ -324,7 +326,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "subflow_passed_in_non_initiated_session"
             data = mapOf(
-                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "sessions" to "${X500_BOB};${X500_CHARLIE}",
                 "messages" to "m1;m2"
             )
         }
@@ -339,7 +341,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
     @Test

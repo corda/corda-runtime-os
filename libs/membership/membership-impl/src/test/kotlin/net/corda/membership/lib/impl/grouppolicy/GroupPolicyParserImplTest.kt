@@ -8,15 +8,22 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsVersion
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.COMBINED
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy.DISTINCT
 import net.corda.membership.lib.MemberInfoExtension.Companion.certificate
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
+import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
-import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.membership.lib.impl.grouppolicy.v1.TEST_CERT
+import net.corda.membership.lib.impl.grouppolicy.v1.TEST_FILE_FORMAT_VERSION
+import net.corda.membership.lib.impl.grouppolicy.v1.TEST_GROUP_ID
+import net.corda.membership.lib.impl.grouppolicy.v1.buildPersistedProperties
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
@@ -43,7 +50,8 @@ class GroupPolicyParserImplTest {
 
         enum class GroupPolicyType {
             STATIC,
-            DYNAMIC
+            DYNAMIC,
+            MGM
         }
     }
 
@@ -59,6 +67,7 @@ class GroupPolicyParserImplTest {
     )
     private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val groupPolicyParser = GroupPolicyParserImpl(memberInfoFactory)
+    private val persistedProperties = buildPersistedProperties(layeredPropertyMapFactory)
 
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB").toString(),
@@ -67,31 +76,33 @@ class GroupPolicyParserImplTest {
 
     @Test
     fun `Empty string as group policy throws corda runtime exception`() {
-        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, EMPTY_STRING) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, EMPTY_STRING) { null } }
     }
 
     @Test
     fun `Whitespace string as group policy throws corda runtime exception`() {
-        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, WHITESPACE_STRING) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, WHITESPACE_STRING) { null } }
     }
 
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
-        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, INVALID_FORMAT_GROUP_POLICY) }
+        assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, INVALID_FORMAT_GROUP_POLICY) { null } }
     }
 
     @Test
     fun `Parse group policy - verify interface properties`() {
-        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC))
+        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC)) { null }
         assertEquals(testGroupId, result.groupId)
     }
 
     @Test
     @Suppress("UNCHECKED_CAST")
-    fun `Parse group policy - verify internal map`() {
-        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC))
+    fun `Parse group policy for member - verify internal map`() {
+        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.STATIC)) { null }
 
         assertSoftly { softly ->
+            softly.assertThat(result).isInstanceOf(MemberGroupPolicy::class.java)
+
             softly.assertThat(result.groupId).isEqualTo(testGroupId)
             softly.assertThat(result.registrationProtocol)
                 .isEqualTo("net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService")
@@ -141,6 +152,35 @@ class GroupPolicyParserImplTest {
     }
 
     @Test
+    fun `Parse group policy for MGM - verify internal map`() {
+        val result = groupPolicyParser.parse(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.MGM)) { persistedProperties }
+
+        assertSoftly {
+            it.assertThat(result).isInstanceOf(MGMGroupPolicy::class.java)
+
+            it.assertThat(result.fileFormatVersion).isEqualTo(TEST_FILE_FORMAT_VERSION)
+            it.assertThat(result.groupId).isEqualTo(TEST_GROUP_ID)
+            it.assertThat(result.registrationProtocol)
+                .isEqualTo("net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService")
+            it.assertThat(result.synchronisationProtocol)
+                .isEqualTo("net.corda.membership.impl.sync.dynamic.MemberSyncService")
+            it.assertThat(result.protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
+            it.assertThat(result.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
+            it.assertThat(result.p2pParameters.sessionTrustRoots).isNotNull
+            it.assertThat(result.p2pParameters.sessionTrustRoots?.size).isEqualTo(1)
+            it.assertThat(result.p2pParameters.sessionTrustRoots?.first()).isEqualTo(TEST_CERT)
+            it.assertThat(result.p2pParameters.tlsTrustRoots.size).isEqualTo(1)
+            it.assertThat(result.p2pParameters.tlsTrustRoots.first()).isEqualTo(TEST_CERT)
+            it.assertThat(result.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
+            it.assertThat(result.p2pParameters.tlsVersion).isEqualTo(TlsVersion.VERSION_1_2)
+            it.assertThat(result.p2pParameters.protocolMode).isEqualTo(ProtocolMode.AUTH)
+
+            it.assertThat(result.mgmInfo).isNull()
+            it.assertThat(result.cipherSuite.entries).isEmpty()
+        }
+    }
+
+    @Test
     fun `MGM member info is correctly constructed from group policy information`() {
         val mgmInfo = groupPolicyParser.getMgmInfo(holdingIdentity, getSampleGroupPolicy(GroupPolicyType.DYNAMIC))!!
         assertSoftly {
@@ -163,5 +203,6 @@ class GroupPolicyParserImplTest {
         when (type) {
             GroupPolicyType.STATIC -> this::class.java.getResource("/SampleStaticGroupPolicy.json")!!.readText()
             GroupPolicyType.DYNAMIC -> this::class.java.getResource("/SampleDynamicGroupPolicy.json")!!.readText()
+            GroupPolicyType.MGM -> this::class.java.getResource("/SampleMgmGroupPolicy.json")!!.readText()
         }
 }

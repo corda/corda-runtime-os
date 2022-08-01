@@ -24,7 +24,7 @@ class MemberLookupImpl @Activate constructor(
     }
 
     override fun lookup(key: PublicKey): MemberInfo? {
-        return getGroupReader().lookup(key.calculateHash())
+        return getGroupReader().lookupByLedgerKey(key.calculateHash())
     }
 
     override fun lookup(name: MemberX500Name): MemberInfo? {

@@ -36,16 +36,16 @@ class VirtualNodeDbFactory(
     /**
      * Creates [VirtualNodeDb]s using connection configurations from virtual node creation request
      *
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @param request Virtual node creation request
      *
      * @return map of [VirtualNodeDbType]s to [VirtualNodeDb]s
      */
-    fun createVNodeDbs(holdingIdentityId: String, request: VirtualNodeCreateRequest): Map<VirtualNodeDbType, VirtualNodeDb> {
+    fun createVNodeDbs(holdingIdentityShortHash: String, request: VirtualNodeCreateRequest): Map<VirtualNodeDbType, VirtualNodeDb> {
         with(request) {
             return mapOf(
-                Pair(VAULT, createVNodeDb(VAULT, holdingIdentityId, vaultDdlConnection, vaultDmlConnection)),
-                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityId, cryptoDdlConnection, cryptoDmlConnection))
+                Pair(VAULT, createVNodeDb(VAULT, holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)),
+                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection))
             )
         }
     }
@@ -55,32 +55,45 @@ class VirtualNodeDbFactory(
      * configuration is not provided, cluster connections are created.
      *
      * @param dbType Virtual node database type
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @param ddlConfig DDL connection configuration
      * @param dmlConfig DML connection configuration
      */
-    private fun createVNodeDb(dbType: VirtualNodeDbType, holdingIdentityId: String, ddlConfig: String?, dmlConfig: String?): VirtualNodeDb {
+    private fun createVNodeDb(
+        dbType: VirtualNodeDbType,
+        holdingIdentityShortHash: String,
+        ddlConfig: String?,
+        dmlConfig: String?
+    ): VirtualNodeDb {
         val connectionsProvided = !dmlConfig.isNullOrBlank()
         val dbConnections =
             if (connectionsProvided) {
                 mapOf(
-                    Pair(DDL, ddlConfig?.let { createConnection(dbType, holdingIdentityId, DDL, ddlConfig) }),
-                    Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityId, DML, dmlConfig) })
+                    Pair(DDL, ddlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DDL, ddlConfig) }),
+                    Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DML, dmlConfig) })
                 )
             } else {
                 mapOf(
-                    Pair(DDL, createClusterConnection(dbType, holdingIdentityId, DDL)),
-                    Pair(DML, createClusterConnection(dbType, holdingIdentityId, DML))
+                    Pair(DDL, createClusterConnection(dbType, holdingIdentityShortHash, DDL)),
+                    Pair(DML, createClusterConnection(dbType, holdingIdentityShortHash, DML))
                 )
             }
-        return VirtualNodeDb(dbType, !connectionsProvided, holdingIdentityId, dbConnections, dbAdmin, dbConnectionManager, schemaMigrator)
+        return VirtualNodeDb(
+            dbType,
+            !connectionsProvided,
+            holdingIdentityShortHash,
+            dbConnections,
+            dbAdmin,
+            dbConnectionManager,
+            schemaMigrator
+        )
     }
 
     /**
      * Creates [DbConnection] from provided connection configuration
      *
      * @param dbType Virtual node database type
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @param dbPrivilege Database privilege
      * @param config Connection configuration
      *
@@ -88,16 +101,16 @@ class VirtualNodeDbFactory(
      */
     private fun createConnection(
         dbType: VirtualNodeDbType,
-        holdingIdentityId: String,
+        holdingIdentityShortHash: String,
         dbPrivilege: DbPrivilege,
         config: String
     ): DbConnection {
         with(dbType) {
             return DbConnection(
-                getConnectionName(holdingIdentityId),
+                getConnectionName(holdingIdentityShortHash),
                 dbPrivilege,
                 config.toSmartConfig(),
-                getConnectionDescription(dbPrivilege, holdingIdentityId)
+                getConnectionDescription(dbPrivilege, holdingIdentityShortHash)
             )
         }
     }
@@ -106,14 +119,18 @@ class VirtualNodeDbFactory(
      * Creates cluster [DbConnection]
      *
      * @param dbType Virtual node database type
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @param dbPrivilege Database privilege
      *
      * @return created cluster [DbConnection]
      */
-    private fun createClusterConnection(dbType: VirtualNodeDbType, holdingIdentityId: String, dbPrivilege: DbPrivilege): DbConnection {
+    private fun createClusterConnection(
+        dbType: VirtualNodeDbType,
+        holdingIdentityShortHash: String,
+        dbPrivilege: DbPrivilege
+    ): DbConnection {
         with(dbType) {
-            val user = getUserName(dbPrivilege, holdingIdentityId)
+            val user = createUsername(dbPrivilege, holdingIdentityShortHash)
             val password = generatePassword()
             val maxPoolSize = when (dbPrivilege) {
                 DDL -> ddlMaxPoolSize
@@ -122,14 +139,14 @@ class VirtualNodeDbFactory(
             // TODO support for CharArray passwords in SmartConfig
             val config = createDbConfig(
                 smartConfigFactory, user, password.concatToString(),
-                jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityId)),
+                jdbcUrl = dbAdmin.createJdbcUrl(adminJdbcUrl, getSchemaName(holdingIdentityShortHash)),
                 maxPoolSize = maxPoolSize
             )
             return DbConnection(
-                getConnectionName(holdingIdentityId),
+                getConnectionName(holdingIdentityShortHash),
                 dbPrivilege,
                 config,
-                getConnectionDescription(dbPrivilege, holdingIdentityId)
+                getConnectionDescription(dbPrivilege, holdingIdentityShortHash)
             )
         }
     }

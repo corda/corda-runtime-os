@@ -6,6 +6,7 @@ import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
+import org.eclipse.jetty.io.EofException
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.StatusCode
@@ -21,6 +22,7 @@ import org.slf4j.Logger
 import java.net.URI
 import java.util.*
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -174,13 +176,19 @@ abstract class AbstractWebsocketTest : HttpRpcServerTestBase() {
 
         log.info("Connecting to: $uri")
 
-        val session = wsClient.connect(wsHandler, uri, ClientUpgradeRequest(), upgradeListener)
-            .get(10, TimeUnit.SECONDS)
-        log.info("Session established: $session")
+        val sessionFuture = wsClient.connect(wsHandler, uri, ClientUpgradeRequest(), upgradeListener)
+        try {
+            val session = sessionFuture.get(10, TimeUnit.SECONDS)
+            log.info("Session established: $session")
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS))
-        wsClient.stop()
+            assertTrue(latch.await(10, TimeUnit.SECONDS))
+            wsClient.stop()
 
-        assertThat(closeStatus?.code).isEqualTo(StatusCode.POLICY_VIOLATION)
+            assertThat(closeStatus?.code).isEqualTo(StatusCode.POLICY_VIOLATION)
+        } catch (ex: ExecutionException) {
+            log.warn("Failed to obtain session", ex)
+            // This is not deemed to be critical as long as specific exception type is a cause of that
+            assertThat(ex.cause).isInstanceOf(EofException::class.java)
+        }
     }
 }

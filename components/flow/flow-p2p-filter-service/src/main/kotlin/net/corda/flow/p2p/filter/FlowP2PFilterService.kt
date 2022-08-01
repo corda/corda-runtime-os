@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,7 +21,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -44,7 +44,11 @@ class FlowP2PFilterService @Activate constructor(
         private const val CONSUMER_GROUP = "FlowSessionFilterConsumer"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowP2PFilterService>(::eventHandler)
+    private val closeableResources = CloseableResources.of(
+        this::durableSub
+    )
+
+    private val coordinator = coordinatorFactory.createCoordinator<FlowP2PFilterService>(closeableResources, ::eventHandler)
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private var durableSub: Subscription<String, AppMessage>? = null
@@ -65,7 +69,7 @@ class FlowP2PFilterService @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        setOf(MESSAGING_CONFIG)
                     )
                 } else {
                     configHandle?.close()
@@ -90,8 +94,6 @@ class FlowP2PFilterService @Activate constructor(
      */
     private fun restartFlowP2PFilterService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-
-        durableSub?.close()
 
         durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),

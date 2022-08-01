@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.httprpc.v1.NetworkRpcOps
+import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -29,17 +30,15 @@ class NetworkRpcOpsImpl @Activate constructor(
     }
 
     override fun setupHostedIdentities(
-        holdingIdentityId: String,
-        certificateChainAlias: String,
-        tlsTenantId: String?,
-        sessionKeyId: String?
+        holdingIdentityShortHash: String,
+        request: HostedIdentitySetupRequest
     ) {
         try {
             certificatesClient.setupLocallyHostedIdentity(
-                holdingIdentityId,
-                certificateChainAlias,
-                tlsTenantId,
-                sessionKeyId,
+                holdingIdentityShortHash,
+                request.certificateChainAlias,
+                request.tlsTenantId,
+                request.sessionKeyId,
             )
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)

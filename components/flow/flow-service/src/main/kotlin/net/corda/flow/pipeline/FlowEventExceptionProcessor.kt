@@ -39,10 +39,11 @@ interface FlowEventExceptionProcessor {
      * Used to handle event retries.
      *
      * @param exception The [FlowTransientException] thrown during processing
+     * @param context The [FlowEventContext] at the point of failure.
      *
      * @return The updated response.
      */
-    fun process(exception: FlowTransientException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowTransientException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes a [FlowFatalException] and provides the pipeline response.
@@ -54,7 +55,7 @@ interface FlowEventExceptionProcessor {
      *
      * @return The updated response.
      */
-    fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowFatalException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes a [FlowEventException] and provides the pipeline response.
@@ -65,7 +66,7 @@ interface FlowEventExceptionProcessor {
      *
      * @return The updated response.
      */
-    fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowEventException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes a [FlowPlatformException] and provides the pipeline response.
@@ -77,5 +78,5 @@ interface FlowEventExceptionProcessor {
      *
      * @return The updated response.
      */
-    fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowPlatformException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 }

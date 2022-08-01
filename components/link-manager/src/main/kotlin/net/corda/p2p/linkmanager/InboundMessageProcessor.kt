@@ -64,7 +64,7 @@ internal class InboundMessageProcessor(
                     processSessionMessage(message)
                 }
                 is UnauthenticatedMessage -> {
-                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), payload))
+                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")

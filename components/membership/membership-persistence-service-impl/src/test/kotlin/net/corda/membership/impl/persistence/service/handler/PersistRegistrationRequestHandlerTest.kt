@@ -82,7 +82,7 @@ class PersistRegistrationRequestHandlerTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
 
     private val services = PersistenceHandlerServices(
@@ -132,8 +132,8 @@ class PersistRegistrationRequestHandlerTest {
 
         assertThat(result).isInstanceOf(Unit::class.java)
         with(argumentCaptor<String>()) {
-            verify(virtualNodeInfoReadService).getById(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verify(entityManagerFactory).createEntityManager()
@@ -144,7 +144,7 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(this).isInstanceOf(RegistrationRequestEntity::class.java)
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
-            assertThat(entity.holdingIdentityId).isEqualTo(ourHoldingIdentity.id)
+            assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash)
             assertThat(entity.status).isEqualTo(RegistrationStatus.NEW.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())

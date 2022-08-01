@@ -16,7 +16,14 @@ docker run -d -p 5432:5432 --name postgresql -e POSTGRES_DB=cordacluster -e POST
 ```
 
 DB schema will be created automatically when worker is started.
-NOTE: DB bootstrapping might change as CLI could be used instead
+
+**NOTES:**
+
+* DB bootstrapping might change as CLI could be used instead, for example. Options are being looked at by the DevEx team.
+* Currently, the bootstrapper expects a postgres connection with the a superuser with credentials `postgres`/`password` 
+(as per docker command above). If you need to use different credentials, you can specify them with the following environment variables:
+  * `CORDA_DEV_POSTGRES_USER`
+  * `CORDA_DEV_POSTGRES_PASSWORD`
 
 ## Start the worker
 
@@ -31,7 +38,7 @@ Run the worker using:
 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
   --instanceId=0 -mbus.busType=DATABASE  \
-  -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
+  -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
   -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
 ```
@@ -41,7 +48,7 @@ Or if you want to connect to "real" KAFKA (see below):
 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
   --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
-  -spassphrase=password -ssalt=salt -spassphrase=password -ssalt=salt \
+  -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
   -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
 ```
@@ -69,7 +76,39 @@ Note that some tests require an empty environment (e.g. CPI upload).
 
 Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
 Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running,
-but it may be useful to change this on a case-by-case basis when debugging.
+but it may be useful to change this on a case-by-case basis when debugging. Note that the JAR must be rebuilt
+after the resource file is changed. Here is an `log4j2.xml` which logs to the console only:
+
+```
+?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="Console">
+            <AppenderRef ref="Console" level="info"/>
+        </logger>
+
+        <!-- log warn only for these 3rd party libs -->
+        <Logger name="org.apache.aries.spifly" level="warn" />
+        <Logger name="org.apache.kafka" level="warn" />
+        <Logger name="io.javalin.Javalin" level="warn" />
+        <Logger name="org.eclipse.jetty" level="warn" />
+        <Logger name="org.hibernate" level="warn" />
+
+        <!-- default to warn only for OSGi logging -->
+        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />
+
+        <root level="debug">
+            <AppenderRef ref="Console" level="info"/>
+        </root>
+    </Loggers>
+</Configuration>
+```
+
 
 ## Message Bus
 

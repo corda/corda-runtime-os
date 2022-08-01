@@ -12,8 +12,6 @@ import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
-const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
-const val X500_SESSION_USER2 = "CN=SU2, OU=Application, O=R3, L=London, C=GB"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -92,7 +90,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
             timeout(Duration.ofSeconds(20))
             condition {
                 val json = it.toJson()
-                val flowStatuses = json["httpFlowStatusResponses"]
+                val flowStatuses = json["flowStatusResponses"]
                 val allStatusComplete = flowStatuses.map { flowStatus ->
                     flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
                             flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
@@ -122,7 +120,7 @@ fun createVirtualNodeFor(x500: String): String {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
         val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-        val hash = truncateLongHash(json["fileChecksum"].textValue())
+        val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
@@ -130,9 +128,24 @@ fun createVirtualNodeFor(x500: String): String {
             failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
-        val holdingId = vNodeJson["holdingIdHash"].textValue()
+        val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
+    }
+}
+
+fun registerMember(holdingIdentityId: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val membershipJson = assertWithRetry {
+            command { registerMember(holdingIdentityId) }
+            condition { it.code == 200 }
+            failMessage("Failed to register the member to the network '$holdingIdentityId'")
+        }.toJson()
+
+        val registrationStatus = membershipJson["registrationStatus"].textValue()
+        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
     }
 }
 

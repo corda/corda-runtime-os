@@ -30,11 +30,11 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     private interface InnerMemberRegistrationRpcOps {
         fun startRegistration(
-            holdingIdentityId: String,
+            holdingIdentityShortHash: String,
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress
 
-        fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgress
     }
 
     private val className = this::class.java.simpleName
@@ -71,13 +71,14 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
     }
 
     override fun startRegistration(
-        holdingIdentityId: String,
+        holdingIdentityShortHash: String,
         memberRegistrationRequest: MemberRegistrationRequest
-    ) = impl.startRegistration(holdingIdentityId, memberRegistrationRequest)
+    ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationRequest)
 
 
-    override fun checkRegistrationProgress(holdingIdentityId: String) =
-        impl.checkRegistrationProgress(holdingIdentityId)
+//    TODO Registration status endpoint will be implemented in CORE-5957.
+//    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+//        impl.checkRegistrationProgress(holdingIdentityShortHash)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -91,14 +92,14 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     private object InactiveImpl : InnerMemberRegistrationRpcOps {
         override fun startRegistration(
-            holdingIdentityId: String,
+            holdingIdentityShortHash: String,
             memberRegistrationRequest: MemberRegistrationRequest,
         ) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
 
-        override fun checkRegistrationProgress(holdingIdentityId: String) =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -106,14 +107,14 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     private inner class ActiveImpl : InnerMemberRegistrationRpcOps {
         override fun startRegistration(
-            holdingIdentityId: String,
+            holdingIdentityShortHash: String,
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress {
-            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityId)).fromDto()
+            return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityShortHash)).fromDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgress {
-            return memberOpsClient.checkRegistrationProgress(holdingIdentityId).fromDto()
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgress {
+            return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).fromDto()
         }
     }
 }

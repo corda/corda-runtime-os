@@ -143,6 +143,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
+    /**
+     * @return null if not found
+     */
     private fun findCpiMetadataEntityInTransaction(
         entityManager: EntityManager,
         name: String,
@@ -304,4 +307,3 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         return false
     }
 }
-

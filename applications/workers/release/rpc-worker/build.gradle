@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description 'RPC Worker'
@@ -68,7 +69,7 @@ dependencies {
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
 
-    image "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
 
 tasks.register('e2eTest', Test) {

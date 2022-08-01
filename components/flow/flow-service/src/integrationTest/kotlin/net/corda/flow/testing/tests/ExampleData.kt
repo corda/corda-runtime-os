@@ -15,6 +15,10 @@ const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
 val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
 val ALICE_HOLDING_IDENTITY = net.corda.data.identity.HoldingIdentity(ALICE_X500, HOLDING_IDENTITY_GROUP)
 
+const val CHARLIE_X500 = "CN=Charlie, O=Charlie Corp, L=LDN, C=GB"
+val CHARLIE_X500_NAME = MemberX500Name.parse(CHARLIE_X500)
+val CHARLIE_HOLDING_IDENTITY = net.corda.data.identity.HoldingIdentity(CHARLIE_X500, HOLDING_IDENTITY_GROUP)
+
 const val CPI1 = "cpi1"
 const val CPK1 = "cpk1"
 const val FLOW_ID1 = "f1"

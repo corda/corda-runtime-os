@@ -27,7 +27,7 @@ class SignBytesRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.SignBytes): FlowEventContext<Any> {
         val flowOpsRequest = cryptoFlowOpsTransformer.createSign(
             requestId = request.requestId,
-            tenantId = context.checkpoint.holdingIdentity.id,
+            tenantId = context.checkpoint.holdingIdentity.shortHash,
             publicKey = request.publicKey,
             signatureSpec = request.signatureSpec,
             data = request.bytes,

@@ -4,6 +4,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
+import java.time.Instant
 
 /**
  * Virtual node database types
@@ -24,29 +25,31 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
 
     /**
      * Returns DB schema name
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return schema name for given holding identity ID
      */
-    fun getSchemaName(holdingIdentityId: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityId".lowercase()
+    fun getSchemaName(holdingIdentityShortHash: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityShortHash".lowercase()
 
     /**
-     * Returns DB user for given DB privilege
+     * Create a DB username for given DB privilege
      * @param dbPrivilege DB privilege
-     * @param holdingIdentityId Holding identity ID (short hash)
-     * @return DB user for given DB privilege
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      */
-    fun getUserName(dbPrivilege: DbPrivilege, holdingIdentityId: String) =
+    fun createUsername(dbPrivilege: DbPrivilege, holdingIdentityShortHash: String) =
         when (dbPrivilege) {
-            DDL -> "vnode_${infix}_${holdingIdentityId}_ddl".lowercase()
-            DML -> "vnode_${infix}_${holdingIdentityId}_dml".lowercase()
+            // NOTE: we add an epoch timestamp here for uniqueness. This should not be important within a Corda
+            //  cluster, but in case a shared DB use used, it is possible that multiple DBs will have the same VNodes
+            //  (in a test instance, for example)
+            DDL -> "vnode_${infix}_${holdingIdentityShortHash}_${Instant.now().epochSecond}_ddl".lowercase()
+            DML -> "vnode_${infix}_${holdingIdentityShortHash}_${Instant.now().epochSecond}_dml".lowercase()
         }
 
     /**
      * Returns DB connection name
-     * @param holdingIdentityId Holding identity ID (short hash)
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return DB connection name
      */
-    fun getConnectionName(holdingIdentityId: String) = "vnode_${infix}_$holdingIdentityId".lowercase()
+    fun getConnectionName(holdingIdentityShortHash: String) = "vnode_${infix}_$holdingIdentityShortHash".lowercase()
 
     /**
      * Returns DB connection description for given privilege

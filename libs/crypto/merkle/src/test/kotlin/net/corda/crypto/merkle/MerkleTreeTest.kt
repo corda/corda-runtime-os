@@ -1,27 +1,28 @@
 package net.corda.crypto.merkle
 
-import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import kotlin.experimental.xor
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotEquals
-import net.corda.crypto.core.toByteArray
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.crypto.core.toByteArray
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.getZeroHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.SecureRandom
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.experimental.xor
 
 class MerkleTreeTest {
     companion object {
@@ -62,15 +63,28 @@ class MerkleTreeTest {
     }
 
     @Test
+    fun `Tweakable hash digest provider argument min length tests`() {
+        assertDoesNotThrow {
+            TweakableHashDigestProvider(digestAlgorithm, digestService, "0".toByteArray(), "1".toByteArray())
+        }
+        assertThrows(IllegalArgumentException::class.java)  {
+            TweakableHashDigestProvider(digestAlgorithm, digestService, "".toByteArray(), "1".toByteArray())
+        }
+        assertThrows(IllegalArgumentException::class.java)  {
+            TweakableHashDigestProvider(digestAlgorithm, digestService, "0".toByteArray(), "".toByteArray())
+        }
+    }
+
+    @Test
     fun `next power tests`() {
         assertEquals(1, MerkleTreeImpl.nextHigherPower2(1))
         assertEquals(2, MerkleTreeImpl.nextHigherPower2(2))
         assertEquals(4, MerkleTreeImpl.nextHigherPower2(3))
         assertEquals(0x20000, MerkleTreeImpl.nextHigherPower2(0x12345))
         assertEquals(0x40000000, MerkleTreeImpl.nextHigherPower2(0x30000000))
-        assertFailsWith<IllegalArgumentException> { MerkleTreeImpl.nextHigherPower2(0) }
-        assertFailsWith<IllegalArgumentException> { MerkleTreeImpl.nextHigherPower2(-5) }
-        assertFailsWith<IllegalArgumentException> { MerkleTreeImpl.nextHigherPower2(0x7FFFFFFF) }
+        assertThrows(IllegalArgumentException::class.java) { MerkleTreeImpl.nextHigherPower2(0) }
+        assertThrows(IllegalArgumentException::class.java) { MerkleTreeImpl.nextHigherPower2(-5) }
+        assertThrows(IllegalArgumentException::class.java) { MerkleTreeImpl.nextHigherPower2(0x7FFFFFFF) }
     }
 
     private fun MerkleTreeImpl.calcLeafHash(index: Int): SecureHash {
@@ -83,7 +97,7 @@ class MerkleTreeTest {
 
     @Test
     fun `Should throw IllegalArgumentException when building Merkle tree with empty list of leaves`() {
-        assertFailsWith<IllegalArgumentException> {
+        assertThrows(IllegalArgumentException::class.java) {
             MerkleTreeImpl.createMerkleTree(emptyList(), defaultHashDigestProvider)
         }
     }
@@ -234,29 +248,29 @@ class MerkleTreeTest {
 
         if (merkleTree.leaves.size > 0) {
             // Should not build proof for empty list
-            assertFailsWith(IllegalArgumentException::class) {
+            assertThrows(IllegalArgumentException::class.java) {
                 merkleTree.createAuditProof(emptyList())
             }
 
             // Cannot build proof for non-existing index
-            assertFailsWith(IllegalArgumentException::class) {
+            assertThrows(IllegalArgumentException::class.java) {
                 merkleTree.createAuditProof(listOf(treeSize + 1))
             }
 
             // Cannot build proof if any of the indices do not exist in the tree
-            assertFailsWith(IllegalArgumentException::class) {
+            assertThrows(IllegalArgumentException::class.java) {
                 merkleTree.createAuditProof(listOf(0, treeSize + 1))
             }
 
             // Should not create proof if indices have been duplicated
-            assertFailsWith(IllegalArgumentException::class) {
+            assertThrows(IllegalArgumentException::class.java) {
                 merkleTree.createAuditProof(listOf(treeSize - 1, treeSize - 1))
             }
         }
 
         if (merkleTree.leaves.size > 1) {
             // Should not create proof if there are duplicated indices between the others
-            assertFailsWith(IllegalArgumentException::class) {
+            assertThrows(IllegalArgumentException::class.java) {
                 merkleTree.createAuditProof(listOf(0, 0, treeSize - 1))
             }
         }
@@ -386,10 +400,10 @@ class MerkleTreeTest {
     fun `Digest Providers should guarantee the same hash used in the whole tree`(candidate: MerkleTreeHashDigestProvider) {
         val matching = SecureHash(digestAlgorithm.name, "abc".toByteArray())
         val nonMatching = SecureHash(DigestAlgorithmName.SHA2_256.name, "abc".toByteArray())
-        assertFailsWith(IllegalArgumentException::class) {
+        assertThrows(IllegalArgumentException::class.java) {
             candidate.nodeHash(1, matching, nonMatching)
         }
-        assertFailsWith(IllegalArgumentException::class) {
+        assertThrows(IllegalArgumentException::class.java) {
             candidate.nodeHash(1, nonMatching, nonMatching)
         }
     }

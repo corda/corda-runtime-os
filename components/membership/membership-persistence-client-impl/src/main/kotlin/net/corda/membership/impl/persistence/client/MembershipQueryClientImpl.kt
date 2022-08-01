@@ -3,20 +3,25 @@ package net.corda.membership.impl.persistence.client
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
+import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -34,6 +39,7 @@ class MembershipQueryClientImpl(
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
     clock: Clock,
+    val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MembershipQueryClient, AbstractPersistenceClient(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
@@ -51,7 +57,9 @@ class MembershipQueryClientImpl(
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
-    ) : this(coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, UTCClock())
+        @Reference(service = LayeredPropertyMapFactory::class)
+        layeredPropertyMapFactory: LayeredPropertyMapFactory
+    ) : this(coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, UTCClock(), layeredPropertyMapFactory)
 
     private companion object {
         val logger = contextLogger()
@@ -61,7 +69,7 @@ class MembershipQueryClientImpl(
     override val clientName = "membership.db.query.client"
 
     override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
-        logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.id}].")
+        logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.shortHash}].")
         return queryMemberInfo(viewOwningIdentity, emptyList())
     }
 
@@ -127,6 +135,23 @@ class MembershipQueryClientImpl(
             }
             else -> {
                 MembershipQueryResult.Failure("Failed to find members signatures, unexpected response: $payload")
+            }
+        }
+    }
+
+    override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            QueryGroupPolicy()
+        ).execute()
+        return when (val payload = result.payload) {
+            is GroupPolicyQueryResponse -> {
+                MembershipQueryResult.Success(
+                    layeredPropertyMapFactory.createMap(payload.properties.toMap())
+                )
+            }
+            else -> {
+                MembershipQueryResult.Failure("Failed to find group policy information.")
             }
         }
     }

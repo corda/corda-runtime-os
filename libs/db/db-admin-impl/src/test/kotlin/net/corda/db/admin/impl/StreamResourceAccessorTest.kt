@@ -17,7 +17,7 @@ class StreamResourceAccessorTest {
     private val dbChange = mock<DbChange> {
         on { masterChangeLogFiles } doReturn(listOf("fred.xml", "jon.xml"))
         on { changeLogFileList } doReturn(setOf("fred.xml", "jon.xml", "another.xml"))
-        on { fetch(any(), any()) } doReturn(mock())
+        on { fetch(any()) } doReturn(mock())
     }
     private val classLoaderResourceAccessor = mock<ResourceAccessor>
     {
@@ -39,6 +39,13 @@ class StreamResourceAccessorTest {
     }
 
     @Test
+    fun `when openStreams with master changelog path and relativeTo throws`() {
+        assertThrows<UnsupportedOperationException> {
+            sra.openStreams("flintstone", "master.xml")
+        }
+    }
+
+    @Test
     fun `when openStreams with liquibase schema URL delegate`() {
         sra.openStreams(null, "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
 
@@ -49,8 +56,15 @@ class StreamResourceAccessorTest {
     fun `when openStreams with known changelog fetch it`() {
         sra.openStreams(null, "fred.xml")
 
-        verify(dbChange).fetch("fred.xml", null)
+        verify(dbChange).fetch("fred.xml")
     }
+
+    @Test
+    fun `when openStreams with known changelog and relative path throws`() {
+        assertThrows<UnsupportedOperationException> {
+            sra.openStreams("flintstone", "fred.xml")
+        }
+}
 
     @Test
     fun `when openStreams with null streamPath throw`() {
@@ -60,9 +74,16 @@ class StreamResourceAccessorTest {
     }
 
     @Test
-    fun `when openStreams with non-null relativeTo throw`() {
+    fun `when openStreams with null streamPath and non-null relativeTo throw`() {
         assertThrows<UnsupportedOperationException> {
             sra.openStreams("hello", null)
+        }
+    }
+
+    @Test
+    fun `when openStreams with  non-null relativeTo throw`() {
+        assertThrows<UnsupportedOperationException> {
+            sra.openStreams("hello", "bar.txt")
         }
     }
 

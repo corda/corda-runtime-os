@@ -15,9 +15,10 @@ import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.configuration.endpoints.v1.types.HTTPGetConfigResponse
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -36,7 +37,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [ConfigRPCOpsImpl]. */
+/**
+ * Tests of [ConfigRPCOpsImpl].
+ */
 class ConfigRPCOpsImplTests {
     companion object {
         private const val actor = "test_principal"
@@ -53,7 +56,7 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val req = HTTPUpdateConfigRequest("section", 999, "a=b", Version(888, 0))
+    private val req = UpdateConfigParameters("section", 999, "a=b", ConfigSchemaVersion(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
         ConfigurationManagementResponse(
             true, null, req.section, req.config, ConfigurationSchemaVersion(
@@ -61,8 +64,8 @@ class ConfigRPCOpsImplTests {
             ), req.version
         )
     }
-    private val successResponse = HTTPUpdateConfigResponse(
-        req.section, req.config, Version(
+    private val successResponse = UpdateConfigResponse(
+        req.section, req.config, ConfigSchemaVersion(
             req.schemaVersion.major,
             req.schemaVersion.minor
         ), req.version
@@ -278,11 +281,11 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
 
-        assertThat(HTTPGetConfigResponse(
+        assertThat(GetConfigResponse(
             configSection,
             config.source,
             config.value,
-            Version(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            ConfigSchemaVersion(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
             config.version
         )).isEqualTo(configRPCOps.get(configSection))
     }

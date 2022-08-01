@@ -31,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -185,8 +186,8 @@ class MGMRegistrationService @Activate constructor(
         ): MembershipRequestRegistrationResult {
             try {
                 validateContext(context)
-                val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.id)
-                val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.id)
+                val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash)
+                val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash)
                 val now = clock.instant().toString()
                 val mgmInfo = memberInfoFactory.create(
                     memberContext = (
@@ -241,7 +242,7 @@ class MGMRegistrationService @Activate constructor(
 
                 val mgmRecord = Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
-                    "${member.id}-${member.id}",
+                    "${member.shortHash}-${member.shortHash}",
                     PersistentMemberInfo(
                         member.toAvro(),
                         mgmInfo.memberProvidedContext.toAvro(),
@@ -275,9 +276,11 @@ class MGMRegistrationService @Activate constructor(
                 require(isNotEmpty()) { "No endpoint protocol was provided." }
                 require(isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
             }
-            context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
-                require(isNotEmpty()) { "No session trust store was provided." }
-                require(isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
+            if (context[PKI_SESSION] != SessionPkiMode.NO_PKI.toString()) {
+                context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
+                    require(isNotEmpty()) { "No session trust store was provided." }
+                    require(isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
+                }
             }
             context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No TLS trust store was provided." }

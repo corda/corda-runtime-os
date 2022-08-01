@@ -84,12 +84,13 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import org.mockito.kotlin.mock
+import java.time.Instant
 import java.util.UUID
 
 class P2PLayerEndToEndTest {
 
     companion object {
-        private const val EXPIRED_TTL = 0L
+        private val EXPIRED_TTL = Instant.ofEpochMilli(0)
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
@@ -423,6 +424,7 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
                 mock(),
+                mock(),
                 ThirdPartyComponentsMode.STUB
             )
 
@@ -622,7 +624,7 @@ class P2PLayerEndToEndTest {
             ).also { it.start() }
         }
 
-        fun sendMessages(messagesToSend: Int, ourIdentity: Identity, peer: Identity, ttl: Long? = null) {
+        fun sendMessages(messagesToSend: Int, ourIdentity: Identity, peer: Identity, ttl: Instant? = null) {
             val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", false), bootstrapConfig)
             val initialMessages = (1..messagesToSend).map { index ->
                 val incrementalId = index.toString()

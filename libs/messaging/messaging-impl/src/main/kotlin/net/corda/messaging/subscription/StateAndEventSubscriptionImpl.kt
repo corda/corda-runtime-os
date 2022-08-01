@@ -274,17 +274,30 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
 
-        if (thisEventUpdates == null || thisEventUpdates.markForDLQ) {
-            log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
-            outputRecords.add(generateDeadLetterRecord(event, state))
-            outputRecords.add(Record(stateTopic, key, null))
-            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
-        } else {
-            outputRecords.addAll(thisEventUpdates.responseEvents)
-            val updatedState = thisEventUpdates.updatedState
-            outputRecords.add(Record(stateTopic, key, updatedState))
-            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
-            log.debug { "Completed event: $event" }
+        when {
+            thisEventUpdates == null -> {
+                log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
+                outputRecords.add(generateDeadLetterRecord(event, state))
+                outputRecords.add(Record(stateTopic, key, null))
+                updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
+            }
+            thisEventUpdates.markForDLQ -> {
+                log.warn("Sending event: $event, and state: $state to dead letter queue. Processor marked event for the dead letter queue")
+                outputRecords.add(generateDeadLetterRecord(event, state))
+                outputRecords.add(Record(stateTopic, key, null))
+                updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
+
+                // In this case the processor may ask us to publish some output records regardless, so make sure these
+                // are outputted.
+                outputRecords.addAll(thisEventUpdates.responseEvents)
+            }
+            else -> {
+                outputRecords.addAll(thisEventUpdates.responseEvents)
+                val updatedState = thisEventUpdates.updatedState
+                outputRecords.add(Record(stateTopic, key, updatedState))
+                updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
+                log.debug { "Completed event: $event" }
+            }
         }
     }
 

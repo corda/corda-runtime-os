@@ -51,7 +51,7 @@ class CpkDbChangeLogEntityTest {
     }
 
     @AfterAll
-    private fun cleanUp() {
+    fun cleanUp() {
         dbConfig.close()
     }
 

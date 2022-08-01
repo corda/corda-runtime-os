@@ -6,9 +6,11 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.VerificationRequest
+import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
@@ -46,8 +48,9 @@ class MembershipP2PProcessorTest {
     private val memberContext = KeyValuePairList(listOf(KeyValuePair("foo", "bar")))
     private val testSig =
         CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer(), KeyValuePairList(emptyList()))
+    private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
-        UUID.randomUUID().toString(),
+        registrationId,
         memberContext.toByteBuffer(),
         testSig
     )
@@ -58,11 +61,18 @@ class MembershipP2PProcessorTest {
     private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
 
     private val verificationRequest = VerificationRequest(
-        UUID.randomUUID().toString(),
+        registrationId,
         KeyValuePairList(listOf(KeyValuePair("A", "B")))
     )
 
     private val verificationReqMsgPayload = verificationRequest.toByteBuffer()
+
+    private val verificationResponse = VerificationResponse(
+        registrationId,
+        KeyValuePairList(listOf(KeyValuePair("A", "B")))
+    )
+
+    private val verificationRespMsgPayload = verificationResponse.toByteBuffer()
 
     private lateinit var membershipP2PProcessor: MembershipP2PProcessor
 
@@ -96,7 +106,7 @@ class MembershipP2PProcessorTest {
             .hasSize(1)
         assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
         assertThat(result.first().value).isInstanceOf(RegistrationCommand::class.java)
-        assertThat(result.first().key).isEqualTo(member.toCorda().id)
+        assertThat(result.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
 
         val value = result.first().value as RegistrationCommand
         assertThat(value.command).isInstanceOf(StartRegistration::class.java)
@@ -154,7 +164,11 @@ class MembershipP2PProcessorTest {
         assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
         val command = result.first().value as? RegistrationCommand
         assertThat(command?.command).isInstanceOf(ProcessMemberVerificationRequest::class.java)
-        assertThat(result.first().key).isEqualTo(member.toCorda().id)
+        assertThat(result.first().key).isEqualTo("$registrationId-${member.toCorda().shortHash}")
+        val request = command?.command as ProcessMemberVerificationRequest
+        assertThat(request.verificationRequest).isEqualTo(verificationRequest)
+        assertThat(request.destination).isEqualTo(member)
+        assertThat(request.source).isEqualTo(mgm)
     }
 
     @Test
@@ -162,6 +176,36 @@ class MembershipP2PProcessorTest {
         val appMessage = with(verificationReqMsgPayload) {
             mockPayloadDeserialization()
             asUnauthenticatedAppMessagePayload(member, mgm)
+        }
+        assertThrows<UnsupportedOperationException> {
+            membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
+        }
+    }
+
+    @Test
+    fun `Verification response as authenticated message is processed as expected`() {
+        val appMessage = with(verificationRespMsgPayload) {
+            mockPayloadDeserialization()
+            asAuthenticatedAppMessagePayload()
+        }
+        val result = membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
+
+        assertThat(result)
+            .isNotEmpty
+            .hasSize(1)
+        assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+        val command = result.first().value as? RegistrationCommand
+        assertThat(command?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
+        assertThat(result.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+        val response = command?.command as ProcessMemberVerificationResponse
+        assertThat(response.verificationResponse).isEqualTo(verificationResponse)
+    }
+
+    @Test
+    fun `Verification response as unauthenticated message throws exception`() {
+        val appMessage = with(verificationRespMsgPayload) {
+            mockPayloadDeserialization()
+            asUnauthenticatedAppMessagePayload()
         }
         assertThrows<UnsupportedOperationException> {
             membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
@@ -192,7 +236,7 @@ class MembershipP2PProcessorTest {
                 AuthenticatedMessageHeader(
                     destination,
                     source,
-                    clock.instant().plusMillis(1000L).toEpochMilli(),
+                    clock.instant().plusMillis(300000L),
                     "mid",
                     null,
                     MEMBERSHIP_P2P_SUBSYSTEM
@@ -219,5 +263,13 @@ class MembershipP2PProcessorTest {
                 eq(null)
             )
         ).thenReturn(verificationRequest)
+        whenever(avroSchemaRegistry.getClassType(eq(verificationRespMsgPayload))).thenReturn(VerificationResponse::class.java)
+        whenever(
+            avroSchemaRegistry.deserialize(
+                eq(verificationRespMsgPayload),
+                eq(VerificationResponse::class.java),
+                eq(null)
+            )
+        ).thenReturn(verificationResponse)
     }
 }

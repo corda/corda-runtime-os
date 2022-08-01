@@ -305,6 +305,27 @@ class SandboxServiceImplTests {
     }
 
     @Test
+    fun `a public sandbox can be created multiple times with same sets of bundles`() {
+        val sandboxService = createSandboxService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
+        val publicBundles = setOf(mockBundle())
+        val privateBundles = setOf(mockBundle())
+        sandboxService.createPublicSandbox(publicBundles, privateBundles)
+        assertDoesNotThrow {
+            sandboxService.createPublicSandbox(publicBundles, privateBundles)
+        }
+    }
+
+    @Test
+    fun `a public sandbox can't be created multiple times with different sets of bundles`() {
+        val sandboxService = createSandboxService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
+        sandboxService.createPublicSandbox(setOf(mockBundle()), setOf(mockBundle()))
+        val e = assertThrows<IllegalStateException> {
+            sandboxService.createPublicSandbox(setOf(mockBundle()), setOf(mockBundle()))
+        }
+        assertEquals("Public sandbox was already created with different bundles", e.message)
+    }
+
+    @Test
     fun `a bundle only has visibility of public bundles in public sandboxes`() {
         val publicMockBundle = mockBundle()
         val privateMockBundle = mockBundle()

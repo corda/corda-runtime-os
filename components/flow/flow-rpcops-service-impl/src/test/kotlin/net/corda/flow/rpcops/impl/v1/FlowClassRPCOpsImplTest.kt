@@ -13,6 +13,7 @@ import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,6 +50,7 @@ class FlowClassRPCOpsImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
+            VirtualNodeState.ACTIVE,
             0,
             Instant.now()
         )
@@ -60,7 +62,7 @@ class FlowClassRPCOpsImplTest {
         cpiInfoReadService = mock()
         virtualNodeInfoReadService = mock()
 
-        whenever(virtualNodeInfoReadService.getById(any())).thenReturn(getStubVirtualNode())
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(getStubVirtualNode())
         whenever(cpiInfoReadService.get(any())).thenReturn(mock())
     }
 
@@ -86,12 +88,12 @@ class FlowClassRPCOpsImplTest {
 
     @Test
     fun `Resource not found error when no vNode exists`() {
-        whenever(virtualNodeInfoReadService.getById(any())).thenReturn(null)
+        whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
         val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         assertThrows<ResourceNotFoundException> {
             flowClassRPCOps.getStartableFlows("")
         }
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(0)).get(any())
     }
 
@@ -103,7 +105,7 @@ class FlowClassRPCOpsImplTest {
         assertThrows<ResourceNotFoundException> {
             flowClassRPCOps.getStartableFlows("")
         }
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
     }
 
@@ -111,7 +113,7 @@ class FlowClassRPCOpsImplTest {
     fun `Get flow classes executes cpi service and vnode service and returns list of strings`() {
         val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         flowClassRPCOps.getStartableFlows("")
-        verify(virtualNodeInfoReadService, times(1)).getById(any())
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
     }
 

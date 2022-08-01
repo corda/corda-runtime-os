@@ -37,7 +37,7 @@ class MemberLookupImplTest {
         val keyHash = PublicKeyHash.calculate(key)
         val member1 = mock<MemberInfo>()
 
-        whenever(membershipGroupReader.lookup(keyHash)).thenReturn(member1)
+        whenever(membershipGroupReader.lookupByLedgerKey(keyHash)).thenReturn(member1)
 
         val target = MemberLookupImpl(flowFiberService)
 

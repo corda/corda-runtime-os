@@ -1,0 +1,16 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Membership data distribution and synchronisation API'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:lifecycle:lifecycle")
+
+    api project(":libs:membership:membership-common")
+    api project(":libs:virtual-node:virtual-node-info")
+}

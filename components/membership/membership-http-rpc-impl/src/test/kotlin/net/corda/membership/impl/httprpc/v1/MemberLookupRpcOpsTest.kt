@@ -23,7 +23,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -162,7 +162,7 @@ class MemberLookupRpcOpsTest {
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),

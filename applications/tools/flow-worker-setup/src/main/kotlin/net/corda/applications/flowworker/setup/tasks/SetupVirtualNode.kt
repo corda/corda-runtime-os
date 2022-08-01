@@ -54,13 +54,14 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
                 cpi.metadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID(),
-                timestamp = Instant.now()
+                timestamp = Instant.now(),
+                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             ) }
         }
 
         virtualNodes.forEach { vNode ->
             val hid = vNode.second.holdingIdentity
-            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
+            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.shortHash}'")
         }
 
         cpiList.flatMap { it.cpks }.map { cpk ->

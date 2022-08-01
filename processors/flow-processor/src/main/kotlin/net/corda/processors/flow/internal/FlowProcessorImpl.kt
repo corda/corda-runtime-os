@@ -2,7 +2,6 @@ package net.corda.processors.flow.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.flow.dummy.link.DummyLinkManagerService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
@@ -37,8 +36,6 @@ class FlowProcessorImpl @Activate constructor(
     private val flowService: FlowService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
-    @Reference(service = DummyLinkManagerService::class)
-    private val dummyLinkManagerService: DummyLinkManagerService,
     @Reference(service = FlowP2PFilterService::class)
     private val flowP2PFilterService: FlowP2PFilterService,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -60,7 +57,6 @@ class FlowProcessorImpl @Activate constructor(
         ::configurationReadService,
         ::flowService,
         ::flowMapperService,
-        ::dummyLinkManagerService,
         ::flowP2PFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,

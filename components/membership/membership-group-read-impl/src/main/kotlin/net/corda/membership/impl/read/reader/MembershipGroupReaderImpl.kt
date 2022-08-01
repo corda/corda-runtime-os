@@ -21,7 +21,7 @@ class MembershipGroupReaderImpl(
     private val memberList: List<MemberInfo>
         get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)
             ?: throw IllegalStateException(
-                "Failed to find member list for ID='${holdingIdentity.id}, Group ID='${holdingIdentity.groupId}'")
+                "Failed to find member list for ID='${holdingIdentity.shortHash}, Group ID='${holdingIdentity.groupId}'")
 
     override val groupParameters: GroupParameters
         get() = TODO("Not yet implemented")
@@ -30,7 +30,7 @@ class MembershipGroupReaderImpl(
 
     override fun lookup(): Collection<MemberInfo> = memberList.filter { it.isActive }
 
-    override fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo? =
+    override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActive && ledgerKeyHash in it.ledgerKeyHashes }
 
     override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =

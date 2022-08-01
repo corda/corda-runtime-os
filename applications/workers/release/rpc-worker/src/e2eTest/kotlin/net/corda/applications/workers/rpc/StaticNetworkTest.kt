@@ -7,7 +7,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.httprpc.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
@@ -133,7 +133,7 @@ class StaticNetworkTest {
             eventually {
                 val status = proxy.status(id)
                 assertThat(status.status).isEqualTo("OK")
-                status.checksum
+                status.cpiFileChecksum
             }
         }
     }
@@ -149,7 +149,7 @@ class StaticNetworkTest {
             val proxy = client.start().proxy
             membersNames.associateWith {
                 proxy.createVirtualNode(
-                    HTTPCreateVirtualNodeRequest(
+                    VirtualNodeRequest(
                         x500Name = it,
                         cpiFileChecksum = checksum,
                         vaultDdlConnection = null,
@@ -157,7 +157,7 @@ class StaticNetworkTest {
                         cryptoDdlConnection = null,
                         cryptoDmlConnection = null,
                     )
-                ).holdingIdHash
+                ).holdingIdentity.shortHash
             }
         }
     }

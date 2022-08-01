@@ -752,7 +752,8 @@ class InboundMessageProcessorTest {
 
         assertThat(records).hasSize(1).anySatisfy {
             assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
-            assertThat(it.value).isSameAs(unauthenticatedMessage)
+            assertThat(it.value).isInstanceOf(AppMessage::class.java)
+            assertThat((it.value as AppMessage).message).isEqualTo(unauthenticatedMessage)
         }
     }
 }

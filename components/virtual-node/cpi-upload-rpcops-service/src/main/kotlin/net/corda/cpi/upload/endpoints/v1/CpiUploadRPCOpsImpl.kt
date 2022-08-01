@@ -7,7 +7,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.cpiupload.endpoints.v1.HTTPGetCPIsResponse
+import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -28,7 +28,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService
 ) : CpiUploadRPCOps, PluggableRPCOps<CpiUploadRPCOps>, Lifecycle {
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRPCOps>(
@@ -47,15 +47,15 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun stop() = coordinator.close()
 
-    override fun cpi(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
+    override fun cpi(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Uploading CPI: ${upload.fileName}")
         requireRunning()
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
-        return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId)
+        return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
     // We're mostly returning the enumeration to a string in this version
-    override fun status(id: String): CpiUploadRPCOps.Status {
+    override fun status(id: String): CpiUploadRPCOps.CpiUploadStatus {
         logger.info("Upload status request for CPI id: $id")
         requireRunning()
         val status = cpiUploadManager.status(id) ?: throw InternalServerException("No such requestId=$id")
@@ -66,14 +66,14 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         }
 
         val checksum = if (status.checksum != null) toShortHash(status.checksum.toCorda()) else ""
-        return CpiUploadRPCOps.Status(status.message, checksum)
+        return CpiUploadRPCOps.CpiUploadStatus(status.message, checksum)
     }
 
-    override fun getAllCpis(): HTTPGetCPIsResponse {
+    override fun getAllCpis(): GetCPIsResponse {
         logger.info("Get all CPIs request")
         requireRunning()
         val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
-        return HTTPGetCPIsResponse(cpis)
+        return GetCPIsResponse(cpis)
     }
 
     /**

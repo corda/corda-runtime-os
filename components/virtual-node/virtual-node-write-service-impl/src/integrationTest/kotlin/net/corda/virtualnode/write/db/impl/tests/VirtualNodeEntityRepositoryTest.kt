@@ -99,33 +99,33 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         // Search by full file checksum
-        var cpiMetadata = repository.getCPIMetadata(fileChecksum)
+        var cpiMetadata = repository.getCPIMetadataByChecksum(fileChecksum)
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by hex file checksum
-        cpiMetadata = repository.getCPIMetadata(fileChecksum)
+        cpiMetadata = repository.getCPIMetadataByChecksum(fileChecksum)
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum
         // We should not match anything less than the 12-char 'short hash'
-        cpiMetadata = repository.getCPIMetadata("56ABCD")
+        cpiMetadata = repository.getCPIMetadataByChecksum("56ABCD")
         Assertions.assertThat(cpiMetadata).isNotEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum using different case
         // We should not match anything less than the 12-char 'short hash'
-        cpiMetadata = repository.getCPIMetadata("56AbCd")
+        cpiMetadata = repository.getCPIMetadataByChecksum("56AbCd")
         Assertions.assertThat(cpiMetadata).isNotEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum
-        cpiMetadata = repository.getCPIMetadata("123456ABCDEF")
+        cpiMetadata = repository.getCPIMetadataByChecksum("123456ABCDEF")
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum using different case
-        cpiMetadata = repository.getCPIMetadata("123456AbCdEf")
+        cpiMetadata = repository.getCPIMetadataByChecksum("123456AbCdEf")
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Noll returned if not found
-        cpiMetadata = repository.getCPIMetadata("111111")
+        cpiMetadata = repository.getCPIMetadataByChecksum("111111")
         Assertions.assertThat(cpiMetadata).isNull()
     }
 
@@ -157,9 +157,9 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(cpiMetadataEntity)
         }
 
-        Assertions.assertThat(repository.getCPIMetadata("")).isNull()
-        Assertions.assertThat(repository.getCPIMetadata("123456")).isNull()
-        Assertions.assertThat(repository.getCPIMetadata(hexFileChecksum.substring(0, 12))).isEqualTo(expectedCpiMetadata)
+        Assertions.assertThat(repository.getCPIMetadataByChecksum("")).isNull()
+        Assertions.assertThat(repository.getCPIMetadataByChecksum("123456")).isNull()
+        Assertions.assertThat(repository.getCPIMetadataByChecksum(hexFileChecksum.substring(0, 12))).isEqualTo(expectedCpiMetadata)
     }
 
     @Test
@@ -168,7 +168,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val holdingIdentityEntity = with(expectedHoldingIdentity) {
             HoldingIdentityEntity(
-                id, hash, x500Name, groupId, null, null,
+                shortHash, fullHash, x500Name, groupId, null, null,
                 null, null, null
             )
         }
@@ -178,7 +178,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         // Search by short hash
-        var holdingIdentity = repository.getHoldingIdentity(expectedHoldingIdentity.id)
+        var holdingIdentity = repository.getHoldingIdentity(expectedHoldingIdentity.shortHash)
         Assertions.assertThat(holdingIdentity).isEqualTo(expectedHoldingIdentity)
 
         // Noll returned if not found
@@ -222,13 +222,13 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         val holdingIdentityEntity = entityManagerFactory.transaction {
-            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.id)
+            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.shortHash)
         }
 
         Assertions.assertThat(holdingIdentityEntity).isNotNull
         with(holdingIdentityEntity) {
-            Assertions.assertThat(holdingIdentityId).isEqualTo(expectedHoldingIdentity.id)
-            Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.hash)
+            Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash)
+            Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.fullHash)
             Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name)
             Assertions.assertThat(mgmGroupId).isEqualTo(expectedHoldingIdentity.groupId)
             Assertions.assertThat(vaultDDLConnectionId).isEqualTo(expectedConnections.vaultDdlConnectionId)
@@ -299,13 +299,13 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         val holdingIdentityEntity = entityManagerFactory.transaction {
-            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.id)
+            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.shortHash)
         }
 
         Assertions.assertThat(holdingIdentityEntity).isNotNull
         with(holdingIdentityEntity) {
-            Assertions.assertThat(holdingIdentityId).isEqualTo(expectedHoldingIdentity.id)
-            Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.hash)
+            Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash)
+            Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.fullHash)
             Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name)
             Assertions.assertThat(mgmGroupId).isEqualTo(expectedHoldingIdentity.groupId)
             Assertions.assertThat(vaultDDLConnectionId).isEqualTo(expectedConnections.vaultDdlConnectionId)
@@ -339,12 +339,12 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                id, hash, x500Name, groupId, null, null,
+                shortHash, fullHash, x500Name, groupId, null, null,
                 null, null, null
             )
         }
         val virtualNodeEntity =
-            VirtualNodeEntity(holdingIdentityEntity, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+            VirtualNodeEntity(holdingIdentityEntity, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString(), "")
 
         entityManagerFactory.transaction {
             it.persist(cpiMetadataEntity)
@@ -383,7 +383,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                id, hash, x500Name, groupId, null, null,
+                shortHash, fullHash, x500Name, groupId, null, null,
                 null, null, null
             )
         }
@@ -404,7 +404,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         Assertions.assertThat(virtualNodeEntity).isNotNull
         with(virtualNodeEntity) {
-            Assertions.assertThat(holdingIdentityEntity.holdingIdentityId).isEqualTo(holdingIdentity.id)
+            Assertions.assertThat(holdingIdentityEntity.holdingIdentityShortHash).isEqualTo(holdingIdentity.shortHash)
             Assertions.assertThat(cpiName).isEqualTo(cpiId.name)
             Assertions.assertThat(cpiVersion).isEqualTo(cpiId.version)
             Assertions.assertThat(cpiSignerSummaryHash).isEqualTo(signerSummaryHash)

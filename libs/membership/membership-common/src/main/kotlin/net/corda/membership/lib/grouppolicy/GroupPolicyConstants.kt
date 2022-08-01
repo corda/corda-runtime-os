@@ -89,6 +89,12 @@ class GroupPolicyConstants {
                 COMBINED("Combined"),
                 DISTINCT("Distinct");
 
+                companion object {
+                    fun fromString(str: String?): SessionKeyPolicy? = values().firstOrNull {
+                        it.policy == str
+                    }
+                }
+
                 override fun toString(): String {
                     return policy
                 }
@@ -108,6 +114,12 @@ class GroupPolicyConstants {
                 CORDA_4("Corda4"),
                 NO_PKI("NoPKI");
 
+                companion object {
+                    fun fromString(str: String?): SessionPkiMode? = values().firstOrNull {
+                        it.mode == str
+                    }
+                }
+
                 override fun toString(): String {
                     return mode
                 }
@@ -121,6 +133,12 @@ class GroupPolicyConstants {
                 STANDARD_EV3("StandardEV3"),
                 CORDA_4("Corda4");
 
+                companion object {
+                    fun fromString(str: String?): TlsPkiMode? = values().firstOrNull {
+                        it.mode == str
+                    }
+                }
+
                 override fun toString(): String {
                     return mode
                 }
@@ -132,6 +150,12 @@ class GroupPolicyConstants {
             enum class TlsVersion(private val version: String) {
                 VERSION_1_2("1.2"),
                 VERSION_1_3("1.3");
+
+                companion object {
+                    fun fromString(str: String?): TlsVersion? = values().firstOrNull {
+                        it.version == str
+                    }
+                }
 
                 override fun toString(): String {
                     return version
@@ -145,10 +169,31 @@ class GroupPolicyConstants {
                 AUTH("Authentication"),
                 AUTH_ENCRYPT("Authentication_Encryption");
 
+                companion object {
+                    fun fromString(str: String?): ProtocolMode? = values().firstOrNull {
+                        it.mode == str
+                    }
+                }
+
                 override fun toString(): String {
                     return mode
                 }
             }
         }
+    }
+
+    /**
+     * Keys as stored in the persistence layer.
+     */
+    object PropertyKeys {
+        const val REGISTRATION_PROTOCOL = "protocol.registration"
+        const val SYNC_PROTOCOL = "protocol.synchronisation"
+        const val SESSION_KEY_POLICY = "key.session.policy"
+        const val SESSION_PKI_MODE = "pki.session"
+        const val TLS_PKI_MODE = "pki.tls"
+        const val TLS_VERSION = "tls.version"
+        const val SESSION_TRUST_ROOTS = "truststore.session"
+        const val TLS_TRUST_ROOTS = "truststore.tls"
+        const val P2P_PROTOCOL_MODE = "protocol.p2p.mode"
     }
 }

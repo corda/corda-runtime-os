@@ -47,8 +47,8 @@ internal class VirtualNodeInfoReadServiceFakeTest {
     @Test
     fun getById() {
         val service = createService(alice, bob)
-        assertEquals(bob, service.getById(bob.holdingIdentity.id), "Virtual Node Info")
-        assertNull(service.getById(carol.holdingIdentity.id), "Virtual Node Info")
+        assertEquals(bob, service.getByHoldingIdentityShortHash(bob.holdingIdentity.shortHash), "Virtual Node Info")
+        assertNull(service.getByHoldingIdentityShortHash(carol.holdingIdentity.shortHash), "Virtual Node Info")
     }
 
     @Test

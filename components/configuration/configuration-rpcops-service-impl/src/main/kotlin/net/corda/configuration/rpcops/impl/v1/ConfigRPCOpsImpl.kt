@@ -17,9 +17,10 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
-import net.corda.libs.configuration.endpoints.v1.types.HTTPGetConfigResponse
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -80,7 +81,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun updateConfig(request: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
+    override fun updateConfig(request: UpdateConfigParameters): UpdateConfigResponse {
         validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -96,8 +97,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val response = sendRequest(rpcRequest)
 
         return if (response.success) {
-            HTTPUpdateConfigResponse(
-                response.section, response.config, Version(
+            UpdateConfigResponse(
+                response.section, response.config, ConfigSchemaVersion(
                     response.schemaVersion.majorVersion,
                     response.schemaVersion.minorVersion
                 ), response.version
@@ -118,16 +119,16 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun get(section: String): HTTPGetConfigResponse {
+    override fun get(section: String): GetConfigResponse {
         val config = configurationGetService.get(section)
             ?: throw ResourceNotFoundException(
                 "Configuration for section '${section} not found."
             )
-        return HTTPGetConfigResponse(
+        return GetConfigResponse(
             section,
             config.source,
             config.value,
-            Version(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            ConfigSchemaVersion(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
             config.version
         )
     }
@@ -136,10 +137,14 @@ internal class ConfigRPCOpsImpl @Activate constructor(
      * Validates that the [request] config can be parsed into a `Config` object and that its values are valid based on the defined
      * schema for this request.
      */
-    private fun validateRequestedConfig(request: HTTPUpdateConfigRequest) = try {
+    private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
         val config = request.config
         val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
-        val updatedConfig = validator.validate(request.section, request.schemaVersion, smartConfig)
+        val updatedConfig = validator.validate(
+            request.section,
+            Version(request.schemaVersion.major, request.schemaVersion.minor),
+            smartConfig
+        )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
         val message = "Configuration \"${request.config}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"

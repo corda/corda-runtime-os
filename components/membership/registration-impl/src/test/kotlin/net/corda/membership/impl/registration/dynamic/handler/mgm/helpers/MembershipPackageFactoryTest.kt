@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler.helpers
+package net.corda.membership.impl.registration.dynamic.handler.mgm.helpers
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -8,11 +8,14 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
+import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
@@ -37,9 +40,9 @@ import java.time.Instant
 
 class MembershipPackageFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(100))
-    private val serializer = mock<CordaAvroSerializer<LayeredPropertyMap>>()
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<LayeredPropertyMap>(any()) } doReturn serializer
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata> {
         on { encodeAsByteArray(any()) } doAnswer {
@@ -200,11 +203,17 @@ class MembershipPackageFactoryTest {
         memberName: String,
     ): MemberInfo {
         val mgmContext = mock<MGMContext>()
-        whenever(serializer.serialize(mgmContext)).doReturn("mgmContext-$memberName".toByteArray())
+        whenever(mgmContext.entries).thenReturn(
+            mapOf("mgmContext" to "mgm+$memberName").entries
+        )
+        whenever(serializer.serialize(mgmContext.toAvro())).doReturn("mgmContext-$memberName".toByteArray())
         val memberContext = mock<MemberContext> {
             on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn "GroupId"
         }
-        whenever(serializer.serialize(memberContext)).doReturn("memberContext-$memberName".toByteArray())
+        whenever(memberContext.entries).thenReturn(
+            mapOf("memberContext" to "member+$memberName").entries
+        )
+        whenever(serializer.serialize(memberContext.toAvro())).doReturn("memberContext-$memberName".toByteArray())
         return mock {
             on { mgmProvidedContext } doReturn mgmContext
             on { memberProvidedContext } doReturn memberContext

@@ -15,7 +15,6 @@ class VirtualNodeDbChangeLog(
     private val changeLogs: List<CpkDbChangeLogEntity>,
 
 ): DbChange {
-    private val separator = '/'
     companion object {
         // To get going we assume the master changelog file for a CPK is XML and has this name
         // Note that this name different to the example in:
@@ -30,7 +29,7 @@ class VirtualNodeDbChangeLog(
 
     private val all by lazy {
         changeLogs.associate {
-            "${it.id.cpkName}${separator}${it.id.filePath}" to it.content
+            it.id.filePath to it.content
         }
     }
 
@@ -41,13 +40,13 @@ class VirtualNodeDbChangeLog(
             .filter {
                 it.id.filePath == MASTER_CHANGE_LOG
             }.map {
-                "${it.id.cpkName}${separator}${it.id.filePath}"
+                it.id.filePath
             }
 
     override val changeLogFileList: Set<String>
         get() = all.keys
 
-    override fun fetch(path: String, relativeTo: String?): InputStream {
+    override fun fetch(path: String): InputStream {
         return all[path]?.byteInputStream()
             ?: throw CordaRuntimeException("Cannot find changelog file: $path")
     }

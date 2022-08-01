@@ -28,6 +28,7 @@ import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.annotations.extensions.title
 import net.corda.httprpc.tools.isStaticallyExposedGet
+import net.corda.httprpc.tools.responseDescription
 import java.lang.reflect.Method
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
@@ -158,7 +159,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
                     annotation.path(method),
                     method.retrieveParameters(),
                     ResponseBody(
-                        annotation.responseDescription,
+                        method.responseDescription,
                         method.toClassAndParameterizedTypes().first,
                         method.toClassAndParameterizedTypes().second,
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false

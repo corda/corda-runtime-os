@@ -94,25 +94,25 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup known member with active status based on ledger public key hash`() {
         mockMemberList(listOf(activeMemberInfo))
-        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookup(mockLedgerKeyHash))
+        assertEquals(activeMemberInfo, membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
     }
 
     @Test
     fun `lookup known member with non active status based on ledger public key hash`() {
         mockMemberList(listOf(suspendedMemberInfo))
-        assertNull(membershipGroupReaderImpl.lookup(mockLedgerKeyHash))
+        assertNull(membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
     }
 
     @Test
     fun `lookup non-existing member based on ledger public key hash`() {
         mockMemberList(emptyList())
-        assertNull(membershipGroupReaderImpl.lookup(mockLedgerKeyHash))
+        assertNull(membershipGroupReaderImpl.lookupByLedgerKey(mockLedgerKeyHash))
     }
 
     @Test
     fun `lookup member based on ledger public key hash using session key fails`() {
         mockMemberList(listOf(activeMemberInfo))
-        assertNull(membershipGroupReaderImpl.lookup(mockSessionKeyHash))
+        assertNull(membershipGroupReaderImpl.lookupByLedgerKey(mockSessionKeyHash))
     }
 
     @Test
@@ -149,7 +149,7 @@ class MembershipGroupReaderImplTest {
     fun `lookup throws illegal state exception if no cached member list available`() {
         val error = assertThrows<IllegalStateException> { membershipGroupReaderImpl.lookup() }
         assertEquals(
-            "Failed to find member list for ID='${aliceIdGroup1.id}, Group ID='${aliceIdGroup1.groupId}'",
+            "Failed to find member list for ID='${aliceIdGroup1.shortHash}, Group ID='${aliceIdGroup1.groupId}'",
             error.message
         )
     }

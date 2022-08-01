@@ -22,6 +22,12 @@ import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.registration.dummy.TestGroupPolicy
 import net.corda.membership.impl.registration.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -214,7 +220,7 @@ class MemberRegistrationIntegrationTest {
             it.assertThat(result).isNotNull
             it.assertThat(result?.first)
                 .isNotNull
-                .isEqualTo(member.id)
+                .isEqualTo(member.shortHash)
             it.assertThat(result?.second)
                 .isNotNull
                 .isInstanceOf(AppMessage::class.java)
@@ -229,6 +235,14 @@ class MemberRegistrationIntegrationTest {
                 with(deserializedContext.items) {
                     it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)
                     it.assertThat(first { pair -> pair.key == PROTOCOL_KEY }.value).isEqualTo(PROTOCOL_VALUE)
+                    it.assertThat(first { pair -> pair.key == PARTY_NAME }.value).isEqualTo(memberName.toString())
+                    it.assertThat(first { pair -> pair.key == GROUP_ID }.value).isEqualTo(groupId)
+                    with (map { pair -> pair.key }) {
+                        it.assertThat(contains(String.format(LEDGER_KEYS_KEY, 0))).isTrue
+                        it.assertThat(contains(String.format(LEDGER_KEY_HASHES_KEY, 0))).isTrue
+                        it.assertThat(contains(PARTY_SESSION_KEY)).isTrue
+                        it.assertThat(contains(SESSION_KEY_HASH)).isTrue
+                    }
                 }
             }
         }
@@ -236,10 +250,10 @@ class MemberRegistrationIntegrationTest {
 
     private fun buildTestContext(member: HoldingIdentity): Map<String, String> {
         val sessionKeyId =
-            cryptoOpsClient.generateKeyPair(member.id, "SESSION_INIT", member.id + "session", "CORDA.ECDSA.SECP256R1")
+            cryptoOpsClient.generateKeyPair(member.shortHash, "SESSION_INIT", member.shortHash + "session", "CORDA.ECDSA.SECP256R1")
                 .publicKeyId()
         val ledgerKeyId =
-            cryptoOpsClient.generateKeyPair(member.id, "LEDGER", member.id + "ledger", "CORDA.ECDSA.SECP256R1")
+            cryptoOpsClient.generateKeyPair(member.shortHash, "LEDGER", member.shortHash + "ledger", "CORDA.ECDSA.SECP256R1")
                 .publicKeyId()
         return mapOf(
             "corda.session.key.id" to sessionKeyId,

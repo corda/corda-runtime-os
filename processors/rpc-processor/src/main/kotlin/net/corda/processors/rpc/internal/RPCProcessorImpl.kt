@@ -6,7 +6,6 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.hsm.HSMConfigurationClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
@@ -20,8 +19,10 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
@@ -57,6 +58,8 @@ class RPCProcessorImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = MemberOpsClient::class)
     private val memberOpsClient: MemberOpsClient,
+    @Reference(service = MGMOpsClient::class)
+    private val mgmOpsClient: MGMOpsClient,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -65,14 +68,14 @@ class RPCProcessorImpl @Activate constructor(
     private val configMerger: ConfigMerger,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = HSMConfigurationClient::class)
-    private val hsmConfigurationClient: HSMConfigurationClient,
     @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : RPCProcessor {
 
     private companion object {
@@ -91,13 +94,14 @@ class RPCProcessorImpl @Activate constructor(
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberOpsClient,
+        ::mgmOpsClient,
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,
-        ::hsmConfigurationClient,
         ::hsmRegistrationClient,
         ::certificatesClient,
         ::groupPolicyProvider,
+        ::membershipQueryClient,
     )
 
     override fun start(bootConfig: SmartConfig) {

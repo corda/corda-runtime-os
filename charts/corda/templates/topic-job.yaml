@@ -1,3 +1,4 @@
+{{- if .Values.bootstrap.kafka.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -8,6 +9,9 @@ metadata:
     "helm.sh/hook": pre-install
 spec:
   template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
@@ -20,12 +24,12 @@ spec:
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
             '-k', '/tmp/working_dir/config.properties',
             {{- if .Values.kafka.topicPrefix }}
-            '-n', '"{{ .Values.kafka.topicPrefix }}"',
+            '-n', '{{ .Values.kafka.topicPrefix }}',
             {{- end }}
             'create',
-            '-r', '{{ .Values.kafka.replicas }}',
-            '-p', '{{ .Values.kafka.partitions }}',
-            'connect'{{- if .Values.kafka.cleanup }},
+            '-r', '{{ .Values.bootstrap.kafka.replicas }}',
+            '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
             '-d'
             {{- end }}
           ]
@@ -91,3 +95,4 @@ spec:
         {{- end }}
       restartPolicy: Never
   backoffLimit: 0
+{{- end }}

@@ -60,7 +60,7 @@ class AllAliasedKeysHSM(
         val hsmAlias = computeHSMAlias(
             tenantId = context.getValue(CRYPTO_TENANT_ID),
             alias = spec.alias ?: UUID.randomUUID().toString(),
-            secret = spec.secret ?: UUID.randomUUID().toString().toByteArray()
+            secret = UUID.randomUUID().toString().toByteArray()
         )
         keyPairs[hsmAlias] = keyPair
         return GeneratedPublicKey(

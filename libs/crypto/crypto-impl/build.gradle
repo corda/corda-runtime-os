@@ -6,27 +6,28 @@ plugins {
 description 'Common crypto implementation'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-
     api project(":libs:crypto:crypto-core")
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:osgi.annotation"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-config-schema"
-    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:utilities")
+    implementation project(':libs:layered-property-map')
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-serialization"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    testImplementation project(":testing:layered-property-map-testkit")
 
     testImplementation "javax.persistence:javax.persistence-api"
-    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

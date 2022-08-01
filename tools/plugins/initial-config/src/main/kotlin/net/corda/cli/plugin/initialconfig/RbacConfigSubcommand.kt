@@ -49,20 +49,4 @@ class RbacConfigSubcommand : Runnable {
         }
     }
 
-    @Suppress("Unused")
-    @CommandLine.Command(
-        name = "create-dev-config",
-        description = ["Create a config with standard admin user/password and self-signed cert"]
-    )
-    fun createDevConfig() {
-        if (user == null) {
-            user = "admin"
-        }
-
-        if (password == null) {
-            password = "admin"
-        }
-        run()
-    }
-
 }

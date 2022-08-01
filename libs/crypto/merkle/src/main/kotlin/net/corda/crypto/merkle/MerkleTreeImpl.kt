@@ -69,7 +69,7 @@ import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
  *
  */
 
-internal class MerkleTreeImpl(
+class MerkleTreeImpl(
     override val leaves: List<ByteArray>,
     override val digestProvider: MerkleTreeHashDigestProvider
 ) : MerkleTree {

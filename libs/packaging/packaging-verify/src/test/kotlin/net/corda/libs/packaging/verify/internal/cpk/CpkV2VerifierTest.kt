@@ -1,13 +1,14 @@
 package net.corda.libs.packaging.verify.internal.cpk
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils.ALICE
-import net.corda.libs.packaging.verify.TestUtils.BOB
-import net.corda.libs.packaging.verify.TestUtils.ROOT_CA
-import net.corda.libs.packaging.verify.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.TestUtils.ALICE
+import net.corda.libs.packaging.testutils.TestUtils.BOB
+import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

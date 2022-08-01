@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
@@ -154,7 +153,7 @@ class StaticMemberRegistrationService @Activate constructor(
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.id
+        val memberId = registeringMember.shortHash
 
         assignSoftHsm(memberId)
 
@@ -193,7 +192,7 @@ class StaticMemberRegistrationService @Activate constructor(
             records.add(
                 Record(
                     MEMBER_LIST_TOPIC,
-                    "${owningMemberHoldingIdentity.id}-$memberId",
+                    "${owningMemberHoldingIdentity.shortHash}-$memberId",
                     PersistentMemberInfo(
                         owningMemberHoldingIdentity.toAvro(),
                         memberInfo.memberProvidedContext.toAvro(),
@@ -214,7 +213,7 @@ class StaticMemberRegistrationService @Activate constructor(
         groupPolicy: GroupPolicy
     ): Record<String, HostedIdentityEntry> {
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.id
+        val memberId = registeringMember.shortHash
         val groupId = groupPolicy.groupId
 
         /**
@@ -231,7 +230,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.id,
+            registeringMember.shortHash,
             hostedIdentity
 
         )
@@ -259,7 +258,7 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun assignSoftHsm(memberId: String) {
         CryptoConsts.Categories.all.forEach {
             if(hsmRegistrationClient.findHSM(memberId, it) == null) {
-                hsmRegistrationClient.assignSoftHSM(memberId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+                hsmRegistrationClient.assignSoftHSM(memberId, it)
             }
         }
     }

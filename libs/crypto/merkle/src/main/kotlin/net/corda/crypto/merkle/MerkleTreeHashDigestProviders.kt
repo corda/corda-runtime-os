@@ -8,11 +8,12 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
 import java.nio.charset.Charset
 import java.security.SecureRandom
 
 private fun createNonce(random: SecureRandom): ByteArray {
-    val nonce = ByteArray(16)
+    val nonce = ByteArray(NonceHashDigestProvider.EXPECTED_ENTROPY_LENGTH)
     random.nextBytes(nonce)
     return nonce
 }
@@ -52,6 +53,12 @@ class TweakableHashDigestProvider(
         require(!leafPrefix.contentEquals(nodePrefix)) {
             "Hash prefix for nodes must be different to that for leaves"
         }
+        require(leafPrefix.size > 0) {
+            "Leaf prefix cannot be empty"
+        }
+        require(nodePrefix.size > 0) {
+            "Node prefix cannot be empty"
+        }
     }
 
     override fun leafNonce(index: Int): ByteArray? = null
@@ -73,7 +80,10 @@ open class NonceHashDigestProvider(
     override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
     private val digestService: DigestService,
     val entropy: ByteArray,
-    ) : MerkleTreeHashDigestProvider {
+    ) : MerkleTreeHashDigestProviderWithSizeProofSupport {
+    companion object{
+        val EXPECTED_ENTROPY_LENGTH = 32
+    }
     constructor(
         digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
         digestService: DigestService,
@@ -103,7 +113,7 @@ open class NonceHashDigestProvider(
         }
     }
 
-    fun getSizeProof(leaves: List<ByteArray>): MerkleProof {
+    override fun getSizeProof(leaves: List<ByteArray>): MerkleProof {
         val merkleTree = MerkleTreeImpl.createMerkleTree(leaves, this)
         val allLeavesProof = merkleTree.createAuditProof(merkleTree.leaves.indices.toList())
         val preHashedLeaves = allLeavesProof.leaves.map {

@@ -7,28 +7,11 @@ plugins {
 description 'Registration service implementations'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
-    implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-config-schema"
-    implementation "net.corda:corda-membership"
-    implementation "net.corda:corda-topic-schema"
-
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-impl")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:schema-registry:schema-registry")
-    implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":libs:utilities")
-    implementation project(':libs:chunking:chunking-core')
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:crypto:crypto-client")
@@ -37,16 +20,24 @@ dependencies {
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":components:membership:registration")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:membership:membership-impl")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:utilities")
+    implementation project(":libs:utilities")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:chunking:chunking-core')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation project(":libs:crypto:cipher-suite-impl")
-    testImplementation project(":testing:layered-property-map-testkit")
-    testImplementation project(":testing:test-utilities")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-topic-schema"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 
@@ -60,4 +51,14 @@ dependencies {
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":testing:test-utilities")
+
+    testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
