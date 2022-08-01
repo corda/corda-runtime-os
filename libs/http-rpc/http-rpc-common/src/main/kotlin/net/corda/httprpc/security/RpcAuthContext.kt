@@ -19,6 +19,12 @@ val CURRENT_RPC_CONTEXT: ThreadLocal<RpcAuthContext> = CurrentRpcContext()
  */
 fun rpcContext(): RpcAuthContext = CURRENT_RPC_CONTEXT.get()
 
+/**
+ * Returns a context specific to the current RPC call or <code>null</code> if not set.
+ * The [RpcAuthContext] includes permissions.
+ */
+fun nullableRpcContext(): RpcAuthContext? = CURRENT_RPC_CONTEXT.get()
+
 internal class CurrentRpcContext : ThreadLocal<RpcAuthContext>() {
 
     override fun remove() {
