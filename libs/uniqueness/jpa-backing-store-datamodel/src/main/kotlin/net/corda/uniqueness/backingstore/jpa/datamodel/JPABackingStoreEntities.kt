@@ -140,6 +140,9 @@ data class UniquenessTransactionDetailEntity(
         @Column(name = "expiry_datetime", nullable = false)
         val expiryDateTime: Instant,
 
+        @Column(name = "commit_timestamp", nullable = false)
+        val commitTimestamp: Instant,
+
         @Column(name = "result", nullable = false)
         val result: Char
 ) {

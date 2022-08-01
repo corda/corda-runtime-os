@@ -9,14 +9,14 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.test.util.time.TestClock
+import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.jpa.datamodel.*
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalError
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -26,7 +26,8 @@ class JPABackingStoreEntitiesIntegrationTest {
     private val entityManagerFactory: EntityManagerFactory
 
     // Test clock is restricted to milliseconds because this is the granularity stored in the DB
-    private val testClock = TestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS))
+    private val testClock =
+        AutoTickTestClock(Instant.now().truncatedTo(ChronoUnit.MILLIS), Duration.ofMillis(1))
 
     private companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/uniqueness/migration/uniqueness-creation-v1.0.xml"
@@ -114,6 +115,7 @@ class JPABackingStoreEntitiesIntegrationTest {
         val txDetails = UniquenessTransactionDetailEntity(
             txId.algorithm,
             txId.bytes,
+            testClock.instant(),
             testClock.instant(),
             UniquenessCheckInternalResult.RESULT_ACCEPTED_REPRESENTATION)
 

@@ -10,9 +10,16 @@ dependencies {
 
     api project(':libs:lifecycle:lifecycle')
 
+    implementation 'javax.persistence:javax.persistence-api'
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
+    implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
+
+    // For JSON serialization to DB
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+
 }

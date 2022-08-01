@@ -27,4 +27,17 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
+
+    integrationTestImplementation 'net.corda:corda-crypto'
+    integrationTestImplementation 'net.corda:corda-db-schema'
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-core')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
+    integrationTestImplementation project(':testing:db-testkit')
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

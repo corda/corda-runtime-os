@@ -34,21 +34,21 @@ import java.util.*
  * store implementation.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-open class UniquenessCheckerImplTests {
+class UniquenessCheckerImplTests {
 
-    protected val baseTime: Instant = Instant.EPOCH
+    private val baseTime: Instant = Instant.EPOCH
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
-    protected val defaultTimeWindowUpperBound: Instant =
+    private val defaultTimeWindowUpperBound: Instant =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
-    protected lateinit var testClock: AutoTickTestClock
+    private lateinit var testClock: AutoTickTestClock
 
-    protected lateinit var uniquenessChecker: UniquenessChecker
+    private lateinit var uniquenessChecker: UniquenessChecker
 
-    protected fun currentTime(): Instant = testClock.peekTime()
+    private fun currentTime(): Instant = testClock.peekTime()
 
-    protected fun newRequestBuilder(txId: SecureHash = randomSecureHash())
+    private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
     : UniquenessCheckRequest.Builder =
         UniquenessCheckRequest.newBuilder(
             UniquenessCheckRequest(
@@ -61,10 +61,10 @@ open class UniquenessCheckerImplTests {
             )
         )
 
-    protected fun processRequests(vararg requests: UniquenessCheckRequest) =
+    private fun processRequests(vararg requests: UniquenessCheckRequest) =
         uniquenessChecker.processRequests(requests.asList())
 
-    protected fun generateUnspentStates(numOutputStates: Int): List<String> {
+    private fun generateUnspentStates(numOutputStates: Int): List<String> {
         val issueTxId = randomSecureHash()
         val unspentStateRefs = LinkedList<String>()
 
@@ -87,7 +87,7 @@ open class UniquenessCheckerImplTests {
     }
 
     @BeforeEach
-    open fun init() {
+    private fun init() {
         /*
          * Specific clock values are important to our testing in some cases, so we use a mock time
          * facilities service which provides a clock starting at a known point in time (baseTime)

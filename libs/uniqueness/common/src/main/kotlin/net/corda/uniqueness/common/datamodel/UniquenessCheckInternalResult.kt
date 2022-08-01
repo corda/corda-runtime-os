@@ -9,17 +9,20 @@ import java.time.Instant
  * checker and backing store only. This representation is agnostic to both the message bus API
  * and any DB schema that may be used to persist data by the backing store.
  */
-sealed class UniquenessCheckInternalResult {
+sealed class UniquenessCheckInternalResult(val commitTimestamp: Instant) {
     companion object {
         const val RESULT_ACCEPTED_REPRESENTATION = 'A'
         const val RESULT_REJECTED_REPRESENTATION = 'R'
     }
 
-    data class Success(val commitTimestamp: Instant) : UniquenessCheckInternalResult() {
+    class Success(commitTimestamp: Instant) : UniquenessCheckInternalResult(commitTimestamp) {
         override fun toCharacterRepresentation(): Char = RESULT_ACCEPTED_REPRESENTATION
     }
 
-    data class Failure(val error: UniquenessCheckInternalError) : UniquenessCheckInternalResult() {
+    class Failure(
+        commitTimestamp: Instant,
+        val error: UniquenessCheckInternalError
+        ) : UniquenessCheckInternalResult(commitTimestamp) {
         override fun toCharacterRepresentation(): Char = RESULT_REJECTED_REPRESENTATION
 
         /**
