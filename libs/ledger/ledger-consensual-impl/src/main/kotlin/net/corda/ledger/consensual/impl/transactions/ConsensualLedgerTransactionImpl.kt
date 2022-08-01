@@ -17,22 +17,22 @@ class ConsensualLedgerTransactionImpl(
         get() = wireTransaction.id
 
     override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroups.TIMESTAMP.ordinal).first()
+        val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroupEnum.TIMESTAMP.ordinal).first()
         serializer.deserialize(timeStampBytes, Instant::class.java)
     }
     override val requiredSigningKeys: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroups.REQUIRED_SIGNING_KEYS.ordinal)
+            .getComponentGroupList(ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS.ordinal)
             .map{serializer.deserialize(it, PublicKey::class.java)}.toSet()
     }
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroups.OUTPUT_STATE_TYPES.ordinal)
+            .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES.ordinal)
             .map{serializer.deserialize(it, String::class.java)}
     }
     override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroups.OUTPUT_STATES.ordinal)
+            .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATES.ordinal)
             .mapIndexed{
                 index, state ->
             //@TODO(continue with net.corda.flow.application.sessions.FlowSessionImpl.deserializeReceivedPayload)

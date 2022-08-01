@@ -65,17 +65,17 @@ class ConsensualTransactionBuilderImpl(
             .map{it.owningKey}
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()
-        for (componentGroupIndex in ConsensualComponentGroups.values()) {
+        for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
             componentGroupLists += when (componentGroupIndex) {
-                ConsensualComponentGroups.METADATA ->
+                ConsensualComponentGroupEnum.METADATA ->
                     listOf(serializer.serialize(calculateMetaData()).bytes)
-                ConsensualComponentGroups.TIMESTAMP ->
+                ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(timeStamp).bytes)
-                ConsensualComponentGroups.REQUIRED_SIGNING_KEYS ->
+                ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
                     requiredSigningKeys.map{serializer.serialize(it).bytes}
-                ConsensualComponentGroups.OUTPUT_STATES ->
+                ConsensualComponentGroupEnum.OUTPUT_STATES ->
                     states.map{serializer.serialize(it).bytes}
-                ConsensualComponentGroups.OUTPUT_STATE_TYPES ->
+                ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
                     states.map{serializer.serialize(it::class.java.name).bytes}
             }
         }
