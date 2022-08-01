@@ -6,10 +6,9 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transactions.LedgerTransaction
 import net.corda.v5.ledger.common.transactions.SignedTransaction
-import net.corda.v5.ledger.common.transactions.WireTransaction
 
 class SignedTransactionImpl(
-    override val wireTransaction: WireTransaction,
+    val wireTransaction: WireTransaction,
     override val sigs: List<DigitalSignatureAndMetadata>
     ) :SignedTransaction
 {

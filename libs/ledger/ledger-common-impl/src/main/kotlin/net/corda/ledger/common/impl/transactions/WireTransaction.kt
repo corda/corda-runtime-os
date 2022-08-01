@@ -3,6 +3,7 @@ package net.corda.ledger.common.impl.transactions
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -15,8 +16,6 @@ import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.ledger.common.transactions.PrivacySalt
-import net.corda.v5.ledger.common.transactions.TransactionMetaData
-import net.corda.v5.ledger.common.transactions.WireTransaction
 
 internal const val ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
@@ -27,24 +26,25 @@ internal val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME = DigestAlgorithmName.
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
-class WireTransactionImpl(
+@CordaSerializable
+class WireTransaction(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
-    override val privacySalt: PrivacySalt,
-    override val componentGroupLists: List<List<ByteArray>>
-): WireTransaction{
-    override val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val privacySalt: PrivacySalt,
+    val componentGroupLists: List<List<ByteArray>>
+){
+    val id: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
         rootMerkleTree.root
     }
 
-    override fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
+    fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 
-    override fun getWrappedLedgerTransactionClassName(serializer: SerializationService): String {
+    fun getWrappedLedgerTransactionClassName(serializer: SerializationService): String {
         return this.getMetadata(serializer).getLedgerModel()
     }
 
-    override fun getMetadata(serializer: SerializationService): TransactionMetaDataImpl {
+    fun getMetadata(serializer: SerializationService): TransactionMetaDataImpl {
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
         return serializer.deserialize(metadataBytes, TransactionMetaDataImpl::class.java)
     }

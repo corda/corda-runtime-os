@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.impl.transactions
 import net.corda.ledger.common.impl.transactions.PrivacySaltImpl
 import net.corda.ledger.common.impl.transactions.SignedTransactionImpl
 import net.corda.ledger.common.impl.transactions.TransactionMetaDataImpl
-import net.corda.ledger.common.impl.transactions.WireTransactionImpl
+import net.corda.ledger.common.impl.transactions.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -15,7 +15,6 @@ import net.corda.v5.ledger.common.transactions.SignedTransaction
 import net.corda.v5.ledger.common.transactions.TransactionMetaData
 import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_VERSION_KEY
-import net.corda.v5.ledger.common.transactions.WireTransaction
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
@@ -105,7 +104,7 @@ class ConsensualTransactionBuilderImpl(
         secureRandom.nextBytes(entropy)
         val privacySalt = PrivacySaltImpl(entropy)
 
-        return WireTransactionImpl(
+        return WireTransaction(
             merkleTreeFactory,
             digestService,
             privacySalt,
