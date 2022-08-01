@@ -44,8 +44,8 @@ class ClusterBuilder {
     fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) = put(
-        "/api/v1/maintenance/virtualnode",
-        vNodeUpdateBody(holdingIdHash, newState)
+        "/api/v1/maintenance/virtualnode/$holdingIdHash?state=$newState",
+       ""
     )
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
@@ -63,9 +63,6 @@ class ClusterBuilder {
 
     private fun registerMemberBody() =
         """{ "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
-
-    private fun vNodeUpdateBody(virtualNodeShortId: String, newState: String) =
-        """{ "virtualNodeShortId" : "$virtualNodeShortId", "newState" : "$newState"}"""
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
