@@ -20,10 +20,10 @@ class ConsensualLedgerTransactionImpl(
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroups.TIMESTAMP.ordinal).first()
         serializer.deserialize(timeStampBytes, Instant::class.java)
     }
-    override val requiredSigningKeys: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val requiredSigningKeys: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroups.REQUIRED_SIGNING_KEYS.ordinal)
-            .map{serializer.deserialize(it, PublicKey::class.java)}
+            .map{serializer.deserialize(it, PublicKey::class.java)}.toSet()
     }
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
