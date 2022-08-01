@@ -9,7 +9,7 @@ import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RpcAuthContext
-import net.corda.httprpc.security.nullableRpcContext
+import net.corda.httprpc.security.rpcContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
@@ -84,7 +84,7 @@ internal object ContextUtils {
         return { ctx ->
             MDC.put("http.method", ctx.method())
             MDC.put("http.path", ctx.path())
-            MDC.put("http.user", nullableRpcContext()?.principal ?: "<anonymous>")
+            MDC.put("http.user", rpcContext()?.principal ?: "<anonymous>")
             log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
