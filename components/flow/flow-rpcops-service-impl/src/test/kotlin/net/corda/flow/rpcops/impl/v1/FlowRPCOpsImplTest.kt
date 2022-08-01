@@ -14,8 +14,8 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -38,7 +38,7 @@ class FlowRPCOpsImplTest {
     private lateinit var publisher: Publisher
 
     private fun getStubVirtualNode(): VirtualNodeInfo {
-        return VirtualNodeInfo(HoldingIdentity("", ""),
+        return VirtualNodeInfo(createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
             CpiIdentifier("", "",
             SecureHash("", "bytes".toByteArray())),
             UUID.randomUUID(),

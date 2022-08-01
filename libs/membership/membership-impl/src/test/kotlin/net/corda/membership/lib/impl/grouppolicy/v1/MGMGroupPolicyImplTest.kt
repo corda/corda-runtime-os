@@ -40,7 +40,7 @@ class MGMGroupPolicyImplTest {
         const val WHITESPACE_STRING = "   "
 
         private val name = MemberX500Name.parse("O=MGM, L=London, C=GB")
-        val holdingIdentity = HoldingIdentity(name.toString(), TEST_GROUP_ID)
+        val holdingIdentity = HoldingIdentity(name, TEST_GROUP_ID)
     }
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory()
     private val emptyProperties = buildEmptyProperties(layeredPropertyMapFactory)

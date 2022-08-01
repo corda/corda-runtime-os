@@ -25,6 +25,7 @@
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='net.corda.test-utilities',\
 
 -runstartlevel: \
     order=sortbynameversion,\

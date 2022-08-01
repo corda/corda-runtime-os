@@ -16,7 +16,7 @@ class MembershipGroupReaderImpl(
     private val membershipGroupReadCache: MembershipGroupReadCache
 ) : MembershipGroupReader {
     override val groupId: String = holdingIdentity.groupId
-    override val owningMember: MemberX500Name = MemberX500Name.parse(holdingIdentity.x500Name)
+    override val owningMember: MemberX500Name = holdingIdentity.x500Name
 
     private val memberList: List<MemberInfo>
         get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)

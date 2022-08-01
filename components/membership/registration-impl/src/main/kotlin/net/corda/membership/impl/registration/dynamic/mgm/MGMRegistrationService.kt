@@ -198,7 +198,7 @@ class MGMRegistrationService @Activate constructor(
                         } +
                             mapOf(
                                 GROUP_ID to member.groupId,
-                                PARTY_NAME to member.x500Name,
+                                PARTY_NAME to member.x500Name.toString(),
                                 PARTY_SESSION_KEY to sessionKey,
                                 ECDH_KEY to ecdhKey,
                                 // temporarily hardcoded
