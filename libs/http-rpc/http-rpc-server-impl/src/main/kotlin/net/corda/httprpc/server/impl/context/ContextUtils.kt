@@ -19,6 +19,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import java.lang.IllegalArgumentException
 import javax.security.auth.login.FailedLoginException
 
@@ -80,6 +81,8 @@ internal object ContextUtils {
 
     fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
+            MDC.put("http.method", ctx.method())
+            MDC.put("http.path", ctx.path())
             log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
@@ -102,6 +105,8 @@ internal object ContextUtils {
                 log.warn("Error invoking path '${this.fullPath}'.", e)
                 throw HttpExceptionMapper.mapToResponse(e)
             } finally {
+                MDC.remove("http.method")
+                MDC.remove("http.path")
                 if(ctx.isMultipartFormData()) {
                     cleanUpMultipartRequest(ctx)
                 }

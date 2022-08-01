@@ -2,7 +2,7 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true" />
         </Console>
     </Appenders>
     <Loggers>
