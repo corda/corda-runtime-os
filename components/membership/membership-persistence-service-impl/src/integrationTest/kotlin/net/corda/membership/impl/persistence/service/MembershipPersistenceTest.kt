@@ -65,6 +65,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -566,7 +567,7 @@ class MembershipPersistenceTest {
 
         val signatures = (1..5).associate { index ->
             val registrationId = randomUUID().toString()
-            val holdingId = HoldingIdentity(MemberX500Name.parse("O=Bob-$index, C=GB, L=London"), groupId)
+            val holdingId = createTestHoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
             val publicKey = ByteBuffer.wrap("pk-$index".toByteArray())
             val signature = ByteBuffer.wrap("signature-$index".toByteArray())
             val context = KeyValuePairList(

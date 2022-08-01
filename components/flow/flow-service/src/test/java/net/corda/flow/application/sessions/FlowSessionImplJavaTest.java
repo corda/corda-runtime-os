@@ -16,7 +16,6 @@ import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.application.serialization.SerializationService;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.serialization.SerializedBytes;
-import net.corda.virtualnode.HoldingIdentity;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
+import static net.corda.test.util.identity.IdentityUtilsKt.createTestHoldingIdentity;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -40,7 +40,7 @@ public class FlowSessionImplJavaTest {
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
             mock(FlowCheckpoint.class),
             flowSandboxGroupContext,
-            new HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "group1"),
+            createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
             mock(MembershipGroupReader.class)
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);

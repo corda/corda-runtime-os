@@ -3,9 +3,8 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
-import net.corda.v5.base.types.MemberX500Name
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -62,7 +61,7 @@ class VirtualNodeDbReconcilerReaderTest {
         val versionedRecords = virtualNodeEntitiesToVersionedRecords(entities.stream())
         val record = versionedRecords.toList().single()
 
-        val expectedKey = HoldingIdentity(MemberX500Name.parse(x500name), groupId)
+        val expectedKey = createTestHoldingIdentity(x500name, groupId)
 
         Assertions.assertThat(record.key).isEqualTo(expectedKey)
 

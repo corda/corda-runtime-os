@@ -35,6 +35,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
@@ -56,7 +57,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MembershipQueryClientImplTest {
@@ -476,15 +476,15 @@ class MembershipQueryClientImplTest {
 
         @Test
         fun `it will returns the correct data in case of successful result`() {
-            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
-            val holdingId1 = HoldingIdentity(MemberX500Name.parse("O=Alice ,L=London, C=GB"), ourGroupId)
+            val holdingId1 = createTestHoldingIdentity("O=Alice ,L=London, C=GB", ourGroupId)
             val signature1 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk1".toByteArray()),
                 ByteBuffer.wrap("ct1".toByteArray()),
                 KeyValuePairList(emptyList()),
             )
-            val holdingId2 = HoldingIdentity(MemberX500Name.parse("O=Donald ,L=London, C=GB"), ourGroupId)
+            val holdingId2 = createTestHoldingIdentity("O=Donald ,L=London, C=GB", ourGroupId)
             val signature2 = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk2".toByteArray()),
                 ByteBuffer.wrap("ct2".toByteArray()),
@@ -528,7 +528,7 @@ class MembershipQueryClientImplTest {
 
         @Test
         fun `it will return error for failure`() {
-            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {
@@ -553,7 +553,7 @@ class MembershipQueryClientImplTest {
         }
         @Test
         fun `it will return error for invalid reply`() {
-            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             postConfigChangedEvent()
             whenever(rpcSender.sendRequest(any())).thenAnswer {
                 val context = with((it.arguments.first() as MembershipPersistenceRequest).context) {

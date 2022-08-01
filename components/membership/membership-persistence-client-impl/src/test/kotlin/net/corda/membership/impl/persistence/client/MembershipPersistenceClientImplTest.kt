@@ -34,6 +34,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -477,7 +478,7 @@ class MembershipPersistenceClientImplTest {
     inner class SetMemberAndRegistrationRequestAsApprovedTests {
         @Test
         fun `it returns the correct member info`() {
-            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val persistentMemberInfo = PersistentMemberInfo(
                 bob.toAvro(),
                 KeyValuePairList(emptyList()),
@@ -504,7 +505,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `it returns error when there was an issue`() {
-            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(false)
@@ -520,7 +521,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `it returns error when the return data has the wrong type`() {
-            val bob = HoldingIdentity(MemberX500Name.parse("O=Bob ,L=London, C=GB"), ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(payload = "This should not be a string!")

@@ -26,11 +26,11 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,7 +43,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.MemberX500Name
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -74,7 +73,7 @@ class MemberLookupRpcOpsTest {
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
-    private val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "0")
+    private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey

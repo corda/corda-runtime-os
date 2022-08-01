@@ -17,9 +17,8 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.types.MemberX500Name
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
@@ -165,7 +164,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
     @Test
     fun `can read holding identity`() {
-        val expectedHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "Group ID")
+        val expectedHoldingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "Group ID")
 
         val holdingIdentityEntity = with(expectedHoldingIdentity) {
             HoldingIdentityEntity(
@@ -191,7 +190,7 @@ internal class VirtualNodeEntityRepositoryTest {
     fun `can save holding identity`() {
         val entityManager = entityManagerFactory.createEntityManager()
 
-        val expectedHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-2, O=Bob Corp, L=LDN, C=GB"), "Group ID")
+        val expectedHoldingIdentity = createTestHoldingIdentity("CN=Bob-2, O=Bob Corp, L=LDN, C=GB", "Group ID")
 
         // Save holding identity and DB connections
 
@@ -241,7 +240,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
     @Test
     fun `can update holding identity`() {
-        val expectedHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-3, O=Bob Corp, L=LDN, C=GB"), "Group ID")
+        val expectedHoldingIdentity = createTestHoldingIdentity("CN=Bob-3, O=Bob Corp, L=LDN, C=GB", "Group ID")
 
         // Save holding identity and DB connections
 
@@ -323,7 +322,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.create(signerSummaryHash))
         val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
-        val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-4, O=Bob Corp, L=LDN, C=GB"), "Group ID")
+        val holdingIdentity = createTestHoldingIdentity("CN=Bob-4, O=Bob Corp, L=LDN, C=GB", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
@@ -367,7 +366,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.create(signerSummaryHash))
         val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
-        val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob-5, O=Bob Corp, L=LDN, C=GB"), "Group ID")
+        val holdingIdentity = createTestHoldingIdentity("CN=Bob-5, O=Bob Corp, L=LDN, C=GB", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(

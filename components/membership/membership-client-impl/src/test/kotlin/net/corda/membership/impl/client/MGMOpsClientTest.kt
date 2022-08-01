@@ -36,6 +36,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -53,7 +54,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions
@@ -63,8 +63,8 @@ import java.util.*
 
 class MGMOpsClientTest {
     companion object {
-        private val holdingIdentity = HoldingIdentity(
-            MemberX500Name.parse("CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB"),
+        private val holdingIdentity = createTestHoldingIdentity(
+            "CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB",
             "DEFAULT_MEMBER_GROUP_ID"
         )
         private const val HOLDING_IDENTITY_STRING = "test"

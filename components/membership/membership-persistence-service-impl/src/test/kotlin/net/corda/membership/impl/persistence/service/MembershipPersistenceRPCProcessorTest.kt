@@ -26,11 +26,11 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -62,7 +62,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice, L=London, C=GB").toString()
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourRegistrationId = UUID.randomUUID().toString()
-    private val ourHoldingIdentity = HoldingIdentity(MemberX500Name.parse(ourX500Name), ourGroupId)
+    private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
     private val context = "context".toByteArray()
 
     private val vaultDmlConnectionId = UUID.randomUUID()

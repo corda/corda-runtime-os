@@ -26,6 +26,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
@@ -79,7 +80,7 @@ class VirtualNodeWriterProcessorTests {
 
     private val groupId = "f3676687-ab69-4ca1-a17b-ab20b7bc6d03"
     private val x500Name = "OU=LLC, O=Bob, L=Dublin, C=IE"
-    private val holdingIdentity = HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
+    private val holdingIdentity = createTestHoldingIdentity(x500Name, groupId)
     private val mgmName = MemberX500Name.parse("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
     private val mgmHoldingIdentity = HoldingIdentity(mgmName, groupId)
 

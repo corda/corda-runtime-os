@@ -50,7 +50,7 @@ import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
-import net.corda.v5.base.types.MemberX500Name
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
@@ -59,7 +59,6 @@ import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -145,10 +144,7 @@ class CryptoProcessorTests {
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
-        private val vnodeIdentity = HoldingIdentity(
-            MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"),
-            UUID.randomUUID().toString()
-        )
+        private val vnodeIdentity = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", UUID.randomUUID().toString())
 
         private val vnodeId: String = vnodeIdentity.shortHash
 

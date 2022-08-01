@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.data.flow.FlowStartContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.flows.getRequestBodyAsList
 import net.corda.v5.application.marshalling.MarshallingService
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -74,7 +73,7 @@ class RPCRequestDataImplTest {
             startArgs = args
         }
         whenever(checkpoint.flowStartContext).thenReturn(startContext)
-        val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB"), "12345")
+        val holdingIdentity = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "12345")
         val executionContext = FlowFiberExecutionContext(checkpoint, mock(), holdingIdentity, mock())
         whenever(fiber.getExecutionContext()).thenReturn(executionContext)
         whenever(fiberService.getExecutingFiber()).thenReturn(fiber)

@@ -29,8 +29,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -292,9 +292,6 @@ class ApproveRegistrationHandlerTest {
     }
 
     private fun createHoldingIdentity(name: String): HoldingIdentity {
-        return HoldingIdentity(
-            groupId = GROUP_ID,
-            x500Name = MemberX500Name.parse("C=GB,L=London,O=$name")
-        )
+        return createTestHoldingIdentity("C=GB,L=London,O=$name", GROUP_ID)
     }
 }

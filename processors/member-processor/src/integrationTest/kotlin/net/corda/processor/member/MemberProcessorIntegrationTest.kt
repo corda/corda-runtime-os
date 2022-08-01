@@ -55,10 +55,9 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -124,13 +123,13 @@ class MemberProcessorIntegrationTest {
 
         lateinit var publisher: Publisher
 
-        private val invalidHoldingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), groupId)
+        private val invalidHoldingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
 
-        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName), groupId).shortHash
+        private val aliceVNodeId = createTestHoldingIdentity(aliceName, groupId).shortHash
 
-        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName), groupId).shortHash
+        private val bobVNodeId = createTestHoldingIdentity(bobName, groupId).shortHash
 
-        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName), groupId).shortHash
+        private val charlieVNodeId = createTestHoldingIdentity(charlieName, groupId).shortHash
 
         private lateinit var testDependencies: TestDependenciesTracker
 

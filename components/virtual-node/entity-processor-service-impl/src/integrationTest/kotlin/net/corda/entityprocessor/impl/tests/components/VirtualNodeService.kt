@@ -4,11 +4,10 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.junit.jupiter.api.fail
 import org.osgi.service.component.annotations.Activate
@@ -35,7 +34,7 @@ class VirtualNodeService @Activate constructor(
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
-        fun generateHoldingIdentity() = HoldingIdentity(MemberX500Name.parse(X500_NAME), UUID.randomUUID().toString())
+        fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
 
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
