@@ -11,12 +11,11 @@ kafka:
     enabled: true
     autoDiscovery:
       enabled: true
-    service:
-      loadBalancerNames:
-        - prereqs-kafka-0
-        - prereqs-kafka-1
-        - prereqs-kafka-2
   replicaCount: 3
+  serviceAccount:
+    create: true
+  rbac:
+    create: true
   resources:
     requests:
       memory: 390Mi
