@@ -13,12 +13,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.concurrent.ConcurrentHashMap
 
 class LifecycleTest<T : Lifecycle>(
     initializer: LifecycleTest<T>.() -> T
 ) {
 
-    private val dependencies: MutableSet<LifecycleCoordinatorName> = mutableSetOf()
+    private val dependencies = ConcurrentHashMap.newKeySet<LifecycleCoordinatorName>()
     private val coordinatorToConfigKeys = mutableMapOf<LifecycleCoordinator, Set<String>>()
     private val configCoordinator = argumentCaptor<LifecycleCoordinator>()
     private val configKeys = argumentCaptor<Set<String>>()
@@ -64,7 +65,11 @@ class LifecycleTest<T : Lifecycle>(
      * This is the actual instantiation of the component to be tested.  It is made available here
      * for use by test code later.
      */
-    val testClass = initializer.invoke(this)
+    val testClass = initializer.invoke(this).also {
+        coordinatorFactory.dependentComponents?.coordinatorNames?.forEach {
+            addDependency(it)
+        }
+    }
 
     /**
      * Registers the given class as a dependency of the component under test.  This allows for bringing
