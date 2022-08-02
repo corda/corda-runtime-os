@@ -30,7 +30,7 @@ kubectl describe service/buildkit
 kubectl get pods
 kubectl get svc 
 
-kubectl port-forward -n default service/buildkit 3476
+kubectl -n default port-forward $(kubectl -n default get pods -o name | grep buildkit) 3476
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
