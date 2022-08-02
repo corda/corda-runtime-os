@@ -43,10 +43,14 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
-        log.warn("QQQ in createConsumer 1 consumerConfig -> $consumerConfig")
-        log.warn("QQQ in createConsumer 2 messageBusConfig -> ${messageBusConfig.root().render(ConfigRenderOptions.concise())}")
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = resolver.resolve(messageBusConfig, consumerConfig)
+        println("QQQ in createConsumer A consumerConfig -> $consumerConfig")
+        println("QQQ in createConsumer B messageBusConfig -> ${messageBusConfig.root().render(ConfigRenderOptions.concise())}")
+        println("QQQ in createConsumer C kafkaProperties -> ${kafkaProperties}")
+        println("QQQ in createConsumer D resolvedConfig -> ${resolvedConfig}")
+        log.warn("QQQ in createConsumer 1 consumerConfig -> $consumerConfig")
+        log.warn("QQQ in createConsumer 2 messageBusConfig -> ${messageBusConfig.root().render(ConfigRenderOptions.concise())}")
         log.warn("QQQ in createConsumer 3 kafkaProperties -> ${kafkaProperties}")
         log.warn("QQQ in createConsumer 4 resolvedConfig -> ${resolvedConfig}")
 

@@ -15,8 +15,8 @@ import net.corda.messaging.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilderImpl
 import net.corda.messaging.subscription.factory.CordaSubscriptionFactory
 import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import kotlin.random.Random
 
@@ -59,7 +59,6 @@ internal class KafkaTestToolKit {
         val sslPassword = if (System.getenv("SASL_SECRET") != null) {
             mapOf(
                 "security.protocol" to "SASL_SSL",
-                "ssl.truststore.password" to System.getenv("SASL_SECRET"),
                 "sasl.mechanism" to "SCRAM-SHA-256",
             )
         } else {
@@ -69,7 +68,7 @@ internal class KafkaTestToolKit {
             "bootstrap.servers" to "$kafkaHost:$kafkaPort"
         )
         val kafkaProperties = (trustStoreLocation + sslPassword + bootstrapServers).mapKeys { (key, _) ->
-            "$BOOT_KAFKA_COMMON.${key.trim()}"
+            "$KAFKA_PROPERTIES_COMMON.${key.trim()}"
         }
 
         val secretsConfig = ConfigFactory.empty()
@@ -78,7 +77,7 @@ internal class KafkaTestToolKit {
                 .withValue(MessagingConfig.Bus.BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("e2e-test"))
                 .withValue(BootConfig.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
-                .withValue(BootConfig.INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt()))
+                .withValue(BootConfig.INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt().toString()))
         )
     }
 

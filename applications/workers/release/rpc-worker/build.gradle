@@ -84,10 +84,17 @@ tasks.named('e2eTest') {
     var namespace = System.getenv("NAMESPACE") ?: "corda"
     var host = "prereqs-kafka-0.prereqs-kafka-headless.${namespace}.svc.cluster.local"
     var hostsFile = File.createTempFile("hosts", "files")
+    jvmArgs "-Djdk.net.hosts.file=${hostsFile.absolutePath}"
+    var jaasFile = null
+    if (System.getenv("SASL_SECRET") != null) {
+        jaasFile = File.createTempFile("jaas", ".conf")
+        jvmArgs "-Djava.security.auth.login.config=${jaasFile.absolutePath}"
+    }
     doFirst {
         hostsFile.write("127.0.0.1 $host\n")
+        if(jaasFile != null) {
+            jaasFile.write("KafkaClient {\n  org.apache.kafka.common.security.scram.ScramLoginModule required\n  username=\"user\"\n  password=\"${System.getenv("SASL_SECRET")}\";\n};\n")
+        }
     }
     environment("KAFKA-HOST-NAME", host)
-    jvmArgs "-Djdk.net.hosts.file=${hostsFile.absolutePath}"
-
 }
