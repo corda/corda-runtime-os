@@ -1921,43 +1921,6 @@
         }
       }
     },
-    "/role/addpermission" : {
-      "put" : {
-        "tags" : [ "RBAC Role API" ],
-        "description" : "Add a permission to a role",
-        "operationId" : "put_role_addpermission",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddPermissionWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RoleResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/role/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC Role API" ],
@@ -1987,23 +1950,23 @@
         }
       }
     },
-    "/role/removepermission" : {
-      "put" : {
+    "/role/{id}" : {
+      "get" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Removes a permission from a role",
-        "operationId" : "put_role_removepermission",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RemovePermissionWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
+        "description" : "Get a Role by its ID",
+        "operationId" : "get_role__id_",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "ID of the role to be returned.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the role to be returned.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "Success.",
@@ -2024,19 +1987,76 @@
         }
       }
     },
-    "/role/{id}" : {
-      "get" : {
+    "/role/{roleid}/permission/{permissionid}" : {
+      "put" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Get a Role by its ID",
-        "operationId" : "get_role__id_",
+        "description" : "Add a permission to a role",
+        "operationId" : "put_role__roleid__permission__permissionid_",
         "parameters" : [ {
-          "name" : "id",
+          "name" : "roleid",
           "in" : "path",
-          "description" : "ID of the role to be returned.",
+          "description" : "Identifier for an existing role",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the role to be returned.",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "permissionid",
+          "in" : "path",
+          "description" : "Identifier for an existing permission",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RoleResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "RBAC Role API" ],
+        "description" : "Removes a permission from a role",
+        "operationId" : "delete_role__roleid__permission__permissionid_",
+        "parameters" : [ {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "Identifier for an existing role",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing role",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "permissionid",
+          "in" : "path",
+          "description" : "Identifier for an existing permission",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Identifier for an existing permission",
             "nullable" : false,
             "example" : "string"
           }
@@ -2190,43 +2210,6 @@
         }
       }
     },
-    "/user/addrole" : {
-      "put" : {
-        "tags" : [ "RBAC User API" ],
-        "description" : "Assign a Role to a User",
-        "operationId" : "put_user_addrole",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AddRoleWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Success.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/UserResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/user/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC User API" ],
@@ -2256,11 +2239,11 @@
         }
       }
     },
-    "/user/permissionsummary/{loginname}" : {
+    "/user/{loginname}/permissionsummary" : {
       "get" : {
         "tags" : [ "RBAC User API" ],
         "description" : "Get a summary of a User's permissions",
-        "operationId" : "get_user_permissionsummary__loginname_",
+        "operationId" : "get_user__loginname__permissionsummary",
         "parameters" : [ {
           "name" : "loginname",
           "in" : "path",
@@ -2293,23 +2276,80 @@
         }
       }
     },
-    "/user/removerole" : {
+    "/user/{loginname}/role/{roleid}" : {
       "put" : {
         "tags" : [ "RBAC User API" ],
-        "description" : "Un-assign a role from a user",
-        "operationId" : "put_user_removerole",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RemoveRoleWrapperRequest"
+        "description" : "Assign a Role to a User",
+        "operationId" : "put_user__loginname__role__roleid_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "User login name to be changed",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "User login name to be changed",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "Id of the role to associate with this user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Id of the role to associate with this user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
               }
             }
           },
-          "required" : true
-        },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "Un-assign a role from a user",
+        "operationId" : "delete_user__loginname__role__roleid_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "User login name to be changed",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "User login name to be changed",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "Id of the role to un-assign from this user",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Id of the role to un-assign from this user",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "Success.",
@@ -2423,44 +2463,6 @@
   },
   "components" : {
     "schemas" : {
-      "AddPermissionWrapperRequest" : {
-        "required" : [ "permissionId", "roleId" ],
-        "properties" : {
-          "permissionId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing permission",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "AddPermissionWrapperRequest",
-        "nullable" : false
-      },
-      "AddRoleWrapperRequest" : {
-        "required" : [ "loginName", "roleId" ],
-        "properties" : {
-          "loginName" : {
-            "type" : "string",
-            "description" : "User login name to be changed",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "roleId" : {
-            "type" : "string",
-            "description" : "Id of the role to associate with this user",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "AddRoleWrapperRequest",
-        "nullable" : false
-      },
       "ChangeVirtualNodeStateResponse" : {
         "required" : [ "holdingIdShortHash", "newState" ],
         "type" : "object",
@@ -3168,44 +3170,6 @@
             "example" : "string"
           }
         }
-      },
-      "RemovePermissionWrapperRequest" : {
-        "required" : [ "permissionId", "roleId" ],
-        "properties" : {
-          "permissionId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing permission",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "roleId" : {
-            "type" : "string",
-            "description" : "Identifier for an existing role",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "RemovePermissionWrapperRequest",
-        "nullable" : false
-      },
-      "RemoveRoleWrapperRequest" : {
-        "required" : [ "loginName", "roleId" ],
-        "properties" : {
-          "loginName" : {
-            "type" : "string",
-            "description" : "User login name to be changed",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "roleId" : {
-            "type" : "string",
-            "description" : "Id of the role to un-assign from this user",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "RemoveRoleWrapperRequest",
-        "nullable" : false
       },
       "RoleAssociationResponseType" : {
         "required" : [ "createTimestamp", "roleId" ],
