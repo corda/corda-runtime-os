@@ -12,7 +12,6 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test

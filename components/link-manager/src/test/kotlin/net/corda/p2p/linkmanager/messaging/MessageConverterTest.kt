@@ -110,7 +110,11 @@ class MessageConverterTest {
         val groupId = "group-1"
         val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
         val members = mockMembers(emptyList())
-        val flowMessage = authenticatedMessageAndKey(createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId), peer, ByteBuffer.wrap("DATA".toByteArray()))
+        val flowMessage = authenticatedMessageAndKey(
+            createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId),
+            peer,
+            ByteBuffer.wrap("DATA".toByteArray())
+        )
         assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members)).isNull()
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
