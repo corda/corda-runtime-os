@@ -28,7 +28,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -171,7 +170,7 @@ class MGMOpsClientImpl @Activate constructor(
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
             val filteredMembers =
-                reader.lookup(MemberX500Name.parse(holdingIdentity.x500Name))
+                reader.lookup(holdingIdentity.x500Name)
                     ?:throw CordaRuntimeException ("Could not find holding identity associated with member.")
 
             if(filteredMembers.isMgm) {

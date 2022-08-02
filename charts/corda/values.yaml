@@ -28,6 +28,11 @@ resources:
   # -- the default CPU/memory resource request for the Corda containers
   requests: {}
 
+# Logging configuration
+logging:
+  # -- log format; "json" or "text"
+  format: "json"
+
 # Open Telemetry configuration
 openTelemetry:
   # -- enables the Open Telemetry Java agent for the Corda workers

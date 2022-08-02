@@ -17,6 +17,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.exception.InvalidInputDataException
 
 @Component(service = [PluggableRPCOps::class])
 class CpiUploadRPCOpsImpl @Activate constructor(
@@ -58,7 +59,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     override fun status(id: String): CpiUploadRPCOps.CpiUploadStatus {
         logger.info("Upload status request for CPI id: $id")
         requireRunning()
-        val status = cpiUploadManager.status(id) ?: throw InternalServerException("No such requestId=$id")
+        val status = cpiUploadManager.status(id) ?: throw InvalidInputDataException("No such requestId=$id")
 
         // Errors are passed back to the Javalin code via exceptions.
         if (status.exception != null) {

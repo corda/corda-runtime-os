@@ -19,7 +19,7 @@ class MembershipGroupReadCacheTest {
     val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
     val aliceName = TestProperties.aliceName
-    val aliceIdGroup1 = HoldingIdentity(aliceName.toString(), GROUP_ID_1)
+    val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
     val bob: MemberInfo = mock()
     val membershipGroupReader: MembershipGroupReader = mock()
 

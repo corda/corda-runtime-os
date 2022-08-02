@@ -141,7 +141,7 @@ class VirtualNodeRPCOpsImplTests {
         val id = holdingId.toCorda()
         val successResponse =
             VirtualNodeInfoEndpointType(
-                holdingIdentity = HoldingIdentityEndpointType(id.x500Name, id.groupId, id.shortHash, id.fullHash),
+                holdingIdentity = HoldingIdentityEndpointType(id.x500Name.toString(), id.groupId, id.shortHash, id.fullHash),
                 cpiIdentifier = cpiId,
                 vaultDdlConnectionId = vaultDdlConnectionId,
                 vaultDmlConnectionId = vaultDmlConnectionId,

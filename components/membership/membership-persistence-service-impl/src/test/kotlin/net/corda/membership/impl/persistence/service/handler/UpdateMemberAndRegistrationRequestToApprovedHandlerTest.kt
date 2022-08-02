@@ -72,7 +72,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             "", "", null
         ),
         cryptoDmlConnectionId = UUID(0, 0),
-        holdingIdentity = HoldingIdentity("", "").toCorda(),
+        holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "").toCorda(),
         timestamp = clock.instant(),
     )
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
@@ -104,7 +104,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke throws exception if member can not be fund`() {
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         whenever(
             entityManager.find(
                 eq(MemberInfoEntity::class.java),
@@ -119,10 +119,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             "requestId",
         )
 
@@ -133,7 +133,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke throws exception if request can not be fund`() {
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity>()
         val requestId = "requestId"
         whenever(
@@ -151,10 +151,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
 
@@ -169,7 +169,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
         )
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
             on { mgmContext } doReturn mgmContextBytes
         }
@@ -190,10 +190,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
 
@@ -218,7 +218,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         )
         val mgmContextCapture = argumentCaptor<KeyValuePairList>()
         whenever(keyValuePairListSerializer.serialize(mgmContextCapture.capture())).doReturn(byteArrayOf(0))
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
             on { mgmContext } doReturn mgmContextBytes
         }
@@ -239,10 +239,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
 
@@ -262,7 +262,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
         )
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
             on { mgmContext } doReturn mgmContextBytes
         }
@@ -283,10 +283,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
 
@@ -300,7 +300,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     fun `invoke will throw an exception if mgm context can not be deserialize`() {
         val mgmContextBytes = byteArrayOf(1, 10)
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(null)
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
             on { mgmContext } doReturn mgmContextBytes
         }
@@ -321,10 +321,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
 
@@ -340,7 +340,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(mgmContextBytes)).doReturn(
             KeyValuePairList(listOf(KeyValuePair(STATUS, MEMBER_STATUS_PENDING)))
         )
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
             on { mgmContext } doReturn mgmContextBytes
         }
@@ -361,10 +361,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
 
@@ -377,7 +377,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
 
     @Test
     fun `invoke returns the correct data`() {
-        val member = HoldingIdentity("member", "group")
+        val member = HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group")
         val entity = mock<MemberInfoEntity> {
             on { memberContext } doReturn byteArrayOf(1)
             on { mgmContext } doReturn byteArrayOf(2)
@@ -399,10 +399,10 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
         )
         val request = UpdateMemberAndRegistrationRequestToApproved(
-            HoldingIdentity("member", "group"),
+            HoldingIdentity(member.x500Name.toString(), "group"),
             requestId,
         )
         val mgmContext = KeyValuePairList(

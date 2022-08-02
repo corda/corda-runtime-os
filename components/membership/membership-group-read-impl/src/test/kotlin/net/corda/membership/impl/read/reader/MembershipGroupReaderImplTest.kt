@@ -26,7 +26,7 @@ class MembershipGroupReaderImplTest {
     private lateinit var membershipGroupReaderImpl: MembershipGroupReaderImpl
 
     private val aliceName = TestProperties.aliceName
-    private val aliceIdGroup1 = HoldingIdentity(aliceName.toString(), GROUP_ID_1)
+    private val aliceIdGroup1 = HoldingIdentity(aliceName, GROUP_ID_1)
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
         whenever(this.memberListCache).thenReturn(memberCache)

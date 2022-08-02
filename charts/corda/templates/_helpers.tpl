@@ -184,7 +184,9 @@ Worker environment variables
       -Dotel.metrics.exporter=logging
       -Dotel.traces.exporter=logging
       {{- end -}}
-    {{- end -}}
+    {{- end }}
+- name: LOG4J_CONFIG_FILE
+  value: "log4j2-console{{ if eq .Values.logging.format "json" }}-json{{ end }}.xml"
 {{- end }}
 
 {{/*

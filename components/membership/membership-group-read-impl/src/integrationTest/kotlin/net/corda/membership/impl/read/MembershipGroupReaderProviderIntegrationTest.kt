@@ -55,7 +55,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     private val aliceX500Name = "C=GB, L=London, O=Alice"
     private val aliceMemberName = MemberX500Name.parse(aliceX500Name)
     private val groupId = "ABC123"
-    private val aliceHoldingIdentity = HoldingIdentity(aliceX500Name, groupId)
+    private val aliceHoldingIdentity = HoldingIdentity(aliceMemberName, groupId)
     private val bootConf = """
         $INSTANCE_ID=1
         $BUS_TYPE = INMEMORY

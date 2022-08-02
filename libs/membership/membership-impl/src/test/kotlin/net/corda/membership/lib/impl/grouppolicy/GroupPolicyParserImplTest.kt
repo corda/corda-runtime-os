@@ -70,7 +70,7 @@ class GroupPolicyParserImplTest {
     private val persistedProperties = buildPersistedProperties(layeredPropertyMapFactory)
 
     private val holdingIdentity = HoldingIdentity(
-        MemberX500Name.parse("O=Alice, L=London, C=GB").toString(),
+        MemberX500Name.parse("O=Alice, L=London, C=GB"),
         "13822f7f-0d2c-450b-8f6f-93c3b8ce9602"
     )
 

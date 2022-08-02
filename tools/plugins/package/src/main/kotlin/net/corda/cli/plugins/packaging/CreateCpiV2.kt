@@ -7,9 +7,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.READ
 import java.nio.file.StandardOpenOption.WRITE
+import java.util.jar.Attributes
 import java.util.jar.JarEntry
-import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.CpxSigner
@@ -23,14 +24,26 @@ private const val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
 
 private const val CPI_EXTENSION = ".cpi"
 
+internal const val MANIFEST_VERSION = "1.0"
+
+internal val CPI_FORMAT_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Format")
+
+internal const val CPI_FORMAT_ATTRIBUTE = "2.0"
+
+internal val CPI_NAME_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Name")
+
+internal val CPI_VERSION_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Version")
+
+internal val CPI_UPGRADE_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Upgrade")
+
 /**
- * Creates a CPI from a CPB and GroupPolicy.json file.
+ * Creates a CPI v2 from a CPB and GroupPolicy.json file.
  */
 @Command(
-    name = "create",
-    description = ["Creates a CPI from a CPB and GroupPolicy.json file."]
+    name = "create-cpi",
+    description = ["Creates a CPI v2 from a CPB and GroupPolicy.json file."]
 )
-class CreateCpi : Runnable {
+class CreateCpiV2 : Runnable {
 
     @Option(names = ["--cpb", "-c"], required = true, description = ["CPB file to convert into CPI"])
     lateinit var cpbFileName: String
@@ -41,6 +54,15 @@ class CreateCpi : Runnable {
         description = ["Group policy to include in CPI", "Use \"-\" to read group policy from standard input"]
     )
     lateinit var groupPolicyFileName: String
+
+    @Option(names = ["--cpi-name"], required = true, description = ["CPI name (manifest attribute)"])
+    lateinit var cpiName: String
+
+    @Option(names = ["--cpi-version"], required = true, description = ["CPI version (manifest attribute)"])
+    lateinit var cpiVersion: String
+
+    @Option(names = ["--upgrade"], arity = "1", description = ["Allow upgrade without flow draining"])
+    var cpiUpgrade: Boolean = false
 
     @Option(
         names = ["--file", "-f"],
@@ -96,7 +118,7 @@ class CreateCpi : Runnable {
     /**
      * Build and sign CPI file
      *
-     * Creates a temporary file, copies CPB entries into temporary file, adds group policy then signs
+     * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
     private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: GroupPolicySource) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
@@ -123,34 +145,25 @@ class CreateCpi : Runnable {
     /**
      * Build unsigned CPI file
      *
-     * Copies CPB entries into new jar file and then adds group policy
+     * Copies CPB into new jar file and then adds group policy
      */
     private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: GroupPolicySource) {
-        JarInputStream(Files.newInputStream(cpbPath, READ)).use { cpbJar ->
-            JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), cpbJar.manifest).use { cpiJar ->
+        val manifest = Manifest()
+        val manifestMainAttributes = manifest.mainAttributes
+        manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
+        manifestMainAttributes[CPI_FORMAT_ATTRIBUTE_NAME] = CPI_FORMAT_ATTRIBUTE
+        manifestMainAttributes[CPI_NAME_ATTRIBUTE_NAME] = cpiName
+        manifestMainAttributes[CPI_VERSION_ATTRIBUTE_NAME] = cpiVersion
+        manifestMainAttributes[CPI_UPGRADE_ATTRIBUTE_NAME] = cpiUpgrade.toString()
 
-                // Copy the CPB contents
-                copyJarContents(cpbJar, cpiJar)
+        JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), manifest).use { cpiJar ->
 
-                // Add group policy
-                addGroupPolicy(cpiJar, groupPolicy)
-            }
-        }
-    }
+            // Copy the CPB contents
+            cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
+            Files.newInputStream(cpbPath, READ).copyTo(cpiJar)
 
-    /**
-     * Copy contents of one jar to another
-     */
-    private fun copyJarContents(inputJar: JarInputStream, outputJar: JarOutputStream) {
-        var entry = inputJar.nextJarEntry
-        while (entry != null) {
-            // Copy entry
-            outputJar.putNextEntry(entry)
-            inputJar.copyTo(outputJar)
-            outputJar.closeEntry()
-
-            // Move to next input entry
-            entry = inputJar.nextJarEntry
+            // Add group policy
+            addGroupPolicy(cpiJar, groupPolicy)
         }
     }
 

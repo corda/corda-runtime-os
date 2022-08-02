@@ -6,6 +6,7 @@ import net.corda.cli.plugins.packaging.TestUtils.jarEntriesContentIsEqualInCpxs
 import net.corda.cli.plugins.packaging.TestUtils.jarEntriesExistInCpx
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
@@ -18,6 +19,12 @@ class SignCpbTest {
     private lateinit var app: SignCpx
 
     private companion object {
+        // Share cpb across all tests since we only read it and not modify it to save disk writes
+        @TempDir
+        lateinit var cpbDir: Path
+
+        lateinit var createdCpb: Path
+
         const val CPx_SIGNER_NAME = "CPX-SIG"
 
         const val SIGNED_CPB_NAME = "signed-cpb-output.cpb"
@@ -34,16 +41,20 @@ class SignCpbTest {
             this::class.java.getResource("/signingkeys.pfx")?.toURI()
                 ?: error("signingkeys.pfx not found")
         )
+
+        @JvmStatic
+        @BeforeAll
+        fun setUp() {
+            // Create a single cpb to be used for all tests
+            val createCpbTest = CreateCpbTest()
+            createCpbTest.tempDir = cpbDir
+            createCpbTest.`packs CPKs into CPB`()
+            createdCpb = Path.of("${cpbDir}/${CreateCpbTest.CREATED_CPB_NAME}")
+        }
     }
 
     @Test
     fun `sign cpb with erasing signatures removes previous signatures and adds new with the same signature file name`() {
-        // build a signed CPB
-        val createCpbTest = CreateCpbTest()
-        createCpbTest.tempDir = tempDir
-        createCpbTest.`packs CPKs into CPB`()
-        val createdCpb = Path.of("$tempDir/${CreateCpbTest.CREATED_CPB_NAME}")
-
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
         app = SignCpx()
         CommandLine(app).execute(
@@ -106,12 +117,6 @@ class SignCpbTest {
 
     @Test
     fun `sign cpb without erasing signatures keeps previous signatures and adds new with pass in signature file name`() {
-        // build a signed CPB
-        val createCpbTest = CreateCpbTest()
-        createCpbTest.tempDir = tempDir
-        createCpbTest.`packs CPKs into CPB`()
-        val createdCpb = Path.of("$tempDir/${CreateCpbTest.CREATED_CPB_NAME}")
-
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
         app = SignCpx()
         CommandLine(app).execute(
@@ -174,12 +179,6 @@ class SignCpbTest {
 
     @Test
     fun `signing without specifying sig file option uses key alias`() {
-        // build a signed CPB
-        val createCpbTest = CreateCpbTest()
-        createCpbTest.tempDir = tempDir
-        createCpbTest.`packs CPKs into CPB`()
-        val createdCpb = Path.of("$tempDir/${CreateCpbTest.CREATED_CPB_NAME}")
-
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
         app = SignCpx()
         CommandLine(app).execute(

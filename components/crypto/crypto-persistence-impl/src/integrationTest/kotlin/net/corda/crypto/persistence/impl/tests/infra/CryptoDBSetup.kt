@@ -10,14 +10,14 @@ import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.orm.utils.transaction
-import net.corda.virtualnode.HoldingIdentity
+import net.corda.test.util.identity.createTestHoldingIdentity
 import org.osgi.framework.FrameworkUtil
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 object CryptoDBSetup {
-    val vNodeHoldingIdentity = HoldingIdentity(
+    val vNodeHoldingIdentity = createTestHoldingIdentity(
         "CN=Alice, O=Alice Corp, L=LDN, C=GB",
         UUID.randomUUID().toString()
     )
