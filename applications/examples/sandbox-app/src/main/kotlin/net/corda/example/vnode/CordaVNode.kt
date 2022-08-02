@@ -25,6 +25,7 @@ import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURAT
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -148,7 +149,7 @@ class CordaVNode @Activate constructor(
 
     @Suppress("SameParameterValue")
     private fun executeSandbox(clientId: String, resourceName: String) {
-        val holdingIdentity = HoldingIdentity(X500_NAME, generateRandomId())
+        val holdingIdentity = HoldingIdentity(MemberX500Name.parse(X500_NAME), generateRandomId())
         val vnodeInfo = vnode.loadVirtualNode(resourceName, holdingIdentity)
         try {
             // Checkpoint: We have loaded the CPI into the framework.

@@ -96,7 +96,7 @@ class CreateCpi : Runnable {
     /**
      * Build and sign CPI file
      *
-     * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
+     * Creates a temporary file, copies CPB entries into temporary file, adds group policy then signs
      */
     private fun buildAndSignCpi(cpbPath: Path, outputFilePath: Path, groupPolicy: GroupPolicySource) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
@@ -123,7 +123,7 @@ class CreateCpi : Runnable {
     /**
      * Build unsigned CPI file
      *
-     * Copies CPB into new jar file and then adds group policy
+     * Copies CPB entries into new jar file and then adds group policy
      */
     private fun buildUnsignedCpi(cpbPath: Path, unsignedCpi: Path, groupPolicy: GroupPolicySource) {
         JarInputStream(Files.newInputStream(cpbPath, READ)).use { cpbJar ->

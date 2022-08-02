@@ -8,6 +8,7 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.data.chunking.Chunk
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach

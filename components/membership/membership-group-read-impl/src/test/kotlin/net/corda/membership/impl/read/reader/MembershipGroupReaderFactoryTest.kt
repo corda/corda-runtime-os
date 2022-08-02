@@ -25,8 +25,8 @@ class MembershipGroupReaderFactoryTest {
     val alice = aliceName
     val bob = bobName
 
-    val aliceIdGroup1 = HoldingIdentity(alice.toString(), GROUP_ID_1)
-    val bobIdGroup1 = HoldingIdentity(bob.toString(), GROUP_ID_1)
+    val aliceIdGroup1 = HoldingIdentity(alice, GROUP_ID_1)
+    val bobIdGroup1 = HoldingIdentity(bob, GROUP_ID_1)
 
     val aliceReader: MembershipGroupReader = mock()
     val groupReaderCache = mock<MemberDataCache<MembershipGroupReader>>().apply {

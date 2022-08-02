@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -53,9 +52,12 @@ import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -106,12 +108,12 @@ class SessionManagerTest {
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
-        private val OUR_PARTY = HoldingIdentity("Alice", GROUP_ID)
+        private val OUR_PARTY = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         private val OUR_KEY = keyGenerator.genKeyPair()
         private val OUR_MEMBER_INFO =
             LinkManagerMembershipGroupReader.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
                 "http://alice.com")
-        private val PEER_PARTY = HoldingIdentity("Bob", GROUP_ID)
+        private val PEER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         private val PEER_KEY = keyGenerator.genKeyPair()
         private val PEER_MEMBER_INFO =
             LinkManagerMembershipGroupReader.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
@@ -282,8 +284,8 @@ class SessionManagerTest {
     private val message = AuthenticatedMessageAndKey(
         AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                PEER_PARTY,
-                OUR_PARTY,
+                PEER_PARTY.toAvro(),
+                OUR_PARTY.toAvro(),
                 null,
                 "messageId",
                 "", "system-1"

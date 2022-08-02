@@ -260,7 +260,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         + generateLedgerKeyData(context, member.shortHash).items
                         + listOf(
                     KeyValuePair(REGISTRATION_ID, registrationId),
-                    KeyValuePair(PARTY_NAME, member.x500Name),
+                    KeyValuePair(PARTY_NAME, member.x500Name.toString()),
                     KeyValuePair(GROUP_ID, member.groupId),
                     // temporarily hardcoded
                     KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),

@@ -54,7 +54,7 @@ class FlowSessionManagerImplTest {
             locality = "LDN",
             country = "GB"
         )
-        val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
+        val HOLDING_IDENTITY = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group id")
         val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "group id")
 
         @JvmStatic

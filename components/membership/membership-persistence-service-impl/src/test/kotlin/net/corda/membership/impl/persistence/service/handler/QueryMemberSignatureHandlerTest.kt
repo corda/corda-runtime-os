@@ -60,7 +60,7 @@ class QueryMemberSignatureHandlerTest {
             "", "", null
         ),
         cryptoDmlConnectionId = UUID(0, 0),
-        holdingIdentity = HoldingIdentity("", "").toCorda(),
+        holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "").toCorda(),
         timestamp = clock.instant(),
     )
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
@@ -95,7 +95,7 @@ class QueryMemberSignatureHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group"),
         )
         val request = QueryMemberSignature(
             (1..10).map {
@@ -114,10 +114,10 @@ class QueryMemberSignatureHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group"),
         )
         val members = (1..10).map {
-            HoldingIdentity("name-$it", "group")
+            HoldingIdentity("CN=Member-$it, O=Corp, L=LDN, C=GB", "group")
         }
         val request = QueryMemberSignature(
             members
@@ -173,10 +173,10 @@ class QueryMemberSignatureHandlerTest {
         val context = MembershipRequestContext(
             clock.instant(),
             "id",
-            HoldingIdentity("name", "group"),
+            HoldingIdentity("CN=Member, O=Corp, L=LDN, C=GB", "group"),
         )
         val members = (1..10).map {
-            HoldingIdentity("name-$it", "group")
+            HoldingIdentity("CN=Member-$it, O=Corp, L=LDN, C=GB", "group")
         }
         val request = QueryMemberSignature(
             members

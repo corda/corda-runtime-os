@@ -35,7 +35,7 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
 
     private class MembershipGroupReaderImpl(holdingIdentity: HoldingIdentity) : MembershipGroupReader {
         override val groupId: String = holdingIdentity.groupId
-        override val owningMember: MemberX500Name = MemberX500Name.parse(holdingIdentity.x500Name)
+        override val owningMember: MemberX500Name = holdingIdentity.x500Name
 
         override val groupParameters: GroupParameters
             get() = TODO("groupParameters: Not yet implemented")

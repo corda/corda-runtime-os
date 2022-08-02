@@ -85,11 +85,11 @@ class GroupPolicyProviderImplTest {
     }
     private val parsedMgmGroupPolicy: MGMGroupPolicy = mock()
 
-    val holdingIdentity1 = HoldingIdentity(alice.toString(), groupId1)
-    val holdingIdentity2 = HoldingIdentity(bob.toString(), groupId1)
-    val holdingIdentity3 = HoldingIdentity(alice.toString(), groupId2)
-    val holdingIdentity4 = HoldingIdentity(bob.toString(), groupId2)
-    val holdingIdentity5 = HoldingIdentity(mgm.toString(), groupId2)
+    val holdingIdentity1 = HoldingIdentity(alice, groupId1)
+    val holdingIdentity2 = HoldingIdentity(bob, groupId1)
+    val holdingIdentity3 = HoldingIdentity(alice, groupId2)
+    val holdingIdentity4 = HoldingIdentity(bob, groupId2)
+    val holdingIdentity5 = HoldingIdentity(mgm, groupId2)
 
     fun mockMetadata(resultGroupPolicy: String?) = mock<CpiMetadata> {
         on { groupPolicy } doReturn resultGroupPolicy
@@ -363,7 +363,7 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         // test holding identity
-        val holdingIdentity = HoldingIdentity(alice.toString(), "FOO-BAR")
+        val holdingIdentity = HoldingIdentity(alice, "FOO-BAR")
 
         doReturn(parsedGroupPolicy1).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(groupPolicy1), any())
         doThrow(BadGroupPolicyException("")).whenever(groupPolicyParser).parse(eq(holdingIdentity), eq(null), any())

@@ -5,6 +5,9 @@ bootstrap:
   initialAdminUser:
     password: "admin"
 
+logging:
+  format: text
+
 kafka:
   bootstrapServers: prereqs-kafka:9092
   tls:

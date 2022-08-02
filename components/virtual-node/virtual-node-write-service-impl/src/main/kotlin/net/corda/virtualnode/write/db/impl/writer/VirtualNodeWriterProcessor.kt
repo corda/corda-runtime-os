@@ -102,7 +102,7 @@ internal class VirtualNodeWriterProcessor(
             val groupId = cpiMetadata.mgmGroupId.let {
                 if (it == MGM_DEFAULT_GROUP_ID) UUID.randomUUID().toString() else it
             }
-            val holdingId = HoldingIdentity(create.getX500CanonicalName(), groupId)
+            val holdingId = HoldingIdentity(MemberX500Name.parse(create.getX500CanonicalName()), groupId)
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
                 handleException(
                     respFuture,
@@ -164,7 +164,7 @@ internal class VirtualNodeWriterProcessor(
                     this.cpiVersion
                 ) ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityShortHash)
                 val holdingIdentity = HoldingIdentity(
-                    this.holdingIdentity.x500Name,
+                    MemberX500Name.parse(this.holdingIdentity.x500Name),
                     this.holdingIdentity.mgmGroupId
                 )
                 val cpiIdentifier = CpiIdentifier(
@@ -421,7 +421,7 @@ internal class VirtualNodeWriterProcessor(
             logger.info("No MGM information found in group policy. MGM member info not published.")
             return
         }
-        val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name.toString(), mgmInfo.groupId)
+        val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name, mgmInfo.groupId)
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
             "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}",
@@ -450,7 +450,7 @@ internal class VirtualNodeWriterProcessor(
         val response = VirtualNodeManagementResponse(
             instant,
             VirtualNodeCreateResponse(
-                holdingIdentity.x500Name, cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
+                holdingIdentity.x500Name.toString(), cpiMetadata.id.toAvro(), cpiMetadata.fileChecksum,
                 holdingIdentity.groupId, holdingIdentity.toAvro(), holdingIdentity.shortHash,
                 dbConnections.vaultDdlConnectionId?.toString(),
                 dbConnections.vaultDmlConnectionId.toString(),
