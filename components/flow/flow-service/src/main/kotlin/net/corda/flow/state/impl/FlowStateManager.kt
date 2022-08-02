@@ -22,11 +22,7 @@ class FlowStateManager(private val initialState: FlowState) {
 
     private var sessionMap = validateAndCreateSessionMap(initialState.sessions)
 
-    var stack = FlowStackImpl(
-        flowStackItems = state.flowStackItems,
-        initialContextPlatformProperties = state.initialContextPlatformProperties,
-        initialContextUserProperties = state.initialContextUserProperties
-    )
+    var stack = FlowStackImpl(state.flowStackItems)
 
     val flowKey: FlowKey = state.flowStartContext.statusKey
 
@@ -82,11 +78,7 @@ class FlowStateManager(private val initialState: FlowState) {
     fun rollback() {
         state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
-        stack = FlowStackImpl(
-            initialState.flowStackItems,
-            initialContextPlatformProperties = initialState.initialContextPlatformProperties,
-            initialContextUserProperties = initialState.initialContextUserProperties
-        )
+        stack = FlowStackImpl(initialState.flowStackItems)
         flowContextProperties = FlowContextImpl(stack)
     }
 

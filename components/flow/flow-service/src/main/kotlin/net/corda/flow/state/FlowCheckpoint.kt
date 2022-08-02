@@ -52,7 +52,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val flowContextProperties: FlowContext
 
-    fun initFlowState(flowStartContext: FlowStartContext, contextUserProperties: Map<String, String>)
+    fun initFlowState(flowStartContext: FlowStartContext)
 
     fun getSessionState(sessionId: String): SessionState?
 

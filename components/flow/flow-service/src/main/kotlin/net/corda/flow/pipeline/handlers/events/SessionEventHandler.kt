@@ -94,10 +94,9 @@ class SessionEventHandler @Activate constructor(
             .setInitiatedBy(initiatingIdentity)
             .setFlowClassName(initiatedFlow)
             .setCreatedTimestamp(Instant.now())
-            .setContextPlatformProperties(sessionInit.contextPlatformProperties)
             .build()
 
-        context.checkpoint.initFlowState(startContext, sessionInit.contextUserProperties)
+        context.checkpoint.initFlowState(startContext)
         context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
     }
 

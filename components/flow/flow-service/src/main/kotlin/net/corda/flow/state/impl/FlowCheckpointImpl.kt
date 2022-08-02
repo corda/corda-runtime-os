@@ -124,7 +124,7 @@ class FlowCheckpointImpl(
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.flowContextProperties
 
-    override fun initFlowState(flowStartContext: FlowStartContext, contextUserProperties: Map<String, String>) {
+    override fun initFlowState(flowStartContext: FlowStartContext) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -142,8 +142,6 @@ class FlowCheckpointImpl(
             waitingFor = null
             suspendCount = 0
             suspendedOn = null
-            initialContextPlatformProperties = flowStartContext.contextPlatformProperties
-            initialContextUserProperties = contextUserProperties
         }.build()
 
         flowStateManager = FlowStateManager(flowState)

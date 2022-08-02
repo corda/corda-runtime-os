@@ -12,6 +12,22 @@ interface FlowStack : NonSerializable {
     val size: Int
 
     /**
+     * Pushes a flow onto the stack with some initial context properties. These context properties form an initial set
+     * for this stack item and thus behave just like any other context properties added at a particular point in the
+     * context stack. Initial context properties for a Flow can be added by calling this method for the first item
+     * added to its [FlowStack].
+     *
+     * @param flow the flow to be pushed onto the stack
+     * @param contextPlatformProperties the platform context properties to add to this stack item
+     * @param contextUserProperties the user context properties to add to this stack item
+     * @return the [FlowStackItem] created
+     */
+    fun pushWithContext(
+        flow: Flow, contextPlatformProperties: Map<String, String>,
+        contextUserProperties: Map<String, String>
+    ): FlowStackItem
+
+    /**
      * Pushes a flow onto the stack
      *
      * @param flow the flow to be pushed onto the stack
