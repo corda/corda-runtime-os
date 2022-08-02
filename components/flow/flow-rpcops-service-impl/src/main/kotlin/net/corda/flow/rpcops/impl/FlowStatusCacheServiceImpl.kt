@@ -117,7 +117,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         }
     }
 
-    override fun registerFlowStatusFeed(
+    override fun registerFlowStatusListener(
         clientRequestId: String,
         holdingIdentity: HoldingIdentity,
         listener: FlowStatusUpdateListener
@@ -142,9 +142,9 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         cache[flowKey]?.let { listener.updateReceived(it) }
     }
 
-    override fun unregisterFlowStatusFeed(listenerId: UUID) {
+    override fun unregisterFlowStatusListener(listenerId: UUID) {
         statusListenerByUuid.remove(listenerId)?.let {
-            log.info("Unregistered flow status feed listener: $listenerId. Total number of open listeners: ${statusListenerByUuid.size}.")
+            log.info("Unregistered flow status listener: $listenerId. Total number of open listeners: ${statusListenerByUuid.size}.")
         }
     }
 

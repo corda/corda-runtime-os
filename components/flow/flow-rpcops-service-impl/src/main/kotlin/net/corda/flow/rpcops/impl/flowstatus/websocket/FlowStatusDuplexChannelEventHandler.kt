@@ -27,7 +27,7 @@ class FlowStatusDuplexChannelEventHandler(
             log.debug { "Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)." }
             val listener = WebSocketFlowStatusUpdateListener(id, channel, clientRequestId, holdingIdentity)
             try {
-                flowStatusCacheService.registerFlowStatusFeed(clientRequestId, holdingIdentity, listener)
+                flowStatusCacheService.registerFlowStatusListener(clientRequestId, holdingIdentity, listener)
             } catch (e: Exception) {
                 channel.error(e)
             }
@@ -52,6 +52,6 @@ class FlowStatusDuplexChannelEventHandler(
     }
 
     private fun unregisterFlowStatusFeed(handlerId: UUID) {
-        flowStatusCacheService.unregisterFlowStatusFeed(handlerId)
+        flowStatusCacheService.unregisterFlowStatusListener(handlerId)
     }
 }
