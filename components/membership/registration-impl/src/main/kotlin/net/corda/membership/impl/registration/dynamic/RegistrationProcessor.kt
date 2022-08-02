@@ -16,6 +16,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
@@ -69,6 +70,7 @@ class RegistrationProcessor(
             cryptoOpsClient,
             cordaAvroSerializationFactory,
         ),
+        DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient),
 
         ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(clock, cordaAvroSerializationFactory),
         VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient),
@@ -101,9 +103,8 @@ class RegistrationProcessor(
                 }
                 is DeclineRegistration -> {
                     logger.info("Received decline registration command.")
-                    logger.warn("Unimplemented command.")
                     logger.warn("Declining registration because: ${command.reason}")
-                    null
+                    handlers[DeclineRegistration::class.java]?.invoke(state, event)
                 }
                 is ProcessMemberVerificationRequest -> {
                     logger.info("Received process member verification request during registration command.")
