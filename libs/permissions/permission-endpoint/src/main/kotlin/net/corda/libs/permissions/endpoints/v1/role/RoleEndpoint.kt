@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.role
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
@@ -47,7 +48,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Associates a role with a permission
      */
-    @HttpRpcPUT(path = "addPermission/{roleId}/{permissionId}", description = "Add a permission to a role")
+    @HttpRpcPUT(path = "{roleId}/permission/{permissionId}", description = "Add a permission to a role")
     fun addPermission(
         @HttpRpcPathParameter(description = "Identifier for an existing role")
         roleId: String,
@@ -58,7 +59,7 @@ interface RoleEndpoint : RpcOps {
     /**
      * Removes Association between a role and a permission
      */
-    @HttpRpcPUT(path = "removePermission/{roleId}/{permissionId}", description = "Removes a permission from a role")
+    @HttpRpcDELETE(path = "{roleId}/permission/{permissionId}", description = "Removes a permission from a role")
     fun removePermission(
         @HttpRpcPathParameter(description = "Identifier for an existing role")
         roleId: String,

@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
@@ -43,7 +44,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Assign a Role to a User in the RBAC permission system.
      */
-    @HttpRpcPUT(path = "addRole/{loginName}/{roleId}", description = "Assign a Role to a User")
+    @HttpRpcPUT(path = "{loginName}/role/{roleId}", description = "Assign a Role to a User")
     fun addRole(
         @HttpRpcPathParameter(description = "User login name to be changed")
         loginName: String,
@@ -54,7 +55,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Un-assign a Role from a User in the RBAC permission system.
      */
-    @HttpRpcPUT(path = "removeRole/{loginName}/{roleId}", description = "Un-assign a role from a user")
+    @HttpRpcDELETE(path = "{loginName}/role/{roleId}", description = "Un-assign a role from a user")
     fun removeRole(
         @HttpRpcPathParameter(description = "User login name to be changed")
         loginName: String,
