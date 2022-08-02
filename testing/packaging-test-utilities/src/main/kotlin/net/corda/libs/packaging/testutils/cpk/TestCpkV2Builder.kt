@@ -10,6 +10,10 @@ import java.util.jar.Manifest
 
 const val CPK_BUNDLE_NAME_ATTRIBUTE = "Bundle-SymbolicName"
 const val CPK_BUNDLE_VERSION_ATTRIBUTE = "Bundle-Version"
+const val CPK_WORKFLOW_LICENCE_ATTRIBUTE = "Cordapp-Workflow-Licence"
+const val CPK_WORKFLOW_NAME_ATTRIBUTE = "Cordapp-Workflow-Name"
+const val CPK_WORKFLOW_VENDOR_ATTRIBUTE = "Cordapp-Workflow-Vendor"
+const val CPK_WORKFLOW_VERSION_ATTRIBUTE = "Cordapp-Workflow-Version"
 
 class TestCpkV2Builder {
     var name = "testCpkV2-1.0.0.0.jar"
@@ -52,6 +56,10 @@ class TestCpkV2Builder {
                 Corda-CPK-Format: 2.0
                 $CPK_BUNDLE_NAME_ATTRIBUTE: $bundleName
                 $CPK_BUNDLE_VERSION_ATTRIBUTE: $bundleVersion
+                $CPK_WORKFLOW_LICENCE_ATTRIBUTE: Unknown
+                $CPK_WORKFLOW_NAME_ATTRIBUTE: Test
+                $CPK_WORKFLOW_VENDOR_ATTRIBUTE: R3
+                $CPK_WORKFLOW_VERSION_ATTRIBUTE: 1
                 """.trimIndent().plus("\n").toByteArray())
             )
         }
