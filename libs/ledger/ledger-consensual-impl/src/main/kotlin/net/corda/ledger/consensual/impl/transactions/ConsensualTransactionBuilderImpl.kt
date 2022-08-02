@@ -1,7 +1,9 @@
 package net.corda.ledger.consensual.impl.transactions
 
 import net.corda.ledger.common.impl.transactions.PrivacySaltImpl
-import net.corda.ledger.common.impl.transactions.TransactionMetaDataImpl
+import net.corda.ledger.common.impl.transactions.TransactionMetaData
+import net.corda.ledger.common.impl.transactions.TransactionMetaData.Companion.LEDGER_MODEL_KEY
+import net.corda.ledger.common.impl.transactions.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.ledger.common.impl.transactions.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -10,9 +12,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.ledger.common.transactions.TransactionMetaData
-import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_MODEL_KEY
-import net.corda.v5.ledger.common.transactions.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -48,7 +47,7 @@ class ConsensualTransactionBuilderImpl(
         this.copy(states = states + state)
 
     private fun calculateMetaData(): TransactionMetaData {
-        return TransactionMetaDataImpl(mapOf(
+        return TransactionMetaData(mapOf(
             LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
             LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
             // TODO(CORE-5940 CPK identifier/etc)

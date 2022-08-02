@@ -44,9 +44,9 @@ class WireTransaction(
         return this.getMetadata(serializer).getLedgerModel()
     }
 
-    fun getMetadata(serializer: SerializationService): TransactionMetaDataImpl {
+    fun getMetadata(serializer: SerializationService): TransactionMetaData {
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        return serializer.deserialize(metadataBytes, TransactionMetaDataImpl::class.java)
+        return serializer.deserialize(metadataBytes, TransactionMetaData::class.java)
     }
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
