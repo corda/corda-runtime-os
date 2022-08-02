@@ -160,7 +160,9 @@ class CreateCpiV2 : Runnable {
 
             // Copy the CPB contents
             cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
-            Files.newInputStream(cpbPath, READ).copyTo(cpiJar)
+            Files.newInputStream(cpbPath, READ).use {
+                it.copyTo(cpiJar)
+            }
 
             // Add group policy
             addGroupPolicy(cpiJar, groupPolicy)
