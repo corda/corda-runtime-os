@@ -1,14 +1,18 @@
+import aQute.bnd.gradle.Bundle // MERGE ???
+
 plugins {
-    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle)
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle)
     id 'corda.common-library'
 }
 
 description 'Corda consensual ledger - implementation'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.core' // MERGE ???
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion" // MERGE ???
 
     // TODO: review dependencies
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -22,6 +26,8 @@ dependencies {
     implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
     implementation project(":libs:ledger:ledger-common-impl")
 
+    testImplementation "org.assertj:assertj-core:$assertjVersion"  // MERGE ???
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"  // MERGE ???
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
@@ -33,4 +39,13 @@ dependencies {
     testImplementation project(":libs:virtual-node:sandbox-group-context")
     testImplementation project(':libs:virtual-node:virtual-node-info')
     testImplementation project(":components:flow:flow-service") // For FlowFiberServiceImpl
+
+    testCompileOnly 'org.osgi:osgi.core'  // MERGE ???
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"  // MERGE ???
+    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"  // MERGE ???
+    testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"  // MERGE ???
+
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {  // MERGE ???
+        exclude group: 'org.osgi'
+    }
 }

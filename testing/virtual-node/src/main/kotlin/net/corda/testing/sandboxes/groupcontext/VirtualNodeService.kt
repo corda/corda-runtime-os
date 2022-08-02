@@ -1,4 +1,4 @@
-package net.corda.sandboxgroupcontext.test
+package net.corda.testing.sandboxes.groupcontext
 
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
