@@ -10,8 +10,8 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -42,7 +42,7 @@ class FlowClassRPCOpsImplTest {
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
     private fun getStubVirtualNode(): VirtualNodeInfo {
-        return VirtualNodeInfo(HoldingIdentity("", ""),
+        return VirtualNodeInfo(createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", ""),
             CpiIdentifier("", "",
             SecureHash("", "bytes".toByteArray())),
             UUID.randomUUID(),

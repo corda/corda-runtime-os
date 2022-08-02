@@ -75,7 +75,7 @@ class DynamicMemberRegistrationServiceTest {
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
-    private val mgm = HoldingIdentity(mgmName.toString(), GROUP_NAME)
+    private val mgm = HoldingIdentity(mgmName, GROUP_NAME)
     private val mgmInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn memberProvidedContext
         on { mgmProvidedContext } doReturn mgmProvidedContext
@@ -84,7 +84,7 @@ class DynamicMemberRegistrationServiceTest {
         on { isMgm } doReturn true
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
-    private val member = HoldingIdentity(memberName.toString(), GROUP_NAME)
+    private val member = HoldingIdentity(memberName, GROUP_NAME)
     private val memberId = member.shortHash
     private val sessionKey: PublicKey = mock {
         on { encoded } doReturn SESSION_KEY.toByteArray()

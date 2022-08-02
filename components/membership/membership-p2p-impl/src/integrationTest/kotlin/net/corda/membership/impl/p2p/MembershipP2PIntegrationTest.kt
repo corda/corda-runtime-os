@@ -47,11 +47,13 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -193,9 +195,8 @@ class MembershipP2PIntegrationTest {
     @Test
     fun `membership p2p service reads registration requests from the p2p topic and puts them on a membership topic for further processing`() {
         val groupId = UUID.randomUUID().toString()
-        val source = MemberX500Name.parse("O=Alice,C=GB,L=London").toString()
-        val destination = MemberX500Name.parse("O=MGM,C=GB,L=London").toString()
-        val destinationHoldingIdentity = net.corda.virtualnode.HoldingIdentity(destination, groupId)
+        val source = createTestHoldingIdentity("O=Alice,C=GB,L=London", groupId)
+        val destination = createTestHoldingIdentity("O=MGM,C=GB,L=London", groupId)
         val registrationId = UUID.randomUUID().toString()
         val fakeKey = "fakeKey"
         val fakeSig = "fakeSig"
@@ -219,8 +220,8 @@ class MembershipP2PIntegrationTest {
             KeyValuePairList(emptyList())
         )
         val messageHeader = UnauthenticatedMessageHeader(
-            HoldingIdentity(destination, groupId),
-            HoldingIdentity(source, groupId),
+            destination.toAvro(),
+            source.toAvro(),
             MEMBERSHIP_P2P_SUBSYSTEM
         )
         val message = MembershipRegistrationRequest(
@@ -256,7 +257,7 @@ class MembershipP2PIntegrationTest {
         assertThat(result?.second).isNotNull
         with(result!!.second) {
             assertThat(topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-            assertThat(key).isEqualTo("$registrationId-${destinationHoldingIdentity.shortHash}")
+            assertThat(key).isEqualTo("$registrationId-${destination.shortHash}")
             assertThat(value)
                 .isNotNull
                 .isInstanceOf(RegistrationCommand::class.java)
@@ -265,9 +266,9 @@ class MembershipP2PIntegrationTest {
                 .isInstanceOf(StartRegistration::class.java)
 
             with(value!!.command as StartRegistration) {
-                assertThat(this.destination.x500Name).isEqualTo(destination)
+                assertThat(this.destination.x500Name).isEqualTo(destination.x500Name.toString())
                 assertThat(this.destination.groupId).isEqualTo(groupId)
-                assertThat(this.source.x500Name).isEqualTo(source)
+                assertThat(this.source.x500Name).isEqualTo(source.x500Name.toString())
                 assertThat(this.source.groupId).isEqualTo(groupId)
                 assertThat(memberRegistrationRequest).isNotNull
                 with(memberRegistrationRequest) {

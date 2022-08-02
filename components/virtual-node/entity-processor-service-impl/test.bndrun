@@ -38,6 +38,7 @@
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'
+    bnd.identity;id='net.corda.test-utilities'
 
 -runstartlevel: \
     order=sortbynameversion,\

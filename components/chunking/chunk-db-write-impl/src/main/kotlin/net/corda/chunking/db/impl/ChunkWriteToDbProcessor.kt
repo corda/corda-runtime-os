@@ -4,9 +4,9 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.validation.CpiValidator
-import net.corda.chunking.db.impl.validation.ValidationException
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
@@ -45,7 +45,7 @@ class ChunkWriteToDbProcessor(
             publisher.complete(request.requestId, checksum)
         } catch (e: Exception) {
             log.error("Could not persist chunk $request", e)
-            publisher.error(request.requestId, ExceptionEnvelope(e::class.java.name, e.message), "Error")
+            publisher.error(request.requestId, ExceptionEnvelope(e::class.java.name, e.message), e.message ?: "Error")
         }
     }
 

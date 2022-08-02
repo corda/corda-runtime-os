@@ -45,7 +45,7 @@ class PersistMemberInfoHandlerTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = HoldingIdentity(
-        ourX500Name.toString(),
+        ourX500Name,
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()

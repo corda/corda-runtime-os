@@ -9,6 +9,7 @@ import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RpcAuthContext
+import net.corda.httprpc.security.rpcContext
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
@@ -19,6 +20,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import java.lang.IllegalArgumentException
 import javax.security.auth.login.FailedLoginException
 
@@ -80,6 +82,9 @@ internal object ContextUtils {
 
     fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
+            MDC.put("http.method", ctx.method())
+            MDC.put("http.path", ctx.path())
+            MDC.put("http.user", rpcContext()?.principal ?: "<anonymous>")
             log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
@@ -102,6 +107,9 @@ internal object ContextUtils {
                 log.warn("Error invoking path '${this.fullPath}'.", e)
                 throw HttpExceptionMapper.mapToResponse(e)
             } finally {
+                MDC.remove("http.method")
+                MDC.remove("http.path")
+                MDC.remove("http.user")
                 if(ctx.isMultipartFormData()) {
                     cleanUpMultipartRequest(ctx)
                 }

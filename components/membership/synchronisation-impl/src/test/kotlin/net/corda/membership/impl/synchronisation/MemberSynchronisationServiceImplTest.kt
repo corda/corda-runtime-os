@@ -115,7 +115,7 @@ class MemberSynchronisationServiceImplTest {
         on { create(any()) } doReturn participant
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
-    private val member = HoldingIdentity(memberName.toString(), GROUP_NAME)
+    private val member = HoldingIdentity(memberName, GROUP_NAME)
     private val memberContextList = KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, participantName.toString())))
     private val mgmContextList = KeyValuePairList(listOf())
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {

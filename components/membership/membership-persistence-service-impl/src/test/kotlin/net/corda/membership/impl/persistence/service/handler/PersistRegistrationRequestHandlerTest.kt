@@ -44,7 +44,7 @@ class PersistRegistrationRequestHandlerTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = "cbdc24f5-35b0-4ef3-be9e-f428d273d7b1"
     private val ourHoldingIdentity = HoldingIdentity(
-        ourX500Name.toString(),
+        ourX500Name,
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
@@ -153,7 +153,7 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(this).isInstanceOf(MemberSignatureEntity::class.java)
             val entity = this as MemberSignatureEntity
             assertThat(entity.groupId).isEqualTo(ourHoldingIdentity.groupId)
-            assertThat(entity.memberX500Name).isEqualTo(ourHoldingIdentity.x500Name)
+            assertThat(entity.memberX500Name).isEqualTo(ourHoldingIdentity.x500Name.toString())
             assertThat(entity.publicKey).isEqualTo("123".toByteArray())
             assertThat(entity.content).isEqualTo("456".toByteArray())
             assertThat(entity.context).isEqualTo(byteArrayOf(1, 3, 4))

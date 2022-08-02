@@ -24,7 +24,7 @@ import org.mockito.kotlin.whenever
 
 class ForwardingGroupPolicyProviderTest {
 
-    private val alice = HoldingIdentity("alice", "group-1")
+    private val alice = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group-1")
     private val groupInfo =
         GroupPolicyListener.GroupInfo(
             alice,
