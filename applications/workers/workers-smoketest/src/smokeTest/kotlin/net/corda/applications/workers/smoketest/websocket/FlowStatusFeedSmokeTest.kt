@@ -118,6 +118,7 @@ class FlowStatusFeedSmokeTest {
         }
         client.close()
     }
+/*
 
     @Order(50)
     @Test
@@ -141,6 +142,7 @@ class FlowStatusFeedSmokeTest {
             assertThat(wsHandler.isNotConnected)
         }
     }
+*/
 
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {
