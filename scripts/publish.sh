@@ -22,16 +22,6 @@
 
 #wait
 
-
-kubectl get pods -n default 
-kubectl get svc -n default 
-kubectl describe service/buildkit
-
-kubectl get pods
-kubectl get svc 
-
-nohup kubectl -n default port-forward $(kubectl -n default get pods -o name | grep buildkit) 3476 &
-
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
 cp -v ./tools/plugins/db-config/build/libs/*db-config-cli-plugin* ./tools/plugins/build/tmp/buildkit/containerization/db-config-cli-plugin.jar
