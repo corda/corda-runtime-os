@@ -25,6 +25,10 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
     implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(':components:flow:flow-service') // For FlowFiberService
+    implementation project(':libs:serialization:serialization-checkpoint-api') // Dependency of FlowFiberService
+    implementation project(":libs:virtual-node:sandbox-group-context") // Dependency of FlowFiberService
+
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"  // MERGE ???
     testImplementation "org.mockito:mockito-core:$mockitoVersion"  // MERGE ???
