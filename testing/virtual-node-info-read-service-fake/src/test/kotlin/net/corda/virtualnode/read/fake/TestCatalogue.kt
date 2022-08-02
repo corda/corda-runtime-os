@@ -1,6 +1,7 @@
 package net.corda.virtualnode.read.fake
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import java.time.Instant
@@ -10,15 +11,15 @@ object TestCatalogue {
 
     object Identity {
         fun alice(groupId: String): HoldingIdentity {
-            return HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
+            return createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
         }
 
         fun bob(groupId: String): HoldingIdentity {
-            return HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+            return createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
         }
 
         fun carol(groupId: String): HoldingIdentity {
-            return HoldingIdentity("CN=Carol, O=Carol Corp, L=LDN, C=GB", groupId)
+            return createTestHoldingIdentity("CN=Carol, O=Carol Corp, L=LDN, C=GB", groupId)
         }
     }
 

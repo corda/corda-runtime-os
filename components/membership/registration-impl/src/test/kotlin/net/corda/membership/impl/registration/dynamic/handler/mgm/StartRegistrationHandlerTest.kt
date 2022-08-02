@@ -6,17 +6,18 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -45,8 +46,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.SortedMap
-import java.util.UUID
+import java.util.*
 
 class StartRegistrationHandlerTest {
 
@@ -107,9 +107,13 @@ class StartRegistrationHandlerTest {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
+    val memberMgmContext: MGMContext = mock {
+        on { entries } doReturn emptySet()
+    }
     val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
         on { memberProvidedContext } doReturn memberMemberContext
+        on { mgmProvidedContext } doReturn memberMgmContext
     }
 
     val mgmMemberContext: MemberContext = mock {
@@ -119,6 +123,7 @@ class StartRegistrationHandlerTest {
         on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn true
     }
     val mgmMemberInfo: MemberInfo = mock {
+        on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
@@ -169,12 +174,16 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertRegistrationStarted()
 
             val registrationCommand = this.outputStates.first().value as RegistrationCommand
             assertThat(registrationCommand.command).isInstanceOf(VerifyMember::class.java)
+
+            val pendingMemberRecord = this.outputStates[1].value as? PersistentMemberInfo
+            assertThat(pendingMemberRecord).isNotNull
+            assertThat(pendingMemberRecord!!.viewOwningMember).isEqualTo(mgmHoldingIdentity)
         }
         verifyServices(
             persistRegistrationRequest = true,

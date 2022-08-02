@@ -11,9 +11,9 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -37,7 +37,7 @@ import javax.persistence.TypedQuery
 class QueryGroupPolicyHandlerTest {
     private val x500Name = MemberX500Name.parse("O=MGM,L=London,C=GB").toString()
     private val groupId = UUID.randomUUID().toString()
-    private val holdingIdentity = HoldingIdentity(x500Name, groupId)
+    private val holdingIdentity = createTestHoldingIdentity(x500Name, groupId)
 
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val cryptoDmlConnectionId = UUID.randomUUID()

@@ -69,7 +69,7 @@ class MemberOpsServiceProcessorTest {
         val mgmX500Name = MemberX500Name.parse("O=MGM,L=London,C=GB")
         private const val MGM_GROUP_ID = "090ae2ea-3920-42d7-a5cf-a79b909d7c30"
         private val mgmHoldingIdentity = HoldingIdentity(
-            mgmX500Name.toString(),
+            mgmX500Name,
             MGM_GROUP_ID
         )
 

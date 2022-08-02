@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true" />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="Console">
+            <AppenderRef ref="Console" level="info"/>
+        </logger>
+        <root level="${env:CONSOLE_LOG_LEVEL:-info}">
+            <AppenderRef ref="Console" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
+        </root>
+    </Loggers>
+</Configuration>

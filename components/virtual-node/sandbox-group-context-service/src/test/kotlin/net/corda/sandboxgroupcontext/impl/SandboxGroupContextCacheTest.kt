@@ -4,6 +4,8 @@ import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCacheImpl
+import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
@@ -21,7 +23,7 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(1)
 
         val id = mock<HoldingIdentity> {
-            on { x500Name } doReturn "name"
+            on { x500Name } doReturn MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
         }
         val vnodeContext1 = mock<VirtualNodeContext> {
             on { sandboxGroupType } doReturn SandboxGroupType.FLOW
@@ -47,7 +49,7 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(10)
 
         val id = mock<HoldingIdentity> {
-            on { x500Name } doReturn "name"
+            on { x500Name } doReturn MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
         }
         val vnodeContext1 = mock<VirtualNodeContext> {
             on { sandboxGroupType } doReturn SandboxGroupType.FLOW
@@ -75,7 +77,7 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(10)
 
         val id = mock<HoldingIdentity> {
-            on { x500Name } doReturn "name"
+            on { x500Name } doReturn MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
         }
         val vnodeContext1 = mock<VirtualNodeContext> {
             on { sandboxGroupType } doReturn SandboxGroupType.FLOW
@@ -95,7 +97,7 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(10)
 
         val id = mock<HoldingIdentity> {
-            on { x500Name } doReturn "name"
+            on { x500Name } doReturn MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
         }
         val vnodeContext1 = mock<VirtualNodeContext> {
             on { sandboxGroupType } doReturn SandboxGroupType.FLOW
@@ -116,14 +118,14 @@ class SandboxGroupContextCacheTest {
         val cache = SandboxGroupContextCacheImpl(10)
 
         val vnodeContext1 = VirtualNodeContext(
-            HoldingIdentity("Alice", "group"),
+            createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
             setOf(SecureHash.create("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             "filter")
 
         val equalVnodeContext1 = VirtualNodeContext(
-            HoldingIdentity("Alice", "group"),
+            createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
             setOf(SecureHash.create("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,

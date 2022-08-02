@@ -20,9 +20,9 @@ class MemberDataCacheTest {
 
     private lateinit var memberDataCache: MemberDataCache<MemberData>
 
-    private val aliceIdGroup1 = HoldingIdentity(TestProperties.aliceName.toString(), GROUP_ID_1)
-    private val bobIdGroup1 = HoldingIdentity(TestProperties.bobName.toString(), GROUP_ID_1)
-    private val aliceIdGroup2 = HoldingIdentity(TestProperties.aliceName.toString(), GROUP_ID_2)
+    private val aliceIdGroup1 = HoldingIdentity(TestProperties.aliceName, GROUP_ID_1)
+    private val bobIdGroup1 = HoldingIdentity(TestProperties.bobName, GROUP_ID_1)
+    private val aliceIdGroup2 = HoldingIdentity(TestProperties.aliceName, GROUP_ID_2)
     private val memberData1 = mock<MemberData>()
     private val memberData2 = mock<MemberData>()
 

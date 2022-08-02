@@ -9,6 +9,7 @@ import net.corda.libs.virtualnode.datamodel.findVirtualNode
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
@@ -93,7 +94,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             .transaction { entityManager ->
                 val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash)
                     ?: return null
-                HoldingIdentity(hidEntity.x500Name, hidEntity.mgmGroupId)
+                HoldingIdentity(MemberX500Name.parse(hidEntity.x500Name), hidEntity.mgmGroupId)
             }
     }
 
@@ -118,7 +119,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         } ?: HoldingIdentityEntity(
             holdingIdentity.shortHash,
             holdingIdentity.fullHash,
-            holdingIdentity.x500Name,
+            holdingIdentity.x500Name.toString(),
             holdingIdentity.groupId,
             connections.vaultDdlConnectionId,
             connections.vaultDmlConnectionId,
@@ -188,7 +189,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     fun HoldingIdentity.toEntity(connections: VirtualNodeDbConnections?) = HoldingIdentityEntity(
         this.shortHash,
         this.fullHash,
-        this.x500Name,
+        this.x500Name.toString(),
         this.groupId,
         connections?.vaultDdlConnectionId,
         connections?.vaultDmlConnectionId,

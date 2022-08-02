@@ -65,6 +65,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -225,11 +226,11 @@ class MembershipPersistenceTest {
 
         private val groupId = randomUUID().toString()
         private val x500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
-        private val viewOwningHoldingIdentity = HoldingIdentity(x500Name.toString(), groupId)
+        private val viewOwningHoldingIdentity = HoldingIdentity(x500Name, groupId)
         private val holdingIdentityShortHash: String = viewOwningHoldingIdentity.shortHash
 
         private val registeringX500Name = MemberX500Name.parse("O=Bob, C=GB, L=London")
-        private val registeringHoldingIdentity = HoldingIdentity(registeringX500Name.toString(), groupId)
+        private val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)
 
         private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityShortHash", DbSchema.VNODE)
         private val clusterDbInfo = TestDbInfo.createConfig()
@@ -541,7 +542,7 @@ class MembershipPersistenceTest {
 
         assertThat(approveResult.status).isEqualTo(MEMBER_STATUS_ACTIVE)
         assertThat(approveResult.groupId).isEqualTo(groupId)
-        assertThat(approveResult.name.toString()).isEqualTo(registeringHoldingIdentity.x500Name)
+        assertThat(approveResult.name).isEqualTo(registeringHoldingIdentity.x500Name)
         val newMemberEntity = vnodeEmf.use {
             it.find(
                 MemberInfoEntity::class.java,
@@ -566,7 +567,7 @@ class MembershipPersistenceTest {
 
         val signatures = (1..5).associate { index ->
             val registrationId = randomUUID().toString()
-            val holdingId = HoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
+            val holdingId = createTestHoldingIdentity("O=Bob-$index, C=GB, L=London", groupId)
             val publicKey = ByteBuffer.wrap("pk-$index".toByteArray())
             val signature = ByteBuffer.wrap("signature-$index".toByteArray())
             val context = KeyValuePairList(

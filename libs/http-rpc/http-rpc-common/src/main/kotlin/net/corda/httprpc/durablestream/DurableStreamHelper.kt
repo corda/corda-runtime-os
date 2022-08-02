@@ -24,7 +24,7 @@ object DurableStreamHelper {
     @JvmStatic
     fun <T> withDurableStreamContext
             (block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>): FiniteDurableCursorBuilder<T> {
-        val durableStreamContext = requireNotNull(rpcContext().invocation.durableStreamContext) {
+        val durableStreamContext = requireNotNull(rpcContext()?.invocation?.durableStreamContext) {
             "Durable stream context should always be set for durable streams invocation."
         }
         val (positionedValues, remainingElementsCountEstimate, isLastResult) = block(durableStreamContext)

@@ -94,7 +94,7 @@ class MemberListProcessorTest {
         ): Map<String, PersistentMemberInfo> {
             val topicData = mutableMapOf<String, PersistentMemberInfo>()
             memberInfoList.forEach { member ->
-                val holdingIdentity = HoldingIdentity(member.name.toString(), member.groupId)
+                val holdingIdentity = HoldingIdentity(member.name, member.groupId)
                 if (!selfOwned && holdingIdentity != aliceIdentity) {
                     topicData[aliceIdentity.shortHash + holdingIdentity.shortHash] = PersistentMemberInfo(
                         aliceIdentity.toAvro(),
@@ -147,11 +147,11 @@ class MemberListProcessorTest {
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
             alice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING)
-            aliceIdentity = HoldingIdentity(alice.name.toString(), alice.groupId)
+            aliceIdentity = HoldingIdentity(alice.name, alice.groupId)
             bob = createTestMemberInfo("O=Bob,L=London,C=GB", MEMBER_STATUS_ACTIVE)
-            bobIdentity = HoldingIdentity(bob.name.toString(), bob.groupId)
+            bobIdentity = HoldingIdentity(bob.name, bob.groupId)
             charlie = createTestMemberInfo("O=Charlie,L=London,C=GB", MEMBER_STATUS_SUSPENDED)
-            charlieIdentity = HoldingIdentity(charlie.name.toString(), charlie.groupId)
+            charlieIdentity = HoldingIdentity(charlie.name, charlie.groupId)
             memberListFromTopic = convertToTestTopicData(listOf(alice, bob, charlie))
         }
     }
@@ -178,7 +178,7 @@ class MemberListProcessorTest {
     fun `Member list cache is successfully updated with new record`() {
         memberListProcessor.onSnapshot(memberListFromTopic)
         val newMember = createTestMemberInfo("O=NewMember,L=London,C=GB", MEMBER_STATUS_ACTIVE)
-        val newMemberIdentity = HoldingIdentity(newMember.name.toString(), newMember.groupId)
+        val newMemberIdentity = HoldingIdentity(newMember.name, newMember.groupId)
         val topicData = convertToTestTopicData(listOf(newMember), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         memberListProcessor.onNext(newRecord, null, memberListFromTopic)

@@ -85,6 +85,7 @@ dependencies {
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
+    integrationTestImplementation project(':testing:test-utilities')
 
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

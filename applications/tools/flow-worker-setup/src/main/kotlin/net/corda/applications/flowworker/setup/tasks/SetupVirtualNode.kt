@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -50,7 +51,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val virtualNodes = cpiList.flatMap { cpi ->
             x500Identities.map { x500 -> cpi to VirtualNodeInfo(
-                HoldingIdentity(x500, cpi.metadata.cpiId.name),
+                HoldingIdentity(MemberX500Name.parse(x500), cpi.metadata.cpiId.name),
                 cpi.metadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID(),
