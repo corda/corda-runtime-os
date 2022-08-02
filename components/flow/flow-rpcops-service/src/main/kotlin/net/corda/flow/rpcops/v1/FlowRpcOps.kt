@@ -67,9 +67,9 @@ interface FlowRpcOps : RpcOps {
 
     @HttpRpcWS(
         path = "{holdingIdentityShortHash}/{clientRequestId}",
-        title = "Get Flow Status updates via websockets.",
-        description = "Gets a stream of flow status updates for a given flow.",
-        responseDescription = "Updates about the status of the given flow."
+        title = "Get status updates for a flow via websockets.",
+        description = "Gets a stream of status updates for a given flow.",
+        responseDescription = "Flow status updates."
     )
     fun registerFlowStatusUpdatesFeed(
         channel: DuplexChannel,
