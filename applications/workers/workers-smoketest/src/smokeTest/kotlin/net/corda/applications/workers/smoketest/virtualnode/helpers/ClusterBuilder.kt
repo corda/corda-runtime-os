@@ -84,7 +84,7 @@ class ClusterBuilder {
         post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/v1/keys/$holdingIdentityShortHash?alias=$alias&hsmCategory=$category&scheme=$scheme", body = "")
+        post("/api/v1/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
 
     fun getKey(holdingIdentityShortHash: String, keyId: String) =
         get("/api/v1/keys/$holdingIdentityShortHash/$keyId")

@@ -129,22 +129,22 @@ interface KeysRpcOps : RpcOps {
      * @return The ID of the newly generated key pair.
      */
     @HttpRpcPOST(
-        path = "{tenantId}",
+        path = "{tenantId}/alias/{alias}/category/{hsmCategory}/scheme/{scheme}",
         description = "Generate key pair.",
         responseDescription = "The ID of the newly generated key pair."
     )
     fun generateKeyPair(
         @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
-        @HttpRpcQueryParameter(
+        @HttpRpcPathParameter(
             description = "The key alias"
         )
         alias: String,
-        @HttpRpcQueryParameter(
+        @HttpRpcPathParameter(
             description = "The HSM Category"
         )
         hsmCategory: String,
-        @HttpRpcQueryParameter(
+        @HttpRpcPathParameter(
             description = "The scheme"
         )
         scheme: String
