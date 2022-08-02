@@ -1,6 +1,5 @@
 package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.CloseableResources
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -17,6 +16,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledFuture
@@ -45,7 +45,6 @@ class LifecycleCoordinatorImpl(
     batchSize: Int,
     private val registry: LifecycleRegistryCoordinatorAccess,
     private val scheduler: LifecycleCoordinatorScheduler,
-    closeableResources: CloseableResources?,
     lifecycleEventHandler: LifecycleEventHandler,
 ) : LifecycleCoordinatorInternal {
 
@@ -61,7 +60,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(name, lifecycleState, registry, closeableResources, lifecycleEventHandler)
+    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifecycleEventHandler)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
@@ -209,6 +208,16 @@ class LifecycleCoordinatorImpl(
         }
         return followStatusChanges(coordinators)
     }
+
+    override fun <T : AutoCloseable> createManagedResource(name: String, generator: () -> T) {
+        processor.addManagedResource(name, generator)
+    }
+
+    override fun <T: AutoCloseable> getManagedResource(name: String) : T? {
+        return uncheckedCast(processor.getManagedResource(name))
+    }
+
+    override fun closeManagedResources(resources: Set<String>?) = processor.closeManagedResources(resources)
 
     /**
      * See [LifecycleCoordinator].
