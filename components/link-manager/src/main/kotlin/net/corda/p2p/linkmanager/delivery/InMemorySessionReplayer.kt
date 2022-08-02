@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -18,6 +17,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")

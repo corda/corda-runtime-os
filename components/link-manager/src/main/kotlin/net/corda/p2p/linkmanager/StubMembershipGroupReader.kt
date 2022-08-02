@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -13,6 +12,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -56,7 +57,7 @@ internal class StubMembershipGroupReader(
             val newValue = newRecord.value
             if (oldValue != null) {
                 publicHashToMemberInformation.remove(oldValue.toGroupIdWithPublicKeyHash())
-                membersInformation.remove(oldValue.holdingIdentity)
+                membersInformation.remove(oldValue.holdingIdentity.toCorda())
             }
             if (newValue != null) {
                 addMember(newValue)
@@ -64,7 +65,7 @@ internal class StubMembershipGroupReader(
         }
 
         private fun addMember(member: MemberInfoEntry) {
-            membersInformation[member.holdingIdentity] = member.toMemberInfo()
+            membersInformation[member.holdingIdentity.toCorda()] = member.toMemberInfo()
             publicHashToMemberInformation[member.toGroupIdWithPublicKeyHash()] = member.toMemberInfo()
         }
     }
@@ -98,7 +99,7 @@ internal class StubMembershipGroupReader(
     private fun MemberInfoEntry.toMemberInfo(): LinkManagerMembershipGroupReader.MemberInfo {
         val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return LinkManagerMembershipGroupReader.MemberInfo(
-            HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
+            this.holdingIdentity.toCorda(),
             publicKey,
             publicKey.toKeyAlgorithm(),
             this.address,

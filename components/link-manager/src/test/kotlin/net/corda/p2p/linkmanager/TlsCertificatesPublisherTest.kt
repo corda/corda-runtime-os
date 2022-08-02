@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,6 +14,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
+import net.corda.test.util.identity.createTestHoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -64,10 +64,7 @@ class TlsCertificatesPublisherTest {
     private val configuration = mock<SmartConfig>()
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val identityInfo = HostingMapListener.IdentityInfo(
-        HoldingIdentity(
-            "Alice",
-            "Group1",
-        ),
+        createTestHoldingIdentity("CN=Alice, O=Bob Corp, L=LDN, C=GB", "Group1",),
         listOf("one", "two"),
         "id1",
         "id2",
@@ -102,7 +99,8 @@ class TlsCertificatesPublisherTest {
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(
                     Record(
-                        GATEWAY_TLS_CERTIFICATES, "Group1-Alice",
+                        GATEWAY_TLS_CERTIFICATES,
+                        "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
                         GatewayTlsCertificates(
                             "id1",
                             listOf("one", "two"),
@@ -152,8 +150,10 @@ class TlsCertificatesPublisherTest {
             )
 
             assertThat(publishedRecords.allValues).containsExactly(
-                listOf(Record(GATEWAY_TLS_CERTIFICATES, "Group1-Alice", GatewayTlsCertificates("id1", identityInfo.tlsCertificates))),
-                listOf(Record(GATEWAY_TLS_CERTIFICATES, "Group1-Alice", GatewayTlsCertificates("id1", certificatesTwo))),
+                listOf(Record(GATEWAY_TLS_CERTIFICATES, "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
+                    GatewayTlsCertificates("id1", identityInfo.tlsCertificates))),
+                listOf(Record(GATEWAY_TLS_CERTIFICATES, "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}",
+                    GatewayTlsCertificates("id1", certificatesTwo))),
             )
         }
 
@@ -225,7 +225,7 @@ class TlsCertificatesPublisherTest {
 
             processor.firstValue.onSnapshot(
                 mapOf(
-                    "Group1-Alice" to GatewayTlsCertificates(
+                    "${identityInfo.holdingIdentity.groupId}-${identityInfo.holdingIdentity.x500Name}" to GatewayTlsCertificates(
                         identityInfo.tlsTenantId,
                         identityInfo.tlsCertificates,
                     )

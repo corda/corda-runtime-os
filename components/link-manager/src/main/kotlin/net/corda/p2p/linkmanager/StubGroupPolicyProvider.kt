@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -12,6 +11,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -23,7 +24,7 @@ internal class StubGroupPolicyProvider(
     companion object {
         fun GroupPolicyEntry.toGroupInfo(): GroupPolicyListener.GroupInfo {
             return GroupPolicyListener.GroupInfo(
-                this.holdingIdentity,
+                this.holdingIdentity.toCorda(),
                 this.networkType,
                 this.protocolModes.toSet(),
                 this.trustedCertificates
@@ -57,7 +58,7 @@ internal class StubGroupPolicyProvider(
         ) {
             val newValue = newRecord.value
             if (newValue == null) {
-                groups.remove(oldValue?.holdingIdentity)
+                groups.remove(oldValue?.holdingIdentity?.toCorda())
             } else {
                 addGroup(newValue)
             }
@@ -65,7 +66,7 @@ internal class StubGroupPolicyProvider(
 
         private fun addGroup(group: GroupPolicyEntry) {
             val info = group.toGroupInfo()
-            groups[group.holdingIdentity] = info
+            groups[group.holdingIdentity.toCorda()] = info
             listeners.forEach {
                 it.groupAdded(info)
             }

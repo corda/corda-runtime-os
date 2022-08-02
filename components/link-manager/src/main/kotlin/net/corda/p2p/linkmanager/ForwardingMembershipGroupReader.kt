@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -10,11 +9,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.toCorda
+import net.corda.virtualnode.HoldingIdentity
 
 internal class ForwardingMembershipGroupReader(
     private val groupReaderProvider: MembershipGroupReaderProvider,
@@ -27,17 +25,17 @@ internal class ForwardingMembershipGroupReader(
 
     override fun getMemberInfo(requestingIdentity: HoldingIdentity, lookupIdentity: HoldingIdentity):
             LinkManagerMembershipGroupReader.MemberInfo? {
-        return groupReaderProvider.getGroupReader(requestingIdentity.toCorda())
-            .lookup(MemberX500Name.parse(lookupIdentity.x500Name))
+        return groupReaderProvider.getGroupReader(requestingIdentity)
+            .lookup(lookupIdentity.x500Name)
             ?.toLinkManagerMemberInfo(lookupIdentity)
     }
 
     override fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray):
             LinkManagerMembershipGroupReader.MemberInfo? {
         val lookup = groupReaderProvider
-            .getGroupReader(requestingIdentity.toCorda())
+            .getGroupReader(requestingIdentity)
             .lookupBySessionKey(PublicKeyHash.Companion.parse(publicKeyHashToLookup))
-        return lookup?.toLinkManagerMemberInfo(HoldingIdentity(lookup.name.toString(), requestingIdentity.groupId))
+        return lookup?.toLinkManagerMemberInfo(HoldingIdentity(lookup.name, requestingIdentity.groupId))
     }
 
     override val dominoTile = ComplexDominoTile(
@@ -57,7 +55,7 @@ internal class ForwardingMembershipGroupReader(
             null
         } else {
             LinkManagerMembershipGroupReader.MemberInfo(
-                HoldingIdentity(this.name.toString(), this.groupId),
+                HoldingIdentity(this.name, this.groupId),
                 this.sessionInitiationKey,
                 this.sessionInitiationKey.toKeyAlgorithm(),
                 endpoint

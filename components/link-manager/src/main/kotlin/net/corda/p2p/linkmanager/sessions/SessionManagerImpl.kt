@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -60,6 +59,8 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
@@ -104,7 +105,7 @@ internal class SessionManagerImpl(
         fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties {
             val peer = message.header.destination
             val us = message.header.source
-            return SessionCounterparties(us, peer)
+            return SessionCounterparties(us.toCorda(), peer.toCorda())
         }
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
@@ -586,8 +587,7 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, HoldingIdentity(hostedIdentityInSameGroup.x500Name, hostedIdentityInSameGroup.groupId),
-                                    peer, groupInfo.networkType)
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peer, groupInfo.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {

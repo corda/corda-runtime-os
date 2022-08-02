@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
@@ -8,6 +7,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -30,9 +30,9 @@ class ForwardingMembershipGroupReaderTest {
     companion object {
         private const val GROUP_ID = "Group-Id"
         private val ALICE_X500_NAME = MemberX500Name.parse("O=Alice,C=GB,L=London")
-        private val ALICE = HoldingIdentity(ALICE_X500_NAME.toString(), GROUP_ID)
+        private val ALICE = createTestHoldingIdentity(ALICE_X500_NAME.toString(), GROUP_ID)
         private val BOB_X500_NAME = MemberX500Name.parse("O=Bob,C=GB,L=London")
-        private val BOB = HoldingIdentity(BOB_X500_NAME.toString(), GROUP_ID)
+        private val BOB = createTestHoldingIdentity(BOB_X500_NAME.toString(), GROUP_ID)
         private const val KEY_ALGORITHM = "EC"
         private const val BOB_ENDPOINT = "0.0.0.0"
         private val PUBLIC_KEY_HASH = "---- 32 Byte Public Key Hash----".toByteArray()
@@ -60,13 +60,13 @@ class ForwardingMembershipGroupReaderTest {
     }
 
     private val bobMemberInfo = mock<MemberInfo> {
-        on { name } doReturn MemberX500Name.parse(BOB.x500Name)
+        on { name } doReturn BOB.x500Name
         on { sessionInitiationKey } doReturn bobSessionKey
         on { memberProvidedContext } doReturn bobMemberContext
     }
     private val aliceGroupReader = mock<MembershipGroupReader>()
     private val mockMembershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(ALICE.toCorda()) } doReturn aliceGroupReader
+        on { getGroupReader(ALICE) } doReturn aliceGroupReader
     }
     private val forwardingMembershipGroupReader = ForwardingMembershipGroupReader(mockMembershipGroupReaderProvider, mock())
 

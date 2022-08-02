@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
 import java.security.PublicKey
 
 interface HostingMapListener {
