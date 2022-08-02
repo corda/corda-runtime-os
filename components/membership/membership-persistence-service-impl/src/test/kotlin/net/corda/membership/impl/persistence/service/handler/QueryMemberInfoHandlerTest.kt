@@ -44,11 +44,11 @@ class QueryMemberInfoHandlerTest {
     private val otherX500Name = MemberX500Name.parse("O=Bob,L=London,C=GB")
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = HoldingIdentity(
-        ourX500Name.toString(),
+        ourX500Name,
         ourGroupId
     )
     private val otherHoldingIdentity = HoldingIdentity(
-        otherX500Name.toString(),
+        otherX500Name,
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()

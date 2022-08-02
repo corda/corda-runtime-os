@@ -11,7 +11,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
-import net.corda.virtualnode.HoldingIdentity
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -29,8 +29,8 @@ class VerificationResponseHandlerTest {
         const val TOPIC = "dummyTopic"
     }
 
-    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
-    private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
+    private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
+    private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
     private val command = ProcessMemberVerificationResponse(
         VerificationResponse(
             REGISTRATION_ID,

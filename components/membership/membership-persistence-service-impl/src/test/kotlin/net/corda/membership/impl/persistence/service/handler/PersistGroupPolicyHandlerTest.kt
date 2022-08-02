@@ -74,7 +74,7 @@ class PersistGroupPolicyHandlerTest {
     @Test
     fun `invoke return the correct version`() {
         val context = mock<MembershipRequestContext> {
-            on { holdingIdentity } doReturn HoldingIdentity("name", "group")
+            on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
         }
         val request = mock<PersistGroupPolicy> {
             on { properties } doReturn KeyValuePairList(

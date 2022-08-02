@@ -14,22 +14,22 @@ import net.corda.httprpc.HttpFileUpload
 )
 interface CpiUploadRPCOps : RpcOps {
     /** Simple class to return some information back to the caller regarding the upload request */
-    data class UploadResponse(val id: String)
+    data class CpiUploadResponse(val id: String)
 
     /**
      * HTTP POST resource to upload a CPI to Kafka.
      *
-     * Please note that this method will not close [cpiContent] input stream, the caller must close it.
+     * Please note that this method will not close [HttpFileUpload.content] input stream, the caller must close it.
      */
     @HttpRpcPOST(
         title = "CPI API",
         description = "CPI management endpoints.",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun cpi(upload: HttpFileUpload): UploadResponse
+    fun cpi(upload: HttpFileUpload): CpiUploadResponse
 
     /** Simple class to return the status of the upload request */
-    data class Status(val status: String, val cpiFileChecksum: String)
+    data class CpiUploadStatus(val status: String, val cpiFileChecksum: String)
 
     /**
      * Get the status of the upload.
@@ -41,7 +41,7 @@ interface CpiUploadRPCOps : RpcOps {
     fun status(
         @HttpRpcPathParameter(description = "The requestId")
         id: String,
-    ): Status
+    ): CpiUploadStatus
 
     /**
      * Lists all CPIs uploaded to the cluster.

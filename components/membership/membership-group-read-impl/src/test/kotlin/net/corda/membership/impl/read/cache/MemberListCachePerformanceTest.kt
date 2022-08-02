@@ -26,12 +26,12 @@ class MemberListCachePerformanceTest {
     private val bob = bobName
     private val charlie = charlieName
 
-    private val aliceIdGroup1 = HoldingIdentity(alice.toString(), GROUP_ID_1)
-    private val bobIdGroup1 = HoldingIdentity(bob.toString(), GROUP_ID_1)
-    private val charlieIdGroup1 = HoldingIdentity(charlie.toString(), GROUP_ID_1)
-    private val aliceIdGroup2 = HoldingIdentity(alice.toString(), GROUP_ID_2)
-    private val bobIdGroup2 = HoldingIdentity(bob.toString(), GROUP_ID_2)
-    private val charlieIdGroup2 = HoldingIdentity(charlie.toString(), GROUP_ID_2)
+    private val aliceIdGroup1 = HoldingIdentity(alice, GROUP_ID_1)
+    private val bobIdGroup1 = HoldingIdentity(bob, GROUP_ID_1)
+    private val charlieIdGroup1 = HoldingIdentity(charlie, GROUP_ID_1)
+    private val aliceIdGroup2 = HoldingIdentity(alice, GROUP_ID_2)
+    private val bobIdGroup2 = HoldingIdentity(bob, GROUP_ID_2)
+    private val charlieIdGroup2 = HoldingIdentity(charlie, GROUP_ID_2)
 
     private lateinit var memberInfoAlice: MemberInfo
     private lateinit var memberInfoBob: MemberInfo

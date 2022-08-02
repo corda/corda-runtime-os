@@ -76,7 +76,7 @@ Note that some tests require an empty environment (e.g. CPI upload).
 
 Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
 Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running,
-but it may be useful to change this on a case-by-case basis when debugging. Note that the JAR bust be rebuilt
+but it may be useful to change this on a case-by-case basis when debugging. Note that the JAR must be rebuilt
 after the resource file is changed. Here is an `log4j2.xml` which logs to the console only:
 
 ```

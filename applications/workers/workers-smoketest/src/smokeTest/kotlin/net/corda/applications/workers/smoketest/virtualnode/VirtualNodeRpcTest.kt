@@ -75,9 +75,9 @@ class VirtualNodeRpcTest {
                 condition {
                     it.code == 200 && it.toJson()["status"].textValue() == "OK" }
                 immediateFailCondition {
-                    it.code == 500
-                            && null != it.toJson()["title"].textValue()
-                            && ObjectMapper().readTree(it.toJson()["title"].textValue())["errorMessage"].textValue()
+                    it.code == 400
+                            && null != it.toJson()["details"]
+                            && it.toJson()["details"]["errorMessage"].textValue()
                         .startsWith("CPI already uploaded")
                 }
             }.toJson()
@@ -117,8 +117,8 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 500) {
-                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                        if(it.code == 400) {
+                            val json = it.toJson()["details"]
                             json.has("errorMessage")
                                     && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
                         } else {
@@ -146,8 +146,8 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 500) {
-                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                        if(it.code == 400) {
+                            val json = it.toJson()["details"]
                             json["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)
                         } else {
                             false
@@ -270,6 +270,18 @@ class VirtualNodeRpcTest {
                             virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
                         }["state"].textValue() == oldState
                 }
+            }
+        }
+    }
+
+    @Test
+    @Order(65)
+    fun `cpi status returns 400 for unknown request id`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertWithRetry {
+                command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
+                condition { it.code == 400 }
             }
         }
     }

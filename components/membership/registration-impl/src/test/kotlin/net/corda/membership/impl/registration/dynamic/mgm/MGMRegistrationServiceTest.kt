@@ -22,8 +22,8 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
-import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -69,7 +69,7 @@ class MGMRegistrationServiceTest {
     }
 
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
-    private val mgm = HoldingIdentity(mgmName.toString(), "dummy_group")
+    private val mgm = HoldingIdentity(mgmName, "dummy_group")
     private val mgmId = mgm.shortHash
     private val sessionKey: PublicKey = mock {
         on { encoded } doReturn SESSION_KEY.toByteArray()

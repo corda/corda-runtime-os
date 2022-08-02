@@ -41,6 +41,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:schema-registry:schema-registry-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-topic-admin-impl')
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation project(':testing:test-utilities')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"

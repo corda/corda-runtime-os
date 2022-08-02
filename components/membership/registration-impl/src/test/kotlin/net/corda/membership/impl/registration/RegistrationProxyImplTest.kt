@@ -37,6 +37,7 @@ import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -94,7 +95,7 @@ class RegistrationProxyImplTest {
         on { getGroupPolicy(any()) } doReturn mock()
     }
 
-    private fun createHoldingIdentity() = HoldingIdentity("O=Alice, L=London, C=GB", "ABC")
+    private fun createHoldingIdentity() = createTestHoldingIdentity("O=Alice, L=London, C=GB", "ABC")
     private fun createGroupPolicy(registrationProtocol: String) = MemberGroupPolicyImpl(
         ObjectMapper().readTree(
             """

@@ -26,4 +26,5 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(":libs:membership:membership-impl")
+    testImplementation project(':testing:test-utilities')
 }

@@ -108,7 +108,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeCreateResponse -> {
                 VirtualNodeInfo(
-                    HoldingIdentity(resolvedResponse.x500Name, resolvedResponse.mgmGroupId).toEndpointType(),
+                    HoldingIdentity(MemberX500Name.parse(resolvedResponse.x500Name), resolvedResponse.mgmGroupId).toEndpointType(),
                     CpiIdentifier.fromAvro(resolvedResponse.cpiIdentifier),
                     resolvedResponse.vaultDdlConnectionId,
                     resolvedResponse.vaultDmlConnectionId,
@@ -132,7 +132,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =
-        HoldingIdentityEndpointType(x500Name, groupId, shortHash, fullHash)
+        HoldingIdentityEndpointType(x500Name.toString(), groupId, shortHash, fullHash)
 
     private fun net.corda.virtualnode.VirtualNodeInfo.toEndpointType(): VirtualNodeInfo =
         VirtualNodeInfo(

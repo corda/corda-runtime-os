@@ -12,12 +12,10 @@ data class RpcAuthContext(
 val CURRENT_RPC_CONTEXT: ThreadLocal<RpcAuthContext> = CurrentRpcContext()
 
 /**
- * Returns a context specific to the current RPC call. Note that trying to call this function outside of an RPC will
- * throw. If you'd like to use the context outside of the call (e.g. in another thread) then pass the returned reference
- * around explicitly.
+ * Returns a context specific to the current RPC call or <code>null</code> if not set.
  * The [RpcAuthContext] includes permissions.
  */
-fun rpcContext(): RpcAuthContext = CURRENT_RPC_CONTEXT.get()
+fun rpcContext(): RpcAuthContext? = CURRENT_RPC_CONTEXT.get()
 
 internal class CurrentRpcContext : ThreadLocal<RpcAuthContext>() {
 

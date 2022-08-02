@@ -11,8 +11,8 @@ import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -31,8 +31,8 @@ class VerificationRequestHandlerTest {
         val clock = TestClock(Instant.ofEpochSecond(0))
     }
 
-    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
-    private val member = HoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
+    private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
+    private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
     private val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
     private val verificationRequest = VerificationRequest(
         REGISTRATION_ID,
