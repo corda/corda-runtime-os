@@ -9,8 +9,9 @@ kafka:
     clientProtocol: sasl_tls
   externalAccess:
     enabled: true
+    autoDiscovery:
+      enabled: true
     service:
-      port: 19092
       loadBalancerNames:
         - prereqs-kafka-0
         - prereqs-kafka-1
