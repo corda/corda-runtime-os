@@ -63,7 +63,7 @@ class SmokeTestWebsocketClient(
             BasicAuthUpgradeListener(username, password)
         )
         val session = sessionFuture.getOrThrow(connectTimeout)
-            ?: throw E2eWebsocketException("Session was null after ${connectTimeout.seconds} seconds.")
+            ?: throw SmokeTestWebsocketException("Session was null after ${connectTimeout.seconds} seconds.")
 
         log.info("Session established: $session")
         return session
@@ -74,4 +74,4 @@ class SmokeTestWebsocketClient(
     }
 }
 
-class E2eWebsocketException(message: String) : Exception(message)
+class SmokeTestWebsocketException(message: String) : Exception(message)

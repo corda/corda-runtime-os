@@ -7,7 +7,7 @@ import org.eclipse.jetty.websocket.client.NoOpEndpoint
 
 class MessageQueueWebsocketHandler(
     private val messageQueue: Queue<String>,
-): NoOpEndpoint() {
+) : NoOpEndpoint() {
 
     private companion object {
         val log = contextLogger()
