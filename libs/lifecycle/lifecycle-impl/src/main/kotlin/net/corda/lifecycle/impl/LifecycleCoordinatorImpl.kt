@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.CustomEvent
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleCoordinatorScheduler
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
+    dependentComponents: DependentComponents?,
     private val registry: LifecycleRegistryCoordinatorAccess,
     private val scheduler: LifecycleCoordinatorScheduler,
     lifecycleEventHandler: LifecycleEventHandler,
@@ -60,7 +62,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifecycleEventHandler)
+    private val processor = LifecycleProcessor(name, lifecycleState, registry, dependentComponents, lifecycleEventHandler)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is

@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -32,6 +33,7 @@ internal class LifecycleProcessor(
     private val name: LifecycleCoordinatorName,
     private val state: LifecycleStateManager,
     private val registry: LifecycleRegistryCoordinatorAccess,
+    private val dependentComponents: DependentComponents?,
     private val userEventHandler: LifecycleEventHandler
 ) {
 
@@ -148,6 +150,7 @@ internal class LifecycleProcessor(
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.
             updateStatus(coordinator, LifecycleStatus.DOWN, STARTED_REASON)
+            dependentComponents?.registerAndStartAll(coordinator)
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to start an already running coordinator" }
@@ -171,6 +174,7 @@ internal class LifecycleProcessor(
                 // the registry.
                 logger.debug { "Could not update status as coordinator is closing" }
             }
+            dependentComponents?.stopAll()
             runUserEventHandler(event, coordinator)
             closeManagedResources(emptySet())
         } else {

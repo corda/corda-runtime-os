@@ -47,8 +47,7 @@ class MemberProcessorLifecycleHandlerTest {
     @BeforeEach
     fun setUp() {
         memberProcessorLifecycleHandler = MemberProcessorLifecycleHandler(
-            configurationReadService,
-            dependentComponents
+            configurationReadService
         )
     }
 

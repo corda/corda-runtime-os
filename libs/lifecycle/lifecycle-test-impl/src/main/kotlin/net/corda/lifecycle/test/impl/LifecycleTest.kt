@@ -3,9 +3,11 @@ package net.corda.lifecycle.test.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
@@ -26,7 +28,17 @@ class LifecycleTest<T : Lifecycle>(
      *
      * This will replace the OSGi injected factory.
      */
-    val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+    val coordinatorFactory = object : TestLifecycleCoordinatorFactoryImpl() {
+        override fun createCoordinator(
+            name: LifecycleCoordinatorName,
+            batchSize: Int,
+            dependentComponents: DependentComponents?,
+            handler: LifecycleEventHandler
+        ): LifecycleCoordinator {
+            dependentComponents?.coordinatorNames?.forEach { addDependency(it) }
+            return super.createCoordinator(name, batchSize, dependentComponents, handler)
+        }
+    }
 
     /**
      * This mock can be used to verify the usage of the config handles by components.

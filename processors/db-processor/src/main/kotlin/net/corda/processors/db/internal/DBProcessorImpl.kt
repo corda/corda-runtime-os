@@ -120,7 +120,6 @@ class DBProcessorImpl @Activate constructor(
         private val log = contextLogger()
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::dbConnectionManager,
         ::configWriteService,
@@ -141,6 +140,7 @@ class DBProcessorImpl @Activate constructor(
         ::virtualNodeInfoWriteService,
         ::membershipPersistenceService,
     )
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
     private val reconcilers = Reconcilers(
         coordinatorFactory,
@@ -187,7 +187,6 @@ class DBProcessorImpl @Activate constructor(
     }
 
     private fun onStopEvent() {
-        dependentComponents.stopAll()
         reconcilers.close()
         dbManagerRegistrationHandler?.close()
         dbManagerRegistrationHandler = null
@@ -233,7 +232,6 @@ class DBProcessorImpl @Activate constructor(
         // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
         // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
         reconcilers.updateConfigReconciler(3600000)
-        dependentComponents.registerAndStartAll(coordinator)
         dbManagerRegistrationHandler = lifecycleCoordinator.followStatusChangesByName(
             setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
         )
