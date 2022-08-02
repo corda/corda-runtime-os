@@ -3,12 +3,14 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoFactory
@@ -18,6 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -26,6 +29,7 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -66,67 +70,84 @@ class StartRegistrationHandler(
                 )
             }
 
-        val outputCommand = RegistrationCommand(
-            try {
-                logger.info("Persisting the received registration request.")
-                membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
-                    require(it as? MembershipPersistenceResult.Failure == null) {
-                        "Failed to persist the received registration request. Reason: " +
-                                (it as MembershipPersistenceResult.Failure).errorMsg
-                    }
+        val (outputCommand, outputStates) = try {
+            logger.info("Persisting the received registration request.")
+            membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
+                require(it as? MembershipPersistenceResult.Failure == null) {
+                    "Failed to persist the received registration request. Reason: " +
+                            (it as MembershipPersistenceResult.Failure).errorMsg
                 }
-
-                val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
-                logger.info("Registering with MGM for holding identity: $mgmHoldingId")
-                val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
-                // Parse the registration request and verify contents
-                // The MemberX500Name matches the source MemberX500Name from the P2P messaging
-                validateRegistrationRequest(
-                    pendingMemberInfo.name == pendingMemberHoldingId.x500Name
-                ) { "MemberX500Name in registration request does not match member sending request over P2P." }
-
-                // The MemberX500Name is not a duplicate
-                val existingMemberInfo = membershipQueryClient.queryMemberInfo(
-                    mgmHoldingId,
-                    listOf(pendingMemberHoldingId)
-                )
-                validateRegistrationRequest(
-                    existingMemberInfo is MembershipQueryResult.Success
-                            && existingMemberInfo.payload.isEmpty()
-                ) { "Member Info already exists for applying member" }
-
-                // The group ID matches the group ID of the MGM
-                validateRegistrationRequest(
-                    pendingMemberInfo.groupId == mgmMemberInfo.groupId
-                ) { "Group ID in registration request does not match the group ID of the target MGM." }
-
-                // There is at least one endpoint specified
-                validateRegistrationRequest(
-                    pendingMemberInfo.endpoints.isNotEmpty()
-                ) { "Registering member has not specified any endpoints" }
-
-                // Persist pending member info
-                membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
-                    require(it as? MembershipPersistenceResult.Failure == null) {
-                        "Failed to persist pending member info. Reason: " +
-                                (it as MembershipPersistenceResult.Failure).errorMsg
-                    }
-                }
-
-                logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
-                VerifyMember()
-            } catch (ex: InvalidRegistrationRequestException) {
-                logger.warn("Declined registration.", ex)
-                DeclineRegistration(ex.originalMessage)
-            } catch (ex: Exception) {
-                logger.warn("Declined registration.", ex)
-                DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
             }
-        )
+
+            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
+            logger.info("Registering with MGM for holding identity: $mgmHoldingId")
+            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+            // Parse the registration request and verify contents
+            // The MemberX500Name matches the source MemberX500Name from the P2P messaging
+            validateRegistrationRequest(
+                pendingMemberInfo.name == pendingMemberHoldingId.x500Name
+            ) { "MemberX500Name in registration request does not match member sending request over P2P." }
+
+            // The MemberX500Name is not a duplicate
+            val existingMemberInfo = membershipQueryClient.queryMemberInfo(
+                mgmHoldingId,
+                listOf(pendingMemberHoldingId)
+            )
+            validateRegistrationRequest(
+                existingMemberInfo is MembershipQueryResult.Success
+                        && existingMemberInfo.payload.isEmpty()
+            ) { "Member Info already exists for applying member" }
+
+            // The group ID matches the group ID of the MGM
+            validateRegistrationRequest(
+                pendingMemberInfo.groupId == mgmMemberInfo.groupId
+            ) { "Group ID in registration request does not match the group ID of the target MGM." }
+
+            // There is at least one endpoint specified
+            validateRegistrationRequest(
+                pendingMemberInfo.endpoints.isNotEmpty()
+            ) { "Registering member has not specified any endpoints" }
+
+            // Persist pending member info
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
+                require(it as? MembershipPersistenceResult.Failure == null) {
+                    "Failed to persist pending member info. Reason: " +
+                            (it as MembershipPersistenceResult.Failure).errorMsg
+                }
+            }
+
+            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
+                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
+                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
+                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
+                .build()
+            val pendingMemberRecord = Record(
+                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
+                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}",
+                value = persistentMemberInfo,
+            )
+
+            logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
+            Pair(VerifyMember(), listOf(pendingMemberRecord))
+        } catch (ex: InvalidRegistrationRequestException) {
+            logger.warn("Declined registration.", ex)
+            Pair(DeclineRegistration(ex.originalMessage), emptyList())
+        } catch (ex: Exception) {
+            logger.warn("Declined registration.", ex)
+            Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
+        }
+
+
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationRequest.registrationId, pendingMemberHoldingId.toAvro(), mgmHoldingId.toAvro()),
-            listOf(Record(REGISTRATION_COMMAND_TOPIC, key, outputCommand))
+            RegistrationState(
+                registrationRequest.registrationId,
+                pendingMemberHoldingId.toAvro(),
+                mgmHoldingId.toAvro()
+            ),
+            listOf(
+                Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand))
+            ) + outputStates
         )
     }
 
