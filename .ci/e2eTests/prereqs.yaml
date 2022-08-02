@@ -7,6 +7,14 @@ global:
 kafka:
   auth:
     clientProtocol: sasl_tls
+  externalAccess:
+    enabled: true
+    service:
+      port: 19092
+      loadBalancerNames:
+        - prereqs-kafka-0
+        - prereqs-kafka-1
+        - prereqs-kafka-2
   replicaCount: 3
   resources:
     requests:
