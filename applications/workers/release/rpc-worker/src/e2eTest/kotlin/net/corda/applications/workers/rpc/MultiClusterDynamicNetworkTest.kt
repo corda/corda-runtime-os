@@ -8,6 +8,7 @@ import net.corda.applications.workers.rpc.utils.MemberTestData
 import net.corda.applications.workers.rpc.utils.P2P_GATEWAY
 import net.corda.applications.workers.rpc.utils.RPC_PORT
 import net.corda.applications.workers.rpc.utils.RPC_WORKER
+import net.corda.applications.workers.rpc.utils.assertOnlyMgmIsInMemberList
 import net.corda.applications.workers.rpc.utils.assignSoftHsm
 import net.corda.applications.workers.rpc.utils.clearX500Name
 import net.corda.applications.workers.rpc.utils.createMGMGroupPolicyJson
@@ -33,11 +34,14 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
+@Disabled("No multi cluster environment is available to run this test against. Remove this to run locally.")
 class MultiClusterDynamicNetworkTest {
 
     private val mgmRpcHost = "$RPC_WORKER.$MGM_CLUSTER_NS"
@@ -79,7 +83,7 @@ class MultiClusterDynamicNetworkTest {
     fun `Create mgm and allow members to join the group`() {
         val holdingIds = mutableMapOf<String, String>()
         mgm.disableCLRChecks()
-        val cpiChecksum = mgm.uploadCpi(createMGMGroupPolicyJson())
+        val cpiChecksum = mgm.uploadCpi(createMGMGroupPolicyJson(), true)
         val mgmHoldingId = mgm.createVirtualNode(mgm.name, cpiChecksum)
         holdingIds[mgm.name] = mgmHoldingId
         println("MGM HoldingIdentity: $mgmHoldingId")
@@ -98,15 +102,7 @@ class MultiClusterDynamicNetworkTest {
             )
         )
 
-        mgm.lookupMembers(mgmHoldingId).also { result ->
-            assertThat(result)
-                .hasSize(1)
-                .allSatisfy {
-                    assertThat(it.mgmContext["corda.status"]).isEqualTo("ACTIVE")
-                    assertThat(it.memberContext["corda.name"]).isEqualTo(mgm.name)
-                }
-        }
-
+        mgm.assertOnlyMgmIsInMemberList(mgmHoldingId, mgm.name)
 
         val mgmTlsCsr = mgm.generateCsr(mgm, mgmTlsKeyId)
         val mgmTlsCert = ca.generateCert(mgmTlsCsr)
@@ -151,6 +147,7 @@ class MultiClusterDynamicNetworkTest {
                 memberSessionKeyId
             )
 
+            member.assertOnlyMgmIsInMemberList(memberHoldingId, mgm.name)
             member.register(
                 memberHoldingId,
                 getMemberRegistrationContext(
@@ -164,16 +161,18 @@ class MultiClusterDynamicNetworkTest {
         (members + mgm).forEach {
             val holdingId = holdingIds[it.name]
             assertNotNull(holdingId)
-            it.lookupMembers(holdingId!!).also { result ->
-                assertThat(result)
-                    .hasSize(1 + members.size)
-                    .allSatisfy { memberInfo ->
-                        assertThat(memberInfo.mgmContext["corda.status"]).isEqualTo("ACTIVE")
-                    }
-                assertThat(result.map { memberInfo -> memberInfo.memberContext["corda.name"] })
-                    .hasSize(1 + members.size)
-                    .contains(mgm.name)
-                    .containsExactlyInAnyOrder(*members.map { member -> member.name }.toTypedArray())
+            eventually {
+                it.lookupMembers(holdingId!!).also { result ->
+                    assertThat(result)
+                        .hasSize(1 + members.size)
+                        .allSatisfy { memberInfo ->
+                            assertThat(memberInfo.mgmContext["corda.status"]).isEqualTo("ACTIVE")
+                        }
+                    val expectedList = members.map { member -> member.name } + mgm.name
+                    assertThat(result.map { memberInfo -> memberInfo.memberContext["corda.name"] })
+                        .hasSize(1 + members.size)
+                        .containsExactlyInAnyOrderElementsOf(expectedList)
+                }
             }
         }
     }

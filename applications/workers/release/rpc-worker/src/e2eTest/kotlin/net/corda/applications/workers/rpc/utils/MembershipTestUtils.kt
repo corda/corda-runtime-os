@@ -23,6 +23,7 @@ import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.ByteArrayOutputStream
@@ -116,16 +117,21 @@ fun String.clearX500Name(): String {
     return MemberX500Name.parse(this).toString()
 }
 
-fun MemberTestData.uploadCpi(groupPolicy: ByteArray) = with(testToolkit) {
+fun MemberTestData.uploadCpi(
+    groupPolicy: ByteArray,
+    isMgm: Boolean = false
+) = with(testToolkit) {
     httpClientFor(CpiUploadRPCOps::class.java)
         .use { client ->
             val proxy = client.start().proxy
 
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
-            proxy.getAllCpis().cpis.firstOrNull {
-                it.groupPolicy?.contains("CREATE_ID") ?: false
-            }?.let {
-                return it.cpiFileChecksum
+            if (isMgm) {
+                proxy.getAllCpis().cpis.firstOrNull {
+                    it.groupPolicy?.contains("CREATE_ID") ?: false
+                }?.let {
+                    return it.cpiFileChecksum
+                }
             }
 
             val jar = createEmptyJarWithManifest(groupPolicy)
@@ -319,6 +325,18 @@ fun MemberTestData.disableCLRChecks() = with(testToolkit) {
             )
         }
     }
+}
+
+fun MemberTestData.assertOnlyMgmIsInMemberList(
+    holdingId: String,
+    mgmName: String
+) = lookupMembers(holdingId).also { result ->
+    assertThat(result)
+        .hasSize(1)
+        .allSatisfy {
+            assertThat(it.mgmContext["corda.status"]).isEqualTo("ACTIVE")
+            assertThat(it.memberContext["corda.name"]).isEqualTo(mgmName)
+        }
 }
 
 fun getTlsCertAlias(holdingId: String) = "$holdingId-tls-cert"
