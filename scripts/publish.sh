@@ -31,8 +31,6 @@ kubectl get pods
 kubectl get svc 
 
 nohup kubectl -n default port-forward $(kubectl -n default get pods -o name | grep buildkit) 3476 &
-procno=$!
-trap "kill -9 ${procno}"
 
 mkdir -p ./tools/plugins/build/tmp/buildkit/containerization
 
