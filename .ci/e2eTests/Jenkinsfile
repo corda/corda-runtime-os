@@ -127,7 +127,7 @@ pipeline {
 
                     export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
                     export KAFKA_TRUSTSTORE=$(mktemp)
-                    kubectl get secret prereqs-kafka-0-tls -o go-template='{{ index .data "ca.crt" }}' | base64 --decode > $KAFKA_TRUSTSTORE
+                    kubectl get secret -n $NAMESPACE prereqs-kafka-0-tls -o go-template='{{ index .data "ca.crt" }}' | base64 --decode > $KAFKA_TRUSTSTORE
 
                     ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                     ./gradlew cleanSmokeTest smokeTest ${GRADLE_PERFORMANCE_TUNING}
