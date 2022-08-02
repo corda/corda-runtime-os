@@ -11,6 +11,7 @@ import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.HoldingIdentity
@@ -119,7 +120,7 @@ class FlowCheckpointImpl(
     override val pendingPlatformError: ExceptionEnvelope?
         get() = checkpoint.pipelineState.pendingPlatformError
 
-    override val flowContextProperties: FlowContextImpl
+    override val flowContextProperties: FlowContext
         get() = checkNotNull(flowStateManager)
         { "Attempt to access context before flow state has been created" }.flowContextProperties
 
