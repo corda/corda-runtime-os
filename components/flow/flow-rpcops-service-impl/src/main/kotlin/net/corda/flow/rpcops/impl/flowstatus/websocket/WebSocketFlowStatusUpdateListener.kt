@@ -28,20 +28,24 @@ class WebSocketFlowStatusUpdateListener(
     }
 
     override fun updateReceived(status: FlowStatus) {
-        logger.debug { "Flow status update: ${status.flowStatus.name} for listener $id, " +
-                "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId." }
+        logger.debug {
+            "Flow status update: ${status.flowStatus.name} for listener $id, " +
+                    "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId."
+        }
 
         val statusResponse = createFlowStatusResponse(status)
         channel.send(statusResponse)
 
-        if(flowFinished(status.flowStatus)) {
-            logger.debug { "Flow ${status.flowStatus}. Closing WebSocket connection(s) for " +
-                    "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId" }
+        if (status.flowStatus.isFlowFinished()) {
+            logger.debug {
+                "Flow ${status.flowStatus}. Closing WebSocket connection(s) for " +
+                        "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId"
+            }
             channel.close("Flow ${status.flowStatus.name}.")
         }
     }
 
-    private fun flowFinished(status: FlowStates) = status == FlowStates.COMPLETED || status == FlowStates.FAILED
+    private fun FlowStates.isFlowFinished() = this == FlowStates.COMPLETED || this == FlowStates.FAILED
 
     private fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse {
 

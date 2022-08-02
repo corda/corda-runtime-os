@@ -33,13 +33,17 @@ class FlowStatusDuplexChannelEventHandler(
             }
         }
         channel.onClose = { statusCode, reason ->
-            log.debug { "Closing flow status feed $id with status $statusCode, reason: $reason. " +
-                    "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)" }
+            log.debug {
+                "Closing flow status feed $id with status $statusCode, reason: $reason. " +
+                        "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
+            }
             unregisterFlowStatusFeed(id)
         }
         channel.onError = { e ->
-            log.info("Flow status feed $id received an error. " +
-                    "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)", e)
+            log.info(
+                "Flow status feed $id received an error. " +
+                        "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)", e
+            )
         }
         channel.onTextMessage = {
             log.debug { "Flow status feed $id does not support receiving messages. Terminating connection." }
