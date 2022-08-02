@@ -34,7 +34,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
-/** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [PluggableRPCOps::class])
 // Primary constructor is for test. This is until a clock service is available

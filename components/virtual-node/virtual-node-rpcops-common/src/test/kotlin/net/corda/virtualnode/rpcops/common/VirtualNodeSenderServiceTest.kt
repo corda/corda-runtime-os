@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.rpcops.common.impl.VirtualNodeSenderServiceImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

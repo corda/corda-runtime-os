@@ -1,10 +1,11 @@
-package net.corda.cpi.upload.endpoints.service
+package net.corda.cpi.upload.endpoints.service.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory

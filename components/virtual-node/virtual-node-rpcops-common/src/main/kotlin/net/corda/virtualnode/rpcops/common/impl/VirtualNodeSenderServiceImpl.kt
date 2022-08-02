@@ -1,4 +1,4 @@
-package net.corda.virtualnode.rpcops.common
+package net.corda.virtualnode.rpcops.common.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -23,10 +23,22 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.rpcops.common.VirtualNodeSenderService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
+
+/**
+ * Wrapper service around the publisher factory and RPCSender lifecycle
+ *
+ * Adds a lifecycle around the existence of the RPC Sender. This allows the lifecycle
+ * logic of the sender to be reused by the [VirtualNodeRPCOps] and the [VirtualNodeMaintenanceRPCOps]
+ *
+ * @constructor Primary constructor is visible for testing - this allows the option of injecting mocks
+ *  at test time without requiring OSGI.
+ * @author Ben McMahon
+ */
 
 @Component(service = [VirtualNodeSenderService::class])
 class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
@@ -37,14 +49,21 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
     var timeout: Duration? = null
 ) : VirtualNodeSenderService {
 
-    @Activate constructor(
+    @Activate
+    constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = ConfigurationReadService::class)
         configurationReadService: ConfigurationReadService,
         @Reference(service = PublisherFactory::class)
         publisherFactory: PublisherFactory,
-    ) : this(coordinatorFactory, configurationReadService, publisherFactory, null, null)
+    ) : this(
+        coordinatorFactory,
+        configurationReadService,
+        publisherFactory,
+        null,
+        null
+    )
 
     private companion object {
         private const val GROUP_NAME = "virtual.node.management"
@@ -87,6 +106,17 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
         }
     }
 
+    /**
+     * Manages updates to the config of the component
+     *
+     * Will destroy and recreate the rpc sender in the event of a config update.
+     *
+     * @property coordinator is a reference to the lifecycle coordinator
+     * @property config is a map containing the new config pushed to the bus
+     * @property changedKeys is a set used to determine whether the keys changed by the config update
+     *  are ones that we care about. This is done by comparing them to the [requiredKeys]
+     */
+
     private fun onConfigChange(coordinator: LifecycleCoordinator, config: Map<String, SmartConfig>, changedKeys: Set<String>) {
         if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
             val rpcConfig = config.getConfig(ConfigKeys.RPC_CONFIG)
@@ -113,7 +143,10 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
             } catch (e: Exception) {
                 logger.error("Exception was thrown while attempting to set up the sender or its timeout: $e")
                 // Exception will implicitly perform coordinator.updateStatus(LifecycleStatus.ERROR)
-                throw CordaRuntimeException("Exception was thrown while attempting to set up the sender or its timeout", e)
+                throw CordaRuntimeException(
+                    "Exception was thrown while attempting to set up the sender or its timeout",
+                    e
+                )
             }
         }
     }
@@ -121,7 +154,12 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
     /**
      * Sends the [request] to the configuration management topic on bus.
      *
+     * @property request is a [VirtualNodeManagementRequest]. This an enveloper around the intended request
      * @throws CordaRuntimeException If the updated configuration could not be published.
+     * @return [VirtualNodeManagementResponse] which is an envelope around the actual response.
+     *  This response corresponds to the [VirtualNodeManagementRequest] received by the function
+     * @see VirtualNodeManagementRequest
+     * @see VirtualNodeManagementResponse
      */
     @Suppress("ThrowsCount")
     override fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {

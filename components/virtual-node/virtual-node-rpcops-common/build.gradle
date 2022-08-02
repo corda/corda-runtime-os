@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Virtual Node RPC Ops Service"
+description "Virtual Node RPC Ops Common"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

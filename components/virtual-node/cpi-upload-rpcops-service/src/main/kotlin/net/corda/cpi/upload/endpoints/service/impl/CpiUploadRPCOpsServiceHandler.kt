@@ -1,7 +1,8 @@
-package net.corda.cpi.upload.endpoints.service
+package net.corda.cpi.upload.endpoints.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.libs.cpiupload.CpiUploadManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,12 +14,9 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
@@ -82,9 +80,9 @@ class CpiUploadRPCOpsServiceHandler(
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
-                    MESSAGING_CONFIG,
-                    BOOT_CONFIG,
-                    RPC_CONFIG
+                    ConfigKeys.MESSAGING_CONFIG,
+                    ConfigKeys.BOOT_CONFIG,
+                    ConfigKeys.RPC_CONFIG
                 )
             )
         } else {
@@ -100,7 +98,7 @@ class CpiUploadRPCOpsServiceHandler(
         coordinator: LifecycleCoordinator
     ) {
         log.info("CPI Upload RPCOpsServiceHandler event - config changed")
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         cpiUploadManager?.close()
         cpiUploadManager = cpiUploadManagerFactory.create(
             messagingConfig,
