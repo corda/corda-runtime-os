@@ -1344,11 +1344,11 @@
         }
       }
     },
-    "/maintenance/virtualnode/{virtualnodeshortid}" : {
+    "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node Maintenance API" ],
         "description" : "Updates the state of a new virtual node.",
-        "operationId" : "put_maintenance_virtualnode__virtualnodeshortid_",
+        "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
         "parameters" : [ {
           "name" : "virtualnodeshortid",
           "in" : "path",
@@ -1361,8 +1361,8 @@
             "example" : "string"
           }
         }, {
-          "name" : "state",
-          "in" : "query",
+          "name" : "newstate",
+          "in" : "path",
           "description" : "State to transition virtual node instance into",
           "required" : true,
           "schema" : {
