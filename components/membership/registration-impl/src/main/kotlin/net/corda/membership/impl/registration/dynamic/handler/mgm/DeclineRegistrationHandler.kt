@@ -18,16 +18,16 @@ class DeclineRegistrationHandler(
     ): RegistrationHandlerResult {
         if(state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
-        val approvedBy = state.mgm
-        val approvedMember = state.registeringMember
+        val declinedBy = state.mgm
+        val declinedMember = state.registeringMember
         val registrationId = state.registrationId
         membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
-            viewOwningIdentity = approvedBy.toCorda(),
-            declinedMember = approvedMember.toCorda(),
+            viewOwningIdentity = declinedBy.toCorda(),
+            declinedMember = declinedMember.toCorda(),
             registrationRequestId = registrationId,
         )
         return RegistrationHandlerResult(
-            RegistrationState(registrationId, approvedMember, approvedBy),
+            state,
             emptyList()
         )
     }

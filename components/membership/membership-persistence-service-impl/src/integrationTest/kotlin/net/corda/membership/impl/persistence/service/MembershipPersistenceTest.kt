@@ -529,7 +529,7 @@ class MembershipPersistenceTest {
     fun `setMemberAndRegistrationRequestAsDeclined updates the member and registration request`() {
         // 1. Persist a member
         val registeringX500Name = MemberX500Name.parse("O=Charlie, C=GB, L=London")
-        val registeringHoldingIdentity = HoldingIdentity(registeringX500Name.toString(), groupId)
+        val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)
         val memberPersistentResult = persistMember(registeringX500Name)
 
         assertThat(memberPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)

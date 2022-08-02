@@ -541,7 +541,7 @@ class MembershipPersistenceClientImplTest {
     inner class SetMemberAndRegistrationRequestAsDeclinedTests {
         @Test
         fun `request to set member and request as declined is as expected`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
 
             postConfigChangedEvent()
@@ -571,7 +571,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `it returns error when there was an issue`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(false)
@@ -587,7 +587,7 @@ class MembershipPersistenceClientImplTest {
 
         @Test
         fun `it returns error when the return data has the wrong type`() {
-            val bob = HoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
+            val bob = createTestHoldingIdentity("O=Bob ,L=London, C=GB", ourGroupId)
             val registrationRequestId = "registrationRequestId"
             postConfigChangedEvent()
             mockPersistenceResponse(payload = "This should not be a string!")
