@@ -2,7 +2,6 @@ package net.corda.flow.rpcops.impl.v1
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
@@ -28,7 +27,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

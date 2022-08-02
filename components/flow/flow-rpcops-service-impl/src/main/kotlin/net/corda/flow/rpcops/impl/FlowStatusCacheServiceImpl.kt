@@ -2,6 +2,7 @@ package net.corda.flow.rpcops.impl
 
 import com.google.common.collect.ArrayListMultimap
 import com.google.common.collect.Multimap
+import com.google.common.collect.Multimaps.synchronizedMultimap
 import java.util.Collections
 import java.util.UUID
 import net.corda.data.flow.FlowInitiatorType
@@ -49,7 +50,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     private val cache = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatus>())
 
     private val statusListenerByUuid = Collections.synchronizedMap(mutableMapOf<UUID, FlowStatusUpdateListener>())
-    private val statusListenerIdsPerFlowKey: Multimap<FlowKey, UUID> = ArrayListMultimap.create()
+    private val statusListenerIdsPerFlowKey: Multimap<FlowKey, UUID> = synchronizedMultimap(ArrayListMultimap.create())
 
     private var subReg: RegistrationHandle? = null
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
