@@ -1,5 +1,6 @@
 package net.corda.messagebus.kafka.consumer.builder
 
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -42,8 +43,12 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
+        log.warn("QQQ in createConsumer 1 consumerConfig -> $consumerConfig")
+        log.warn("QQQ in createConsumer 2 messageBusConfig -> ${messageBusConfig.root().render(ConfigRenderOptions.concise())}")
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val (resolvedConfig, kafkaProperties) = resolver.resolve(messageBusConfig, consumerConfig)
+        log.warn("QQQ in createConsumer 3 kafkaProperties -> ${kafkaProperties}")
+        log.warn("QQQ in createConsumer 4 resolvedConfig -> ${resolvedConfig}")
 
         return executeKafkaActionWithRetry(
             action = {
