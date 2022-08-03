@@ -56,15 +56,27 @@ class FlowStatusFeedSmokeTest {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
 
-        runWithWebsocketConnection(flowStatusFeedPath) { messageQueue ->
-            startFlow(clientRequestId)
+        val messageQueue = LinkedList<String>()
+        val wsHandler = MessageQueueWebsocketHandler(messageQueue)
+        val client = SmokeTestWebsocketClient(wsHandler)
+        client.start()
+        client.connect(flowStatusFeedPath)
+        eventually {
+            assertThat(wsHandler.isConnected)
+        }
 
-            eventually(Duration.ofSeconds(10)) {
-                assertThat(messageQueue).hasSize(3)
-                assertThat(messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
-                assertThat(messageQueue.poll()).contains(FlowStates.RUNNING.name)
-                assertThat(messageQueue.poll()).contains(FlowStates.COMPLETED.name)
-            }
+        startFlow(clientRequestId)
+
+        eventually(Duration.ofSeconds(10)) {
+            assertThat(messageQueue).hasSize(3)
+            assertThat(messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue.poll()).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+        }
+
+        client.close()
+        eventually {
+            assertThat(wsHandler.isNotConnected)
         }
     }
 
@@ -74,22 +86,42 @@ class FlowStatusFeedSmokeTest {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
 
-        runWithWebsocketConnection(flowStatusFeedPath) { messageQueue1 ->
-            runWithWebsocketConnection(flowStatusFeedPath) { messageQueue2 ->
-                startFlow(clientRequestId)
+        val messageQueue1 = LinkedList<String>()
+        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
+        val client1 = SmokeTestWebsocketClient(wsHandler1)
+        client1.start()
+        client1.connect(flowStatusFeedPath)
+        eventually {
+            assertThat(wsHandler1.isConnected)
+        }
 
-                eventually(Duration.ofSeconds(10)) {
-                    assertThat(messageQueue1).hasSize(3)
-                    assertThat(messageQueue1.poll()).contains(FlowStates.START_REQUESTED.name)
-                    assertThat(messageQueue1.poll()).contains(FlowStates.RUNNING.name)
-                    assertThat(messageQueue1.poll()).contains(FlowStates.COMPLETED.name)
-                    assertThat(messageQueue2).hasSize(3)
-                    assertThat(messageQueue2.poll()).contains(FlowStates.START_REQUESTED.name)
-                    assertThat(messageQueue2.poll()).contains(FlowStates.RUNNING.name)
-                    assertThat(messageQueue2.poll()).contains(FlowStates.COMPLETED.name)
-                }
+        val messageQueue2 = LinkedList<String>()
+        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
+        val client2 = SmokeTestWebsocketClient(wsHandler2)
+        client2.start()
+        client2.connect(flowStatusFeedPath)
+        eventually {
+            assertThat(wsHandler2.isConnected)
+        }
 
-            }
+        startFlow(clientRequestId)
+
+        eventually(Duration.ofSeconds(10)) {
+            assertThat(messageQueue1).hasSize(3)
+            assertThat(messageQueue1.poll()).contains(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue1.poll()).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue1.poll()).contains(FlowStates.COMPLETED.name)
+            assertThat(messageQueue2).hasSize(3)
+            assertThat(messageQueue2.poll()).contains(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue2.poll()).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue2.poll()).contains(FlowStates.COMPLETED.name)
+        }
+
+        client1.close()
+        client2.close()
+        eventually {
+            assertThat(wsHandler1.isNotConnected)
+            assertThat(wsHandler2.isNotConnected)
         }
     }
 
