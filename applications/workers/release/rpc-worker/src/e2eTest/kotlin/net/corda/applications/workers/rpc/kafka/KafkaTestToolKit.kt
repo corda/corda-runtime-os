@@ -21,8 +21,11 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import kotlin.random.Random
 
 internal class KafkaTestToolKit {
-    private val kafkaHost = System.getenv("KAFKA-HOST-NAME") ?: "localhost"
-    private val kafkaPort = (System.getenv("KAFKA-PORT") ?: "9092").toIntOrNull() ?: 9092
+
+    //private val kafkaHost = System.getenv("KAFKA-HOST-NAME") ?: "localhost"
+    private val kafkaHost = "a7dc15aebbce7414ba99bbd6106bd4b8-152611535.eu-west-1.elb.amazonaws.com"
+    private val kafkaPort = 9094
+    //private val kafkaPort = (System.getenv("KAFKA-PORT") ?: "9092").toIntOrNull() ?: 9092
     private val registry by lazy {
         AvroSchemaRegistryImpl()
     }
@@ -52,6 +55,7 @@ internal class KafkaTestToolKit {
             mapOf(
                 "ssl.truststore.location" to System.getenv("KAFKA_TRUSTSTORE"),
                 "ssl.truststore.type" to "PEM",
+                "ssl.endpoint.identification.algorithm" to ""
             )
         } else {
             emptyMap()
@@ -65,7 +69,7 @@ internal class KafkaTestToolKit {
             emptyMap()
         }
         val bootstrapServers = mapOf(
-            "bootstrap.servers" to "$kafkaHost:$kafkaPort"
+            "bootstrap.servers" to "a7dc15aebbce7414ba99bbd6106bd4b8-152611535.eu-west-1.elb.amazonaws.com:9094,a7efab08b67c7448eb7fc5cb69c22c46-311519785.eu-west-1.elb.amazonaws.com:9094,aea93923762234e84a42c8f16355a1d6-625820652.eu-west-1.elb.amazonaws.com:9094",
         )
         val kafkaProperties = (trustStoreLocation + sslPassword + bootstrapServers).mapKeys { (key, _) ->
             "$KAFKA_PROPERTIES_COMMON.${key.trim()}"
