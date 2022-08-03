@@ -1115,11 +1115,13 @@
             "description" : "Forbidden."
           }
         }
-      },
+      }
+    },
+    "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
         "tags" : [ "Keys Management API" ],
         "description" : "Generate key pair.",
-        "operationId" : "post_keys__tenantid_",
+        "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1131,18 +1133,40 @@
             "nullable" : false,
             "example" : "string"
           }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The key alias",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The key alias",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "hsmcategory",
+          "in" : "path",
+          "description" : "The HSM Category",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The HSM Category",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "scheme",
+          "in" : "path",
+          "description" : "The scheme",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The scheme",
+            "nullable" : false,
+            "example" : "string"
+          }
         } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/GenerateKeyPairWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
         "responses" : {
           "200" : {
             "description" : "The ID of the newly generated key pair.",
@@ -2815,31 +2839,6 @@
           }
         },
         "description" : "GenerateCsrWrapperRequest",
-        "nullable" : false
-      },
-      "GenerateKeyPairWrapperRequest" : {
-        "required" : [ "alias", "hsmCategory", "scheme" ],
-        "properties" : {
-          "alias" : {
-            "type" : "string",
-            "description" : "The key alias",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "hsmCategory" : {
-            "type" : "string",
-            "description" : "The HSM Category",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "scheme" : {
-            "type" : "string",
-            "description" : "The scheme",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "GenerateKeyPairWrapperRequest",
         "nullable" : false
       },
       "GetCPIsResponse" : {

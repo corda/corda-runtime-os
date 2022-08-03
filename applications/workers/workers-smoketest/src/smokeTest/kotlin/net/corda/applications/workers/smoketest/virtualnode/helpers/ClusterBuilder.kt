@@ -69,7 +69,7 @@ class ClusterBuilder {
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
-        client!!.post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
+        post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
 
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
@@ -78,35 +78,28 @@ class ClusterBuilder {
      * Register a member to the network
      */
     fun registerMember(holdingId: String) =
-        client!!.post("/api/v1/membership/$holdingId", registerMemberBody())
+        post("/api/v1/membership/$holdingId", registerMemberBody())
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
-        client!!.post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
+        post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        client!!.post(
-            "/api/v1/keys/$holdingIdentityShortHash",
-            body = """{
-                    "alias": "$alias",
-                    "hsmCategory": "$category",
-                    "scheme": "$scheme"
-                }""".trimIndent()
-        )
+        post("/api/v1/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
 
     fun getKey(holdingIdentityShortHash: String, keyId: String) =
-        client!!.get("/api/v1/keys/$holdingIdentityShortHash/$keyId")
+        get("/api/v1/keys/$holdingIdentityShortHash/$keyId")
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
-        client!!.get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId")
+        get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId")
 
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdentityShortHash: String) =
-        client!!.get("/api/v1/flow/$holdingIdentityShortHash")
+        get("/api/v1/flow/$holdingIdentityShortHash")
 
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
-        client!!.get("/api/v1/flowclass/$holdingIdentityShortHash")
+        get("/api/v1/flowclass/$holdingIdentityShortHash")
 
     /** Start a flow */
     fun flowStart(
@@ -115,7 +108,7 @@ class ClusterBuilder {
         flowClassName: String,
         requestData: String
     ): SimpleResponse {
-        return client!!.post("/api/v1/flow/$holdingIdentityShortHash", flowStartBody(clientRequestId, flowClassName, requestData))
+        return post("/api/v1/flow/$holdingIdentityShortHash", flowStartBody(clientRequestId, flowClassName, requestData))
     }
 
     private fun flowStartBody(clientRequestId: String, flowClassName: String, requestData: String) =
