@@ -27,6 +27,7 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
+    implementation project(":testing:test-utilities") // TODO: double check
 
     implementation project(':libs:packaging:packaging-core')
 

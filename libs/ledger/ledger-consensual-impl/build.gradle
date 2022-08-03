@@ -1,8 +1,8 @@
-import aQute.bnd.gradle.Bundle
+import aQute.bnd.gradle.Bundle // not needed
 
 plugins {
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle)
+    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle
     id 'corda.common-library'
 }
 
@@ -51,6 +51,63 @@ dependencies {
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"  // MERGE ???
 
     integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {  // MERGE ???
-        exclude group: 'org.osgi'
+         exclude group: 'org.osgi'
     }
+
+    //integrationTestImplementation project(":components:flow:flow-service") // osgi.wiring.package: (&(osgi.wiring.package=net.corda.flow.pipeline.sandbox)(version>=5.0.0)(!(version>=6.0.0)))
+    //integrationTestImplementation project(":libs:serialization:serialization-amqp") // osgi.wiring.package: (&(osgi.wiring.package=net.corda.internal.serialization.amqp)(version>=5.0.0)(!(version>=6.0.0)))
+
+    //From Christian's branch
+    /*
+    integrationTestImplementation 'net.corda:corda-application'
+    integrationTestImplementation project(':components:security-manager')
+    integrationTestImplementation project(':testing:security-manager-utilities')
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:virtual-node')
+    integrationTestRuntimeOnly project(':components:flow:flow-service')
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-amqp')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    integrationTestRuntimeOnly "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    */
+
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    // For osgi.service: (objectClass=net.corda.messagebus.api.configuration.BusConfigMerger)
+
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    // osgi.service: (objectClass=net.corda.lifecycle.LifecycleCoordinatorFactory)
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    //for osgi.extender: (&(osgi.extender=osgi.serviceloader.processor)(version>=1.0.0)(!(version>=2.0.0)))
+
+    integrationTestRuntimeOnly project(':testing:cpi-info-read-service-fake')
+    // osgi.service: (objectClass=net.corda.cpiinfo.read.CpiInfoReadService)
+
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+    // osgi.service: (objectClass=net.corda.membership.read.MembershipGroupReaderProvider)
+
+    integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
+    // osgi.service: (objectClass=net.corda.cpk.read.CpkReadService)
+
+    integrationTestRuntimeOnly project(':libs:sandbox-internal')
+    // osgi.service: (objectClass=net.corda.sandbox.SandboxContextService)
+
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+    // osgi.service: (objectClass=net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory)
+
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    // osgi.service: (objectClass=net.corda.session.manager.SessionManager)
+
+    // ???
+    integrationTestRuntimeOnly "net.corda:corda-ledger-consensual"
+    // osgi.wiring.package: (osgi.wiring.package=net.corda.v5.ledger.consensual.transaction)
+
+    // I have removed import kotlin.test.assertIs
+    //osgi.wiring.package: (osgi.wiring.package=kotlin.test)
+
+    // Added ledger/ledger-consensual/src/main/java/net/corda/v5/ledger/consensual/transaction/package-info.java
+    // For osgi.wiring.package: (osgi.wiring.package=net.corda.v5.ledger.consensual.transaction)
+
 }
