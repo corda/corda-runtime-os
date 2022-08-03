@@ -13,5 +13,5 @@ class LinkManager(
 
     override val imageName = "p2p-link-manager"
 
-    override val readyLog = ".*LinkManager-1 - Starting child.*".toRegex()
+    override val readyLog = ".*LinkManager-1.* - Starting child.*".toRegex()
 }
