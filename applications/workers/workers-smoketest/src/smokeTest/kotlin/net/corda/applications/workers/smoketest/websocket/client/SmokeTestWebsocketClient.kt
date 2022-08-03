@@ -9,7 +9,9 @@ import net.corda.applications.workers.smoketest.getOrThrow
 import net.corda.test.util.eventually
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
+import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.Session
+import org.eclipse.jetty.websocket.api.StatusCode
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
@@ -24,18 +26,17 @@ fun useWebsocketConnection(
     val wsHandler = MessageQueueWebsocketHandler(messageQueue)
     val client = SmokeTestWebsocketClient(wsHandler)
 
-    try {
-        client.start()
-        client.connect(path)
+    client.use {
+        it.start()
+        it.connect(path)
         eventually {
             assertTrue(wsHandler.isConnected)
         }
         block.invoke(wsHandler)
-    } finally {
-        client.close()
-        eventually {
-            assertFalse(wsHandler.isConnected)
-        }
+    }
+
+    eventually {
+        assertFalse(wsHandler.isConnected)
     }
 }
 
@@ -51,7 +52,8 @@ class SmokeTestWebsocketClient(
         const val baseWssPath = "wss://localhost:8888/api/v1"
     }
 
-    private val wsClient = WebSocketClient(HttpClient(SslContextFactory.Client(true)))
+    private var wsClient = WebSocketClient(HttpClient(SslContextFactory.Client(true)))
+    private var session: Session? = null
 
     fun start() {
         wsClient.start()
@@ -64,15 +66,18 @@ class SmokeTestWebsocketClient(
             ClientUpgradeRequest(),
             BasicAuthUpgradeListener(username, password)
         )
-        val session = sessionFuture.getOrThrow(connectTimeout)
+        session = sessionFuture.getOrThrow(connectTimeout)
             ?: throw SmokeTestWebsocketException("Session was null after ${connectTimeout.seconds} seconds.")
 
         log.info("Session established: $session")
-        return session
+        return session!!
     }
 
     override fun close() {
+        log.info("Gracefully closing session.")
         wsClient.stop()
+        session?.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing session from client side."))
+        session = null
     }
 }
 
