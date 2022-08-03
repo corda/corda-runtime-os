@@ -99,7 +99,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     // osgi.service: (objectClass=net.corda.session.manager.SessionManager)
 
-    // ???
+    // ??? This may not be needed.
     integrationTestRuntimeOnly "net.corda:corda-ledger-consensual"
     // osgi.wiring.package: (osgi.wiring.package=net.corda.v5.ledger.consensual.transaction)
 
@@ -108,5 +108,14 @@ dependencies {
 
     // Added ledger/ledger-consensual/src/main/java/net/corda/v5/ledger/consensual/transaction/package-info.java
     // For osgi.wiring.package: (osgi.wiring.package=net.corda.v5.ledger.consensual.transaction)
+
+    ///////// For the mock flow fiber:
+    integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
+    //osgi.wiring.package: (osgi.wiring.package=net.corda.crypto.impl.serialization)
+    //For PublicKeySerializer
+
+    //integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
+    // osgi.wiring.package: (osgi.wiring.package=org.mockito.kotlin)
+
 
 }
