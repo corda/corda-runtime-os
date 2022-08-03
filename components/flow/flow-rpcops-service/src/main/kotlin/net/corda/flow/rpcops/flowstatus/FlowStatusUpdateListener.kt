@@ -17,4 +17,9 @@ interface FlowStatusUpdateListener : AutoCloseable {
      * Update received for flow status.
      */
     fun updateReceived(status: FlowStatus)
+
+    /**
+     * Close with a message.
+     */
+    fun close(message: String)
 }

@@ -111,7 +111,11 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val flowKey = newRecord.key
         if (newRecord.value == null) {
             cache.remove(flowKey)
-            closeAndRemoveStatusListeners(flowKey)
+            statusListenerIdsPerFlowKey[flowKey].map { id ->
+                statusListenerByUuid[id]?.close("Flow status removed from cache.")
+                statusListenerByUuid.remove(id)
+            }
+            statusListenerIdsPerFlowKey.removeAll(flowKey)
         } else {
             cache[flowKey] = newRecord.value
             updateAllStatusListenersForFlowKey(flowKey, newRecord.value!!)
@@ -169,14 +173,6 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         statusListenerIdsPerFlowKey[flowKey].map { id ->
             statusListenerByUuid[id]?.updateReceived(flowStatus)
         }
-    }
-
-    private fun closeAndRemoveStatusListeners(flowKey: FlowKey) {
-        statusListenerIdsPerFlowKey[flowKey].map { id ->
-            statusListenerByUuid[id]?.close()
-            statusListenerByUuid.remove(id)
-        }
-        statusListenerIdsPerFlowKey.removeAll(flowKey)
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
