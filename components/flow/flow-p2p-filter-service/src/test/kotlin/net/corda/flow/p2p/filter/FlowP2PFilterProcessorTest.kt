@@ -39,7 +39,8 @@ class FlowP2PFilterProcessorTest {
     fun `validate flow session filter logic transforms sessionId and ignores other subsystems`() {
         val testValue = "test"
         val identity = HoldingIdentity(testValue, testValue)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession")
+        val flowHeader =
+            AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "flowSession")
         val version = listOf(1)
         val flowEvent = SessionEvent(
             MessageDirection.OUTBOUND,
@@ -51,7 +52,7 @@ class FlowP2PFilterProcessorTest {
             0,
             listOf(),
             SessionInit(
-                testValue, version, testValue, null, ByteBuffer.wrap("".toByteArray())
+                testValue, version, testValue, null, emptyMap(), emptyMap(), ByteBuffer.wrap("".toByteArray())
             )
         )
 
@@ -59,11 +60,16 @@ class FlowP2PFilterProcessorTest {
         whenever(deserializer.deserialize(flowEventMockData)).thenReturn(flowEvent)
 
         val flowRecord = Record(
-            Schemas.P2P.P2P_IN_TOPIC, testValue, AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(flowEventMockData)))
+            Schemas.P2P.P2P_IN_TOPIC,
+            testValue,
+            AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(flowEventMockData)))
         )
-        val otherHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other")
+        val otherHeader =
+            AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), testValue, testValue, "other")
         val otherRecord = Record(
-            Schemas.P2P.P2P_IN_TOPIC, testValue, AppMessage(AuthenticatedMessage(otherHeader, ByteBuffer.wrap("other".toByteArray())))
+            Schemas.P2P.P2P_IN_TOPIC,
+            testValue,
+            AppMessage(AuthenticatedMessage(otherHeader, ByteBuffer.wrap("other".toByteArray())))
         )
 
         val events = listOf(flowRecord, otherRecord)

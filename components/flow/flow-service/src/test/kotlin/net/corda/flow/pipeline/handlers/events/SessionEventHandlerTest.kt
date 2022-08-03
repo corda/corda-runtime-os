@@ -170,6 +170,8 @@ class SessionEventHandlerTest {
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            .setContextPlatformProperties(emptyMap())
+            .setContextUserProperties(emptyMap())
             .build()
 
         return createSessionEvent(payload)

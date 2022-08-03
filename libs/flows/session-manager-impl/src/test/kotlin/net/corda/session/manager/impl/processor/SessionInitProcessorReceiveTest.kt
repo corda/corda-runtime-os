@@ -12,13 +12,15 @@ import java.time.Instant
 
 class SessionInitProcessorReceiveTest {
 
+    private fun createSessionInit() = SessionInit("flow", listOf(1), "cpiId", "flowId1", emptyMap(), emptyMap(), null)
+
     @Test
     fun `Receive duplicate init when state is not null`() {
         val sessionInitEvent = buildSessionEvent(
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
+            createSessionInit()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -43,7 +45,7 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
+            createSessionInit()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -71,7 +73,7 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
+            createSessionInit()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())

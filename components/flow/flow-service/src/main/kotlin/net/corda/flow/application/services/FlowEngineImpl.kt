@@ -45,8 +45,6 @@ class FlowEngineImpl @Activate constructor(
         override operator fun get(key: String): String? {
             return null
         }
-
-        override operator fun set(key: String, value: String) {}
     }
 
     @Suspendable

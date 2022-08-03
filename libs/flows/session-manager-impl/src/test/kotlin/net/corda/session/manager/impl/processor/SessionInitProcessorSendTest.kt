@@ -11,13 +11,15 @@ import java.time.Instant
 
 class SessionInitProcessorSendTest {
 
+    private fun createSessionInit() = SessionInit("flow", listOf(1), "cpiId", "flowId1", emptyMap(), emptyMap(), null)
+
     @Test
     fun `Send init when state is not null`() {
         val sessionInit = buildSessionEvent(
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
+            createSessionInit()
         )
 
         val sessionState = buildSessionState(SessionStateType.CREATED, 0, listOf(), 1, listOf(sessionInit))
@@ -35,7 +37,7 @@ class SessionInitProcessorSendTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
+            createSessionInit()
         )
         val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
 

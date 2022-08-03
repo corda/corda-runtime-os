@@ -31,9 +31,10 @@ class SessionInitExecutorTest {
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
 
         val flowId = "id1"
-        val sessionInit = SessionInit("", listOf(1), "", flowId, null)
+        val sessionInit = SessionInit("", listOf(1), "", flowId, emptyMap(), emptyMap(), null)
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
-        val result = SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
+        val result =
+            SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -52,9 +53,16 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Inbound session init creates new state and forwards to flow event`() {
-        val sessionInit = SessionInit("", listOf(1), "", null, null)
+        val sessionInit = SessionInit("", listOf(1), "", null, emptyMap(), emptyMap(), null)
         val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, sessionInit)
-        val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
+        val result = SessionInitExecutor(
+            "sessionId-INITIATED",
+            payload,
+            sessionInit,
+            null,
+            sessionEventSerializer,
+            flowConfig
+        ).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -74,7 +82,7 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Session init with non null state ignored`() {
-        val sessionInit = SessionInit("", listOf(1), "", null, null)
+        val sessionInit = SessionInit("", listOf(1), "", null, emptyMap(), emptyMap(), null)
         val payload = buildSessionEvent(MessageDirection.INBOUND, "", 1, sessionInit)
         val result = SessionInitExecutor(
             "sessionId-INITIATED",

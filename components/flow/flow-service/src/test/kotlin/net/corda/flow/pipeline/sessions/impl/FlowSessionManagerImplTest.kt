@@ -117,7 +117,9 @@ class FlowSessionManagerImplTest {
 
         whenever(flowStack.peek()).thenReturn(
             FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
-                .setSessionIds(emptyList()).build()
+                .setSessionIds(emptyList()).setContextPlatformProperties(mutableMapOf()).setContextUserProperties(
+                    mutableMapOf()
+                ).build()
         )
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply {
             cpiId = CPI_ID
@@ -132,6 +134,8 @@ class FlowSessionManagerImplTest {
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            .setContextPlatformProperties(emptyMap())
+            .setContextUserProperties(emptyMap())
             .build()
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,

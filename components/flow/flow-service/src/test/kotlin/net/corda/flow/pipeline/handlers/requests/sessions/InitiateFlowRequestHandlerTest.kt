@@ -47,7 +47,15 @@ class InitiateFlowRequestHandlerTest {
         whenever(testContext.flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
-        whenever(testContext.flowStack.nearestFirst(any())).thenReturn(FlowStackItem("flow", true, listOf()))
+        whenever(testContext.flowStack.nearestFirst(any())).thenReturn(
+            FlowStackItem(
+                "flow",
+                true,
+                mutableListOf(),
+                mutableMapOf(),
+                mutableMapOf()
+            )
+        )
     }
 
     @Test

@@ -27,19 +27,19 @@ class StartFlow(private val context: TaskContext) : Task {
             ),
 
             "start_session_smoke_test" to getSmokeTestStartRecord(
-            "{\"command\":\"start_sessions\",\"data\":{\"sessions\":\"CN=user1, O=user1 Corp, L=LDN, C=GB;CN=user2," +
-                    " O=user2 Corp, L=LDN, C=GB\",\"messages\":\"m1;m2\"}}"
+                "{\"command\":\"start_sessions\",\"data\":{\"sessions\":\"CN=user1, O=user1 Corp, L=LDN, C=GB;CN=user2," +
+                        " O=user2 Corp, L=LDN, C=GB\",\"messages\":\"m1;m2\"}}"
             ),
 
             "throw_platform_error_smoke_test" to getSmokeTestStartRecord(
-            "{\"command\":\"throw_platform_error\",\"data\":{\"x500\":\"CN=user1, O=user1 Corp, L=LDN, C=GB\"}}"
+                "{\"command\":\"throw_platform_error\",\"data\":{\"x500\":\"CN=user1, O=user1 Corp, L=LDN, C=GB\"}}"
             )
         )
 
         context.publish(
             checkNotNull(
                 namedFlows[context.startArgs.flowName]
-            ) {"Could not find named flow '${context.startArgs.flowName}'"}
+            ) { "Could not find named flow '${context.startArgs.flowName}'" }
         )
     }
 
@@ -72,6 +72,7 @@ class StartFlow(private val context: TaskContext) : Task {
             identity,
             flowName,
             jsonArgs,
+            emptyMap(),
             Instant.now()
         )
 

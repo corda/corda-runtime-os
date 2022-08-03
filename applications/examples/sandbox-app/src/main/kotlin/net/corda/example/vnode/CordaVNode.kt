@@ -1,4 +1,5 @@
 @file:JvmName("Constants")
+
 package net.corda.example.vnode
 
 import co.paralleluniverse.fibers.instrument.Retransform
@@ -50,14 +51,16 @@ const val VNODE_SERVICE = "vnode"
 const val SHUTDOWN_GRACE = 30L
 
 @Suppress("unused", "LongParameterList")
-@Component(reference = [
-    Reference(
-        name = VNODE_SERVICE,
-        service = VNodeService::class,
-        cardinality = OPTIONAL,
-        policy = DYNAMIC
-    )
-])
+@Component(
+    reference = [
+        Reference(
+            name = VNODE_SERVICE,
+            service = VNodeService::class,
+            cardinality = OPTIONAL,
+            policy = DYNAMIC
+        )
+    ]
+)
 class CordaVNode @Activate constructor(
     @Reference
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
@@ -142,8 +145,9 @@ class CordaVNode @Activate constructor(
                 virtualNodeInfo.holdingIdentity,
                 "com.example.cpk.ExampleFlow",
                 "{\"message\":\"Bongo!\"}",
+                emptyMap(),
                 Instant.now(),
-            ),  "{\"message\":\"Bongo!\"}"
+            ), "{\"message\":\"Bongo!\"}"
         )
     }
 
@@ -235,6 +239,7 @@ class CordaVNode @Activate constructor(
             val dbField = instrumentor::class.java.getDeclaredField("dbForClassloader").apply {
                 isAccessible = true
             }
+
             @Suppress("unchecked_cast")
             val classLoaders = (dbField.get(instrumentor) as Map<ClassLoader, *>).keys
             for (classLoader in classLoaders) {
@@ -243,8 +248,10 @@ class CordaVNode @Activate constructor(
                     if (bundle == null) {
                         logger.info("CLASSLOADER>> {} is DEAD", classLoader)
                     } else if (bundle.location.startsWith("FLOW/")) {
-                        logger.info("BUNDLE>> {} is-in-use={} (classloader={})",
-                            bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java)
+                        logger.info(
+                            "BUNDLE>> {} is-in-use={} (classloader={})",
+                            bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java
+                        )
                     }
                 }
             }

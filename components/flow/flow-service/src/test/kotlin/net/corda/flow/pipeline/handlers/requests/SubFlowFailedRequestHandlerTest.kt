@@ -49,6 +49,8 @@ class SubFlowFailedRequestHandlerTest {
         .setFlowName("FLOW_NAME")
         .setIsInitiatingFlow(true)
         .setSessionIds(sessions)
+        .setContextPlatformProperties(mutableMapOf())
+        .setContextUserProperties(mutableMapOf())
         .build()
     private val ioRequest = FlowIORequest.SubFlowFailed(flowError, flowStackItem)
     private val record = Record("", "", FlowEvent())
@@ -75,7 +77,9 @@ class SubFlowFailedRequestHandlerTest {
 
     @ParameterizedTest(name = "Sends session error messages and creates a Wakeup record when the flow has no closed or errored sessions (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    fun `Sends session error messages and creates a Wakeup record when the flow has no closed or errored sessions`(isInitiatingFlow: Boolean) {
+    fun `Sends session error messages and creates a Wakeup record when the flow has no closed or errored sessions`(
+        isInitiatingFlow: Boolean
+    ) {
         flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
@@ -105,12 +109,19 @@ class SubFlowFailedRequestHandlerTest {
         verify(testContext.flowCheckpoint).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint).putSessionState(sessionState2)
         verify(testContext.flowCheckpoint).putSessionState(sessionState3)
-        verify(testContext.flowSessionManager).sendErrorMessages(eq(testContext.flowCheckpoint), eq(sessions), eq(flowError), any())
+        verify(testContext.flowSessionManager).sendErrorMessages(
+            eq(testContext.flowCheckpoint),
+            eq(sessions),
+            eq(flowError),
+            any()
+        )
     }
 
     @ParameterizedTest(name = "Sends session error messages to non-closed and non-errored sessions and creates a Wakeup record when the flow has sessions to error (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    fun `Sends session error messages to non-closed and non-errored sessions and creates a Wakeup record when the flow has sessions to error`(isInitiatingFlow: Boolean) {
+    fun `Sends session error messages to non-closed and non-errored sessions and creates a Wakeup record when the flow has sessions to error`(
+        isInitiatingFlow: Boolean
+    ) {
         flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
@@ -150,7 +161,9 @@ class SubFlowFailedRequestHandlerTest {
 
     @ParameterizedTest(name = "Sends no session error messages and creates a Wakeup record when the flow has no sessions to error (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    fun `Sends no session error messages and creates a Wakeup record when the flow has no sessions to error`(isInitiatingFlow: Boolean) {
+    fun `Sends no session error messages and creates a Wakeup record when the flow has no sessions to error`(
+        isInitiatingFlow: Boolean
+    ) {
         flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(

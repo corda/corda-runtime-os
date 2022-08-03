@@ -14,7 +14,7 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
         val stackItem =
             FlowStackItem(
                 flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf(),
-                emptyMap(), emptyMap()
+                mutableMapOf(), mutableMapOf()
             )
         flowStackItems.add(stackItem)
         return stackItem
