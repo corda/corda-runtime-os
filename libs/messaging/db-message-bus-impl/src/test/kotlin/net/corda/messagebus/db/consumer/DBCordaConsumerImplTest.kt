@@ -302,6 +302,14 @@ internal class DBCordaConsumerImplTest {
     }
 
     @Test
+    fun `consumer returns empty list when no partitions are given`() {
+        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { emptySet<CordaTopicPartition>() }
+
+        val consumer = makeConsumer()
+        assertThat(consumer.poll(Duration.ZERO)).isEmpty()
+    }
+
+    @Test
     fun `consumer returns correct position when not available based on auto_offset_reset`() {
         fun createAutoResetConsumer(strategy: CordaOffsetResetStrategy): CordaConsumer<String, String> {
             val keyDeserializer = mock<CordaAvroDeserializer<String>>()
