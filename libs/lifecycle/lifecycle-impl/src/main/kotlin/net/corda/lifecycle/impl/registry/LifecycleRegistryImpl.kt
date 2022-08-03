@@ -7,6 +7,7 @@ import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
@@ -78,7 +79,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      * See [LifecycleRegistryCoordinatorAccess]
      */
     override fun removeCoordinator(name: LifecycleCoordinatorName) {
-        logger.info("Removing coordinator $name from registry")
+        logger.debug { "Removing coordinator $name from registry" }
         coordinators.remove(name)
         statuses.remove(name)
     }
