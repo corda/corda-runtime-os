@@ -43,7 +43,7 @@ class SingleClusterDynamicNetworkTest {
     companion object {
         // If running deployment in eks, ensure this is set to true to use correct endpoint information.
         // This should be false by default for automated builds.
-        private const val IS_REMOTE_CLUSTER = true
+        private const val IS_REMOTE_CLUSTER = false
     }
 
     private val remoteRpcHost = "$RPC_WORKER.$SINGLE_CLUSTER_NS"
