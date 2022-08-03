@@ -59,23 +59,29 @@ class SmokeTestWebsocketClient(
         wsClient.start()
     }
 
-    fun connect(path: String): Session {
+    fun connect(path: String) {
+        val fullPath = "$baseWssPath$path"
         val sessionFuture = wsClient.connect(
             wsHandler,
-            URI("$baseWssPath$path"),
+            URI(fullPath),
             ClientUpgradeRequest(),
             BasicAuthUpgradeListener(username, password)
         )
         session = sessionFuture.getOrThrow(connectTimeout)
             ?: throw SmokeTestWebsocketException("Session was null after ${connectTimeout.seconds} seconds.")
 
-        log.info("Session established: $session")
-        return session!!
+        log.info("Session established for $username at $fullPath.")
+        log.info("Open sessions for this client: ${wsClient.openSessions.size}.")
     }
 
     override fun close() {
-        log.info("Gracefully closing session.")
+        log.info("Sessions before closing client: ${wsClient.openSessions.size} sessions.")
+        log.info("Gracefully closing WebSocket client.")
         wsClient.stop()
+        log.info("Sessions after closing client: ${wsClient.openSessions.size} sessions.")
+        log.info("Gracefully closing all ${wsClient.openSessions.size} sessions.")
+        wsClient.openSessions.forEach { it.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing session from client side.")) }
+        log.info("Gracefully closing session held in client variable.")
         session?.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing session from client side."))
         session = null
     }
