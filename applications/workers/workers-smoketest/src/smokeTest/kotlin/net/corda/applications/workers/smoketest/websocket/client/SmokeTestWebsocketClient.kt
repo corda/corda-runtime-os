@@ -52,7 +52,9 @@ class SmokeTestWebsocketClient(
         const val baseWssPath = "wss://localhost:8888/api/v1"
     }
 
-    private var wsClient = WebSocketClient(HttpClient(SslContextFactory.Client(true)))
+    private val httpClient = HttpClient(SslContextFactory.Client(true))
+    private val wsClient = WebSocketClient(httpClient)
+    @Volatile
     private var session: Session? = null
 
     fun start() {
@@ -84,6 +86,7 @@ class SmokeTestWebsocketClient(
         log.info("Gracefully closing session held in client variable.")
         session?.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing session from client side."))
         session = null
+        httpClient.stop()
     }
 }
 
