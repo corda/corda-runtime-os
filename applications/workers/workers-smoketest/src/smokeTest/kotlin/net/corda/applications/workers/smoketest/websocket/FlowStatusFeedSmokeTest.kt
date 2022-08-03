@@ -2,8 +2,8 @@ package net.corda.applications.workers.smoketest.websocket
 
 import java.time.Duration
 import java.util.LinkedList
-import java.util.Queue
 import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
@@ -12,9 +12,10 @@ import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebsocketHandler
 import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsocketClient
-import net.corda.applications.workers.smoketest.websocket.client.runWithWebsocketConnection
+import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -52,31 +53,19 @@ class FlowStatusFeedSmokeTest {
 
     @Order(20)
     @Test
-    fun `flow status update feed receives updates for flow lifecycle`() {
+    fun `flow status update feed receives updates for the basic lifecycle of a flow`() {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
 
-        val messageQueue = LinkedList<String>()
-        val wsHandler = MessageQueueWebsocketHandler(messageQueue)
-        val client = SmokeTestWebsocketClient(wsHandler)
-        client.start()
-        client.connect(flowStatusFeedPath)
-        eventually {
-            assertThat(wsHandler.isConnected)
-        }
+        useWebsocketConnection(flowStatusFeedPath) { wsHandler ->
+            startFlow(clientRequestId)
 
-        startFlow(clientRequestId)
-
-        eventually(Duration.ofSeconds(10)) {
-            assertThat(messageQueue).hasSize(3)
-            assertThat(messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
-            assertThat(messageQueue.poll()).contains(FlowStates.RUNNING.name)
-            assertThat(messageQueue.poll()).contains(FlowStates.COMPLETED.name)
-        }
-
-        client.close()
-        eventually {
-            assertThat(wsHandler.isNotConnected)
+            eventually(Duration.ofSeconds(10)) {
+                assertThat(wsHandler.messageQueue).hasSize(3)
+                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
+                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.RUNNING.name)
+                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+            }
         }
     }
 
@@ -86,42 +75,22 @@ class FlowStatusFeedSmokeTest {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
 
-        val messageQueue1 = LinkedList<String>()
-        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
-        val client1 = SmokeTestWebsocketClient(wsHandler1)
-        client1.start()
-        client1.connect(flowStatusFeedPath)
-        eventually {
-            assertThat(wsHandler1.isConnected)
-        }
+        useWebsocketConnection(flowStatusFeedPath) { wsHandler1 ->
+            useWebsocketConnection(flowStatusFeedPath) { wsHandler2 ->
+                startFlow(clientRequestId)
 
-        val messageQueue2 = LinkedList<String>()
-        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
-        val client2 = SmokeTestWebsocketClient(wsHandler2)
-        client2.start()
-        client2.connect(flowStatusFeedPath)
-        eventually {
-            assertThat(wsHandler2.isConnected)
-        }
+                eventually(Duration.ofSeconds(10)) {
+                    assertThat(wsHandler1.messageQueue).hasSize(3)
+                    assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
+                    assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.RUNNING.name)
+                    assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+                    assertThat(wsHandler2.messageQueue).hasSize(3)
+                    assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
+                    assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.RUNNING.name)
+                    assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+                }
 
-        startFlow(clientRequestId)
-
-        eventually(Duration.ofSeconds(10)) {
-            assertThat(messageQueue1).hasSize(3)
-            assertThat(messageQueue1.poll()).contains(FlowStates.START_REQUESTED.name)
-            assertThat(messageQueue1.poll()).contains(FlowStates.RUNNING.name)
-            assertThat(messageQueue1.poll()).contains(FlowStates.COMPLETED.name)
-            assertThat(messageQueue2).hasSize(3)
-            assertThat(messageQueue2.poll()).contains(FlowStates.START_REQUESTED.name)
-            assertThat(messageQueue2.poll()).contains(FlowStates.RUNNING.name)
-            assertThat(messageQueue2.poll()).contains(FlowStates.COMPLETED.name)
-        }
-
-        client1.close()
-        client2.close()
-        eventually {
-            assertThat(wsHandler1.isNotConnected)
-            assertThat(wsHandler2.isNotConnected)
+            }
         }
     }
 
@@ -134,23 +103,23 @@ class FlowStatusFeedSmokeTest {
         startFlow(clientRequestId)
         awaitRpcFlowFinished(bobHoldingId, clientRequestId)
 
-        val messageQueue: Queue<String> = LinkedList()
+        val messageQueue = ConcurrentLinkedQueue<String>()
         val wsHandler = MessageQueueWebsocketHandler(messageQueue)
         val client = SmokeTestWebsocketClient(wsHandler)
+
         client.start()
         client.connect(flowStatusFeedPath)
 
-        eventually(Duration.ofSeconds(10)) {
-            assertThat(messageQueue).hasSize(1)
-            assertThat(messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+        // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected == true
+        eventually {
+            assertThat(wsHandler.messageQueue).hasSize(1)
+            assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
         }
 
         eventually {
-            assertThat(wsHandler.isNotConnected)
+            assertFalse(wsHandler.isConnected)
         }
-        client.close()
     }
-/*
 
     @Order(50)
     @Test
@@ -158,23 +127,13 @@ class FlowStatusFeedSmokeTest {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
 
-        val wsHandler = MessageQueueWebsocketHandler(LinkedList())
-
-        val client = SmokeTestWebsocketClient(wsHandler)
-        client.start()
-        client.connect(flowStatusFeedPath)
-
-        eventually {
-            assertThat(wsHandler.isConnected)
-        }
-
-        wsHandler.send("malicious message!")
-
-        eventually {
-            assertThat(wsHandler.isNotConnected)
+        useWebsocketConnection(flowStatusFeedPath) { wsHandler ->
+            wsHandler.send("malicious message!")
+            eventually {
+                assertFalse(wsHandler.isConnected())
+            }
         }
     }
-*/
 
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {

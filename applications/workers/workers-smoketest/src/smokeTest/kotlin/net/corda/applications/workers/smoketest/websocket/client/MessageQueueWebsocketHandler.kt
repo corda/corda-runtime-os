@@ -6,8 +6,8 @@ import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 
 class MessageQueueWebsocketHandler(
-    private val messageQueue: Queue<String>,
-) : NoOpEndpoint() {
+    override val messageQueue: Queue<String>,
+) : NoOpEndpoint(), InternalWebsocketHandler {
 
     private companion object {
         val log = contextLogger()
@@ -15,6 +15,7 @@ class MessageQueueWebsocketHandler(
 
     override fun onWebSocketConnect(session: Session) {
         log.info("onWebSocketConnect : $session")
+        super.onWebSocketConnect(session)
     }
 
     override fun onWebSocketClose(statusCode: Int, reason: String?) {
@@ -27,7 +28,7 @@ class MessageQueueWebsocketHandler(
         messageQueue.add(message)
     }
 
-    fun send(message: String) {
+    override fun send(message: String) {
         log.info("Sending message: $message")
         super.getRemote().sendString(message)
     }
