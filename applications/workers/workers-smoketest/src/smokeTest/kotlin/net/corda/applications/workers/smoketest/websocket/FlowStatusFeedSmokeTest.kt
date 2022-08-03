@@ -111,16 +111,17 @@ class FlowStatusFeedSmokeTest {
         client.start()
         client.connect(flowStatusFeedPath)
 
-        // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected == true
-        eventually {
-            assertThat(wsHandler.messageQueue).hasSize(1)
-            assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
-        }
+        client.use {
+            // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
+            eventually {
+                assertThat(wsHandler.messageQueue).hasSize(1)
+                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+            }
 
-        eventually {
-            assertFalse(wsHandler.isConnected)
+            eventually {
+                assertFalse(wsHandler.isConnected)
+            }
         }
-        client.close()
     }
 
     @Order(50)
