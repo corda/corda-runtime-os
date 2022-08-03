@@ -20,6 +20,7 @@ import net.corda.applications.workers.rpc.utils.getMgmRegistrationContext
 import net.corda.applications.workers.rpc.utils.hsmCategoryLedger
 import net.corda.applications.workers.rpc.utils.hsmCategorySession
 import net.corda.applications.workers.rpc.utils.hsmCategoryTls
+import net.corda.applications.workers.rpc.utils.keyExists
 import net.corda.applications.workers.rpc.utils.lookupMembers
 import net.corda.applications.workers.rpc.utils.p2pTenantId
 import net.corda.applications.workers.rpc.utils.register
@@ -27,8 +28,8 @@ import net.corda.applications.workers.rpc.utils.setUpNetworkIdentity
 import net.corda.applications.workers.rpc.utils.toByteArray
 import net.corda.applications.workers.rpc.utils.uploadCpi
 import net.corda.applications.workers.rpc.utils.uploadTlsCertificate
-import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.test.util.eventually
@@ -36,12 +37,13 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import java.io.File
 
 class SingleClusterDynamicNetworkTest {
     companion object {
         // If running deployment in eks, ensure this is set to true to use correct endpoint information.
         // This should be false by default for automated builds.
-        private const val IS_REMOTE_CLUSTER = false
+        private const val IS_REMOTE_CLUSTER = true
     }
 
     private val remoteRpcHost = "$RPC_WORKER.$SINGLE_CLUSTER_NS"
@@ -70,10 +72,11 @@ class SingleClusterDynamicNetworkTest {
         )
     )
 
-    private val ca: CertificateAuthority = CertificateAuthorityFactory
-        .createMemoryAuthority(
-            RSA_TEMPLATE.toFactoryDefinitions()
-        )
+    private val ca: FileSystemCertificatesAuthority = CertificateAuthorityFactory
+        .createFileSystemLocalAuthority(
+            RSA_TEMPLATE.toFactoryDefinitions(),
+            File("build${File.separator}tmp${File.separator}e2eTestCa")
+        ).also { it.save() }
 
     @Test
     fun `Create mgm and allow members to join the group`() {
@@ -86,7 +89,6 @@ class SingleClusterDynamicNetworkTest {
         mgm.assignSoftHsm(mgmHoldingId, hsmCategorySession)
 
         val mgmSessionKeyId = mgm.genKeyPair(mgmHoldingId, hsmCategorySession)
-        val mgmTlsKeyId = mgm.genKeyPair(p2pTenantId, hsmCategoryTls)
 
         mgm.register(
             mgmHoldingId,
@@ -98,13 +100,12 @@ class SingleClusterDynamicNetworkTest {
         )
         mgm.assertOnlyMgmIsInMemberList(mgmHoldingId, mgm.name)
 
-        val mgmTlsCsr = mgm.generateCsr(mgm, mgmTlsKeyId)
-        val mgmTlsCert = ca.generateCert(mgmTlsCsr)
-
-        mgm.uploadTlsCertificate(
-            mgmHoldingId,
-            mgmTlsCert
-        )
+        if (!mgm.keyExists(p2pTenantId, hsmCategoryTls)) {
+            val mgmTlsKeyId = mgm.genKeyPair(p2pTenantId, hsmCategoryTls)
+            val mgmTlsCsr = mgm.generateCsr(mgm, mgmTlsKeyId)
+            val mgmTlsCert = ca.generateCert(mgmTlsCsr)
+            mgm.uploadTlsCertificate(mgmTlsCert)
+        }
 
         mgm.setUpNetworkIdentity(
             mgmHoldingId,
@@ -124,15 +125,13 @@ class SingleClusterDynamicNetworkTest {
 
             val memberSessionKeyId = member.genKeyPair(memberHoldingId, hsmCategorySession)
             val memberLedgerKeyId = member.genKeyPair(memberHoldingId, hsmCategoryLedger)
-            val memberTlsKeyId = member.genKeyPair(p2pTenantId, hsmCategoryTls)
 
-            val memberTlsCsr = member.generateCsr(member, memberTlsKeyId)
-            val memberTlsCert = ca.generateCert(memberTlsCsr)
-
-            member.uploadTlsCertificate(
-                memberHoldingId,
-                memberTlsCert
-            )
+            if (!member.keyExists(p2pTenantId, hsmCategoryTls)) {
+                val memberTlsKeyId = member.genKeyPair(p2pTenantId, hsmCategoryTls)
+                val memberTlsCsr = member.generateCsr(member, memberTlsKeyId)
+                val memberTlsCert = ca.generateCert(memberTlsCsr)
+                member.uploadTlsCertificate(memberTlsCert)
+            }
 
             member.setUpNetworkIdentity(
                 memberHoldingId,

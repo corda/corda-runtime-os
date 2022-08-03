@@ -170,6 +170,30 @@ fun MemberTestData.createVirtualNode(
         }
 }
 
+fun MemberTestData.keyExists(
+    tenantId: String,
+    cat: String
+) = with(testToolkit) {
+    httpClientFor(KeysRpcOps::class.java)
+        .use { client ->
+            with(client.start().proxy) {
+                val keyAlias = "$tenantId-$cat"
+                listKeys(
+                    tenantId = tenantId,
+                    skip = 0,
+                    take = 1,
+                    orderBy = "none",
+                    category = cat,
+                    schemeCodeName = null,
+                    alias = keyAlias,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    ids = null
+                ).isNotEmpty()
+            }
+        }
+}
 
 fun MemberTestData.genKeyPair(
     tenantId: String,
@@ -268,11 +292,10 @@ fun MemberTestData.genGroupPolicy(
 }
 
 fun MemberTestData.uploadTlsCertificate(
-    holdingId: String,
     certificatePem: String
 ) = with(testToolkit) {
     httpClientFor(CertificatesRpcOps::class.java).use { client ->
-        val tlsCertAlias = getTlsCertAlias(holdingId)
+        val tlsCertAlias = "p2p-tls-cert"
         client.start().proxy.importCertificateChain(
             p2pTenantId,
             tlsCertAlias,
@@ -291,7 +314,7 @@ fun MemberTestData.setUpNetworkIdentity(
     sessionKeyId: String
 ) = with(testToolkit) {
     httpClientFor(NetworkRpcOps::class.java).use { client ->
-        val tlsCertAlias = getTlsCertAlias(holdingId)
+        val tlsCertAlias = "p2p-tls-cert"
         client.start().proxy.setupHostedIdentities(
             holdingId,
             HostedIdentitySetupRequest(
@@ -338,9 +361,6 @@ fun MemberTestData.assertOnlyMgmIsInMemberList(
             assertThat(it.memberContext["corda.name"]).isEqualTo(mgmName)
         }
 }
-
-fun getTlsCertAlias(holdingId: String) = "$holdingId-tls-cert"
-
 
 fun getMgmRegistrationContext(
     tlsTrustRoot: String,
