@@ -1293,43 +1293,6 @@
         }
       }
     },
-    "/maintenance/virtualnode" : {
-      "put" : {
-        "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Updates the state of a new virtual node.",
-        "operationId" : "put_maintenance_virtualnode",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdatevirtualnodestateWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "The details of the updated virtual node.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
@@ -1392,6 +1355,54 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
+      "put" : {
+        "tags" : [ "Virtual Node Maintenance API" ],
+        "description" : "Updates the state of a new virtual node.",
+        "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "newstate",
+          "in" : "path",
+          "description" : "State to transition virtual node instance into",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "State to transition virtual node instance into",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The details of the updated virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
                 }
               }
             }
@@ -3354,25 +3365,6 @@
             "example" : 0
           }
         }
-      },
-      "UpdatevirtualnodestateWrapperRequest" : {
-        "required" : [ "newState", "virtualNodeShortId" ],
-        "properties" : {
-          "newState" : {
-            "type" : "string",
-            "description" : "Details of the virtual node to be created",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "virtualNodeShortId" : {
-            "type" : "string",
-            "description" : "Short ID of the virtual node instance to update",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "UpdatevirtualnodestateWrapperRequest",
-        "nullable" : false
       },
       "UserPermissionSummaryResponseType" : {
         "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
