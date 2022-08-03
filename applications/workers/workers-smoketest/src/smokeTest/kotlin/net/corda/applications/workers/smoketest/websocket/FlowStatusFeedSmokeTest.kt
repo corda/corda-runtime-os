@@ -124,7 +124,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    @Order(50)
+    /*@Order(50)
     @Test
     fun `websocket connection terminated when client sends server a message`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -136,7 +136,7 @@ class FlowStatusFeedSmokeTest {
                 assertFalse(wsHandler.isConnected())
             }
         }
-    }
+    }*/
 
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {
