@@ -42,7 +42,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-//TODO(Deduplicate with net.corda.internal.serialization.amqp.testutils)
+//TODO(Deduplicate with net.corda.internal.serialization.amqp.testutils and with net.corda.ledger.consensual.MockFlowFiberService)
 
 private class MockSandboxGroup(private val classLoader: ClassLoader = ClassLoader.getSystemClassLoader()) :
     SandboxGroup {
