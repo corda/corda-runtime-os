@@ -1,4 +1,4 @@
-import aQute.bnd.gradle.Bundle // MERGE ???
+import aQute.bnd.gradle.Bundle
 
 plugins {
     id 'corda.common-publishing'
