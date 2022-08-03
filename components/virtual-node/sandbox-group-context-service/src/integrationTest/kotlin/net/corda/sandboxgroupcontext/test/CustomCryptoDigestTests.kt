@@ -2,6 +2,7 @@ package net.corda.sandboxgroupcontext.test
 
 import java.nio.file.Path
 import net.corda.sandbox.SandboxException
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -59,14 +60,14 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `end to end crypto test for first cordapp as two cpks`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE)
+        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
         assertThat(virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContext))
             .hasFieldOrPropertyWithValue(ALGORITHM_PROPERTY_NAME, "SHA-256-TRIPLE")
     }
 
     @Test
     fun `first consumer cannot use other CPI digest`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE)
+        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
         assertThrows<IllegalArgumentException> {
             virtualNode.runFlow<SecureHash>("$PACKAGE_NAME_ONE.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContext)
         }
@@ -74,14 +75,14 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `end to end crypto test for second cordapp as two cpks`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_TWO)
+        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_TWO, SandboxGroupType.FLOW)
         assertThat(virtualNode.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupContext))
             .hasFieldOrPropertyWithValue(ALGORITHM_PROPERTY_NAME, "SHA-256-QUAD")
     }
 
     @Test
     fun `second consumer cannot use other CPI digest`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_TWO)
+        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_TWO, SandboxGroupType.FLOW)
         assertThrows<IllegalArgumentException> {
             // NOTE the 'package' is 'TWO'.
             virtualNode.runFlow<SecureHash>("$PACKAGE_NAME_TWO.CryptoConsumerTryAndUseOtherDigest", sandboxGroupContext)
@@ -90,15 +91,15 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `check consumer can still use platform crypto`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE)
+        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
         assertThat(virtualNode.runFlow<SecureHash>(PLATFORM_DIGEST_ONE_CLASSNAME, sandboxGroupContext))
             .hasFieldOrPropertyWithValue(ALGORITHM_PROPERTY_NAME, "SHA-256")
     }
 
     @Test
     fun `load two cpis side by side`() {
-        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE)
-        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_TWO)
+        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
+        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_TWO, SandboxGroupType.FLOW)
 
         virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContextOne)
         virtualNode.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupContextTwo)
@@ -106,8 +107,8 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load two cpis side by side cannot use each others custom digests`() {
-        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE)
-        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_TWO)
+        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
+        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_TWO, SandboxGroupType.FLOW)
 
         virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContextOne)
         virtualNode.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupContextTwo)
@@ -124,7 +125,7 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load cpi and then unload cpi`() {
-        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE)
+        val sandboxGroupContext = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
 
         virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContext)
 
@@ -137,8 +138,8 @@ class CustomCryptoDigestTests {
 
     @Test
     fun `load two cpis then unload both`() {
-        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE)
-        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_TWO)
+        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
+        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_TWO, SandboxGroupType.FLOW)
 
         // We can use the two different custom cryptos
         virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContextOne)
@@ -169,8 +170,8 @@ class CustomCryptoDigestTests {
      */
     @Test
     fun `load same cpis twice with different sandboxes then unload both`() {
-        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE)
-        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_ONE)
+        val sandboxGroupContextOne = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
+        val sandboxGroupContextTwo = virtualNode.loadSandbox(DIGEST_CPB_ONE, SandboxGroupType.FLOW)
 
         virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContextOne)
         virtualNode.runFlow<SecureHash>(DIGEST_ONE_CLASSNAME, sandboxGroupContextTwo)

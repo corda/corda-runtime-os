@@ -24,6 +24,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.temporal.ChronoUnit
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -251,6 +252,7 @@ class VirtualNodeRpcTest {
             updateVirtualNodeState(vnode.first, newState)
 
             assertWithRetry {
+                timeout(Duration.of(10, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
@@ -263,6 +265,7 @@ class VirtualNodeRpcTest {
             updateVirtualNodeState(vnode.first, oldState)
 
             assertWithRetry {
+                timeout(Duration.of(10, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
