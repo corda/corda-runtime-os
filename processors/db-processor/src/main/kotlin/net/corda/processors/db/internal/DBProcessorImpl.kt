@@ -177,7 +177,7 @@ class DBProcessorImpl @Activate constructor(
         log.debug { "DB processor received event $event." }
 
         when (event) {
-            is StartEvent -> onStartEvent(coordinator)
+            is StartEvent -> onStartEvent()
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> reconcilers.onConfigChanged(event)
             is BootConfigEvent -> onBootConfigEvent(event)
@@ -228,7 +228,7 @@ class DBProcessorImpl @Activate constructor(
         }
     }
 
-    private fun onStartEvent(coordinator: LifecycleCoordinator) {
+    private fun onStartEvent() {
         // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
         // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
         reconcilers.updateConfigReconciler(3600000)
