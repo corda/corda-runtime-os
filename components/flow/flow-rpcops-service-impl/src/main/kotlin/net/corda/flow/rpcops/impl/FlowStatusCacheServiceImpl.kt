@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap
 import com.google.common.collect.Multimaps.synchronizedMultimap
 import java.util.Collections
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
@@ -49,7 +50,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
     private val cache = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatus>())
 
-    private val statusListenerByUuid = Collections.synchronizedMap(mutableMapOf<UUID, FlowStatusUpdateListener>())
+    private val statusListenerByUuid = ConcurrentHashMap<UUID, FlowStatusUpdateListener>()
     private val statusListenerIdsPerFlowKey: Multimap<FlowKey, UUID> = synchronizedMultimap(ArrayListMultimap.create())
 
     private var subReg: RegistrationHandle? = null
@@ -152,7 +153,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val existingHandlers = statusListenerIdsPerFlowKey[flowKey]
         val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
         if (handlersForRequestAndHoldingIdAlreadyExist) {
-            if (existingHandlers.size > MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
+            if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
                 errors.add("Max WebSocket connections per flowkey has been reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
             }
         }

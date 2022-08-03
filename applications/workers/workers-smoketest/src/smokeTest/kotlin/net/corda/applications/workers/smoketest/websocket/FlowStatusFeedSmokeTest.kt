@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 
-@Order(30)
+@Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {
 
