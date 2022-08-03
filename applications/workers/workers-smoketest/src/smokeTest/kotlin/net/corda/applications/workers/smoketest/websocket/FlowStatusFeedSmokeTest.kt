@@ -17,9 +17,13 @@ import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 
-//@Order(40)
-//@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+@Order(40)
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {
 
     private companion object {
@@ -28,8 +32,8 @@ class FlowStatusFeedSmokeTest {
 
     private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED }
 
-//    @Order(10)
-//    @Test
+    @Order(10)
+    @Test
     fun `websocket connection can be opened to listen for updates for flow clientRequestid`() {
         val flowStatusFeedPath = "/flow/$bobHoldingId/${UUID.randomUUID()}"
 
@@ -48,8 +52,8 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-//    @Order(20)
-//    @Test
+    @Order(20)
+    @Test
     fun `flow status update feed receives updates for the basic lifecycle of a flow`() {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
@@ -66,8 +70,8 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-//    @Order(30)
-//    @Test
+    @Order(30)
+    @Test
     fun `multiple websocket connections can be open for one flow from one holding identity and request id`() {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
@@ -91,8 +95,8 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-//    @Order(40)
-//    @Test
+    @Order(40)
+    @Test
     fun `registering for flow status feed when flow is already finished sends the finished status and terminates connection`() {
         val clientRequestId = UUID.randomUUID().toString()
         val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
@@ -118,7 +122,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    /*@Order(50)
+    @Order(50)
     @Test
     fun `websocket connection terminated when client sends server a message`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -130,7 +134,7 @@ class FlowStatusFeedSmokeTest {
                 assertFalse(wsHandler.isConnected())
             }
         }
-    }*/
+    }
 
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {
