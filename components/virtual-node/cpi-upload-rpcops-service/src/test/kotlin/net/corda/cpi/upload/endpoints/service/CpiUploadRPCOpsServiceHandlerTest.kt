@@ -2,6 +2,7 @@ package net.corda.cpi.upload.endpoints.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpi.upload.endpoints.service.impl.CpiUploadRPCOpsServiceHandler
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.libs.configuration.SmartConfig
