@@ -43,10 +43,8 @@ class ClusterBuilder {
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
-    fun updateVirtualNodeState(holdingIdHash: String, newState: String) = put(
-        "/api/v1/maintenance/virtualnode/$holdingIdHash/state/$newState",
-       ""
-    )
+    fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
+        put("/api/v1/maintenance/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(resourceName: String, groupId: String) =
