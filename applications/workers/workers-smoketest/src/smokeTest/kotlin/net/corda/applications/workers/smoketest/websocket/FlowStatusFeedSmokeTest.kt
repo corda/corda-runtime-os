@@ -120,6 +120,7 @@ class FlowStatusFeedSmokeTest {
         eventually {
             assertFalse(wsHandler.isConnected)
         }
+        client.close()
     }
 
     @Order(50)
