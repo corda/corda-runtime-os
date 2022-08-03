@@ -4,8 +4,13 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuild
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 
+@Order(30)
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class ConfigTests {
     @Test
     fun `can update config`() {
