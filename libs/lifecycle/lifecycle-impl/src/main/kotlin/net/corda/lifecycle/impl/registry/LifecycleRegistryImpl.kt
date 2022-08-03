@@ -10,8 +10,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.ConcurrentMap
 
 /**
  * The lifecycle registry implementation.
@@ -31,37 +30,26 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinatorInternal> =
         ConcurrentHashMap()
 
-    private val statuses: MutableMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
-
-    /**
-     * This lock is meant to guard against `updateStatus` and `removeCoordinator` being called concurrently.
-     * Without the lock, `updateStatus` may (in theory) re-introduce just removed coordinator to `statuses` map only,
-     * but not to `coordinators` map.
-     *
-     * Note: If congestion around this lock proves to be causing performance impact it can be replaced with LockManager
-     * keyed by `LifecycleCoordinatorName`.
-     */
-    private val lock = ReentrantLock()
+    private val statuses: ConcurrentMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
 
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
     override fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String) {
-        lock.withLock {
-            if (statuses[name] == null) {
-                logger.warn(
-                    "Attempt was made to update the status of coordinator $name to $status " +
-                            "($reason) that has not been registered with the registry."
-                )
+        if (statuses[name] == null) {
+            logger.warn("Attempt was made to update the status of coordinator $name to $status " +
+                    "($reason) that has not been registered with the registry.")
 //            throw LifecycleRegistryException(
 //                "Attempt was made to update the status of coordinator $name to $status " +
 //                        "($reason) that has not been registered with the registry."
 //            )
-            } else {
-                val coordinatorStatus = CoordinatorStatus(name, status, reason)
-                statuses[name] = coordinatorStatus
-                logger.trace { "Coordinator status update: $name is now $status ($reason)" }
-            }
+        } else {
+            // Guards against `updateStatus` and `removeCoordinator` being called concurrently.
+            // Without `computeIfPresent`, `updateStatus` may (in theory) re-introduce just removed coordinator to `statuses` map only,
+            // but not to `coordinators` map.
+            val coordinatorStatus = CoordinatorStatus(name, status, reason)
+            statuses.computeIfPresent(name) { _, _ -> coordinatorStatus }
+            logger.trace { "Coordinator status update: $name is now $status ($reason)" }
         }
     }
 
@@ -90,11 +78,9 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      * See [LifecycleRegistryCoordinatorAccess]
      */
     override fun removeCoordinator(name: LifecycleCoordinatorName) {
-        lock.withLock {
-            logger.info("Removing coordinator $name from registry")
-            coordinators.remove(name)
-            statuses.remove(name)
-        }
+        logger.info("Removing coordinator $name from registry")
+        coordinators.remove(name)
+        statuses.remove(name)
     }
 
     /**
