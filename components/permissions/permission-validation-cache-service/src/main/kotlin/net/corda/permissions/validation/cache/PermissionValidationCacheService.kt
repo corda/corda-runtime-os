@@ -65,6 +65,12 @@ class PermissionValidationCacheService @Activate constructor(
 
     private var permissionSummarySnapshotReceived: Boolean = false
 
+    /**
+     * Cache need to be retained even between cycles of configuration change when underlying
+     * subscription restarts.
+     */
+    private val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
+
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
@@ -125,8 +131,6 @@ class PermissionValidationCacheService @Activate constructor(
     }
 
     private fun createAndStartSubscriptionsAndCache(config: SmartConfig) {
-        val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
-
         permissionSummarySubscription?.close()
         createPermissionSummarySubscription(permissionSummaryData, config)
             .also {
