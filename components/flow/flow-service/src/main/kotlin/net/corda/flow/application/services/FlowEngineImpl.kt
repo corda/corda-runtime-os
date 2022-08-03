@@ -4,6 +4,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
@@ -37,6 +38,16 @@ class FlowEngineImpl @Activate constructor(
 
     override val virtualNodeName: MemberX500Name
         get() = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
+
+    override val flowContextProperties = object : FlowContextProperties {
+        // TODO CORE-5991 placeholder for FlowContextProperties
+        override fun put(key: String, value: String) {}
+        override operator fun get(key: String): String? {
+            return null
+        }
+
+        override operator fun set(key: String, value: String) {}
+    }
 
     @Suspendable
     override fun sleep(duration: Duration) {

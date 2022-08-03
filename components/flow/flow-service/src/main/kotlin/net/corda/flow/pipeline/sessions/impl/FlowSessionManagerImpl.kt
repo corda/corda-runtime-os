@@ -43,6 +43,9 @@ class FlowSessionManagerImpl @Activate constructor(
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            // TODO CORE-5991 populate with maps from the current context properties
+            .setContextPlatformProperties(emptyMap())
+            .setContextUserProperties(emptyMap())
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -164,8 +167,10 @@ class FlowSessionManagerImpl @Activate constructor(
         val sessionsToReport = missingSessionStates.map { "'${it}'=MISSING" } +
                 invalidSessions.map { "'${it.sessionId}'=${it.status}" }
 
-        throw FlowSessionStateException("${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
-                "sessions are invalid [${sessionsToReport.joinToString(", ")}]")
+        throw FlowSessionStateException(
+            "${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
+                    "sessions are invalid [${sessionsToReport.joinToString(", ")}]"
+        )
     }
 
     private fun sendSessionMessageToExistingSession(

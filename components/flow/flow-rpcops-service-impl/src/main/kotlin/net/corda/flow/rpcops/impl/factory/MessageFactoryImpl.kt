@@ -22,7 +22,8 @@ class MessageFactoryImpl : MessageFactory {
         clientRequestId: String,
         virtualNode: VirtualNodeInfo,
         flowClassName: String,
-        flowStartArgs: String
+        flowStartArgs: String,
+        flowContextPlatformProperties: Map<String, String>
     ): FlowMapperEvent {
         val context = FlowStartContext(
             FlowKey(clientRequestId, virtualNode.holdingIdentity),
@@ -33,6 +34,7 @@ class MessageFactoryImpl : MessageFactory {
             virtualNode.holdingIdentity,
             flowClassName,
             flowStartArgs,
+            flowContextPlatformProperties,
             Instant.now()
         )
 

@@ -10,8 +10,12 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
     override val size: Int get() = flowStackItems.size
 
     override fun push(flow: Flow): FlowStackItem {
+        // TODO CORE-5991 passing empty maps for context properties temporarily
         val stackItem =
-            FlowStackItem(flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf())
+            FlowStackItem(
+                flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf(),
+                emptyMap(), emptyMap()
+            )
         flowStackItems.add(stackItem)
         return stackItem
     }
