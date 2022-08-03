@@ -30,6 +30,13 @@ object DbSchema {
     const val VNODE_GROUP_POLICY = "vnode_group_policy"
     const val VNODE_MEMBER_SIGNATURE = "vnode_member_signature"
 
+    const val LEDGER_CONSENSUAL_TRANSACTION_TABLE = "consensual_transaction"
+    const val LEDGER_CONSENSUAL_TRANSACTION_STATUS_TABLE = "consensual_transaction_status"
+    const val LEDGER_CONSENSUAL_TRANSACTION_SIGNATURE_TABLE = "consensual_transaction_signature"
+    const val LEDGER_CONSENSUAL_TRANSACTION_COMPONENT_TABLE = "consensual_transaction_component"
+    const val LEDGER_CONSENSUAL_CPK_TABLE = "consensual_cpk"
+    const val LEDGER_CONSENSUAL_TRANSACTION_CPK_TABLE = "consensual_transaction_cpk"
+
     const val CERTIFICATES_SCHEME = "CERTIFICATES"
     const val CLUSTER_CERTIFICATES_DB_TABLE = "cluster_certificates"
 
