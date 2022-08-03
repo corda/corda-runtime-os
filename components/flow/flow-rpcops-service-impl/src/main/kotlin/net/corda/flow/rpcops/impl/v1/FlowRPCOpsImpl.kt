@@ -6,7 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.impl.flowstatus.websocket.FlowStatusDuplexChannelEventHandler
+import net.corda.flow.rpcops.impl.flowstatus.websocket.registerFlowStatusFeedHooks
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
@@ -127,7 +127,7 @@ class FlowRPCOpsImpl @Activate constructor(
             channel.close()
             throw e
         }
-        FlowStatusDuplexChannelEventHandler(flowStatusCacheService, channel, clientRequestId, holdingIdentity)
+        channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
     }
 
     override fun start() = Unit
