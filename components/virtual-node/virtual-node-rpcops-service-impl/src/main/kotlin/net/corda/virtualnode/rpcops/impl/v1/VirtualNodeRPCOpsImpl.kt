@@ -3,92 +3,88 @@ package net.corda.virtualnode.rpcops.impl.v1
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
-import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
-import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
-import net.corda.virtualnode.rpcops.impl.CLIENT_NAME_HTTP
-import net.corda.virtualnode.rpcops.impl.GROUP_NAME
+import net.corda.virtualnode.rpcops.common.VirtualNodeSenderService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
-/** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
-@Component(service = [VirtualNodeRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
+@Component(service = [PluggableRPCOps::class])
 // Primary constructor is for test. This is until a clock service is available
 internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
-    private val publisherFactory: PublisherFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val virtualNodeSenderService: VirtualNodeSenderService,
     private var clock: Clock
-) : VirtualNodeRPCOpsInternal, PluggableRPCOps<VirtualNodeRPCOps> {
+) : VirtualNodeRPCOps, PluggableRPCOps<VirtualNodeRPCOps>, Lifecycle {
 
     @Activate constructor(
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory,
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService
-    ) : this(publisherFactory, virtualNodeInfoReadService, UTCClock())
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        @Reference(service = VirtualNodeSenderService::class)
+        virtualNodeSenderService: VirtualNodeSenderService
+    ) : this(coordinatorFactory, virtualNodeInfoReadService, virtualNodeSenderService, UTCClock())
 
     private companion object {
-        // The configuration used for the RPC sender.
-        private val rpcConfig = RPCConfig(
-            GROUP_NAME,
-            CLIENT_NAME_HTTP,
-            VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
-            VirtualNodeManagementRequest::class.java,
-            VirtualNodeManagementResponse::class.java
-        )
         val logger = contextLogger()
     }
 
-    override val targetInterface = VirtualNodeRPCOps::class.java
+    override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
-    private var rpcSender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null
-    private var requestTimeout: Duration? = null
-    override val isRunning get() = rpcSender?.isRunning ?: false && requestTimeout != null
 
-    override fun start() = Unit
+    private val dependentComponents = DependentComponents.of(
+        ::virtualNodeInfoReadService,
+        ::virtualNodeSenderService
+    )
 
-    override fun stop() {
-        rpcSender?.close()
-        rpcSender = null
+    private val coordinator = coordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName.forComponent<VirtualNodeRPCOps>()
+    ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+        when (event) {
+            is StartEvent -> {
+                dependentComponents.registerAndStartAll(coordinator)
+                coordinator.updateStatus(LifecycleStatus.UP)
+                logger.info("${this::javaClass.name} is now Up")
+            }
+        }
     }
 
-    override fun createAndStartRpcSender(messagingConfig: SmartConfig) {
-        rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(rpcConfig, messagingConfig).apply { start() }
-    }
-
-    override fun setTimeout(millis: Int) {
-        this.requestTimeout = Duration.ofMillis(millis.toLong())
+    override fun getAllVirtualNodes(): VirtualNodes {
+        if (!isRunning) throw IllegalStateException("${this.javaClass.simpleName} is not running! Its status is: ${coordinator.status}")
+        return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
     override fun createVirtualNode(request: VirtualNodeRequest): VirtualNodeInfo {
         val instant = clock.instant()
+        if (!isRunning) throw IllegalStateException("${this.javaClass.simpleName} is not running! Its status is: ${coordinator.status}")
         validateX500Name(request.x500Name)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -96,11 +92,17 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             VirtualNodeManagementRequest(
                 instant,
                 VirtualNodeCreateRequest(
-                    x500Name, cpiFileChecksum, vaultDdlConnection, vaultDmlConnection, cryptoDdlConnection, cryptoDmlConnection, actor
+                    x500Name,
+                    cpiFileChecksum,
+                    vaultDdlConnection,
+                    vaultDmlConnection,
+                    cryptoDdlConnection,
+                    cryptoDmlConnection,
+                    actor
                 )
             )
         }
-        val resp = sendRequest(rpcRequest)
+        val resp = virtualNodeSenderService.sendAndReceive(rpcRequest)
         logger.info(resp.responseType.toString())
 
         return when (val resolvedResponse = resp.responseType) {
@@ -113,7 +115,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     resolvedResponse.cryptoDdlConnectionId,
                     resolvedResponse.cryptoDmlConnectionId,
                     resolvedResponse.hsmConnectionId,
-                    resolvedResponse.virtualNodeState,
+                    resolvedResponse.virtualNodeState
                 )
             }
             is VirtualNodeManagementResponseFailure -> {
@@ -129,10 +131,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         }
     }
 
-    override fun getAllVirtualNodes(): VirtualNodes {
-        return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
-    }
-
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =
         HoldingIdentityEndpointType(x500Name.toString(), groupId, shortHash, fullHash)
 
@@ -145,7 +143,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             cryptoDdlConnectionId?.toString(),
             cryptoDmlConnectionId.toString(),
             hsmConnectionId.toString(),
-            state.name,
+            state.name
         )
 
     private fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType(): CpiIdentifier =
@@ -160,23 +158,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         throw InvalidInputDataException(message)
     }
 
-    /**
-     * Sends the [request] to the configuration management topic on Kafka.
-     *
-     * @throws VirtualNodeRPCOpsServiceException If the updated configuration could not be published.
-     */
-    @Suppress("ThrowsCount")
-    private fun sendRequest(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
-        val nonNullRPCSender = rpcSender ?: throw VirtualNodeRPCOpsServiceException(
-            "Configuration update request could not be sent as no RPC sender has been created."
-        )
-        val nonNullRequestTimeout = requestTimeout ?: throw VirtualNodeRPCOpsServiceException(
-            "Configuration update request could not be sent as the request timeout has not been set."
-        )
-        return try {
-            nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
-        } catch (e: Exception) {
-            throw VirtualNodeRPCOpsServiceException("Could not complete virtual node creation request.", e)
-        }
-    }
+    // Mandatory lifecycle methods - def to coordinator
+    override val isRunning get() = coordinator.isRunning
+    override fun start() = coordinator.start()
+    override fun stop() = coordinator.close()
 }

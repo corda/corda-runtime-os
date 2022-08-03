@@ -4,7 +4,7 @@ import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
@@ -44,14 +44,15 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcPUT(
+        path = "{virtualNodeShortId}/state/{newState}",
         title = "Update virtual node state",
         description = "Updates the state of a new virtual node.",
         responseDescription = "The details of the updated virtual node."
     )
     fun updateVirtualNodeState(
-        @HttpRpcRequestBodyParameter(description = "Short ID of the virtual node instance to update")
+        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
+        @HttpRpcPathParameter(description = "State to transition virtual node instance into")
         newState: String
     ): ChangeVirtualNodeStateResponse
 }

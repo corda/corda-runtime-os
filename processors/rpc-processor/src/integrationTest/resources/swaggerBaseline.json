@@ -1115,11 +1115,13 @@
             "description" : "Forbidden."
           }
         }
-      },
+      }
+    },
+    "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
         "tags" : [ "Keys Management API" ],
         "description" : "Generate key pair.",
-        "operationId" : "post_keys__tenantid_",
+        "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1131,18 +1133,40 @@
             "nullable" : false,
             "example" : "string"
           }
+        }, {
+          "name" : "alias",
+          "in" : "path",
+          "description" : "The key alias",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The key alias",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "hsmcategory",
+          "in" : "path",
+          "description" : "The HSM Category",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The HSM Category",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "scheme",
+          "in" : "path",
+          "description" : "The scheme",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The scheme",
+            "nullable" : false,
+            "example" : "string"
+          }
         } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/GenerateKeyPairWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
         "responses" : {
           "200" : {
             "description" : "The ID of the newly generated key pair.",
@@ -1269,43 +1293,6 @@
         }
       }
     },
-    "/maintenance/virtualnode" : {
-      "put" : {
-        "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Updates the state of a new virtual node.",
-        "operationId" : "put_maintenance_virtualnode",
-        "parameters" : [ ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdatevirtualnodestateWrapperRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "The details of the updated virtual node.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized."
-          },
-          "403" : {
-            "description" : "Forbidden."
-          }
-        }
-      }
-    },
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
@@ -1368,6 +1355,54 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized."
+          },
+          "403" : {
+            "description" : "Forbidden."
+          }
+        }
+      }
+    },
+    "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
+      "put" : {
+        "tags" : [ "Virtual Node Maintenance API" ],
+        "description" : "Updates the state of a new virtual node.",
+        "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "newstate",
+          "in" : "path",
+          "description" : "State to transition virtual node instance into",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "State to transition virtual node instance into",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The details of the updated virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
                 }
               }
             }
@@ -2817,31 +2852,6 @@
         "description" : "GenerateCsrWrapperRequest",
         "nullable" : false
       },
-      "GenerateKeyPairWrapperRequest" : {
-        "required" : [ "alias", "hsmCategory", "scheme" ],
-        "properties" : {
-          "alias" : {
-            "type" : "string",
-            "description" : "The key alias",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "hsmCategory" : {
-            "type" : "string",
-            "description" : "The HSM Category",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "scheme" : {
-            "type" : "string",
-            "description" : "The scheme",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "GenerateKeyPairWrapperRequest",
-        "nullable" : false
-      },
       "GetCPIsResponse" : {
         "required" : [ "cpis" ],
         "type" : "object",
@@ -3355,25 +3365,6 @@
             "example" : 0
           }
         }
-      },
-      "UpdatevirtualnodestateWrapperRequest" : {
-        "required" : [ "newState", "virtualNodeShortId" ],
-        "properties" : {
-          "newState" : {
-            "type" : "string",
-            "description" : "Details of the virtual node to be created",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "virtualNodeShortId" : {
-            "type" : "string",
-            "description" : "Short ID of the virtual node instance to update",
-            "nullable" : false,
-            "example" : "string"
-          }
-        },
-        "description" : "UpdatevirtualnodestateWrapperRequest",
-        "nullable" : false
       },
       "UserPermissionSummaryResponseType" : {
         "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
