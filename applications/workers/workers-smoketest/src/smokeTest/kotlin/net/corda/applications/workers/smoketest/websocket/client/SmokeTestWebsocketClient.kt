@@ -2,39 +2,40 @@ package net.corda.applications.workers.smoketest.websocket.client
 
 import java.net.URI
 import java.time.Duration
-import java.util.LinkedList
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.contextLogger
 import net.corda.applications.workers.smoketest.getOrThrow
 import net.corda.test.util.eventually
-import org.assertj.core.api.Assertions
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.WebSocketClient
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 
-fun runWithWebsocketConnection(
+fun useWebsocketConnection(
     path: String,
     messageQueue: Queue<String> = ConcurrentLinkedQueue(),
-    block: (messageQueue: Queue<String>) -> Unit
+    block: (wsHandler: InternalWebsocketHandler) -> Unit
 ) {
     val wsHandler = MessageQueueWebsocketHandler(messageQueue)
     val client = SmokeTestWebsocketClient(wsHandler)
-    client.start()
-    client.connect(path)
 
-    eventually {
-        Assertions.assertThat(wsHandler.isConnected)
-    }
-
-    block.invoke(messageQueue)
-    client.close()
-
-    eventually {
-        Assertions.assertThat(wsHandler.isNotConnected)
+    try {
+        client.start()
+        client.connect(path)
+        eventually {
+            assertTrue(wsHandler.isConnected)
+        }
+        block.invoke(wsHandler)
+    } finally {
+        client.close()
+        eventually {
+            assertFalse(wsHandler.isConnected)
+        }
     }
 }
 
