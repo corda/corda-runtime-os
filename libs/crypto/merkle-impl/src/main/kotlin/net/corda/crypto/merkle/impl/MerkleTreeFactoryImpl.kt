@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.impl
 
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService

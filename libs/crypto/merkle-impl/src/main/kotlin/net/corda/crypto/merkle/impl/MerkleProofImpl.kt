@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.impl
 
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf

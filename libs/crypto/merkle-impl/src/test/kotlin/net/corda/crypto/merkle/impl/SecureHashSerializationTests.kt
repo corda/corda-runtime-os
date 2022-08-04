@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl

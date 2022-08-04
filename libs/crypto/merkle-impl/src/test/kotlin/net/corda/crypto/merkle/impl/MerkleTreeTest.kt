@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
@@ -313,7 +313,8 @@ class MerkleTreeTest {
             // We add one extra hash which breaks the proof.
             val badProof1: MerkleProof =
                 MerkleProofImpl(proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
-                    digestAlgorithm))
+                    digestAlgorithm
+                ))
             assertFalse( badProof1.verify(root, nonceHashDigestProviderVerify))
 
             // We remove one hash which breaks the proof.
@@ -369,12 +370,16 @@ class MerkleTreeTest {
         val merkleTreeTweaked = MerkleTreeImpl.createMerkleTree(leafData, tweakedHash)
         val proof2 = merkleTreeTweaked.createAuditProof(leafList)
         assertEquals(true, proof2.verify(merkleTreeTweaked.root, tweakedHash))
-        val nonceMerkleTree1 = MerkleTreeImpl.createMerkleTree(leafData,
-            NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom))
+        val nonceMerkleTree1 = MerkleTreeImpl.createMerkleTree(
+            leafData,
+            NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
+        )
         val proof3 = nonceMerkleTree1.createAuditProof(leafList)
         assertEquals(true, proof3.verify(nonceMerkleTree1.root, nonceHashDigestProviderVerify))
-        val nonceMerkleTree2 = MerkleTreeImpl.createMerkleTree(leafData,
-            NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom))
+        val nonceMerkleTree2 = MerkleTreeImpl.createMerkleTree(
+            leafData,
+            NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
+        )
         val proof4 = nonceMerkleTree2.createAuditProof(leafList)
         assertEquals(true, proof4.verify(nonceMerkleTree2.root, nonceHashDigestProviderVerify))
         val roots = setOf(merkleTreeDefault.root, merkleTreeTweaked.root, nonceMerkleTree1.root, nonceMerkleTree2.root)
@@ -391,7 +396,9 @@ class MerkleTreeTest {
         assertEquals(leafData.size, sizeOnlyProof.leaves.size)
         assertEquals(
             true,
-            sizeOnlyProof.verify(nonceMerkleTree.root, NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService))
+            sizeOnlyProof.verify(nonceMerkleTree.root,
+                NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService)
+            )
         )
     }
 

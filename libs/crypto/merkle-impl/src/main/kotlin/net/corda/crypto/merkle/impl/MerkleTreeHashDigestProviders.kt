@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.impl
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
@@ -180,5 +180,5 @@ internal fun SecureHash.Companion.deserialize(bytes: ByteArray, digestService: D
 }
 
 internal fun SecureHash.serialize(): ByteArray {
-    return ("$algorithm${SERIALIZATION_SEPARATOR}").toByteArray(Charset.forName("UTF8")) + bytes
+    return ("$algorithm$SERIALIZATION_SEPARATOR").toByteArray(Charset.forName("UTF8")) + bytes
 }
