@@ -9,6 +9,12 @@ import org.junit.jupiter.api.Test
 
 class RollCallTest {
 
+<<<<<<< HEAD
+=======
+
+    private
+
+>>>>>>> 5fb63a762 (CORE-5653: Adding cordapp test utils)
     @Test
     fun `should get roll call from multiple recipients`() {
         // Given a RollCallFlow that's been uploaded to Corda for a teacher
