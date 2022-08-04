@@ -32,6 +32,7 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkFormatVersion
@@ -39,7 +40,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -143,8 +143,7 @@ internal class DatabaseCpiPersistenceTest {
 
         val cordappManifest = CordappManifest(
             "", "", -1, -1,
-            ManifestCorDappInfo(null, null, null, null),
-            ManifestCorDappInfo(null, null, null, null),
+            CordappType.WORKFLOW, "","", 0, "",
             emptyMap()
         )
 
