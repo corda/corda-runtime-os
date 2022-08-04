@@ -13,7 +13,6 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.CryptoConnectionsFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
-import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -106,9 +105,11 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 connections.get(tenantId) { createEntityManagerFactory(tenantId) }
             }
 
-        private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.getOrCreateEntityManagerFactory(
-            name = VirtualNodeDbType.CRYPTO.getConnectionName(tenantId),
-            privilege = DbPrivilege.DML,
+        private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
+            connectionId = vnodeInfo.getByHoldingIdentityShortHash(tenantId)?.cryptoDmlConnectionId
+                ?: throw throw IllegalStateException(
+                    "virtual node for $tenantId is not registered."
+                ),
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
                 ?: throw IllegalStateException(
                     "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
