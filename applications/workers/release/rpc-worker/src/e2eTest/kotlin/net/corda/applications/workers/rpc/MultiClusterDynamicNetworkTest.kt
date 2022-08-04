@@ -36,6 +36,7 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.minutes
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -44,7 +45,7 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import java.io.File.separator
 
-@Disabled("No multi cluster environment is available to run this test against. Remove this to run locally.")
+//@Disabled("No multi cluster environment is available to run this test against. Remove this to run locally.")
 class MultiClusterDynamicNetworkTest {
 
     private val mgmRpcHost = "$RPC_WORKER.$MGM_CLUSTER_NS"
@@ -159,9 +160,10 @@ class MultiClusterDynamicNetworkTest {
         }
 
         (members + mgm).forEach {
+            println("QQQ looking at ${it.name}")
             val holdingId = holdingIds[it.name]
             assertNotNull(holdingId)
-            eventually {
+            eventually(duration = 1.minutes) {
                 it.lookupMembers(holdingId!!).also { result ->
                     assertThat(result)
                         .hasSize(1 + members.size)

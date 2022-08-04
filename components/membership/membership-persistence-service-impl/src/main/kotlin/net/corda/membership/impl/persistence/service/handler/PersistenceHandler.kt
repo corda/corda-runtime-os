@@ -12,6 +12,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -33,6 +34,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
+
+    private val factories = ConcurrentHashMap<String, EntityManagerFactory>()
 
     fun <R> transaction(holdingIdentityShortHash: String, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)

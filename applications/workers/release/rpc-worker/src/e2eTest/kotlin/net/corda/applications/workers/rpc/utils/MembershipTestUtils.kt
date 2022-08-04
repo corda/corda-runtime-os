@@ -43,9 +43,9 @@ const val hsmCategoryTls = "TLS"
 const val P2P_GATEWAY = "corda-p2p-gateway-worker"
 const val RPC_WORKER = "corda-rpc-worker"
 
-const val MGM_CLUSTER_NS = "ccrean-cluster-mgm"
-const val ALICE_CLUSTER_NS = "ccrean-cluster-a"
-const val BOB_CLUSTER_NS = "ccrean-cluster-b"
+const val MGM_CLUSTER_NS = "yift-cluster-mgm"
+const val ALICE_CLUSTER_NS = "yift-cluster-a"
+const val BOB_CLUSTER_NS = "yift-cluster-b"
 const val SINGLE_CLUSTER_NS = ALICE_CLUSTER_NS
 
 const val KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
