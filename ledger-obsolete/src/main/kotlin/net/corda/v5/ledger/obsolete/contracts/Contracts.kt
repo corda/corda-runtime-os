@@ -7,6 +7,8 @@ import kotlin.reflect.KClass
 
 typealias ContractClassName = String
 
+// Modifying to test SNYK Delta - not to be merged
+
 /**
  * Implemented by a program that implements business logic on the shared ledger. All participants run this code for
  * every [LedgerTransaction][net.corda.v5.ledger.obsolete.transactions.LedgerTransaction] they see on the network, for every input and output state. All
