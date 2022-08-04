@@ -302,6 +302,29 @@ internal class DBCordaConsumerImplTest {
     }
 
     @Test
+    fun `consumer returns empty list when no partitions are given`() {
+        // Something to return.  But we don't expect to actually see it.
+        val pollResult = listOf(
+            TopicRecordEntry(
+                topic,
+                0,
+                0,
+                serializedKey,
+                serializedValue,
+                TransactionRecordEntry("id", TransactionState.COMMITTED),
+                Instant.parse("2022-01-01T00:00:00.00Z")
+            )
+        )
+
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.readRecords(any(), any(), any())).thenAnswer { pollResult }
+        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { emptySet<CordaTopicPartition>() }
+
+        val consumer = makeConsumer()
+        assertThat(consumer.poll(Duration.ZERO)).isEmpty()
+    }
+
+    @Test
     fun `consumer returns correct position when not available based on auto_offset_reset`() {
         fun createAutoResetConsumer(strategy: CordaOffsetResetStrategy): CordaConsumer<String, String> {
             val keyDeserializer = mock<CordaAvroDeserializer<String>>()
