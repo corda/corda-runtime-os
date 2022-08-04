@@ -42,7 +42,6 @@ snyk {
 }
 
 allprojects {
-
     pluginManager.withPlugin('java') {
         java {
             toolchain {
