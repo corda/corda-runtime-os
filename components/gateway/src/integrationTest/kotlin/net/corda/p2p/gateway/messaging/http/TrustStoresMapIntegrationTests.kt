@@ -21,6 +21,7 @@ import java.io.StringWriter
 class TrustStoresMapIntegrationTests : TestBase() {
     companion object {
         private const val GROUP_ID = "Group-A"
+        private const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
     }
     private val topicService = TopicServiceImpl()
     private val rpcTopicService = RPCTopicServiceImpl()
@@ -41,8 +42,8 @@ class TrustStoresMapIntegrationTests : TestBase() {
                 listOf(
                     Record(
                         Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
-                        "alice-$GROUP_ID",
-                        GatewayTruststore(HoldingIdentity("alice", GROUP_ID), listOf(expectedCertificatePem))
+                        "$ALICE_NAME-$GROUP_ID",
+                        GatewayTruststore(HoldingIdentity(ALICE_NAME, GROUP_ID), listOf(expectedCertificatePem))
                     )
                 )
             ).forEach {
@@ -56,7 +57,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             assertThat(map.isRunning).isTrue
 
             val store = assertDoesNotThrow {
-                map.getTrustStore("alice", GROUP_ID)
+                map.getTrustStore(ALICE_NAME, GROUP_ID)
             }
 
             val certificate = store.aliases().toList().map {
