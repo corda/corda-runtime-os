@@ -7,9 +7,11 @@ import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 /**
  * The lifecycle registry implementation.
@@ -29,7 +31,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinatorInternal> =
         ConcurrentHashMap()
 
-    private val statuses: MutableMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
+    private val statuses: ConcurrentMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
 
     /**
      * See [LifecycleRegistryCoordinatorAccess].
@@ -43,8 +45,11 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
 //                        "($reason) that has not been registered with the registry."
 //            )
         } else {
+            // Guards against `updateStatus` and `removeCoordinator` being called concurrently.
+            // Without `computeIfPresent`, `updateStatus` may (in theory) re-introduce just removed coordinator to `statuses` map only,
+            // but not to `coordinators` map.
             val coordinatorStatus = CoordinatorStatus(name, status, reason)
-            statuses[name] = coordinatorStatus
+            statuses.computeIfPresent(name) { _, _ -> coordinatorStatus }
             logger.trace { "Coordinator status update: $name is now $status ($reason)" }
         }
     }
@@ -74,7 +79,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      * See [LifecycleRegistryCoordinatorAccess]
      */
     override fun removeCoordinator(name: LifecycleCoordinatorName) {
-        logger.trace { "Removing coordinator $name from registry" }
+        logger.debug { "Removing coordinator $name from registry" }
         coordinators.remove(name)
         statuses.remove(name)
     }

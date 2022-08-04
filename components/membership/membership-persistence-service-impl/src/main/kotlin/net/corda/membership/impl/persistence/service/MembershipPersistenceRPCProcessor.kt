@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
+import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -24,6 +25,7 @@ import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHan
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
+import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToDeclinedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -64,6 +66,8 @@ internal class MembershipPersistenceRPCProcessor(
         QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
         UpdateMemberAndRegistrationRequestToApproved::class.java to
             { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },
+        UpdateMemberAndRegistrationRequestToDeclined::class.java to
+            { UpdateMemberAndRegistrationRequestToDeclinedHandler(persistenceHandlerServices) },
         UpdateRegistrationRequestStatus::class.java to { UpdateRegistrationRequestStatusHandler(persistenceHandlerServices) },
         QueryGroupPolicy::class.java to { QueryGroupPolicyHandler(persistenceHandlerServices) },
     )

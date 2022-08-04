@@ -36,7 +36,8 @@ interface GroupPolicyParser {
      *  parsing on behalf of an MGM.
      * @param groupPolicy Group policy file as a Json String
      *
-     * @throws [BadGroupPolicyException] if the input string is null, blank, or cannot be parsed.
+     * @throws [BadGroupPolicyException] if the input string is null, blank, cannot be parsed, or if persisted
+     * properties cannot be retrieved.
      */
     fun parse(
         holdingIdentity: HoldingIdentity,

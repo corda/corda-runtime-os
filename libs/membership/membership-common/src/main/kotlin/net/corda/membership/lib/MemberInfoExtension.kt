@@ -1,11 +1,13 @@
 package net.corda.membership.lib
 
 import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
 import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -14,6 +16,8 @@ import java.time.Instant
 
 class MemberInfoExtension {
     companion object {
+        val logger = contextLogger()
+
         /** Key name for ledger keys property. */
         const val LEDGER_KEYS = "corda.ledger.keys"
         const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s"
@@ -77,6 +81,9 @@ class MemberInfoExtension {
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
+
+        /** Membership request was declined by the Group Manager. **/
+        const val MEMBER_STATUS_DECLINED = "DECLINED"
 
         /**
          * Membership request has been submitted but Group Manager still hasn't responded to it. Nodes with this status can't
@@ -152,10 +159,17 @@ class MemberInfoExtension {
         val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
             get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
-        /** Collection of ledger key hashes for member's node. */
+        /**
+         * [PublicKeyHash] for the session initiation key.
+         * The hash value should be stored in the member context, but as a fallback it is calculated if not available.
+         * It is preferable to always store this in the member context to avoid the repeated calculation.
+         */
         @JvmStatic
         val MemberInfo.sessionKeyHash: PublicKeyHash
-            get() = memberProvidedContext.parse(SESSION_KEY_HASH)
+            get() = memberProvidedContext.parseOrNull(SESSION_KEY_HASH) ?: sessionInitiationKey.calculateHash().also {
+                logger.warn("Calculating the session key hash for $name in group $groupId. " +
+                        "It is preferable to store this hash in the member context to avoid calculating on each access.")
+            }
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic

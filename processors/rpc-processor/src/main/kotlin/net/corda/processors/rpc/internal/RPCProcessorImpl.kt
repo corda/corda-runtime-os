@@ -29,7 +29,6 @@ import net.corda.processors.rpc.RPCProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,8 +47,6 @@ class RPCProcessorImpl @Activate constructor(
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = VirtualNodeRPCOpsService::class)
-    private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService,
     @Reference(service = FlowRPCOpsService::class)
     private val flowRPCOpsService: FlowRPCOpsService,
     @Reference(service = CpiUploadRPCOpsService::class)
@@ -90,7 +87,6 @@ class RPCProcessorImpl @Activate constructor(
         ::httpRpcGateway,
         ::flowRPCOpsService,
         ::configRPCOpsService,
-        ::virtualNodeRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberOpsClient,

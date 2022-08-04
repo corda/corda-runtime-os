@@ -71,6 +71,8 @@ data class CpkMetadata(
         }
     }
 
+    fun isContractCpk() = cordappManifest.type == CordappType.CONTRACT
+
     // TODO - should we do these conversions back/forth or could this just be a proxy to the AVRO object itself?
     fun toAvro(): CpkMetadataAvro {
         return CpkMetadataAvro(
