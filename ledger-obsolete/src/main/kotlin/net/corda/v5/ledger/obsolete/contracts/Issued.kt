@@ -23,9 +23,6 @@ import net.corda.v5.ledger.obsolete.identity.PartyAndReference
  * of product may differentiate different kinds of asset within the same logical class e.g the currency, or
  * it may just be a type marker for a single custom asset.
  */
-
-// Modifying to test SNYK Delta - not to be merged
-
 @CordaSerializable
 data class Issued<out P : Any>(val issuer: PartyAndReference, val product: P) {
     init {
