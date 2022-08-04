@@ -151,6 +151,7 @@ class ConfigTests {
     private class DummyHealthMonitor : HealthMonitor {
         override fun listen(port: Int) = Unit
         override fun stop() = throw NotImplementedError()
+        override val port = 7000
     }
 
     private class DummyValidatorFactory : ConfigurationValidatorFactory {

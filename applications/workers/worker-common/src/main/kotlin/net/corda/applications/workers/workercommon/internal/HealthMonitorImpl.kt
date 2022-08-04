@@ -46,6 +46,8 @@ internal class HealthMonitorImpl @Activate constructor(
             }
     }
 
+    override val port get() = server?.port()
+
     override fun stop() {
         server?.stop()
     }

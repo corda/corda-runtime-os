@@ -15,4 +15,7 @@ interface HealthMonitor {
 
     /** Stops serving worker health and readiness. */
     fun stop()
+
+    /** The port the health monitor listens on, once it has successfully managed to listen on a socket */
+    val port: Int?
 }
