@@ -2,7 +2,7 @@ package net.corda.ledger.consensual
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.crypto.merkle.MerkleTreeFactoryImpl
+import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
