@@ -3,6 +3,8 @@ package net.corda.v5.crypto.failures
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
+// Modifying to test SNYK Delta - not to be merged
+
 /**
  * Base exception for all Crypto Library specific exception. Note that the library may throw common exceptions
  * such as [IllegalArgumentException], [IllegalStateException] and others as well. This base class is only
