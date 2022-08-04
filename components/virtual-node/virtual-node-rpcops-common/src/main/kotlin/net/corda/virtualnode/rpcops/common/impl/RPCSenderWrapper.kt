@@ -1,0 +1,34 @@
+package net.corda.virtualnode.rpcops.common.impl
+
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.messaging.api.publisher.RPCSender
+import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import java.time.Duration
+
+class RPCSenderWrapper(
+    private var sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>,
+    private var timeout: Duration
+) : AutoCloseable {
+    /**
+     * Sends the [request] to the configuration management topic on bus.
+     *
+     * @property request is a [VirtualNodeManagementRequest]. This an enveloper around the intended request
+     * @throws CordaRuntimeException If the updated configuration could not be published.
+     * @return [VirtualNodeManagementResponse] which is an envelope around the actual response.
+     *  This response corresponds to the [VirtualNodeManagementRequest] received by the function
+     * @see VirtualNodeManagementRequest
+     * @see VirtualNodeManagementResponse
+     */
+    @Suppress("ThrowsCount")
+    fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
+        return try {
+            sender.sendRequest(request).getOrThrow(timeout)
+        } catch (e: Exception) {
+            throw CordaRuntimeException("Could not complete virtual node creation request.", e)
+        }
+    }
+
+    override fun close() = sender.close()
+}

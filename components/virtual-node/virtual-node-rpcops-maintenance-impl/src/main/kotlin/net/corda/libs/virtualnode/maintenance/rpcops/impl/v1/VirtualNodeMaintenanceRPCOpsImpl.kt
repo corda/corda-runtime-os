@@ -50,8 +50,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
 
     private val clock = UTCClock()
     private val dependentComponents = DependentComponents.of(
-        ::cpiUploadRPCOpsService,
-        ::virtualNodeSenderService
+        ::cpiUploadRPCOpsService
     )
 
     private val coordinator = coordinatorFactory.createCoordinator(

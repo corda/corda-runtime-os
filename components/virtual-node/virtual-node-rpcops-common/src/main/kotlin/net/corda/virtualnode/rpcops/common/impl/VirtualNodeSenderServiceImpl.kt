@@ -14,15 +14,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.virtualnode.rpcops.common.SENDER_CONFIG
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -41,38 +38,22 @@ import java.time.Duration
  */
 
 @Component(service = [VirtualNodeSenderService::class])
-class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
+class VirtualNodeSenderServiceImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReadService: ConfigurationReadService,
+    @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    var sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>? = null,
-    var timeout: Duration? = null
 ) : VirtualNodeSenderService {
 
-    @Activate
-    constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService,
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory,
-    ) : this(
-        coordinatorFactory,
-        configurationReadService,
-        publisherFactory,
-        null,
-        null
-    )
-
     private companion object {
-        private const val GROUP_NAME = "virtual.node.management"
-        private const val CLIENT_NAME_HTTP = "virtual.node.manager.http"
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
         private val logger = contextLogger()
     }
     private var configReadServiceRegistrationHandle: AutoCloseable? = null
     private var configUpdateHandle: AutoCloseable? = null
+    private var rpcSenderWrapper: RPCSenderWrapper? = null
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeSenderService>()
@@ -86,6 +67,7 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
             }
             is StopEvent -> {
                 configReadServiceRegistrationHandle?.close()
+                rpcSenderWrapper?.close()
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is RegistrationStatusChangeEvent -> {
@@ -97,7 +79,7 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
                         configUpdateHandle =
                             configurationReadService.registerComponentForUpdates(coordinator, requiredKeys)
                     }
-                    else -> Unit
+                    else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
                 logger.info("${this::javaClass.name} is now ${event.status}")
@@ -123,23 +105,16 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
             // Make sender unavailable while we're updating
             coordinator.updateStatus(LifecycleStatus.DOWN)
+            rpcSenderWrapper?.close()
             try {
-                timeout = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
-                // Attempt to create and start the sender
-                sender = publisherFactory.createRPCSender(
-                    RPCConfig(
-                        GROUP_NAME,
-                        CLIENT_NAME_HTTP,
-                        Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC,
-                        VirtualNodeManagementRequest::class.java,
-                        VirtualNodeManagementResponse::class.java
-                    ),
-                    messagingConfig
-                ).apply {
-                    // Report as back up post start
-                    start()
-                    coordinator.updateStatus(LifecycleStatus.UP)
-                }
+                rpcSenderWrapper = RPCSenderWrapper(
+                    publisherFactory.createRPCSender(SENDER_CONFIG, messagingConfig).apply {
+                        // Report as back up post start
+                        start()
+                        coordinator.updateStatus(LifecycleStatus.UP)
+                    },
+                    Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                )
             } catch (e: Exception) {
                 logger.error("Exception was thrown while attempting to set up the sender or its timeout: $e")
                 // Exception will implicitly perform coordinator.updateStatus(LifecycleStatus.ERROR)
@@ -166,11 +141,8 @@ class VirtualNodeSenderServiceImpl @VisibleForTesting constructor(
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
-        return try {
-            sender!!.sendRequest(request).getOrThrow(timeout!!)
-        } catch (e: Exception) {
-            throw CordaRuntimeException("Could not complete virtual node creation request.", e)
-        }
+
+        return rpcSenderWrapper!!.sendAndReceive(request)
     }
 
     // Mandatory lifecycle methods - def to coordinator
