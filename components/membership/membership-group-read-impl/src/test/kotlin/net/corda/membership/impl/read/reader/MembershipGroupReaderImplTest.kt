@@ -44,7 +44,7 @@ class MembershipGroupReaderImplTest {
     private val mockSessionKeyHash = PublicKeyHash.parse(mockSessionKeyAsByteArray.sha256Bytes())
     private val mockedSuspendedMemberProvidedContext = mock<MemberContext> {
         on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
-        on { parse(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
+        on { parseOrNull(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
     }
     private val mockedSuspendedMgmProvidedContext = mock<MGMContext> {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_SUSPENDED
@@ -60,7 +60,7 @@ class MembershipGroupReaderImplTest {
 
     private val mockedActiveMemberProvidedContext = mock<MemberContext> {
         on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(mockLedgerKeyHash)
-        on { parse(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
+        on { parseOrNull(eq(SESSION_KEY_HASH), eq(PublicKeyHash::class.java)) } doReturn mockSessionKeyHash
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
     }
     private val mockedActiveMgmProvidedContext = mock<MGMContext> {
