@@ -100,10 +100,31 @@ class TrustStoresMapTest {
         processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))),
             null,
-            emptyMap(),
+            emptyMap()
         )
 
         assertThat(testObject.getTrustStore(sourceX500Name, groupId)).isEqualTo(keyStore)
+    }
+
+    @Test
+    fun `getTrustStore will use normalized X500 name`() {
+        creteResources.get()?.invoke(mock())
+        processor.firstValue.onSnapshot(emptyMap())
+
+        val groupId = "group id 1"
+        processor.firstValue.onNext(
+            Record(
+                Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
+                "key", GatewayTruststore(
+                    HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId),
+                    listOf("one")
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(testObject.getTrustStore("C=GB,   CN=Alice, O=Alice Corp, L=LDN", groupId)).isEqualTo(keyStore)
     }
 
     @Test
@@ -121,7 +142,7 @@ class TrustStoresMapTest {
         processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", null),
             null,
-            emptyMap(),
+            emptyMap()
         )
 
         assertThrows<IllegalArgumentException> {
@@ -149,7 +170,7 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
             )
         )
 
@@ -166,7 +187,7 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
             )
         )
 
@@ -184,7 +205,7 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
             )
         )
 
