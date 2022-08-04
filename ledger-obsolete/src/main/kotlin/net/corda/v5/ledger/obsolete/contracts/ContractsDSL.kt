@@ -5,6 +5,8 @@ package net.corda.v5.ledger.obsolete.contracts
 import net.corda.v5.base.util.uncheckedCast
 import java.security.PublicKey
 
+// Modifying to test SNYK Delta - not to be merged
+
 /**
  * Defines a simple domain specific language for the specification of financial contracts. Currently covers:
  *
