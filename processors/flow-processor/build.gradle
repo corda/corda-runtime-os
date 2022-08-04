@@ -33,6 +33,7 @@ dependencies {
 
     runtimeOnly 'javax.persistence:javax.persistence-api'
     runtimeOnly "net.corda:corda-avro-schema"
+    runtimeOnly project(':libs:ledger:ledger-consensual-impl')
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:membership:membership-group-read-impl")

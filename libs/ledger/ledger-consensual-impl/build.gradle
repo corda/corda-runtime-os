@@ -8,6 +8,13 @@ plugins {
 
 description 'Corda consensual ledger - implementation'
 
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 dependencies {
     compileOnly 'org.osgi:osgi.core' // MERGE ???
     compileOnly 'org.osgi:osgi.annotation'
@@ -117,5 +124,16 @@ dependencies {
     //integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
     // osgi.wiring.package: (osgi.wiring.package=org.mockito.kotlin)
 
+    // Gather locations of CPIs to add into `resources`
+    cpis project(path: ':testing:cpbs:consensual-ledger', configuration: 'cordaCPB')
+}
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
 
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }
