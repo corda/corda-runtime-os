@@ -102,8 +102,6 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             if (!response.isSuccess || response.parsingError.isPresent) {
                 val mapper = Unirest.config().objectMapper
                 val errorResponseJson = mapper.writeValue(response.mapError(String::class.java))
-                println("QQQ response.status -> ${response.status}")
-                println("QQQ errorResponseJson -> $errorResponseJson")
                 when (response.status) {
                     HttpStatus.BAD_REQUEST -> throw RequestErrorException(errorResponseJson)
                     HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED, HttpStatus.METHOD_NOT_ALLOWED, HttpStatus.PROXY_AUTHENTICATION_REQUIRED

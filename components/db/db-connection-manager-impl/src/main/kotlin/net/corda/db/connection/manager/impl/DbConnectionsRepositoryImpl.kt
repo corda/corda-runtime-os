@@ -17,7 +17,6 @@ import net.corda.orm.utils.use
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -48,8 +47,6 @@ class DbConnectionsRepositoryImpl(
             put(it, name, privilege, config, description, updateActor)
         }
     }
-
-    private val connectionIdToDataSource = ConcurrentHashMap<UUID, CloseableDataSource?>()
 
     override fun put(
         entityManager: EntityManager,
@@ -94,16 +91,14 @@ class DbConnectionsRepositoryImpl(
     }
 
     override fun create(connectionId: UUID): CloseableDataSource? {
-        return connectionIdToDataSource.compute(connectionId) { _, db ->
-            if(db?.is)
-            logger.debug("Fetching DB connection for $connectionId")
-            entityManagerFactory.createEntityManager().use {
-                val dbConfig = it.find(DbConnectionConfig::class.java, connectionId) ?: return@use null
+        logger.debug("Fetching DB connection for $connectionId")
+        entityManagerFactory.createEntityManager().use {
+            val dbConfig = it.find(DbConnectionConfig::class.java, connectionId)  ?:
+            return null
 
-                val config = ConfigFactory.parseString(dbConfig.config)
-                logger.debug("Creating DB (${dbConfig.description}) from config: $config")
-                dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
-            }
+            val config = ConfigFactory.parseString(dbConfig.config)
+            logger.debug("Creating DB (${dbConfig.description}) from config: $config")
+            return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
         }
     }
 
