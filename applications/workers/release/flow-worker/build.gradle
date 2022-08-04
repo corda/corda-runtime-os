@@ -35,6 +35,7 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     runtimeOnly project(':libs:ledger:ledger-consensual-impl')
+    runtimeOnly project(':libs:crypto:merkle-impl') // TODO this did not help
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
