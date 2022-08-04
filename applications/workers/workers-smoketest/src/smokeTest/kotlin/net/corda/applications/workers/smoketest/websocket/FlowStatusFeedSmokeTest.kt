@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 
-@Order(40)
+@Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {
 
@@ -124,7 +124,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    /*@Order(50)
+    @Order(50)
     @Test
     fun `websocket connection terminated when client sends server a message`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -136,7 +136,7 @@ class FlowStatusFeedSmokeTest {
                 assertFalse(wsHandler.isConnected())
             }
         }
-    }*/
+    }
 
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {

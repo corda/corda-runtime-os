@@ -1,5 +1,6 @@
 package net.corda.flow.rpcops.impl.v1
 
+import java.lang.IllegalArgumentException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import net.corda.data.virtualnode.VirtualNodeInfo
@@ -123,9 +124,9 @@ class FlowRPCOpsImpl @Activate constructor(
         val holdingIdentity = try {
             getVirtualNode(holdingIdentityShortHash).holdingIdentity
         } catch (e: FlowRPCOpsServiceException) {
-            log.info("Exception during registering flow status update feed.", e)
-            channel.close()
-            throw e
+            log.info("Exception during registration of flow status update feed.", e)
+            channel.error(IllegalArgumentException(e))
+            return
         }
         channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
     }
