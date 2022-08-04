@@ -11,6 +11,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.utils.KeyValueStore
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -23,7 +24,7 @@ class MessageFactoryImpl : MessageFactory {
         virtualNode: VirtualNodeInfo,
         flowClassName: String,
         flowStartArgs: String,
-        flowContextPlatformProperties: Map<String, String>
+        flowContextPlatformProperties: KeyValueStore
     ): FlowMapperEvent {
         val context = FlowStartContext(
             FlowKey(clientRequestId, virtualNode.holdingIdentity),
@@ -34,7 +35,7 @@ class MessageFactoryImpl : MessageFactory {
             virtualNode.holdingIdentity,
             flowClassName,
             flowStartArgs,
-            flowContextPlatformProperties,
+            flowContextPlatformProperties.avro,
             Instant.now()
         )
 

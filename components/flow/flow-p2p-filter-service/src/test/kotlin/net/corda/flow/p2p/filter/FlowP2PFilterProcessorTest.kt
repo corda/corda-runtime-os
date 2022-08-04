@@ -7,6 +7,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
@@ -52,7 +53,13 @@ class FlowP2PFilterProcessorTest {
             0,
             listOf(),
             SessionInit(
-                testValue, version, testValue, null, emptyMap(), emptyMap(), ByteBuffer.wrap("".toByteArray())
+                testValue,
+                version,
+                testValue,
+                null,
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
+                ByteBuffer.wrap("".toByteArray())
             )
         )
 

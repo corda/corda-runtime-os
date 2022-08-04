@@ -7,7 +7,7 @@ description 'VNode Sandbox Example'
 
 osgiRun {
     frameworkProperties.putAll(
-        'org.osgi.framework.security': 'osgi'
+            'org.osgi.framework.security': 'osgi'
     )
 }
 
@@ -37,6 +37,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':libs:flows:utils')
     implementation project(':components:flow:flow-service')
     implementation project(":components:membership:membership-group-read")
     implementation project(':components:virtual-node:sandbox-group-context-service')

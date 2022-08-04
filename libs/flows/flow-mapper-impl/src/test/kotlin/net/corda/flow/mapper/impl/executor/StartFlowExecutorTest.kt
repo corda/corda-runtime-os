@@ -8,6 +8,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.emptyKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -26,7 +27,7 @@ class StartFlowExecutorTest {
             identity,
             "className",
             null,
-            mutableMapOf(),
+            emptyKeyValuePairList(),
             Instant.MIN
         ), null
     )

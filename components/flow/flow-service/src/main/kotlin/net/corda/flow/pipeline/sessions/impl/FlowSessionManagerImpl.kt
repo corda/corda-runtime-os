@@ -13,6 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -44,8 +45,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             // TODO CORE-5991 populate with maps from the current context properties
-            .setContextPlatformProperties(emptyMap())
-            .setContextUserProperties(emptyMap())
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)

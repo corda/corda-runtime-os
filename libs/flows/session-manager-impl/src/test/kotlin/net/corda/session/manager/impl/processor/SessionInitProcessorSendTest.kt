@@ -3,6 +3,7 @@ package net.corda.session.manager.impl.processor
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
@@ -11,7 +12,8 @@ import java.time.Instant
 
 class SessionInitProcessorSendTest {
 
-    private fun createSessionInit() = SessionInit("flow", listOf(1), "cpiId", "flowId1", emptyMap(), emptyMap(), null)
+    private fun createSessionInit() =
+        SessionInit("flow", listOf(1), "cpiId", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), null)
 
     @Test
     fun `Send init when state is not null`() {

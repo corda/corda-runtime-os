@@ -13,6 +13,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpkMetadata
@@ -145,7 +146,7 @@ class CordaVNode @Activate constructor(
                 virtualNodeInfo.holdingIdentity,
                 "com.example.cpk.ExampleFlow",
                 "{\"message\":\"Bongo!\"}",
-                emptyMap(),
+                emptyKeyValuePairList(),
                 Instant.now(),
             ), "{\"message\":\"Bongo!\"}"
         )

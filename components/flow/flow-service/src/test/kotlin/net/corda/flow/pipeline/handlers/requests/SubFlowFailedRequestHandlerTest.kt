@@ -9,6 +9,7 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -49,8 +50,8 @@ class SubFlowFailedRequestHandlerTest {
         .setFlowName("FLOW_NAME")
         .setIsInitiatingFlow(true)
         .setSessionIds(sessions)
-        .setContextPlatformProperties(mutableMapOf())
-        .setContextUserProperties(mutableMapOf())
+        .setContextPlatformProperties(mutableKeyValuePairList())
+        .setContextUserProperties(mutableKeyValuePairList())
         .build()
     private val ioRequest = FlowIORequest.SubFlowFailed(flowError, flowStackItem)
     private val record = Record("", "", FlowEvent())

@@ -4,6 +4,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.utils.KeyValueStore
 
 interface MessageFactory {
 
@@ -12,7 +13,7 @@ interface MessageFactory {
         virtualNode: VirtualNodeInfo,
         flowClassName: String,
         flowStartArgs: String,
-        flowContextPlatformProperties: Map<String, String>
+        flowContextPlatformProperties: KeyValueStore
     ): FlowMapperEvent
 
     fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse

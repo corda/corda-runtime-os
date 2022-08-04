@@ -8,6 +8,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import java.time.Instant
@@ -72,7 +73,7 @@ class StartFlow(private val context: TaskContext) : Task {
             identity,
             flowName,
             jsonArgs,
-            emptyMap(),
+            emptyKeyValuePairList(),
             Instant.now()
         )
 

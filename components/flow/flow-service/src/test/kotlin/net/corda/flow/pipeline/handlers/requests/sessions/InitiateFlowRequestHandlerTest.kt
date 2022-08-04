@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -52,8 +53,8 @@ class InitiateFlowRequestHandlerTest {
                 "flow",
                 true,
                 mutableListOf(),
-                mutableMapOf(),
-                mutableMapOf()
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
             )
         )
     }
