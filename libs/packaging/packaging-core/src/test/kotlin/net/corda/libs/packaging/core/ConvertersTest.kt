@@ -26,8 +26,11 @@ class ConvertersTest {
                 CordappManifest::bundleVersion,
                 CordappManifest::minPlatformVersion,
                 CordappManifest::targetPlatformVersion,
-                CordappManifest::contractInfo,
-                CordappManifest::workflowInfo,
+                CordappManifest::type,
+                CordappManifest::shortName,
+                CordappManifest::vendor,
+                CordappManifest::versionId,
+                CordappManifest::licence,
                 CordappManifest::attributes,
             ).forEach {
                 Assertions.assertEquals(it(m1), it(m2))
@@ -88,11 +91,10 @@ class ConvertersTest {
     }
 
     @Test
-    fun `ManifestCordappInfo round trip`() {
-        val original = CpkMetaTestData.manifestCordappInfo
+    fun `CordappType round trip`() {
+        val original = CpkMetaTestData.cordappType
         val avroObject = original.toAvro()
-        val cordaObject =
-            ManifestCorDappInfo(avroObject.shortName, avroObject.vendor, avroObject.versionId, avroObject.license)
+        val cordaObject = CordappType.fromAvro(avroObject)
         Assertions.assertEquals(original, cordaObject)
     }
 

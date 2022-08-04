@@ -11,7 +11,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -27,6 +26,7 @@ import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
 import net.corda.libs.cpi.datamodel.CpkKey
+import net.corda.libs.packaging.core.CordappType
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
@@ -52,8 +52,11 @@ class CpiInfoDbReconcilerReaderTest {
             "1.2.3",
             12,
             34,
-            ManifestCorDappInfo("someName", "R3", 42, "some license"),
-            ManifestCorDappInfo("someName", "R3", 42, "some license"),
+            CordappType.WORKFLOW,
+            "someName",
+            "R3",
+            42,
+            "some license",
             mapOf(
                 "Corda-Contract-Classes" to "contractClass1, contractClass2",
                 "Corda-Flow-Classes" to "flowClass1, flowClass2"
