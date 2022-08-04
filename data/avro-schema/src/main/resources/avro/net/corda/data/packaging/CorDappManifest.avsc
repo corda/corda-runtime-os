@@ -20,12 +20,24 @@
       "type" : "int"
     },
     {
-      "name": "contractInfo",
-      "type" : "net.corda.data.packaging.ManifestCorDappInfo"
+      "name": "type",
+      "type" : "net.corda.data.packaging.CorDappType"
     },
     {
-      "name": "workflowInfo",
-      "type" : "net.corda.data.packaging.ManifestCorDappInfo"
+      "name": "shortName",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "vendor",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "versionId",
+      "type": ["null", "int"]
+    },
+    {
+      "name": "license",
+      "type": ["null", "string"]
     },
     {
       "name": "attributes",
