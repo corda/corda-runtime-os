@@ -92,13 +92,20 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         } else {
             buildApplicationJsonRequest(webRequest, request)
         }
+        println("QQQ reqeust -> ${request.url} - ${request.httpMethod}")
+        request.socketTimeout(480000)
+        request.connectTimeout(480000)
+
+        println("QQQ \t 1 timeout ${request.socketTimeout}; ${request.connectTimeout}")
 
         context.authenticationScheme.authenticate(context.credentials, request, context)
 
         request = applyQueryParameters(webRequest, request)
 
         try {
+            println("QQQ \t 2 timeout ${request.socketTimeout}; ${request.connectTimeout}")
             val response = request.remoteCallFn()
+            println("QQQ \t 3 response ${response.status}")
             if (!response.isSuccess || response.parsingError.isPresent) {
                 val mapper = Unirest.config().objectMapper
                 val errorResponseJson = mapper.writeValue(response.mapError(String::class.java))

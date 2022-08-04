@@ -164,6 +164,7 @@ class MultiClusterDynamicNetworkTest {
             val holdingId = holdingIds[it.name]
             assertNotNull(holdingId)
             eventually(duration = 1.minutes) {
+                println("QQQ Looking out at ${it.name}")
                 it.lookupMembers(holdingId!!).also { result ->
                     assertThat(result)
                         .hasSize(1 + members.size)
