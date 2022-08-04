@@ -7,11 +7,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class KeyValueStoreTest {
+    companion object {
+        val KEY_VALUE_PAIR = KeyValuePair("key", "value")
+    }
 
     @Test
     fun `mutableKeyValuePairList as a parameter to a container can be modified`() {
-        val KEY_VALUE_PAIR = KeyValuePair("key", "value")
-
         data class Container(val list: KeyValuePairList)
 
         val containerBackingList = mutableKeyValuePairList()
