@@ -10,14 +10,14 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 
 /**
- * Example consensual flow. Currently does almost nothing other than verify that
+ * Example consensual flow. Currently, does almost nothing other than verify that
  * we can inject the ledger service. Eventually it should do a two-party IOUState
  * agreement.
  */
 
 class ConsensualFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
-    data class ResultMessage(val number: Int)
+    data class ResultMessage(val text: String)
 
     private companion object {
         val log = contextLogger()
@@ -39,8 +39,7 @@ class ConsensualFlow : RPCStartableFlow {
             val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
             log.info("Consensual state demo. Inputs: $inputs")
             log.info("flowEngine: $flowEngine")
-            // val resultMessage = flowEngine.subFlow(inputs)
-            val resultMessage = ResultMessage(number = consensualLedgerService.double(inputs.number))
+            val resultMessage = ResultMessage(text = consensualLedgerService.getTransactionBuilder().toString())
             log.info("Success! Response: $resultMessage")
             return jsonMarshallingService.format(resultMessage)
         } catch (e: Exception) {
