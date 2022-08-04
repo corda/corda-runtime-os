@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
+import net.corda.ledger.consensual.impl.ConsensualLedgerServiceImpl
 import net.corda.ledger.consensual.impl.helper.TestSerializationService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.application.crypto.SigningService

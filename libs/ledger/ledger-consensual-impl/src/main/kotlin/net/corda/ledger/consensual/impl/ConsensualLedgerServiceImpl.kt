@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual
+package net.corda.ledger.consensual.impl
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.consensual.impl.transactions.ConsensualTransactionBuilderImpl
