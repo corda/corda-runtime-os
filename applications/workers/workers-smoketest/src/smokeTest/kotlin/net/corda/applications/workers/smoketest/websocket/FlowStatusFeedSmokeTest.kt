@@ -95,7 +95,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    @Order(40)
+    /*@Order(40)
     @Test
     fun `registering for flow status feed when flow is already finished sends the finished status and terminates connection`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -122,7 +122,7 @@ class FlowStatusFeedSmokeTest {
                 assertFalse(wsHandler.isConnected)
             }
         }
-    }
+    }*/
 
     /*@Order(50)
     @Test
