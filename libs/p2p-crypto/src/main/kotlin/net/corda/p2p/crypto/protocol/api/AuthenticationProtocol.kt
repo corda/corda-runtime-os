@@ -77,7 +77,7 @@ abstract class AuthenticationProtocol {
     private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())
 
     fun getSignature(signatureSpec: SignatureSpec): Signature {
-        return Signature.getInstance(signatureSpec.signatureName)
+        return Signature.getInstance(signatureSpec.signatureName, provider)
     }
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderHello: ByteArray): SharedHandshakeSecrets {
