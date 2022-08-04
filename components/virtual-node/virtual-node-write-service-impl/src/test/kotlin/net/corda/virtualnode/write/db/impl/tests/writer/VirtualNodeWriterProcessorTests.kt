@@ -13,6 +13,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
@@ -41,7 +42,6 @@ import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
 import org.assertj.core.api.SoftAssertions.assertSoftly

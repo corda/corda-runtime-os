@@ -8,6 +8,7 @@ import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
@@ -21,10 +22,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -44,19 +45,16 @@ class CertificatesProcessorTest {
     private val nodeFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn nodeEntityManager
     }
-    private val connectionId = UUID(0, 0)
     private val registry = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn registry
     }
+    private val nodeTenantId = "ID1"
     private val dbConnectionManager = mock<DbConnectionManager> {
         on { getClusterEntityManagerFactory() } doReturn clusterFactory
-        on { createEntityManagerFactory(connectionId, registry) } doReturn nodeFactory
+        on { getOrCreateEntityManagerFactory(eq("vnode_vault_id1"), eq(DbPrivilege.DML), eq(registry)) } doReturn nodeFactory
     }
-    private val nodeInfo = mock< VirtualNodeInfo> {
-        on { vaultDmlConnectionId } doReturn connectionId
-    }
-    private val nodeTenantId = "ID1"
+    private val nodeInfo = mock<VirtualNodeInfo>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(nodeTenantId) } doReturn nodeInfo
     }
