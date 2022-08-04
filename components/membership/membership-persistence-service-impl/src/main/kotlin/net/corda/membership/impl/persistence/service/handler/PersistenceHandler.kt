@@ -3,6 +3,8 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -45,9 +47,10 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        return dbConnectionManager.createEntityManagerFactory(
-            info.vaultDmlConnectionId,
-            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
+        return dbConnectionManager.getOrCreateEntityManagerFactory(
+            name = VirtualNodeDbType.VAULT.getConnectionName(info.holdingIdentity.shortHash),
+            privilege = DbPrivilege.DML,
+            entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                 )
