@@ -194,24 +194,23 @@ class MGMRegistrationService @Activate constructor(
                 val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash)
                 val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash)
                 val now = clock.instant().toString()
+                val memberContext = context.filterKeys {
+                    !keyIdList.contains(it)
+                }.filterKeys {
+                    !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
+                } + mapOf(
+                    GROUP_ID to member.groupId,
+                    PARTY_NAME to member.x500Name.toString(),
+                    PARTY_SESSION_KEY to sessionKey.toPem(),
+                    SESSION_KEY_HASH to sessionKey.calculateHash().value,
+                    ECDH_KEY to ecdhKey.toPem(),
+                    // temporarily hardcoded
+                    PLATFORM_VERSION to PLATFORM_VERSION_CONST,
+                    SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                    SERIAL to SERIAL_CONST,
+                )
                 val mgmInfo = memberInfoFactory.create(
-                    memberContext = (
-                            context.filterKeys {
-                                !keyIdList.contains(it)
-                            }.filterKeys {
-                                !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
-                            } + mapOf(
-                                GROUP_ID to member.groupId,
-                                PARTY_NAME to member.x500Name.toString(),
-                                PARTY_SESSION_KEY to sessionKey.toPem(),
-                                SESSION_KEY_HASH to sessionKey.calculateHash().value,
-                                ECDH_KEY to ecdhKey.toPem(),
-                                // temporarily hardcoded
-                                PLATFORM_VERSION to PLATFORM_VERSION_CONST,
-                                SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
-                                SERIAL to SERIAL_CONST,
-                            )
-                            ).toSortedMap(),
+                    memberContext = memberContext.toSortedMap(),
                     mgmContext = sortedMapOf(
                         CREATED_TIME to now,
                         MODIFIED_TIME to now,

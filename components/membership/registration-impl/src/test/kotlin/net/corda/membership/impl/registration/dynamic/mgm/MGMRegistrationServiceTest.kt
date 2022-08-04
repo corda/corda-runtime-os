@@ -255,9 +255,9 @@ class MGMRegistrationServiceTest {
             val expectedRecordKey = "$mgmId-$mgmId"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
 
-            val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
+            val persistedMgm = publishedMgmInfo.value as PersistentMemberInfo
 
-            it.assertThat(persistentMemberPublished.memberContext.items.map { item -> item.key })
+            it.assertThat(persistedMgm.memberContext.items.map { item -> item.key })
                 .containsExactlyInAnyOrderElementsOf(
                     listOf(
                         GROUP_ID,
@@ -272,7 +272,7 @@ class MGMRegistrationServiceTest {
                         String.format(PROTOCOL_VERSION, 0),
                     )
                 )
-            it.assertThat(persistentMemberPublished.mgmContext.items.map { item -> item.key })
+            it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
                 .containsExactlyInAnyOrderElementsOf(
                     listOf(
                         CREATED_TIME,
@@ -283,10 +283,10 @@ class MGMRegistrationServiceTest {
                 )
 
             fun getProperty(prop: String): String {
-                return persistentMemberPublished
+                return persistedMgm
                     .memberContext.items.firstOrNull { item ->
                         item.key == prop
-                    }?.value ?: persistentMemberPublished.mgmContext.items.firstOrNull { item ->
+                    }?.value ?: persistedMgm.mgmContext.items.firstOrNull { item ->
                     item.key == prop
                 }?.value ?: fail("Could not find property within published member for test")
             }
@@ -341,8 +341,8 @@ class MGMRegistrationServiceTest {
             eq(mgm),
             argThat {
                 this.size == 1 &&
-                        this.first().isMgm &&
-                        this.first().name == mgmName
+                    this.first().isMgm &&
+                    this.first().name == mgmName
             }
         )
     }
@@ -396,7 +396,7 @@ class MGMRegistrationServiceTest {
         val testProperties =
             properties + mapOf(
                 "corda.group.truststore.tls.100" to
-                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                    "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
         val result = registrationService.register(mgm, testProperties)
