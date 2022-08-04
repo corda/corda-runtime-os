@@ -17,6 +17,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -399,5 +401,33 @@ class GroupPolicyProviderImplTest {
         // group policy retrieval works again
         val result = groupPolicyProvider.getGroupPolicy(holdingIdentity)
         assertExpectedGroupPolicy(result, groupId1, regProtocol1)
+    }
+
+    @Test
+    fun `Persisted group policy properties are null if error occurs when querying`() {
+        startComponentAndDependencies()
+        val argCap = argumentCaptor<() -> LayeredPropertyMap?>()
+
+        whenever(membershipQueryClient.queryGroupPolicy(any()))
+            .doThrow(
+                MembershipQueryResult.QueryException(
+                    MembershipQueryResult.Failure<LayeredPropertyMap>("")
+                )
+            )
+        groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        verify(groupPolicyParser).parse(any(), any(), argCap.capture())
+        assertThat(argCap.firstValue.invoke()).isNull()
+    }
+
+    @Test
+    fun `Persisted group policy properties are return if no error occurs when querying`() {
+        startComponentAndDependencies()
+        val argCap = argumentCaptor<() -> LayeredPropertyMap?>()
+
+        whenever(membershipQueryClient.queryGroupPolicy(any()))
+            .doReturn(MembershipQueryResult.Success(properties))
+        groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        verify(groupPolicyParser).parse(any(), any(), argCap.capture())
+        assertThat(argCap.firstValue.invoke()).isEqualTo(properties)
     }
 }

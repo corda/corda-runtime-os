@@ -16,6 +16,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -69,7 +71,8 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     override val isRunning get() = coordinator.isRunning
 
-    private val listeners: MutableList<(HoldingIdentity, GroupPolicy) -> Unit> = Collections.synchronizedList(mutableListOf())
+    private val listeners: MutableList<(HoldingIdentity, GroupPolicy) -> Unit> =
+        Collections.synchronizedList(mutableListOf())
 
     /**
      * Handle lifecycle events.
@@ -127,7 +130,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerGroupPolicyProvider {
-        private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
+        private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy?> = ConcurrentHashMap()
 
         private var virtualNodeInfoCallbackHandle: AutoCloseable = startVirtualNodeHandle()
 
@@ -171,7 +174,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         private fun parseGroupPolicy(
             holdingIdentity: HoldingIdentity,
             virtualNodeInfo: VirtualNodeInfo? = null,
-        ): GroupPolicy {
+        ): GroupPolicy? {
             val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
             if (vNodeInfo == null) {
                 logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
@@ -183,10 +186,22 @@ class GroupPolicyProviderImpl @Activate constructor(
                             "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
                 )
             }
-            return groupPolicyParser.parse(
-                holdingIdentity,
-                metadata?.groupPolicy
-            ) { membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow() }
+            fun persistedPropertyQuery(): LayeredPropertyMap? = try {
+                membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
+            } catch (e: MembershipQueryResult.QueryException) {
+                logger.warn("Failed to retrieve persisted group policy properties.", e)
+                null
+            }
+            return try {
+                groupPolicyParser.parse(
+                    holdingIdentity,
+                    metadata?.groupPolicy,
+                    ::persistedPropertyQuery
+                )
+            } catch (e: BadGroupPolicyException) {
+                logger.warn("Failed to parse group policy. Returning null.", e)
+                null
+            }
         }
 
         /**
