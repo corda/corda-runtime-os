@@ -30,9 +30,9 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow
-            {
-                name jar.baseName
-                versionId 1
-                vendor "LizR3"
-            }
+    {
+        name jar.baseName
+        versionId 1
+        vendor "LizR3"
+    }
 }
