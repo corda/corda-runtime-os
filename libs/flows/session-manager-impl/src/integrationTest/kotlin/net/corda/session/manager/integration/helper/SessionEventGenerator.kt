@@ -8,14 +8,19 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.test.flow.util.buildSessionEvent
 import java.nio.ByteBuffer
 import java.time.Instant
 
-fun generateMessage(messageType: SessionMessageType, instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND) :
+fun generateMessage(
+    messageType: SessionMessageType,
+    instant: Instant,
+    messageDirection: MessageDirection = MessageDirection.OUTBOUND
+):
         SessionEvent {
-    return when(messageType) {
+    return when (messageType) {
         SessionMessageType.INIT -> generateInit(instant, messageDirection)
         SessionMessageType.DATA -> generateData(instant, messageDirection)
         SessionMessageType.ERROR -> generateError(instant, messageDirection)
@@ -31,6 +36,8 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
         .setProtocol("someflow")
         .setVersions(listOf(1))
         .setPayload(ByteBuffer.wrap("some bytes".toByteArray()))
+        .setContextPlatformProperties(emptyKeyValuePairList())
+        .setContextUserProperties(emptyKeyValuePairList())
         .build()
     return generateSessionEvent(sessionInit, instant, messageDirection)
 }
@@ -44,7 +51,11 @@ fun generateAck(instant: Instant, messageDirection: MessageDirection = MessageDi
 }
 
 fun generateError(instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return generateSessionEvent(SessionError(ExceptionEnvelope("error type", "error message")), instant, messageDirection)
+    return generateSessionEvent(
+        SessionError(ExceptionEnvelope("error type", "error message")),
+        instant,
+        messageDirection
+    )
 }
 
 fun generateClose(instant: Instant, messageDirection: MessageDirection): SessionEvent {
