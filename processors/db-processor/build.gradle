@@ -51,6 +51,7 @@ dependencies {
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')
+    runtimeOnly project(':libs:flows:external-events-impl')
     runtimeOnly project(':components:reconciliation:reconciliation-impl')
     runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')
     runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')

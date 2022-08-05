@@ -32,7 +32,6 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    runtimeOnly project(':libs:flows:external-events-impl')
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
 
     testImplementation 'org.osgi:osgi.core'
