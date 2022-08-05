@@ -22,9 +22,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }
-
-jar {
-    baseName "cordapp-example-rollcall"
+tasks.named('jar', Jar) {
+    archiveBaseName = 'cordapp-example-rollcall'
 }
 
 cordapp {
