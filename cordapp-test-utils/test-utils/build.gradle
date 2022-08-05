@@ -1,3 +1,8 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
 dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
