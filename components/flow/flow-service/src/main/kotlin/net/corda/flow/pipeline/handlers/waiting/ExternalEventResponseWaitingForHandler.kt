@@ -8,6 +8,7 @@ import net.corda.flow.external.events.impl.handler.ExternalEventHandlerMap
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -40,13 +41,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
 
         val continuation = when (externalEventState.status.type) {
             ExternalEventStateType.OK -> {
-                when (val externalEventResponse = externalEventManager.getReceivedResponse(externalEventState)) {
-                    null -> FlowContinuation.Continue
-                    else -> {
-                        val handler = externalEventHandlerMap.get(externalEventState.handlerClassName)
-                        FlowContinuation.Run(handler.resuming(context.checkpoint, externalEventResponse))
-                    }
-                }
+                resumeIfResponseReceived(context.checkpoint, externalEventState)
             }
             ExternalEventStateType.RETRY -> {
                 retryOrError(context.config, externalEventState.status.exception, externalEventState)
@@ -67,6 +62,19 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         }
 
         return continuation
+    }
+
+    private fun resumeIfResponseReceived(
+        checkpoint: FlowCheckpoint,
+        externalEventState: ExternalEventState
+    ): FlowContinuation {
+        return when (val externalEventResponse = externalEventManager.getReceivedResponse(externalEventState)) {
+            null -> FlowContinuation.Continue
+            else -> {
+                val handler = externalEventHandlerMap.get(externalEventState.handlerClassName)
+                FlowContinuation.Run(handler.resuming(checkpoint, externalEventResponse))
+            }
+        }
     }
 
     private fun retryOrError(
