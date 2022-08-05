@@ -695,7 +695,7 @@ class CryptoProcessorTests {
                 flowExternalEventContext = ExternalEventContext(requestId, key)
             )
             logger.info(
-                "Publishing: createSign({}, {}, {})",
+                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
                 tenantId,
                 publicKey.publicKeyId(),
                 spec
