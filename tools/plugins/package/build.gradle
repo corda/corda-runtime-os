@@ -31,3 +31,13 @@ tasks.named("installDist") {
     from cliPlugin
     into "$homePath/.corda/cli/plugins"
 }
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
+            groupId project.group
+            artifact cliPluginTask
+        }
+    }
+}
