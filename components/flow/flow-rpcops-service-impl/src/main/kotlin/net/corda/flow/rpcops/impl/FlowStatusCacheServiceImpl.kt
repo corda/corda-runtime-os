@@ -140,17 +140,19 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         statusListenerByUuid[listener.id] = listener
         statusListenerIdsPerFlowKey.put(flowKey, listener.id)
 
-        log.info("Registered flow status listener ${listener.id} " +
-                "(clientRequestId: $clientRequestId, holdingIdentity: ${holdingIdentity.toCorda().shortHash}). " +
-                "Total number of open listeners: ${statusListenerByUuid.size}.")
+        log.info(
+            "Registered flow status listener ${listener.id} " +
+                    "(clientRequestId: $clientRequestId, holdingIdentity: ${holdingIdentity.toCorda().shortHash}). " +
+                    "Total number of open listeners: ${statusListenerByUuid.size}."
+        )
 
         cache[flowKey]?.let { listener.updateReceived(it) }
     }
 
-    override fun unregisterFlowStatusListener(listenerId: UUID) {
-        statusListenerByUuid.remove(listenerId)?.let {
-            log.info("Unregistered flow status listener: $listenerId. Total number of open listeners: ${statusListenerByUuid.size}.")
-        }
+    override fun unregisterFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listenerId: UUID) {
+        statusListenerByUuid.remove(listenerId)
+        if (statusListenerIdsPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listenerId))
+            log.info("Unregistered flow status listener: $clientRequestId. Total number of open listeners: ${statusListenerByUuid.size}.")
     }
 
     private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey, errors: MutableList<String>) {

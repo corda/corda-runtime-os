@@ -38,10 +38,10 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     }
     onClose = { statusCode, reason ->
         log.info(
-            "Closing flow status feed $id with status $statusCode, reason: $reason. " +
+            "Close hook called for id $id with status $statusCode, reason: $reason. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
         )
-        flowStatusCacheService.unregisterFlowStatusListener(id)
+        flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, id)
     }
     onError = { e ->
         log.info(

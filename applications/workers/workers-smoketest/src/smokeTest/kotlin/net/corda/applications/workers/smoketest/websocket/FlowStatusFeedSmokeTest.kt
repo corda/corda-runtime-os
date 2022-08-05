@@ -39,9 +39,9 @@ class FlowStatusFeedSmokeTest {
 
         val wsHandler = MessageQueueWebsocketHandler(LinkedList())
 
-        val client = SmokeTestWebsocketClient(wsHandler)
+        val client = SmokeTestWebsocketClient()
         client.start()
-        client.connect(flowStatusFeedPath)
+        client.connect(flowStatusFeedPath, wsHandler)
         eventually {
             assertTrue(wsHandler.isConnected)
         }
@@ -95,7 +95,52 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    /*@Order(40)
+    /*@Order(31)
+    @Test
+    fun `one test client can have multiple websocket connections open for different flows`() {
+        val clientRequestId1 = UUID.randomUUID().toString()
+        val clientRequestId2 = UUID.randomUUID().toString()
+        val flowStatusFeedPath1 = "/flow/$bobHoldingId/$clientRequestId1"
+        val flowStatusFeedPath2 = "/flow/$bobHoldingId/$clientRequestId2"
+
+        val messageQueue1 = ConcurrentLinkedQueue<String>()
+        val messageQueue2 = ConcurrentLinkedQueue<String>()
+        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
+        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
+        val client = SmokeTestWebsocketClient()
+
+        client.start()
+        val session1 = client.connect(flowStatusFeedPath1, wsHandler1)
+        val session2 = client.connect(flowStatusFeedPath2, wsHandler2)
+
+        eventually {
+            assertTrue(session1.isOpen)
+            assertTrue(session2.isOpen)
+        }
+
+        startFlow(clientRequestId1)
+        awaitRpcFlowFinished(bobHoldingId, clientRequestId1)
+
+        startFlow(clientRequestId2)
+        awaitRpcFlowFinished(bobHoldingId, clientRequestId2)
+
+        eventually(Duration.ofSeconds(10)) {
+            assertThat(messageQueue1).hasSize(3)
+            assertThat(messageQueue2).hasSize(3)
+            assertThat(messageQueue1.poll()).contains(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue1.poll()).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue1.poll()).contains(FlowStates.COMPLETED.name)
+            assertThat(messageQueue2.poll()).contains(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue2.poll()).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue2.poll()).contains(FlowStates.COMPLETED.name)
+        }
+
+        session1.close(1000, "CONAL closed 1")
+        session2.close(1000, "CONAL closed 2")
+        client.close()
+    }*/
+
+    @Order(40)
     @Test
     fun `registering for flow status feed when flow is already finished sends the finished status and terminates connection`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -106,13 +151,13 @@ class FlowStatusFeedSmokeTest {
 
         val messageQueue = ConcurrentLinkedQueue<String>()
         val wsHandler = MessageQueueWebsocketHandler(messageQueue)
-        val client = SmokeTestWebsocketClient(wsHandler)
+        val client = SmokeTestWebsocketClient()
 
         client.start()
-        client.connect(flowStatusFeedPath)
+        client.connect(flowStatusFeedPath, wsHandler)
+        // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
 
         client.use {
-            // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
             eventually {
                 assertThat(wsHandler.messageQueue).hasSize(1)
                 assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
@@ -122,6 +167,56 @@ class FlowStatusFeedSmokeTest {
                 assertFalse(wsHandler.isConnected)
             }
         }
+    }
+
+    /*@Order(41)
+    @Test
+    fun `two test clients can function after first reports completed flow during registration`() {
+        val clientRequestId = UUID.randomUUID().toString()
+        val flowStatusFeedPath = "/flow/$bobHoldingId/$clientRequestId"
+
+        startFlow(clientRequestId)
+        awaitRpcFlowFinished(bobHoldingId, clientRequestId)
+
+        val messageQueue1 = ConcurrentLinkedQueue<String>()
+        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
+        val client1 = SmokeTestWebsocketClient()
+
+        client1.start()
+        val session1 = client1.connect(flowStatusFeedPath, wsHandler1)
+        // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
+
+        eventually {
+            assertThat(wsHandler1.messageQueue).hasSize(1)
+            assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+        }
+
+        eventually {
+            assertFalse(wsHandler1.isConnected)
+        }
+
+        session1.close(1000, "CONAL closed 1")
+        client1.close()
+
+        val messageQueue2 = ConcurrentLinkedQueue<String>()
+        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
+        val client2 = SmokeTestWebsocketClient()
+
+        client2.start()
+        val session2 = client2.connect(flowStatusFeedPath, wsHandler2)
+        // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
+
+        eventually {
+            assertThat(wsHandler2.messageQueue).hasSize(1)
+            assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+        }
+
+        eventually {
+            assertFalse(wsHandler2.isConnected)
+        }
+
+        session2.close(1000, "CONAL closed 2")
+        client2.close()
     }*/
 
     @Order(50)
