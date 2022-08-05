@@ -268,12 +268,12 @@ class PersistenceServiceInternalTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope).isNotNull
+        assertThat(response.error).isNotNull
         // The failure is correctly categorised - serialization fails within the database path of the code.
         // It can never succeed on retry, therefore, it's fatal.
-        assertThat(response.exceptionEnvelope.errorType).isEqualTo(ExternalEventResponseErrorType.PLATFORM_ERROR)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.PLATFORM_ERROR)
         // The failure also captures the exception name.
-        assertThat(response.exceptionEnvelope.exception.errorType).contains("NotSerializableException")
+        assertThat(response.error.exception.errorType).contains("NotSerializableException")
     }
 
     @Test
@@ -493,7 +493,7 @@ class PersistenceServiceInternalTests {
 
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope.exception.errorType).contains("KafkaMessageSizeException")
+        assertThat(response.error.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     @Test
@@ -514,7 +514,7 @@ class PersistenceServiceInternalTests {
 
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope.exception.errorType).contains("KafkaMessageSizeException")
+        assertThat(response.error.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     @Test
@@ -542,7 +542,7 @@ class PersistenceServiceInternalTests {
 
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope.exception.errorType).contains("KafkaMessageSizeException")
+        assertThat(response.error.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     /** Cat class has composite key, so also check we find those ok */
@@ -732,10 +732,10 @@ class PersistenceServiceInternalTests {
         records.forEach {
             val flowEvent = it.value as FlowEvent
             val response = flowEvent.payload as ExternalEventResponse
-            if (response.exceptionEnvelope != null) {
-                logger.error("Incorrect error response: ${response.exceptionEnvelope}")
+            if (response.error != null) {
+                logger.error("Incorrect error response: ${response.error}")
             }
-            assertThat(response.exceptionEnvelope).isNull()
+            assertThat(response.error).isNull()
         }
         return records
     }
@@ -744,10 +744,10 @@ class PersistenceServiceInternalTests {
         records.forEach {
             val flowEvent = it.value as FlowEvent
             val response = flowEvent.payload as ExternalEventResponse
-            if (response.exceptionEnvelope == null) {
-                logger.error("Incorrect successful response: ${response.exceptionEnvelope}")
+            if (response.error == null) {
+                logger.error("Incorrect successful response: ${response.error}")
             }
-            assertThat(response.exceptionEnvelope).isNotNull()
+            assertThat(response.error).isNotNull()
         }
         return records
     }
@@ -791,7 +791,7 @@ class PersistenceServiceInternalTests {
         expectFailure: String? = null, sizeLimit: Int = Int.MAX_VALUE
     ): List<*> {
         val paramsSerialized = params.mapValues { ctx.serialize(it.value) }
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
+        val processor = EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory) {
             if (sizeLimit != Int.MAX_VALUE && it.array().size > sizeLimit) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -804,13 +804,13 @@ class PersistenceServiceInternalTests {
         val record = records.first()
         val flowEvent = record.value as FlowEvent
         if (expectFailure != null) {
-            val response = flowEvent.payload as EntityResponse
-            if (response.responseType is EntityResponseFailure) {
-                logger.error("$response.responseType (expected failure)")
-                assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
+            val response = flowEvent.payload as ExternalEventResponse
+            if (response.error != null) {
+                logger.error("Error response: ${response.error} (expected failure)")
+                assertThat(response.error).isNotNull()
 
             }
-            assertThat(response.responseType.toString()).contains(expectFailure)
+            assertThat(response.error.toString()).contains(expectFailure)
             return listOf<String>()
         } else {
             val entityResponse = flowEvent.payload as EntityResponse

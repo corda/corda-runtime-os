@@ -7,8 +7,8 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.event.external.ExternalEventResponseError
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.flow.event.external.ExternalEventResponseExceptionEnvelope
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -34,7 +34,7 @@ class ExternalEventResponseFactoryImpl(
         val response = ExternalEventResponse.newBuilder()
             .setRequestId(flowExternalEventContext.requestId)
             .setPayload(ByteBuffer.wrap(serializer.serialize(payload)))
-            .setExceptionEnvelope(null)
+            .setError(null)
             .setTimestamp(clock.instant())
             .build()
         return flowEvent(flowExternalEventContext, response)
@@ -99,8 +99,8 @@ class ExternalEventResponseFactoryImpl(
         val response = ExternalEventResponse.newBuilder()
             .setRequestId(flowExternalEventContext.requestId)
             .setPayload(null)
-            .setExceptionEnvelope(
-                ExternalEventResponseExceptionEnvelope(
+            .setError(
+                ExternalEventResponseError(
                     errorType,
                     exceptionEnvelope
                 )

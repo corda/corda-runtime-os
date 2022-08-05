@@ -1,7 +1,10 @@
 package net.corda.entityprocessor.impl.internal
 
-import net.corda.data.persistence.DeleteEntityById
+import java.nio.ByteBuffer
+import javax.persistence.EntityManager
+import javax.persistence.criteria.Selection
 import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
@@ -13,9 +16,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
-import java.nio.ByteBuffer
-import javax.persistence.EntityManager
-import javax.persistence.criteria.Selection
 
 
 /**
@@ -175,7 +175,7 @@ class PersistenceServiceInternal(
         }
         payload.parameters.filter { it.value != null}.forEach { rec ->
             val bytes = rec.value.array()
-            query.setParameter(rec.key, serializationService.deserialize<Any>(bytes))
+            query.setParameter(rec.key, serializationService.deserialize(bytes))
         }
         if (payload.offset != 0) {
             query.firstResult = payload.offset
@@ -183,10 +183,10 @@ class PersistenceServiceInternal(
         if (payload.limit != Int.MAX_VALUE) {
             query.maxResults = payload.limit
         }
-        val innerMsg = when (val results = query.resultList) {
-            null -> EntityResponseSuccess()
-            else -> EntityResponseSuccess(payloadCheck(serializationService.toBytes(results)))
-        }
-        return EntityResponse(clock.instant(), requestId, innerMsg)
+
+        val result = query.resultList
+            ?.let { results -> payloadCheck(serializationService.toBytes(results))}
+
+        return EntityResponse(result)
     }
 }

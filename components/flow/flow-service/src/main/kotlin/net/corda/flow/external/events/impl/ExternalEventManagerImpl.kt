@@ -81,16 +81,16 @@ class ExternalEventManagerImpl(
         if (requestId == externalEventState.requestId) {
             logger.debug { "External event response with id $requestId matched last sent request" }
             externalEventState.response = externalEventResponse
-            externalEventResponse.exceptionEnvelope?.let { exceptionEnvelope ->
-                externalEventState.status = when (exceptionEnvelope.errorType) {
+            externalEventResponse.error?.let { error ->
+                externalEventState.status = when (error.errorType) {
                     ExternalEventResponseErrorType.RETRY -> {
-                        ExternalEventStateStatus(ExternalEventStateType.RETRY, exceptionEnvelope.exception)
+                        ExternalEventStateStatus(ExternalEventStateType.RETRY, error.exception)
                     }
                     ExternalEventResponseErrorType.PLATFORM_ERROR -> {
-                        ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exceptionEnvelope.exception)
+                        ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, error.exception)
                     }
                     ExternalEventResponseErrorType.FATAL_ERROR -> {
-                        ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exceptionEnvelope.exception)
+                        ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, error.exception)
                     }
                     else -> throw FlowFatalException(
                         "Unexpected null ${Error::class.java.name} for external event with request id $requestId"

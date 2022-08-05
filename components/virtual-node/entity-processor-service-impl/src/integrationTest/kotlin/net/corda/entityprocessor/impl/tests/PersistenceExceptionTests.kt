@@ -117,11 +117,11 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope).isNotNull()
+        assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(response.exceptionEnvelope.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
         // The failure also captures the exception name.
-        assertThat(response.exceptionEnvelope.exception.errorType).isEqualTo("NotReadyException")
+        assertThat(response.error.exception.errorType).isEqualTo("NotReadyException")
     }
 
     @Test
@@ -154,11 +154,11 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope).isNotNull()
+        assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(response.exceptionEnvelope.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
         // The failure also captures the exception name.
-        assertThat(response.exceptionEnvelope.exception.errorType).isEqualTo("VirtualNodeException")
+        assertThat(response.error.exception.errorType).isEqualTo("VirtualNodeException")
     }
 
     @Test
@@ -186,11 +186,11 @@ class PersistenceExceptionTests {
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.exceptionEnvelope).isNotNull()
+        assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(response.exceptionEnvelope.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL_ERROR)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL_ERROR)
         // The failure also captures the exception name.
-        assertThat(response.exceptionEnvelope.exception.errorType).isEqualTo("CordaRuntimeException")
+        assertThat(response.error.exception.errorType).isEqualTo("CordaRuntimeException")
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes

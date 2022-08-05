@@ -144,10 +144,9 @@ class EntityMessageProcessor(
                         request.flowExternalEventContext,
                         persistenceServiceInternal.findAll(serializationService, it, entityRequest, holdingIdentity)
                     )
-                    is FindWithNamedQuery -> persistenceServiceInternal.findWithNamedQuery(
-                        serializationService,
-                        it,
-                        request.request as FindWithNamedQuery
+                    is FindWithNamedQuery -> successResponse(
+                        request.flowExternalEventContext,
+                        persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
                     )
                     else -> {
                         fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
