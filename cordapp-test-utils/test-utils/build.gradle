@@ -25,12 +25,3 @@ dependencies {
 tasks.named('jar', Jar) {
     archiveBaseName = 'cordapp-test-utils'
 }
-
-publishing {
-    publications {
-        myLibrary(MavenPublication) {
-            artifactId = "cordapp-test-utils"
-            from components.java
-        }
-    }
-}
