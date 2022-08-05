@@ -260,9 +260,8 @@ class DBAccess(
         }
     }
 
-    private fun findOffsetToReadUntil(topicPartition: CordaTopicPartition): Long {
-        return executeWithErrorHandling("read latest offsets") { entityManager ->
-            entityManager.createQuery(
+    private fun findOffsetToReadUntil(entityManager: EntityManager, topicPartition: CordaTopicPartition): Long {
+        return entityManager.createQuery(
                 """
                      select t from topic_record t 
                      join transaction_record tr on t.${TopicRecordEntry::transactionId.name} 
@@ -272,9 +271,8 @@ class DBAccess(
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.PENDING.ordinal}
                      order by t.${TopicRecordEntry::recordOffset.name}
                     """.trimIndent(),
-                TopicRecordEntry::class.java
-            ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: Long.MAX_VALUE
-        }
+            TopicRecordEntry::class.java
+        ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: Long.MAX_VALUE
     }
 
     fun getLatestRecordOffset(topicPartitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
@@ -288,7 +286,7 @@ class DBAccess(
                      where t.${TopicRecordEntry::topic.name} = '${it.topic}'
                      and t.${TopicRecordEntry::partition.name} = '${it.partition}'
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.COMMITTED.ordinal}
-                     and t.${TopicRecordEntry::recordOffset.name} < ${findOffsetToReadUntil(it)}
+                     and t.${TopicRecordEntry::recordOffset.name} < ${findOffsetToReadUntil(entityManager, it)}
                      order by t.${TopicRecordEntry::recordOffset.name} desc
                 """.trimIndent(),
                     TopicRecordEntry::class.java
