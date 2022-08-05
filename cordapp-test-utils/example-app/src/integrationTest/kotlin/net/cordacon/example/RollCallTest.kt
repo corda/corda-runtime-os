@@ -9,12 +9,6 @@ import org.junit.jupiter.api.Test
 
 class RollCallTest {
 
-<<<<<<< HEAD
-=======
-
-    private
-
->>>>>>> 5fb63a762 (CORE-5653: Adding cordapp test utils)
     @Test
     fun `should get roll call from multiple recipients`() {
         // Given a RollCallFlow that's been uploaded to Corda for a teacher
@@ -56,7 +50,13 @@ class RollCallTest {
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
+
+        // And Ferris Bueller's absence should have been persisted
+        val persistence = corda.getPersistenceServiceFor(teacher)
+        val absenceResponses = persistence.findAll(AbsenceRecordEntity::class.java)
+        assertThat(absenceResponses.execute().map { it.name }, `is`(listOf("Bueller")))
     }
 
     @Test
@@ -93,6 +93,7 @@ class RollCallTest {
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
     }
 }
