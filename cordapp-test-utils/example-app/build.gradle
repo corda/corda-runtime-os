@@ -1,61 +1,9 @@
-import static org.gradle.api.JavaVersion.VERSION_11
-
 plugins {
-    id 'maven-publish'
-    id "java-library"
-
-    id 'org.jetbrains.kotlin.jvm'
-    id 'net.corda.plugins.cordapp-cpk'
     id 'net.corda.plugins.cordapp-cpb'
-    id 'net.corda.plugins.quasar-utils'
-    id 'org.jetbrains.kotlin.plugin.jpa'
-    id 'org.jetbrains.kotlin.plugin.allopen'
 }
 
 group = "net.cordacon"
 version = "$cordaApiVersion"
-
-def javaVersion = VERSION_11
-
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-    kotlinOptions {
-        languageVersion = '1.6'
-        apiVersion = '1.6'
-        jvmTarget = javaVersion
-        javaParameters = true   // Useful for reflection.
-        freeCompilerArgs += [
-                "-java-parameters",
-                "-Xjvm-default=all"
-        ]
-    }
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = "$artifactoryContextUrl/corda-dependencies"
-
-    }
-    maven {
-        url "${artifactoryContextUrl}/corda-os-maven"
-        authentication {
-            basic(BasicAuthentication)
-        }
-        credentials {
-            username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-        }
-    }
-    gradlePluginPortal()
-}
-
-configurations {
-    implementation.transitive = false
-
-    integrationTestImplementation.extendsFrom testImplementation
-    integrationTestRuntimeOnly.extendsFrom runtimeOnly
-}
 
 dependencies {
 
@@ -73,12 +21,6 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-}
-
-check.dependsOn integrationTest
-
-tasks.withType(Test) {
-    useJUnitPlatform()
 }
 
 jar {
