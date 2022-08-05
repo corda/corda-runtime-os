@@ -57,15 +57,15 @@ class CryptoFlowOpsBusProcessor(
             logger.error("Unexpected null payload for event with the key={} in topic={}", event.key, event.topic)
             return null // cannot send any error back as have no idea where to send to
         }
-        
+
+        val requestId = request.flowExternalEventContext.requestId
+        val flowId = request.flowExternalEventContext.flowId
         val expireAt = getRequestExpireAt(request)
         
         if (Instant.now() >= expireAt) {
             logger.error(
-                "Event {} for tenant {} is no longer valid, expired at {}",
-                request.request::class.java,
-                request.context.tenantId,
-                expireAt
+                "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
+                        "expired at $expireAt { requestId: $requestId, key: $flowId }"
             )
             return externalEventResponseFactory.retriable(
                 request.flowExternalEventContext,
@@ -73,17 +73,18 @@ class CryptoFlowOpsBusProcessor(
             )
         }
         return try {
-            logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
+            logger.info(
+                "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                        "{ requestId: $requestId, key: $flowId }"
+            )
             val handler = getHandler(request.request::class.java, cryptoOpsClient)
             val response = executor.executeWithRetry {
                 handler.handle(request.context, request.request)
             }
             if (Instant.now() >= expireAt) {
                 logger.error(
-                    "Event {} for tenant {} is no longer valid, expired at {}",
-                    request.request::class.java,
-                    request.context.tenantId,
-                    expireAt
+                    "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
+                            "expired at $expireAt { requestId: $requestId, key: $flowId }"
                 )
                 return externalEventResponseFactory.retriable(
                     request.flowExternalEventContext,
@@ -94,10 +95,17 @@ class CryptoFlowOpsBusProcessor(
                 request.flowExternalEventContext,
                 FlowOpsResponse(createResponseContext(request), response, null)
             )
-            logger.debug { "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId}" }
+            logger.debug {
+                "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId} " +
+                        "{ requestId: $requestId, key: $flowId }"
+            }
             result
         } catch (t: Throwable) {
-            logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", t)
+            logger.error(
+                "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId} " +
+                        "{ requestId: $requestId, key: $flowId }",
+                t
+            )
             return externalEventResponseFactory.platformError(request.flowExternalEventContext, t)
         }
     }
