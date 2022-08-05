@@ -49,8 +49,8 @@ internal class TrustStoresMap(
         emptyList()
     )
 
-    fun getTrustStore(sourceX500Name: String, destinationGroupId: String) =
-        trustRootsPerHoldingIdentity[createKey(sourceX500Name, destinationGroupId)]
+    fun getTrustStore(sourceX500Name: MemberX500Name, destinationGroupId: String) =
+        trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
             ?.trustStore
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")

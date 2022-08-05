@@ -12,6 +12,7 @@ import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.gateway.TestBase
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
@@ -57,7 +58,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             assertThat(map.isRunning).isTrue
 
             val store = assertDoesNotThrow {
-                map.getTrustStore(ALICE_NAME, GROUP_ID)
+                map.getTrustStore(MemberX500Name.parse(ALICE_NAME), GROUP_ID)
             }
 
             val certificate = store.aliases().toList().map {
