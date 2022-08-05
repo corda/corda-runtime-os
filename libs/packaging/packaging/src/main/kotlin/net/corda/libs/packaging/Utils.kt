@@ -59,7 +59,7 @@ internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     }.takeIf { counter > 0 }
 }
 
-fun Sequence<Certificate>.certSummaryHash(): SecureHash? =
+fun Sequence<Certificate>.signerSummaryHash(): SecureHash? =
     map {
         require(it is X509Certificate) {
             "Certificate should be of type ${X509Certificate::class.java.name}"
