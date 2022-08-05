@@ -6,7 +6,6 @@ import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
 import net.corda.data.uniqueness.UniquenessCheckResultSuccess
 import net.corda.lifecycle.*
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.backingstore.impl.JPABackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.common.datamodel.*
 import net.corda.utilities.time.Clock
@@ -19,7 +18,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Instant
 import java.util.*
-import javax.persistence.EntityManagerFactory
 
 /**
  * A batched implementation of the uniqueness checker component, which processes batches of requests
@@ -36,9 +34,9 @@ class BatchedUniquenessCheckerImpl(
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = EntityManagerFactory::class)
-        entityManagerFactory: EntityManagerFactory
-    ) : this(coordinatorFactory, UTCClock(), JPABackingStore(entityManagerFactory))
+        @Reference(service = BackingStore::class)
+        backingStore: BackingStore
+    ) : this(coordinatorFactory, UTCClock(), backingStore)
 
     private companion object {
         private val log: Logger = contextLogger()
@@ -46,6 +44,10 @@ class BatchedUniquenessCheckerImpl(
 
     private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
         .createCoordinator<UniquenessChecker>(::eventHandler)
+
+    private val dependentComponents = DependentComponents.of(
+        ::backingStore
+    )
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -297,15 +299,14 @@ class BatchedUniquenessCheckerImpl(
         log.info("Uniqueness checker received event $event.")
         when (event) {
             is StartEvent -> {
-                log.info("Uniqueness checker is UP")
-                coordinator.updateStatus(LifecycleStatus.UP)
+                dependentComponents.registerAndStartAll(coordinator)
             }
             is StopEvent -> {
-                log.info("Uniqueness checker is DOWN")
-                coordinator.updateStatus(LifecycleStatus.DOWN)
+                dependentComponents.stopAll()
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Uniqueness checker is ${event.status}")
+
                 coordinator.updateStatus(event.status)
             }
             else -> {

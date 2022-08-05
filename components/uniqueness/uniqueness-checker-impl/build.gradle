@@ -28,6 +28,7 @@ dependencies {
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
 
+    integrationTestApi project(":components:db:db-connection-manager")
     integrationTestImplementation 'net.corda:corda-crypto'
     integrationTestImplementation 'net.corda:corda-db-schema'
     integrationTestImplementation project(':libs:db:db-admin')
@@ -35,6 +36,7 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-core')
     integrationTestImplementation project(':libs:db:db-orm')
     integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':libs:lifecycle:lifecycle')
     integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
 

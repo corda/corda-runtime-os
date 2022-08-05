@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>Indentation:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.kt:25</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.kt:3</ID>
+    <ID>SpacingAroundParens:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest.kt:27</ID>
+    <ID>StringTemplate:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef.kt:14</ID>
+    <ID>WildcardImport:UniquenessCheckInternalResult.kt$import net.corda.data.uniqueness.*</ID>
+    <ID>Wrapping:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.kt:35</ID>
+    <ID>Wrapping:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.kt:38</ID>
+    <ID>Wrapping:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.kt:41</ID>
+    <ID>Wrapping:net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.kt:44</ID>
+  </CurrentIssues>
+</SmellBaseline>

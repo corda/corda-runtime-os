@@ -4,13 +4,14 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.uniqueness.UniquenessCheckRequest
 import net.corda.data.uniqueness.UniquenessCheckResponse
 import net.corda.data.uniqueness.UniquenessCheckResultSuccess
-import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.schema.DbSchema
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.testkit.DbUtils
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
+import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.JPABackingStore
+import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions
@@ -21,7 +22,11 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -34,13 +39,14 @@ import javax.persistence.EntityManagerFactory
  * implementation and an associated JPA compatible DB
  */
 // TODO: Find an elegant way to avoid duplication of unit tests
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplIntegrationTests {
 
     private val entityManagerFactory: EntityManagerFactory
-    private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_db")
+    private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
 
     private companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/uniqueness/migration/uniqueness-creation-v1.0.xml"
+        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/uniqueness/db.changelog-master.xml"
     }
 
     private val baseTime: Instant = Instant.EPOCH
@@ -98,20 +104,8 @@ class UniquenessCheckerImplIntegrationTests {
      * [entityManagerFactory].
      */
     init {
-        val dbChange = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    DbSchema::class.java.packageName,
-                    listOf(MIGRATION_FILE_LOCATION),
-                    DbSchema::class.java.classLoader
-                )
-            )
-        )
-        dbConfig.dataSource.connection.use { connection ->
-            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-        }
         entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
+            "uniqueness_default",
             JPABackingStoreEntities.classes.toList(),
             dbConfig
         )
@@ -128,10 +122,21 @@ class UniquenessCheckerImplIntegrationTests {
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
+        val backingStore = JPABackingStoreImpl(
+            mock(),
+            JpaEntitiesRegistryImpl(),
+            mock<DbConnectionManager>().apply {
+                whenever(getOrCreateEntityManagerFactory(any(),any(),any())) doReturn entityManagerFactory
+                whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+            }
+        )
+
         uniquenessChecker = BatchedUniquenessCheckerImpl(
             mock(),
             testClock,
-            JPABackingStore(entityManagerFactory))
+            backingStore)
+
+        backingStore.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
     }
 
     @Nested

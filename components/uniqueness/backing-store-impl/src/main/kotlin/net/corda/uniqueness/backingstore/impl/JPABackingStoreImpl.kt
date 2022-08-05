@@ -6,29 +6,61 @@ package net.corda.uniqueness.backingstore.impl
  *
  * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
+import net.corda.db.schema.DbSchema
+import net.corda.lifecycle.*
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.uniqueness.backingstore.BackingStore
+import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.common.datamodel.*
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_REJECTED_REPRESENTATION
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import javax.persistence.*
 
 // TODO: Reimplement metrics, config
-open class JPABackingStore(
-    private val entityManagerFactory: EntityManagerFactory
+@Component(service = [BackingStore::class])
+open class JPABackingStoreImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager
 ) : BackingStore {
 
     private companion object {
         private val log: Logger = contextLogger()
 
         // TODO: Replace constants with config
+        const val DEFAULT_UNIQUENESS_DB_NAME = "uniqueness_default"
         const val MAX_RETRIES = 10
     }
+
+    private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
+        .createCoordinator<BackingStore>(::eventHandler)
+
+    private val dependentComponents = DependentComponents.of(
+        ::dbConnectionManager
+    )
+
+    private lateinit var entityManagerFactory: EntityManagerFactory
+
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
 
     override fun session(block: (BackingStore.Session) -> Unit) {
         val entityManager = entityManagerFactory.createEntityManager()
@@ -44,8 +76,19 @@ open class JPABackingStore(
         }
     }
 
+    override fun start() {
+        log.info("Uniqueness checker starting.")
+        lifecycleCoordinator.start()
+    }
+
+    override fun stop() {
+        log.info("Uniqueness checker stopping.")
+        lifecycleCoordinator.stop()
+    }
+
     override fun close() {
         entityManagerFactory.close()
+        stop()
     }
 
     protected open inner class SessionImpl(
@@ -262,6 +305,74 @@ open class JPABackingStore(
                     }
                 }
             }
+        }
+    }
+
+    @VisibleForTesting
+    fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.info("Backing store received event $event.")
+        when (event) {
+            is StartEvent -> {
+                dependentComponents.registerAndStartAll(coordinator)
+            }
+            is StopEvent -> {
+                dependentComponents.stopAll()
+            }
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+
+                    createDefaultUniquenessDb()
+
+                    entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
+                        DEFAULT_UNIQUENESS_DB_NAME,
+                        DbPrivilege.DML,
+                        entitiesSet = jpaEntitiesRegistry.get(CordaDb.Uniqueness.persistenceUnitName)
+                            ?: throw IllegalStateException("persistenceUnitName " +
+                                    "${CordaDb.Uniqueness.persistenceUnitName} is not registered."
+                        )
+                    )
+                }
+
+                log.info("Backing store is ${event.status}")
+                coordinator.updateStatus(event.status)
+            }
+            else -> {
+                log.warn("Unexpected event $event!")
+            }
+        }
+    }
+
+    /*
+     * FIXME: This is a temporary hack which uses the public schema of the cluster database to
+     * store uniqueness data. It needs replacing with a solution to retrieve the appropriate DB
+     * connection for a given notary service identity, and a mechanism to create the DB connection
+     */
+    private fun createDefaultUniquenessDb() {
+        jpaEntitiesRegistry.register(
+            CordaDb.Uniqueness.persistenceUnitName,
+            JPABackingStoreEntities.classes)
+
+        val schemaMigrator = LiquibaseSchemaMigratorImpl()
+        val changeLog = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf("net/corda/db/schema/uniqueness/db.changelog-master.xml"),
+                    DbSchema::class.java.classLoader
+                )
+            )
+        )
+
+        dbConnectionManager.getClusterDataSource().connection.use { connection ->
+            schemaMigrator.updateDb(connection, changeLog)
+
+            dbConnectionManager.putConnection(
+                DEFAULT_UNIQUENESS_DB_NAME,
+                DbPrivilege.DML,
+                dbConnectionManager.clusterConfig,
+                "Uniqueness default DB",
+                ""
+            )
         }
     }
 }

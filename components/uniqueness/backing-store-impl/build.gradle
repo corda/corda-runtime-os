@@ -7,15 +7,19 @@ description 'Backing store component implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     api project(':libs:lifecycle:lifecycle')
 
-    implementation 'javax.persistence:javax.persistence-api'
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-db-schema"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
+    implementation project(":components:db:db-connection-manager")
+    implementation project(':libs:db:db-admin')
+    implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
 
     // For JSON serialization to DB

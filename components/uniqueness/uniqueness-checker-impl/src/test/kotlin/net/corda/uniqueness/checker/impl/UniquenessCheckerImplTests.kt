@@ -5,7 +5,7 @@ import net.corda.crypto.testkit.SecureHashUtils.randomBytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.fake.InMemoryBackingStore
+import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
@@ -97,7 +97,8 @@ class UniquenessCheckerImplTests {
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(mock(), testClock, InMemoryBackingStore())
+        uniquenessChecker =
+            BatchedUniquenessCheckerImpl(mock(), testClock, BackingStoreImplFake(mock()))
     }
 
     @Nested

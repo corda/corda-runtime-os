@@ -1,5 +1,6 @@
 package net.corda.uniqueness.backingstore
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
 import net.corda.uniqueness.common.datamodel.*
 import net.corda.v5.crypto.SecureHash
@@ -39,7 +40,8 @@ import net.corda.v5.crypto.SecureHash
  * }
  * ```
  */
-interface BackingStore {
+
+interface BackingStore : Lifecycle {
 
     /**
      * Opens a new session with the backing store and runs the supplied block of code in the
@@ -56,12 +58,6 @@ interface BackingStore {
     fun transactionSession(block: (Session, Session.TransactionOps) -> Unit) {
         session { session -> session.executeTransaction(block) }
     }
-
-    /**
-     * Ends this instance of the backing store. Should be called when the backing store is
-     * no longer required.
-     */
-    fun close()
 
     /**
      * Provides the set of operations that may be performed within the context of a session with.

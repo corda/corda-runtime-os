@@ -92,6 +92,7 @@ data class UniquenessStateDetailEntity(
         @Column(name = "consuming_tx_id", nullable = true, length = TRANSACTION_ID_LENGTH)
         val consumingTxId: ByteArray?
 ) {
+        @Suppress("ComplexMethod")
         override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (other !is UniquenessStateDetailEntity) return false
