@@ -1,70 +1,14 @@
-<<<<<<< HEAD
-plugins {
-    id 'net.corda.plugins.cordapp-cpb'
-=======
-import static org.gradle.api.JavaVersion.VERSION_11
 
 plugins {
-    id 'maven-publish'
-    id "java-library"
-
-    id 'org.jetbrains.kotlin.jvm'
-    id 'net.corda.plugins.cordapp-cpk'
     id 'net.corda.plugins.cordapp-cpb'
     id 'net.corda.plugins.quasar-utils'
     id 'org.jetbrains.kotlin.plugin.jpa'
     id 'org.jetbrains.kotlin.plugin.allopen'
->>>>>>> 5fb63a762 (CORE-5653: Adding cordapp test utils)
 }
 
 group = "net.cordacon"
 version = "$cordaApiVersion"
 
-<<<<<<< HEAD
-=======
-def javaVersion = VERSION_11
-
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-    kotlinOptions {
-        languageVersion = '1.6'
-        apiVersion = '1.6'
-        jvmTarget = javaVersion
-        javaParameters = true   // Useful for reflection.
-        freeCompilerArgs += [
-                "-java-parameters",
-                "-Xjvm-default=all"
-        ]
-    }
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = "$artifactoryContextUrl/corda-dependencies"
-
-    }
-    maven {
-        url "${artifactoryContextUrl}/corda-os-maven"
-        authentication {
-            basic(BasicAuthentication)
-        }
-        credentials {
-            username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-        }
-    }
-    gradlePluginPortal()
-}
-
-configurations {
-    implementation.transitive = false
-
-    integrationTestImplementation.extendsFrom testImplementation
-    integrationTestRuntimeOnly.extendsFrom runtimeOnly
-}
-
->>>>>>> 5fb63a762 (CORE-5653: Adding cordapp test utils)
 dependencies {
 
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
@@ -82,37 +26,18 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }
-<<<<<<< HEAD
+
 tasks.named('jar', Jar) {
     archiveBaseName = 'cordapp-example-rollcall'
-=======
-
-check.dependsOn integrationTest
-
-tasks.withType(Test) {
-    useJUnitPlatform()
-}
-
-jar {
-    baseName "cordapp-example-rollcall"
->>>>>>> 5fb63a762 (CORE-5653: Adding cordapp test utils)
 }
 
 cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow
-<<<<<<< HEAD
     {
         name jar.baseName
         versionId 1
         vendor "LizR3"
     }
-=======
-            {
-                name jar.baseName
-                versionId 1
-                vendor "LizR3"
-            }
->>>>>>> 5fb63a762 (CORE-5653: Adding cordapp test utils)
 }
