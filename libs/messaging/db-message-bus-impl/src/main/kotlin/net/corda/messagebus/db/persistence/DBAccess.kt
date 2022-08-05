@@ -27,8 +27,9 @@ import javax.persistence.PersistenceException
 class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
-
-    private val defaultNumPartitions = 1
+    // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
+    // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
+    private val defaultNumPartitions = 3
     private val autoCreate = true
 
     companion object {
