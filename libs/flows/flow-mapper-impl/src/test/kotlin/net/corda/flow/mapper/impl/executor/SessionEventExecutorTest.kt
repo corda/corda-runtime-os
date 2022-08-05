@@ -1,5 +1,8 @@
 package net.corda.flow.mapper.impl.executor
 
+import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
@@ -8,21 +11,23 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class SessionEventExecutorTest {
 
     private val sessionId = "sessionId"
+    private val flowConfig = SmartConfigImpl.empty().withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
 
     @Test
@@ -39,7 +44,8 @@ class SessionEventExecutorTest {
             FlowMapperState(),
             Instant.now(),
             sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
         ).execute()
 
         val state = result.flowMapperState
@@ -62,12 +68,14 @@ class SessionEventExecutorTest {
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(
-            sessionId, payload, FlowMapperState(
+            sessionId, payload,
+            FlowMapperState(
                 "flowId1", null, FlowMapperStateType.OPEN
             ),
             Instant.now(),
             sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
         ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -91,7 +99,8 @@ class SessionEventExecutorTest {
             null,
             Instant.now(),
             sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
         ).execute()
 
         val state = result.flowMapperState
@@ -119,15 +128,18 @@ class SessionEventExecutorTest {
 
     class AppMessageFactoryCaptor(val appMessage: AppMessage) {
 
+        var flowConfig: SmartConfig? = null
         var sessionEvent: SessionEvent? = null
         var sessionEventSerializer: CordaAvroSerializer<SessionEvent>? = null
 
         fun generateAppMessage(
             sessionEvent: SessionEvent,
-            sessionEventSerializer: CordaAvroSerializer<SessionEvent>
+            sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
+            flowConfig: SmartConfig
         ): AppMessage {
             this.sessionEvent = sessionEvent
             this.sessionEventSerializer = sessionEventSerializer
+            this.flowConfig = flowConfig
 
             return appMessage
         }

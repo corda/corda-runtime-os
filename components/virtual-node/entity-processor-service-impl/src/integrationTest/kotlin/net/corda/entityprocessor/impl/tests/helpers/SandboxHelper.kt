@@ -35,7 +35,7 @@ object SandboxHelper {
         return this.loadClassFromMainBundles("net.corda.testing.bundles.cats.Owner")
     }
 
-    fun SandboxGroupContext.createDogInstance(id: UUID, name: String, date: Instant, owner: String): Any {
+    fun SandboxGroupContext.createDogInstance(id: UUID, name: String, date: Instant, owner: String?): Any {
         val dogCtor = this.sandboxGroup.getDogClass().getDeclaredConstructor(UUID::class.java, String::class.java, Instant::class.java, String::class.java)
         return dogCtor.newInstance(id, name, date, owner)
     }

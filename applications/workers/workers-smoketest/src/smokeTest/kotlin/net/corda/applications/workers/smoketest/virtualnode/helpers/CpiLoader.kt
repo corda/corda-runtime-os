@@ -8,6 +8,7 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 object CpiLoader {
+    private const val groupIdPlaceholder = "group-id-placeholder"
     private fun getInputStream(resourceName: String): InputStream {
         return this::class.java.getResource(resourceName)?.openStream()
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
@@ -40,8 +41,12 @@ object CpiLoader {
     }
 
     private fun addGroupPolicy(zipOutputStream: ZipOutputStream, groupId: String) {
+        val staticNetworkPolicy = javaClass.classLoader.getResourceAsStream("GroupPolicy-static-network.json")
+            .reader().use { it.readText() }
+            .replace(groupIdPlaceholder, groupId)
+
         zipOutputStream.putNextEntry(ZipEntry("META-INF/GroupPolicy.json"))
-        """{"groupId":"$groupId"}\n""".byteInputStream().use { it.copyTo(zipOutputStream) }
+        staticNetworkPolicy.byteInputStream().use { it.copyTo(zipOutputStream) }
         zipOutputStream.closeEntry()
     }
 }

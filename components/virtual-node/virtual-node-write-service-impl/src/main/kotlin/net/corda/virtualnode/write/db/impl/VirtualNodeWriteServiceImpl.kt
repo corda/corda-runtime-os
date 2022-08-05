@@ -6,7 +6,7 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -43,8 +43,7 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             dbConnectionManager,
             dbAdmin,
             schemaMigrator,
-            groupPolicyParser,
-        )
+            groupPolicyParser)
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
     }

@@ -9,8 +9,8 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -19,6 +19,8 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
+import net.corda.processors.p2p.gateway.GatewayProcessor
+import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
@@ -45,6 +47,10 @@ class CombinedWorker @Activate constructor(
     private val rpcProcessor: RPCProcessor,
     @Reference(service = MemberProcessor::class)
     private val memberProcessor: MemberProcessor,
+    @Reference(service = LinkManagerProcessor::class)
+    private val linkManagerProcessor: LinkManagerProcessor,
+    @Reference(service = GatewayProcessor::class)
+    private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -61,6 +67,10 @@ class CombinedWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
 
+        if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
+            logger.info("Quasar's instrumentation verification is enabled")
+        }
+
         PostgresDbSetup().run()
 
         JavaSerialisationFilter.install()
@@ -76,8 +86,7 @@ class CombinedWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig, cryptoConfig)
         ).addDefaultBootCryptoConfig(
-            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
         cryptoProcessor.start(config)
@@ -86,6 +95,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.start(config)
         memberProcessor.start(config)
         rpcProcessor.start(config)
+        linkManagerProcessor.start(config, false)
+        gatewayProcessor.start(config, false)
     }
 
     override fun shutdown() {
@@ -97,6 +108,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.stop()
         memberProcessor.stop()
         rpcProcessor.stop()
+        linkManagerProcessor.stop()
+        gatewayProcessor.stop()
 
         healthMonitor.stop()
     }

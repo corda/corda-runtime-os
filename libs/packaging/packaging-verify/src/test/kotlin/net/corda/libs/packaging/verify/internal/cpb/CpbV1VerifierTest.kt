@@ -1,17 +1,18 @@
 package net.corda.libs.packaging.verify.internal.cpb
 
-import net.corda.libs.packaging.JarReader
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
+import net.corda.libs.packaging.verify.JarReader
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.ALICE
+import net.corda.libs.packaging.testutils.TestUtils.BOB
+import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder
+import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder.Companion.POLICY_FILE
+import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.ALICE
-import net.corda.libs.packaging.verify.TestUtils.BOB
-import net.corda.libs.packaging.verify.TestUtils.ROOT_CA
-import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.internal.cpb.TestCpbV1Builder.Companion.POLICY_FILE
-import net.corda.libs.packaging.verify.internal.cpk.TestCpkV1Builder
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals

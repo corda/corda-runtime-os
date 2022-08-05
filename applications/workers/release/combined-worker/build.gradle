@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
+    id 'corda.docker-app'
 }
 
 description 'Combined Worker'
@@ -9,6 +10,13 @@ osgiRun {
     frameworkProperties.putAll(
         'org.osgi.framework.security': 'osgi'
     )
+}
+
+quasar {
+    excludePackages.addAll([
+        'org.eclipse.jetty**',
+        'net.corda.membership**'
+    ])
 }
 
 dependencies {
@@ -22,6 +30,7 @@ dependencies {
     implementation project(':libs:application:application-db-setup')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':processors:crypto-processor')
@@ -30,6 +39,8 @@ dependencies {
     implementation project(':processors:member-processor')
     implementation project(':processors:rpc-processor')
     implementation project(':processors:uniqueness-processor')
+    implementation project(':processors:link-manager-processor')
+    implementation project(':processors:gateway-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -44,7 +55,9 @@ dependencies {
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
-    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+//  swap these around in order to use a "real" Kafka message bus rather than the emulation.
+    runtimeOnly project(':libs:messaging:db-message-bus-impl')
+//    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'

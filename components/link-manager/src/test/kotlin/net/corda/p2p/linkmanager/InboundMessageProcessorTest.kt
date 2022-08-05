@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.p2p.AuthenticatedMessageAck
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -39,7 +38,9 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.seconds
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -59,8 +60,8 @@ class InboundMessageProcessorTest {
         private const val MESSAGE_ID = "MessageId"
     }
     private val sessionManager = mock<SessionManager>()
-    private val myIdentity = HoldingIdentity("PartyA", "Group")
-    private val remoteIdentity = HoldingIdentity("PartyC", "Group")
+    private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
+    private val remoteIdentity = createTestHoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group")
     private val membersAndGroups = mockMembersAndGroups(
         myIdentity, remoteIdentity
     )
@@ -126,8 +127,8 @@ class InboundMessageProcessorTest {
         fun `AuthenticatedDataMessage with Inbound session will produce a message on the P2P_IN_TOPIC and LINK_OUT_TOPIC topics`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    remoteIdentity,
-                    myIdentity,
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
                     null, MESSAGE_ID, "trace-id", "system-1"
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
@@ -323,8 +324,8 @@ class InboundMessageProcessorTest {
         fun `AuthenticatedDataMessage with no session  will not produce records`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    remoteIdentity,
-                    myIdentity,
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
                     null, MESSAGE_ID, "trace-id", "system-1"
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
@@ -361,8 +362,8 @@ class InboundMessageProcessorTest {
         fun `receiving data message with Inbound session will produce a message on the P2P_IN_TOPIC and LINK_OUT_TOPIC topics`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    remoteIdentity,
-                    myIdentity,
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
                     null, MESSAGE_ID, "trace-id", "system-1"
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
@@ -430,8 +431,8 @@ class InboundMessageProcessorTest {
         fun `when the message's source identity does not match the one of the session the message is discarded`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    remoteIdentity,
-                    myIdentity,
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
                     null, MESSAGE_ID, "trace-id", "system-1"
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
@@ -490,8 +491,8 @@ class InboundMessageProcessorTest {
         fun `when the message's dest identity does not match the one of the session the message is discarded`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    remoteIdentity,
-                    myIdentity,
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
                     null, MESSAGE_ID, "trace-id", "system-1"
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
@@ -752,7 +753,8 @@ class InboundMessageProcessorTest {
 
         assertThat(records).hasSize(1).anySatisfy {
             assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
-            assertThat(it.value).isSameAs(unauthenticatedMessage)
+            assertThat(it.value).isInstanceOf(AppMessage::class.java)
+            assertThat((it.value as AppMessage).message).isEqualTo(unauthenticatedMessage)
         }
     }
 }

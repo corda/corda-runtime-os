@@ -35,7 +35,6 @@ class CloseSessionsRequestHandler @Activate constructor(
             // TODO Wakeup flow with an error
             throw FlowFatalException(
                 e.message ?: "An error occurred in the platform - A session in ${request.sessions} was missing from the checkpoint",
-                context,
                 e
             )
         }
@@ -58,7 +57,7 @@ class CloseSessionsRequestHandler @Activate constructor(
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, context, e)
+            throw FlowFatalException(e.message, e)
         }
 
         return if (hasNoSessionsOrAllClosed) {

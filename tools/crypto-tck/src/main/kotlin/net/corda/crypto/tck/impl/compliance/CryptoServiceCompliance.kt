@@ -3,8 +3,11 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
+import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
 import net.corda.crypto.impl.decorators.requiresWrappingKey
 import net.corda.crypto.impl.decorators.supportsKeyDelete
+import net.corda.crypto.impl.decorators.supportsSharedSecretDerivation
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ComplianceSpec
@@ -14,16 +17,23 @@ import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
+import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
+import net.corda.v5.cipher.suite.SharedSecretAliasSpec
+import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -31,8 +41,10 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.asn1.x509.Time
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.jcajce.provider.util.DigestFactory
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -76,11 +88,18 @@ class CryptoServiceCompliance : AbstractCompliance() {
 
     private val schemesAndSignatureSpecs = mutableListOf<Pair<String, SignatureSpec>>()
 
+    private lateinit var derivingSchemes: List<KeyScheme>
+
     @BeforeEach
     fun setup(spec: ComplianceSpec) {
         super.setup(spec, providers)
-        service.supportedSchemes.forEach {
+        service.supportedSchemes.filter {
+            it.key.canDo(KeySchemeCapability.SIGN)
+        }.forEach {
             it.value.forEach { s -> schemesAndSignatureSpecs.add(Pair(it.key.codeName, s)) }
+        }
+        derivingSchemes = service.supportedSchemes.keys.filter {
+            it.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION)
         }
     }
 
@@ -92,12 +111,12 @@ class CryptoServiceCompliance : AbstractCompliance() {
     }
 
     @Test
-    fun `Should support at least one key schema supported by scheme matadata`() {
+    fun `Should support at least one signing key schema supported by scheme matadata`() {
         logger.info(
             "Supported key schemes by service: [${service.supportedSchemes.keys.joinToString()}]"
         )
         val supported = service.supportedSchemes.filter {
-            schemeMetadata.schemes.contains(it.key)
+            it.key.canDo(KeySchemeCapability.SIGN) && schemeMetadata.schemes.contains(it.key)
         }
         logger.info("Supported by service and scheme metadata: [${supported.keys.joinToString()}]")
         assertTrue(supported.isNotEmpty(), "The service must support at least one key scheme.")
@@ -109,8 +128,27 @@ class CryptoServiceCompliance : AbstractCompliance() {
     }
 
     @Test
+    fun `Should support at least one deriving key schema supported by scheme matadata`() {
+        assumeTrue(
+            service.supportsSharedSecretDerivation,
+            "The test expects that service supports secret derivation."
+        )
+        logger.info(
+            "Supported key schemes by service: [${service.supportedSchemes.keys.joinToString()}]"
+        )
+        val supported = service.supportedSchemes.filter {
+            it.key.canDo(KeySchemeCapability.SHARED_SECRET_DERIVATION) && schemeMetadata.schemes.contains(it.key)
+        }
+        logger.info("Supported by service and scheme metadata: [${supported.keys.joinToString()}]")
+        assertTrue(supported.isNotEmpty(), "The service must support at least one key scheme.")
+    }
+
+    @Test
     fun `delete should throw UnsupportedOperationException if it's not supported but still called`() {
-        assumeFalse(service.supportsKeyDelete)
+        assumeFalse(
+            service.supportsKeyDelete,
+            "The test expects that service doesn't support key deletion."
+        )
         assertThrows(UnsupportedOperationException::class.java) {
             service.delete("alias", mapOf(
                 CRYPTO_TENANT_ID to tenantId,
@@ -121,10 +159,39 @@ class CryptoServiceCompliance : AbstractCompliance() {
 
     @Test
     fun `createWrappingKey should throw UnsupportedOperationException if it's not supported but still called`() {
-        assumeFalse(service.requiresWrappingKey)
+        assumeFalse(
+            service.requiresWrappingKey,
+            "The test expects that service doesn't require wrapping keys."
+        )
         assertThrows(UnsupportedOperationException::class.java) {
             service.createWrappingKey("masterKeyAlias", false, mapOf(
                 CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+            ))
+        }
+    }
+
+    @Test
+    fun `deriveSharedSecret should throw UnsupportedOperationException if it's not supported but still called`() {
+        assumeFalse(
+            service.supportsSharedSecretDerivation,
+            "The test expects that service doesn't support secret derivation."
+        )
+        assertThrows(UnsupportedOperationException::class.java) {
+            service.deriveSharedSecret(SharedSecretAliasSpec(
+                publicKey =  object : PublicKey {
+                    override fun getAlgorithm(): String = "EC"
+                    override fun getFormat(): String = ASN1Encoding.DER
+                    override fun getEncoded(): ByteArray = "key".toByteArray()
+                },
+                hsmAlias = "alias",
+                keyScheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"),
+                otherPublicKey = object : PublicKey {
+                    override fun getAlgorithm(): String = "EC"
+                    override fun getFormat(): String = ASN1Encoding.DER
+                    override fun getEncoded(): ByteArray = "key".toByteArray()
+                }
+            ), mapOf(
+                CRYPTO_TENANT_ID to tenantId
             ))
         }
     }
@@ -136,7 +203,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
             val generatedKeys = ConcurrentLinkedQueue<PublicKey>()
-            val experiments = ConcurrentLinkedQueue<Experiment>()
+            val experiments = ConcurrentLinkedQueue<SigningExperiment>()
             try {
                 (0 until compliance.options.concurrency).createTestCase {
                     val alias = compliance.generateRandomIdentifier()
@@ -147,7 +214,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                     )
                 }.runAndValidate()
             } catch (e: Throwable) {
-                experiments.cleanupKeyPairs()
+                experiments.cleanupSigningKeyPairs()
                 throw e
             }
             experiments.validateAndCleanupKeys(generatedKeys)
@@ -161,7 +228,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
             val generatedKeys = ConcurrentLinkedQueue<PublicKey>()
-            val experiments = ConcurrentLinkedQueue<Experiment>()
+            val experiments = ConcurrentLinkedQueue<SigningExperiment>()
             try {
                 (0 until compliance.options.concurrency).createTestCase {
                     val key = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
@@ -171,10 +238,35 @@ class CryptoServiceCompliance : AbstractCompliance() {
                     )
                 }.runAndValidate()
             } catch (e: Throwable) {
-                experiments.cleanupKeyPairs()
+                experiments.cleanupSigningKeyPairs()
                 throw e
             }
             experiments.validateAndCleanupKeys(generatedKeys)
+        }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `Should be able to generate key pair with proposed alias then endcode & decode public key and then derive shared secret`() {
+        assumeTrue(
+            service.supportsSharedSecretDerivation,
+            "The test expects that service supports secret derivation."
+        )
+        derivingSchemes.forEach { keyScheme ->
+            logger.info("scheme=$keyScheme")
+            val generatedKeys = ConcurrentLinkedQueue<GeneratedKey>()
+            try {
+                (0 until compliance.options.concurrency).createTestCase {
+                    val alias = compliance.generateRandomIdentifier()
+                    val key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
+                    generatedKeys.add(key)
+                    `Should be able to derive shared secret and use it for encryption`(key, keyScheme)
+                }.runAndValidate()
+            } catch (e: Throwable) {
+                generatedKeys.cleanupKeyPairs()
+                throw e
+            }
+            generatedKeys.encodeDecodeAndCleanupKeys()
         }
     }
 
@@ -197,8 +289,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                 KeyGenerationSpec(
                     keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
                     alias = compliance.generateRandomIdentifier(),
-                    masterKeyAlias = masterKeyAlias,
-                    secret = compliance.generateRandomIdentifier().toByteArray()
+                    masterKeyAlias = masterKeyAlias
                 ),
                 context = mapOf(
                     CRYPTO_TENANT_ID to tenantId,
@@ -211,8 +302,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                 KeyGenerationSpec(
                     keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
                     alias = null,
-                    masterKeyAlias = masterKeyAlias,
-                    secret = compliance.generateRandomIdentifier().toByteArray()
+                    masterKeyAlias = masterKeyAlias
                 ),
                 context = mapOf(
                     CRYPTO_TENANT_ID to tenantId,
@@ -222,7 +312,69 @@ class CryptoServiceCompliance : AbstractCompliance() {
         }
     }
 
-    private fun Collection<Experiment>.validateAndCleanupKeys(generatedKeys: ConcurrentLinkedQueue<PublicKey>) {
+    private fun `Should be able to derive shared secret and use it for encryption`(
+        key: GeneratedKey,
+        keyScheme: KeyScheme
+    ) {
+        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            schemeMetadata.secureRandom.nextBytes(this)
+        }
+        val plainText = "Hello MGM!".toByteArray()
+        val encryptedData = encryptWithEphemeralKeyPair(
+            schemeMetadata = schemeMetadata,
+            salt = salt,
+            otherPublicKey = key.publicKey,
+            plainText = plainText,
+            aad = null
+        )
+        val spec = if (key is GeneratedWrappedKey) {
+            SharedSecretWrappedSpec(
+                publicKey = key.publicKey,
+                keyMaterialSpec = KeyMaterialSpec(
+                    keyMaterial = key.keyMaterial,
+                    masterKeyAlias = masterKeyAlias,
+                    encodingVersion = key.encodingVersion
+                ),
+                keyScheme = keyScheme,
+                otherPublicKey = encryptedData.publicKey
+            )
+        } else {
+            key as GeneratedPublicKey
+            val spec = SharedSecretAliasSpec(
+                publicKey = key.publicKey,
+                hsmAlias = key.hsmAlias,
+                keyScheme = keyScheme,
+                otherPublicKey = encryptedData.publicKey
+            )
+            assertThrows<IllegalArgumentException>(
+                "Should throw IllegalArgumentException when HSM alias is not known."
+            ) {
+                service.deriveSharedSecret(
+                    SharedSecretAliasSpec(
+                        publicKey = key.publicKey,
+                        hsmAlias = compliance.generateRandomIdentifier(),
+                        keyScheme = keyScheme,
+                        otherPublicKey = encryptedData.publicKey
+                    ),
+                    mapOf(CRYPTO_TENANT_ID to tenantId)
+                )
+            }
+            spec
+        }
+        val result = decryptWithStableKeyPair(
+            schemeMetadata = schemeMetadata,
+            salt = salt,
+            publicKey = key.publicKey,
+            otherPublicKey = encryptedData.publicKey,
+            cipherText = encryptedData.cipherText,
+            aad = null
+        ) {
+            service.deriveSharedSecret(spec, mapOf(CRYPTO_TENANT_ID to tenantId))
+        }
+        assertArrayEquals(plainText, result)
+    }
+
+    private fun Collection<SigningExperiment>.validateAndCleanupKeys(generatedKeys: Collection<PublicKey>) {
         try {
             forEach {
                 `Should be able to encode and then decode public key as byte array`(it.key.publicKey)
@@ -234,7 +386,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
                     verifier.isValid(
                         publicKey = it.key.publicKey,
                         signatureSpec = it.signatureSpec,
-                        signatureData = it.signature,
+                        signatureData = it.result,
                         clearData = it.clearData
                     ),
                     "Signature validation failed."
@@ -246,13 +398,33 @@ class CryptoServiceCompliance : AbstractCompliance() {
                 "All generated keys must be distinct"
             )
         } finally {
+            cleanupSigningKeyPairs()
+        }
+    }
+
+    private fun Collection<GeneratedKey>.encodeDecodeAndCleanupKeys() {
+        try {
+            forEach {
+                `Should be able to encode and then decode public key as byte array`(it.publicKey)
+                `Should be able to encode and then decode public key as PEM`(it.publicKey)
+            }
+            assertEquals(
+                size,
+                distinct().size,
+                "All generated keys must be distinct"
+            )
+        } finally {
             cleanupKeyPairs()
         }
     }
 
-    private fun Collection<Experiment>.cleanupKeyPairs() {
+    private fun Collection<SigningExperiment>.cleanupSigningKeyPairs() {
+        map { it.key }.cleanupKeyPairs()
+    }
+
+    private fun Collection<GeneratedKey>.cleanupKeyPairs() {
         val candidates = mapNotNull {
-            (it.key as? GeneratedPublicKey)?.hsmAlias
+            (it as? GeneratedPublicKey)?.hsmAlias
         }.distinct()
         logger.info(
             "Considering {} keys for deleting [{}])",

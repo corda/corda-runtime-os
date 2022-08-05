@@ -9,7 +9,7 @@ function onPoll() {
     }
 
     pendingResults.forEach((value, key) => {
-        getFlowStatus(value.holdingShortId, key)
+        getFlowStatus(value.holdingIdentityShortHash, key)
     })
 }
 

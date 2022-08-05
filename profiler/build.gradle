@@ -1,0 +1,79 @@
+plugins {
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
+    id 'base'
+}
+
+description 'Creates a ZIP artifact containing the YourKit Java Profiler agent for Linux x86_64'
+
+def downloadUrl = "${downloadBaseUrl}/${yourkitVersion}/YourKit-JavaProfiler-${yourkitVersion}-b103.zip"
+def downloadDir = layout.buildDirectory.dir('download')
+def yourkitProfilerZip = objects.fileProperty().value(downloadDir.map { it.file('yourkit.zip') })
+def distributionDir = layout.buildDirectory.dir('distribution')
+
+def downloadZip = tasks.register('downloadZip') {
+    inputs.property('downloadUrl', downloadUrl)
+    outputs.file yourkitProfilerZip
+
+    doLast {
+        ant.get(src: downloadUrl, dest: yourkitProfilerZip.get(), retries: 3, verbose: 'on')
+    }
+}
+
+def extractAgent = tasks.register('extractAgent', Zip) {
+    inputs.file yourkitProfilerZip
+    dependsOn downloadZip
+
+    destinationDirectory = distributionDir
+    archiveBaseName = 'yourkit'
+    archiveAppendix = 'linux-x86-64'
+    archiveVersion = yourkitVersion
+
+    from(zipTree(yourkitProfilerZip)) {
+        include '*/license-redist.txt'
+        include '*/bin/linux-x86-64/libyjpagent.so'
+    }
+    reproducibleFileOrder = true
+}
+
+artifacts {
+    archives extractAgent
+}
+
+publishing {
+    publications {
+        yourkitAgent(MavenPublication) {
+            groupId 'com.yourkit.corda'
+            artifactId 'yourkit-agent-linux-x86-64'
+            version yourkitVersion
+
+            artifact extractAgent
+            pom {
+                name = 'YourKit Java Profiler agent for Linux x86_64'
+                url = 'https://www.yourkit.com'
+
+                licenses {
+                    license {
+                        name = 'YourKit (redistribution)'
+                        distribution = 'repo'
+                    }
+                }
+            }
+        }
+    }
+}
+
+artifactory {
+    publish {
+        contextUrl = artifactoryContextUrl
+        repository {
+            repoKey = 'engineering-tools-maven-stable'
+            username = project.findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+            password = project.findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+        }
+
+        defaults {
+            publications 'yourkitAgent'
+        }
+    }
+}

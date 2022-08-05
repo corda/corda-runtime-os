@@ -12,10 +12,13 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.libs.virtualnode.datamodel.findAllVirtualNodes
+import net.corda.libs.virtualnode.datamodel.findVirtualNode
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -59,16 +62,16 @@ class VirtualNodeEntitiesIntegrationTest {
 
     @Suppress("Unused")
     @AfterAll
-    private fun cleanup() {
+    fun cleanup() {
         dbConfig.close()
         entityManagerFactory.close()
     }
 
     @Test
     fun `can persist and read back Holding Identity entity`() {
-        val holdingIdentityId = Generator.randomHex()
+        val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
         val holdingIdentity = HoldingIdentityEntity(
-            holdingIdentityId, "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
+            holdingIdentityShortHash, "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
             "${random.nextInt()}", null, null, null, null, null
         )
 
@@ -79,7 +82,7 @@ class VirtualNodeEntitiesIntegrationTest {
         assertEquals(
             holdingIdentity,
             entityManagerFactory.createEntityManager()
-                .find(HoldingIdentityEntity::class.java, holdingIdentity.holdingIdentityId)
+                .find(HoldingIdentityEntity::class.java, holdingIdentity.holdingIdentityShortHash)
         )
     }
 
@@ -90,13 +93,13 @@ class VirtualNodeEntitiesIntegrationTest {
         val hash = "CPI summary hash"
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentityId = Generator.randomHex()
-        val entity = newHoldingIdentityEntity(holdingIdentityId)
+        val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
+        val entity = newHoldingIdentityEntity(holdingIdentityShortHash)
 
         val holdingIdentityEntity = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityId) }
+            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityShortHash) }
 
-        val virtualNode = VirtualNodeEntity(entity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(entity, name, version, hash, "")
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
@@ -115,15 +118,15 @@ class VirtualNodeEntitiesIntegrationTest {
         val hash = "CPI summary hash"
 
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentityId = Generator.randomHex()
-        val holdingIdentityEntity = newHoldingIdentityEntity(holdingIdentityId)
+        val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
+        val holdingIdentityEntity = newHoldingIdentityEntity(holdingIdentityShortHash)
 
         // Persist holding identity...
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentityEntity) }
 
         // Now persist the virtual node but use the merge operation because we've
         // already persisted the holding identity (i.e. REST end-point - "create holding identity")
-        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash)
+        val virtualNode = VirtualNodeEntity(holdingIdentityEntity, name, version, hash, "")
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadata)
             em.merge(virtualNode)
@@ -132,7 +135,7 @@ class VirtualNodeEntitiesIntegrationTest {
         // Use a reference to *find* only - we do NOT need the other fields in the HoldingIdentityEntity
         // (and in fact, neither does hibernate - it only cares about the primary keys).
         val holdingIdentityReference = entityManagerFactory.createEntityManager()
-            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityId) }
+            .transaction { em -> em.getReference(HoldingIdentityEntity::class.java, holdingIdentityShortHash) }
         val key = VirtualNodeEntityKey(holdingIdentityReference, name, version, hash)
 
         assertEquals(virtualNode, entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, key))
@@ -164,18 +167,36 @@ class VirtualNodeEntitiesIntegrationTest {
         }
     }
 
-    private fun newVNode(name: String, version: String, hash: String) {
+    @Test
+    fun `lookup virtual node entity query test`() {
+        // "set up"
+        val numberOfVNodes = 5
+        val vnodes = (1..numberOfVNodes).map { i ->
+            newVNode("Test CPI $i", "1.0-${Generator.epochMillis()}", "hash$i")
+        }
+
+        // Now check the query - and also we should look at the console output for this
+        val virtualNode = entityManagerFactory.createEntityManager().use {
+            it.findVirtualNode(vnodes.last().holdingIdentity.holdingIdentityShortHash)
+        }!!
+
+        // Validate relation for holdingIdentity has been resolved
+        assertNotNull(virtualNode.holdingIdentity.x500Name)
+        assertEquals(virtualNode.holdingIdentity.x500Name, vnodes.last().holdingIdentity.x500Name)
+    }
+
+    private fun newVNode(name: String, version: String, hash: String): VirtualNodeEntity {
         val cpiMetadata = newCpiMetadataEntity(name, version, hash)
-        val holdingIdentity = newHoldingIdentityEntity(Generator.randomHex())
-        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash)
+        val holdingIdentity = newHoldingIdentityEntity(Generator.randomHoldingIdentityShortHash())
+        val virtualNode = VirtualNodeEntity(holdingIdentity, name, version, hash, "")
 
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(holdingIdentity) }
         entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
-        entityManagerFactory.createEntityManager().transaction { em -> em.merge(virtualNode) }
+        entityManagerFactory.createEntityManager().transaction { em -> return em.merge(virtualNode) }
     }
 
-    private fun newHoldingIdentityEntity(holdingIdentityId: String) = HoldingIdentityEntity(
-        holdingIdentityId = holdingIdentityId,
+    private fun newHoldingIdentityEntity(holdingIdentityShortHash: String) = HoldingIdentityEntity(
+        holdingIdentityShortHash = holdingIdentityShortHash,
         holdingIdentityFullHash = "1234",
         x500Name = "dummy",
         mgmGroupId = "dummy",
@@ -195,7 +216,7 @@ class VirtualNodeEntitiesIntegrationTest {
         version = version,
         signerSummaryHash = hash,
         fileName = "file",
-        fileChecksum = Generator.randomHex(),
+        fileChecksum = Generator.randomHoldingIdentityShortHash(),
         groupPolicy = "group policy",
         groupId = "group ID",
         fileUploadRequestId = "request ID",

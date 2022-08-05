@@ -16,6 +16,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledFuture
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
  * @param lifecycleEventHandler The user event handler for lifecycle events.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
@@ -207,6 +208,16 @@ class LifecycleCoordinatorImpl(
         }
         return followStatusChanges(coordinators)
     }
+
+    override fun <T : AutoCloseable> createManagedResource(name: String, generator: () -> T) {
+        processor.addManagedResource(name, generator)
+    }
+
+    override fun <T: AutoCloseable> getManagedResource(name: String) : T? {
+        return uncheckedCast(processor.getManagedResource(name))
+    }
+
+    override fun closeManagedResources(resources: Set<String>?) = processor.closeManagedResources(resources)
 
     /**
      * See [LifecycleCoordinator].

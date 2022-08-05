@@ -8,33 +8,61 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("LongParameterList")
-abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
+abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    myName: LifecycleCoordinatorName,
+    private val myName: LifecycleCoordinatorName,
     private val configurationReadService: ConfigurationReadService,
-    @Volatile
-    var impl: IMPL,
-    private val dependencies: Set<LifecycleCoordinatorName>,
-    private val configKeys: Set<String> = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.BOOT_CONFIG)
+    private val upstream: DependenciesTracker,
+    private val configKeys: Set<String>
 ) : Lifecycle {
+
+   interface AbstractImpl: AutoCloseable {
+        val downstream: DependenciesTracker
+        override fun close() {
+            downstream.clear()
+        }
+        fun onUpstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
+        fun onDownstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
+    }
+
+    abstract class DownstreamAlwaysUpAbstractImpl : AbstractImpl {
+        override val downstream: DependenciesTracker = DependenciesTracker.AlwaysUp()
+    }
+
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
+    init {
+        val configReaderName = LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        require(upstream.dependencies.contains(configReaderName)) {
+            "The upstream dependencies must contain $configReaderName"
+        }
+    }
 
-    @Volatile
-    private var registrationHandle: RegistrationHandle? = null
+    private val activationFailureCounter = AtomicInteger(0)
 
     @Volatile
     private var configHandle: AutoCloseable? = null
+
+    @Volatile
+    private var _impl: IMPL? = null
+
+    val impl: IMPL get() {
+        val tmp = _impl
+        if(tmp == null || lifecycleCoordinator.status != LifecycleStatus.UP) {
+            throw IllegalStateException("Component $myName is not ready.")
+        }
+        return tmp
+    }
+
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -53,53 +81,124 @@ abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
         logger.info("LifecycleEvent received: $event")
         when (event) {
             is StartEvent -> {
-                registrationHandle?.close()
-                registrationHandle = coordinator.followStatusChangesByName(dependencies)
+                upstream.follow(coordinator)
             }
             is StopEvent -> {
-                registrationHandle?.close()
-                registrationHandle = null
-                configHandle?.close()
-                configHandle = null
-                deactivateImpl("Stopping component.")
+                onStop()
             }
             is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.UP) {
-                    logger.info("Registering for configuration updates.")
-                    configHandle = configurationReadService.registerComponentForUpdates(coordinator, configKeys)
-                } else {
-                    configHandle?.close()
-                    configHandle = null
-                    deactivateImpl("At least one dependency is DOWN.")
+                if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
+                    onUpstreamRegistrationStatusChange(coordinator)
+                } else if(_impl?.downstream?.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
+                    onDownstreamRegistrationStatusChange(coordinator)
                 }
             }
             is ConfigChangedEvent -> {
-                activateImpl(event)
+                onConfigChange(event, coordinator)
+            }
+            is TryAgainCreateActiveImpl -> {
+                onTryAgainCreateActiveImpl(event.configChangedEvent, coordinator)
             }
         }
     }
 
-    private fun activateImpl(event: ConfigChangedEvent) {
-        logger.info("Activating")
-        try {
-            impl.close()
-            impl = createActiveImpl(event)
-        } catch (e: Throwable) {
-            logger.error("Failed activate...", e)
-            throw e
-        }
-        logger.info("Activated, setting the status of {} UP", this::class.simpleName)
-        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+    private fun onStop() {
+        upstream.clear()
+        _impl?.downstream?.clear()
+        configHandle?.close()
+        configHandle = null
+        _impl?.close()
+        _impl = null
     }
 
-    private fun deactivateImpl(reason: String) {
-        logger.info("Deactivating due {}", reason)
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        impl.close()
-        impl = createInactiveImpl()
+    private fun onUpstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
+        logger.info(
+            "onUpstreamRegistrationStatusChange(upstream={}, downstream={}).",
+            upstream.isUp,
+            _impl?.downstream?.isUp
+        )
+        updateLifecycleStatus(coordinator)
+        configHandle?.close()
+        configHandle = if (upstream.isUp) {
+            logger.info("Registering for configuration updates.")
+            configurationReadService.registerComponentForUpdates(coordinator, configKeys)
+        } else {
+            null
+        }
+        _impl?.onUpstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
+    }
+
+    private fun onDownstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
+        logger.info(
+            "onDownstreamRegistrationStatusChange(upstream={}, downstream={}).",
+            upstream.isUp,
+            _impl?.downstream?.isUp
+        )
+        updateLifecycleStatus(coordinator)
+        _impl?.onDownstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
+    }
+
+    private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        doActivation(event, coordinator)
+        updateLifecycleStatus(coordinator)
+    }
+
+    private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        if(_impl != null || !upstream.isUp) {
+            logger.info(
+                "onTryAgainCreateActiveImpl skipping as stale (upstream={}, _impl={}).",
+                upstream.isUp,
+                _impl
+            )
+            return
+        }
+        doActivation(event, coordinator)
+        updateLifecycleStatus(coordinator)
+    }
+
+    private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Activating {}", myName)
+        try {
+            _impl?.downstream?.clear()
+            _impl?.close()
+            _impl = createActiveImpl(event)
+            _impl?.downstream?.follow(coordinator)
+            activationFailureCounter.set(0)
+            logger.debug("Activated {}", myName)
+        } catch (e: FatalActivationException) {
+            logger.error("Failed activate", e)
+            coordinator.updateStatus(LifecycleStatus.ERROR)
+        } catch (e: Throwable) {
+            if(activationFailureCounter.incrementAndGet() <= 5) {
+                logger.warn("Failed activate..., will try again", e)
+                coordinator.postEvent(TryAgainCreateActiveImpl(event))
+            } else {
+                logger.error("Failed activate, giving up", e)
+                coordinator.updateStatus(LifecycleStatus.ERROR)
+            }
+        }
+    }
+
+    private fun updateLifecycleStatus(coordinator: LifecycleCoordinator) {
+        logger.debug(
+            "updateStatus(self={},upstream={}, downstream={}, _impl={}).",
+            coordinator.status,
+            upstream.isUp,
+            _impl?.downstream?.isUp,
+            _impl
+        )
+        if (upstream.isUp && _impl?.downstream?.isUp == true && _impl != null) {
+            logger.info("Setting the status of {} UP", myName)
+            coordinator.updateStatus(LifecycleStatus.UP)
+        } else {
+            if(coordinator.status != LifecycleStatus.ERROR) {
+                logger.info("Setting the status of {} DOWN", myName)
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            }
+        }
     }
 
     protected abstract fun createActiveImpl(event: ConfigChangedEvent): IMPL
 
-    protected abstract fun createInactiveImpl(): IMPL
+    class TryAgainCreateActiveImpl(val configChangedEvent: ConfigChangedEvent) : LifecycleEvent
 }

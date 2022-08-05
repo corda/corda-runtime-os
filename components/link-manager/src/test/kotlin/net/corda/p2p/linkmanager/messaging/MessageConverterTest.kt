@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.messaging
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
@@ -18,6 +17,9 @@ import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockGroups
 import net.corda.p2p.linkmanager.utilities.mockMembers
+import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -105,9 +107,14 @@ class MessageConverterTest {
         val session = mock<AuthenticatedSession> {
             on { createMac(any()) } doReturn mac
         }
-        val peer = HoldingIdentity("Imposter", "")
+        val groupId = "group-1"
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
         val members = mockMembers(emptyList())
-        val flowMessage = authenticatedMessageAndKey(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
+        val flowMessage = authenticatedMessageAndKey(
+            createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId),
+            peer,
+            ByteBuffer.wrap("DATA".toByteArray())
+        )
         assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, mock(), members)).isNull()
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
@@ -124,8 +131,9 @@ class MessageConverterTest {
         val session = mock<AuthenticatedSession> {
             on { createMac(any()) } doReturn mac
         }
-        val peer = HoldingIdentity("Imposter", "")
-        val us = HoldingIdentity("", "")
+        val groupId = "group-1"
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
+        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
         val members = mockMembers(listOf(us, peer))
         val groups = mockGroups(emptyList())
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
@@ -139,10 +147,11 @@ class MessageConverterTest {
     @Test
     fun `linkOutFromUnauthenticatedMessage returns null (with appropriate logging) if if the destination is not in the network map`() {
         val payload = "test"
-        val us = HoldingIdentity("Alice", "test-group-id")
-        val peer = HoldingIdentity("Imposter", "")
+        val groupId = "group-1"
+        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
         val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(peer, us, "subsystem"),
+            UnauthenticatedMessageHeader(peer.toAvro(), us.toAvro(), "subsystem"),
             ByteBuffer.wrap(payload.toByteArray())
         )
 
@@ -158,10 +167,11 @@ class MessageConverterTest {
     @Test
     fun `linkOutFromUnauthenticatedMessage returns null (with appropriate logging) if if their network type is not in the network map`() {
         val payload = "test"
-        val us = HoldingIdentity("Alice", "test-group-id")
-        val peer = HoldingIdentity("Imposter", "")
+        val groupId = "group-1"
+        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
         val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(peer, us, "subsystem"),
+            UnauthenticatedMessageHeader(peer.toAvro(), us.toAvro(), "subsystem"),
             ByteBuffer.wrap(payload.toByteArray())
         )
 
@@ -180,7 +190,7 @@ class MessageConverterTest {
         data: ByteBuffer,
         messageId: String = ""
     ): AuthenticatedMessageAndKey {
-        val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
+        val header = AuthenticatedMessageHeader(dest.toAvro(), source.toAvro(), null, messageId, "", "system-1")
         return AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), "key")
     }
 }

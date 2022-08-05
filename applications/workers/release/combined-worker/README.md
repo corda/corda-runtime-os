@@ -4,26 +4,133 @@
 
 ### Postgres DB
 
-Run postgres container in background:
+Run postgres container:
 ```shell
-docker run -d -p 5432:5432 --name postgresql -e POSTGRESQL_DATABASE=cordacluster -e POSTGRESQL_USERNAME=user -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_POSTGRES_PASSWORD=password bitnami/postgresql:latest
+docker run --rm -p 5432:5432 --name postgresql -e POSTGRES_DB=cordacluster -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password postgres:latest
 ```
 
-Run it with logs visible in console and ensure the container is deleted (and data wiped) when the container is stopped:
+Note that the above will give you a new "clean" DB every time the container is started. If you want to run postgres in the background and maintain the state until you manually clean, then use:
 
 ```shell
-docker run --rm -p 5432:5432 --name postgresql -e POSTGRESQL_DATABASE=cordacluster -e POSTGRESQL_USERNAME=user -e POSTGRESQL_PASSWORD=password -e POSTGRESQL_POSTGRES_PASSWORD=password bitnami/postgresql:latest
+docker run -d -p 5432:5432 --name postgresql -e POSTGRES_DB=cordacluster -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password postgres:latest
 ```
 
 DB schema will be created automatically when worker is started.
-TODO: DB bootstraping might change as CLI could be used instead
 
-### Message Bus
+**NOTES:**
 
-#### Kafka
+* DB bootstrapping might change as CLI could be used instead, for example. Options are being looked at by the DevEx team.
+* Currently, the bootstrapper expects a postgres connection with the a superuser with credentials `postgres`/`password` 
+(as per docker command above). If you need to use different credentials, you can specify them with the following environment variables:
+  * `CORDA_DEV_POSTGRES_USER`
+  * `CORDA_DEV_POSTGRES_PASSWORD`
 
-TODO: Database message bus should be used instead, this is just temporary work-around (which is the reason why all containers are not created together).
-Note that topics were taken from k8s cluster and might be out of sync.
+## Start the worker
+
+### From the command line
+Build the worker using:
+```bash
+./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar
+```
+
+Run the worker using:
+```bash
+java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+  ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
+  --instanceId=0 -mbus.busType=DATABASE  \
+  -spassphrase=password -ssalt=salt \
+  -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
+```
+
+Or if you want to connect to "real" KAFKA (see below):
+```bash
+java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
+  ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
+  --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
+  -spassphrase=password -ssalt=salt \
+  -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
+```
+
+### From IntelliJ IDE
+
+Use one of the following run configuratons:
+
+- `Combined Worker Local (no debug)` (no debug agent attached)
+- `Combined Worker Local (debug agent 5005)` (debug agent attached and exposed on port 5005)
+- `Combined Worker Local (suspend debug agent 5005)` (debug agent attached, exposed on port 5005 and suspended on start)
+
+## Interact with the worker
+
+The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger
+The status endpoint is also exposed: http://localhost:7000/status
+
+## Smoketests
+
+Run the [smoketests](/applications/workers/workers-smoketest/) to validate the combined worker.
+
+Note that some tests require an empty environment (e.g. CPI upload).
+
+## Logs
+
+Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
+Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running,
+but it may be useful to change this on a case-by-case basis when debugging. Note that the JAR must be rebuilt
+after the resource file is changed. Here is an `log4j2.xml` which logs to the console only:
+
+```
+?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="Console">
+            <AppenderRef ref="Console" level="info"/>
+        </logger>
+
+        <!-- log warn only for these 3rd party libs -->
+        <Logger name="org.apache.aries.spifly" level="warn" />
+        <Logger name="org.apache.kafka" level="warn" />
+        <Logger name="io.javalin.Javalin" level="warn" />
+        <Logger name="org.eclipse.jetty" level="warn" />
+        <Logger name="org.hibernate" level="warn" />
+
+        <!-- default to warn only for OSGi logging -->
+        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />
+
+        <root level="debug">
+            <AppenderRef ref="Console" level="info"/>
+        </root>
+    </Loggers>
+</Configuration>
+```
+
+
+## Message Bus
+
+### Message bus emulation
+
+By default, the combined-worker uses the DB Message Bus emulation. This means that Kafka is not required, instead the message API will be supported by the postgres DB created above.
+
+### Kafka
+
+If using a "real", Kafka, message bus is preferred, for example for debugging or troubleshooting message library issues, this can be done by changing the runtime dependency in `build.gradle`:
+
+```
+runtimeOnly project(':libs:messaging:db-message-bus-impl')
+```
+
+to:
+
+```
+runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+```
+
+You then also need to provide a Kafka installation and set it up, which can be done like so:
 
 Create file `docker-compose.yml`:
 ```
@@ -54,108 +161,21 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
 ```
 Run:
 ```shell
-docker compose up
+docker compose up -d
 ```
 
-Create file `create-topics.txt`:
+To create the topics:
+Build the topic plugin, build the cli plugin host, copy the plugin and run it:
+```bash
+./gradlew :tools:plugins:topic-config:clean :tools:plugins:topic-config:cliPluginTask
+cd ../corda-cli-plugin-host/
+./gradlew assemble
+cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-plugin-*.jar ./build/plugins/
+ ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
+ cd ../corda-runtime-os/
 ```
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic certificates.rpc.ops  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic certificates.rpc.ops.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic config.management  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic config.management.request  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic config.management.request.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic config.topic --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.event  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.config.hsm  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.config.hsm.label  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.config.member  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.key.info  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.key.soft  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.hsm.label  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.hsm.rpc.registration  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.hsm.rpc.registration.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.hsm.rpc.configuration  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.hsm.rpc.configuration.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.ops.flow  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.ops.rpc  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.ops.rpc.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.ops.rpc.client  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic crypto.registration.hsm  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.event  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.event.state --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.event.dlq  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.mapper.event  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.mapper.event.state --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.mapper.event.dlq  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic flow.status --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.event --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.group.cpi.whitelists  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.group.params  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.proposals  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.update  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.members --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.rpc.ops  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.rpc.ops.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.ops.rpc  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic membership.ops.rpc.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.in  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.out  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.out.markers  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.out.markers.state --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.out.markers.dlq  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.hosted.identities --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic link.in  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic link.out  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic gateway.tls.certs --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic gateway.tls.truststores --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic session.out.partitions --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.members.info --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.group.policies --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic p2p.crypto.keys --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic user.permissions.management  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic permissions.user.summary --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic rpc.permissions.management  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic rpc.permissions.management.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic rpc.permissions.group --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic rpc.permissions.permission --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic rpc.permissions.user --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic rpc.permissions.role --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic cpi.info --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic cpi.upload  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic cpi.chunk.writer  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic cpi.upload.status  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic cpk.file --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic db.entity.processor  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic virtual.node.entity.processor  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic virtual.node.management  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic virtual.node.creation.request  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic virtual.node.creation.request.resp  ;
-kafka-topics --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --create --if-not-exists --topic virtual.node.info --config "cleanup.policy=compact" --config "segment.ms=300000" --config "delete.retention.ms=300000" --config "min.compaction.lag.ms=60000" --config "max.compaction.lag.ms=300000" --config "min.cleanable.dirty.ratio=0.5" ;
-```
-
-Run:
-```shell
-docker exec -i kafka /bin/bash < create-topics.txt
-```
-
-## Interact with the worker
-
-The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger 
-The status endpoint is also exposed: http://localhost:7000/status
-
-## Smoketests
-
-Run the [smoketests](/applications/workers/workers-smoketest/) to validate the combined worker.
-
-Note that some tests require an empty environment (e.g. CPI upload).
-
-## Logs
-
-Logs are output to disk, using the `osgi-framework-bootstrap/src/main/resources/log4j2.xml` configuration.
-Logging level for 3rd party libs has been defaulted to WARN to reduce the log size/increase the usefulness in normal running, 
-but it may be useful to change this on a case-by-case basis when debugging.

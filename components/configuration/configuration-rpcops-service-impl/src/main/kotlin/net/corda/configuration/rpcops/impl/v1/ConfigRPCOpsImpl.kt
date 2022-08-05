@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
-import java.time.Duration
+import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
@@ -12,12 +12,15 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
-import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -30,6 +33,7 @@ import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 /** An implementation of [ConfigRPCOpsInternal]. */
 @Suppress("Unused")
@@ -38,7 +42,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationValidatorFactory::class)
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = ConfigurationGetService::class)
+    private val configurationGetService: ConfigurationGetService,
 ) : ConfigRPCOpsInternal, PluggableRPCOps<ConfigRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
@@ -75,7 +81,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         this.requestTimeout = Duration.ofMillis(millis.toLong())
     }
 
-    override fun updateConfig(request: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
+    override fun updateConfig(request: UpdateConfigParameters): UpdateConfigResponse {
         validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
@@ -91,8 +97,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val response = sendRequest(rpcRequest)
 
         return if (response.success) {
-            HTTPUpdateConfigResponse(
-                response.section, response.config, Version(
+            UpdateConfigResponse(
+                response.section, response.config, ConfigSchemaVersion(
                     response.schemaVersion.majorVersion,
                     response.schemaVersion.minorVersion
                 ), response.version
@@ -113,14 +119,32 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         }
     }
 
+    override fun get(section: String): GetConfigResponse {
+        val config = configurationGetService.get(section)
+            ?: throw ResourceNotFoundException(
+                "Configuration for section '${section} not found."
+            )
+        return GetConfigResponse(
+            section,
+            config.source,
+            config.value,
+            ConfigSchemaVersion(config.schemaVersion.majorVersion, config.schemaVersion.minorVersion),
+            config.version
+        )
+    }
+
     /**
      * Validates that the [request] config can be parsed into a `Config` object and that its values are valid based on the defined
      * schema for this request.
      */
-    private fun validateRequestedConfig(request: HTTPUpdateConfigRequest) = try {
+    private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
         val config = request.config
         val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
-        val updatedConfig = validator.validate(request.section, request.schemaVersion, smartConfig)
+        val updatedConfig = validator.validate(
+            request.section,
+            Version(request.schemaVersion.major, request.schemaVersion.minor),
+            smartConfig
+        )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
         val message = "Configuration \"${request.config}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"

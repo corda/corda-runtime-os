@@ -41,6 +41,7 @@ dependencies {
     implementation project(':components:domino-logic')
     implementation project(':components:p2p-test:stub-crypto-processor')
     implementation project(":components:crypto:crypto-client")
+    implementation project(":components:membership:membership-persistence-client")
     implementation "net.corda:corda-cipher-suite"
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
@@ -60,6 +61,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
+    implementation project(":components:membership:membership-group-read")
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
@@ -88,6 +90,8 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
+    integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
+    integrationTestRuntimeOnly project(":components:membership:membership-persistence-client-impl")
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
     testRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"

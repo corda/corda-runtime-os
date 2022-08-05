@@ -21,7 +21,7 @@ import javax.persistence.Version
 /**
  * The entity for a virtual node instance in the cluster database.
  *
- * @param holdingIdentityId The short 12-character hash of the virtual node's holding identity.
+ * @param holdingIdentity The virtual node's holding identity.
  * @param cpiName The name of the CPI the virtual node is created for.
  * @param cpiVersion The version of the CPI the virtual node is created for.
  * @param cpiSignerSummaryHash The signer summary hash of the CPI the virtual node is created for.
@@ -45,6 +45,9 @@ data class VirtualNodeEntity(
     @Id
     @Column(name = "cpi_signer_summary_hash", nullable = false)
     var cpiSignerSummaryHash: String,
+
+    @Column(name = "state", nullable = false)
+    var virtualNodeState: String,
 
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null,
@@ -77,12 +80,16 @@ data class VirtualNodeEntity(
         result = 31 * result + cpiSignerSummaryHash.hashCode()
         return result
     }
+
+    fun update(newState: String) {
+        virtualNodeState = newState
+    }
 }
 
 /** The composite primary key for a virtual node instance. */
 @Embeddable
 @Suppress("Unused")
-class VirtualNodeEntityKey(
+data class VirtualNodeEntityKey(
     private val holdingIdentity: HoldingIdentityEntity,
     private val cpiName: String,
     private val cpiVersion: String,
@@ -101,4 +108,24 @@ fun EntityManager.findAllVirtualNodes(): Stream<VirtualNodeEntity> {
     query.select(root)
 
     return createQuery(query).resultStream
+}
+
+fun EntityManager.findVirtualNode(holdingIdentityShortHash: String): VirtualNodeEntity? {
+    val queryBuilder = with(criteriaBuilder!!) {
+        val queryBuilder = createQuery(VirtualNodeEntity::class.java)!!
+        val root = queryBuilder.from(VirtualNodeEntity::class.java)
+        root.fetch<Any, Any>("holdingIdentity")
+        queryBuilder.where(
+            equal(
+                root.get<HoldingIdentityEntity>("holdingIdentity").get<String>("holdingIdentityShortHash"),
+                parameter(String::class.java, "shortId")
+            )
+        ).orderBy(desc(root.get<String>("cpiVersion")))
+        queryBuilder
+    }
+
+    return createQuery(queryBuilder)
+        .setParameter("shortId", holdingIdentityShortHash)
+        .setMaxResults(1)
+        .singleResult
 }

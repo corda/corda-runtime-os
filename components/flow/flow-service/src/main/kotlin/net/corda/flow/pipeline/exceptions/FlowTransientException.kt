@@ -1,11 +1,11 @@
 package net.corda.flow.pipeline.exceptions
 
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
  * The [FlowTransientException] is thrown for a recoverable error, this exception will cause the event processing
  * to be retried
  */
-class FlowTransientException(message: String, flowEventContext: FlowEventContext<*>, cause: Throwable? = null) :
-    FlowProcessingException(message, flowEventContext, cause)
+class FlowTransientException(override val message: String, cause: Throwable? = null) :
+    CordaRuntimeException(message, cause)
 

@@ -10,11 +10,11 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.CompletableFuture
@@ -66,7 +66,7 @@ class ReconfigurableHttpServer(
 
     inner class ReconfigurableHttpServerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
-        Gateway.CONFIG_KEY,
+        ConfigKeys.P2P_GATEWAY_CONFIG,
         { it.toGatewayConfiguration() }
     ) {
         override fun applyNewConfiguration(

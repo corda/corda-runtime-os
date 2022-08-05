@@ -1,21 +1,24 @@
 package net.corda.chunking.db.impl.validation
 
-import java.io.FileNotFoundException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.security.KeyStore
-import java.security.cert.X509Certificate
+import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.utilities.time.Clock
 import net.corda.libs.packaging.verify.verifyCpi
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import java.io.FileNotFoundException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.security.KeyStore
+import java.security.cert.X509Certificate
 
 @Suppress("LongParameterList")
 class CpiValidatorImpl constructor(
@@ -37,7 +40,7 @@ class CpiValidatorImpl constructor(
 
         // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
-        val fileInfo = getCpiFileInfo(cpiCacheDir, chunkPersistence, requestId)
+        val fileInfo = assembleFileFromChunks(cpiCacheDir, chunkPersistence, requestId, ChunkReaderFactoryImpl)
 
         publisher.update(requestId, "Checking signatures")
         fileInfo.checkSignature()
@@ -61,18 +64,24 @@ class CpiValidatorImpl constructor(
         val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir)
 
         publisher.update(requestId, "Checking group id in CPI")
-        cpi.validateAndGetGroupId()
+        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
-            cpiPersistence.checkGroupIdDoesNotExistForCpi(cpi)
+            cpiPersistence.verifyGroupIdIsUniqueForCpi(cpi)
         }
+
+        publisher.update(
+            requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=${groupId}"
+        )
+        canUpsertCpi(cpi, groupId)
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity = cpiPersistence.persistCpiToDatabase(cpi, fileInfo, requestId, cpkDbChangeLogEntities, log)
+        val cpiMetadataEntity =
+            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(
@@ -86,6 +95,20 @@ class CpiValidatorImpl constructor(
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         return fileInfo.checksum
+    }
+
+    /**
+     *  Check that we can upsert a CPI with the same name and group id, or a new cpi
+     *  with a different name *and* different group id.  This is enforcing the policy
+     *  of one CPI per mgm group id.
+     */
+    private fun canUpsertCpi(cpi: Cpi, groupId: String) {
+        if (!cpiPersistence.canUpsertCpi(cpi.metadata.cpiId.name, groupId)) {
+            throw ValidationException(
+                "Group id ($groupId) in use with another CPI.  " +
+                        "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
+            )
+        }
     }
 
     // TODO The implementation of this method needs updating to load needed certificates from the database.

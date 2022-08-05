@@ -10,11 +10,8 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
-import net.corda.applications.workers.smoketest.virtualnode.toJson
 
 const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
-const val X500_SESSION_USER1 = "CN=SU1, OU=Application, O=R3, L=London, C=GB"
-const val X500_SESSION_USER2 = "CN=SU2, OU=Application, O=R3, L=London, C=GB"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -93,7 +90,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
             timeout(Duration.ofSeconds(20))
             condition {
                 val json = it.toJson()
-                val flowStatuses = json["httpFlowStatusResponses"]
+                val flowStatuses = json["flowStatusResponses"]
                 val allStatusComplete = flowStatuses.map { flowStatus ->
                     flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
                             flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
@@ -104,12 +101,26 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
+fun getFlowClasses(holdingId: String) : List<String> {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val vNodeJson = assertWithRetry {
+            command { runnableFlowClasses(holdingId) }
+            condition { it.code == 200 }
+            failMessage("Failed to get flows for holdingId '$holdingId'")
+        }.toJson()
+
+        vNodeJson["flowClassNames"].map { it.textValue() }
+    }
+}
+
 fun createVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
         val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-        val hash = truncateLongHash(json["fileChecksum"].textValue())
+        val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
         val vNodeJson = assertWithRetry {
             command { vNodeCreate(hash, x500) }
@@ -117,9 +128,52 @@ fun createVirtualNodeFor(x500: String): String {
             failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
-        val holdingId = vNodeJson["holdingIdHash"].textValue()
+        val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
+    }
+}
+
+fun registerMember(holdingIdentityId: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val membershipJson = assertWithRetry {
+            command { registerMember(holdingIdentityId) }
+            condition { it.code == 200 }
+            failMessage("Failed to register the member to the network '$holdingIdentityId'")
+        }.toJson()
+
+        val registrationStatus = membershipJson["registrationStatus"].textValue()
+        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
+    }
+}
+
+fun addSoftHsmFor(holdingId: String, category: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        assertWithRetry {
+            timeout(Duration.ofSeconds(5))
+            command { addSoftHsmToVNode(holdingId, category) }
+            condition { it.code == 200 }
+            failMessage("Failed to add SoftHSM for holding id '$holdingId'")
+        }
+    }
+}
+
+fun createKeyFor(holdingId: String, alias: String, category: String, scheme: String): String {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+        val keyId = assertWithRetry {
+            command { createKey(holdingId, alias, category, scheme) }
+            condition { it.code == 200 }
+            failMessage("Failed to create key for holding id '$holdingId'")
+        }.body
+        assertWithRetry {
+            command { getKey(holdingId, keyId) }
+            condition { it.code == 200 }
+            failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
+        }.body
     }
 }
 

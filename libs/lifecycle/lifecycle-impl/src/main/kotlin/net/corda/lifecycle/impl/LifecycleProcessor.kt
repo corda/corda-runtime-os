@@ -14,6 +14,7 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
 
 /**
@@ -43,6 +44,11 @@ internal class LifecycleProcessor(
     }
 
     /**
+     * A map of the current resources managed by this coordinator.
+     */
+    private val managedResources = ConcurrentHashMap<String, AutoCloseable>()
+
+    /**
      * Process a batch of events.
      *
      * @param coordinator The coordinator scheduling processing of this processor.
@@ -58,6 +64,7 @@ internal class LifecycleProcessor(
     /**
      * Process an individual event.
      */
+    @Suppress("ComplexMethod")
     private fun processEvent(
         event: LifecycleEvent,
         coordinator: LifecycleCoordinatorInternal,
@@ -165,6 +172,7 @@ internal class LifecycleProcessor(
                 logger.debug { "Could not update status as coordinator is closing" }
             }
             runUserEventHandler(event, coordinator)
+            closeManagedResources(emptySet())
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
         }
@@ -200,6 +208,8 @@ internal class LifecycleProcessor(
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
+        closeManagedResources(emptySet())
+        managedResources.clear()
         return true
     }
 
@@ -237,6 +247,25 @@ internal class LifecycleProcessor(
                 )
             }
             errorEvent.isHandled
+        }
+    }
+
+    fun addManagedResource(name: String, generator: () -> AutoCloseable) {
+        managedResources[name]?.close()
+        managedResources[name] = generator.invoke()
+    }
+
+    fun getManagedResource(name: String): AutoCloseable? {
+        return managedResources[name]
+    }
+
+    internal fun closeManagedResources(resources: Set<String>?) {
+        if (resources != null) {
+            managedResources.filter { it.key in resources }.values
+        } else {
+            managedResources.values
+        }.forEach {
+            it.close()
         }
     }
 }

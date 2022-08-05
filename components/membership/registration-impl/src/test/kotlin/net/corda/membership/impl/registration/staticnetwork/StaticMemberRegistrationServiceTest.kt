@@ -5,36 +5,37 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
-import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
-import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
-import net.corda.membership.impl.MemberInfoExtension.Companion.status
-import net.corda.membership.impl.MemberInfoFactoryImpl
-import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.membership.impl.converter.PublicKeyConverter
-import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.aliceName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.bobName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.charlieName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.daisyName
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.ericName
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithEmptyStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
-import net.corda.membership.impl.toSortedMap
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
+import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.impl.MemberInfoFactoryImpl
+import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.membership.lib.toSortedMap
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -73,14 +74,15 @@ class StaticMemberRegistrationServiceTest {
         private const val KEY_SCHEME = "corda.key.scheme"
     }
 
-    private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
-    private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
-    private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
-    private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
+    private val alice = HoldingIdentity(aliceName, DUMMY_GROUP_ID)
+    private val bob = HoldingIdentity(bobName, DUMMY_GROUP_ID)
+    private val charlie = HoldingIdentity(charlieName, DUMMY_GROUP_ID)
+    private val daisy = HoldingIdentity(daisyName, DUMMY_GROUP_ID)
+    private val eric = HoldingIdentity(ericName, DUMMY_GROUP_ID)
 
-    private val aliceId = alice.id
-    private val bobId = bob.id
-    private val charlieId = charlie.id
+    private val aliceId = alice.shortHash
+    private val bobId = bob.shortHash
+    private val charlieId = charlie.shortHash
 
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
@@ -100,6 +102,7 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(bob) } doReturn groupPolicyWithInvalidStaticNetworkTemplate
         on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
         on { getGroupPolicy(daisy) } doReturn groupPolicyWithStaticNetwork
+        on { getGroupPolicy(eric) } doReturn groupPolicyWithEmptyStaticNetwork
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -201,7 +204,7 @@ class StaticMemberRegistrationServiceTest {
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
-            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it)
         }
         registrationService.stop()
 
@@ -239,11 +242,11 @@ class StaticMemberRegistrationServiceTest {
 
         val publishedHostedIdentity = hostedIdentityList.first()
 
-        assertEquals(alice.id, publishedHostedIdentity.key)
+        assertEquals(alice.shortHash, publishedHostedIdentity.key)
         assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
         val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
         assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
-        assertEquals(alice.x500Name, hostedIdentityPublished.holdingIdentity.x500Name)
+        assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
 
         assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
     }
@@ -264,10 +267,25 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
-    fun `registration fails when static network is empty`() {
+    fun `registration fails when static network is missing`() {
         setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(charlie, mockContext)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: Could not find static member list in group policy file."
+            ),
+            registrationResult
+        )
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when static network is empty`() {
+        setUpPublisher()
+        registrationService.start()
+        val registrationResult = registrationService.register(eric, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,

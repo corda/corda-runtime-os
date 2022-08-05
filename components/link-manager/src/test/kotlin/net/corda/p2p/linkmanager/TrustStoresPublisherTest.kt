@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -17,6 +16,8 @@ import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
+import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -69,7 +70,7 @@ class TrustStoresPublisherTest {
 
     private val certificates = listOf("one", "two")
     private val groupInfo = GroupPolicyListener.GroupInfo(
-        HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "groupOne"),
+        createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "groupOne"),
         NetworkType.CORDA_5,
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         certificates,
@@ -103,7 +104,7 @@ class TrustStoresPublisherTest {
             assertThat(publishedRecords.allValues).containsExactly(
                 listOf(Record(GATEWAY_TLS_TRUSTSTORES,
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
+                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
                 ))
             )
         }
@@ -151,13 +152,12 @@ class TrustStoresPublisherTest {
                 listOf(
                     Record(GATEWAY_TLS_TRUSTSTORES,
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates))
+                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates))
                 ),
                 listOf(
                     Record(GATEWAY_TLS_TRUSTSTORES,
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId),
-                        certificatesTwo))
+                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificatesTwo))
                 ),
             )
         }
@@ -231,7 +231,7 @@ class TrustStoresPublisherTest {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
-                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
+                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
                 )
             )
 
@@ -246,7 +246,7 @@ class TrustStoresPublisherTest {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}" to
-                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
+                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
                 )
             )
 
@@ -270,7 +270,7 @@ class TrustStoresPublisherTest {
             processor.firstValue.onNext(
                 Record(
                     "", "${groupInfo.holdingIdentity.x500Name}-${groupInfo.holdingIdentity.groupId}",
-                    GatewayTruststore(HoldingIdentity(groupInfo.holdingIdentity.x500Name, groupInfo.holdingIdentity.groupId), certificates)
+                    GatewayTruststore(groupInfo.holdingIdentity.toAvro(), certificates)
                 ),
                 null, emptyMap()
             )

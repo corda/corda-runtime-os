@@ -18,10 +18,13 @@ import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
 import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.seconds
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -33,11 +36,12 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Instant
 
 class OutboundMessageProcessorTest {
-    private val myIdentity = HoldingIdentity("PartyA", "Group")
-    private val localIdentity = HoldingIdentity("PartyB", "Group")
-    private val remoteIdentity = HoldingIdentity("PartyC", "Group")
+    private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
+    private val localIdentity = createTestHoldingIdentity("CN=PartyB, O=Corp, L=LDN, C=GB", "Group")
+    private val remoteIdentity = createTestHoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group")
     private val membersAndGroups = mockMembersAndGroups(
         myIdentity, localIdentity, remoteIdentity
     )
@@ -73,8 +77,8 @@ class OutboundMessageProcessorTest {
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                myIdentity,
-                localIdentity,
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap(payload.toByteArray())
@@ -93,13 +97,14 @@ class OutboundMessageProcessorTest {
 
         assertSoftly { softAssertions ->
             softAssertions.assertThat(records).hasSize(3)
-            val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }.filterIsInstance<AppMessageMarker>()
+            val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+                .filterIsInstance<AppMessageMarker>()
             softAssertions.assertThat(markers).hasSize(2)
 
-            val sentMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerSentMarker>()
-            softAssertions.assertThat(sentMarkers).hasSize(1)
-            softAssertions.assertThat(sentMarkers.first().message.message).isSameAs(authenticatedMsg)
-            softAssertions.assertThat(sentMarkers.first().message.key).isEqualTo("key")
+            val processedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerProcessedMarker>()
+            softAssertions.assertThat(processedMarkers).hasSize(1)
+            softAssertions.assertThat(processedMarkers.first().message.message).isSameAs(authenticatedMsg)
+            softAssertions.assertThat(processedMarkers.first().message.key).isEqualTo("key")
 
             val receivedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerReceivedMarker>()
             softAssertions.assertThat(receivedMarkers).hasSize(1)
@@ -120,8 +125,8 @@ class OutboundMessageProcessorTest {
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                myIdentity,
-                localIdentity,
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap(payload.toByteArray())
@@ -140,8 +145,8 @@ class OutboundMessageProcessorTest {
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
             UnauthenticatedMessageHeader(
-                myIdentity,
-                localIdentity,
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
                 "subsystem"
             ),
             ByteBuffer.wrap(payload.toByteArray())
@@ -169,8 +174,8 @@ class OutboundMessageProcessorTest {
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
             UnauthenticatedMessageHeader(
-                remoteIdentity,
-                myIdentity,
+                remoteIdentity.toAvro(),
+                myIdentity.toAvro(),
                 "subsystem"
             ),
             ByteBuffer.wrap(payload.toByteArray()),
@@ -197,13 +202,13 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces only a LinkManagerSent marker (per flowMessage) if SessionAlreadyPending`() {
+    fun `onNext produces only a LinkManagerProcessed marker (per flowMessage) if SessionAlreadyPending`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val numberOfMessages = 3
         val messages = (1..numberOfMessages).map { i ->
             val header = AuthenticatedMessageHeader(
-                remoteIdentity,
-                myIdentity,
+                remoteIdentity.toAvro(),
+                myIdentity.toAvro(),
                 null,
                 "MessageId$i",
                 "trace-$i",
@@ -225,7 +230,7 @@ class OutboundMessageProcessorTest {
             .allMatch {
                 it.topic == Schemas.P2P.P2P_OUT_MARKERS
             }.allMatch {
-                (it.value as? AppMessageMarker)?.marker is LinkManagerSentMarker
+                (it.value as? AppMessageMarker)?.marker is LinkManagerProcessedMarker
             }.extracting("key")
             .isEqualTo((1..numberOfMessages).map { "MessageId$it" })
     }
@@ -236,8 +241,8 @@ class OutboundMessageProcessorTest {
         val numberOfMessages = 3
         val messages = (1..numberOfMessages).map { i ->
             val header = AuthenticatedMessageHeader(
-                remoteIdentity,
-                myIdentity,
+                remoteIdentity.toAvro(),
+                myIdentity.toAvro(),
                 null,
                 "MessageId$i",
                 "trace-$i",
@@ -266,8 +271,8 @@ class OutboundMessageProcessorTest {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
@@ -284,7 +289,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces session init messages, a LinkManagerSent marker and lists of partitions if NewSessionsNeeded`() {
+    fun `onNext produces session init messages, a LinkManagerProcessed marker and lists of partitions if NewSessionsNeeded`() {
         val firstSessionInitMessage = mock<LinkOutMessage>()
         val secondSessionInitMessage = mock<LinkOutMessage>()
         val state = SessionManager.SessionState.NewSessionsNeeded(
@@ -298,8 +303,8 @@ class OutboundMessageProcessorTest {
         whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
@@ -333,7 +338,7 @@ class OutboundMessageProcessorTest {
                 .hasSize(messages.size)
                 .allSatisfy { assertThat(it.key).isEqualTo("message-id") }
                 .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-                .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+                .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerProcessedMarker::class.java) }
         }
     }
 
@@ -353,8 +358,8 @@ class OutboundMessageProcessorTest {
         whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
@@ -390,8 +395,8 @@ class OutboundMessageProcessorTest {
         whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
@@ -404,7 +409,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces a LinkOutMessage and a LinkManagerSentMarker per message if SessionEstablished`() {
+    fun `onNext produces a LinkOutMessage and a LinkManagerProcessedMarker per message if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val messageIds = (1..3).map { i ->
@@ -417,8 +422,8 @@ class OutboundMessageProcessorTest {
                 AppMessage(
                     AuthenticatedMessage(
                         AuthenticatedMessageHeader(
-                            remoteIdentity,
-                            myIdentity,
+                            remoteIdentity.toAvro(),
+                            myIdentity.toAvro(),
                             null, id, "trace-id", "system-1"
                         ),
                         ByteBuffer.wrap(id.toByteArray())
@@ -431,18 +436,19 @@ class OutboundMessageProcessorTest {
         val records = processor.onNext(messages)
 
         assertSoftly { softly ->
-            softly.assertThat(records).hasSize(2 * messages.size)
+            softly.assertThat(records).hasSize(9)
 
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(messages.size)
                 .extracting<LinkOutMessage> { it.value as LinkOutMessage }
                 .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
 
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(messages.size)
-                .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-                .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
-
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.extracting<String> { it.key as String }
-                .containsExactlyElementsOf(messageIds)
+            val markers = records.filter { it.value is AppMessageMarker }
+                softly.assertThat(markers).hasSize(6)
+                softly.assertThat(markers.map { it.value as AppMessageMarker }
+                    .filter { it.marker is LinkManagerProcessedMarker }).hasSize(3)
+                softly.assertThat(markers.map { it.value as AppMessageMarker }
+                    .filter { it.marker is LinkManagerSentMarker }).hasSize(3)
+                softly.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
 
         verify(sessionManager, times(messages.size)).dataMessageSent(state.session)
@@ -450,13 +456,13 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and doesn't queue messages if SessionEstablished`() {
+    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and SentMarker and doesn't queue messages if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
                 null, "message-id", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("0".toByteArray())
@@ -468,18 +474,24 @@ class OutboundMessageProcessorTest {
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        assertThat(records)
-            .hasSize(1)
-            .filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }
-            .extracting<LinkOutMessage> { it.value as LinkOutMessage }
-            .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
+        assertSoftly { softly ->
+            softly.assertThat(records).hasSize(2)
+            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(1)
+                .extracting<LinkOutMessage> { it.value as LinkOutMessage }
+                .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
+            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(1)
+                .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+                .allSatisfy {
+                    assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java)
+                }
+        }
 
         verify(sessionManager, times(1)).dataMessageSent(state.session)
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
     @Test
-    fun `onNext produces only a LinkManagerSentMarker if CannotEstablishSession`() {
+    fun `onNext produces only a LinkManagerProcessedMarker if CannotEstablishSession`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
         val messages = listOf(
             EventLogRecord(
@@ -488,8 +500,8 @@ class OutboundMessageProcessorTest {
                 AppMessage(
                     AuthenticatedMessage(
                         AuthenticatedMessageHeader(
-                            remoteIdentity,
-                            localIdentity,
+                            remoteIdentity.toAvro(),
+                            localIdentity.toAvro(),
                             null, "message-id", "trace-id", "system-1"
                         ),
                         ByteBuffer.wrap("payload".toByteArray())
@@ -506,7 +518,7 @@ class OutboundMessageProcessorTest {
         assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isEqualTo("message-id") }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerProcessedMarker::class.java) }
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
@@ -517,8 +529,8 @@ class OutboundMessageProcessorTest {
             AuthenticatedMessageAndKey(
                 AuthenticatedMessage(
                     AuthenticatedMessageHeader(
-                        remoteIdentity,
-                        localIdentity,
+                        remoteIdentity.toAvro(),
+                        localIdentity.toAvro(),
                         null, "message-id", "trace-id", "system-1"
                     ),
                     ByteBuffer.wrap("payload".toByteArray())
@@ -532,14 +544,14 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces only a LinkManagerSentMarker if SessionEstablished and receiver is not in the network map`() {
+    fun `onNext produces only a LinkManagerProcessedMarker if SessionEstablished and receiver is not in the network map`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val appMessage = AppMessage(
             AuthenticatedMessage(
                 AuthenticatedMessageHeader(
-                    HoldingIdentity("PartyE", "Group"),
-                    localIdentity,
+                    HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
+                    localIdentity.toAvro(),
                     null, "message-id", "trace-id", "system-1"
                 ),
                 ByteBuffer.wrap("payload".toByteArray())
@@ -549,23 +561,31 @@ class OutboundMessageProcessorTest {
 
         val records = processor.onNext(messages)
 
-        assertThat(records).hasSize(messages.size)
+        assertThat(records).hasSize(2)
 
-        assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.hasSize(messages.size)
-            .allSatisfy { assertThat(it.key).isEqualTo("message-id") }
-            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
-            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("message-id")
+            }
+            it.assertThat(markers).hasSize(2)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerProcessedMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerSentMarker }).hasSize(1)
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+        }
         verify(messagesPendingSession, never()).queueMessage(any())
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces TtlExpiredMarker if TTL expiry is true and replay is true`() {
+    fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker if TTL expiry true and replay true`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
-                null, "message-id", "trace-id", "system-1"
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
+                null, "MessageId", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
         )
@@ -573,25 +593,31 @@ class OutboundMessageProcessorTest {
             authenticatedMsg,
             "key"
         )
-        authenticatedMessageAndKey.message.header.ttl = 0L
+        authenticatedMessageAndKey.message.header.ttl = Instant.ofEpochMilli(0)
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        assertThat(records).allSatisfy { record ->
-            assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
-            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
-            val marker = record.value as AppMessageMarker
-            assertThat(marker.marker).isInstanceOf(TtlExpiredMarker::class.java)
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("MessageId")
+            }
+            it.assertThat(markers).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker })
+                .hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
     }
 
     @Test
-    fun `OutboundMessageProcessor produces TtlExpiredMarker and LinkManagerSentMarker if TTL expiry is true and replay is false`() {
+    fun `OutboundMessageProcessor produces TtlExpiredMarker and LinkManagerProcessedMarker if TTL expiry is true and replay is false`() {
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                remoteIdentity,
-                localIdentity,
-                0, "MessageId", "trace-id", "system-1"
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
+                Instant.ofEpochMilli(0), "MessageId", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
         )
@@ -607,10 +633,14 @@ class OutboundMessageProcessorTest {
                 it.equals("MessageId")
             }
             it.assertThat(markers).hasSize(2)
-            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerSentMarker }).hasSize(1)
-            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker }).hasSize(1)
-            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerProcessedMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker })
+                .hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
     }
+
 }

@@ -10,9 +10,9 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.MemberInfoEntity
-import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.impl.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
@@ -45,7 +45,7 @@ class PersistMemberInfoHandlerTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = HoldingIdentity(
-        ourX500Name.toString(),
+        ourX500Name,
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
@@ -72,7 +72,6 @@ class PersistMemberInfoHandlerTest {
         timestamp = clock.instant()
     )
 
-
     private val entityTransaction: EntityTransaction = mock()
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
@@ -97,7 +96,7 @@ class PersistMemberInfoHandlerTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValueSerializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
 
     private val services = PersistenceHandlerServices(
@@ -141,7 +140,7 @@ class PersistMemberInfoHandlerTest {
 
         assertThat(result).isInstanceOf(Unit::class.java)
         verify(memberInfoFactory, never()).create(any())
-        verify(virtualNodeInfoReadService, never()).getById(any())
+        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(dbConnectionManager, never()).createEntityManagerFactory(any(), any())
         verify(jpaEntitiesRegistry, never()).get(any())
     }
@@ -156,8 +155,8 @@ class PersistMemberInfoHandlerTest {
 
         assertThat(result).isInstanceOf(Unit::class.java)
         with(argumentCaptor<String>()) {
-            verify(virtualNodeInfoReadService).getById(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(dbConnectionManager).createEntityManagerFactory(any(), any())
         verify(entityManagerFactory).createEntityManager()

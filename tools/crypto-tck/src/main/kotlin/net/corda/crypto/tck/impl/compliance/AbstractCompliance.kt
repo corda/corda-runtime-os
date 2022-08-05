@@ -16,6 +16,7 @@ import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.KeyMaterialSpec
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -69,7 +70,7 @@ abstract class AbstractCompliance {
                 )
             )
         } catch (e: Throwable) {
-            logger.warn("Failed to delete a ky with alias=$hsmAlias", e)
+            logger.warn("Failed to delete a key with alias=$hsmAlias", e)
         }
     }
 
@@ -87,7 +88,7 @@ abstract class AbstractCompliance {
                 )
             )
         } catch (e: Throwable) {
-            logger.warn("Failed to delete a ky with alias=$alias", e)
+            logger.warn("Failed to delete a key with alias=$alias", e)
         }
     }
 
@@ -100,8 +101,7 @@ abstract class AbstractCompliance {
             spec = KeyGenerationSpec(
                 keyScheme = keyScheme,
                 alias = alias,
-                masterKeyAlias = masterKeyAlias,
-                secret = compliance.generateRandomIdentifier().toByteArray()
+                masterKeyAlias = masterKeyAlias
             ),
             context = mapOf(
                 CRYPTO_TENANT_ID to tenantId,
@@ -119,18 +119,22 @@ abstract class AbstractCompliance {
         key: GeneratedKey,
         keyScheme: KeyScheme,
         signatureSpec: SignatureSpec
-    ): List<Experiment> {
+    ): List<SigningExperiment> {
         val spec = if (key is GeneratedWrappedKey) {
             SigningWrappedSpec(
-                keyMaterial = key.keyMaterial,
-                masterKeyAlias = masterKeyAlias,
-                encodingVersion = key.encodingVersion,
+                publicKey = key.publicKey,
+                keyMaterialSpec = KeyMaterialSpec(
+                    keyMaterial = key.keyMaterial,
+                    masterKeyAlias = masterKeyAlias,
+                    encodingVersion = key.encodingVersion
+                ),
                 keyScheme = keyScheme,
                 signatureSpec = signatureSpec
             )
         } else {
             key as GeneratedPublicKey
             val spec = SigningAliasSpec(
+                publicKey = key.publicKey,
                 hsmAlias = key.hsmAlias,
                 keyScheme = keyScheme,
                 signatureSpec = signatureSpec
@@ -140,6 +144,7 @@ abstract class AbstractCompliance {
             ) {
                 service.sign(
                     SigningAliasSpec(
+                        publicKey = key.publicKey,
                         hsmAlias = compliance.generateRandomIdentifier(),
                         keyScheme = keyScheme,
                         signatureSpec = signatureSpec
@@ -158,12 +163,12 @@ abstract class AbstractCompliance {
             ByteArray(67199).also { CryptoServiceCompliance.schemeMetadata.secureRandom.nextBytes(it) }
         ).map { clearData ->
             logger.info("About to sign array with size={}", clearData.size)
-            Experiment(
+            SigningExperiment(
                 key = key,
                 keyScheme = keyScheme,
                 signatureSpec = signatureSpec,
                 clearData = clearData,
-                signature = service.sign(spec, clearData, mapOf(CRYPTO_TENANT_ID to tenantId))
+                result = service.sign(spec, clearData, mapOf(CRYPTO_TENANT_ID to tenantId))
             )
         }
     }
@@ -191,11 +196,11 @@ abstract class AbstractCompliance {
         }
     }
 
-    class Experiment(
+    class SigningExperiment(
         val key: GeneratedKey,
         val keyScheme: KeyScheme,
         val signatureSpec: SignatureSpec,
         val clearData: ByteArray,
-        val signature: ByteArray
+        val result: ByteArray
     )
 }

@@ -14,6 +14,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.linkmanager.StubGroupPolicyProvider.Companion.toGroupInfo
 import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -95,13 +96,13 @@ class StubGroupPolicyProviderTest {
         processor.firstValue.onSnapshot(groupsToPublish)
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity.toCorda())).isEqualTo(
                 groupOne.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity.toCorda())).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isNull()
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity.toCorda())).isNull()
         }
     }
 
@@ -120,11 +121,11 @@ class StubGroupPolicyProviderTest {
         )
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isNull()
-            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity.toCorda())).isNull()
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity.toCorda())).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isNull()
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity.toCorda())).isNull()
         }
     }
 
@@ -147,11 +148,11 @@ class StubGroupPolicyProviderTest {
         )
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isNull()
-            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity.toCorda())).isNull()
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity.toCorda())).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isNull()
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity.toCorda())).isNull()
         }
     }
 
@@ -174,13 +175,13 @@ class StubGroupPolicyProviderTest {
         )
 
         assertSoftly {
-            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupOne.holdingIdentity.toCorda())).isEqualTo(
                 groupOne.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupTwo.holdingIdentity.toCorda())).isEqualTo(
                 groupTwo.toGroupInfo()
             )
-            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity)).isEqualTo(
+            it.assertThat(groups.getGroupInfo(groupThree.holdingIdentity.toCorda())).isEqualTo(
                 groupThree.toGroupInfo()
             )
         }

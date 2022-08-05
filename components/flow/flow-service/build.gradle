@@ -58,6 +58,7 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":testing:flow:flow-utilities")
+    testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 

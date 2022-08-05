@@ -8,29 +8,29 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
-import net.corda.membership.impl.EndpointInfoImpl
-import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.impl.MemberInfoFactoryImpl
-import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.membership.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.impl.MemberInfoFactoryImpl
+import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -73,7 +73,7 @@ class MemberLookupRpcOpsTest {
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
-    private val holdingIdentity = HoldingIdentity("test", "0")
+    private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
@@ -162,7 +162,7 @@ class MemberLookupRpcOpsTest {
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),

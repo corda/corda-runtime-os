@@ -8,6 +8,7 @@ import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
@@ -33,9 +34,8 @@ class AllAliasedKeysHSM(
 
     override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> = supportedSchemesMap
 
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
-        throw UnsupportedOperationException("Operation is not supported")
-    }
+    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) =
+        throw UnsupportedOperationException("Creating wrapping keys is not supported")
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
         logger.info(
@@ -60,7 +60,7 @@ class AllAliasedKeysHSM(
         val hsmAlias = computeHSMAlias(
             tenantId = context.getValue(CRYPTO_TENANT_ID),
             alias = spec.alias ?: UUID.randomUUID().toString(),
-            secret = spec.secret ?: UUID.randomUUID().toString().toByteArray()
+            secret = UUID.randomUUID().toString().toByteArray()
         )
         keyPairs[hsmAlias] = keyPair
         return GeneratedPublicKey(
@@ -87,4 +87,7 @@ class AllAliasedKeysHSM(
     override fun delete(alias: String, context: Map<String, String>): Boolean {
         throw Error("Just to test that the tests will not break.")
     }
+
+    override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray =
+        throw UnsupportedOperationException("Deriving shared secret is not supported")
 }

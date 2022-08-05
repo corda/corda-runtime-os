@@ -6,10 +6,10 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
+import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -32,7 +32,7 @@ internal class ConnectionConfigReader(
 
     private inner class ConfigChangeHandler: ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
-        Gateway.CONFIG_KEY,
+        ConfigKeys.P2P_GATEWAY_CONFIG,
         { it.toGatewayConfiguration() }
     ) {
         override fun applyNewConfiguration(

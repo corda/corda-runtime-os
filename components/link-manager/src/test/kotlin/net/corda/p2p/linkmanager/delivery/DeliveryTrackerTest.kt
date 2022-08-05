@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
@@ -20,7 +19,9 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
-import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.LinkManagerProcessedMarker
+import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -91,11 +92,11 @@ class DeliveryTrackerTest {
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
-    private val source = HoldingIdentity("Source", groupId)
-    private val dest = HoldingIdentity("Dest", groupId)
+    private val source = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+    private val dest = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
     private val header = mock<AuthenticatedMessageHeader> {
-        on { source } doReturn source
-        on { destination } doReturn dest
+        on { source } doReturn source.toAvro()
+        on { destination } doReturn dest.toAvro()
     }
     private val message = mock<AuthenticatedMessage> {
         on { header } doReturn header
@@ -180,11 +181,11 @@ class DeliveryTrackerTest {
     }
 
     @Test
-    fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerSentMarker`() {
+    fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerProcessedMarker`() {
         val (tracker, processor) = createTracker()
         tracker.start()
         val messageId = UUID.randomUUID().toString()
-        val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(messageAndKey), timeStamp))
+        val event = Record("topic", messageId, AppMessageMarker(LinkManagerProcessedMarker(messageAndKey), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
 

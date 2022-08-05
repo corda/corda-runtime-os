@@ -1,6 +1,6 @@
 package net.corda.flow.application.services
 
-import net.corda.data.flow.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest

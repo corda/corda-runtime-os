@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
@@ -15,6 +14,8 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -50,16 +51,12 @@ class PendingSessionMessageQueuesImplTest {
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
     }
     private val sessionCounterparties = SessionManager.SessionCounterparties(
-        HoldingIdentity("carol", "group-1"),
-        HoldingIdentity("david", "group-2")
+        createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
+        createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-2")
     )
     private val members = mock<LinkManagerMembershipGroupReader> {
-        on { getMemberInfo(sessionCounterparties.counterpartyId) } doReturn LinkManagerMembershipGroupReader.MemberInfo(
-            sessionCounterparties.counterpartyId,
-            mock(),
-            KeyAlgorithm.ECDSA,
-            "",
-        )
+        on { getMemberInfo(sessionCounterparties.ourId, sessionCounterparties.counterpartyId) } doReturn
+                LinkManagerMembershipGroupReader.MemberInfo(sessionCounterparties.counterpartyId, mock(), KeyAlgorithm.ECDSA, "",)
     }
     private val groups = mock<LinkManagerGroupPolicyProvider> {
         on { getGroupInfo(sessionCounterparties.ourId) } doReturn GroupPolicyListener.GroupInfo(
@@ -81,8 +78,8 @@ class PendingSessionMessageQueuesImplTest {
     fun `sessionNegotiatedCallback publish messages`() {
         val messages = (1..5).map {
             val header = AuthenticatedMessageHeader(
-                sessionCounterparties.counterpartyId,
-                sessionCounterparties.ourId,
+                sessionCounterparties.counterpartyId.toAvro(),
+                sessionCounterparties.ourId.toAvro(),
                 null,
                 "msg-$it",
                 "",
@@ -112,8 +109,8 @@ class PendingSessionMessageQueuesImplTest {
         val count = 3
         (1..count).map {
             val header = AuthenticatedMessageHeader(
-                sessionCounterparties.counterpartyId,
-                sessionCounterparties.ourId,
+                sessionCounterparties.counterpartyId.toAvro(),
+                sessionCounterparties.ourId.toAvro(),
                 null,
                 "msg-$it",
                 "",
@@ -134,8 +131,8 @@ class PendingSessionMessageQueuesImplTest {
     fun `sessionNegotiatedCallback will not publish messages for another counter parties`() {
         (1..5).map {
             val header = AuthenticatedMessageHeader(
-                sessionCounterparties.counterpartyId,
-                sessionCounterparties.ourId,
+                sessionCounterparties.counterpartyId.toAvro(),
+                sessionCounterparties.ourId.toAvro(),
                 null,
                 "msg-$it",
                 "",
@@ -148,8 +145,8 @@ class PendingSessionMessageQueuesImplTest {
         }
 
         val anotherSessionCounterparties = SessionManager.SessionCounterparties(
-            HoldingIdentity("carol", "group-2"),
-            HoldingIdentity("david", "group-1")
+            createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
+            createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1")
         )
         queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session, groups, members)
 

@@ -59,6 +59,31 @@ interface CpiPersistence {
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity
 
-    /** Get the group id for a given CPI */
+    /**
+     *  Get the group id for a given CPI
+     *
+     *  @return null if not found
+     */
     fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String?
+
+    /**
+     * Can we insert (or update) this Cpi into the database given its name and groupId?
+     *
+     * Entries are 'unique' on `(name, groupId)`.
+     *
+     * @param cpiName the name of the cpi
+     * @param groupId the MGM group id that we want to use for this CPI
+     *
+     * @return
+     *
+     * false: If `(aaa, 123456)` is in the db, we cannot upsert `(bbb, 123456)` for
+     * the same group id
+     *
+     * true: If `(aaa, 123456)` is in the db, we can still "upsert" `(aaa, 123456)`
+     *
+     * true: If `(aaa, 123456)` is in the db, we can upsert a new cpi `(bbb, 654321)`
+     *
+     * true: If nothing is in the db we can clearly insert `(any, any)`
+     */
+    fun canUpsertCpi(cpiName: String, groupId: String): Boolean
 }

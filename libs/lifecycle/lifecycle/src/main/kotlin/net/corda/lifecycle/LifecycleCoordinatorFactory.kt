@@ -39,6 +39,7 @@ interface LifecycleCoordinatorFactory {
     }
 }
 
+
 /**
  * Create a new lifecycle coordinator.
  *

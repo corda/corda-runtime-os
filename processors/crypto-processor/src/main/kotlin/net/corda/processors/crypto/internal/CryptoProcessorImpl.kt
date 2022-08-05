@@ -2,23 +2,22 @@ package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.createDefaultCryptoConfig
+import net.corda.crypto.persistence.CryptoConnectionsFactory
+import net.corda.crypto.persistence.HSMStore
+import net.corda.crypto.persistence.SigningKeyStore
+import net.corda.crypto.persistence.WrappingKeyStore
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.persistence.hsm.HSMStoreProvider
-import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
-import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.HSMConfigurationBusService
 import net.corda.crypto.service.HSMRegistrationBusService
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.SoftCryptoServiceProvider
+import net.corda.crypto.softhsm.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
@@ -58,10 +57,14 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = SoftCryptoKeyStoreProvider::class)
-    private val softCryptoKeyStoreProvider: SoftCryptoKeyStoreProvider,
-    @Reference(service = SigningKeyStoreProvider::class)
-    private val signingKeyStoreProvider: SigningKeyStoreProvider,
+    @Reference(service = CryptoConnectionsFactory::class)
+    private val cryptoConnectionsFactory: CryptoConnectionsFactory,
+    @Reference(service = WrappingKeyStore::class)
+    private val wrappingKeyStore: WrappingKeyStore,
+    @Reference(service = SigningKeyStore::class)
+    private val signingKeyStore: SigningKeyStore,
+    @Reference(service = HSMStore::class)
+    private val hsmStore: HSMStore,
     @Reference(service = SigningServiceFactory::class)
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
@@ -76,12 +79,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMService::class)
     private val hsmService: HSMService,
-    @Reference(service = HSMConfigurationBusService::class)
-    private val hsmConfiguration: HSMConfigurationBusService,
     @Reference(service = HSMRegistrationBusService::class)
     private val hsmRegistration: HSMRegistrationBusService,
-    @Reference(service = HSMStoreProvider::class)
-    private val hsmStoreProvider: HSMStoreProvider,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -98,7 +97,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     init {
         // define the different DB Entity Sets
-        //  entities can be in different packages, but all JPA classes must be passed in.
+        // entities can be in different packages, but all JPA classes must be passed in.
         entitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
     }
@@ -107,8 +106,10 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::softCryptoKeyStoreProvider,
-        ::signingKeyStoreProvider,
+        ::cryptoConnectionsFactory,
+        ::wrappingKeyStore,
+        ::signingKeyStore,
+        ::hsmStore,
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
@@ -116,12 +117,16 @@ class CryptoProcessorImpl @Activate constructor(
         ::softCryptoServiceProvider,
         ::cryptoServiceFactory,
         ::hsmService,
-        ::hsmConfiguration,
         ::hsmRegistration,
-        ::hsmStoreProvider,
         ::dbConnectionManager,
         ::vnodeInfo
     )
+
+    @Volatile
+    private var hsmAssociated: Boolean = false
+
+    @Volatile
+    private var dependenciesUp: Boolean = false
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -137,6 +142,7 @@ class CryptoProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Crypto processor received event $event.")
         when (event) {
@@ -148,19 +154,16 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Assigning SOFT HSMs")
-                    val failed = temporaryAssociateClusterWithSoftHSM()
-                    if (failed.isNotEmpty()) {
-                        logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
-                        coordinator.updateStatus(
-                            LifecycleStatus.ERROR,
-                            "Failed to associate SOFT HSMs with cluster tenants."
-                        )
-                        return
+                    dependenciesUp = true
+                    if (hsmAssociated) {
+                        setStatus(event.status, coordinator)
+                    } else {
+                        coordinator.postEvent(AssociateHSM())
                     }
+                } else {
+                    dependenciesUp = false
+                    setStatus(event.status, coordinator)
                 }
-                logger.info("Crypto processor is set to be ${event.status}")
-                coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
                 logger.info("Crypto  processor bootstrapping {}", configurationReadService::class.simpleName)
@@ -171,10 +174,29 @@ class CryptoProcessorImpl @Activate constructor(
 
                 publishCryptoBootstrapConfig(event)
             }
-            else -> {
-                logger.warn("Unexpected event $event!")
+            is AssociateHSM -> {
+                if(dependenciesUp) {
+                    if (hsmAssociated) {
+                        setStatus(LifecycleStatus.UP, coordinator)
+                    } else {
+                        logger.info("Assigning SOFT HSMs")
+                        val failed = temporaryAssociateClusterWithSoftHSM()
+                        if (failed.isNotEmpty()) {
+                            logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
+                            coordinator.postEvent(AssociateHSM()) // try again
+                        } else {
+                            hsmAssociated = true
+                            setStatus(LifecycleStatus.UP, coordinator)
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
+        logger.info("Crypto processor is set to be $status")
+        coordinator.updateStatus(status)
     }
 
     private fun publishCryptoBootstrapConfig(event: BootConfigEvent) {
@@ -187,12 +209,12 @@ class CryptoProcessorImpl @Activate constructor(
                 event.config.getConfig(CRYPTO_CONFIG)
             } else {
                 event.config.factory.createDefaultCryptoConfig(
-                    cryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-                    softKey = KeyCredentials("soft-passphrase", "soft-salt")
+                    masterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
                 )
             }.root().render()
-            logger.info("Crypto Worker config\n: {}", configValue)
-            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, 0, ConfigurationSchemaVersion(1, 0)))
+            logger.debug("Crypto Processor config\n: {}", configValue)
+            val record =
+                Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, configValue, 0, ConfigurationSchemaVersion(1, 0)))
             it.publish(listOf(record)).forEach { future -> future.get() }
         }
     }
@@ -220,16 +242,14 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
         logger.info("Assigning SOFT HSM for $tenantId:$category")
-        hsmService.assignSoftHSM(
-            tenantId, category, mapOf(
-                NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-            )
-        )
+        hsmService.assignSoftHSM(tenantId, category)
         logger.info("Assigned SOFT HSM for $tenantId:$category")
         true
     } catch (e: Throwable) {
         logger.error("Failed to assign SOFT HSM for $tenantId:$category", e)
         false
     }
+
+    class AssociateHSM : LifecycleEvent
 }
 

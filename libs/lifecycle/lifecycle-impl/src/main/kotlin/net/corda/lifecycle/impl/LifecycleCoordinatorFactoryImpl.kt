@@ -21,8 +21,15 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
 
     ) : LifecycleCoordinatorFactory {
 
-
     override fun createCoordinator(
+        name: LifecycleCoordinatorName,
+        batchSize: Int,
+        handler: LifecycleEventHandler
+    ): LifecycleCoordinator {
+        return internalCreateCoordinator(name, batchSize, handler)
+    }
+
+    private fun internalCreateCoordinator(
         name: LifecycleCoordinatorName,
         batchSize: Int,
         handler: LifecycleEventHandler
@@ -34,7 +41,7 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
             )
         }
 
-        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, schedulerFactory.create(), handler )
+        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, schedulerFactory.create(), handler)
         registry.registerCoordinator(name, coordinator)
         return coordinator
     }

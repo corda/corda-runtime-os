@@ -27,6 +27,7 @@ import net.corda.httprpc.test.utils.ChecksumUtil
 import net.corda.httprpc.test.utils.TestClientFileUpload
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.WebResponse
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 
@@ -101,10 +102,19 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     @Test
     fun `POST ping returns Pong with custom deserializer`() {
 
-        val pingResponse = client.call(POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
-        assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
-        assertEquals("application/json", pingResponse.headers["Content-Type"])
-        assertEquals("Pong for str = stringdata", pingResponse.body)
+        fun  WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_OK, responseStatus)
+            assertEquals("application/json", headers["Content-Type"])
+            assertEquals("Pong for str = stringdata", body)
+        }
+
+        // Call with explicit "pingPongData" in the root JSON
+        client.call(POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
+            .doAssert()
+
+        // Call without explicit "pingPongData" in the root JSON
+        client.call(POST, WebRequest("health/ping", """{"str": "stringdata"}"""), userName, password)
+            .doAssert()
     }
 
     //https://r3-cev.atlassian.net/browse/CORE-2491
@@ -359,9 +369,30 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     @Test
     fun `POST dateCall should return embedded date value`() {
         val date = "2021-07-29T13:13:14"
-        val dateCallResponse = client.call(POST, WebRequest<Any>("health/datecall", """ { "date": { "date": "$date" } } """), userName, password)
-        assertEquals(HttpStatus.SC_OK, dateCallResponse.responseStatus)
-        assertThat(dateCallResponse.body!!).contains("2021-07-29T13:13:14")
+
+        fun WebResponse<String>.doAssert() {
+            assertEquals(HttpStatus.SC_OK, responseStatus)
+            assertThat(body!!).contains(date)
+        }
+
+        // Explicit `date` at the root JSON
+        client.call(
+            POST,
+            WebRequest<Any>("health/datecall", """ { "date": { "date": "$date" } } """),
+            userName,
+            password
+        ).doAssert()
+
+        // Without explicit `date` at the root JSON
+        // We are hitting limitation here where inner "date" along with outer "date" confuse our parameter retrieval logic
+        // Probably worth providing some guidance to avoid this sort of data structures with clashing attributes
+        /*client.call(
+            POST,
+            WebRequest<Any>("health/datecall", """{ "date": "$date" }"""),
+            userName,
+            password
+        ).doAssert()
+         */
     }
 
     @Test
@@ -614,6 +645,18 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals(expectedResult, createEntityResponse.body)
+    }
+
+    @Test
+    fun `file upload with file missing`() {
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(path = "fileupload/upload", formParameters = mapOf("foo" to "bar")),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, createEntityResponse.responseStatus)
     }
 
     @Test

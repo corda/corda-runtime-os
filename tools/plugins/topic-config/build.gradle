@@ -8,25 +8,26 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compileOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli-codegen:$picocliVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-topic-schema'
-    implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion")  {
-        exclude group: "org.slf4j"
-    }
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
+    compileOnly "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    testImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 }
 
 cliPlugin {

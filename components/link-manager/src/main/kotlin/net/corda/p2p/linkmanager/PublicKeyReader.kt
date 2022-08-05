@@ -12,7 +12,7 @@ internal class PublicKeyReader {
     companion object {
         internal fun PublicKey.toKeyAlgorithm(): KeyAlgorithm {
             return when (this.algorithm) {
-                "EC" -> KeyAlgorithm.ECDSA
+                "EC", "ECDSA" -> KeyAlgorithm.ECDSA
                 "RSA" -> KeyAlgorithm.RSA
                 else -> throw UnsupportedAlgorithm(this)
             }

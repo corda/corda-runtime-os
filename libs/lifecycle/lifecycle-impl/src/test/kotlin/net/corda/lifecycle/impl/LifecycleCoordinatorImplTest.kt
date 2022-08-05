@@ -1201,7 +1201,6 @@ internal class LifecycleCoordinatorImplTest {
         val coordinator2 = createTestCoordinator { _, _ -> }
         val coordinator3 = createTestCoordinator { _, _ -> }
 
-        @Suppress("UNUSED_VARIABLE")
         val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
 
         coordinator1.close()

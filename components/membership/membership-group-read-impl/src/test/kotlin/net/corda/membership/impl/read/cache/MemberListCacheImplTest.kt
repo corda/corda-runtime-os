@@ -22,9 +22,9 @@ class MemberListCacheImplTest {
     private val bob = bobName
     private val charlie = charlieName
 
-    private val aliceIdGroup1 = HoldingIdentity(alice.toString(), GROUP_ID_1)
-    private val bobIdGroup1 = HoldingIdentity(bob.toString(), GROUP_ID_1)
-    private val aliceIdGroup2 = HoldingIdentity(alice.toString(), GROUP_ID_2)
+    private val aliceIdGroup1 = HoldingIdentity(alice, GROUP_ID_1)
+    private val bobIdGroup1 = HoldingIdentity(bob, GROUP_ID_1)
+    private val aliceIdGroup2 = HoldingIdentity(alice, GROUP_ID_2)
 
     private val memberInfo1 = mock<MemberInfo>().apply {
         whenever(name).thenReturn(bob)

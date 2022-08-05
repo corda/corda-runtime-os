@@ -16,6 +16,7 @@ import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.PersistenceException
 
 /**
  * Class for DB reads and writes.  Handles the query execution.
@@ -36,7 +37,6 @@ class DBAccess(
     }
 
     fun close() {
-        entityManagerFactory.close()
     }
 
     fun getMaxCommittedPositions(
@@ -110,7 +110,7 @@ class DBAccess(
     fun getTopicPartitionMapFor(topic: String): Set<CordaTopicPartition> {
         val topicEntry = executeWithErrorHandling(
             "get topic partition map",
-            allowDuplicate = true
+            allowDuplicate = true,
         ) { entityManager ->
             entityManager.find(TopicEntry::class.java, topic)
                 ?: if (autoCreate) {
@@ -333,7 +333,7 @@ class DBAccess(
                 result
             }
         } catch (e: Exception) {
-            if (allowDuplicate && e.isCausedBy(SQLIntegrityConstraintViolationException::class.java)) {
+            if (allowDuplicate && e.isDuplicate()) {
                 // Someone got here first, not a problem
                 log.info("Attempt at duplicate record is allowed in this instance.")
                 result
@@ -343,15 +343,18 @@ class DBAccess(
             }
         } ?: throw CordaMessageAPIFatalException("Internal error.  DB result should not be null.")
     }
-}
 
-fun <T : Exception> Exception.isCausedBy(exceptionType: Class<T>): Boolean {
-    var currentCause = this.cause
-    while (currentCause != null) {
-        if (currentCause::class.java.isAssignableFrom(exceptionType)) {
-            return true
+    private fun <T : Exception> Exception.isCausedBy(exceptionType: Class<T>): Boolean {
+        var currentCause = this.cause
+        while (currentCause != null) {
+            if (currentCause::class.java.isAssignableFrom(exceptionType)) {
+                return true
+            }
+            currentCause = currentCause.cause
         }
-        currentCause = currentCause.cause
+        return false
     }
-    return false
+
+    private fun Exception.isDuplicate() =
+        isCausedBy(SQLIntegrityConstraintViolationException::class.java) || isCausedBy(PersistenceException::class.java)
 }

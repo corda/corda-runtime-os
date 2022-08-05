@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -53,9 +52,12 @@ import net.corda.p2p.test.stub.crypto.processor.UnsupportedAlgorithm
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -106,12 +108,12 @@ class SessionManagerTest {
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
-        private val OUR_PARTY = HoldingIdentity("Alice", GROUP_ID)
+        private val OUR_PARTY = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         private val OUR_KEY = keyGenerator.genKeyPair()
         private val OUR_MEMBER_INFO =
             LinkManagerMembershipGroupReader.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
                 "http://alice.com")
-        private val PEER_PARTY = HoldingIdentity("Bob", GROUP_ID)
+        private val PEER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         private val PEER_KEY = keyGenerator.genKeyPair()
         private val PEER_MEMBER_INFO =
             LinkManagerMembershipGroupReader.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
@@ -180,10 +182,10 @@ class SessionManagerTest {
         val membersDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
-        on { getMemberInfo(OUR_PARTY) } doReturn OUR_MEMBER_INFO
-        on { getMemberInfo(messageDigest.hash(OUR_KEY.public.encoded), GROUP_ID) } doReturn OUR_MEMBER_INFO
-        on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
-        on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
+        on { getMemberInfo(OUR_PARTY, OUR_PARTY) } doReturn OUR_MEMBER_INFO
+        on { getMemberInfo(OUR_PARTY, messageDigest.hash(OUR_KEY.public.encoded)) } doReturn OUR_MEMBER_INFO
+        on { getMemberInfo(OUR_PARTY, PEER_PARTY) } doReturn PEER_MEMBER_INFO
+        on { getMemberInfo(OUR_PARTY, messageDigest.hash(PEER_KEY.public.encoded)) } doReturn PEER_MEMBER_INFO
         on { dominoTile } doReturn membersDominoTile
     }
     private val hostingIdentity = HostingMapListener.IdentityInfo(
@@ -282,8 +284,8 @@ class SessionManagerTest {
     private val message = AuthenticatedMessageAndKey(
         AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                PEER_PARTY,
-                OUR_PARTY,
+                PEER_PARTY.toAvro(),
+                OUR_PARTY.toAvro(),
                 null,
                 "messageId",
                 "", "system-1"
@@ -373,7 +375,7 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         val anotherInitiatorHello = mock<InitiatorHelloMessage>()
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
-        whenever(members.getMemberInfo(PEER_PARTY)).thenReturn(null)
+        whenever(members.getMemberInfo(OUR_PARTY, PEER_PARTY)).thenReturn(null)
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
@@ -392,7 +394,7 @@ class SessionManagerTest {
         }
 
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
-                "which is not in the members map. The sessionInit message was not sent.")
+                "which is not in ${OUR_PARTY}'s members map. The sessionInit message was not sent.")
     }
 
     @Test
@@ -511,7 +513,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
         whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
-        whenever(members.getMemberInfo(initiatorKeyHash, GROUP_ID)).thenReturn(null)
+        whenever(members.getMemberInfo(OUR_PARTY, initiatorKeyHash)).thenReturn(null)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -574,7 +576,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("There is no locally hosted identity in the same group with the initiator")
+        loggingInterceptor.assertSingleWarningContains("There is no locally hosted identity in group $GROUP_ID.")
         loggingInterceptor
             .assertSingleWarningContains("The initiator message was discarded.")
     }
@@ -632,7 +634,7 @@ class SessionManagerTest {
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
         whenever(linkManagerHostingMap.getInfo(OUR_PARTY)).thenReturn(null)
-        whenever(members.getMemberInfo(OUR_PARTY)).thenReturn(null)
+        whenever(members.getMemberInfo(OUR_PARTY, OUR_PARTY)).thenReturn(null)
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
@@ -651,7 +653,7 @@ class SessionManagerTest {
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
-        whenever(members.getMemberInfo(PEER_PARTY)).thenReturn(null)
+        whenever(members.getMemberInfo(OUR_PARTY, PEER_PARTY)).thenReturn(null)
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
@@ -798,6 +800,30 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when initiator handshake is received but no locally hosted identity in the same group as the initiator, message is dropped`() {
+        val sessionId = "some-session-id"
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHandshakeIdentity = InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID)
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, initiatorHandshakeIdentity)
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(emptySet())
+        whenever(protocolResponder.getInitiatorIdentity()).thenReturn(initiatorHandshakeIdentity)
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("There is no locally hosted identity in group $GROUP_ID.")
+        loggingInterceptor
+            .assertSingleWarningContains("The initiator handshake message was discarded.")
+    }
+
+    @Test
     fun `when initiator handshake is received, but peer's member info is missing from network map, message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
@@ -810,7 +836,7 @@ class SessionManagerTest {
 
         val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(members.getMemberInfo(initiatorPublicKeyHash, GROUP_ID)).thenReturn(null)
+        whenever(members.getMemberInfo(OUR_PARTY, initiatorPublicKeyHash)).thenReturn(null)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1026,7 +1052,7 @@ class SessionManagerTest {
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(members.getMemberInfo(PEER_PARTY)).thenReturn(null)
+        whenever(members.getMemberInfo(OUR_PARTY, PEER_PARTY)).thenReturn(null)
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
         loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId " +

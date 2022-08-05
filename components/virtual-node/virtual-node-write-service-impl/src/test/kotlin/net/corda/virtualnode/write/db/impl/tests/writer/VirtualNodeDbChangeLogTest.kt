@@ -53,7 +53,7 @@ class VirtualNodeDbChangeLogTest {
         val masterFiles = changeLog.masterChangeLogFiles
 
         assertThat(masterFiles).containsAll(
-            listOf("CPK1-${masterFile1.id.filePath}", "CPK2-${masterFile2.id.filePath}")
+            listOf(masterFile1.id.filePath, masterFile2.id.filePath)
         )
     }
 
@@ -71,9 +71,9 @@ class VirtualNodeDbChangeLogTest {
 
         assertThat(files).containsAll(
             listOf(
-                "CPK1-${masterFile1.id.filePath}",
-                "CPK1-${otherFile1.id.filePath}",
-                "CPK2-${masterFile2.id.filePath}"
+                masterFile1.id.filePath,
+                otherFile1.id.filePath,
+                masterFile2.id.filePath
             )
         )
     }
@@ -87,10 +87,10 @@ class VirtualNodeDbChangeLogTest {
             )
         )
 
-        changeLog.fetch("CPK1-${masterFile1.id.filePath}").reader().use {
+        changeLog.fetch(masterFile1.id.filePath).reader().use {
             assertThat(it.readText()).isEqualTo(masterFile1.content)
         }
-        changeLog.fetch("CPK1-${otherFile1.id.filePath}").reader().use {
+        changeLog.fetch(otherFile1.id.filePath).reader().use {
             assertThat(it.readText()).isEqualTo(otherFile1.content)
         }
     }
@@ -104,7 +104,7 @@ class VirtualNodeDbChangeLogTest {
         )
 
         assertThrows<CordaRuntimeException> {
-            changeLog.fetch("CPK1-${otherFile1.id.filePath}")
+            changeLog.fetch(otherFile1.id.filePath)
         }
     }
 }

@@ -520,6 +520,59 @@ class LifecycleProcessorTest {
         assertEquals(LifecycleStatus.DOWN, state.status)
     }
 
+    @Test
+    fun `all managed resources are closed when requested`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry) { _, _ -> }
+        val resource1 = mock<AutoCloseable>()
+        val resource2 = mock<AutoCloseable>()
+        val resource3 = mock<AutoCloseable>()
+
+        processor.addManagedResource("TEST1") { resource1 }
+        processor.addManagedResource("TEST2") { resource2 }
+        processor.addManagedResource("TEST3") { resource3 }
+
+        processor.closeManagedResources(null)
+        verify(resource1).close()
+        verify(resource2).close()
+        verify(resource3).close()
+    }
+
+    @Test
+    fun `only requested managed resources are closed`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry) { _, _ -> }
+        val resource1 = mock<AutoCloseable>()
+        val resource2 = mock<AutoCloseable>()
+        val resource3 = mock<AutoCloseable>()
+
+        processor.addManagedResource("TEST1") { resource1 }
+        processor.addManagedResource("TEST2") { resource2 }
+        processor.addManagedResource("TEST3") { resource3 }
+
+        processor.closeManagedResources(setOf("TEST1", "TEST2"))
+
+        verify(resource1).close()
+        verify(resource2).close()
+        verify(resource3, never()).close()
+    }
+
+    @Test
+    fun `managed resources are closed when new object of same name created`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry) { _, _ -> }
+        val resource1 = mock<AutoCloseable>()
+        val resource2 = mock<AutoCloseable>()
+
+        processor.addManagedResource("TEST") { resource1 }
+        processor.addManagedResource("TEST") { resource2 }
+
+        verify(resource1).close()
+    }
+
     private object TestEvent1 : LifecycleEvent
     private object TestEvent2 : LifecycleEvent
     private object TestEvent3 : LifecycleEvent

@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
+    id 'corda.docker-app'
 }
 
 description 'Gateway Application'
@@ -10,7 +11,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation project(':components:gateway')
+    implementation project(':processors:gateway-processor')
     implementation project(':osgi-framework-api')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -21,8 +22,6 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation project(":components:crypto:crypto-client")
-
-    implementation project(":libs:configuration:configuration-merger")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
@@ -38,4 +37,6 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-client-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
+
+    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

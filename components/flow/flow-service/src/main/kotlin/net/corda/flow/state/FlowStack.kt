@@ -1,12 +1,11 @@
 package net.corda.flow.state
 
-import net.corda.data.flow.FlowStackItem
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 
 /**
- * The FlowStack provides an API for managing the flow/sub-flow call stack, stored in the [Checkpoint] state.
+ * The FlowStack provides an API for managing the flow/sub-flow call stack, stored in the checkpoint state.
  */
 interface FlowStack : NonSerializable {
 

@@ -17,8 +17,8 @@ class ProtocolConstants {
         const val ELLIPTIC_CURVE_KEY_SIZE_BITS = 256
 
 
-        val INITIATOR_SIG_PAD = " ".repeat(64) + "Corda, client signature verify" + "\\0"
-        val RESPONDER_SIG_PAD = " ".repeat(64) + "Corda, server signature verify" + "\\0"
+        val INITIATOR_SIG_PAD = " ".repeat(64) + "Corda, client signature verify" + "\u0000"
+        val RESPONDER_SIG_PAD = " ".repeat(64) + "Corda, server signature verify" + "\u0000"
 
         const val INITIATOR_HANDSHAKE_ENCRYPTION_KEY_INFO = "Corda client hs enc key"
         const val RESPONDER_HANDSHAKE_ENCRYPTION_KEY_INFO = "Corda server hs enc key"
