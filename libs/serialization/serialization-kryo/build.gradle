@@ -47,13 +47,13 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
+    testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project('cpks:serializable-cpk-one')
     integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
+    integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
 
     integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')

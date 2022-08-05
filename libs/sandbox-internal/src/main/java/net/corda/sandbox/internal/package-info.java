@@ -1,6 +1,4 @@
-@Export
 @QuasarIgnoreAllPackages
-package net.corda.testing.sandboxes;
+package net.corda.sandbox.internal;
 
 import co.paralleluniverse.quasar.annotations.QuasarIgnoreAllPackages;
-import org.osgi.annotation.bundle.Export;
