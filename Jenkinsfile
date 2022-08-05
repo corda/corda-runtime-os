@@ -2,12 +2,11 @@
 @Library('corda-shared-build-pipeline-steps@ronanb/test-list') _
 
 cordaPipeline(
-    nexusAppId: 'flow-worker-5.0',
-    runIntegrationTests: true,
+    runIntegrationTests: false,
     publishRepoPrefix: 'corda-ent-maven',
-    createPostgresDb: true,
+    createPostgresDb: false,
     publishOSGiImage: true,
-    publishPreTestImage: true,
+    publishPreTestImage: false,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false
