@@ -2,6 +2,7 @@ package net.corda.testutils.services
 
 import net.corda.testutils.internal.H2PersistenceUnitInfo
 import net.corda.testutils.internal.cast
+import net.corda.testutils.tools.sandboxName
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.v5.application.persistence.PersistenceService
@@ -14,6 +15,7 @@ import org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_USER
 import org.hibernate.dialect.HSQLDialect
 import org.hibernate.jpa.HibernatePersistenceProvider
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 class DBPersistenceService(
@@ -23,11 +25,12 @@ class DBPersistenceService(
     companion object { }
 
     override fun <T : Any> find(entityClass: Class<T>, primaryKey: Any): T? {
-        TODO("Not yet implemented")
+        return emf.createEntityManager().find(entityClass, primaryKey)
     }
 
     override fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T> {
-        TODO("Not yet implemented")
+        val em = emf.createEntityManager()
+        return primaryKeys.map { em.find(entityClass, it) }
     }
 
     override fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T> {
@@ -45,28 +48,27 @@ class DBPersistenceService(
     }
 
     override fun <T : Any> merge(entity: T): T? {
-        TODO("Not yet implemented")
+        emf.transaction {
+            return it.merge(entity)
+        }
     }
 
     override fun <T : Any> merge(entities: List<T>): List<T> {
-        TODO("Not yet implemented")
+        emf.transaction { em ->
+            return entities.map { em.merge(it) }
+        }
     }
 
     override fun persist(entity: Any) {
-        val em = emf.createEntityManager()
-        val transaction = em.transaction
-        transaction.begin()
-        try {
-            em.persist(entity)
-            transaction.commit()
-        } catch (e: RuntimeException) {
-            if (transaction.isActive) { transaction.rollback() }
-            throw e
+        emf.transaction {
+            it.persist(entity)
         }
     }
 
     override fun persist(entities: List<Any>) {
-        TODO("Not yet implemented")
+        emf.transaction { em ->
+            entities.forEach { em.persist(it) }
+        }
     }
 
     override fun <T : Any> query(queryName: String, entityClass: Class<T>): ParameterisedQuery<T> {
@@ -74,14 +76,40 @@ class DBPersistenceService(
     }
 
     override fun remove(entity: Any) {
-        TODO("Not yet implemented")
+        emf.transaction {
+            it.remove(if (it.contains(entity)) { entity } else { it.merge(entity) })
+        }
     }
 
     override fun remove(entities: List<Any>) {
-        TODO("Not yet implemented")
+        emf.transaction {
+            entities.forEach { entity ->
+                it.remove(if (it.contains(entity)) { entity } else { it.merge(entity) })
+            }
+        }
     }
 
 }
+
+inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R {
+
+    val em = this.createEntityManager()
+    val t = em.transaction
+    t.begin()
+    return try {
+        block(em)
+    } catch (e: Exception) {
+        t.setRollbackOnly()
+        throw e
+    } finally {
+        if (!t.rollbackOnly) {
+            t.commit()
+        } else {
+            t.rollback()
+        }
+    }
+}
+
 
 
 fun createH2EntityManagerFactory(x500 : MemberX500Name): EntityManagerFactory {
@@ -90,7 +118,7 @@ fun createH2EntityManagerFactory(x500 : MemberX500Name): EntityManagerFactory {
             H2PersistenceUnitInfo(),
             mapOf(
                 JPA_JDBC_DRIVER to "org.hsqldb.jdbcDriver",
-                JPA_JDBC_URL to "jdbc:hsqldb:mem:${x500.shortName}",
+                JPA_JDBC_URL to "jdbc:hsqldb:mem:${x500.sandboxName}",
                 JPA_JDBC_USER to "admin",
                 JPA_JDBC_PASSWORD to "",
                 DIALECT to HSQLDialect::class.java.name,
@@ -98,6 +126,3 @@ fun createH2EntityManagerFactory(x500 : MemberX500Name): EntityManagerFactory {
             )
         )
 }
-
-private val MemberX500Name.shortName: String
-    get() { return this.commonName ?: this.organisation }

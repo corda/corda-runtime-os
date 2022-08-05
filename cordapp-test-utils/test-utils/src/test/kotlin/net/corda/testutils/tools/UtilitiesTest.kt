@@ -2,9 +2,13 @@ package net.corda.testutils.tools
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.base.types.MemberX500Name
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+
 
 class UtilitiesTest {
 
@@ -24,6 +28,18 @@ class UtilitiesTest {
         // Then the declared field should be set, but not the inherited one
         assertNotNull(b.declaredField)
         assertThrows<UninitializedPropertyAccessException>({b.inheritedField})
+    }
+
+    @Test
+    fun `should extend MemberX500 names with something that returns a unique db-friendly string back`() {
+        // Given an x500
+        val x500 = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+
+        // When we turn it into a db-friendly name
+        val name = x500.sandboxName
+
+        // Then it should be something readable and unique
+        assertThat(name, `is`("CN_IRunCorDapps_OU_Application_O_R3_L_London_C_GB"))
     }
 
     open class A : Flow {
