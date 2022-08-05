@@ -34,6 +34,7 @@ internal class WebsocketRouteAdaptor(
 
     private var channel: DuplexChannel? = null
 
+    // The handler is called when a WebSocket client connects.
     override fun handleConnect(ctx: WsConnectContext) {
 
         log.info("Connected to remote: ${ctx.session.remoteAddress}")
@@ -62,16 +63,19 @@ internal class WebsocketRouteAdaptor(
         }
     }
 
+    // The handler is called when a WebSocket client sends a String message.
     override fun handleMessage(ctx: WsMessageContext) {
         // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage hook has been defined. The
         // hook will be responsible for ensuring the messages respect the protocol and terminate connections when malicious messages arrive.
         requireNotNull(channel).onTextMessage?.invoke(ctx.message()) ?: log.info("Inbound messages are not supported.")
     }
 
+    // The handler is called when an error is detected.
     override fun handleError(ctx: WsErrorContext) {
         requireNotNull(channel).onError?.let { it(ctx.error()) }
     }
 
+    // The handler is called when a WebSocket client closes the connection.
     override fun handleClose(ctx: WsCloseContext) {
         requireNotNull(channel).onClose?.let { it(ctx.status(), ctx.reason()) }
     }

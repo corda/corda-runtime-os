@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
+import java.io.IOException
 import java.util.Queue
 import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.Session
@@ -29,7 +30,15 @@ class MessageQueueWebsocketHandler(
     }
 
     override fun send(message: String) {
-        log.info("Sending message: $message")
-        super.getRemote().sendString(message)
+        if(super.isConnected()) {
+            try {
+                log.info("Attempting to send message from client websocket handler to server. Message: $message")
+                remote.sendString(message)
+            } catch (e: IOException) {
+                log.warn("Exception sending message to server.", e)
+            }
+        } else {
+            log.warn("Attempted to send message from client to server but session was not connected.")
+        }
     }
 }

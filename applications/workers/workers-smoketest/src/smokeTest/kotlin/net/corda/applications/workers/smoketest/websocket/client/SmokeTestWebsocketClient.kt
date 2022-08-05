@@ -2,6 +2,7 @@ package net.corda.applications.workers.smoketest.websocket.client
 
 import java.net.URI
 import java.time.Duration
+import java.util.LinkedList
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.contextLogger
@@ -24,11 +25,11 @@ fun useWebsocketConnection(
     block: (wsHandler: InternalWebsocketHandler) -> Unit
 ) {
     val wsHandler = MessageQueueWebsocketHandler(messageQueue)
-    val client = SmokeTestWebsocketClient(wsHandler)
+    val client = SmokeTestWebsocketClient()
 
     client.use {
         it.start()
-        it.connect(path)
+        it.connect(path, wsHandler)
         eventually {
             assertTrue(wsHandler.isConnected)
         }
@@ -41,7 +42,6 @@ fun useWebsocketConnection(
 }
 
 class SmokeTestWebsocketClient(
-    private val wsHandler: WebSocketAdapter,
     private val username: String = "admin",
     private val password: String = "admin",
     private val connectTimeout: Duration = Duration.ofSeconds(10),
@@ -54,39 +54,38 @@ class SmokeTestWebsocketClient(
 
     private val httpClient = HttpClient(SslContextFactory.Client(true))
     private val wsClient = WebSocketClient(httpClient)
-    @Volatile
-    private var session: Session? = null
+
+    private val sessions: MutableList<Session> = LinkedList()
 
     fun start() {
         wsClient.start()
     }
 
-    fun connect(path: String) {
+    fun connect(path: String, webSocketAdapter: WebSocketAdapter): Session {
         val fullPath = "$baseWssPath$path"
         val sessionFuture = wsClient.connect(
-            wsHandler,
+            webSocketAdapter,
             URI(fullPath),
             ClientUpgradeRequest(),
             BasicAuthUpgradeListener(username, password)
         )
-        session = sessionFuture.getOrThrow(connectTimeout)
-            ?: throw SmokeTestWebsocketException("Session was null after ${connectTimeout.seconds} seconds.")
+        val session = (sessionFuture.getOrThrow(connectTimeout)
+            ?: throw SmokeTestWebsocketException("Session was null after ${connectTimeout.seconds} seconds."))
+
+        sessions.add(session)
 
         log.info("Session established for $username at $fullPath.")
         log.info("Open sessions for this client: ${wsClient.openSessions.size}.")
+        return session
     }
 
     override fun close() {
-        log.info("Sessions before closing client: ${wsClient.openSessions.size} sessions.")
+        log.info("Gracefully closing sessions.")
+        sessions.forEach { it.close(CloseStatus(StatusCode.NORMAL, "Smoke test closing from client side")) }
+        log.info("Gracefully http client.")
+        httpClient.stop()
         log.info("Gracefully closing WebSocket client.")
         wsClient.stop()
-        log.info("Sessions after closing client: ${wsClient.openSessions.size} sessions.")
-        log.info("Gracefully closing all ${wsClient.openSessions.size} sessions.")
-        wsClient.openSessions.forEach { it.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing session from client side.")) }
-        log.info("Gracefully closing session held in client variable.")
-        session?.close(CloseStatus(StatusCode.NORMAL, "Gracefully closing session from client side."))
-        session = null
-        httpClient.stop()
     }
 }
 
