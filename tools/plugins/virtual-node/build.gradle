@@ -3,6 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
     id 'corda.cli-plugin-packager'
+    id 'corda.common-publishing'
 }
 
 group 'net.corda.cli.deployment'
