@@ -70,7 +70,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    @Order(30)
+    /*@Order(30)
     @Test
     fun `multiple websocket connections can be open for one flow from one holding identity and request id`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -93,7 +93,7 @@ class FlowStatusFeedSmokeTest {
 
             }
         }
-    }
+    }*/
 
     /*@Order(31)
     @Test
