@@ -136,7 +136,7 @@ bootstrap:
     # -- Kafka topic partitions
     partitions: 10
     # -- Kafka topic replicas
-    replicas: 1
+    replicas: 3
 
   # Configuration for CLI image used for bootstrap
   image:
