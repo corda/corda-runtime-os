@@ -3,6 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
     id 'corda.cli-plugin-packager'
+    id 'corda.common-publishing'
 }
 
 group 'net.corda.cli.deployment'
@@ -36,4 +37,14 @@ tasks.named("installDist") {
     def homePath = System.properties['user.home']
     from cliPlugin
     into "$homePath/.corda/cli/plugins"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
+            groupId project.group
+            artifact cliPluginTask
+        }
+    }
 }

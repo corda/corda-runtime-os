@@ -393,6 +393,8 @@ class DBAccessIntegrationTest {
         val topic = randomId()
         val expectedResult = setOf(
             CordaTopicPartition(topic, 0),
+            CordaTopicPartition(topic, 1),
+            CordaTopicPartition(topic, 2),
         )
 
         assertThat(dbAccess.getTopicPartitionMapFor(topic)).isEqualTo(expectedResult)

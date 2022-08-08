@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -12,6 +11,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -98,7 +99,7 @@ internal class LinkManagerHostingMapImpl(
         ) {
             if (oldValue != null) {
                 publicHashToIdentityInfo.remove(oldValue.toGroupIdWithPublicKeyHash())
-                locallyHostedIdentityToIdentityInfo.remove(oldValue.holdingIdentity)
+                locallyHostedIdentityToIdentityInfo.remove(oldValue.holdingIdentity.toCorda())
             }
             val newIdentity = newRecord.value
             if (newIdentity != null) {
@@ -117,13 +118,13 @@ internal class LinkManagerHostingMapImpl(
 
     private fun addEntry(entry: HostedIdentityEntry) {
         val info = HostingMapListener.IdentityInfo(
-            holdingIdentity = entry.holdingIdentity,
+            holdingIdentity = entry.holdingIdentity.toCorda(),
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
             sessionKeyTenantId = entry.sessionKeyTenantId,
             sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey)
         )
-        locallyHostedIdentityToIdentityInfo[entry.holdingIdentity] = info
+        locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toCorda()] = info
         publicHashToIdentityInfo[entry.toGroupIdWithPublicKeyHash()] = info
         listeners.forEach {
             it.identityAdded(info)

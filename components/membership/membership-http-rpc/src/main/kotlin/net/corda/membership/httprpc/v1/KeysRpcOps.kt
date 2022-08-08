@@ -5,7 +5,6 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 
@@ -130,28 +129,25 @@ interface KeysRpcOps : RpcOps {
      * @return The ID of the newly generated key pair.
      */
     @HttpRpcPOST(
-        path = "{tenantId}",
+        path = "{tenantId}/alias/{alias}/category/{hsmCategory}/scheme/{scheme}",
         description = "Generate key pair.",
         responseDescription = "The ID of the newly generated key pair."
     )
     fun generateKeyPair(
         @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
-        @HttpRpcRequestBodyParameter(
-            description = "The key alias",
-            required = true,
+        @HttpRpcPathParameter(
+            description = "The key alias"
         )
         alias: String,
-        @HttpRpcRequestBodyParameter(
-            description = "The HSM Category",
-            required = true,
+        @HttpRpcPathParameter(
+            description = "The HSM Category"
         )
         hsmCategory: String,
-        @HttpRpcRequestBodyParameter(
-            description = "The scheme",
-            required = true,
+        @HttpRpcPathParameter(
+            description = "The scheme"
         )
-        scheme: String,
+        scheme: String
     ): String
 
     /**

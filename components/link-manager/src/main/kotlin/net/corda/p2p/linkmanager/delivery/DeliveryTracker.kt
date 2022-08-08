@@ -30,6 +30,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -195,8 +196,8 @@ internal class DeliveryTracker(
             private fun sessionCounterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionCounterparties {
                 val header = state.message.message.header
                 return SessionManager.SessionCounterparties(
-                    header.source,
-                    header.destination
+                    header.source.toCorda(),
+                    header.destination.toCorda()
                 )
             }
         }

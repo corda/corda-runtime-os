@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
@@ -11,8 +10,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -24,7 +23,7 @@ import org.mockito.kotlin.whenever
 
 class ForwardingGroupPolicyProviderTest {
 
-    private val alice = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group-1")
+    private val alice = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group-1")
     private val groupInfo =
         GroupPolicyListener.GroupInfo(
             alice,
@@ -99,7 +98,7 @@ class ForwardingGroupPolicyProviderTest {
     fun `get group info delegates to the real policy provider properly`() {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
 
-        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo)
     }
 
@@ -108,7 +107,7 @@ class ForwardingGroupPolicyProviderTest {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
         whenever(groupPolicy.p2pParameters.tlsPki).thenReturn(P2PParameters.TlsPkiMode.CORDA_4)
 
-        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo.copy(networkType = NetworkType.CORDA_4))
     }
 
@@ -117,7 +116,7 @@ class ForwardingGroupPolicyProviderTest {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
         whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
-        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(groupPolicy)
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice))
             .isEqualTo(groupInfo.copy(protocolModes = setOf(ProtocolMode.AUTHENTICATION_ONLY)))
     }
@@ -127,7 +126,7 @@ class ForwardingGroupPolicyProviderTest {
         val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
         whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
-        whenever(realGroupPolicyProvider.getGroupPolicy(alice.toCorda())).thenReturn(null)
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(null)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isNull()
     }
 
@@ -140,7 +139,7 @@ class ForwardingGroupPolicyProviderTest {
         val capturedListener = argumentCaptor<(net.corda.virtualnode.HoldingIdentity, GroupPolicy) -> Unit>()
         verify(realGroupPolicyProvider).registerListener(capturedListener.capture())
 
-        capturedListener.firstValue.invoke(alice.toCorda(), groupPolicy)
+        capturedListener.firstValue.invoke(alice, groupPolicy)
         verify(listener).groupAdded(groupInfo)
     }
 

@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * This interface represents a component that has knowledge about the identities that are hosted locally.

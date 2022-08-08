@@ -24,6 +24,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.temporal.ChronoUnit
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -75,9 +76,9 @@ class VirtualNodeRpcTest {
                 condition {
                     it.code == 200 && it.toJson()["status"].textValue() == "OK" }
                 immediateFailCondition {
-                    it.code == 500
-                            && null != it.toJson()["title"].textValue()
-                            && ObjectMapper().readTree(it.toJson()["title"].textValue())["errorMessage"].textValue()
+                    it.code == 400
+                            && null != it.toJson()["details"]
+                            && it.toJson()["details"]["errorMessage"].textValue()
                         .startsWith("CPI already uploaded")
                 }
             }.toJson()
@@ -117,8 +118,8 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 500) {
-                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                        if(it.code == 400) {
+                            val json = it.toJson()["details"]
                             json.has("errorMessage")
                                     && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
                         } else {
@@ -146,8 +147,8 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 500) {
-                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                        if(it.code == 400) {
+                            val json = it.toJson()["details"]
                             json["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)
                         } else {
                             false
@@ -251,6 +252,7 @@ class VirtualNodeRpcTest {
             updateVirtualNodeState(vnode.first, newState)
 
             assertWithRetry {
+                timeout(Duration.of(10, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
@@ -263,6 +265,7 @@ class VirtualNodeRpcTest {
             updateVirtualNodeState(vnode.first, oldState)
 
             assertWithRetry {
+                timeout(Duration.of(10, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&

@@ -1,6 +1,7 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.db.impl.persistence.CpiPersistence
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata

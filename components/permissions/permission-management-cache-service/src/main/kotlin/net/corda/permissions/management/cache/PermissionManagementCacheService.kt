@@ -83,6 +83,15 @@ class PermissionManagementCacheService @Activate constructor(
     private var roleSnapshotReceived: Boolean = false
     private var permissionSnapshotReceived: Boolean = false
 
+    /**
+     * Caches need to be retained even between cycles of configuration change when underlying
+     * subscriptions restart.
+     */
+    private val userData = ConcurrentHashMap<String, User>()
+    private val groupData = ConcurrentHashMap<String, Group>()
+    private val roleData = ConcurrentHashMap<String, Role>()
+    private val permissionData = ConcurrentHashMap<String, Permission>()
+
     private fun allSnapshotsReceived(): Boolean = userSnapshotReceived && groupSnapshotReceived &&
             roleSnapshotReceived && permissionSnapshotReceived
 
@@ -173,45 +182,39 @@ class PermissionManagementCacheService @Activate constructor(
     }
 
     private fun createAndStartSubscriptionsAndCache(config: SmartConfig) {
-        val userData = ConcurrentHashMap<String, User>()
-        val groupData = ConcurrentHashMap<String, Group>()
-        val roleData = ConcurrentHashMap<String, Role>()
-        val permissionData = ConcurrentHashMap<String, Permission>()
-
+        // It is important to close `topicsRegistration` ahead of closing `userSubscription`,
+        // `groupSubscription`, etc. Failure to do so will cause `coordinator` to go into
+        // error state as followed dependency will be closed whilst registration is still active.
         topicsRegistration?.close()
 
         userSubscription?.close()
-        val userSubscription = createUserSubscription(userData, config)
+        userSubscription = createUserSubscription(userData, config)
             .also {
                 it.start()
-                userSubscription = it
             }
 
         groupSubscription?.close()
-        val groupSubscription = createGroupSubscription(groupData, config)
+        groupSubscription = createGroupSubscription(groupData, config)
             .also {
                 it.start()
-                groupSubscription = it
             }
 
         roleSubscription?.close()
-        val roleSubscription = createRoleSubscription(roleData, config)
+        roleSubscription = createRoleSubscription(roleData, config)
             .also {
                 it.start()
-                roleSubscription = it
             }
 
         permissionSubscription?.close()
-        val permissionSubscription = createPermissionSubscription(permissionData, config)
+        permissionSubscription = createPermissionSubscription(permissionData, config)
             .also {
                 it.start()
-                permissionSubscription = it
             }
 
         topicsRegistration = coordinator.followStatusChangesByName(
             setOf(
-                userSubscription.subscriptionName, groupSubscription.subscriptionName,
-                roleSubscription.subscriptionName, permissionSubscription.subscriptionName
+                userSubscription!!.subscriptionName, groupSubscription!!.subscriptionName,
+                roleSubscription!!.subscriptionName, permissionSubscription!!.subscriptionName
             )
         )
 

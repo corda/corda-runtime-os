@@ -13,8 +13,11 @@ data class CordappManifest(
     val bundleVersion: String,
     val minPlatformVersion: Int,
     val targetPlatformVersion: Int,
-    val contractInfo: ManifestCorDappInfo,
-    val workflowInfo: ManifestCorDappInfo,
+    val type: CordappType,
+    val shortName: String,
+    val vendor: String,
+    val versionId: Int,
+    val licence: String,
     val attributes: Map<String, String>) {
 
     companion object {
@@ -65,8 +68,11 @@ data class CordappManifest(
             other.bundleVersion,
             other.minPlatformVersion,
             other.targetPlatformVersion,
-            ManifestCorDappInfo.fromAvro(other.contractInfo),
-            ManifestCorDappInfo.fromAvro(other.workflowInfo),
+            CordappType.fromAvro(other.type),
+            other.shortName,
+            other.vendor,
+            other.versionId,
+            other.license,
             other.attributes
         )
 
@@ -79,43 +85,70 @@ data class CordappManifest(
         fun fromManifest(manifest: Manifest): CordappManifest {
             val manifestAttributes = manifest.mainAttributes
 
-            val minPlatformVersion = parseInt(manifestAttributes, MIN_PLATFORM_VERSION) ?: DEFAULT_MIN_PLATFORM_VERSION
-            val bundleSymbolicName = manifestAttributes.getValue(Constants.BUNDLE_SYMBOLICNAME) ?: throw CordappManifestException(
-                    "CorDapp manifest does not specify a `${Constants.BUNDLE_SYMBOLICNAME}` attribute.")
-            val bundleVersion = manifestAttributes.getValue(Constants.BUNDLE_VERSION) ?: throw CordappManifestException(
-                    "CorDapp manifest does not specify a `${Constants.BUNDLE_VERSION}` attribute.")
+            val minPlatformVersion = manifestAttributes.parseInt(MIN_PLATFORM_VERSION) ?: DEFAULT_MIN_PLATFORM_VERSION
+            val bundleSymbolicName = manifestAttributes.getMandatoryValue(Constants.BUNDLE_SYMBOLICNAME)
+            val bundleVersion = manifestAttributes.getMandatoryValue(Constants.BUNDLE_VERSION)
 
             val attributes = manifestAttributes
                     .map { (key, value) -> key.toString() to value.toString() }
                     .filterNot { (key, _) -> key in DEFAULT_ATTRIBUTES }
                     .toMap()
 
-            return CordappManifest(
+            if (manifestAttributes.getValue(CORDAPP_CONTRACT_NAME) != null) {
+                return CordappManifest(
                     bundleSymbolicName = bundleSymbolicName,
                     bundleVersion = bundleVersion,
                     minPlatformVersion = minPlatformVersion,
-                    targetPlatformVersion = parseInt(manifestAttributes, TARGET_PLATFORM_VERSION) ?: minPlatformVersion,
-                    contractInfo = ManifestCorDappInfo(
-                            manifestAttributes.getValue(CORDAPP_CONTRACT_NAME),
-                            manifestAttributes.getValue(CORDAPP_CONTRACT_VENDOR),
-                            parseInt(manifestAttributes, CORDAPP_CONTRACT_VERSION),
-                            manifestAttributes.getValue(CORDAPP_CONTRACT_LICENCE)),
-                    workflowInfo = ManifestCorDappInfo(
-                            manifestAttributes.getValue(CORDAPP_WORKFLOW_NAME),
-                            manifestAttributes.getValue(CORDAPP_WORKFLOW_VENDOR),
-                            parseInt(manifestAttributes, CORDAPP_WORKFLOW_VERSION),
-                            manifestAttributes.getValue(CORDAPP_WORKFLOW_LICENCE)),
+                    targetPlatformVersion = manifestAttributes.parseInt(TARGET_PLATFORM_VERSION) ?: minPlatformVersion,
+                    type = CordappType.CONTRACT,
+                    shortName = manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_NAME),
+                    vendor =  manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_VENDOR),
+                    versionId = manifestAttributes.getMandatoryIntValue(CORDAPP_CONTRACT_VERSION),
+                    licence = manifestAttributes.getMandatoryValue(CORDAPP_CONTRACT_LICENCE),
                     attributes = attributes
-            )
+                )
+            }
+            if (manifestAttributes.getValue(CORDAPP_WORKFLOW_NAME) != null) {
+                return CordappManifest(
+                    bundleSymbolicName = bundleSymbolicName,
+                    bundleVersion = bundleVersion,
+                    minPlatformVersion = minPlatformVersion,
+                    targetPlatformVersion = manifestAttributes.parseInt(TARGET_PLATFORM_VERSION) ?: minPlatformVersion,
+                    type = CordappType.WORKFLOW,
+                    shortName = manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_NAME),
+                    vendor =  manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_VENDOR),
+                    versionId = manifestAttributes.getMandatoryIntValue(CORDAPP_WORKFLOW_VERSION),
+                    licence = manifestAttributes.getMandatoryValue(CORDAPP_WORKFLOW_LICENCE),
+                    attributes = attributes
+                )
+            }
+            throw CordappManifestException("One of attributes $CORDAPP_CONTRACT_NAME, $CORDAPP_WORKFLOW_NAME has to be set.")
         }
 
         /**
-         * Parses an [attribute] from the [manifestAttributes] to [Int], or null if the attribute is missing.
+         * Parses an [attribute] to [Int], or null if the attribute is missing.
          *
          * Throws [CordappManifestException] if the attribute is not a valid integer.
          */
-        private fun parseInt(manifestAttributes: Attributes, attribute: String) = try {
-            manifestAttributes.getValue(attribute)?.toInt()
+        private fun Attributes.parseInt(attribute: String) = try {
+            getValue(attribute)?.toInt()
+        } catch (e: NumberFormatException) {
+            throw CordappManifestException("Attribute $attribute is not a valid integer.", e)
+        }
+
+        /**
+         * Returns value of an [attribute], or throws [CordappManifestException] if the attribute is missing.
+         */
+        private fun Attributes.getMandatoryValue(attribute: String): String =
+            getValue(attribute)
+                ?: throw CordappManifestException("CorDapp manifest does not specify a `$attribute` attribute.")
+
+        /**
+         * Parses an [attribute] to [Int], or throws [CordappManifestException] if the attribute is missing or not a
+         * valid integer.
+         */
+        private fun Attributes.getMandatoryIntValue(attribute: String) = try {
+            getMandatoryValue(attribute).toInt()
         } catch (e: NumberFormatException) {
             throw CordappManifestException("Attribute $attribute is not a valid integer.", e)
         }
@@ -152,8 +185,11 @@ data class CordappManifest(
             bundleVersion,
             minPlatformVersion,
             targetPlatformVersion,
-            contractInfo.toAvro(),
-            workflowInfo.toAvro(),
+            type.toAvro(),
+            shortName,
+            vendor,
+            versionId,
+            licence,
             attributes
         )
 }

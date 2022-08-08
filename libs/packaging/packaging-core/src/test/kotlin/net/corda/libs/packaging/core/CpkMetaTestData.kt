@@ -28,14 +28,17 @@ object CpkMetaTestData {
     val cpkType = CpkType.CORDA_API
     val cpkFormatVersion = CpkFormatVersion(2, 3)
     val cpkManifest = CpkManifest(CpkFormatVersion(2, 3))
-    val manifestCordappInfo = ManifestCorDappInfo("someName", "R3", 42, "some license")
+    val cordappType = CordappType.WORKFLOW
     val cordappManifest = CordappManifest(
         "net.corda.Bundle",
         "1.2.3",
         12,
         34,
-        ManifestCorDappInfo("someName", "R3", 42, "some license"),
-        ManifestCorDappInfo("someName", "R3", 42, "some license"),
+        CordappType.WORKFLOW,
+        "someName",
+        "R3",
+        42,
+        "some license",
         mapOf(
             "Corda-Contract-Classes" to "contractClass1, contractClass2",
             "Corda-Flow-Classes" to "flowClass1, flowClass2"

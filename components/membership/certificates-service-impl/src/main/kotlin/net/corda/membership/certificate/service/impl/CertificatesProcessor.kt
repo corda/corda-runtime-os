@@ -8,6 +8,8 @@ import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
@@ -87,10 +89,11 @@ internal class CertificatesProcessor(
         return if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
             ClusterCertificateProcessor(tenantId)
         } else {
-            val info = virtualNodeInfoReadService.getByHoldingIdentityShortHash(tenantId) ?: throw NoSuchNode(tenantId)
-            val factory = dbConnectionManager.createEntityManagerFactory(
-                info.vaultDmlConnectionId,
-                jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
+            virtualNodeInfoReadService.getByHoldingIdentityShortHash(tenantId) ?: throw NoSuchNode(tenantId)
+            val factory = dbConnectionManager.getOrCreateEntityManagerFactory(
+                name = VirtualNodeDbType.VAULT.getConnectionName(tenantId),
+                privilege = DbPrivilege.DML,
+                entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                     ?: throw java.lang.IllegalStateException(
                         "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                     )

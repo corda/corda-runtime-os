@@ -28,6 +28,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -103,7 +104,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val SESSION_KEY_SIGNATURE_SPEC = "${PARTY_SESSION_KEY}.signature.spec"
         const val LEDGER_KEY_ID = "${LEDGER_KEYS_KEY}.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "${LEDGER_KEYS_KEY}.signature.spec"
-        const val REGISTRATION_ID = "corda.registration.id"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val PLATFORM_VERSION_CONST = "5000"
         const val SOFTWARE_VERSION_CONST = "5.0.0"

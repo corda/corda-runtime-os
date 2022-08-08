@@ -12,13 +12,10 @@ import java.net.URL
 
 /** Tests of [HealthMonitorImpl]. */
 class HealthMonitorImplTests {
-    private val isHealthyUrl = URL("http://localhost:$HEALTH_MONITOR_PORT$HTTP_HEALTH_ROUTE")
-    private val statusUrl = URL("http://localhost:$HEALTH_MONITOR_PORT$HTTP_STATUS_ROUTE")
-
     @Test
     fun `worker is considered healthy and ready if there are no components in the lifecycle registry`() {
         val healthMonitor = startHealthMonitor(emptyMap())
-        val (healthyCode, readyCode) = getHealthAndReadinessCodes()
+        val (healthyCode, readyCode) = getHealthAndReadinessCodes(healthMonitor.port!!)
 
         assertEquals(HTTP_OK_CODE, healthyCode)
         assertEquals(HTTP_OK_CODE, readyCode)
@@ -33,7 +30,7 @@ class HealthMonitorImplTests {
             createComponentStatus(LifecycleStatus.DOWN)
         )
         val healthMonitor = startHealthMonitor(componentStatuses)
-        val (healthyCode, _) = getHealthAndReadinessCodes()
+        val (healthyCode, _) = getHealthAndReadinessCodes(healthMonitor.port!!)
 
         assertEquals(HTTP_OK_CODE, healthyCode)
 
@@ -48,7 +45,7 @@ class HealthMonitorImplTests {
             createComponentStatus(LifecycleStatus.ERROR)
         )
         val healthMonitor = startHealthMonitor(componentStatuses)
-        val (healthyCode, _) = getHealthAndReadinessCodes()
+        val (healthyCode, _) = getHealthAndReadinessCodes(healthMonitor.port!!)
 
         assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, healthyCode)
 
@@ -61,7 +58,7 @@ class HealthMonitorImplTests {
             createComponentStatus(LifecycleStatus.UP)
         )
         val healthMonitor = startHealthMonitor(componentStatuses)
-        val (_, readyCode) = getHealthAndReadinessCodes()
+        val (_, readyCode) = getHealthAndReadinessCodes(healthMonitor.port!!)
 
         assertEquals(HTTP_OK_CODE, readyCode)
 
@@ -75,7 +72,7 @@ class HealthMonitorImplTests {
             createComponentStatus(LifecycleStatus.DOWN)
         )
         val healthMonitor = startHealthMonitor(componentStatuses)
-        val (_, readyCode) = getHealthAndReadinessCodes()
+        val (_, readyCode) = getHealthAndReadinessCodes(healthMonitor.port!!)
 
         assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, readyCode)
 
@@ -89,7 +86,7 @@ class HealthMonitorImplTests {
             createComponentStatus(LifecycleStatus.ERROR)
         )
         val healthMonitor = startHealthMonitor(componentStatuses)
-        val (_, readyCode) = getHealthAndReadinessCodes()
+        val (_, readyCode) = getHealthAndReadinessCodes(healthMonitor.port!!)
 
         assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, readyCode)
 
@@ -106,14 +103,14 @@ class HealthMonitorImplTests {
     private fun startHealthMonitor(componentStatuses: Map<LifecycleCoordinatorName, CoordinatorStatus>): HealthMonitor {
         val lifecycleRegistry = TestLifecycleRegistry(componentStatuses)
         val healthMonitor = HealthMonitorImpl(lifecycleRegistry)
-        healthMonitor.listen(HEALTH_MONITOR_PORT)
+        healthMonitor.listen(0)
         return healthMonitor
     }
 
     /** Retrieves the HTTP codes of the health and readiness endpoints of a running [HealthMonitor]. */
-    private fun getHealthAndReadinessCodes(): Pair<Int, Int> {
-        val responseCodeHealthy = (isHealthyUrl.openConnection() as HttpURLConnection).responseCode
-        val responseCodeReady = (statusUrl.openConnection() as HttpURLConnection).responseCode
+    private fun getHealthAndReadinessCodes(port: Int): Pair<Int, Int> {
+        val responseCodeHealthy = (URL("http://localhost:$port$HTTP_HEALTH_ROUTE").openConnection() as HttpURLConnection).responseCode
+        val responseCodeReady = (URL("http://localhost:$port$HTTP_STATUS_ROUTE").openConnection() as HttpURLConnection).responseCode
         return responseCodeHealthy to responseCodeReady
     }
 }

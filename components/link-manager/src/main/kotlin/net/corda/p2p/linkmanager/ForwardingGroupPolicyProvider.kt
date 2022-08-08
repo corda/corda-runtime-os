@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -12,9 +11,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.toCorda
 
 internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
                                              private val groupPolicyProvider: GroupPolicyProvider,
@@ -45,12 +43,12 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
     )
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
-       return groupPolicyProvider.getGroupPolicy(holdingIdentity.toCorda())?.let { toGroupInfo(holdingIdentity, it) }
+       return groupPolicyProvider.getGroupPolicy(holdingIdentity)?.let { toGroupInfo(holdingIdentity, it) }
     }
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
-            val groupInfo = toGroupInfo(holdingIdentity.toAvro(), groupPolicy)
+            val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
             groupPolicyListener.groupAdded(groupInfo)
         }
     }
