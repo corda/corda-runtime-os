@@ -1251,10 +1251,8 @@ internal class LifecycleCoordinatorImplTest {
     private val dependency = mock<LifecycleCoordinator>()
     @Test
     fun `coordinator calls start and stop on dependency`() {
-        val registrationHandle = mock<RegistrationHandle>()
         val registry = mock<LifecycleRegistryCoordinatorAccess>().also {
             doAnswer { mock<LifecycleCoordinatorInternal>() }.whenever(it).getCoordinator(any())
-            doAnswer { registrationHandle }.whenever(it).registerCoordinator(any(), any())
         }
         val dependentComponents = DependentComponents.of(::dependency)
 
@@ -1264,12 +1262,10 @@ internal class LifecycleCoordinatorImplTest {
         ) { _, _ -> }
 
         coordinator.start()
-        verify(registry).registerCoordinator(any(), any())
         verify(dependency).start()
 
         coordinator.stop()
         verify(dependency).stop()
-        verify(registrationHandle).close()
     }
 
     private fun createCoordinator(
