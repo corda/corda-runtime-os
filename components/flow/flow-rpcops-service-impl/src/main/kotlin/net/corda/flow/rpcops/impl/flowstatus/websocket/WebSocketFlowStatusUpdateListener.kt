@@ -22,6 +22,8 @@ class WebSocketFlowStatusUpdateListener(
         val logger = contextLogger()
     }
 
+    // Potentially this can be invoked from multiple threads
+    @Synchronized
     override fun updateReceived(status: FlowStatus) {
         logger.info(
             "Flow status update: ${status.flowStatus.name} for listener $id (clientRequestId: $clientRequestId, " +

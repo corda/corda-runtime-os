@@ -14,6 +14,7 @@ import net.corda.httprpc.ws.WebSocketProtocolViolationException
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
+import java.util.concurrent.TimeUnit
 
 fun DuplexChannel.registerFlowStatusFeedHooks(
     flowStatusCacheService: FlowStatusCacheService,
@@ -63,13 +64,19 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
 
 private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldingIdentity, clientRequestId: String) =
     { avroStatus: FlowStatus ->
-        send(avroStatus.createFlowStatusResponse())
+        val future = send(avroStatus.createFlowStatusResponse())
         if (avroStatus.flowStatus.isFlowFinished()) {
+            try {
+                future.get(10, TimeUnit.SECONDS)
+            } catch (ex: Exception) {
+                log.error("Could not send terminal state to the remote side", ex)
+            }
+
             log.debug {
                 "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
                         "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
             }
-            close("Flow ${avroStatus.flowStatus.name}")
+            close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
         }
     }
 
