@@ -3,7 +3,6 @@ package net.corda.testutils.tools
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.types.MemberX500Name
-import java.lang.reflect.Modifier
 
 fun <T> Flow.injectIfRequired(
     field: Class<T>,
