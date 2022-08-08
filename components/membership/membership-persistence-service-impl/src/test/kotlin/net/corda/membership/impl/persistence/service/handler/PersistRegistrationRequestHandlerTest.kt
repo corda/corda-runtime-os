@@ -50,13 +50,11 @@ class PersistRegistrationRequestHandlerTest {
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
 
-    private val vaultDmlConnectionId = UUID.randomUUID()
-    private val cryptoDmlConnectionId = UUID.randomUUID()
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
-        vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = cryptoDmlConnectionId,
+        vaultDmlConnectionId = UUID(0, 0),
+        cryptoDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
 
@@ -69,7 +67,13 @@ class PersistRegistrationRequestHandlerTest {
     }
 
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(eq(vaultDmlConnectionId), any()) } doReturn entityManagerFactory
+        on {
+            getOrCreateEntityManagerFactory(
+                eq("vnode_vault_${ourHoldingIdentity.shortHash.lowercase()}"),
+                any(),
+                any()
+            )
+        } doReturn entityManagerFactory
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
@@ -135,7 +139,7 @@ class PersistRegistrationRequestHandlerTest {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
-        verify(dbConnectionManager).createEntityManagerFactory(any(), any())
+        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))

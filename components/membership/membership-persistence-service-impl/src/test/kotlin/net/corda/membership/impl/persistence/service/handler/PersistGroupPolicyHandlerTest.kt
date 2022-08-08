@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.orm.JpaEntitiesRegistry
@@ -16,6 +17,7 @@ import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -23,7 +25,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.time.Instant
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -36,9 +37,9 @@ class PersistGroupPolicyHandlerTest {
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
-    private val connectionId = UUID(1L, 300L)
+    val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
     private val nodeInfo = mock<VirtualNodeInfo> {
-        on { vaultDmlConnectionId } doReturn connectionId
+        on { holdingIdentity } doReturn identity
     }
     private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
@@ -59,7 +60,13 @@ class PersistGroupPolicyHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val connectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(connectionId, entitySet) } doReturn entityManagerFactory
+        on {
+            getOrCreateEntityManagerFactory(
+                "vnode_vault_${identity.shortHash.lowercase()}",
+                DbPrivilege.DML,
+                entitySet
+            )
+        } doReturn entityManagerFactory
     }
     private val clock = TestClock(Instant.ofEpochMilli(10))
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {

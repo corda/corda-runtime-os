@@ -6,6 +6,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupPolicyEntity
@@ -39,9 +40,6 @@ class QueryGroupPolicyHandlerTest {
     private val groupId = UUID.randomUUID().toString()
     private val holdingIdentity = createTestHoldingIdentity(x500Name, groupId)
 
-    private val vaultDmlConnectionId = UUID.randomUUID()
-    private val cryptoDmlConnectionId = UUID.randomUUID()
-
     private val clock = TestClock(Instant.ofEpochSecond(0))
 
     private val entityTransaction: EntityTransaction = mock()
@@ -53,7 +51,11 @@ class QueryGroupPolicyHandlerTest {
     }
 
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(eq(vaultDmlConnectionId), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(
+            eq(VirtualNodeDbType.VAULT.getConnectionName(holdingIdentity.shortHash)),
+            any(),
+            any()
+        ) } doReturn entityManagerFactory
     }
 
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
@@ -76,8 +78,8 @@ class QueryGroupPolicyHandlerTest {
     private val virtualNodeInfo = VirtualNodeInfo(
         holdingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
-        vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = cryptoDmlConnectionId,
+        vaultDmlConnectionId = UUID(0, 0),
+        cryptoDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {

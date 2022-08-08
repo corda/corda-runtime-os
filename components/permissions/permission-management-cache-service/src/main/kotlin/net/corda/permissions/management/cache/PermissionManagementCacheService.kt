@@ -182,6 +182,10 @@ class PermissionManagementCacheService @Activate constructor(
     }
 
     private fun createAndStartSubscriptionsAndCache(config: SmartConfig) {
+        // It is important to close `topicsRegistration` ahead of closing `userSubscription`,
+        // `groupSubscription`, etc. Failure to do so will cause `coordinator` to go into
+        // error state as followed dependency will be closed whilst registration is still active.
+        topicsRegistration?.close()
 
         userSubscription?.close()
         userSubscription = createUserSubscription(userData, config)
@@ -207,7 +211,6 @@ class PermissionManagementCacheService @Activate constructor(
                 it.start()
             }
 
-        topicsRegistration?.close()
         topicsRegistration = coordinator.followStatusChangesByName(
             setOf(
                 userSubscription!!.subscriptionName, groupSubscription!!.subscriptionName,
