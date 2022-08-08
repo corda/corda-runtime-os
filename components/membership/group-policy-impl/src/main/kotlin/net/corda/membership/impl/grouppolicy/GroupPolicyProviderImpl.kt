@@ -137,11 +137,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
         ) = try {
-            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }.also {
-                if(groupPolicies[holdingIdentity] is MGMGroupPolicy) {
-                    groupPolicies.remove(holdingIdentity)
-                }
-            }
+            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
         } catch (e: BadGroupPolicyException) {
             logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null
