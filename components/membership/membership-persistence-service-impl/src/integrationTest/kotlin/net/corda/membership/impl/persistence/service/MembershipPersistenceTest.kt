@@ -238,7 +238,7 @@ class MembershipPersistenceTest {
         private val groupId = randomUUID().toString()
         private val x500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
         private val viewOwningHoldingIdentity = HoldingIdentity(x500Name, groupId)
-        private val holdingIdentityShortHash: String = viewOwningHoldingIdentity.shortHash
+        private val holdingIdentityShortHash: String = viewOwningHoldingIdentity.shortHash.lowercase()
 
         private val registeringX500Name = MemberX500Name.parse("O=Bob, C=GB, L=London")
         private val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)

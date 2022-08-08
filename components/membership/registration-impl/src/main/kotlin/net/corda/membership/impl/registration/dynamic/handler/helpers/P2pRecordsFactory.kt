@@ -11,7 +11,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
-import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class P2pRecordsFactory(
@@ -22,13 +22,25 @@ class P2pRecordsFactory(
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
 
         private val logger = contextLogger()
-        private val TTL = Duration.ofMinutes(5)
     }
 
+    /**
+     * Creates an authenticated message for P2P communication.
+     *
+     * @param source The source of the message.
+     * @param destination The destination of the message.
+     * @param content The content of the message.
+     * @param minutesToWait Optional parameter. If not defined default value will be null. Meaning, P2P will re-try
+     * to send the message infinitely. If defined, P2P will be trying to deliver the message for that many minutes,
+     * after which this message will be dropped from the p2p layer.
+     *
+     * @return The ready-to-send authenticated message record.
+     */
     fun <T : Any> createAuthenticatedMessageRecord(
         source: HoldingIdentity,
         destination: HoldingIdentity,
-        content: T
+        content: T,
+        minutesToWait: Long? = null
     ): Record<String, AppMessage> {
         val data = cordaAvroSerializationFactory.createAvroSerializer<T> {
             logger.warn("Serialization failed")
@@ -37,7 +49,7 @@ class P2pRecordsFactory(
         val header = AuthenticatedMessageHeader.newBuilder()
             .setDestination(destination)
             .setSource(source)
-            .setTtl(clock.instant().plus(TTL))
+            .setTtl(minutesToWait?.let { clock.instant().plus(it, ChronoUnit.MINUTES) })
             .setMessageId(UUID.randomUUID().toString())
             .setTraceId(null)
             .setSubsystem(MEMBERSHIP_P2P_SUBSYSTEM)

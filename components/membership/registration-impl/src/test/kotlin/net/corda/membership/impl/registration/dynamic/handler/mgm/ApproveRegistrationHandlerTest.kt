@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.mgm.handler
+package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
@@ -11,7 +11,6 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
-import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
@@ -123,7 +122,8 @@ class ApproveRegistrationHandlerTest {
             createAuthenticatedMessageRecord(
                 any(),
                 any(),
-                any()
+                any(),
+                eq(null)
             )
         } doReturn record
     }

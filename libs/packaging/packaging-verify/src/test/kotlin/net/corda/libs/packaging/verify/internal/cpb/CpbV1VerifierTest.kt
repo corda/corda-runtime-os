@@ -10,7 +10,6 @@ import net.corda.libs.packaging.testutils.TestUtils.BOB
 import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA
 import net.corda.libs.packaging.testutils.TestUtils.signedBy
 import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder
-import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder.Companion.POLICY_FILE
 import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
 import net.corda.test.util.InMemoryZipFile
 import net.corda.v5.crypto.SecureHash
@@ -48,7 +47,7 @@ class CpbV1VerifierTest {
         val exception = assertThrows<InvalidSignatureException> {
             verify(cpb)
         }
-        assertEquals("File $POLICY_FILE is not signed in package \"test.cpb\"", exception.message)
+        assertEquals("File testCpk1-1.0.0.0.cpk is not signed in package \"test.cpb\"", exception.message)
     }
 
     @Test

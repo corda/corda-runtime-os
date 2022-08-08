@@ -1,4 +1,4 @@
-package net.corda.virtualnode.write.db.impl.writer
+package net.corda.db.connection.manager
 
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
