@@ -41,7 +41,7 @@ class TestCpkV2Builder {
     fun build() =
         InMemoryZipFile().apply {
             setManifest(manifest ?: cpkV2Manifest())
-            addFile("META-INF/CPKDependencies", cpkV2Dependencies(dependencies))
+            addFile("META-INF/CPKDependencies.json", cpkV2Dependencies(dependencies))
             libraries.forEach { addFile("META-INF/privatelib/${it.name}", it.content) }
             for (i in 1..3) addFile("package/Cpk$i.class")
             addFile("migration/schema-v1.changelog-master.xml")
@@ -66,13 +66,13 @@ class TestCpkV2Builder {
 
     private fun cpkV2Dependencies(dependencies: Array<TestUtils.Dependency>) =
         buildString {
-            append("[")
+            append("{\"formatVersion\":\"2.0\",\"dependencies\":[")
             dependencies.forEachIndexed { i, it ->
                 if (i > 0) append(",")
                 if (it.hash != null) append(hashDependency(it))
                 else append(signerDependency(it))
             }
-            append("]")
+            append("]}")
         }
 
     private fun hashDependency(dependency: TestUtils.Dependency) =
