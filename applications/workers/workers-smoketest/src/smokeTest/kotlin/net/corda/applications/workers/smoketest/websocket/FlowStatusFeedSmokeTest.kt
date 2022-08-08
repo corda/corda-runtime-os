@@ -3,9 +3,11 @@ package net.corda.applications.workers.smoketest.websocket
 import java.time.Duration
 import java.util.LinkedList
 import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
+import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebsocketHandler
@@ -69,8 +71,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    // todo conal - could it be this test all along? two clients? Maybe it passes and then something goes wrong when closing both clients
-    /*@Order(30)
+    @Order(30)
     @Test
     fun `multiple websocket connections can be open for one flow from one holding identity and request id`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -93,53 +94,7 @@ class FlowStatusFeedSmokeTest {
 
             }
         }
-    }*/
-
-    /*@Order(31)
-    @Test
-    fun `one test client can have multiple websocket connections open for different flows`() {
-        val clientRequestId1 = UUID.randomUUID().toString()
-        val clientRequestId2 = UUID.randomUUID().toString()
-        val flowStatusFeedPath1 = "/flow/$bobHoldingId/$clientRequestId1"
-        val flowStatusFeedPath2 = "/flow/$bobHoldingId/$clientRequestId2"
-
-        val messageQueue1 = ConcurrentLinkedQueue<String>()
-        val messageQueue2 = ConcurrentLinkedQueue<String>()
-        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
-        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
-        val client = SmokeTestWebsocketClient()
-
-        client.start()
-        val session1 = client.connect(flowStatusFeedPath1, wsHandler1)
-        val session2 = client.connect(flowStatusFeedPath2, wsHandler2)
-
-        eventually {
-            assertTrue(session1.isOpen)
-            assertTrue(session2.isOpen)
-        }
-
-        startFlow(clientRequestId1)
-        awaitRpcFlowFinished(bobHoldingId, clientRequestId1)
-
-        startFlow(clientRequestId2)
-        awaitRpcFlowFinished(bobHoldingId, clientRequestId2)
-
-        eventually(Duration.ofSeconds(10)) {
-            assertThat(messageQueue1).hasSize(3)
-            assertThat(messageQueue2).hasSize(3)
-            assertThat(messageQueue1.poll()).contains(FlowStates.START_REQUESTED.name)
-            assertThat(messageQueue1.poll()).contains(FlowStates.RUNNING.name)
-            assertThat(messageQueue1.poll()).contains(FlowStates.COMPLETED.name)
-            assertThat(messageQueue2.poll()).contains(FlowStates.START_REQUESTED.name)
-            assertThat(messageQueue2.poll()).contains(FlowStates.RUNNING.name)
-            assertThat(messageQueue2.poll()).contains(FlowStates.COMPLETED.name)
-        }
-
-        session1.close(1000, "CONAL closed 1")
-        session2.close(1000, "CONAL closed 2")
-        client.close()
-    }*/
-/*
+    }
 
     @Order(40)
     @Test
@@ -169,9 +124,8 @@ class FlowStatusFeedSmokeTest {
             }
         }
     }
-*/
 
-    /*@Order(41)
+    @Order(41)
     @Test
     fun `two test clients can function after first reports completed flow during registration`() {
         val clientRequestId = UUID.randomUUID().toString()
@@ -197,7 +151,7 @@ class FlowStatusFeedSmokeTest {
             assertFalse(wsHandler1.isConnected)
         }
 
-        session1.close(1000, "CONAL closed 1")
+        session1.close(1000, "Smoke test closing session 1.")
         client1.close()
 
         val messageQueue2 = ConcurrentLinkedQueue<String>()
@@ -217,9 +171,9 @@ class FlowStatusFeedSmokeTest {
             assertFalse(wsHandler2.isConnected)
         }
 
-        session2.close(1000, "CONAL closed 2")
+        session2.close(1000, "Smoke test closing session 2.")
         client2.close()
-    }*/
+    }
 
     @Order(50)
     @Test

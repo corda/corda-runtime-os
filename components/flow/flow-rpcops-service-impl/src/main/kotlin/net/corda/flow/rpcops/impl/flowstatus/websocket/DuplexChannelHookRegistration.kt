@@ -11,6 +11,7 @@ import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketProtocolViolationException
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 
@@ -24,7 +25,7 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     var listener: FlowStatusUpdateListener? = null
     onConnect = {
         val id = UUID.randomUUID()
-        log.info("Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash).")
+        log.debug { "Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)." }
         listener = WebSocketFlowStatusUpdateListener(
             id,
             clientRequestId,
@@ -41,22 +42,23 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
         }
     }
     onClose = { statusCode, reason ->
-        log.info(
+        log.debug {
             "Close hook called for id ${listener?.id} with status $statusCode, reason: $reason. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
-        )
+        }
         listener?.let {
             flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, it)
         }
     }
     onError = { e ->
-        log.info(
+        log.warn(
             "Flow status feed ${listener?.id} received an error. " +
-                    "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)", e
+                    "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)",
+            e
         )
     }
     onTextMessage = {
-        log.info("Flow status feed ${listener?.id} does not support receiving messages. Terminating connection.")
+        log.debug { "Flow status feed ${listener?.id} does not support receiving messages. Terminating connection." }
         error(WebSocketProtocolViolationException("Inbound messages are not permitted."))
     }
 }
@@ -65,10 +67,10 @@ private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldi
     { avroStatus: FlowStatus ->
         send(avroStatus.createFlowStatusResponse())
         if (avroStatus.flowStatus.isFlowFinished()) {
-            log.info(
+            log.debug {
                 "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
-                        "holdingId: ${holdingIdentity.toCorda().shortHash}, clientRequestId: $clientRequestId"
-            )
+                        "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
+            }
             close("Flow ${avroStatus.flowStatus.name}")
         }
     }
