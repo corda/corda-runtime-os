@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "FindWithNamedQuery",
-  "doc": "Find entities matched by a named query. Parameters for the query may be specified. Pagination is supported, but there's no guarantee of consistency if the underlying data changes or is unsorted.  Replies with {@link EntityResponse}",
+  "doc": "Find entities matched by a named query. Parameters for the query may be specified. Pagination is supported, but there's no guarantee of consistency if the underlying data changes. The data will not be sorted in Corda; if the database returns an unpredictable order that must be handled by the caller. FindWithNamedQuery can be used to enforce ordering if required. Replies with {@link EntityResponse}",
   "namespace": "net.corda.data.persistence",
   "fields": [
     {

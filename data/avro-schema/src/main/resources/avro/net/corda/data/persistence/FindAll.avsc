@@ -8,6 +8,16 @@
       "name": "entityClassName",
       "type": "string",
       "doc": "the fully qualified entity class name"
+    },
+    {
+      "name": "offset",
+      "type" : "int",
+      "doc": "The index of the first result in the query output that should be returned."
+    },
+    {
+      "name": "limit",
+      "type": "int",
+      "doc": "Limit number of rows in the output query results, after applying the offset. Use the maximum int value if you do not want a lower limit."
     }
   ]
 }
