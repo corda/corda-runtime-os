@@ -90,6 +90,7 @@ internal class FlowMapperServiceTest {
         }
 
         LifecycleTest<FlowMapperService> {
+            addDependency<ConfigurationReadService>()
             addDependency(subName)
 
             FlowMapperService(
