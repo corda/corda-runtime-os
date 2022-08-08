@@ -30,7 +30,7 @@ class ExternalEventResponseFactoryImpl(
         cordaAvroSerializationFactory: CordaAvroSerializationFactory
     ) : this(cordaAvroSerializationFactory.createAvroSerializer { }, UTCClock())
 
-    override fun success(flowExternalEventContext: ExternalEventContext, payload: Any, ): Record<String, FlowEvent> {
+    override fun success(flowExternalEventContext: ExternalEventContext, payload: Any): Record<String, FlowEvent> {
         val response = ExternalEventResponse.newBuilder()
             .setRequestId(flowExternalEventContext.requestId)
             .setPayload(ByteBuffer.wrap(serializer.serialize(payload)))

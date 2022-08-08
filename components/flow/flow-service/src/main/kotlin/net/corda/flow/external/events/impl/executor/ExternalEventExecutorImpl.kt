@@ -19,9 +19,9 @@ class ExternalEventExecutorImpl @Activate constructor(
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>> execute(
+    override fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
         requestId: String,
-        handlerClass: Class<T>,
+        handlerClass: Class<out ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
         return uncheckedCast(
@@ -36,8 +36,8 @@ class ExternalEventExecutorImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>> execute(
-        handlerClass: Class<T>,
+    override fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
+        handlerClass: Class<out ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
         return execute(UUID.randomUUID().toString(), handlerClass, parameters)

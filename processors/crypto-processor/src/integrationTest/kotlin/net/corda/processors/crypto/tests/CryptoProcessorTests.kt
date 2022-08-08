@@ -17,8 +17,10 @@ import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -139,6 +141,9 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
 
+        @InjectService(timeout = 5000L)
+        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
@@ -212,8 +217,15 @@ class CryptoProcessorTests {
                     )
                 )
             )
-            flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
-            transformer = cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
+            flowOpsResponses = FlowOpsResponses(
+                messagingConfig,
+                subscriptionFactory,
+                cordaAvroSerializationFactory.createAvroDeserializer({}, FlowOpsResponse::class.java)
+            )
+            transformer = cryptoFlowOpsTransformerFactory.create(
+                requestingComponent = "test",
+                responseTopic = RESPONSE_TOPIC
+            )
         }
 
         private fun setupDatabases() {
@@ -673,16 +685,17 @@ class CryptoProcessorTests {
         schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
+            val requestId = UUID.randomUUID().toString()
             val event = transformer.createSign(
-                requestId = UUID.randomUUID().toString(),
+                requestId = requestId,
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
                 data = data,
-                flowExternalEventContext = ExternalEventContext()
+                flowExternalEventContext = ExternalEventContext(requestId, key)
             )
             logger.info(
-                "Publishing: createSign({}, {}, {})",
+                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
                 tenantId,
                 publicKey.publicKeyId(),
                 spec
@@ -718,13 +731,14 @@ class CryptoProcessorTests {
             val data = randomDataByteArray()
             val key = UUID.randomUUID().toString()
             val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
+            val requestId = UUID.randomUUID().toString()
             val event = transformer.createSign(
-                requestId = UUID.randomUUID().toString(),
+                requestId = requestId,
                 tenantId = tenantId,
                 publicKey = publicKey,
                 signatureSpec = spec,
                 data = data,
-                flowExternalEventContext = ExternalEventContext()
+                flowExternalEventContext = ExternalEventContext(requestId, key)
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",

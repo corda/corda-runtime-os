@@ -813,7 +813,9 @@ class PersistenceServiceInternalTests {
             assertThat(response.error.toString()).contains(expectFailure)
             return listOf<String>()
         } else {
-            val entityResponse = flowEvent.payload as EntityResponse
+            val entityResponse = deserializer.deserialize(
+                (flowEvent.payload as ExternalEventResponse).payload.array()
+            )!!
             return assertThatResponseIsAList(entityResponse)
         }
     }
