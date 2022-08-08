@@ -2,44 +2,44 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
+    <ID>ForbiddenComment:JPABackingStoreImpl.kt$// TODO: Reimplement metrics, config</ID>
     <ID>ForbiddenComment:JPABackingStoreImpl.kt$JPABackingStoreImpl$/* * FIXME: This is a temporary hack which uses the public schema of the cluster database to * store uniqueness data. It needs replacing with a solution to retrieve the appropriate DB * connection for a given notary service identity, and a mechanism to create the DB connection */</ID>
     <ID>ForbiddenComment:JPABackingStoreImpl.kt$JPABackingStoreImpl$// TODO: Need to figure out what exceptions can be thrown when using JPA directly</ID>
-    <ID>ForbiddenComment:JPABackingStoreImpl.kt$JPABackingStoreImpl$// TODO: Reimplement metrics, config</ID>
     <ID>ForbiddenComment:JPABackingStoreImpl.kt$JPABackingStoreImpl.Companion$// TODO: Replace constants with config</ID>
     <ID>ForbiddenComment:JPABackingStoreImpl.kt$JPABackingStoreImpl.SessionImpl$// TODO: Revisit handled exceptions, this is a subset of what</ID>
     <ID>ForbiddenComment:JPABackingStoreImpl.kt$JPABackingStoreImpl.SessionImpl.TransactionOpsImpl$// TODO: Figure out application specific exceptions</ID>
-    <ID>ForbiddenComment:JSONEntitySerialization.kt$// TODO: Remove this entirely and use standard Corda serialization libaries</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:120</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:121</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:150</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:159</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:212</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:218</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:331</ID>
-    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:332</ID>
+    <ID>ForbiddenComment:JSONEntitySerialization.kt$// TODO: Remove this entirely and use standard Corda serialization libraries</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:117</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:118</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:147</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:156</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:209</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:215</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:328</ID>
+    <ID>Indentation:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:329</ID>
     <ID>NestedBlockDepth:JPABackingStoreImpl.kt$JPABackingStoreImpl.SessionImpl$override fun executeTransaction( block: (BackingStore.Session, BackingStore.Session.TransactionOps) -&gt; Unit )</ID>
-    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:15</ID>
-    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:22</ID>
-    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:32</ID>
-    <ID>SpacingAroundParens:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:299</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:16</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:26</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:9</ID>
+    <ID>SpacingAroundParens:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:296</ID>
     <ID>TooGenericExceptionCaught:JPABackingStoreImpl.kt$JPABackingStoreImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:JPABackingStoreImpl.kt$JPABackingStoreImpl.SessionImpl$e: Exception</ID>
     <ID>UnusedPrivateMember:JPABackingStoreImpl.kt$JPABackingStoreImpl.SessionImpl$retryCount</ID>
     <ID>WildcardImport:JPABackingStoreImpl.kt$import javax.persistence.*</ID>
     <ID>WildcardImport:JPABackingStoreImpl.kt$import net.corda.lifecycle.*</ID>
     <ID>WildcardImport:JPABackingStoreImpl.kt$import net.corda.uniqueness.common.datamodel.*</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:121</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:217</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:218</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:242</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:252</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:258</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:281</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:291</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:118</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:214</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:215</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:239</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:249</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:255</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:278</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:288</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:294</ID>
     <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:297</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:300</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:304</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:330</ID>
-    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:353</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:301</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:327</ID>
+    <ID>Wrapping:net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl.kt:350</ID>
   </CurrentIssues>
 </SmellBaseline>

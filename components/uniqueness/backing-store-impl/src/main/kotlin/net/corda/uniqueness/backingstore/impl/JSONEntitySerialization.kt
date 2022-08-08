@@ -16,7 +16,7 @@ import net.corda.v5.crypto.SecureHash
  * required to store the Uniqueness Service result in the database
  * as a JSON format.
  */
-// TODO: Remove this entirely and use standard Corda serialization libaries
+// TODO: Remove this entirely and use standard Corda serialization libraries
 fun jpaBackingStoreObjectMapper() = jacksonObjectMapper().apply {
     registerModule(JavaTimeModule())
     val module = SimpleModule()

@@ -4,119 +4,131 @@ import net.corda.uniqueness.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGT
 import net.corda.uniqueness.common.UniquenessConstants.TRANSACTION_ID_LENGTH
 import java.io.Serializable
 import java.time.Instant
-import javax.persistence.Entity
-import javax.persistence.Column
-import javax.persistence.Id
-import javax.persistence.IdClass
-import javax.persistence.NamedQueries
-import javax.persistence.NamedQuery
-import javax.persistence.Table
+import javax.persistence.*
 
-
+/*
+ * JPA entity definitions used by the JPA backing store implementation
+ */
 object JPABackingStoreEntities {
-        val classes = setOf(
-                UniquenessStateDetailEntity::class.java,
-                UniquenessTransactionDetailEntity::class.java,
-                UniquenessRejectedTransactionEntity::class.java
-        )
+    val classes = setOf(
+        UniquenessStateDetailEntity::class.java,
+        UniquenessTransactionDetailEntity::class.java,
+        UniquenessRejectedTransactionEntity::class.java
+    )
 }
 
 data class UniquenessTxAlgoStateRefKey(
-        val issueTxIdAlgo: String = "",
-        val issueTxId: ByteArray = ByteArray(0),
-        val issueTxOutputIndex: Long = 0
-): Serializable {
-        override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
+    val issueTxIdAlgo: String = "",
+    val issueTxId: ByteArray = ByteArray(0),
+    val issueTxOutputIndex: Long = 0
+) : Serializable {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-                other as UniquenessTxAlgoStateRefKey
+        other as UniquenessTxAlgoStateRefKey
 
-                if (issueTxIdAlgo != other.issueTxIdAlgo) return false
-                if (!issueTxId.contentEquals(other.issueTxId)) return false
-                if (issueTxOutputIndex != other.issueTxOutputIndex) return false
+        if (issueTxIdAlgo != other.issueTxIdAlgo) return false
+        if (!issueTxId.contentEquals(other.issueTxId)) return false
+        if (issueTxOutputIndex != other.issueTxOutputIndex) return false
 
-                return true
-        }
+        return true
+    }
 
-        override fun hashCode(): Int {
-                var result = issueTxIdAlgo.hashCode()
-                result = 31 * result + issueTxId.contentHashCode()
-                result = 31 * result + issueTxOutputIndex.hashCode()
-                return result
-        }
+    override fun hashCode(): Int {
+        var result = issueTxIdAlgo.hashCode()
+        result = 31 * result + issueTxId.contentHashCode()
+        result = 31 * result + issueTxOutputIndex.hashCode()
+        return result
+    }
 }
 
 data class UniquenessTxAlgoIdKey(
-        val txIdAlgo: String = "",
-        val txId: ByteArray = ByteArray(0),
-): Serializable
+    val txIdAlgo: String = "",
+    val txId: ByteArray = ByteArray(0),
+) : Serializable {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UniquenessTxAlgoIdKey) return false
+
+        if (txIdAlgo != other.txIdAlgo) return false
+        if (!txId.contentEquals(other.txId)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = txIdAlgo.hashCode()
+        result = 31 * result + txId.contentHashCode()
+        return result
+    }
+}
 
 @Entity
 @Table(name = "uniqueness_state_details")
 
 // TODO this query needs refining because this way records are retrieved one-by-one which is extremely slow
 @NamedQueries(
-        NamedQuery(
-                name = "UniquenessStateDetailEntity.select",
-                query = "SELECT c FROM UniquenessStateDetailEntity c " +
-                        "WHERE c.issueTxIdAlgo = :txAlgo AND c.issueTxId = :txId AND c.issueTxOutputIndex = :stateIndex"
-        ),
-        NamedQuery(
-                name = "UniquenessStateDetailEntity.consumeWithProtection",
-                query = "UPDATE UniquenessStateDetailEntity SET " +
-                        "consumingTxIdAlgo = :consumingTxAlgo, consumingTxId = :consumingTxId " +
-                        "WHERE issueTxIdAlgo = :issueTxAlgo AND issueTxId = :issueTxId AND issueTxOutputIndex = :stateIndex " +
-                        "AND consumingTxId IS NULL" // In-flight double spend protection
-        )
+    NamedQuery(
+        name = "UniquenessStateDetailEntity.select",
+        query = "SELECT c FROM UniquenessStateDetailEntity c " +
+                "WHERE c.issueTxIdAlgo = :txAlgo AND c.issueTxId = :txId AND c.issueTxOutputIndex = :stateIndex"
+    ),
+    NamedQuery(
+        name = "UniquenessStateDetailEntity.consumeWithProtection",
+        query = "UPDATE UniquenessStateDetailEntity SET " +
+                "consumingTxIdAlgo = :consumingTxAlgo, consumingTxId = :consumingTxId " +
+                "WHERE issueTxIdAlgo = :issueTxAlgo AND issueTxId = :issueTxId AND issueTxOutputIndex = :stateIndex " +
+                "AND consumingTxId IS NULL" // In-flight double spend protection
+    )
 )
 
 @IdClass(UniquenessTxAlgoStateRefKey::class)
 data class UniquenessStateDetailEntity(
-        @Id
-        @Column(name = "issue_tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
-        val issueTxIdAlgo: String,
+    @Id
+    @Column(name = "issue_tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
+    val issueTxIdAlgo: String,
 
-        @Id
-        @Column(name = "issue_tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
-        val issueTxId: ByteArray,
+    @Id
+    @Column(name = "issue_tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
+    val issueTxId: ByteArray,
 
-        @Id
-        @Column(name = "issue_tx_output_idx", nullable = false)
-        // TODO Using Long here instead of Int is a temporary solution, should be investigated as part of NAAS-458
-        val issueTxOutputIndex: Long,
+    @Id
+    @Column(name = "issue_tx_output_idx", nullable = false)
+    // TODO Using Long here instead of Int is a temporary solution, should be investigated as part of NAAS-458
+    val issueTxOutputIndex: Long,
 
-        @Column(name = "consuming_tx_id_algo", nullable = true, length = TRANSACTION_ID_ALGO_LENGTH)
-        val consumingTxIdAlgo: String?,
+    @Column(name = "consuming_tx_id_algo", nullable = true, length = TRANSACTION_ID_ALGO_LENGTH)
+    val consumingTxIdAlgo: String?,
 
-        @Column(name = "consuming_tx_id", nullable = true, length = TRANSACTION_ID_LENGTH)
-        val consumingTxId: ByteArray?
+    @Column(name = "consuming_tx_id", nullable = true, length = TRANSACTION_ID_LENGTH)
+    val consumingTxId: ByteArray?
 ) {
-        @Suppress("ComplexMethod")
-        override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is UniquenessStateDetailEntity) return false
+    @Suppress("ComplexMethod")
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UniquenessStateDetailEntity) return false
 
-                if (issueTxIdAlgo != other.issueTxIdAlgo) return false
-                if (!issueTxId.contentEquals(other.issueTxId)) return false
-                if (issueTxOutputIndex != other.issueTxOutputIndex) return false
-                if (consumingTxIdAlgo != other.consumingTxIdAlgo) return false
-                if (consumingTxId != null) {
-                        if (other.consumingTxId == null) return false
-                        if (!consumingTxId.contentEquals(other.consumingTxId)) return false
-                } else if (other.consumingTxId != null) return false
+        if (issueTxIdAlgo != other.issueTxIdAlgo) return false
+        if (!issueTxId.contentEquals(other.issueTxId)) return false
+        if (issueTxOutputIndex != other.issueTxOutputIndex) return false
+        if (consumingTxIdAlgo != other.consumingTxIdAlgo) return false
+        if (consumingTxId != null) {
+            if (other.consumingTxId == null) return false
+            if (!consumingTxId.contentEquals(other.consumingTxId)) return false
+        } else if (other.consumingTxId != null) return false
 
-                return true
-        }
+        return true
+    }
 
-        override fun hashCode(): Int {
-                var result = issueTxIdAlgo.hashCode()
-                result = 31 * result + issueTxId.contentHashCode()
-                result = 31 * result + issueTxOutputIndex.hashCode()
-                result = 31 * result + (consumingTxIdAlgo?.hashCode() ?: 0)
-                result = 31 * result + (consumingTxId?.contentHashCode() ?: 0)
-                return result
-        }
+    override fun hashCode(): Int {
+        var result = issueTxIdAlgo.hashCode()
+        result = 31 * result + issueTxId.contentHashCode()
+        result = 31 * result + issueTxOutputIndex.hashCode()
+        result = 31 * result + (consumingTxIdAlgo?.hashCode() ?: 0)
+        result = 31 * result + (consumingTxId?.contentHashCode() ?: 0)
+        return result
+    }
 }
 
 @Entity
@@ -124,87 +136,87 @@ data class UniquenessStateDetailEntity(
 
 // TODO this query needs refining because this way records are retrieved one-by-one which is extremely slow
 @NamedQuery(
-        name = "UniquenessTransactionDetailEntity.select",
-        query = "SELECT t FROM UniquenessTransactionDetailEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
+    name = "UniquenessTransactionDetailEntity.select",
+    query = "SELECT t FROM UniquenessTransactionDetailEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
 )
 
 @IdClass(UniquenessTxAlgoIdKey::class)
 data class UniquenessTransactionDetailEntity(
-        @Id
-        @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
-        val txIdAlgo: String,
+    @Id
+    @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
+    val txIdAlgo: String,
 
-        @Id
-        @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
-        val txId: ByteArray,
+    @Id
+    @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
+    val txId: ByteArray,
 
-        @Column(name = "expiry_datetime", nullable = false)
-        val expiryDateTime: Instant,
+    @Column(name = "expiry_datetime", nullable = false)
+    val expiryDateTime: Instant,
 
-        @Column(name = "commit_timestamp", nullable = false)
-        val commitTimestamp: Instant,
+    @Column(name = "commit_timestamp", nullable = false)
+    val commitTimestamp: Instant,
 
-        @Column(name = "result", nullable = false)
-        val result: Char
+    @Column(name = "result", nullable = false)
+    val result: Char
 ) {
-        override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is UniquenessTransactionDetailEntity) return false
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UniquenessTransactionDetailEntity) return false
 
-                if (txIdAlgo != other.txIdAlgo) return false
-                if (!txId.contentEquals(other.txId)) return false
-                if (expiryDateTime != other.expiryDateTime) return false
-                if (result != other.result) return false
+        if (txIdAlgo != other.txIdAlgo) return false
+        if (!txId.contentEquals(other.txId)) return false
+        if (expiryDateTime != other.expiryDateTime) return false
+        if (result != other.result) return false
 
-                return true
-        }
+        return true
+    }
 
-        override fun hashCode(): Int {
-                var result1 = txIdAlgo.hashCode()
-                result1 = 31 * result1 + txId.contentHashCode()
-                result1 = 31 * result1 + expiryDateTime.hashCode()
-                result1 = 31 * result1 + result.hashCode()
-                return result1
-        }
+    override fun hashCode(): Int {
+        var result1 = txIdAlgo.hashCode()
+        result1 = 31 * result1 + txId.contentHashCode()
+        result1 = 31 * result1 + expiryDateTime.hashCode()
+        result1 = 31 * result1 + result.hashCode()
+        return result1
+    }
 }
 
 @Entity
 @Table(name = "uniqueness_rejected_txs")
 @NamedQuery(
-        name = "UniquenessRejectedTransactionEntity.select",
-        query = "SELECT t FROM UniquenessRejectedTransactionEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
+    name = "UniquenessRejectedTransactionEntity.select",
+    query = "SELECT t FROM UniquenessRejectedTransactionEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
 )
 @IdClass(UniquenessTxAlgoIdKey::class)
 data class UniquenessRejectedTransactionEntity(
-        @Id
-        @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
-        val txIdAlgo: String,
+    @Id
+    @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
+    val txIdAlgo: String,
 
-        @Id
-        // NOTE: In case of a ByteArray length is probably ignored but we keep it here just in case
-        @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
-        val txId: ByteArray,
+    @Id
+    // NOTE: In case of a ByteArray length is probably ignored but we keep it here just in case
+    @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
+    val txId: ByteArray,
 
-        // TODO Removing @Lob annotation from here is a temporary solution, should be investigated as part of NAAS-458
-        // @Lob
-        @Column(name = "error_details", nullable = false)
-        val errorDetails: ByteArray
+    // TODO Removing @Lob annotation from here is a temporary solution, should be investigated as part of NAAS-458
+    // @Lob
+    @Column(name = "error_details", nullable = false)
+    val errorDetails: ByteArray
 ) {
-        override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is UniquenessRejectedTransactionEntity) return false
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UniquenessRejectedTransactionEntity) return false
 
-                if (txIdAlgo != other.txIdAlgo) return false
-                if (!txId.contentEquals(other.txId)) return false
-                if (!errorDetails.contentEquals(other.errorDetails)) return false
+        if (txIdAlgo != other.txIdAlgo) return false
+        if (!txId.contentEquals(other.txId)) return false
+        if (!errorDetails.contentEquals(other.errorDetails)) return false
 
-                return true
-        }
+        return true
+    }
 
-        override fun hashCode(): Int {
-                var result = txIdAlgo.hashCode()
-                result = 31 * result + txId.contentHashCode()
-                result = 31 * result + errorDetails.contentHashCode()
-                return result
-        }
+    override fun hashCode(): Int {
+        var result = txIdAlgo.hashCode()
+        result = 31 * result + txId.contentHashCode()
+        result = 31 * result + errorDetails.contentHashCode()
+        return result
+    }
 }

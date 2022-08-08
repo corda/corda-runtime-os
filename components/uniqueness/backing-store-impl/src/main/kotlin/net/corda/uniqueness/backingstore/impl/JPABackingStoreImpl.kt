@@ -1,11 +1,5 @@
 package net.corda.uniqueness.backingstore.impl
 
-/**
- * An in-memory backing store implementation, which does not persist any data to permanent storage,
- * and therefore loses all data when the instance of this class is destroyed.
- *
- * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
- */
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
@@ -32,6 +26,9 @@ import org.slf4j.Logger
 import javax.persistence.*
 
 // TODO: Reimplement metrics, config
+/**
+ * JPA backing store implementation, which uses a JPA compliant database to persist data.
+ */
 @Component(service = [BackingStore::class])
 open class JPABackingStoreImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
