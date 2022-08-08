@@ -118,7 +118,7 @@ class StaticNetworkTest {
             val id = proxy.cpi(upload).id
             eventually {
                 val status = proxy.status(id)
-                assertThat(status.status).isEqualTo("OK")
+                assertThat(status.status).isEqualTo("OK-NOP")
                 status.cpiFileChecksum
             }
         }
