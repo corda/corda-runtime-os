@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
-import net.corda.lifecycle.TimerEvent
 
 @Component(immediate = true, service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
@@ -111,16 +110,20 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         oldValue: FlowStatus?,
         currentData: Map<FlowKey, FlowStatus>
     ) {
-        val flowKey = newRecord.key
-        val flowStatus = newRecord.value
-        if (flowStatus == null) {
-            cache.remove(flowKey)
-            lock.writeLock().withLock { statusListenersPerFlowKey.removeAll(flowKey) }.map {
-                it.close("Flow status removed from cache when null flow status received.")
+        try {
+            val flowKey = newRecord.key
+            val flowStatus = newRecord.value
+            if (flowStatus == null) {
+                cache.remove(flowKey)
+                lock.writeLock().withLock { statusListenersPerFlowKey.removeAll(flowKey) }.map {
+                    it.close("Flow status removed from cache when null flow status received.")
+                }
+            } else {
+                cache[flowKey] = flowStatus
+                updateAllStatusListenersForFlowKey(flowKey, flowStatus)
             }
-        } else {
-            cache[flowKey] = flowStatus
-            updateAllStatusListenersForFlowKey(flowKey, flowStatus)
+        } catch(ex: Exception) {
+            log.error("Unhandled error when processing onNext for FlowStatus", ex)
         }
     }
 
@@ -150,18 +153,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
         // If the status is already known for a particular flow - deliver it to the listener
         // This can be the case when flow is already completed.
-        cache[flowKey]?.let { existingFlowStatus ->
-            lifecycleCoordinator.setTimer(listener.id.toString(), 1000) { id ->
-                UpdateAndCloseFlowStatusListenerEvent(id, listener, existingFlowStatus)
-            }
-        }
+        cache[flowKey]?.let { listener.updateReceived(it) }
     }
-
-    data class UpdateAndCloseFlowStatusListenerEvent(
-        override val key: String,
-        val listener: FlowStatusUpdateListener,
-        val existingFlowStatus: FlowStatus
-    ) : TimerEvent
 
     override fun unregisterFlowStatusListener(
         clientRequestId: String,
@@ -206,12 +199,6 @@ class FlowStatusCacheServiceImpl @Activate constructor(
                 if (event.registration == subReg && event.status == LifecycleStatus.DOWN) {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
-            }
-
-            is UpdateAndCloseFlowStatusListenerEvent -> {
-                log.info("Asynchronously updating listener ${event.listener.id} with status ${event.existingFlowStatus.flowStatus.name}.")
-                event.listener.updateReceived(event.existingFlowStatus)
-                coordinator.cancelTimer(event.key)
             }
         }
     }
