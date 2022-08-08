@@ -4,6 +4,11 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 
 fun mutableKeyValuePairList() = KeyValuePairList(mutableListOf())
+
+fun mutableKeyValuePairList(initialProperties: KeyValuePairList) = mutableKeyValuePairList().apply {
+    items.addAll(initialProperties.items)
+}
+
 fun emptyKeyValuePairList() = KeyValuePairList(emptyList())
 
 fun keyValueStoreOf(vararg pairs: Pair<String, String>) = KeyValueStore().apply {
