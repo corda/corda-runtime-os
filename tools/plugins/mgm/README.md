@@ -1,10 +1,18 @@
+# MGM Plugin
+This is a plug-in for [Corda CLI plugin host](https://github.com/corda/corda-cli-plugin-host) for membership operations.
+
+> The commands below assume you have access to corda-cli.sh   
+> To use this plugin, build the JAR with `./gradlew :tools:plugins:mgm:build`, move the JAR to 
+> `corda-cli-plugin-host/build/plugins/` and run the commands as shown below by locating corda-cli.sh in 
+> `corda-cli-plugin-host/build/generatedScripts/`.
+
 # Generate Group Policy
 
 This is a sub-command under the `mgm` plugin for generating a GroupPolicy.json file.
 
 Running `groupPolicy` without any command line arguments prints a sample GroupPolicy file for the user to manually tweak.
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-SNAPSHOT.jar mgm groupPolicy
+./corda-cli.sh mgm groupPolicy
 ```
 
 Alternatively, the following command line arguments can be used to define the static network section of the GroupPolicy:
@@ -19,7 +27,7 @@ Alternatively, the following command line arguments can be used to define the st
 To generate GroupPolicy using file input:
 > Sample files are available [here](#sample-files).
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-SNAPSHOT.jar mgm groupPolicy --file="app/build/resources/src.yaml"
+./corda-cli.sh mgm groupPolicy --file="app/build/resources/src.yaml"
 ```
 Note:
 1. Only one of `memberNames` and `members` blocks may be present.
@@ -28,7 +36,7 @@ Note:
 
 To generate GroupPolicy using string parameters:
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-SNAPSHOT.jar mgm groupPolicy --name="C=GB, L=London, O=Member1" --name="C=GB, L=London, O=Member2" --endpoint-protocol=5 --endpoint="http://dummy-url"
+./corda-cli.sh mgm groupPolicy --name="C=GB, L=London, O=Member1" --name="C=GB, L=London, O=Member2" --endpoint-protocol=5 --endpoint="http://dummy-url"
 ```
 Note:
 1. Passing one or more `--name` without specifying endpoint information will throw an error.
