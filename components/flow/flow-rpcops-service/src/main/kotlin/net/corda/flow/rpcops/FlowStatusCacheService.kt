@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops
 
-import java.util.UUID
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
@@ -26,8 +25,8 @@ interface FlowStatusCacheService: Lifecycle {
     fun registerFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener)
 
     /**
-     * Unregisters the flow status feed for the given [clientRequestId], [holdingIdentity] and [listenerId].
+     * Unregisters the flow status feed for the given [clientRequestId], [holdingIdentity] and [listener].
      */
-    fun unregisterFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listenerId: UUID)
+    fun unregisterFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener)
 
 }

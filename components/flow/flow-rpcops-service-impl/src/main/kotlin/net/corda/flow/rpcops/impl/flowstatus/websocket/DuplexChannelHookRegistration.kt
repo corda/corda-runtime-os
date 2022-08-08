@@ -6,6 +6,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
+import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.httprpc.ws.DuplexChannel
@@ -20,37 +21,42 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     log: Logger,
 ) {
     val holdingIdentityShortHash = holdingIdentity.toCorda().shortHash
-    val id = UUID.randomUUID()
+    var listener: FlowStatusUpdateListener? = null
     onConnect = {
+        val id = UUID.randomUUID()
         log.info("Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash).")
-        val listener = WebSocketFlowStatusUpdateListener(
+        listener = WebSocketFlowStatusUpdateListener(
             id,
             clientRequestId,
             holdingIdentity,
             onCloseCallback(),
             onStatusUpdate(log, holdingIdentity, clientRequestId)
-        )
-        try {
-            flowStatusCacheService.registerFlowStatusListener(clientRequestId, holdingIdentity, listener)
-        } catch (e: Exception) {
-            error(e)
+        ).also {
+            try {
+                flowStatusCacheService.registerFlowStatusListener(clientRequestId, holdingIdentity, it)
+            } catch (e: Exception) {
+                log.error("Unexpected error at registerFlowStatusListener")
+                error(e)
+            }
         }
     }
     onClose = { statusCode, reason ->
         log.info(
-            "Close hook called for id $id with status $statusCode, reason: $reason. " +
+            "Close hook called for id ${listener?.id} with status $statusCode, reason: $reason. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
         )
-        flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, id)
+        listener?.let {
+            flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, it)
+        }
     }
     onError = { e ->
         log.info(
-            "Flow status feed $id received an error. " +
+            "Flow status feed ${listener?.id} received an error. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)", e
         )
     }
     onTextMessage = {
-        log.info("Flow status feed $id does not support receiving messages. Terminating connection.")
+        log.info("Flow status feed ${listener?.id} does not support receiving messages. Terminating connection.")
         error(WebSocketProtocolViolationException("Inbound messages are not permitted."))
     }
 }
