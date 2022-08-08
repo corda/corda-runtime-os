@@ -164,10 +164,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val removed = lock.writeLock()
             .withLock { statusListenersPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
         if (removed) {
-            log.info(
-                "Unregistered flow status listener: $clientRequestId." +
-                        " Total number of open listeners: ${statusListenersPerFlowKey.size()}."
-            )
+            log.info("Unregistered flow status listener: ${listener.id} for clientId: $clientRequestId." +
+                    " Total number of open listeners: ${statusListenersPerFlowKey.size()}.")
         }
     }
 
