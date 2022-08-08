@@ -15,6 +15,7 @@ import net.corda.applications.workers.smoketest.websocket.client.SmokeTestWebsoc
 import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.MethodOrderer
@@ -32,6 +33,11 @@ class FlowStatusFeedSmokeTest {
     }
 
     private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED }
+
+    @AfterEach
+    fun closeConnections() {
+
+    }
 
     @Order(10)
     @Test
@@ -95,6 +101,7 @@ class FlowStatusFeedSmokeTest {
             }
         }
     }
+/*
 
     @Order(40)
     @Test
@@ -124,7 +131,8 @@ class FlowStatusFeedSmokeTest {
             }
         }
     }
-
+*/
+/*
     @Order(41)
     @Test
     fun `two test clients can function after first reports completed flow during registration`() {
@@ -173,7 +181,7 @@ class FlowStatusFeedSmokeTest {
 
         session2.close(1000, "Smoke test closing session 2.")
         client2.close()
-    }
+    }*/
 
     @Order(50)
     @Test
