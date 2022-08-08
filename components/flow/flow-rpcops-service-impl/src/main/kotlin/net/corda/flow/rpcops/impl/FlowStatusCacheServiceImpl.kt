@@ -49,7 +49,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
-    private val cache = ConcurrentHashMap(mutableMapOf<FlowKey, FlowStatus>())
+    private val cache = ConcurrentHashMap<FlowKey, FlowStatus>()
 
     private val lock: ReadWriteLock = ReentrantReadWriteLock()
     private val statusListenerIdsPerFlowKey: Multimap<FlowKey, FlowStatusUpdateListener> =
@@ -152,10 +152,16 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         cache[flowKey]?.let { listener.updateReceived(it) }
     }
 
-    override fun unregisterFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener) {
-        val removed =  lock.writeLock().withLock { statusListenerIdsPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
+    override fun unregisterFlowStatusListener(
+        clientRequestId: String,
+        holdingIdentity: HoldingIdentity,
+        listener: FlowStatusUpdateListener
+    ) {
+        val removed = lock.writeLock()
+            .withLock { statusListenerIdsPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
         if (removed) {
-            log.info("Unregistered flow status listener: $clientRequestId. Total number of open listeners: ${statusListenerIdsPerFlowKey.size()}.")
+            log.info("Unregistered flow status listener: $clientRequestId." +
+                    " Total number of open listeners: ${statusListenerIdsPerFlowKey.size()}.")
         }
     }
 
