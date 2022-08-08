@@ -5,6 +5,7 @@ import net.corda.data.KeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class KeyValueStoreTest {
     companion object {
@@ -20,6 +21,13 @@ class KeyValueStoreTest {
         container.list.items.add(KEY_VALUE_PAIR)
 
         assertThat(containerBackingList.items).contains(KEY_VALUE_PAIR)
+    }
+
+    @Test
+    fun `emptyKeyValuePairList creates an empty immutable list`() {
+        val immutableKeyValueStoreList = emptyKeyValuePairList()
+        assertThat(immutableKeyValueStoreList.items.size).isEqualTo(0)
+        assertThrows<UnsupportedOperationException> { immutableKeyValueStoreList.items.add(KEY_VALUE_PAIR) }
     }
 
     @Test
