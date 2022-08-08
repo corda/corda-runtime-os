@@ -3,11 +3,9 @@ package net.corda.applications.workers.smoketest.websocket
 import java.time.Duration
 import java.util.LinkedList
 import java.util.UUID
-import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebsocketHandler
@@ -22,6 +20,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 
+// This test relies on `VirtualNodeRpcTest` and `FlowTest` to run first which will create vNodes necessary to run this test
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class FlowStatusFeedSmokeTest {
