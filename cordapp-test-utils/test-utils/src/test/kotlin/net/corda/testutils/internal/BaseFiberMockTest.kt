@@ -2,24 +2,24 @@ package net.corda.testutils.internal
 
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 
-class ProtocolLookupFiberMockTest {
+class BaseFiberMockTest {
 
-    val memberA = MemberX500Name.parse("CN=CorDapperA, OU=Application, O=R3, L=London, C=GB")
-    val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
-    val memberC = MemberX500Name.parse("CN=CorDapperC, OU=Application, O=R3, L=London, C=GB")
-
+    private val memberA = MemberX500Name.parse("CN=CorDapperA, OU=Application, O=R3, L=London, C=GB")
+    private val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
 
     @Test
     fun `should look up concrete implementations for a given protocol and a given party`() {
         // Given a fiber with a concrete implementation registered for a protocol
-        val fiber = ProtocolLookUpFiberMock()
+        val fiber = BaseFiberMock()
         val flow = Flow1()
         fiber.registerResponderInstance(memberA, "protocol-1", flow)
 
@@ -33,7 +33,7 @@ class ProtocolLookupFiberMockTest {
     @Test
     fun `should look up the matching flow class for a given protocol and a given party`() {
         // Given a fiber and two nodes with some shared flow protocol
-        val fiber = ProtocolLookUpFiberMock()
+        val fiber = BaseFiberMock()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderClass(memberA, "protocol-2", Flow2::class.java)
         fiber.registerResponderClass(memberB, "protocol-1", Flow3InitBy1::class.java)
@@ -49,7 +49,7 @@ class ProtocolLookupFiberMockTest {
     @Test
     fun `should prevent us from uploading a responder twice for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = ProtocolLookUpFiberMock()
+        val fiber = BaseFiberMock()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-1", Flow2())
 
@@ -73,7 +73,7 @@ class ProtocolLookupFiberMockTest {
     @Test
     fun `should tell us if it cant find a flow for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = ProtocolLookUpFiberMock()
+        val fiber = BaseFiberMock()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-2", Flow2())
 
@@ -84,6 +84,14 @@ class ProtocolLookupFiberMockTest {
 
         assertNull(fiber.lookUpResponderInstance(memberB, "protocol-1"))
         assertNull(fiber.lookUpResponderClass(memberB, "protocol-1"))
+    }
+
+    @Test
+    fun `should allow us to register and retrieve a persistence service`() {
+        val fiber = BaseFiberMock()
+        val persistence = mock<PersistenceService>()
+        fiber.registerPersistenceService(memberA, persistence)
+        assertThat(fiber.getPersistenceService(memberA), `is`(persistence))
     }
 
     class Flow1 : ResponderFlow { override fun call(session: FlowSession) {} }

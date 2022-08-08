@@ -31,7 +31,7 @@ import kotlin.concurrent.thread
 class ConcurrentFlowMessaging(
     private val initiator: MemberX500Name,
     private val flowClass: Class<out Flow>,
-    private val protocolLookUp: ProtocolLookUp,
+    private val fiberMock: FiberMock,
     private val injector: FlowServicesInjector,
     private val flowFactory: FlowFactory
 ) : FlowMessaging {
@@ -43,20 +43,30 @@ class ConcurrentFlowMessaging(
         val protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
             ?: throw NoInitiatingFlowAnnotationException(flowClass)
 
-        val responderClass = protocolLookUp.lookUpResponderClass(x500Name, protocol)
+        val responderClass = fiberMock.lookUpResponderClass(x500Name, protocol)
         val responderFlow = if (responderClass == null) {
-            protocolLookUp.lookUpResponderInstance(x500Name, protocol)
+            fiberMock.lookUpResponderInstance(x500Name, protocol)
                 ?: throw NoRegisteredResponderException(x500Name, protocol)
         } else {
             flowFactory.createResponderFlow(x500Name, responderClass)
         }
 
-        injector.injectServices(responderFlow, x500Name, protocolLookUp, flowFactory)
+        injector.injectServices(responderFlow, x500Name, fiberMock, flowFactory)
 
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
-        val initiatorSession = BlockingQueueFlowSession(initiator, x500Name, flowClass, fromInitiatorToResponder, fromResponderToInitiator)
-        val recipientSession = BlockingQueueFlowSession(x500Name, initiator, flowClass, fromResponderToInitiator, fromInitiatorToResponder)
+        val initiatorSession = BlockingQueueFlowSession(
+            initiator,
+            x500Name,
+            flowClass,
+            fromInitiatorToResponder,
+            fromResponderToInitiator)
+        val recipientSession = BlockingQueueFlowSession(
+            x500Name,
+            initiator,
+            flowClass,
+            fromResponderToInitiator,
+            fromInitiatorToResponder)
 
         thread { responderFlow.call(recipientSession) }
         return initiatorSession

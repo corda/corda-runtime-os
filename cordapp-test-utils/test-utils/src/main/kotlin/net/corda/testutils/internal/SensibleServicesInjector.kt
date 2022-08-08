@@ -1,11 +1,13 @@
 package net.corda.testutils.internal
 
+import net.corda.testutils.services.DbPersistenceService
 import net.corda.testutils.services.SimpleJsonMarshallingService
 import net.corda.testutils.tools.injectIfRequired
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -30,29 +32,35 @@ class SensibleServicesInjector : FlowServicesInjector {
     override fun injectServices(
         flow: Flow,
         x500: MemberX500Name,
-        protocolLookUp: ProtocolLookUp,
+        fiberMock: FiberMock,
         flowFactory: FlowFactory,
     ) {
         val flowClass = flow.javaClass
         flow.injectIfRequired(JsonMarshallingService::class.java,
             createJsonMarshallingService())
         flow.injectIfRequired(FlowEngine::class.java,
-            createFlowEngine(x500, protocolLookUp))
+            createFlowEngine(x500, fiberMock))
         flow.injectIfRequired(FlowMessaging::class.java,
-            createFlowMessaging(x500, flowClass, protocolLookUp, flowFactory))
+            createFlowMessaging(x500, flowClass, fiberMock, flowFactory))
+        flow.injectIfRequired(
+            PersistenceService::class.java,
+            createPersistenceService(x500, fiberMock))
+    }
+
+    private fun createPersistenceService(x500: MemberX500Name, fiberMock: FiberMock): PersistenceService  {
+        val persistence = DbPersistenceService(x500)
+        fiberMock.registerPersistenceService(x500, persistence)
+        return persistence
     }
 
     private fun createJsonMarshallingService() : JsonMarshallingService = SimpleJsonMarshallingService()
-    private fun createFlowEngine(x500: MemberX500Name, protocolLookUp: ProtocolLookUp): FlowEngine = InjectingFlowEngine(
-        x500,
-        protocolLookUp,
-        this
-    )
+    private fun createFlowEngine(x500: MemberX500Name, fiberMock: FiberMock): FlowEngine
+        = InjectingFlowEngine(x500, fiberMock)
     private fun createFlowMessaging(
         x500: MemberX500Name,
         flowClass: Class<out Flow>,
-        protocolLookUp: ProtocolLookUp,
+        fiberMock: FiberMock,
         flowFactory: FlowFactory
-    ): FlowMessaging = ConcurrentFlowMessaging(x500, flowClass, protocolLookUp, this, flowFactory)
+    ): FlowMessaging = ConcurrentFlowMessaging(x500, flowClass, fiberMock, this, flowFactory)
 }
 

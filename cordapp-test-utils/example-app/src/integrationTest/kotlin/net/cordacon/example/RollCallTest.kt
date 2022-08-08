@@ -27,7 +27,7 @@ class RollCallTest {
         // initialization, checking etc. will have to happen when it's passed to the engine.
         // corda.upload(teacher, AbsenceSubFlow::class.java)
 
-        // and a response (which we do need, but it's exactly the same; Bueller continues to take a day off)
+        // and a response (which we do need, but it's exactly the same; Ferris Bueller continues to take a day off)
         students.forEach { corda.upload(MemberX500Name.parse(it), AbsenceCallResponderFlow::class.java) }
 
         // When we invoke it in Corda
@@ -50,7 +50,13 @@ class RollCallTest {
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
+
+        // And Ferris Bueller's absence should have been persisted
+        val persistence = corda.getPersistenceServiceFor(teacher)
+        val absenceResponses = persistence.findAll(AbsenceRecordEntity::class.java)
+        assertThat(absenceResponses.execute().map { it.name }, `is`(listOf("Bueller")))
     }
 
     @Test
@@ -87,6 +93,7 @@ class RollCallTest {
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
             BEN STEIN: Bueller?
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
     }
 }
