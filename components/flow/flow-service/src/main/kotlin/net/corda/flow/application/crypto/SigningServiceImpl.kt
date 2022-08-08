@@ -6,7 +6,7 @@ import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.external.events.handler.ExternalEventHandler
+import net.corda.flow.external.events.handler.ExternalEventFactory
 import net.corda.flow.external.events.handler.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
@@ -32,7 +32,7 @@ class SigningServiceImpl @Activate constructor(
     @Suspendable
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
         return externalEventExecutor.execute(
-            CreateSignatureExternalEventHandler::class.java,
+            CreateSignatureExternalEventFactory::class.java,
             SignParameters(bytes, publicKey, signatureSpec)
         )
     }
@@ -45,13 +45,13 @@ class SigningServiceImpl @Activate constructor(
 
 data class SignParameters(val bytes: ByteArray, val publicKey: PublicKey, val signatureSpec: SignatureSpec)
 
-@Component(service = [ExternalEventHandler::class])
-class CreateSignatureExternalEventHandler @Activate constructor(
+@Component(service = [ExternalEventFactory::class])
+class CreateSignatureExternalEventFactory @Activate constructor(
     @Reference(service = CryptoFlowOpsTransformer::class)
     private val cryptoFlowOpsTransformer: CryptoFlowOpsTransformer
-) : ExternalEventHandler<SignParameters, FlowOpsResponse, DigitalSignature.WithKey> {
+) : ExternalEventFactory<SignParameters, FlowOpsResponse, DigitalSignature.WithKey> {
 
-    override fun suspending(
+    override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
         parameters: SignParameters
@@ -65,10 +65,10 @@ class CreateSignatureExternalEventHandler @Activate constructor(
             context = emptyMap(),
             flowExternalEventContext = flowExternalEventContext
         )
-        return ExternalEventRecord(Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, flowOpsRequest)
+        return ExternalEventRecord(topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, payload = flowOpsRequest)
     }
 
-    override fun resuming(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignature.WithKey {
+    override fun createResumeFlow(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignature.WithKey {
         return cryptoFlowOpsTransformer.transform(response) as DigitalSignature.WithKey
     }
 }

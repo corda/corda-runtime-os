@@ -56,7 +56,7 @@ class PersistenceServiceImplTest {
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
         whenever(
             externalEventExecutor.execute(
-                eq(PersistenceServiceExternalEventHandler::class.java),
+                eq(PersistenceServiceExternalEventFactory::class.java),
                 argumentCaptor.capture()
             )
         ).thenReturn(byteBuffer.array())

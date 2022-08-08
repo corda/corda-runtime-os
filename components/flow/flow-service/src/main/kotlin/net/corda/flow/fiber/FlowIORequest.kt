@@ -3,7 +3,7 @@ package net.corda.flow.fiber
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.flow.state.checkpoint.FlowStackItem
-import net.corda.flow.external.events.handler.ExternalEventHandler
+import net.corda.flow.external.events.handler.ExternalEventFactory
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
@@ -98,7 +98,7 @@ interface FlowIORequest<out R> {
 
     data class ExternalEvent(
         val requestId: String,
-        val handlerClass: Class<out ExternalEventHandler<out Any, *, *>>,
+        val factoryClass: Class<out ExternalEventFactory<out Any, *, *>>,
         val parameters: Any
     ) : FlowIORequest<Any>
 }

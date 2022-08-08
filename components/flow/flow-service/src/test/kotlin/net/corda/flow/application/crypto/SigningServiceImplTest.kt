@@ -19,7 +19,7 @@ class SigningServiceImplTest {
     @Test
     fun `sign returns the signature returned from the flow resuming`() {
         val signature = DigitalSignature.WithKey(mock(), byteArrayOf(1), emptyMap())
-        whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventHandler::class.java), any()))
+        whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), any()))
             .thenReturn(signature)
         assertEquals(signature, signingService.sign(byteArrayOf(1), mock(), mock()))
     }

@@ -39,7 +39,9 @@ class ExternalEventManagerImpl(
 
     private companion object {
         val logger = contextLogger()
-        const val INSTANT_COMPARE_BUFFER = 100L
+        //Comparing two instants which are the same can yield inconsistent comparison results.
+        //A small buffer is added to make sure we pick up new messages to be sent
+        const val INSTANT_COMPARE_BUFFER_MILLIS = 10L
     }
 
     override fun processEventToSend(
@@ -117,7 +119,6 @@ class ExternalEventManagerImpl(
     ): Pair<ExternalEventState, Record<*, *>?> {
         return if (isWaitingForResponse(externalEventState) && isSendWindowValid(externalEventState, instant)) {
             val eventToSend = externalEventState.eventToSend
-            // Have a "sending" and "resending" log line
             logger.debug { "Resending external event request which was last sent at ${eventToSend.timestamp}" }
             eventToSend.timestamp = instant
             externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
@@ -132,6 +133,6 @@ class ExternalEventManagerImpl(
     }
 
     private fun isSendWindowValid(externalEventState: ExternalEventState, instant: Instant): Boolean {
-        return externalEventState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER)
+        return externalEventState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER_MILLIS)
     }
 }

@@ -1,6 +1,6 @@
 package net.corda.flow.external.events.executor
 
-import net.corda.flow.external.events.handler.ExternalEventHandler
+import net.corda.flow.external.events.handler.ExternalEventFactory
 import net.corda.v5.base.annotations.Suspendable
 
 /**
@@ -16,18 +16,19 @@ interface ExternalEventExecutor {
      * - An exception.
      *
      * @param requestId The unique request id of the event.
-     * @param handlerClass The [ExternalEventHandler] that is called to create the event to send and convert the
+     * @param factoryClass The [ExternalEventFactory] that is called to create the event to send and convert the
      * received response into an acceptable object to resume with.
      * @param parameters The [PARAMETERS] object.
      *
      * @param PARAMETERS The type to pass to the handler just after suspending/creating the event.
      * @param RESPONSE The type that is received as a response from the external processor.
      * @param RESUME The type that the flow will resume with after calling [execute].
+     * @return The object that the flow will resume with.
      */
     @Suspendable
     fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
         requestId: String,
-        handlerClass: Class<out ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>>,
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME
 
@@ -38,17 +39,18 @@ interface ExternalEventExecutor {
      * - Response of type [RESUME].
      * - An exception.
      *
-     * @param handlerClass The [ExternalEventHandler] that is called to create the event to send and convert the
+     * @param factoryClass The [ExternalEventFactory] that is called to create the event to send and convert the
      * received response into an acceptable object to resume with.
      * @param parameters The [PARAMETERS] object.
      *
      * @param PARAMETERS The type to pass to the handler when suspending/creating the event.
      * @param RESPONSE The type that is received as a response from the external processor.
      * @param RESUME The type that the flow will resume with after calling [execute].
+     * @return The object that the flow will resume with.
      */
     @Suspendable
     fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
-        handlerClass: Class<out ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>>,
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME
 }

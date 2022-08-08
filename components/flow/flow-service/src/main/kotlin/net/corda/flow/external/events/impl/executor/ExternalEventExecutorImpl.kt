@@ -3,7 +3,7 @@ package net.corda.flow.external.events.impl.executor
 import co.paralleluniverse.fibers.Suspendable
 import java.util.*
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.external.events.handler.ExternalEventHandler
+import net.corda.flow.external.events.handler.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.base.util.uncheckedCast
@@ -21,14 +21,14 @@ class ExternalEventExecutorImpl @Activate constructor(
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
         requestId: String,
-        handlerClass: Class<out ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>>,
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
         return uncheckedCast(
             flowFiberService.getExecutingFiber().suspend(
                 FlowIORequest.ExternalEvent(
                     requestId,
-                    handlerClass,
+                    factoryClass,
                     parameters
                 )
             )
@@ -37,9 +37,9 @@ class ExternalEventExecutorImpl @Activate constructor(
 
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
-        handlerClass: Class<out ExternalEventHandler<PARAMETERS, RESPONSE, RESUME>>,
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
-        return execute(UUID.randomUUID().toString(), handlerClass, parameters)
+        return execute(UUID.randomUUID().toString(), factoryClass, parameters)
     }
 }

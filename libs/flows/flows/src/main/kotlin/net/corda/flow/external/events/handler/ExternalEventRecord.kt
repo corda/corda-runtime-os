@@ -7,7 +7,4 @@ package net.corda.flow.external.events.handler
  * @param key The key of the event. If left as `null`, the calling flow's flow id is used.
  * @param payload The payload to send.
  */
-data class ExternalEventRecord(val topic: String, val key: Any?, val payload: Any) {
-
-    constructor(topic: String, payload: Any) : this(topic, null, payload)
-}
+data class ExternalEventRecord(val topic: String, val key: Any? = null, val payload: Any)

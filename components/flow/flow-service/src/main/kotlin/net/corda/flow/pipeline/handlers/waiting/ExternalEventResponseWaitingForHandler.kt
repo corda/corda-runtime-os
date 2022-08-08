@@ -4,7 +4,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.external.events.impl.handler.ExternalEventHandlerMap
+import net.corda.flow.external.events.impl.handler.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -21,8 +21,8 @@ import org.osgi.service.component.annotations.Reference
 class ExternalEventResponseWaitingForHandler @Activate constructor(
     @Reference(service = ExternalEventManager::class)
     private val externalEventManager: ExternalEventManager,
-    @Reference(service = ExternalEventHandlerMap::class)
-    private val externalEventHandlerMap: ExternalEventHandlerMap
+    @Reference(service = ExternalEventFactoryMap::class)
+    private val externalEventFactoryMap: ExternalEventFactoryMap
 ) : FlowWaitingForHandler<net.corda.data.flow.state.waiting.external.ExternalEventResponse> {
 
     private companion object {
@@ -71,8 +71,8 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         return when (val externalEventResponse = externalEventManager.getReceivedResponse(externalEventState)) {
             null -> FlowContinuation.Continue
             else -> {
-                val handler = externalEventHandlerMap.get(externalEventState.handlerClassName)
-                FlowContinuation.Run(handler.resuming(checkpoint, externalEventResponse))
+                val handler = externalEventFactoryMap.get(externalEventState.handlerClassName)
+                FlowContinuation.Run(handler.createResumeFlow(checkpoint, externalEventResponse))
             }
         }
     }

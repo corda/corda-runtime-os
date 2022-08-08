@@ -5,7 +5,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.external.events.impl.handler.ExternalEventHandlerMap
+import net.corda.flow.external.events.impl.handler.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import org.osgi.service.component.annotations.Activate
@@ -16,8 +16,8 @@ import org.osgi.service.component.annotations.Reference
 class ExternalEventRequestHandler @Activate constructor(
     @Reference(service = ExternalEventManager::class)
     private val externalEventManager: ExternalEventManager,
-    @Reference(service = ExternalEventHandlerMap::class)
-    private val externalEventHandlerMap: ExternalEventHandlerMap
+    @Reference(service = ExternalEventFactoryMap::class)
+    private val externalEventFactoryMap: ExternalEventFactoryMap
 ) : FlowRequestHandler<FlowIORequest.ExternalEvent> {
 
     override val type = FlowIORequest.ExternalEvent::class.java
@@ -32,13 +32,13 @@ class ExternalEventRequestHandler @Activate constructor(
             .setFlowId(context.checkpoint.flowId)
             .build()
 
-        val eventRecord = externalEventHandlerMap.get(request.handlerClass.name)
-            .suspending(context.checkpoint, flowExternalEventContext, request.parameters)
+        val eventRecord = externalEventFactoryMap.get(request.factoryClass.name)
+            .createExternalEvent(context.checkpoint, flowExternalEventContext, request.parameters)
 
         context.checkpoint.externalEventState = externalEventManager.processEventToSend(
             context.checkpoint.flowId,
             request.requestId,
-            request.handlerClass.name,
+            request.factoryClass.name,
             eventRecord,
             Instant.now()
         )

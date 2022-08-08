@@ -11,7 +11,7 @@ import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.external.events.handler.ExternalEventHandler
+import net.corda.flow.external.events.handler.ExternalEventFactory
 import net.corda.flow.external.events.handler.ExternalEventRecord
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
@@ -134,7 +134,7 @@ class PersistenceServiceImpl @Activate constructor(
     private fun execute(request: Any, debugLog: (requestId: String) -> String): ByteArray? {
         return try {
             externalEventExecutor.execute(
-                PersistenceServiceExternalEventHandler::class.java,
+                PersistenceServiceExternalEventFactory::class.java,
                 PersistenceParameters(request, debugLog)
             )
         } catch (e: CordaRuntimeException) {
@@ -184,23 +184,23 @@ class PersistenceServiceImpl @Activate constructor(
 
 data class PersistenceParameters(val request: Any, val debugLog: (requestId: String) -> String)
 
-@Component(service = [ExternalEventHandler::class])
-class PersistenceServiceExternalEventHandler :
-    ExternalEventHandler<PersistenceParameters, EntityResponse, ByteArray?> {
+@Component(service = [ExternalEventFactory::class])
+class PersistenceServiceExternalEventFactory :
+    ExternalEventFactory<PersistenceParameters, EntityResponse, ByteArray?> {
 
     private companion object {
         val log = contextLogger()
     }
 
-    override fun suspending(
+    override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
         parameters: PersistenceParameters
     ): ExternalEventRecord {
         log.debug { parameters.debugLog(flowExternalEventContext.requestId) }
         return ExternalEventRecord(
-            Schemas.VirtualNode.ENTITY_PROCESSOR,
-            EntityRequest.newBuilder()
+            topic = Schemas.VirtualNode.ENTITY_PROCESSOR,
+            payload = EntityRequest.newBuilder()
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(parameters.request)
                 .setFlowExternalEventContext(flowExternalEventContext)
@@ -208,7 +208,7 @@ class PersistenceServiceExternalEventHandler :
         )
     }
 
-    override fun resuming(checkpoint: FlowCheckpoint, response: EntityResponse): ByteArray? {
+    override fun createResumeFlow(checkpoint: FlowCheckpoint, response: EntityResponse): ByteArray? {
         return response.result?.array()
     }
 }

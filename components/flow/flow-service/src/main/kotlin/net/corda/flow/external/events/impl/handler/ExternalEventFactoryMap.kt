@@ -1,7 +1,7 @@
 package net.corda.flow.external.events.impl.handler
 
-import net.corda.flow.external.events.handler.ExternalEventHandler
-import net.corda.flow.external.events.impl.handler.ExternalEventHandlerMap.Companion.EXTERNAL_EVENT_HANDLERS
+import net.corda.flow.external.events.handler.ExternalEventFactory
+import net.corda.flow.external.events.impl.handler.ExternalEventFactoryMap.Companion.EXTERNAL_EVENT_HANDLERS
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
@@ -11,34 +11,34 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
 
 @Component(
-    service = [ExternalEventHandlerMap::class],
+    service = [ExternalEventFactoryMap::class],
     reference = [
         Reference(
             name = EXTERNAL_EVENT_HANDLERS,
-            service = ExternalEventHandler::class,
+            service = ExternalEventFactory::class,
             cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC
         )
     ]
 )
-class ExternalEventHandlerMap @Activate constructor(private val componentContext: ComponentContext) {
+class ExternalEventFactoryMap @Activate constructor(private val componentContext: ComponentContext) {
 
     internal companion object {
-        const val EXTERNAL_EVENT_HANDLERS = "externalEventHandlers"
+        const val EXTERNAL_EVENT_HANDLERS = "externalEventFactories"
         private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
             @Suppress("unchecked_cast")
             return (locateServices(refName) as? Array<T>)?.toList() ?: emptyList()
         }
     }
 
-    private val handlers: Map<String, ExternalEventHandler<Any, Any?, Any>> by lazy {
+    private val externalEventFactories: Map<String, ExternalEventFactory<Any, Any?, Any>> by lazy {
         componentContext
-            .fetchServices<ExternalEventHandler<Any, Any?, Any>>(EXTERNAL_EVENT_HANDLERS)
+            .fetchServices<ExternalEventFactory<Any, Any?, Any>>(EXTERNAL_EVENT_HANDLERS)
             .associateBy { it::class.java.name }
     }
 
-    fun get(handlerClassName: String): ExternalEventHandler<Any, Any?, *> {
-        return handlers[handlerClassName]
-            ?: throw FlowFatalException("$handlerClassName does not have an associated external event handler")
+    fun get(factoryClassName: String): ExternalEventFactory<Any, Any?, *> {
+        return externalEventFactories[factoryClassName]
+            ?: throw FlowFatalException("$factoryClassName does not have an associated external event factory")
     }
 }
