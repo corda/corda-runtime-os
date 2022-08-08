@@ -57,6 +57,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class DynamicMemberRegistrationServiceTest {
@@ -73,6 +74,7 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     private val memberProvidedContext: MemberContext = mock()
+    private val registrationResultId = UUID(3, 4)
     private val mgmProvidedContext: MGMContext = mock()
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
     private val mgm = HoldingIdentity(mgmName, GROUP_NAME)
@@ -251,7 +253,7 @@ class DynamicMemberRegistrationServiceTest {
         postConfigChangedEvent()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        val result = registrationService.register(member, context)
+        val result = registrationService.register(registrationResultId, member, context)
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMessageList = capturedPublishedList.firstValue
         SoftAssertions.assertSoftly {
@@ -271,7 +273,7 @@ class DynamicMemberRegistrationServiceTest {
 
     @Test
     fun `registration fails when coordinator is not running`() {
-        val registrationResult = registrationService.register(member, mock())
+        val registrationResult = registrationService.register(registrationResultId, member, mock())
         Assertions.assertThat(registrationResult).isEqualTo(
             MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
@@ -287,7 +289,7 @@ class DynamicMemberRegistrationServiceTest {
         registrationService.start()
         context.entries.apply {
             for (index in indices) {
-                val result = registrationService.register(member, testProperties)
+                val result = registrationService.register(registrationResultId, member, testProperties)
                 SoftAssertions.assertSoftly {
                     it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
                 }
@@ -305,7 +307,7 @@ class DynamicMemberRegistrationServiceTest {
                 "corda.ledger.keys.100.id" to "9999"
             )
         registrationService.start()
-        val result = registrationService.register(member, testProperties)
+        val result = registrationService.register(registrationResultId, member, testProperties)
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)

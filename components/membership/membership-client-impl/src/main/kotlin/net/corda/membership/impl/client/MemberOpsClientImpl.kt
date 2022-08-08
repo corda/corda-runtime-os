@@ -8,8 +8,12 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcAction
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationStatusResponse
+import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -62,7 +66,12 @@ class MemberOpsClientImpl @Activate constructor(
     private interface InnerMemberOpsClient : AutoCloseable {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
-        fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestProgressDto>
+
+        fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String
+        ): RegistrationRequestProgressDto?
     }
 
     private var impl: InnerMemberOpsClient = InactiveImpl
@@ -92,6 +101,13 @@ class MemberOpsClientImpl @Activate constructor(
 
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
         impl.startRegistration(memberRegistrationRequest)
+
+    override fun checkSpecificRegistrationProgress(
+        holdingIdentityShortHash: String,
+        registrationRequestId: String
+    ) = impl.checkSpecificRegistrationProgress(
+        holdingIdentityShortHash, registrationRequestId
+    )
 
     override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
         impl.checkRegistrationProgress(holdingIdentityShortHash)
@@ -161,8 +177,13 @@ class MemberOpsClientImpl @Activate constructor(
         override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
             throw IllegalStateException(ERROR_MSG)
 
-        override fun close() = Unit
+        override fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String,
+        ): RegistrationRequestProgressDto? =
+            throw IllegalStateException(ERROR_MSG)
 
+        override fun close() = Unit
     }
 
     private inner class ActiveImpl(
@@ -181,10 +202,12 @@ class MemberOpsClientImpl @Activate constructor(
                 )
             )
 
-            return registrationResponse(request.sendRequest())
+            val response: RegistrationRpcResponse = request.sendRequest()
+
+            return response.status.toDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto {
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestProgressDto> {
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
@@ -193,26 +216,52 @@ class MemberOpsClientImpl @Activate constructor(
                 RegistrationStatusRpcRequest(holdingIdentityShortHash)
             )
 
-            return registrationResponse(request.sendRequest())
+            return registrationsResponse(request.sendRequest())
+        }
+
+        override fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String,
+        ): RegistrationRequestProgressDto? {
+            val request = MembershipRpcRequest(
+                MembershipRpcRequestContext(
+                    UUID.randomUUID().toString(),
+                    clock.instant()
+                ),
+                RegistrationStatusSpecificRpcRequest(
+                    holdingIdentityShortHash,
+                    registrationRequestId,
+                )
+            )
+
+            val response: RegistrationStatusResponse = request.sendRequest()
+
+            return response.status?.toDto()
         }
 
         override fun close() = rpcSender.close()
 
+        private fun registrationsResponse(response: RegistrationsStatusResponse): List<RegistrationRequestProgressDto> {
+            return response.requests.map {
+                it.toDto()
+            }
+        }
+
         @Suppress("SpreadOperator")
-        private fun registrationResponse(response: RegistrationRpcResponse): RegistrationRequestProgressDto =
+        private fun RegistrationStatus.toDto(): RegistrationRequestProgressDto =
             RegistrationRequestProgressDto(
-                response.registrationSent,
-                response.registrationStatus.toString(),
+                this.registrationId,
+                this.registrationSent,
+                this.registrationStatus.toString(),
                 MemberInfoSubmittedDto(
                     mapOf(
-                        "registrationProtocolVersion" to response.registrationProtocolVersion.toString(),
-                        *response.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
+                        "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
+                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
+                        *this.additionalInfo.items.map { it.key to it.value }.toTypedArray()
                     )
                 )
             )
 
-        @Suppress("UNCHECKED_CAST")
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
                 logger.info("Sending request: $this")

@@ -56,6 +56,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -82,7 +83,11 @@ class MGMRegistrationService @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationService : AutoCloseable {
-        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+        fun register(
+            registrationId: UUID,
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult
     }
 
     private companion object {
@@ -167,12 +172,14 @@ class MGMRegistrationService @Activate constructor(
     }
 
     override fun register(
+        registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult = impl.register(member, context)
+    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult =
@@ -186,6 +193,7 @@ class MGMRegistrationService @Activate constructor(
 
     private inner class ActiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
@@ -261,6 +269,7 @@ class MGMRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
+            // TODO Persist request (1?)
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 

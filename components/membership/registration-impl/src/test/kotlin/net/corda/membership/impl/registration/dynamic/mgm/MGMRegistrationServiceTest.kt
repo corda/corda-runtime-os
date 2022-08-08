@@ -73,6 +73,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
@@ -85,6 +86,7 @@ class MGMRegistrationServiceTest {
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
+    private val registrationRequest = UUID(1L, 2L)
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
     private val mgm = HoldingIdentity(mgmName, groupId)
     private val mgmId = mgm.shortHash
@@ -241,7 +243,7 @@ class MGMRegistrationServiceTest {
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
-        val result = registrationService.register(mgm, properties)
+        val result = registrationService.register(registrationRequest, mgm, properties)
 
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMgmInfoList = capturedPublishedList.firstValue
@@ -312,7 +314,7 @@ class MGMRegistrationServiceTest {
                 )
         ).thenReturn(MembershipPersistenceResult.Success(3))
 
-        registrationService.register(mgm, properties)
+        registrationService.register(registrationRequest, mgm, properties)
 
         assertThat(groupProperties.firstValue.entries)
             .containsExactlyInAnyOrderElementsOf(
@@ -335,7 +337,7 @@ class MGMRegistrationServiceTest {
         postConfigChangedEvent()
         registrationService.start()
 
-        registrationService.register(mgm, properties)
+        registrationService.register(registrationRequest, mgm, properties)
 
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(mgm),
@@ -354,7 +356,7 @@ class MGMRegistrationServiceTest {
         whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
             .doReturn(MembershipPersistenceResult.Failure("Nop"))
 
-        val result = registrationService.register(mgm, properties)
+        val result = registrationService.register(registrationRequest, mgm, properties)
 
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
@@ -364,7 +366,7 @@ class MGMRegistrationServiceTest {
 
     @Test
     fun `registration fails when coordinator is not running`() {
-        val registrationResult = registrationService.register(mgm, mock())
+        val registrationResult = registrationService.register(registrationRequest, mgm, mock())
         assertThat(registrationResult).isEqualTo(
             MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
@@ -380,7 +382,7 @@ class MGMRegistrationServiceTest {
         registrationService.start()
         properties.entries.apply {
             for (index in indices) {
-                val result = registrationService.register(mgm, testProperties)
+                val result = registrationService.register(registrationRequest, mgm, testProperties)
                 assertSoftly {
                     it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
                 }
@@ -399,7 +401,7 @@ class MGMRegistrationServiceTest {
                     "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
-        val result = registrationService.register(mgm, testProperties)
+        val result = registrationService.register(registrationRequest, mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
@@ -415,7 +417,7 @@ class MGMRegistrationServiceTest {
         testProperties["corda.group.pki.session"] = "NoPKI"
         testProperties.remove("corda.group.truststore.session.0")
         registrationService.start()
-        val result = registrationService.register(mgm, testProperties)
+        val result = registrationService.register(registrationRequest, mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
         }

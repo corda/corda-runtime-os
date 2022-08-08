@@ -18,12 +18,26 @@ interface MemberOpsClient : Lifecycle {
     fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
     /**
-     * Checks the latest known status of registration based on a member's own local data and without
+     * Checks the known status of all registration based on a member's own local data and without
      * outwards communication.
      *
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
      * local member data.
      */
-    fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto
+    fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestProgressDto>
+
+    /**
+     * Checks the latest known status of a specific registration based on a member's own local data and without
+     * outwards communication.
+     *
+     * @param holdingIdentityShortHash The ID of the holding identity to be checked.
+     * @param registrationRequestId The ID of the registration request.
+     * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
+     * local member data.
+     */
+    fun checkSpecificRegistrationProgress(
+        holdingIdentityShortHash: String,
+        registrationRequestId: String,
+    ): RegistrationRequestProgressDto?
 }

@@ -51,6 +51,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.UUID
 
 class RegistrationProxyImplTest {
     companion object {
@@ -61,6 +62,7 @@ class RegistrationProxyImplTest {
     }
 
     private val registrationProtocol1 = RegistrationProtocol1()
+    private val registrationId = UUID(6, 6)
     private val registrationProtocol2 = RegistrationProtocol2()
     private val registrationProtocols = listOf(
         registrationProtocol1,
@@ -151,11 +153,11 @@ class RegistrationProxyImplTest {
         startComponentAndDependencies()
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity1)
-        assertEquals(registrationResult1, registrationProxy.register(identity1, mock()))
+        assertEquals(registrationResult1, registrationProxy.register(registrationId, identity1, mock()))
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol2::class.java.name), identity2)
-        assertEquals(registrationResult2, registrationProxy.register(identity2, mock()))
+        assertEquals(registrationResult2, registrationProxy.register(registrationId, identity2, mock()))
     }
 
     @Test
@@ -164,7 +166,7 @@ class RegistrationProxyImplTest {
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
         assertThrows<RegistrationProtocolSelectionException> {
-            registrationProxy.register(identity, mock())
+            registrationProxy.register(registrationId, identity, mock())
         }
     }
 
@@ -185,7 +187,7 @@ class RegistrationProxyImplTest {
         doReturn(false).whenever(coordinator).isRunning
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(identity, mock()) }
+        assertThrows<IllegalStateException> { registrationProxy.register(registrationId, identity, mock()) }
     }
 
     @Test
@@ -194,7 +196,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.DOWN).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(identity, mock()) }
+        assertThrows<IllegalStateException> { registrationProxy.register(registrationId, identity, mock()) }
     }
 
     @Test
@@ -203,7 +205,7 @@ class RegistrationProxyImplTest {
         doReturn(LifecycleStatus.ERROR).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(RegistrationProtocol1::class.java.name), identity)
-        assertThrows<IllegalStateException> { registrationProxy.register(identity, mock()) }
+        assertThrows<IllegalStateException> { registrationProxy.register(registrationId, identity, mock()) }
     }
 
     @Test
@@ -275,6 +277,7 @@ class RegistrationProxyImplTest {
 
     class RegistrationProtocol1 : AbstractRegistrationProtocol() {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult = registrationResult1
@@ -282,6 +285,7 @@ class RegistrationProxyImplTest {
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult = registrationResult2
@@ -289,7 +293,7 @@ class RegistrationProxyImplTest {
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
         var started = 0
-        override fun register(member: HoldingIdentity, context: Map<String, String>) =
+        override fun register(registrationId: UUID, member: HoldingIdentity, context: Map<String, String>) =
             MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED, "mock")
 
         override val isRunning = true

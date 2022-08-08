@@ -21,6 +21,7 @@ fun MemberRegistrationRequest.toDto(holdingIdentityShortHash: String) = MemberRe
  * Convert internal DTO [RegistrationRequestProgressDto] to [RegistrationRequestProgress] from the HTTP API.
  */
 fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
+    registrationStatus,
     registrationSent,
     registrationStatus,
     memberInfoSubmitted.fromDto()

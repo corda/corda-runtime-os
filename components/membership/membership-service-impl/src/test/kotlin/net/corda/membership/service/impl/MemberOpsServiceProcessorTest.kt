@@ -77,7 +77,7 @@ class MemberOpsServiceProcessorTest {
     }
 
     private var registrationProxy: RegistrationProxy = mock {
-        on { register(eq(mgmHoldingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
+        on { register(any(), eq(mgmHoldingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
             MembershipRequestRegistrationOutcome.SUBMITTED
         ))
     }
@@ -171,6 +171,7 @@ class MemberOpsServiceProcessorTest {
         val expectedResponse = RegistrationRpcResponse(
             requestTimestamp,
             RegistrationRpcStatus.SUBMITTED,
+            "registration-id",
             1,
             KeyValuePairList(emptyList()),
             KeyValuePairList(emptyList())

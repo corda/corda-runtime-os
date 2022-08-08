@@ -12,6 +12,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
@@ -46,6 +47,7 @@ import net.corda.v5.base.util.parseList
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import java.lang.reflect.Constructor
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -149,8 +151,9 @@ class MemberOpsServiceProcessor(
                     ?: throw MembershipRegistrationException(
                         "Could not find holding identity associated with ${request.holdingIdentityId}"
                     )
+            val registrationId = UUID.randomUUID()
             val result = try {
-                registrationProxy.register(holdingIdentity, request.context.toMap())
+                registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.", e)
                 null
@@ -159,11 +162,14 @@ class MemberOpsServiceProcessor(
                 RegistrationRpcStatus.valueOf(it.toString())
             } ?: RegistrationRpcStatus.NOT_SUBMITTED
             return RegistrationRpcResponse(
-                context.requestTimestamp,
-                registrationStatus,
-                REGISTRATION_PROTOCOL_VERSION,
-                KeyValuePairList(emptyList()),
-                KeyValuePairList(emptyList())
+                RegistrationStatus(
+                    context.requestTimestamp,
+                    registrationStatus,
+                    registrationId.toString(),
+                    REGISTRATION_PROTOCOL_VERSION,
+                    KeyValuePairList(emptyList()),
+                    KeyValuePairList(emptyList())
+                )
             )
         }
     }

@@ -40,6 +40,7 @@ class MemberRegistrationRpcOpsTest {
     }
 
     private val registrationProgress = RegistrationRequestProgressDto(
+        "RequestId",
         clock.instant(),
         "SUBMITTED",
         MemberInfoSubmittedDto(emptyMap())

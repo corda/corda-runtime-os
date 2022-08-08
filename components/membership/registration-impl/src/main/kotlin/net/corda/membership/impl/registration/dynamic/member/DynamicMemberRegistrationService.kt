@@ -93,7 +93,10 @@ class DynamicMemberRegistrationService @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationService : AutoCloseable {
-        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+        fun register(
+            registrationId: UUID,
+            member: HoldingIdentity,
+            context: Map<String, String>): MembershipRequestRegistrationResult
     }
 
     private companion object {
@@ -170,12 +173,14 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     override fun register(
+        registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ): MembershipRequestRegistrationResult = impl.register(member, context)
+    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
@@ -191,12 +196,12 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     private inner class ActiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
         ): MembershipRequestRegistrationResult {
             try {
-                val registrationId = UUID.randomUUID().toString()
-                val memberContext = buildMemberContext(context, registrationId, member)
+                val memberContext = buildMemberContext(context, registrationId.toString(), member)
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
@@ -221,7 +226,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     MEMBERSHIP_P2P_SUBSYSTEM
                 )
                 val message = MembershipRegistrationRequest(
-                    registrationId,
+                    registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature
                 )
@@ -240,6 +245,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
+            // YIFT: Persist request (1)
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 
