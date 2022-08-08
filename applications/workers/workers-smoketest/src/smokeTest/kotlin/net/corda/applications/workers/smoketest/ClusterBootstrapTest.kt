@@ -5,7 +5,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.SoftAssertions
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -14,7 +17,8 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
 
-
+@Order(2)
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class ClusterBootstrapTest {
     private val healthChecks = mapOf(
         "combined-worker" to System.getProperty("combinedWorkerHealthHttp"),
@@ -33,14 +37,20 @@ class ClusterBootstrapTest {
             healthChecks
                 .filter { !it.value.isNullOrBlank() }
                 .map {
-                async {
-                    val response = tryUntil(Duration.ofSeconds(120)) { checkReady(it.key, it.value) }
-                    if (response)
-                        println("${it.key} is ready")
-                    else
-                        softly.fail("Problem with ${it.key} (${it.value}), \"status\" returns: $response")
-                }
-            }.awaitAll()
+                    async {
+                        var lastResponse: HttpResponse<String>? = null
+                        val isReady: Boolean = tryUntil(Duration.ofSeconds(120)) {
+                            sendAndReceiveResponse(it.key, it.value).also {
+                                lastResponse = it
+                            }
+                        }
+                        if (isReady)
+                            println("${it.key} is ready")
+                        else
+                            softly.fail("Problem with ${it.key} (${it.value}), \"status\"" +
+                                    " returns: $isReady, body: ${lastResponse?.body()}")
+                    }
+                }.awaitAll()
 
             softly.assertAll()
         }
@@ -64,7 +74,7 @@ class ClusterBootstrapTest {
         return false
     }
 
-    private fun checkReady(name: String, endpoint: String): HttpResponse<String> {
+    private fun sendAndReceiveResponse(name: String, endpoint: String): HttpResponse<String> {
         val url = "${endpoint}status"
         println("Checking $name on $url")
         val request = HttpRequest.newBuilder()
