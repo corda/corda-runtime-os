@@ -27,7 +27,7 @@ class RollCallTest {
         // initialization, checking etc. will have to happen when it's passed to the engine.
         // corda.upload(teacher, AbsenceSubFlow::class.java)
 
-        // and a response (which we do need, but it's exactly the same; Bueller continues to take a day off)
+        // and a response (which we do need, but it's exactly the same; Ferris Bueller continues to take a day off)
         students.forEach { corda.upload(MemberX500Name.parse(it), AbsenceCallResponderFlow::class.java) }
 
         // When we invoke it in Corda

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.assertThrows
 
 class UtilitiesTest {
 
+    @Suppress("ForbiddenComment")
     /**
      * TODO: Watch https://r3-cev.atlassian.net/browse/CORE-5987 -
      * if fixed in Corda, this should also do inherited fields.
@@ -27,7 +28,7 @@ class UtilitiesTest {
 
         // Then the declared field should be set, but not the inherited one
         assertNotNull(b.declaredField)
-        assertThrows<UninitializedPropertyAccessException>({b.inheritedField})
+        assertThrows<UninitializedPropertyAccessException>{ b.inheritedField }
     }
 
     @Test

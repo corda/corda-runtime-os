@@ -1,10 +1,10 @@
 package net.corda.testutils
 
+import net.corda.testutils.internal.BaseFiberMock
 import net.corda.testutils.internal.BaseFlowFactory
 import net.corda.testutils.internal.FiberMock
 import net.corda.testutils.internal.FlowFactory
 import net.corda.testutils.internal.FlowServicesInjector
-import net.corda.testutils.internal.ProtocolLookUpFiberMock
 import net.corda.testutils.internal.SensibleServicesInjector
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.CordaFlowChecker
@@ -13,6 +13,7 @@ import net.corda.testutils.tools.RPCRequestDataMock
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -34,8 +35,8 @@ import net.corda.v5.base.types.MemberX500Name
  */
 class CordaMock(
     private val flowChecker: FlowChecker = CordaFlowChecker(),
-    private val injector: FlowServicesInjector = SensibleServicesInjector(),
-    private val fiberMock: FiberMock = ProtocolLookUpFiberMock()
+    private val fiberMock: FiberMock = BaseFiberMock(),
+    private val injector: FlowServicesInjector = SensibleServicesInjector()
 ) {
 
     private val flowFactory: FlowFactory = BaseFlowFactory()
@@ -91,4 +92,6 @@ class CordaMock(
     fun upload(x500: MemberX500Name, protocol: String, responder: ResponderFlow) {
         fiberMock.registerResponderInstance(x500, protocol, responder)
     }
+
+    fun getPersistenceServiceFor(x500: MemberX500Name): PersistenceService = fiberMock.getPersistenceService(x500)
 }

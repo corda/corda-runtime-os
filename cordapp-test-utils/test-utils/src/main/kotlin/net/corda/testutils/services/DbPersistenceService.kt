@@ -1,6 +1,6 @@
 package net.corda.testutils.services
 
-import net.corda.testutils.internal.H2PersistenceUnitInfo
+import net.corda.testutils.internal.JpaPersistenceUnitInfo
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.sandboxName
 import net.corda.v5.application.persistence.PagedQuery
@@ -18,11 +18,25 @@ import org.hibernate.jpa.HibernatePersistenceProvider
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-class DBPersistenceService(
-    x500 : MemberX500Name,
-    val emf: EntityManagerFactory = createH2EntityManagerFactory(x500)) : PersistenceService{
+class DbPersistenceService(x500 : MemberX500Name) : PersistenceService {
 
-    companion object { }
+    private val emf = createEntityManagerFactory(x500)
+    companion object {
+        fun createEntityManagerFactory(x500 : MemberX500Name): EntityManagerFactory {
+            return HibernatePersistenceProvider()
+                .createContainerEntityManagerFactory(
+                    JpaPersistenceUnitInfo(),
+                    mapOf(
+                        JPA_JDBC_DRIVER to "org.hsqldb.jdbcDriver",
+                        JPA_JDBC_URL to "jdbc:hsqldb:mem:${x500.sandboxName}",
+                        JPA_JDBC_USER to "admin",
+                        JPA_JDBC_PASSWORD to "",
+                        DIALECT to HSQLDialect::class.java.name,
+                        HBM2DDL_AUTO to "create",
+                    )
+                )
+        }
+    }
 
     override fun <T : Any> find(entityClass: Class<T>, primaryKey: Any): T? {
         return emf.createEntityManager().find(entityClass, primaryKey)
@@ -88,7 +102,6 @@ class DBPersistenceService(
             }
         }
     }
-
 }
 
 inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R {
@@ -108,21 +121,4 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
             t.rollback()
         }
     }
-}
-
-
-
-fun createH2EntityManagerFactory(x500 : MemberX500Name): EntityManagerFactory {
-    return HibernatePersistenceProvider()
-        .createContainerEntityManagerFactory(
-            H2PersistenceUnitInfo(),
-            mapOf(
-                JPA_JDBC_DRIVER to "org.hsqldb.jdbcDriver",
-                JPA_JDBC_URL to "jdbc:hsqldb:mem:${x500.sandboxName}",
-                JPA_JDBC_USER to "admin",
-                JPA_JDBC_PASSWORD to "",
-                DIALECT to HSQLDialect::class.java.name,
-                HBM2DDL_AUTO to "create",
-            )
-        )
 }

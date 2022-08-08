@@ -16,7 +16,7 @@ interface FlowServicesInjector {
     fun injectServices(
         flow: Flow,
         x500: MemberX500Name,
-        protocolLookUp: ProtocolLookUp,
+        fiberMock: FiberMock,
         flowFactory: FlowFactory = BaseFlowFactory()
     )
 }

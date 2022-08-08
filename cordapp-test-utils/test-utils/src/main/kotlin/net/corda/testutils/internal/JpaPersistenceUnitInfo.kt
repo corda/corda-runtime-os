@@ -11,7 +11,8 @@ import javax.persistence.spi.PersistenceUnitInfo
 import javax.persistence.spi.PersistenceUnitTransactionType
 import javax.sql.DataSource
 
-class H2PersistenceUnitInfo : PersistenceUnitInfo {
+@Suppress("TooManyFunctions")
+class JpaPersistenceUnitInfo : PersistenceUnitInfo {
     override fun getPersistenceUnitName(): String = "CordaMockPersistenceUnit"
 
     override fun getPersistenceProviderClassName(): String = "org.hibernate.jpa.HibernatePersistenceProvider"

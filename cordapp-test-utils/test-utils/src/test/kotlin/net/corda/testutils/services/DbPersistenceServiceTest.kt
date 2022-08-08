@@ -20,7 +20,7 @@ class DBPersistenceServiceTest {
     @Test
     fun `should connect using hsqldb as default`() {
         // Given a persistence service for a member
-        val persistence = DBPersistenceService(x500)
+        val persistence = DbPersistenceService(x500)
 
         // When we persist two entities
         persistence.persist(GreetingEntity(UUID.randomUUID(), "Hello!"))
@@ -36,8 +36,8 @@ class DBPersistenceServiceTest {
         // Given two members with dbs
         val x5002 = MemberX500Name.parse("CN=MeToo, OU=Application, O=R3, L=London, C=GB")
 
-        val persistence1 = DBPersistenceService(x500)
-        val persistence2 = DBPersistenceService(x5002)
+        val persistence1 = DbPersistenceService(x500)
+        val persistence2 = DbPersistenceService(x5002)
 
         // When we persist an entity to one of them
         persistence1.persist(GreetingEntity(UUID.randomUUID(), "Hello!"))
@@ -50,8 +50,8 @@ class DBPersistenceServiceTest {
     @Test
     fun `should always use the same db for any given member`() {
         // Given a member with two instances of the persistence service
-        val persistence1 = DBPersistenceService(x500)
-        val persistence2 = DBPersistenceService(x500)
+        val persistence1 = DbPersistenceService(x500)
+        val persistence2 = DbPersistenceService(x500)
 
         // When we persist an entity to one of them
         val hello = GreetingEntity(UUID.randomUUID(), "Hello!")
@@ -64,7 +64,7 @@ class DBPersistenceServiceTest {
 
     @Test
     fun `should provide merge and find methods`() {
-        val persistence = DBPersistenceService(x500)
+        val persistence = DbPersistenceService(x500)
 
         // Given a persisted greeting
         val hello = GreetingEntity(UUID.randomUUID(), "Hello!")
@@ -84,7 +84,7 @@ class DBPersistenceServiceTest {
 
     @Test
     fun `should provide list merge and find methods`() {
-        val persistence = DBPersistenceService(x500)
+        val persistence = DbPersistenceService(x500)
 
         // Given persisted greetings
         val hello = GreetingEntity(UUID.randomUUID(), "Hello!")
@@ -106,7 +106,7 @@ class DBPersistenceServiceTest {
 
     @Test
     fun `should provide remove methods`() {
-        val persistence = DBPersistenceService(x500)
+        val persistence = DbPersistenceService(x500)
 
 
         // Given persisted greetings

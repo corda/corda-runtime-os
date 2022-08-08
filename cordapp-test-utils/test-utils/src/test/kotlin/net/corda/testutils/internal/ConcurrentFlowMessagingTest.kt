@@ -33,7 +33,7 @@ class ConcurrentFlowMessagingTest {
 
         // And flow messaging that can open sessions to the other side,
         // looking them up in the fake fiber
-        val fiber = mock<ProtocolLookUp>()
+        val fiber = mock<FiberMock>()
 
         // And a sender and receiver that will be returned by the fiber
         whenever(fiber.lookUpResponderClass(receiverX500, "ping-ack"))
@@ -68,10 +68,10 @@ class ConcurrentFlowMessagingTest {
 
         // And flow messaging that can open sessions to the other side,
         // looking them up in the fiber
-        val protocolLookUp = mock<ProtocolLookUp>()
+        val flowAndServiceLookUp = mock<FiberMock>()
 
         // And a sender and receiver that will be returned by the fiber
-        whenever(protocolLookUp.lookUpResponderInstance(receiverX500, "ping-ack"))
+        whenever(flowAndServiceLookUp.lookUpResponderInstance(receiverX500, "ping-ack"))
             .thenReturn(responderFlow)
 
         // And an injector that will inject services
@@ -79,11 +79,11 @@ class ConcurrentFlowMessagingTest {
 
         // When we initiate the flow
         val flowMessaging = ConcurrentFlowMessaging(
-            senderX500, PingAckFlow::class.java, protocolLookUp, injector, flowFactory)
+            senderX500, PingAckFlow::class.java, flowAndServiceLookUp, injector, flowFactory)
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
         // Then it should have injected the services into the responder
-        verify(injector, times(1)).injectServices(responderFlow, receiverX500, protocolLookUp, flowFactory)
+        verify(injector, times(1)).injectServices(responderFlow, receiverX500, flowAndServiceLookUp, flowFactory)
 
         // When we send and receive the message
         thread { sendingSession.send(message) }
