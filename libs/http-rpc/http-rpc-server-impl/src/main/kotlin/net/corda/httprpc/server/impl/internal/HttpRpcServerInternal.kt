@@ -347,6 +347,11 @@ internal class HttpRpcServerInternal(
                 registerWsHandlerForRoute(routeInfo)
             }
 
+            wsException(Exception::class.java) { e, ctx ->
+                log.info("Exception caught during websocket invocation:", e)
+                ctx.session.close(1000, "Exception caught during websocket session operation, closing the session.")
+            }
+
             log.trace { "Add WebSockets routes for some of the GET methods." }
         } catch (e: Exception) {
             "Error during Add WebSockets routes for some of the GET methods".let {
@@ -361,10 +366,6 @@ internal class HttpRpcServerInternal(
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
             ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver))
-            wsException(Exception::class.java) { e, ctx ->
-                log.info("Exception caught during websocket invocation:", e)
-                ctx.session.close(1000, "Exception caught during websocket session operation, closing the session.")
-            }
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {
