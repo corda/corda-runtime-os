@@ -47,7 +47,7 @@ class FindAllAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                entityRequestSent(FindAll(className))
+                entityRequestSent(FindAll(className, 0, Int.MAX_VALUE))
             }
         }
     }

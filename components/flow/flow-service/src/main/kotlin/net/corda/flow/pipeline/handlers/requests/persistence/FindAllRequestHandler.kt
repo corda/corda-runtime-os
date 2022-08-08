@@ -27,7 +27,7 @@ class FindAllRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FindAll): FlowEventContext<Any> {
-        val findAllRequest = FindAll(request.className)
+        val findAllRequest = FindAll(request.className, 0, Int.MAX_VALUE)
         val checkpoint = context.checkpoint
         val entityRequest =
             EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity.toAvro(), findAllRequest)
