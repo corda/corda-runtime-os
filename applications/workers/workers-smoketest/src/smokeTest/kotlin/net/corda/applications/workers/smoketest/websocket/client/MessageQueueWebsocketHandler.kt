@@ -37,9 +37,10 @@ class MessageQueueWebsocketHandler(
                 remote.sendString(message)
             } catch (e: IOException) {
                 log.warn("Exception sending message to server.", e)
+                throw SmokeTestWebsocketException("Exception sending message to server.", e)
             }
         } else {
-            log.warn("Attempted to send message from client to server but session was not connected.")
+            throw SmokeTestWebsocketException("Attempted to send message from client to server but session was not connected.")
         }
     }
 }
