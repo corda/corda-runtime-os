@@ -20,6 +20,11 @@ interface FlowEngine {
     val virtualNodeName: MemberX500Name
 
     /**
+     * Returns the context properties of the current flow.
+     */
+    val flowContextProperties: FlowContextProperties
+
+    /**
      * Invokes the given subflow. This function returns once the subflow completes successfully with the result
      * returned by that subflow's [Flow.call] method. If the subflow has a progress tracker, it is attached to the
      * current step in this flow's progress tracker.

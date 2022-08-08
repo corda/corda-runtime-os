@@ -21,6 +21,16 @@
         "items": "string"
       },
       "doc": "List of any session IDs associated with this flow."
+    },
+    {
+      "name": "contextUserProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The context user properties associated with this level in the Flow stack."
+    },
+    {
+      "name": "contextPlatformProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The context platform properties associated with this level in the Flow stack."
     }
   ]
 }

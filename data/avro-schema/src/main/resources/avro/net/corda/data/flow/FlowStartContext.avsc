@@ -41,9 +41,17 @@
     },
     {
       "name": "startArgs",
-      "type": ["null", "string"],
+      "type": [
+        "null",
+        "string"
+      ],
       "default": null,
-      "doc": "The body of the request provided when the flow was started if this flow was started via RPC. Null otherwise"
+      "doc": "The body of the request provided when the flow was started if this flow was started via RPC. Null otherwise."
+    },
+    {
+      "name": "contextPlatformProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "A map of platform context properties made available to the flow which will also be propagated to sub flows, initiated flows and services, associating the entire end to end flow execution path with a notion of a context. Only populated if this flow was started via RPC. Empty otherwise."
     },
     {
       "name": "createdTimestamp",
