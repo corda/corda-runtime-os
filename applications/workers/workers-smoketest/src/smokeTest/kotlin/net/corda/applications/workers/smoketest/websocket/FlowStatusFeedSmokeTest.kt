@@ -70,6 +70,7 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
+    // todo conal - could it be this test all along? two clients? Maybe it passes and then something goes wrong when closing both clients
     /*@Order(30)
     @Test
     fun `multiple websocket connections can be open for one flow from one holding identity and request id`() {

@@ -88,5 +88,3 @@ class SmokeTestWebsocketClient(
         wsClient.stop()
     }
 }
-
-class SmokeTestWebsocketException(message: String) : Exception(message)
