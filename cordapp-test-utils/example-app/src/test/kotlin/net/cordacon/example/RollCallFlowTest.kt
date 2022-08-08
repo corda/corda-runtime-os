@@ -57,6 +57,7 @@ class RollCallFlowTest {
             BETA: Here
             TEACH: Gamma?
             GAMMA: Yo
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
     }
 
@@ -87,6 +88,7 @@ class RollCallFlowTest {
             TEACH: Zammo?
             TEACH: Zammo?
             TEACH: Zammo?
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
     }
 
@@ -97,6 +99,7 @@ class RollCallFlowTest {
         val flow = RollCallFlow()
         flow.flowMessaging = mock()
         flow.flowEngine = mock()
+        flow.persistenceService = mock()
         flow.jsonMarshallingService = SimpleJsonMarshallingService()
 
         whenever(flow.flowEngine.virtualNodeName).thenReturn(teacher)
