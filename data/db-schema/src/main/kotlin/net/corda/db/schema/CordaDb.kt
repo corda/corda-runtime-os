@@ -8,6 +8,7 @@ package net.corda.db.schema
 enum class CordaDb(val persistenceUnitName: String) {
     CordaCluster("corda-cluster"),
     RBAC("corda-rbac"),
+    Uniqueness("corda-uniqueness"),
     Vault("corda-vault"),
     Crypto("corda-crypto"),
 }

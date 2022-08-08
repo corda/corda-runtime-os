@@ -1,0 +1,112 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <!--This changelog represents the initial state of the database schema used by the JPA
+        backing store as part of the uniqueness checker. As one of our main supported DBs is
+        CockroachDB, we follow the guidance regarding doing each change individually where
+        possible, and not running in transactions. See
+        (https://www.cockroachlabs.com/docs/v21.1/liquibase.html#liquibase-and-transactions)-->
+    <changeSet author="R3.Corda" id="uniqueness-creation-v1.0-1" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="uniqueness_state_details"/>
+            </not>
+        </preConditions>
+        <createTable tableName="uniqueness_state_details">
+            <column name="issue_tx_id_algo" type="VARCHAR(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issue_tx_id" type="VARBINARY(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issue_tx_output_idx" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consuming_tx_id_algo" type="VARCHAR(8)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="consuming_tx_id" type="VARBINARY(64)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="R3.Corda" id="uniqueness-creation-v1.0-2" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <primaryKeyExists primaryKeyName="uniqueness_state_details_pkey" tableName="uniqueness_state_details"/>
+            </not>
+        </preConditions>
+        <addPrimaryKey columnNames="issue_tx_id_algo, issue_tx_id, issue_tx_output_idx"
+                       constraintName="uniqueness_state_details_pkey"
+                       tableName="uniqueness_state_details"/>
+    </changeSet>
+
+    <changeSet author="R3.Corda" id="uniqueness-creation-v1.0-3" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="uniqueness_tx_details"/>
+            </not>
+        </preConditions>
+        <createTable tableName="uniqueness_tx_details">
+            <column name="tx_id_algo" type="VARCHAR(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tx_id" type="VARBINARY(64)">
+                <constraints nullable="false"/>s
+            </column>
+            <column name="expiry_datetime" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="commit_timestamp" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="result" type="CHAR">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="R3.Corda" id="uniqueness-creation-v1.0-4" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <primaryKeyExists primaryKeyName="uniqueness_tx_details_pkey" tableName="uniqueness_tx_details"/>
+            </not>
+        </preConditions>
+        <addPrimaryKey columnNames="tx_id_algo, tx_id"
+                       constraintName="uniqueness_tx_details_pkey"
+                       tableName="uniqueness_tx_details"/>
+    </changeSet>
+
+    <changeSet author="R3.Corda" id="uniqueness-creation-v1.0-5" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="uniqueness_rejected_txs"/>
+            </not>
+        </preConditions>
+        <createTable tableName="uniqueness_rejected_txs">
+            <column name="tx_id_algo" type="VARCHAR(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tx_id" type="VARBINARY(64)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- TODO Using VARBINARY instead of BLOB is a temporary solution, should be investigated as part of NAAS-458 -->
+            <column name="error_details" type="VARBINARY(1024)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="R3.Corda" id="uniqueness-creation-v1.0-6" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <primaryKeyExists primaryKeyName="uniqueness_rejected_txs_pkey" tableName="uniqueness_rejected_txs"/>
+            </not>
+        </preConditions>
+        <addPrimaryKey columnNames="tx_id_algo, tx_id"
+                       constraintName="uniqueness_rejected_txs_pkey"
+                       tableName="uniqueness_rejected_txs"/>
+    </changeSet>
+</databaseChangeLog>

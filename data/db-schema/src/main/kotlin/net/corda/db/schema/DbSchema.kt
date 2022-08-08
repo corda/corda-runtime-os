@@ -49,4 +49,9 @@ object DbSchema {
     const val CRYPTO_HSM_CATEGORY_MAP_TABLE = "crypto_hsm_category_map"
     const val CRYPTO_HSM_ASSOCIATION_TABLE = "crypto_hsm_association"
     const val CRYPTO_HSM_CATEGORY_ASSOCIATION_TABLE = "crypto_hsm_category_association"
+
+    const val UNIQUENESS = "UNIQUENESS"
+    const val UNIQUENESS_STATE_DETAILS_TABLE = "uniqueness_state_details"
+    const val UNIQUENESS_TX_DETAILS_TABLE = "uniqueness_tx_details"
+    const val UNIQUENESS_REJECTED_TX_TABLE = "uniqueness_rejected_txs"
 }
