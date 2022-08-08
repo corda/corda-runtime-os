@@ -3,6 +3,7 @@ package net.corda.flow.state
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -19,6 +20,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.state.impl.FlowCheckpointImpl
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -27,9 +29,11 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.`in`
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
+import java.security.KeyStore
 import java.time.Instant
 
 class FlowCheckpointImplTest {
@@ -353,10 +357,41 @@ class FlowCheckpointImplTest {
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
         assertThat(flowStackItem1.sessionIds).isEmpty()
+        assertThat(flowStackItem1.contextUserProperties.items).isEmpty()
+        assertThat(flowStackItem1.contextPlatformProperties.items).isEmpty()
 
         assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem2.isInitiatingFlow).isFalse
         assertThat(flowStackItem2.sessionIds).isEmpty()
+        assertThat(flowStackItem2.contextUserProperties.items).isEmpty()
+        assertThat(flowStackItem2.contextPlatformProperties.items).isEmpty()
+    }
+
+    @Test
+    fun `flow stack - pushWithContext creates and initializes stack item`() {
+        val flow1 = InitiatingFlowExample()
+        val flow2 = NonInitiatingFlowExample()
+        val checkpoint = setupAvroCheckpoint()
+
+        val context = Array(4) { KeyValueStore() }.onEachIndexed { index, keyValueStore ->
+            keyValueStore["key${index}"] = "value${index}"
+        }
+
+        val service = createFlowCheckpoint(checkpoint).flowStack
+        val flowStackItem1 = service.pushWithContext(flow1, context[0].avro, context[1].avro)
+        val flowStackItem2 = service.pushWithContext(flow2, context[2].avro, context[3].avro)
+
+        assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
+        assertThat(flowStackItem1.isInitiatingFlow).isTrue
+        assertThat(flowStackItem1.sessionIds).isEmpty()
+        assertThat(flowStackItem1.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key1", "value1"))
+        assertThat(flowStackItem1.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key2", "value2"))
+
+        assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
+        assertThat(flowStackItem2.isInitiatingFlow).isFalse
+        assertThat(flowStackItem2.sessionIds).isEmpty()
+        assertThat(flowStackItem2.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key3", "value3"))
+        assertThat(flowStackItem2.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key4", "value4"))
     }
 
     @Test
