@@ -6,9 +6,7 @@ plugins {
 description 'VNode Sandbox Example'
 
 osgiRun {
-    frameworkProperties.putAll(
-            'org.osgi.framework.security': 'osgi'
-    )
+    frameworkProperties.putAll('org.osgi.framework.security': 'osgi')
 }
 
 configurations {
