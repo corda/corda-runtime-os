@@ -8,8 +8,6 @@ ARG IMAGE_ENTRYPOINT="exec java -Dlog4j2.debug=false -Dlog4j.configurationFile=l
 ARG BUILD_PATH="/applications/workers/release/crypto-worker/build/tmp/publishOSGiImage/containerization/corda-crypto-worker-5.0.0.0-SNAPSHOT.jar"
 ARG JAR_LOCATION="/opt/override/"
 
-RUN --mount=type=secret,id=docker-js-temp.software.r3.com,dst=/buildconfig.json cat /buildconfig.json
-
 ENV IMAGE_ENTRYPOINT_ENV=${IMAGE_ENTRYPOINT}
 ENV CORDA_BASE="/opt/override"
 ENV CORDA_CLI_HOME_DIR="/opt/override/home"
