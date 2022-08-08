@@ -6,8 +6,10 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
+import net.corda.applications.workers.smoketest.SMOKE_TEST_CLASS_NAME
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.websocket.client.MessageQueueWebsocketHandler
@@ -92,7 +94,6 @@ class FlowStatusFeedSmokeTest {
                     assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.RUNNING.name)
                     assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
                 }
-
             }
         }
     }
@@ -124,6 +125,9 @@ class FlowStatusFeedSmokeTest {
                 assertFalse(wsHandler.isConnected)
             }
         }
+
+        // Check HTTP RPC Server is still functioning
+        assertThat(getFlowClasses(bobHoldingId)).contains(SMOKE_TEST_CLASS_NAME)
     }
 
     @Order(41)

@@ -64,19 +64,23 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
 
 private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldingIdentity, clientRequestId: String) =
     { avroStatus: FlowStatus ->
-        val future = send(avroStatus.createFlowStatusResponse())
-        if (avroStatus.flowStatus.isFlowFinished()) {
-            try {
-                future.get(10, TimeUnit.SECONDS)
-            } catch (ex: Exception) {
-                log.error("Could not send terminal state to the remote side", ex)
-            }
+        try {
+            val future = send(avroStatus.createFlowStatusResponse())
+            if (avroStatus.flowStatus.isFlowFinished()) {
+                try {
+                    future.get(10, TimeUnit.SECONDS)
+                } catch (ex: Exception) {
+                    log.error("Could not send terminal state to the remote side", ex)
+                }
 
-            log.debug {
-                "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
-                        "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
+                log.debug {
+                    "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
+                            "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
+                }
+                close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
             }
-            close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
+        } catch (ex: Exception) {
+            log.error("Unexpected error when processing FlowStatus update")
         }
     }
 

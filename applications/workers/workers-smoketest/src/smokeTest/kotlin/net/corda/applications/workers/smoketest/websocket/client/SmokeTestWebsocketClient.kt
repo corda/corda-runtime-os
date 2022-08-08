@@ -82,9 +82,9 @@ class SmokeTestWebsocketClient(
     override fun close() {
         log.info("Gracefully closing sessions.")
         sessions.forEach { it.close(CloseStatus(StatusCode.NORMAL, "Smoke test closing from client side")) }
-        log.info("Gracefully http client.")
-        httpClient.stop()
         log.info("Gracefully closing WebSocket client.")
         wsClient.stop()
+        log.info("Gracefully closing HTTP client.")
+        httpClient.stop()
     }
 }
