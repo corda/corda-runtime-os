@@ -29,7 +29,11 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.withLock
 
 @Component(immediate = true, service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
@@ -47,6 +51,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
     private val cache = ConcurrentHashMap(mutableMapOf<FlowKey, FlowStatus>())
 
+    private val lock: ReadWriteLock = ReentrantReadWriteLock()
     private val statusListenerIdsPerFlowKey: Multimap<FlowKey, FlowStatusUpdateListener> =
         Multimaps.newSetMultimap(ConcurrentHashMap()) { ConcurrentHashMap.newKeySet() }
 
@@ -109,8 +114,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val flowStatus = newRecord.value
         if (flowStatus == null) {
             cache.remove(flowKey)
-            statusListenerIdsPerFlowKey.removeAll(flowKey).map {
-                it.close("Flow status removed from cache When null flow status received.")
+            lock.writeLock().withLock { statusListenerIdsPerFlowKey.removeAll(flowKey) }.map {
+                it.close("Flow status removed from cache when null flow status received.")
             }
         } else {
             cache[flowKey] = flowStatus
@@ -132,7 +137,9 @@ class FlowStatusCacheServiceImpl @Activate constructor(
             throw FlowStatusUpdateException("${errors.size} errors during registration for flow status updates.", errors)
         }
 
-        statusListenerIdsPerFlowKey.put(flowKey, listener)
+        lock.writeLock().withLock {
+            statusListenerIdsPerFlowKey.put(flowKey, listener)
+        }
 
         log.info(
             "Registered flow status listener ${listener.id} " +
@@ -146,12 +153,14 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     override fun unregisterFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener) {
-        if (statusListenerIdsPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener))
+        val removed =  lock.writeLock().withLock { statusListenerIdsPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
+        if (removed) {
             log.info("Unregistered flow status listener: $clientRequestId. Total number of open listeners: ${statusListenerIdsPerFlowKey.size()}.")
+        }
     }
 
     private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey, errors: MutableList<String>) {
-        val existingHandlers = statusListenerIdsPerFlowKey[flowKey]
+        val existingHandlers = lock.readLock().withLock { statusListenerIdsPerFlowKey[flowKey] }
         val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
         if (handlersForRequestAndHoldingIdAlreadyExist) {
             if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
@@ -161,7 +170,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     private fun updateAllStatusListenersForFlowKey(flowKey: FlowKey, flowStatus: FlowStatus) {
-        statusListenerIdsPerFlowKey[flowKey].map { listener ->
+        val flowStatusUpdateListeners = lock.readLock().withLock { LinkedList(statusListenerIdsPerFlowKey[flowKey]) }
+        flowStatusUpdateListeners.map { listener ->
             listener.updateReceived(flowStatus)
         }
     }
