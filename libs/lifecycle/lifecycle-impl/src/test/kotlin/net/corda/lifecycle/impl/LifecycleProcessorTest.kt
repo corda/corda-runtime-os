@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -571,6 +572,47 @@ class LifecycleProcessorTest {
         processor.addManagedResource("TEST") { resource2 }
 
         verify(resource1).close()
+    }
+
+    @Test
+    fun `dependent components are registered on start`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val dependentComponents = mock<DependentComponents>()
+        val processor = LifecycleProcessor(NAME, state, registry, dependentComponents) { _, _ -> }
+
+        state.postEvent(StartEvent())
+        process(processor)
+
+        verify(dependentComponents).registerAndStartAll(any())
+    }
+
+    @Test
+    fun `dependent components are stopped on stop - no error`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val dependentComponents = mock<DependentComponents>()
+        val processor = LifecycleProcessor(NAME, state, registry, dependentComponents) { _, _ -> }
+
+        state.postEvent(StartEvent())
+        state.postEvent(StopEvent())
+        process(processor)
+
+        verify(dependentComponents).stopAll()
+    }
+
+    @Test
+    fun `dependent components are not stopped on stop - error`() {
+        val state = LifecycleStateManager(5)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val dependentComponents = mock<DependentComponents>()
+        val processor = LifecycleProcessor(NAME, state, registry, dependentComponents) { _, _ -> }
+
+        state.postEvent(StartEvent())
+        state.postEvent(StopEvent(errored = true))
+        process(processor)
+
+        verify(dependentComponents, never()).stopAll()
     }
 
     private object TestEvent1 : LifecycleEvent

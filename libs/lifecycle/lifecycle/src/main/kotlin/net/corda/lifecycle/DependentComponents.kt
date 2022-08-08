@@ -6,6 +6,8 @@ import kotlin.reflect.jvm.javaField
 /**
  * Encapsulates a group of Dependent components that should be registered, started and stopped together.
  *
+ * NOTE: This is only safe for singleton components.
+ *
  * @property map
  * @constructor Create empty Dependent components
  */

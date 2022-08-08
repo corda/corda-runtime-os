@@ -174,7 +174,9 @@ internal class LifecycleProcessor(
                 // the registry.
                 logger.debug { "Could not update status as coordinator is closing" }
             }
-            dependentComponents?.stopAll()
+            if (!event.errored) {
+                dependentComponents?.stopAll()
+            }
             runUserEventHandler(event, coordinator)
             closeManagedResources(emptySet())
         } else {

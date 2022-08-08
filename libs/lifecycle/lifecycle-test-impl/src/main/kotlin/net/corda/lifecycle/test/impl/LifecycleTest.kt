@@ -3,11 +3,9 @@ package net.corda.lifecycle.test.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
@@ -25,21 +23,11 @@ class LifecycleTest<T : Lifecycle>(
     private val configKeys = argumentCaptor<Set<String>>()
 
     /**
-     * This is the coordinator factory which the component under test can use to create it's coordinator.
+     * This is the coordinator factory which the component under test can use to create its coordinator.
      *
      * This will replace the OSGi injected factory.
      */
-    val coordinatorFactory = object : TestLifecycleCoordinatorFactoryImpl() {
-        override fun createCoordinator(
-            name: LifecycleCoordinatorName,
-            batchSize: Int,
-            dependentComponents: DependentComponents?,
-            handler: LifecycleEventHandler
-        ): LifecycleCoordinator {
-            dependentComponents?.coordinatorNames?.forEach { addDependency(it) }
-            return super.createCoordinator(name, batchSize, dependentComponents, handler)
-        }
-    }
+    val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
 
     /**
      * This mock can be used to verify the usage of the config handles by components.
@@ -65,11 +53,7 @@ class LifecycleTest<T : Lifecycle>(
      * This is the actual instantiation of the component to be tested.  It is made available here
      * for use by test code later.
      */
-    val testClass = initializer.invoke(this).also {
-        coordinatorFactory.dependentComponents?.coordinatorNames?.forEach {
-            addDependency(it)
-        }
-    }
+    val testClass = initializer.invoke(this)
 
     /**
      * Registers the given class as a dependency of the component under test.  This allows for bringing

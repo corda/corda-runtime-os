@@ -91,6 +91,9 @@ class FlowProcessorImpl @Activate constructor(
             }
             is StopEvent -> {
                 // Nothing to do
+                if (event.errored) {
+                    log.warn("Stopped due to error")
+                }
             }
             else -> {
                 log.error("Unexpected event $event!")

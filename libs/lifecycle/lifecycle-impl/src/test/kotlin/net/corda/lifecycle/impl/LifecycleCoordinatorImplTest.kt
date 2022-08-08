@@ -3,7 +3,6 @@ package net.corda.lifecycle.impl
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleCoordinatorScheduler
@@ -1248,11 +1247,14 @@ internal class LifecycleCoordinatorImplTest {
         coordinator1.close()
     }
 
-    private val dependency = mock<Lifecycle>()
+    // Should go in the test but that is hard to specify as a KProperty
+    private val dependency = mock<LifecycleCoordinator>()
     @Test
     fun `coordinator calls start and stop on dependency`() {
+        val registrationHandle = mock<RegistrationHandle>()
         val registry = mock<LifecycleRegistryCoordinatorAccess>().also {
             doAnswer { mock<LifecycleCoordinatorInternal>() }.whenever(it).getCoordinator(any())
+            doAnswer { registrationHandle }.whenever(it).registerCoordinator(any(), any())
         }
         val dependentComponents = DependentComponents.of(::dependency)
 
@@ -1262,10 +1264,12 @@ internal class LifecycleCoordinatorImplTest {
         ) { _, _ -> }
 
         coordinator.start()
+        verify(registry).registerCoordinator(any(), any())
         verify(dependency).start()
 
         coordinator.stop()
         verify(dependency).stop()
+        verify(registrationHandle).close()
     }
 
     private fun createCoordinator(
