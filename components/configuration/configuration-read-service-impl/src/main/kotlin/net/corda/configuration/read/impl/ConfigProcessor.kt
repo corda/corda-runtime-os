@@ -39,12 +39,13 @@ internal class ConfigProcessor(
         get() = Configuration::class.java
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
-        if (currentData.isNotEmpty()) {
+        val config = mergeConfigs(currentData)
+
+        if (config.values.find { !it.isEmpty } != null) {
             currentData.forEach { (configSection, configuration) ->
                 addToCache(configSection, configuration)
             }
 
-            val config = mergeConfigs(currentData)
             coordinator.postEvent(NewConfigReceived(config))
         }
     }
