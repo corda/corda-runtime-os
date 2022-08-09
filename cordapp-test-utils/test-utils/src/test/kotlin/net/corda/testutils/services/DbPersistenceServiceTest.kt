@@ -3,9 +3,11 @@ package net.corda.testutils.services
 import net.corda.v5.application.persistence.find
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.persistence.CordaPersistenceException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import java.util.*
 import javax.persistence.Column
@@ -123,6 +125,16 @@ class DBPersistenceServiceTest {
         // Then they should be removed successfully
         assertThat(persistence.findAll(GreetingEntity::class.java).execute(), `is`(listOf(greetings[3])))
     }
+
+    @Test
+    fun `should throw the same exception as Corda so that it can be caught in flows`() {
+        val persistence = DbPersistenceService(x500)
+        assertThrows<CordaPersistenceException> { persistence.persist(BadEntity()) }
+        assertThrows<CordaPersistenceException> { persistence.findAll(BadEntity::class.java) }
+        assertThrows<CordaPersistenceException> { persistence.find(BadEntity::class.java, UUID.randomUUID()) }
+        assertThrows<CordaPersistenceException> { persistence.merge(BadEntity()) }
+        assertThrows<CordaPersistenceException> { persistence.remove(listOf(BadEntity())) }
+    }
 }
 
 @CordaSerializable
@@ -134,3 +146,4 @@ data class GreetingEntity (
     @Column
     val greeting: String
 )
+data class BadEntity(val id: UUID = UUID.randomUUID())

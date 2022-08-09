@@ -7,6 +7,7 @@ import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.persistence.CordaPersistenceException
 import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER
@@ -39,25 +40,30 @@ class DbPersistenceService(x500 : MemberX500Name) : PersistenceService {
     }
 
     override fun <T : Any> find(entityClass: Class<T>, primaryKey: Any): T? {
-        return emf.createEntityManager().find(entityClass, primaryKey)
+        return emf.guard {
+            it.find(entityClass, primaryKey)
+        }
     }
 
     override fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T> {
-        val em = emf.createEntityManager()
-        return primaryKeys.map { em.find(entityClass, it) }
+        emf.guard {
+            return primaryKeys.map { pk -> it.find(entityClass, pk) }
+        }
     }
 
     override fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T> {
-        val query = emf.createEntityManager().createQuery("SELECT e FROM ${entityClass.simpleName} e")
-        val result = cast<List<T>>(query.resultList)
-            ?: throw java.lang.IllegalArgumentException("The result of the query was not an $entityClass")
+        emf.guard {
+            val query = it.createQuery("SELECT e FROM ${entityClass.simpleName} e")
+            val result = cast<List<T>>(query.resultList)
+                ?: throw java.lang.IllegalArgumentException("The result of the query was not an $entityClass")
 
-        return object : PagedQuery<T> {
-            override fun execute(): List<T>  = result
+            return object : PagedQuery<T> {
+                override fun execute(): List<T>  = result
 
-            override fun setLimit(limit: Int): PagedQuery<T> { TODO("Not yet implemented") }
+                override fun setLimit(limit: Int): PagedQuery<T> { TODO("Not yet implemented") }
 
-            override fun setOffset(offset: Int): PagedQuery<T> { TODO("Not yet implemented") }
+                override fun setOffset(offset: Int): PagedQuery<T> { TODO("Not yet implemented") }
+            }
         }
     }
 
@@ -113,12 +119,21 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
         block(em)
     } catch (e: Exception) {
         t.setRollbackOnly()
-        throw e
+        throw CordaPersistenceException(e.message ?: "Error in persistence", e)
     } finally {
         if (!t.rollbackOnly) {
             t.commit()
         } else {
             t.rollback()
         }
+    }
+}
+
+inline fun <R> EntityManagerFactory.guard(block: (EntityManager) -> R): R {
+    val em = this.createEntityManager()
+    return try {
+        block(em)
+    } catch (e: Exception) {
+        throw CordaPersistenceException(e.message ?: "Error in persistence", e)
     }
 }
