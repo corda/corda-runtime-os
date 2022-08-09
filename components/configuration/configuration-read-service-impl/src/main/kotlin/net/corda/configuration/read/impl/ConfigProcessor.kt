@@ -90,11 +90,11 @@ internal class ConfigProcessor(
         if (currentData.containsKey(MESSAGING_CONFIG)) {
             config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
         }
-        configMerger.getDbConfig(bootConfig, config[DB_CONFIG]).let {
-            if (!it.isEmpty) {
-                config[DB_CONFIG] = it
-            }
+        val dbConfig = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+        if (!dbConfig.isEmpty) {
+            config[DB_CONFIG] = dbConfig
         }
+
         //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
         if (currentData.containsKey(CRYPTO_CONFIG)) {
             config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
