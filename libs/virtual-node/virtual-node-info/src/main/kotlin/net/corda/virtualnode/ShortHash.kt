@@ -7,7 +7,7 @@ import net.corda.v5.crypto.SecureHash
  *
  * NOTE:  cannot be a data class at the moment, because a private constructor would be exposed by [copy()]]
  *
- * @throws IllegalArgumentException if it cannot construct the short hash from the given constructor argument.
+ * @throws [ShortHashException] if it cannot construct the short hash from the given constructor argument.
  */
 class ShortHash private constructor(val value: String) {
     companion object {
