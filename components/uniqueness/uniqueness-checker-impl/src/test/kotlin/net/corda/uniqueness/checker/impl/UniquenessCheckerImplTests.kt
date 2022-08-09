@@ -87,7 +87,7 @@ class UniquenessCheckerImplTests {
     }
 
     @BeforeEach
-    private fun init() {
+    fun init() {
         /*
          * Specific clock values are important to our testing in some cases, so we use a mock time
          * facilities service which provides a clock starting at a known point in time (baseTime)
