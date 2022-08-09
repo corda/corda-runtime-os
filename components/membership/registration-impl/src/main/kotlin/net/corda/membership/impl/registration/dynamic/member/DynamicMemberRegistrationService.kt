@@ -28,6 +28,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.REGISTRATION_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -103,7 +104,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val SESSION_KEY_SIGNATURE_SPEC = "${PARTY_SESSION_KEY}.signature.spec"
         const val LEDGER_KEY_ID = "${LEDGER_KEYS_KEY}.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "${LEDGER_KEYS_KEY}.signature.spec"
-        const val REGISTRATION_ID = "corda.registration.id"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val PLATFORM_VERSION_CONST = "5000"
         const val SOFTWARE_VERSION_CONST = "5.0.0"
@@ -202,7 +202,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val publicKey =
                     keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value)
                 val memberSignature = cryptoOpsClient.sign(
-                    member.shortHash,
+                    member.shortHash.value,
                     publicKey,
                     SignatureSpec(memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value),
                     serializedMemberContext
@@ -230,7 +230,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(registrationRequestSerializer.serialize(message)),
                     // holding identity ID is used as topic key to be able to ensure serial processing of registration
                     // for the same member.
-                    member.shortHash
+                    member.shortHash.value
                 )
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
@@ -256,8 +256,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             return KeyValuePairList(
                 context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
                     .toWire().items
-                        + generateSessionKeyData(context, member.shortHash).items
-                        + generateLedgerKeyData(context, member.shortHash).items
+                        + generateSessionKeyData(context, member.shortHash.value).items
+                        + generateLedgerKeyData(context, member.shortHash.value).items
                         + listOf(
                     KeyValuePair(REGISTRATION_ID, registrationId),
                     KeyValuePair(PARTY_NAME, member.x500Name.toString()),

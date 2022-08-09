@@ -16,7 +16,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -28,9 +27,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -47,12 +48,14 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -117,8 +120,10 @@ class MGMRegistrationService @Activate constructor(
             )
         }
     }
+
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
+
     // for checking the components' health
     private var componentHandle: RegistrationHandle? = null
 
@@ -186,27 +191,26 @@ class MGMRegistrationService @Activate constructor(
         ): MembershipRequestRegistrationResult {
             try {
                 validateContext(context)
-                val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash)
-                val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash)
+                val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash.value)
+                val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash.value)
                 val now = clock.instant().toString()
+                val memberContext = context.filterKeys {
+                    !keyIdList.contains(it)
+                }.filterKeys {
+                    !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
+                } + mapOf(
+                    GROUP_ID to member.groupId,
+                    PARTY_NAME to member.x500Name.toString(),
+                    PARTY_SESSION_KEY to sessionKey.toPem(),
+                    SESSION_KEY_HASH to sessionKey.calculateHash().value,
+                    ECDH_KEY to ecdhKey.toPem(),
+                    // temporarily hardcoded
+                    PLATFORM_VERSION to PLATFORM_VERSION_CONST,
+                    SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                    SERIAL to SERIAL_CONST,
+                )
                 val mgmInfo = memberInfoFactory.create(
-                    memberContext = (
-                        context.filterKeys {
-                            !keyIdList.contains(it)
-                        }.filterKeys {
-                            !it.startsWith(GROUP_POLICY_PREFIX_WITH_DOT)
-                        } +
-                            mapOf(
-                                GROUP_ID to member.groupId,
-                                PARTY_NAME to member.x500Name.toString(),
-                                PARTY_SESSION_KEY to sessionKey,
-                                ECDH_KEY to ecdhKey,
-                                // temporarily hardcoded
-                                PLATFORM_VERSION to PLATFORM_VERSION_CONST,
-                                SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
-                                SERIAL to SERIAL_CONST,
-                            )
-                        ).toSortedMap(),
+                    memberContext = memberContext.toSortedMap(),
                     mgmContext = sortedMapOf(
                         CREATED_TIME to now,
                         MODIFIED_TIME to now,
@@ -305,14 +309,15 @@ class MGMRegistrationService @Activate constructor(
                     true
                 }
 
-        private fun getPemKeyFromId(keyId: String, tenantId: String): String {
+        private fun getKeyFromId(keyId: String, tenantId: String): PublicKey {
             return with(cryptoOpsClient) {
                 lookup(tenantId, listOf(keyId)).firstOrNull()?.let {
-                    val key = keyEncodingService.decodePublicKey(it.publicKey.array())
-                    keyEncodingService.encodeAsString(key)
+                    keyEncodingService.decodePublicKey(it.publicKey.array())
                 } ?: throw IllegalArgumentException("No key found for tenant: $tenantId under ID: $keyId.")
             }
         }
+
+        private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

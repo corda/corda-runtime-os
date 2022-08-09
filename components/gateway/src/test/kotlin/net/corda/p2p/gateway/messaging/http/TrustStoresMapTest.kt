@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -100,10 +101,38 @@ class TrustStoresMapTest {
         processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))),
             null,
-            emptyMap(),
+            emptyMap()
         )
 
-        assertThat(testObject.getTrustStore(sourceX500Name, groupId)).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)).isEqualTo(keyStore)
+    }
+
+    @Test
+    fun `getTrustStore will use normalized X500 name`() {
+        creteResources.get()?.invoke(mock())
+        processor.firstValue.onSnapshot(emptyMap())
+
+        val groupId = "group id 1"
+        processor.firstValue.onNext(
+            Record(
+                Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
+                "key",
+                GatewayTruststore(
+                    HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId),
+                    listOf("one")
+                )
+            ),
+            null,
+            emptyMap()
+        )
+
+        assertThat(
+            testObject.getTrustStore(
+                MemberX500Name.parse("C=GB,   CN=Alice, O=Alice Corp, L=LDN"),
+                groupId
+            )
+        )
+            .isEqualTo(keyStore)
     }
 
     @Test
@@ -121,11 +150,11 @@ class TrustStoresMapTest {
         processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", null),
             null,
-            emptyMap(),
+            emptyMap()
         )
 
         assertThrows<IllegalArgumentException> {
-            testObject.getTrustStore(sourceX500Name, groupId)
+            testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
         }
     }
 
@@ -139,7 +168,7 @@ class TrustStoresMapTest {
             )
         )
 
-        assertThat(testObject.getTrustStore(sourceX500Name, groupId)).isEqualTo(keyStore)
+        assertThat(testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)).isEqualTo(keyStore)
     }
 
     @Test
@@ -149,11 +178,11 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
             )
         )
 
-        testObject.getTrustStore(sourceX500Name, groupId)
+        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
 
         verify(keyStore).setCertificateEntry("gateway-0", certificate)
         verify(keyStore).setCertificateEntry("gateway-1", certificate)
@@ -166,11 +195,11 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
             )
         )
 
-        testObject.getTrustStore(sourceX500Name, groupId)
+        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
 
         verify(keyStore).load(null, null)
     }
@@ -184,11 +213,11 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
             )
         )
 
-        testObject.getTrustStore(sourceX500Name, groupId)
+        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
 
         assertThat(data.firstValue.reader().readText()).isEqualTo("one")
         assertThat(data.secondValue.reader().readText()).isEqualTo("two")

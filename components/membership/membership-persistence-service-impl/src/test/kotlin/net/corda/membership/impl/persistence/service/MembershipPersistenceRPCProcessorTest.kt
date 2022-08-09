@@ -76,7 +76,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val registrationRequest = RegistrationRequestEntity(
         ourRegistrationId,
-        ourHoldingIdentity.shortHash,
+        ourHoldingIdentity.shortHash.value,
         RegistrationStatus.NEW.name,
         clock.instant(),
         clock.instant(),

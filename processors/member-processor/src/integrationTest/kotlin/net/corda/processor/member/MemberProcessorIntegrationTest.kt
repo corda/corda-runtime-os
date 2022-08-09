@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
@@ -141,17 +142,17 @@ class MemberProcessorIntegrationTest {
         )
 
         private val aliceVNodeDb = TestDbInfo(
-            name = "vnode_crypto_$aliceVNodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(aliceVNodeId),
             schemaName = "vnode_crypto_alice"
         )
 
         private val bobVNodeDb = TestDbInfo(
-            name = "vnode_crypto_$bobVNodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(bobVNodeId),
             schemaName = "vnode_crypto_bob"
         )
 
         private val charlieVNodeDb = TestDbInfo(
-            name = "vnode_crypto_$charlieVNodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(charlieVNodeId),
             schemaName = "vnode_crypto_charlie"
         )
 

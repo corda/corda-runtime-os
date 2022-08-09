@@ -63,6 +63,7 @@ class PersistGroupPolicyHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 "vnode_vault_${identity.shortHash.lowercase()}",
+
                 DbPrivilege.DML,
                 entitySet
             )

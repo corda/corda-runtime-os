@@ -51,6 +51,7 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
      */
     fun getConnectionName(holdingIdentityShortHash: String) = "vnode_${infix}_$holdingIdentityShortHash".lowercase()
 
+
     /**
      * Returns DB connection description for given privilege
      * @param dbPrivilege DB privilege

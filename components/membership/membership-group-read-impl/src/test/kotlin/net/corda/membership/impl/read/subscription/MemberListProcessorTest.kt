@@ -96,13 +96,13 @@ class MemberListProcessorTest {
             memberInfoList.forEach { member ->
                 val holdingIdentity = HoldingIdentity(member.name, member.groupId)
                 if (!selfOwned && holdingIdentity != aliceIdentity) {
-                    topicData[aliceIdentity.shortHash + holdingIdentity.shortHash] = PersistentMemberInfo(
+                    topicData[aliceIdentity.shortHash.value + holdingIdentity.shortHash.value] = PersistentMemberInfo(
                         aliceIdentity.toAvro(),
                         member.memberProvidedContext.toAvro(),
                         member.mgmProvidedContext.toAvro()
                     )
                 }
-                topicData[holdingIdentity.shortHash] = PersistentMemberInfo(
+                topicData[holdingIdentity.shortHash.value] = PersistentMemberInfo(
                     holdingIdentity.toAvro(),
                     member.memberProvidedContext.toAvro(),
                     member.mgmProvidedContext.toAvro()

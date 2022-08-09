@@ -15,6 +15,7 @@ import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -119,7 +120,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext find the certificate from the node entity`() {
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -134,7 +135,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext merge the certificate into the node entity`() {
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
@@ -146,7 +147,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext returns CertificateRetrievalRpcResponse without value`() {
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -160,7 +161,7 @@ class CertificatesProcessorTest {
         whenever(nodeEntityManager.find(Certificate::class.java, "alias"))
             .doReturn(Certificate("alias", "certificate"))
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -222,7 +223,7 @@ class CertificatesProcessorTest {
     fun `onNext throws exception for unknown tenant ID`() {
         whenever(jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)) doReturn null
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 

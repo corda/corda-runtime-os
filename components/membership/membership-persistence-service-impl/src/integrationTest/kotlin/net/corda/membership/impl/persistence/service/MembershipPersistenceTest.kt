@@ -13,6 +13,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
@@ -240,10 +241,12 @@ class MembershipPersistenceTest {
         private val viewOwningHoldingIdentity = HoldingIdentity(x500Name, groupId)
         private val holdingIdentityShortHash: String = viewOwningHoldingIdentity.shortHash.lowercase()
 
+
         private val registeringX500Name = MemberX500Name.parse("O=Bob, C=GB, L=London")
         private val registeringHoldingIdentity = HoldingIdentity(registeringX500Name, groupId)
 
-        private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityShortHash", DbSchema.VNODE)
+        private val vnodeDbInfo = TestDbInfo(VirtualNodeDbType.VAULT.getConnectionName(holdingIdentityShortHash), DbSchema.VNODE)
+//        private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityShortHash", DbSchema.VNODE)
         private val clusterDbInfo = TestDbInfo.createConfig()
 
         private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
@@ -386,7 +389,7 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
-        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash)
+        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(persistedEntity.status).isEqualTo(status.toString())
 
         val persistedMemberContext = persistedEntity.context.deserializeContextAsMap()
@@ -651,7 +654,7 @@ class MembershipPersistenceTest {
         }
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
-        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash)
+        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
@@ -667,7 +670,7 @@ class MembershipPersistenceTest {
         }
         assertThat(updatedEntity).isNotNull
         assertThat(updatedEntity.registrationId).isEqualTo(registrationId)
-        assertThat(updatedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash)
+        assertThat(updatedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(updatedEntity.status).isEqualTo(RegistrationStatus.PENDING_AUTO_APPROVAL.name)
     }
 

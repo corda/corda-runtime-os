@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -65,6 +66,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq("vnode_vault_${ourHoldingIdentity.shortHash.lowercase()}"),
+
                 any(),
                 any()
             )

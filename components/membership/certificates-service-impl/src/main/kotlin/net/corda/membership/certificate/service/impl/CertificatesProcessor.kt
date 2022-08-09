@@ -17,6 +17,7 @@ import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManagerFactory
