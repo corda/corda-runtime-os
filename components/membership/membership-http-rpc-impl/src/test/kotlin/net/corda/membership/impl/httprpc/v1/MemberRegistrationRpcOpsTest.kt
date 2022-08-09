@@ -47,7 +47,6 @@ class MemberRegistrationRpcOpsTest {
     )
 
     private val memberOpsClient: MemberOpsClient = mock {
-        on { checkRegistrationProgress(any()) } doReturn registrationProgress
         on { startRegistration(any()) } doReturn registrationProgress
     }
 
@@ -78,17 +77,6 @@ class MemberRegistrationRpcOpsTest {
         memberRegistrationRpcOps.deactivate("")
         memberRegistrationRpcOps.stop()
     }
-
-//    TODO Registration status endpoint will be implemented in CORE-5957.
-//    @Test
-//    fun `checking registration progress calls the client svc`() {
-//        memberRegistrationRpcOps.start()
-//        memberRegistrationRpcOps.activate("")
-//        memberRegistrationRpcOps.checkRegistrationProgress(HOLDING_IDENTITY_ID)
-//        verify(memberOpsClient).checkRegistrationProgress(eq(HOLDING_IDENTITY_ID))
-//        memberRegistrationRpcOps.deactivate("")
-//        memberRegistrationRpcOps.stop()
-//    }
 
     @Test
     fun `operation fails when svc is not running`() {

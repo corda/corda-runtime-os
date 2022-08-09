@@ -263,7 +263,7 @@ class GroupPolicyProviderImplTest {
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
 
-        verify(groupPolicyParser, times(3)).parse(any(), any(), any())
+        verify(groupPolicyParser, times(1)).parse(any(), any(), any())
     }
 
     @Test

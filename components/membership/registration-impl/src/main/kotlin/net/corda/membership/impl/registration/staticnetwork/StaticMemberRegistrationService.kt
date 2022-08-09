@@ -178,7 +178,7 @@ class StaticMemberRegistrationService @Activate constructor(
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.shortHash
+        val memberId = registeringMember.shortHash.value
 
         assignSoftHsm(memberId)
 
@@ -243,17 +243,16 @@ class StaticMemberRegistrationService @Activate constructor(
          */
         val hostedIdentity = HostedIdentityEntry(
             net.corda.data.identity.HoldingIdentity(memberName.toString(), groupId),
-            memberId,
-            memberId,
+            memberId.value,
+            memberId.value,
             listOf(DUMMY_CERTIFICATE),
             DUMMY_PUBLIC_SESSION_KEY
         )
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.shortHash,
+            registeringMember.shortHash.value,
             hostedIdentity
-
         )
     }
 

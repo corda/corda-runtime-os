@@ -11,6 +11,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -112,7 +113,7 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         return map[holdingIdentity]
     }
 
-    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String): VirtualNodeInfo? {
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
         throwIfNotRunning()
         return map.entries.firstOrNull { holdingIdentityShortHash == it.key.shortHash }?.value
     }

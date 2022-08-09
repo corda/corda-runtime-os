@@ -11,6 +11,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -160,7 +161,7 @@ class MemberOpsServiceProcessorTest {
         val request = MembershipRpcRequest(
             requestContext,
             RegistrationRpcRequest(
-                mgmHoldingIdentity.shortHash,
+                mgmHoldingIdentity.shortHash.value,
                 RegistrationRpcAction.REQUEST_JOIN,
                 KeyValuePairList(emptyList())
             )
@@ -169,12 +170,14 @@ class MemberOpsServiceProcessorTest {
         processor.onNext(request, future)
         val result = future.get()
         val expectedResponse = RegistrationRpcResponse(
-            requestTimestamp,
-            RegistrationRpcStatus.SUBMITTED,
-            "registration-id",
-            1,
-            KeyValuePairList(emptyList()),
-            KeyValuePairList(emptyList())
+            RegistrationStatus(
+                requestTimestamp,
+                RegistrationRpcStatus.SUBMITTED,
+                "registration-id",
+                1,
+                KeyValuePairList(emptyList()),
+                KeyValuePairList(emptyList())
+            )
         )
         assertEquals(expectedResponse, result.response)
         assertResponseContext(requestContext, result.responseContext)
@@ -209,7 +212,7 @@ class MemberOpsServiceProcessorTest {
         val request = MembershipRpcRequest(
             requestContext,
             MGMGroupPolicyRequest(
-                mgmHoldingIdentity.shortHash
+                mgmHoldingIdentity.shortHash.value
             )
         )
         val future = CompletableFuture<MembershipRpcResponse>()

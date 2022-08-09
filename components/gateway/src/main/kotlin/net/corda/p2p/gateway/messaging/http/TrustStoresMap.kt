@@ -17,6 +17,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
 internal class TrustStoresMap(
@@ -48,7 +49,7 @@ internal class TrustStoresMap(
         emptyList()
     )
 
-    fun getTrustStore(sourceX500Name: String, destinationGroupId: String) =
+    fun getTrustStore(sourceX500Name: MemberX500Name, destinationGroupId: String) =
         trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
             ?.trustStore
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
@@ -92,12 +93,12 @@ internal class TrustStoresMap(
         override fun onSnapshot(currentData: Map<String, GatewayTruststore>) {
             // Using source group ID here, since source and identity are expected to be in the same group.
             val newEntriesPerKey = currentData.mapValues {
-                TruststoreKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
+                createKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
             }
             entriesPerKey.putAll(newEntriesPerKey)
 
             val newTrustRoots = currentData.map {
-                val truststoreKey = TruststoreKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
+                val truststoreKey = createKey(it.value.sourceIdentity.x500Name, it.value.sourceIdentity.groupId)
                 truststoreKey to TrustedCertificates(it.value.trustedCertificates, certificateFactory)
             }.toMap()
             trustRootsPerHoldingIdentity.putAll(newTrustRoots)
@@ -114,7 +115,7 @@ internal class TrustStoresMap(
             val value = newRecord.value
 
             if (value != null) {
-                val truststoreKey = TruststoreKey(value.sourceIdentity.x500Name, value.sourceIdentity.groupId)
+                val truststoreKey = createKey(value.sourceIdentity.x500Name, value.sourceIdentity.groupId)
                 entriesPerKey[newRecord.key] = truststoreKey
                 val trustedCertificates = TrustedCertificates(value.trustedCertificates, certificateFactory)
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
@@ -131,5 +132,12 @@ internal class TrustStoresMap(
         }
     }
 
-    private data class TruststoreKey(val sourceX500Name: String, val destinationGroupId: String)
+    private fun createKey(sourceX500Name: String, destinationGroupId: String) : TruststoreKey {
+        return TruststoreKey(
+            MemberX500Name.parse(sourceX500Name),
+            destinationGroupId,
+        )
+    }
+
+    private data class TruststoreKey(val sourceX500Name: MemberX500Name, val destinationGroupId: String)
 }

@@ -199,8 +199,8 @@ class MGMRegistrationService @Activate constructor(
         ): MembershipRequestRegistrationResult {
             try {
                 validateContext(context)
-                val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash)
-                val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash)
+                val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash.value)
+                val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash.value)
                 val now = clock.instant().toString()
                 val memberContext = context.filterKeys {
                     !keyIdList.contains(it)

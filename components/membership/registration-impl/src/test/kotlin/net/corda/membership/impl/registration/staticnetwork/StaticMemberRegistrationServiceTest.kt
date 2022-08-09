@@ -128,9 +128,9 @@ class StaticMemberRegistrationServiceTest {
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq(aliceId), any(), any<Map<String, String>>()) } doReturn aliceKey
-        on { generateKeyPair(any(), any(), eq(bobId), any(), any<Map<String, String>>()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq(charlieId), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on { generateKeyPair(any(), any(), eq(aliceId.value), any(), any<Map<String, String>>()) } doReturn aliceKey
+        on { generateKeyPair(any(), any(), eq(bobId.value), any(), any<Map<String, String>>()) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq(charlieId.value), any(), any<Map<String, String>>()) } doReturn charlieKey
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
@@ -204,8 +204,8 @@ class StaticMemberRegistrationServiceTest {
         val registrationResult = registrationService.register(registrationId, alice, mockContext)
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
-            Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
-            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it)
+            Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
+            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId.value, it)
         }
         registrationService.stop()
 
@@ -216,8 +216,9 @@ class StaticMemberRegistrationServiceTest {
         assertEquals(1, hostedIdentityList.size)
 
         memberList.forEach {
-            assertTrue(it.key.startsWith(aliceId) || it.key.startsWith(bobId) || it.key.startsWith(charlieId))
-            assertTrue(it.key.endsWith(aliceId))
+            assertTrue(it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
+                    || it.key.startsWith(charlieId.value))
+            assertTrue(it.key.endsWith(aliceId.value))
         }
 
         val publishedInfo = memberList.first()
@@ -243,7 +244,7 @@ class StaticMemberRegistrationServiceTest {
 
         val publishedHostedIdentity = hostedIdentityList.first()
 
-        assertEquals(alice.shortHash, publishedHostedIdentity.key)
+        assertEquals(alice.shortHash.value, publishedHostedIdentity.key)
         assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)
         val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
         assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)

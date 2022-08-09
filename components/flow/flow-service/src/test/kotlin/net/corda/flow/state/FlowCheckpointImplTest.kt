@@ -19,6 +19,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.state.impl.FlowCheckpointImpl
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
@@ -58,7 +59,7 @@ class FlowCheckpointImplTest {
         suspendCount: Int = 0,
         retryState: RetryState? = null,
         persistenceState: PersistenceState? = null
-    ) : Checkpoint {
+    ): Checkpoint {
         val startContext = FlowStartContext().apply {
             statusKey = key
             identity = holdingIdentity
@@ -360,9 +361,12 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `flow stack - nearest first returns first match closest to the top`() {
-        val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
-        val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
-        val flowStackItem2 = FlowStackItem("3", false, mutableListOf())
+        val flowStackItem0 =
+            FlowStackItem("1", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem1 =
+            FlowStackItem("2", true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem2 =
+            FlowStackItem("3", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1, flowStackItem2))
 
@@ -372,8 +376,10 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `flow stack - nearest first returns null when no match found`() {
-        val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
-        val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
+        val flowStackItem0 =
+            FlowStackItem("1", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem1 =
+            FlowStackItem("2", true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1))
 
@@ -383,8 +389,10 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `rollback - original state restored when checkpoint rolled back`() {
-        val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
-        val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
+        val flowStackItem0 =
+            FlowStackItem("1", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem1 =
+            FlowStackItem("2", true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
         val session1 = SessionState().apply { sessionId = "sid1" }
         val session2 = SessionState().apply { sessionId = "sid2" }

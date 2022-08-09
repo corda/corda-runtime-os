@@ -221,7 +221,7 @@ class MemberRegistrationIntegrationTest {
             it.assertThat(result).isNotNull
             it.assertThat(result?.first)
                 .isNotNull
-                .isEqualTo(member.shortHash)
+                .isEqualTo(member.shortHash.value)
             it.assertThat(result?.second)
                 .isNotNull
                 .isInstanceOf(AppMessage::class.java)
@@ -251,10 +251,20 @@ class MemberRegistrationIntegrationTest {
 
     private fun buildTestContext(member: HoldingIdentity): Map<String, String> {
         val sessionKeyId =
-            cryptoOpsClient.generateKeyPair(member.shortHash, "SESSION_INIT", member.shortHash + "session", "CORDA.ECDSA.SECP256R1")
+            cryptoOpsClient.generateKeyPair(
+                member.shortHash.value,
+                "SESSION_INIT",
+                member.shortHash.value + "session",
+                "CORDA.ECDSA.SECP256R1"
+            )
                 .publicKeyId()
         val ledgerKeyId =
-            cryptoOpsClient.generateKeyPair(member.shortHash, "LEDGER", member.shortHash + "ledger", "CORDA.ECDSA.SECP256R1")
+            cryptoOpsClient.generateKeyPair(
+                member.shortHash.value,
+                "LEDGER",
+                member.shortHash.value + "ledger",
+                "CORDA.ECDSA.SECP256R1"
+            )
                 .publicKeyId()
         return mapOf(
             "corda.session.key.id" to sessionKeyId,

@@ -14,6 +14,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -117,7 +119,10 @@ class FlowSessionManagerImplTest {
 
         whenever(flowStack.peek()).thenReturn(
             FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
-                .setSessionIds(emptyList()).build()
+                .setSessionIds(emptyList()).setContextPlatformProperties(mutableKeyValuePairList())
+                .setContextUserProperties(
+                    mutableKeyValuePairList()
+                ).build()
         )
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply {
             cpiId = CPI_ID
@@ -132,6 +137,8 @@ class FlowSessionManagerImplTest {
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
             .build()
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,

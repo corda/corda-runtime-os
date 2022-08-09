@@ -36,8 +36,9 @@ class NetworkRpcOpsImpl @Activate constructor(
         try {
             certificatesClient.setupLocallyHostedIdentity(
                 holdingIdentityShortHash,
-                request.certificateChainAlias,
-                request.tlsTenantId,
+                request.p2pTlsCertificateChainAlias,
+                request.p2pTlsTenantId,
+                request.sessionKeyTenantId,
                 request.sessionKeyId,
             )
         } catch (e: CertificatesResourceNotFoundException) {

@@ -207,7 +207,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val publicKey =
                     keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value)
                 val memberSignature = cryptoOpsClient.sign(
-                    member.shortHash,
+                    member.shortHash.value,
                     publicKey,
                     SignatureSpec(memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value),
                     serializedMemberContext
@@ -235,7 +235,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ByteBuffer.wrap(registrationRequestSerializer.serialize(message)),
                     // holding identity ID is used as topic key to be able to ensure serial processing of registration
                     // for the same member.
-                    member.shortHash
+                    member.shortHash.value
                 )
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
@@ -262,8 +262,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             return KeyValuePairList(
                 context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
                     .toWire().items
-                        + generateSessionKeyData(context, member.shortHash).items
-                        + generateLedgerKeyData(context, member.shortHash).items
+                        + generateSessionKeyData(context, member.shortHash.value).items
+                        + generateLedgerKeyData(context, member.shortHash.value).items
                         + listOf(
                     KeyValuePair(REGISTRATION_ID, registrationId),
                     KeyValuePair(PARTY_NAME, member.x500Name.toString()),

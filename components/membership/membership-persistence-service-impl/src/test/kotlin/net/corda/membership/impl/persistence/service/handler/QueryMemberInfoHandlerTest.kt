@@ -16,6 +16,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -170,7 +171,7 @@ class QueryMemberInfoHandlerTest {
             assertThat(firstValue).isEqualTo(memberContextBytes)
             assertThat(secondValue).isEqualTo(mgmContextBytes)
         }
-        with(argumentCaptor<String>()) {
+        with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
@@ -198,7 +199,7 @@ class QueryMemberInfoHandlerTest {
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
-        with(argumentCaptor<String>()) {
+        with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
@@ -242,7 +243,7 @@ class QueryMemberInfoHandlerTest {
             assertThat(firstValue).isEqualTo(memberContextBytes)
             assertThat(secondValue).isEqualTo(mgmContextBytes)
         }
-        with(argumentCaptor<String>()) {
+        with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
@@ -274,7 +275,7 @@ class QueryMemberInfoHandlerTest {
         verify(entityManager, never()).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
-        with(argumentCaptor<String>()) {
+        with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
