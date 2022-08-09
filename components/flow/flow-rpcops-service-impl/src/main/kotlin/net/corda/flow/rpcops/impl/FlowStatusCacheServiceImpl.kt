@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
+import net.corda.lifecycle.TimerEvent
 
 @Component(immediate = true, service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
@@ -149,8 +150,18 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
         // If the status is already known for a particular flow - deliver it to the listener
         // This can be the case when flow is already completed.
-        cache[flowKey]?.let { listener.updateReceived(it) }
+        cache[flowKey]?.let { existingFlowStatus ->
+            lifecycleCoordinator.setTimer(listener.id.toString(), 1000) { id ->
+                UpdateAndCloseFlowStatusListenerEvent(id, listener, existingFlowStatus)
+            }
+        }
     }
+
+    data class UpdateAndCloseFlowStatusListenerEvent(
+        override val key: String,
+        val listener: FlowStatusUpdateListener,
+        val existingFlowStatus: FlowStatus
+    ) : TimerEvent
 
     override fun unregisterFlowStatusListener(
         clientRequestId: String,
@@ -160,8 +171,10 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val removed = lock.writeLock()
             .withLock { statusListenersPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
         if (removed) {
-            log.info("Unregistered flow status listener: $clientRequestId." +
-                    " Total number of open listeners: ${statusListenersPerFlowKey.size()}.")
+            log.info(
+                "Unregistered flow status listener: $clientRequestId." +
+                        " Total number of open listeners: ${statusListenersPerFlowKey.size()}."
+            )
         }
     }
 
@@ -192,6 +205,12 @@ class FlowStatusCacheServiceImpl @Activate constructor(
                 if (event.registration == subReg && event.status == LifecycleStatus.DOWN) {
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
+            }
+
+            is UpdateAndCloseFlowStatusListenerEvent -> {
+                log.info("Asynchronously updating listener ${event.listener.id} with status ${event.existingFlowStatus.flowStatus.name}.")
+                event.listener.updateReceived(event.existingFlowStatus)
+                coordinator.cancelTimer(event.key)
             }
         }
     }
