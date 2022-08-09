@@ -96,7 +96,6 @@ class FlowStatusFeedSmokeTest {
             }
         }
     }
-/*
 
     @Order(40)
     @Test
@@ -126,8 +125,7 @@ class FlowStatusFeedSmokeTest {
             }
         }
     }
-*/
-/*
+
     @Order(41)
     @Test
     fun `two test clients can function after first reports completed flow during registration`() {
@@ -176,7 +174,7 @@ class FlowStatusFeedSmokeTest {
 
         session2.close(1000, "Smoke test closing session 2.")
         client2.close()
-    }*/
+    }
 
     @Order(50)
     @Test
