@@ -34,11 +34,6 @@ class FlowStatusFeedSmokeTest {
 
     private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED }
 
-    @AfterEach
-    fun closeConnections() {
-
-    }
-
     @Order(10)
     @Test
     fun `websocket connection can be opened to listen for updates for flow clientRequestid`() {
