@@ -17,6 +17,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -81,7 +82,7 @@ class FlowMapperServiceIntegrationTest {
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
 
-    private val schemaVersion = ConfigurationSchemaVersion(1,0)
+    private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
     @BeforeEach
     fun setup() {
@@ -102,9 +103,11 @@ class FlowMapperServiceIntegrationTest {
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                    testId, versions, testId, testId,null
-                ))
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                        testId, versions, testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), null
+                    )
+                )
             )
         )
 
@@ -130,7 +133,7 @@ class FlowMapperServiceIntegrationTest {
 
         //validate flow event topic
         val flowEventLatch = CountDownLatch(1)
-        val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
+        val testProcessor = TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
             testProcessor,
@@ -159,7 +162,9 @@ class FlowMapperServiceIntegrationTest {
             identity,
             "class name",
             "args",
-            Instant.now())
+            emptyKeyValuePairList(),
+            Instant.now()
+        )
 
         val startRPCEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
@@ -173,7 +178,7 @@ class FlowMapperServiceIntegrationTest {
 
         //flow event subscription to validate outputs
         val flowEventLatch = CountDownLatch(2)
-        val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 2, StartFlow::class.java)
+        val testProcessor = TestFlowMessageProcessor(flowEventLatch, 2, StartFlow::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
             testProcessor,
@@ -199,7 +204,12 @@ class FlowMapperServiceIntegrationTest {
         publisher.publish(listOf(startRPCEvent))
 
         //validate went through and not a duplicate
-        assertThat(flowEventLatch.await(5, TimeUnit.SECONDS)).withFailMessage("latch was ${flowEventLatch.count}").isTrue
+        assertThat(
+            flowEventLatch.await(
+                5,
+                TimeUnit.SECONDS
+            )
+        ).withFailMessage("latch was ${flowEventLatch.count}").isTrue
 
         flowEventSub.stop()
     }
@@ -237,9 +247,11 @@ class FlowMapperServiceIntegrationTest {
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                    testId, versions, testId, testId,null
-                ))
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                        testId, versions, testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), null
+                    )
+                )
             )
         )
 
@@ -290,8 +302,24 @@ class FlowMapperServiceIntegrationTest {
     }
 
     private fun publishConfig(publisher: Publisher) {
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, flowConf, 0, schemaVersion))))
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion))))
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    FLOW_CONFIG,
+                    Configuration(flowConf, flowConf, 0, schemaVersion)
+                )
+            )
+        )
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    MESSAGING_CONFIG,
+                    Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                )
+            )
+        )
     }
 
     private val bootConf = """

@@ -19,6 +19,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -38,7 +39,8 @@ import org.osgi.test.junit5.service.ServiceExtension
 class FlowMapperIntegrationTest {
 
     private val identity = HoldingIdentity("x500", "grp1")
-    private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
+    private val flowConfig =
+        SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val startRPCFlow = StartFlow(
         FlowStartContext(
             FlowKey("a", identity),
@@ -49,7 +51,8 @@ class FlowMapperIntegrationTest {
             identity,
             "className",
             null,
-            Instant.MIN
+            emptyKeyValuePairList(),
+            Instant.MIN,
         ), null
     )
 
@@ -110,7 +113,15 @@ class FlowMapperIntegrationTest {
     @Test
     fun `Send SessionInit`() {
         val inputKey = "sessionId"
-        val sessionInit = SessionInit("flowName", listOf(1), "cpiId", "flowId", null)
+        val sessionInit = SessionInit(
+            "flowName",
+            listOf(1),
+            "cpiId",
+            "flowId",
+            emptyKeyValuePairList(),
+            emptyKeyValuePairList(),
+            null
+        )
 
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit)
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
@@ -133,6 +144,8 @@ class FlowMapperIntegrationTest {
             listOf(1),
             "cpiId",
             "flow id",
+            emptyKeyValuePairList(),
+            emptyKeyValuePairList(),
             null
         )
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit)

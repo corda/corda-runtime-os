@@ -10,6 +10,7 @@ import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
+import net.corda.flow.utils.keyValueStoreOf
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -76,7 +77,17 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val flowClassName = startFlow.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, startFlow.requestData)
+        // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
+        // This is a placeholder which indicates access to everything, see CORE-6076
+        val flowContextPlatformProperties = keyValueStoreOf("net.corda.account" to "account-zero")
+        val startEvent =
+            messageFactory.createStartFlowEvent(
+                clientRequestId,
+                vNode,
+                flowClassName,
+                startFlow.requestData,
+                flowContextPlatformProperties
+            )
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(
