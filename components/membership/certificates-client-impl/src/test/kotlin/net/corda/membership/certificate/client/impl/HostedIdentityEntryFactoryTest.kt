@@ -14,6 +14,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -36,8 +37,8 @@ class HostedIdentityEntryFactoryTest {
         val validHoldingId = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group-1")
         val publicKeyBytes = "123".toByteArray()
         val publicKeyBytesKnownTenant = "456".toByteArray()
-        const val VALID_NODE = "validNode"
-        const val INVALID_NODE = "invalidNode"
+        const val VALID_NODE = "1234567890ab"
+        const val INVALID_NODE = "deaddeaddead"
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val KNOWN_TENANT_PUBLIC_KEY_PEM = "knownTenantPublicKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
@@ -48,8 +49,8 @@ class HostedIdentityEntryFactoryTest {
         on { holdingIdentity } doReturn validHoldingId
     }
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(VALID_NODE) } doReturn nodeInfo
-        on { getByHoldingIdentityShortHash(INVALID_NODE) } doReturn null
+        on { getByHoldingIdentityShortHash(ShortHash.of(VALID_NODE)) } doReturn nodeInfo
+        on { getByHoldingIdentityShortHash(ShortHash.of(INVALID_NODE)) } doReturn null
     }
     private val sessionKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
@@ -140,7 +141,7 @@ class HostedIdentityEntryFactoryTest {
 
         assertSoftly { softly ->
             softly.assertThat(record.topic).isEqualTo(P2P_HOSTED_IDENTITIES_TOPIC)
-            softly.assertThat(record.key).isEqualTo(validHoldingId.shortHash)
+            softly.assertThat(record.key).isEqualTo(validHoldingId.shortHash.value)
             softly.assertThat(record.value).isEqualTo(
                 HostedIdentityEntry(
                     validHoldingId.toAvro(),

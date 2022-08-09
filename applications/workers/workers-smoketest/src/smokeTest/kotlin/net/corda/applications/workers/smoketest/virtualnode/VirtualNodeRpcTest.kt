@@ -145,20 +145,7 @@ class VirtualNodeRpcTest {
 
             assertWithRetry {
                 command { cpiStatus(requestId) }
-                condition {
-                    try {
-                        if(it.code == 400) {
-                            val json = it.toJson()["details"]
-                            json["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)
-                        } else {
-                            false
-                        }
-                    }
-                    catch (e: Exception) {
-                        println("Failed, repsonse: $it")
-                        false
-                    }
-                }
+                condition { it.code == 409 }
             }
         }
     }

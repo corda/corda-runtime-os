@@ -23,7 +23,7 @@ internal class PersistRegistrationRequestHandler(
             em.merge(
                 RegistrationRequestEntity(
                     registrationId = request.registrationRequest.registrationId,
-                    holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash,
+                    holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
                     status = request.status.toString(),
                     created = now,
                     lastModified = now,

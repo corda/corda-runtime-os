@@ -14,7 +14,6 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -137,11 +136,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
         ) = try {
-            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }.also {
-                if(groupPolicies[holdingIdentity] is MGMGroupPolicy) {
-                    groupPolicies.remove(holdingIdentity)
-                }
-            }
+            groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
         } catch (e: BadGroupPolicyException) {
             logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null

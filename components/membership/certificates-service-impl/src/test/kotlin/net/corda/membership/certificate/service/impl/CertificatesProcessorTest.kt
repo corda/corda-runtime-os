@@ -8,6 +8,7 @@ import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
@@ -15,6 +16,7 @@ import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -49,10 +51,14 @@ class CertificatesProcessorTest {
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn registry
     }
-    private val nodeTenantId = "ID1"
+    private val nodeTenantId = ShortHash.of("1234567890ab")
     private val dbConnectionManager = mock<DbConnectionManager> {
         on { getClusterEntityManagerFactory() } doReturn clusterFactory
-        on { getOrCreateEntityManagerFactory(eq("vnode_vault_id1"), eq(DbPrivilege.DML), eq(registry)) } doReturn nodeFactory
+        on { getOrCreateEntityManagerFactory(
+            eq(VirtualNodeDbType.VAULT.getConnectionName(nodeTenantId)),
+            eq(DbPrivilege.DML),
+            eq(registry)
+        ) } doReturn nodeFactory
     }
     private val nodeInfo = mock<VirtualNodeInfo>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
@@ -119,7 +125,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext find the certificate from the node entity`() {
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -134,7 +140,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext merge the certificate into the node entity`() {
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
@@ -146,7 +152,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext returns CertificateRetrievalRpcResponse without value`() {
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -160,7 +166,7 @@ class CertificatesProcessorTest {
         whenever(nodeEntityManager.find(Certificate::class.java, "alias"))
             .doReturn(Certificate("alias", "certificate"))
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -222,7 +228,7 @@ class CertificatesProcessorTest {
     fun `onNext throws exception for unknown tenant ID`() {
         whenever(jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)) doReturn null
         val request = CertificateRpcRequest(
-            nodeTenantId,
+            nodeTenantId.value,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 

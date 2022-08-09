@@ -19,6 +19,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -106,7 +107,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
             }
 
         private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
-            connectionId = vnodeInfo.getByHoldingIdentityShortHash(tenantId)?.cryptoDmlConnectionId
+            connectionId = vnodeInfo.getByHoldingIdentityShortHash(ShortHash.of(tenantId))?.cryptoDmlConnectionId
                 ?: throw throw IllegalStateException(
                     "virtual node for $tenantId is not registered."
                 ),

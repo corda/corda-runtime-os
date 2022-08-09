@@ -120,5 +120,17 @@ class KeyValueStoreTest {
         // Check the initial list is unchanged, i.e. items were cloned into it rather than a reference to the initial
         // list was taken
         assertThat(initialKeyValuePairList.items.size).isEqualTo(2)
+
+    @Test
+    fun `keyValuePairListOf creates list from map`() {
+        val map = mapOf("key1" to "value1", "key2" to "value2")
+        val keyValuePairList = keyValuePairListOf(map)
+
+        // Back the list by a store facade for convenience of testing the values in it
+        val store = KeyValueStore(keyValuePairList)
+        assertThat(store["key1"]).isEqualTo("value1")
+        assertThat(store["key2"]).isEqualTo("value2")
+
+        assertThat(keyValuePairList.items.size).isEqualTo(2)
     }
 }

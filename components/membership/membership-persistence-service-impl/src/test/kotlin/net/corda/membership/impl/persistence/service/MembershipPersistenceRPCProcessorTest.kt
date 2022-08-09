@@ -19,6 +19,7 @@ import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -76,7 +77,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val registrationRequest = RegistrationRequestEntity(
         ourRegistrationId,
-        ourHoldingIdentity.shortHash,
+        ourHoldingIdentity.shortHash.value,
         RegistrationStatus.NEW.name,
         clock.instant(),
         clock.instant(),
@@ -100,7 +101,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
             getOrCreateEntityManagerFactory(
-                eq("vnode_vault_${ourHoldingIdentity.shortHash.lowercase()}"),
+                eq(VirtualNodeDbType.VAULT.getConnectionName(ourHoldingIdentity.shortHash)),
                 eq(DbPrivilege.DML),
                 any()
             )

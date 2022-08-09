@@ -117,8 +117,8 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val mockSignature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), byteArrayOf(1), emptyMap())
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookup(memberId, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookup(memberId, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
+        on { lookup(memberId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookup(memberId.value, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
         on {
             sign(
                 any(),
@@ -259,7 +259,7 @@ class DynamicMemberRegistrationServiceTest {
             it.assertThat(publishedMessageList.size).isEqualTo(1)
             val publishedMessage = publishedMessageList.first()
             it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-            it.assertThat(publishedMessage.key).isEqualTo(memberId)
+            it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
             val unauthenticatedMessagePublished =
                 (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
             it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
