@@ -77,6 +77,7 @@ pipeline {
             }
         }
         stage('Deploy clusters') {
+        
            parallel {
                stage("Deploy Alice cluster") {
                   steps {
