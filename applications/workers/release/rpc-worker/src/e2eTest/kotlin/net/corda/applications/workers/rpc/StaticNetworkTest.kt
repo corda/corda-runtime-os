@@ -228,7 +228,7 @@ class StaticNetworkTest {
     @Test
     @Disabled("This test is disabled until CORE-6079 is ready")
     @Timeout(value = 10, unit = TimeUnit.MINUTES)
-    fun `send P2P messages`() {
+    fun `create a static network, register members and exchange messages between them via p2p`() {
         // Create two identities
         val sender = HoldingIdentity(
             "C=GB, L=London, O=Member-${testToolkit.uniqueName}",
