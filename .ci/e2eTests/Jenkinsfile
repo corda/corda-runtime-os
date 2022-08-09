@@ -125,12 +125,7 @@ pipeline {
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                    export KAFKA_TRUSTSTORE=$(mktemp)
-                    kubectl get secret -n $NAMESPACE prereqs-kafka-0-tls -o go-template='{{ index .data "ca.crt" }}' | base64 --decode > $KAFKA_TRUSTSTORE
-
-                    ./gradlew cleanE2eTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
-                    ./gradlew cleanSmokeTest smokeTest ${GRADLE_PERFORMANCE_TUNING}
+                    ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
             }
             post {
@@ -138,10 +133,9 @@ pipeline {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > prereqs-logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
-                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt, prereqs-logs.txt', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
                     sh 'rm -f forward.txt logs.txt describe.txt'
                 }
             }
