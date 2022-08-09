@@ -89,7 +89,6 @@ pipeline {
                         '''
                   }
                }
-
                stage("Deploy Bob cluster") {
                   steps {
                       script {
@@ -101,7 +100,6 @@ pipeline {
                         '''
                   }
                }
-
                stage("Deploy Caroline cluster") {
                   steps {
                       script {
