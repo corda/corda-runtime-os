@@ -6,9 +6,25 @@ import net.corda.data.KeyValuePairList
 fun mutableKeyValuePairList() = KeyValuePairList(mutableListOf())
 fun emptyKeyValuePairList() = KeyValuePairList(emptyList())
 
+/**
+ * Creates a [KeyValueStore] from a variable number of pairs of strings.
+ * @param pairs Pairs of strings, the first is considered the key, the second the value.
+ * @return A [KeyValueStore] containing the keys and values from the pairs.
+ */
 fun keyValueStoreOf(vararg pairs: Pair<String, String>) = KeyValueStore().apply {
     pairs.forEach {
         put(it.first, it.second)
+    }
+}
+
+/**
+ * Creates an avro generated [KeyValuePairList] from a Kotlin Map
+ * @param map The Kotlin map
+ * @return An avro [KeyValuePairList]
+ */
+fun keyValuePairListOf(map: Map<String, String>) = mutableKeyValuePairList().apply {
+    map.entries.forEach {
+        items.add(KeyValuePair(it.key, it.value))
     }
 }
 
