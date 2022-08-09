@@ -79,7 +79,7 @@ private fun FlowStates.isFlowFinished() = this == FlowStates.COMPLETED || this =
 
 private fun FlowStatus.createFlowStatusResponse(): FlowStatusResponse {
     return FlowStatusResponse(
-        key.identity.toCorda().shortHash,
+        key.identity.toCorda().shortHash.value,
         key.id,
         flowId,
         flowStatus.toString(),
