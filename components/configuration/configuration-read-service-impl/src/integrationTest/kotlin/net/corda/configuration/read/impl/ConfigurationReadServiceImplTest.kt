@@ -18,19 +18,15 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_PASS
-import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_USER
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -39,11 +35,10 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Disabled
 class ConfigurationReadServiceImplTest {
 
     companion object {
-        const val JDBC_URL_DATA = "testDataToTriggerBootDBParamLogic"
+        private const val JDBC_URL_DATA = "testDataToTriggerBootDBParamLogic"
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = DATABASE
@@ -54,13 +49,6 @@ class ConfigurationReadServiceImplTest {
             $JDBC_URL = $JDBC_URL_DATA
         """
 
-        private const val MESSAGING_CONFIG_STRING = """
-            $BUS_TYPE = DATABASE
-            $JDBC_USER = ""
-            $JDBC_PASS = ""
-            $INSTANCE_ID = 1
-            $TOPIC_PREFIX = ""
-        """
         private const val TIMEOUT = 10000L
     }
 
