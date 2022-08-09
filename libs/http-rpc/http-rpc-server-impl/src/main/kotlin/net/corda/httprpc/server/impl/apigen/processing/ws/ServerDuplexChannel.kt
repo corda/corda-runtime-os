@@ -2,12 +2,10 @@ package net.corda.httprpc.server.impl.apigen.processing.ws
 
 import io.javalin.websocket.WsConnectContext
 import java.lang.Exception
-import java.lang.IllegalArgumentException
 import net.corda.httprpc.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.util.concurrent.Future
-import net.corda.httprpc.ws.WebSocketProtocolViolationException
 import net.corda.v5.base.util.contextLogger
 
 internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexChannel {
@@ -38,11 +36,7 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
     }
 
     override fun error(e: Exception) {
-        when (e) {
-            is IllegalArgumentException -> close(CloseStatus(StatusCode.BAD_DATA, e.message))
-            is WebSocketProtocolViolationException -> close(CloseStatus(StatusCode.POLICY_VIOLATION, e.message))
-            else -> close(CloseStatus(StatusCode.NORMAL, e.message))
-        }
+        close(e.mapToWsStatusCode())
     }
 
     fun close(closeStatus: CloseStatus) {

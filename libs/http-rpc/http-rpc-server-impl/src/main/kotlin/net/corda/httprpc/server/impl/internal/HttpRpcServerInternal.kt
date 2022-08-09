@@ -39,6 +39,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
 import javax.servlet.MultipartConfigElement
+import net.corda.httprpc.server.impl.apigen.processing.ws.mapToWsStatusCode
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -348,8 +349,8 @@ internal class HttpRpcServerInternal(
             }
 
             wsException(Exception::class.java) { e, ctx ->
-                log.info("Exception caught during websocket invocation:", e)
-                ctx.session.close(1000, "Exception caught during websocket session operation, closing the session.")
+                log.warn("Exception handled from WebSocket:", e)
+                ctx.session.close(e.mapToWsStatusCode())
             }
 
             log.trace { "Add WebSockets routes for some of the GET methods." }

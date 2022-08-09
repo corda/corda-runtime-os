@@ -7,7 +7,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateException
+import net.corda.flow.rpcops.flowstatus.FlowStatusListenerException
 import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -135,7 +135,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         validateMaxConnectionsPerFlowKey(flowKey, errors)
 
         if (errors.isNotEmpty()) {
-            throw FlowStatusUpdateException("${errors.size} errors during registration for flow status updates.", errors)
+            throw FlowStatusListenerException("${errors.size} errors during registration for flow status updates.", errors)
         }
 
         lock.writeLock().withLock {
@@ -183,7 +183,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
         if (handlersForRequestAndHoldingIdAlreadyExist) {
             if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
-                errors.add("Max WebSocket connections per flowkey has been reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
+                errors.add("Max WebSocket connections for clientRequestId ${flowKey.id}, holdingIdentity ${flowKey.identity} has been " +
+                        "reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
             }
         }
     }

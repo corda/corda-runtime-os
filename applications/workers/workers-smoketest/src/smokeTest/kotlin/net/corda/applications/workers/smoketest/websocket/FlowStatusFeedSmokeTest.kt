@@ -190,6 +190,36 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
+    @Order(60)
+    @Test
+    fun `websocket connection terminated when client registers for holding identity with invalid holding identity hex string`() {
+        val clientRequestId = UUID.randomUUID().toString()
+        val flowStatusFeedPath = "/flow/THIS_HOLDING_ID_IS_NOT_HEX/$clientRequestId"
+
+        val wsHandler = MessageQueueWebsocketHandler(ConcurrentLinkedQueue())
+        val client = SmokeTestWebsocketClient()
+        client.start()
+        client.connect(flowStatusFeedPath, wsHandler)
+        eventually {
+            assertFalse(wsHandler.isConnected)
+        }
+    }
+
+    @Order(61)
+    @Test
+    fun `websocket connection terminated when client registers for non existing holding identity`() {
+        val clientRequestId = UUID.randomUUID().toString()
+        val flowStatusFeedPath = "/flow/544849535f484f4c44494e475f49445f49535f4e4f545f484558/$clientRequestId"
+
+        val wsHandler = MessageQueueWebsocketHandler(ConcurrentLinkedQueue())
+        val client = SmokeTestWebsocketClient()
+        client.start()
+        client.connect(flowStatusFeedPath, wsHandler)
+        eventually {
+            assertFalse(wsHandler.isConnected)
+        }
+    }
+
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {
             command = "echo"

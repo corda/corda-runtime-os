@@ -16,6 +16,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.ws.DuplexChannel
+import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
@@ -26,6 +27,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -134,9 +136,11 @@ class FlowRPCOpsImpl @Activate constructor(
     ) {
         val holdingIdentity = try {
             getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
+        } catch (e: ShortHashException) {
+            channel.error(WebSocketValidationException("Invalid holding identifier.", e))
+            return
         } catch (e: FlowRPCOpsServiceException) {
-            log.warn("Exception during registration of flow status update feed.", e)
-            channel.error(IllegalArgumentException(e))
+            channel.error(WebSocketValidationException("Invalid virtual node.", e))
             return
         }
         channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
