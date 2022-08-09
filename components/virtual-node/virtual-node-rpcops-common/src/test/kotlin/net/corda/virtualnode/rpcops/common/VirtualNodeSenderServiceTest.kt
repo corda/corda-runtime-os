@@ -10,6 +10,7 @@ import net.corda.virtualnode.rpcops.common.impl.RPCSenderFactory
 import net.corda.virtualnode.rpcops.common.impl.RPCSenderWrapperImpl
 import net.corda.virtualnode.rpcops.common.impl.VirtualNodeSenderServiceImpl
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -74,6 +75,7 @@ class VirtualNodeSenderServiceTest {
         }
     }
 
+    @Disabled("TODO: Move to new tests within the new services")
     @Nested
     inner class ServiceApiTests {
         @Test
