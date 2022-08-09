@@ -14,6 +14,7 @@ import net.corda.httprpc.ws.WebSocketProtocolViolationException
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 fun DuplexChannel.registerFlowStatusFeedHooks(
@@ -62,6 +63,8 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     }
 }
 
+private val deferClosePool = Executors.newScheduledThreadPool(1)
+
 private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldingIdentity, clientRequestId: String) =
     { avroStatus: FlowStatus ->
         try {
@@ -73,11 +76,15 @@ private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldi
                     log.error("Could not send terminal state to the remote side", ex)
                 }
 
-                log.debug {
+                log.info(
                     "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
                             "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
-                }
-                close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
+                )
+                // Since this call can be made from `onConnect` it is best to defer calling close later on from a separate
+                // thread or else Javalin may end-up in the unusable state sometimes.
+                deferClosePool.schedule({
+                    close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
+                }, 1, TimeUnit.SECONDS)
             }
         } catch (ex: Exception) {
             log.error("Unexpected error when processing FlowStatus update")
