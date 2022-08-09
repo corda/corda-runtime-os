@@ -3,9 +3,8 @@ package net.corda.flow.state.impl
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.state.FlowStack
-import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.flow.utils.mutableKeyValuePairListOf
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 
@@ -23,8 +22,8 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
                 flow::class.java.name,
                 flow::class.java.getIsInitiatingFlow(),
                 mutableListOf(),
-                mutableKeyValuePairList(contextUserProperties),
-                mutableKeyValuePairList(contextPlatformProperties)
+                mutableKeyValuePairListOf(contextUserProperties),
+                mutableKeyValuePairListOf(contextPlatformProperties)
             )
 
         flowStackItems.add(stackItem)

@@ -29,11 +29,9 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.`in`
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
-import java.security.KeyStore
 import java.time.Instant
 
 class FlowCheckpointImplTest {

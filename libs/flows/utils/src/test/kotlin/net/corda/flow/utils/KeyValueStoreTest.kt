@@ -105,7 +105,7 @@ class KeyValueStoreTest {
         val store = keyValueStoreOf("key1" to "value1", "key2" to "value2")
         val initialKeyValuePairList = store.avro
 
-        val mutableKeyValuePairList = mutableKeyValuePairList(initialKeyValuePairList)
+        val mutableKeyValuePairList = mutableKeyValuePairListOf(initialKeyValuePairList)
 
         // Check initial items appear in the new list
         assertThat(mutableKeyValuePairList.items[0]).isEqualTo(KeyValuePair("key1", "value1"))
@@ -120,6 +120,7 @@ class KeyValueStoreTest {
         // Check the initial list is unchanged, i.e. items were cloned into it rather than a reference to the initial
         // list was taken
         assertThat(initialKeyValuePairList.items.size).isEqualTo(2)
+    }
 
     @Test
     fun `keyValuePairListOf creates list from map`() {
