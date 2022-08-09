@@ -36,6 +36,7 @@ internal class WebsocketRouteAdaptor(
     private var channel: DuplexChannel? = null
 
     // The handler is called when a WebSocket client connects.
+    @Suppress("NestedBlockDepth")
     override fun handleConnect(ctx: WsConnectContext) {
         try {
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
@@ -71,8 +72,9 @@ internal class WebsocketRouteAdaptor(
     // The handler is called when a WebSocket client sends a String message.
     override fun handleMessage(ctx: WsMessageContext) {
         try {
-            // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage hook has been defined. The
-            // hook will be responsible for ensuring the messages respect the protocol and terminate connections when malicious messages arrive.
+            // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage
+            // hook has been defined. The hook will be responsible for ensuring the messages respect the protocol
+            // and terminate connections when malicious messages arrive.
             requireNotNull(channel).onTextMessage?.invoke(ctx.message())
                 ?: log.info("Inbound messages are not supported.")
         } catch (th: Throwable) {
