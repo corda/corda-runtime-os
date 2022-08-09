@@ -1,5 +1,7 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.chunking.PropertyKeys
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -11,6 +13,7 @@ import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
@@ -21,27 +24,37 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderService
+import net.corda.virtualnode.rpcops.common.RPCSenderFactory
+import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
+import net.corda.virtualnode.rpcops.common.impl.RPCSenderWrapperImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
 class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReadService: ConfigurationReadService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
-    @Reference(service = VirtualNodeSenderService::class)
-    private val virtualNodeSenderService: VirtualNodeSenderService,
+    @Reference(service = RPCSenderFactory::class)
+    private val rpcSenderFactory: RPCSenderFactory,
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
 
     companion object {
+        private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
         private val logger = contextLogger()
     }
 
@@ -53,26 +66,92 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         ::cpiUploadRPCOpsService
     )
 
-    private val coordinator = coordinatorFactory.createCoordinator(
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeMaintenanceRPCOps>()
     ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
         when (event) {
             is StartEvent -> {
+                configurationReadService.start()
+                coordinator.createManagedResource("REGISTRATION") {
+                    coordinator.followStatusChangesByName(
+                        setOf(
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        )
+                    )
+                }
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
                 logger.info("${this::javaClass.name} is now Up")
+            }
+            is StopEvent -> {
+                coordinator.closeManagedResources()
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            }
+            is RegistrationStatusChangeEvent -> {
+                when (event.status) {
+                    LifecycleStatus.ERROR -> {
+                        coordinator.closeManagedResources(setOf("CONFIG_HANDLE"))
+                        coordinator.postEvent(StopEvent(errored = true))
+                    }
+                    LifecycleStatus.UP -> {
+                        // Receive updates to the RPC and Messaging config
+                        coordinator.createManagedResource("CONFIG_HANDLE") {
+                            configurationReadService.registerComponentForUpdates(
+                                coordinator,
+                                requiredKeys
+                            )
+                        }
+                    }
+                    else -> logger.debug { "Unexpected status: ${event.status}" }
+                }
+                coordinator.updateStatus(event.status)
+                logger.info("${this::javaClass.name} is now ${event.status}")
+            }
+            is ConfigChangedEvent -> {
+                if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
+                    val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
+                    val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    // Make sender unavailable while we're updating
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                    coordinator.createManagedResource("SENDER") {
+                        rpcSenderFactory.createSender(duration, messagingConfig)
+                    }
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                }
             }
         }
     }
 
     override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")
-        if (!isRunning) throw IllegalStateException("${this.javaClass.simpleName} is not running! Its status is: ${coordinator.status}")
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
         val cpiUploadRequestId = cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
             upload.fileName, upload.content,
             mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
         )
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
+    }
+
+    /**
+     * Sends the [request] to the configuration management topic on bus.
+     *
+     * @property request is a [VirtualNodeManagementRequest]. This an enveloper around the intended request
+     * @throws CordaRuntimeException If the updated configuration could not be published.
+     * @return [VirtualNodeManagementResponse] which is an envelope around the actual response.
+     *  This response corresponds to the [VirtualNodeManagementRequest] received by the function
+     * @see VirtualNodeManagementRequest
+     * @see VirtualNodeManagementResponse
+     */
+    @Suppress("ThrowsCount")
+    private fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
+
+        return lifecycleCoordinator.getManagedResource<RPCSenderWrapper>("SENDER")!!.sendAndReceive(request)
     }
 
     // Lookup and update the virtual node for the given virtual node short ID.
@@ -86,7 +165,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         // Lookup actor to keep track of which RPC user triggered an update
         val actor = CURRENT_RPC_CONTEXT.get().principal
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
-        if (!isRunning) throw IllegalStateException("${this.javaClass.simpleName} is not running! Its status is: ${coordinator.status}")
+        if (!isRunning) throw IllegalStateException(
+            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+        )
         // TODO: Validate newState
         // Send request for update to kafka, precessed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
@@ -98,7 +179,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             )
         )
         // Actually send request and await response message on bus
-        val resp: VirtualNodeManagementResponse = virtualNodeSenderService.sendAndReceive(rpcRequest)
+        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
         logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
 
         return when (val resolvedResponse = resp.responseType) {
@@ -125,7 +206,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     }
 
     // Mandatory lifecycle methods - def to coordinator
-    override val isRunning get() = coordinator.isRunning
-    override fun start() = coordinator.start()
-    override fun stop() = coordinator.close()
+    override val isRunning get() = lifecycleCoordinator.isRunning
+    override fun start() = lifecycleCoordinator.start()
+    override fun stop() = lifecycleCoordinator.close()
 }

@@ -5,12 +5,13 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
 import java.time.Duration
 
 class RPCSenderWrapperImpl(
     private val timeout: Duration,
     private val sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>
-) : AutoCloseable {
+) : RPCSenderWrapper {
     /**
      * Sends the [request] to the configuration management topic on bus.
      *
@@ -22,7 +23,7 @@ class RPCSenderWrapperImpl(
      * @see VirtualNodeManagementResponse
      */
     @Suppress("ThrowsCount")
-    fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
+    override fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
         return try {
             sender.sendRequest(request).getOrThrow(timeout)
         } catch (e: Exception) {
