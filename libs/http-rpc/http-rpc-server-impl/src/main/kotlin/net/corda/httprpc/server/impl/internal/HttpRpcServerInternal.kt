@@ -82,9 +82,9 @@ internal class HttpRpcServerInternal(
             it.enableWebjars()
         }
 
-        if (log.isDebugEnabled) {
+        //if (log.isDebugEnabled) {
             it.enableDevLogging()
-        }
+        //}
         it.server {
             configurationsProvider.getSSLKeyStorePath()
                 ?.let { createSecureServer() }
