@@ -134,7 +134,7 @@ class FlowRPCOpsImpl @Activate constructor(
         clientRequestId: String
     ) {
         val holdingIdentity = try {
-            getVirtualNode(holdingIdentityShortHash).holdingIdentity
+            getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
         } catch (e: FlowRPCOpsServiceException) {
             log.warn("Exception during registration of flow status update feed.", e)
             channel.error(IllegalArgumentException(e))
