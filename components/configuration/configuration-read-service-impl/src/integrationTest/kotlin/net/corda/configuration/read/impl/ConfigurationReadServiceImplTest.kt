@@ -9,7 +9,6 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -17,11 +16,13 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_PASS
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_USER
@@ -40,9 +41,15 @@ import org.osgi.test.junit5.service.ServiceExtension
 class ConfigurationReadServiceImplTest {
 
     companion object {
+        const val JDBC_URL_DATA = "testDataToTriggerBootDBParamLogic"
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = DATABASE
+            $BOOT_JDBC_URL = $JDBC_URL_DATA
+        """
+
+        private const val DB_CONFIG_STRING = """
+            $JDBC_URL = $JDBC_URL_DATA
         """
 
         private const val MESSAGING_CONFIG_STRING = """
@@ -134,10 +141,10 @@ class ConfigurationReadServiceImplTest {
         )
 
         // Register and verify everything gets delivered
-        val emptyConfig = SmartConfigImpl.empty()
+        val expectedDBConfig = smartConfigFactory.create(ConfigFactory.parseString(DB_CONFIG_STRING))
         val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, DB_CONFIG)
         val expectedConfig = mutableMapOf(
-            BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig, DB_CONFIG to emptyConfig
+            BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig, DB_CONFIG to expectedDBConfig
         )
         var receivedKeys = emptySet<String>()
         var receivedConfig = mapOf<String, SmartConfig>()
