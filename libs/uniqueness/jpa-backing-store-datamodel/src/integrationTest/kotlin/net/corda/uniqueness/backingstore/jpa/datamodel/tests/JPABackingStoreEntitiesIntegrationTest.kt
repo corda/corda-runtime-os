@@ -59,7 +59,7 @@ class JPABackingStoreEntitiesIntegrationTest {
 
     @Suppress("Unused")
     @AfterAll
-    private fun cleanup() {
+    fun cleanup() {
         dbConfig.close()
         entityManagerFactory.close()
     }
