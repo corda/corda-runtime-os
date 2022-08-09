@@ -374,7 +374,7 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint()
 
         val context = Array(4) { KeyValueStore() }.onEachIndexed { index, keyValueStore ->
-            keyValueStore["key${index}"] = "value${index}"
+            keyValueStore["key${index + 1}"] = "value${index + 1}"
         }
 
         val service = createFlowCheckpoint(checkpoint).flowStack
