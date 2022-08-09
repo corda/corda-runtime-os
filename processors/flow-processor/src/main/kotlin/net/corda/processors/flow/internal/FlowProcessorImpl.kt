@@ -16,6 +16,8 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.services.token.TokenCacheComponent
+import net.corda.services.token.TokenCacheComponentFactory
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -45,7 +47,9 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = TokenCacheComponentFactory::class)
+    private val tokenCacheComponentFactory: TokenCacheComponentFactory,
 ) : FlowProcessor {
 
     private companion object {
@@ -53,7 +57,8 @@ class FlowProcessorImpl @Activate constructor(
     }
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
-    private val dependentComponents = DependentComponents.of(
+
+    private var  dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::flowService,
         ::flowMapperService,
@@ -62,7 +67,9 @@ class FlowProcessorImpl @Activate constructor(
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent,
         ::membershipGroupReaderProvider
-    )
+    ).let{
+        it.with(tokenCacheComponentFactory.create(), TokenCacheComponent::class.java)
+    }
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")

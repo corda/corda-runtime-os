@@ -30,13 +30,18 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.apache.avro.specific.SpecificRecord
 import org.osgi.service.component.ComponentContext
-import org.osgi.service.component.annotations.*
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicy
 import java.time.Instant
 import java.util.*
 
 // Do not serialize the [eventToSend] as it is only needed when leaving the fiber and executed in the request handler
 // seems like it probably better to use handlers (have the input and output handlers in a single class)
-// use the class of the handler in the request, store in the waiting for handler or the state and then resume with it by extracting from a map of handlers
+// use the class of the handler in the request, store in the waiting for handler or the state and then resume with it by
+// extracting from a map of handlers
 data class ExternalEventRequest(
     val requestId: String,
     val handlerClass: Class<out Handler<out Any, *, *>>,
@@ -79,12 +84,14 @@ interface ExternalEventExecutor {
     ): RESUME
 }
 
+@Suppress("MaxLineLength")
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
 class ExternalEventExecutorImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
 
+    @Suppress("MaxLineLength")
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE, RESUME, T : ExternalEventRequest.Handler<PARAMETERS, RESPONSE, RESUME>> execute(
         requestId: String,
@@ -122,6 +129,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         )
     ]
 )
+@Suppress("MaxLineLength")
 class ExternalEventHandlerMap @Activate constructor(private val componentContext: ComponentContext) {
 
     internal companion object {
@@ -149,6 +157,7 @@ class ExternalEventHandlerMap @Activate constructor(private val componentContext
     }
 }
 
+@Suppress("MaxLineLength")
 @Component(service = [FlowEventHandler::class])
 class FlowExternalEventHandler @Activate constructor(
     @Reference(service = ExternalEventManager::class)
@@ -185,6 +194,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
 
     override val type = net.corda.data.flow.state.waiting.external.ExternalEventResponse::class.java
 
+    @Suppress("ComplexMethod")
     override fun runOrContinue(
         context: FlowEventContext<*>,
         waitingFor: net.corda.data.flow.state.waiting.external.ExternalEventResponse
@@ -224,6 +234,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         return continuation
     }
 
+    @Suppress("MaxLineLength")
     private fun retryOrError(
         config: SmartConfig,
         exception: ExceptionEnvelope,
@@ -309,6 +320,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
         const val INSTANT_COMPARE_BUFFER = 100L
     }
 
+    @Suppress("MaxLineLength")
     override fun processEventToSend(
         flowId: String,
         requestId: String,
@@ -333,6 +345,7 @@ class ExternalEventManagerImpl : ExternalEventManager {
             .build()
     }
 
+    @Suppress("MaxLineLength")
     override fun processEventReceived(
         externalEventState: ExternalEventState,
         externalEventResponse: ExternalEventResponse

@@ -17,6 +17,8 @@ class Tasks(
             add(PublishConfig(context)),
             add(StartFlow(context)),
             add(SetupVirtualNode(context)),
+            add(CreateTokens(context)),
+            add(StartTokenFlows(context)),
         )
     }
 

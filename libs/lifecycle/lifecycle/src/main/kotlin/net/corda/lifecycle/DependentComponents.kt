@@ -41,9 +41,20 @@ class DependentComponents private constructor(private val map: Map<LifecycleCoor
         private fun with(
             map: Map<LifecycleCoordinatorName, Lifecycle>,
             property: KProperty0<Lifecycle>,
-            instanceId: String?): DependentComponents {
-                val name = LifecycleCoordinatorName(property.javaField!!.type.name, instanceId)
-                return DependentComponents(map.plus(Pair(name, property.get())))
+            instanceId: String?
+        ): DependentComponents {
+            val name = LifecycleCoordinatorName(property.javaField!!.type.name, instanceId)
+            return DependentComponents(map.plus(Pair(name, property.get())))
+        }
+
+        private fun with(
+            map: Map<LifecycleCoordinatorName, Lifecycle>,
+            component: Lifecycle,
+            componentType: Class<*>,
+            instanceId: String?
+        ): DependentComponents {
+            val name = LifecycleCoordinatorName(componentType.name, instanceId)
+            return DependentComponents(map.plus(Pair(name,component)))
         }
     }
 
@@ -56,7 +67,11 @@ class DependentComponents private constructor(private val map: Map<LifecycleCoor
      * @return
      */
     fun with(property: KProperty0<Lifecycle>, instanceId: String?): DependentComponents {
-        return DependentComponents.with(map, property, instanceId)
+        return with(map, property, instanceId)
+    }
+
+    fun <T : Lifecycle> with(component: T, componentType: Class<T>, instanceId: String? = null): DependentComponents {
+        return with(map, component,componentType, instanceId)
     }
 
     private var registration: RegistrationHandle? = null

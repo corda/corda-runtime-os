@@ -32,4 +32,10 @@ class Args {
 
     @CommandLine.Option(names = ["--flowName"], description = ["Named flow to start"])
     var flowName: String = "default"
+
+    @CommandLine.Option(names = ["--shortHolderId"], description = ["Virtual Node Short Hash"])
+    var shortHolderId: String = ""
+
+    @CommandLine.Option(names = ["--targetAmount"], description = ["List of target amounts for token selection"])
+    var targetAmount: List<Long> = listOf()
 }

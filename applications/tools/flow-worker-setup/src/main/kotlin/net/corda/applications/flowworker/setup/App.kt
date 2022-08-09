@@ -9,6 +9,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import kotlin.system.exitProcess
 
 @Suppress("Unused")
 @Component
@@ -29,8 +30,9 @@ class App @Activate constructor(
         CommandLine(parameters).parseArgs(*args)
 
 
-        val context = TaskContext(parameters,  publisherFactory)
+        val context = TaskContext(parameters, log, publisherFactory)
         Tasks(context, log).execute(parameters.tasks)
+
     }
 
     override fun shutdown() {

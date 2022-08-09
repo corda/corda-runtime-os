@@ -54,7 +54,7 @@ class FlowEventProcessorImpl(
             return flowEventExceptionProcessor.process(t)
         }
 
-        return try {
+        val response =  try {
             flowEventContextConverter.convert(pipeline
                 .eventPreProcessing()
                 .runOrContinue()
@@ -75,6 +75,8 @@ class FlowEventProcessorImpl(
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
         }
+
+        return response
     }
 }
 

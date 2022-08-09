@@ -22,6 +22,7 @@ dependencies {
     implementation project(":components:flow:flow-service")
     implementation project(":components:flow:flow-p2p-filter-service")
     implementation project(":components:membership:membership-group-read")
+    implementation project(":components:services:token-cache")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")

@@ -6,7 +6,7 @@ import net.corda.data.services.TokenState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 
-interface TokenCacheEventHandlerFactory {
+interface TokenCacheEventProcessorFactory {
 
     fun create(config: SmartConfig): StateAndEventProcessor<TokenSetKey, TokenState, TokenEvent>
 }

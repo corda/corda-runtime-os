@@ -16,49 +16,38 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
-@Suppress("LongParameterList")
-@Component(service = [TokenCacheComponent::class])
-class TokenCacheComponent @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
+class TokenCacheComponent constructor(
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = FlowExecutor::class)
-    private val flowExecutor: FlowExecutor,
-    @Reference(service = FlowWakeUpScheduler::class)
-    private val flowWakeUpScheduler: FlowWakeUpScheduler
+    private val tokenCacheConfiguration: TokenCacheConfiguration,
+    private val tokenCacheSubscriptionHandler: TokenCacheSubscriptionHandler,
+    private val claimTimeoutScheduler: ClaimTimeoutScheduler
 ) : Lifecycle {
 
     companion object {
         private val logger = contextLogger()
-        private val configSections = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.FLOW_CONFIG)
+        private val configSections = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.SERVICES_CONFIG)
     }
 
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
-    private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<TokenCacheComponent>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "FlowService received: $event" }
+        logger.debug { "TokenCacheComponent received: $event" }
         when (event) {
             is StartEvent -> {
-                logger.debug { "Starting flow runner component." }
+                logger.debug { "Starting token cache component." }
                 registration?.close()
                 registration =
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                            LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>(),
-                            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                            LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                            LifecycleCoordinatorName.forComponent<FlowExecutor>(),
+                            LifecycleCoordinatorName.forComponent<TokenCacheSubscriptionHandler>(),
                         )
                     )
-                flowExecutor.start()
+                tokenCacheSubscriptionHandler.start()
             }
 
             is RegistrationStatusChangeEvent -> {
@@ -81,14 +70,15 @@ class TokenCacheComponent @Activate constructor(
                  * is configured before we configure the executor to prevent a race between receiving the first
                  * state events and scheduler creating a publisher.
                  */
-                flowWakeUpScheduler.onConfigChange(config)
-                flowExecutor.onConfigChange(config)
+                tokenCacheConfiguration.onConfigChange(config)
+                claimTimeoutScheduler.onConfigChange(config)
+                tokenCacheSubscriptionHandler.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             is StopEvent -> {
-                flowExecutor.stop()
-                logger.debug { "Stopping flow runner component." }
+                tokenCacheSubscriptionHandler.stop()
+                logger.debug { "Stopping token cache component." }
                 registration?.close()
                 registration = null
             }

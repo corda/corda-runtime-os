@@ -11,32 +11,18 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.services.token.ClaimTimeoutScheduler
 import net.corda.services.token.TokenRecordFactory
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import kotlin.math.min
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
-@Component(service = [ClaimTimeoutSchedulerImpl::class])
 class ClaimTimeoutSchedulerImpl constructor(
     private val publisherFactory: PublisherFactory,
     private val tokenRecordFactory: TokenRecordFactory,
     private val scheduledExecutorService: ScheduledExecutorService,
     private val clock: Clock
 ) : ClaimTimeoutScheduler {
-
-    @Activate
-    constructor(
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory,
-        @Reference(service = TokenRecordFactory::class)
-        tokenRecordFactory: TokenRecordFactory,
-    ) : this(publisherFactory, tokenRecordFactory, Executors.newSingleThreadScheduledExecutor(), UTCClock())
 
     private val scheduledTimeoutCheckEvents = ConcurrentHashMap<TokenSetKey, ScheduledFuture<*>>()
     private var publisher: Publisher? = null
@@ -76,7 +62,7 @@ class ClaimTimeoutSchedulerImpl constructor(
             .filter { it.awaitExpiryTime != null }
             .map { it.awaitExpiryTime }
                 +
-                state.claimedTokens
+                state.tokenClaims
                     .filter { it.claimExpiryTime != null }
                     .map { it.claimExpiryTime }
                 ).minOfOrNull { it }

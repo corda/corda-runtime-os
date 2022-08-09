@@ -40,7 +40,9 @@ class FlowEngineImpl @Activate constructor(
 
     @Suspendable
     override fun sleep(duration: Duration) {
-        TODO("Not yet implemented")
+        // hack for now to pause a flow and push it to the back of the kafka queue
+        // allowing other flows to run
+        flowFiberService.getExecutingFiber().suspend(FlowIORequest.InitialCheckpoint)
     }
 
     @Suspendable
