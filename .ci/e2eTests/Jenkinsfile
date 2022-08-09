@@ -86,7 +86,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploy cluster') {
+        stage('Deploy clusters') {
             steps {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
