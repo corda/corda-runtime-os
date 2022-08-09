@@ -5,10 +5,6 @@ import net.corda.v5.crypto.SecureHash
 /**
  * A short hash is simply the first 12 characters of a hex string.
  *
- * Primary constructor is "from" JSON, or indeed, any hex string.
- *
- * Secondary constructor is "from" internal typing.
- *
  * NOTE:  cannot be a data class at the moment, because a private constructor would be exposed by [copy()]]
  *
  * @throws IllegalArgumentException if it cannot construct the short hash from the given constructor argument.
