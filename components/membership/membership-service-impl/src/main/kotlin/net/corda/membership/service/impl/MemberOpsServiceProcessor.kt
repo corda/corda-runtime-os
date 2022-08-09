@@ -43,6 +43,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import java.lang.reflect.Constructor
@@ -144,8 +145,9 @@ class MemberOpsServiceProcessor(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService
     ) : RpcHandler<RegistrationRpcRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity =
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(request.holdingIdentityId)?.holdingIdentity
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
                     ?: throw MembershipRegistrationException(
                         "Could not find holding identity associated with ${request.holdingIdentityId}"
                     )
@@ -182,8 +184,9 @@ class MemberOpsServiceProcessor(
     ) : RpcHandler<MGMGroupPolicyRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: MGMGroupPolicyRequest): Any {
 
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService
-                .getByHoldingIdentityShortHash(request.holdingIdentityId)?.holdingIdentity
+                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
                 ?: throw GroupPolicyGenerationException(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )

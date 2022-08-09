@@ -13,6 +13,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.virtualnode.ShortHash
 import java.security.SecureRandom
 
 /**
@@ -42,7 +43,10 @@ class VirtualNodeDbFactory(
      *
      * @return map of [VirtualNodeDbType]s to [VirtualNodeDb]s
      */
-    fun createVNodeDbs(holdingIdentityShortHash: String, request: VirtualNodeCreateRequest): Map<VirtualNodeDbType, VirtualNodeDb> {
+    fun createVNodeDbs(
+        holdingIdentityShortHash: ShortHash,
+        request: VirtualNodeCreateRequest
+    ): Map<VirtualNodeDbType, VirtualNodeDb> {
         with(request) {
             return mapOf(
                 Pair(VAULT, createVNodeDb(VAULT, holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)),
@@ -62,7 +66,7 @@ class VirtualNodeDbFactory(
      */
     private fun createVNodeDb(
         dbType: VirtualNodeDbType,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         ddlConfig: String?,
         dmlConfig: String?
     ): VirtualNodeDb {
@@ -102,7 +106,7 @@ class VirtualNodeDbFactory(
      */
     private fun createConnection(
         dbType: VirtualNodeDbType,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         dbPrivilege: DbPrivilege,
         config: String
     ): DbConnection {
@@ -127,7 +131,7 @@ class VirtualNodeDbFactory(
      */
     private fun createClusterConnection(
         dbType: VirtualNodeDbType,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         dbPrivilege: DbPrivilege
     ): DbConnection {
         with(dbType) {

@@ -160,7 +160,7 @@ class MemberOpsServiceProcessorTest {
         val request = MembershipRpcRequest(
             requestContext,
             RegistrationRpcRequest(
-                mgmHoldingIdentity.shortHash,
+                mgmHoldingIdentity.shortHash.value,
                 RegistrationRpcAction.REQUEST_JOIN,
                 KeyValuePairList(emptyList())
             )
@@ -208,7 +208,7 @@ class MemberOpsServiceProcessorTest {
         val request = MembershipRpcRequest(
             requestContext,
             MGMGroupPolicyRequest(
-                mgmHoldingIdentity.shortHash
+                mgmHoldingIdentity.shortHash.value
             )
         )
         val future = CompletableFuture<MembershipRpcResponse>()

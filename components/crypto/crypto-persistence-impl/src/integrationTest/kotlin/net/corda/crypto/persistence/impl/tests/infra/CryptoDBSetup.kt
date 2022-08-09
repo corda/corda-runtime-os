@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl.tests.infra
 
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
@@ -33,7 +34,7 @@ object CryptoDBSetup {
     )
 
     val vnodeDb = TestDbInfo(
-        name = "vnode_crypto_${vNodeHoldingIdentity.shortHash}",
+        name = VirtualNodeDbType.CRYPTO.getConnectionName(vNodeHoldingIdentity.shortHash),
         schemaName = "vnode_crypto"
     )
 

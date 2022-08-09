@@ -2,6 +2,7 @@ package net.corda.virtualnode.read
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerReader
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 
@@ -45,7 +46,7 @@ interface VirtualNodeInfoReadService : ReconcilerReader<HoldingIdentity, Virtual
      *
      * Returns `null` if no such information exists
      */
-    fun getByHoldingIdentityShortHash(holdingIdentityShortHash: String): VirtualNodeInfo?
+    fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
 
     /**
      * Callback on receipt of a VirtualNodeInfo message.

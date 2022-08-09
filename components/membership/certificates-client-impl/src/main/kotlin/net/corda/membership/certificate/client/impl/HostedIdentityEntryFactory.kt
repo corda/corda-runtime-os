@@ -10,6 +10,7 @@ import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -30,7 +31,7 @@ internal class HostedIdentityEntryFactory(
 ) {
 
     private fun getNode(holdingIdentityShortHash: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(holdingIdentityShortHash))
             ?: throw CertificatesResourceNotFoundException("No node with ID $holdingIdentityShortHash")
     }
 
@@ -109,7 +110,7 @@ internal class HostedIdentityEntryFactory(
             .build()
         return Record(
             topic = Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
-            key = nodeInfo.holdingIdentity.shortHash,
+            key = nodeInfo.holdingIdentity.shortHash.value,
             value = hostedIdentityEntry,
         )
     }
