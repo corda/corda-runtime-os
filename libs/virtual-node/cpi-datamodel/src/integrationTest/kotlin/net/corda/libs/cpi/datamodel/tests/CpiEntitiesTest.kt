@@ -9,6 +9,7 @@ import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpiTrustedCertificate
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.findAllCpiMetadata
@@ -418,5 +419,37 @@ class CpiEntitiesIntegrationTest {
             }
         }
         return cpkFiles
+    }
+
+    @Test
+    fun `can persist trusted certificate`() {
+        val alias = "test"
+        val rawCertificate = "certificate"
+        val trustedCert = CpiTrustedCertificate(alias, rawCertificate)
+
+        EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use { em ->
+            em.transaction {
+                it.persist(trustedCert)
+                it.flush()
+            }
+        }
+
+        EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use {
+            val loadedCpiEntity = it.find(
+                CpiTrustedCertificate::class.java,
+                alias
+            )
+
+            assertThat(loadedCpiEntity).isEqualTo(trustedCert)
+        }
+
     }
 }
