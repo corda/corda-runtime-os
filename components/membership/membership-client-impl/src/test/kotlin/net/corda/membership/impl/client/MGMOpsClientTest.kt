@@ -54,6 +54,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions
@@ -67,7 +68,7 @@ class MGMOpsClientTest {
             "CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB",
             "DEFAULT_MEMBER_GROUP_ID"
         )
-        private const val HOLDING_IDENTITY_STRING = "test"
+        private const val HOLDING_IDENTITY_STRING = "1234567890ab"
         private const val KNOWN_KEY = "12345"
 
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
@@ -75,7 +76,7 @@ class MGMOpsClientTest {
     }
 
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
-        on { getByHoldingIdentityShortHash(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),

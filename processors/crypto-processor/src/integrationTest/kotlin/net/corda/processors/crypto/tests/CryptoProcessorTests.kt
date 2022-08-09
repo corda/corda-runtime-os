@@ -15,6 +15,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
@@ -144,9 +145,10 @@ class CryptoProcessorTests {
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
-        private val vnodeIdentity = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", UUID.randomUUID().toString())
+        private val vnodeIdentity =
+            createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", UUID.randomUUID().toString())
 
-        private val vnodeId: String = vnodeIdentity.shortHash
+        private val vnodeId: String = vnodeIdentity.shortHash.value
 
         private val clusterDb = TestDbInfo.createConfig()
 
@@ -156,7 +158,7 @@ class CryptoProcessorTests {
         )
 
         private val vnodeDb = TestDbInfo(
-            name = "vnode_crypto_$vnodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(vnodeIdentity.shortHash),
             schemaName = "vnode_crypto"
         )
 
@@ -212,7 +214,8 @@ class CryptoProcessorTests {
                 )
             )
             flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
-            transformer = cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
+            transformer =
+                cryptoFlowOpsTransformerFactory.create(requestingComponent = "test", responseTopic = RESPONSE_TOPIC)
         }
 
         private fun setupDatabases() {
@@ -243,13 +246,15 @@ class CryptoProcessorTests {
             dbs.forEach { db ->
                 val configAsString = db.config.root().render(ConfigRenderOptions.concise())
                 configEmf.transaction {
-                    val existing = it.createQuery("""
+                    val existing = it.createQuery(
+                        """
                         SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
-                    """.trimIndent(), DbConnectionConfig::class.java)
+                    """.trimIndent(), DbConnectionConfig::class.java
+                    )
                         .setParameter("name", db.name)
                         .setParameter("privilege", DbPrivilege.DML)
                         .resultList
-                    ids[db.name] = if(existing.isEmpty()) {
+                    ids[db.name] = if (existing.isEmpty()) {
                         val record = DbConnectionConfig(
                             UUID.randomUUID(),
                             db.name,
@@ -314,7 +319,7 @@ class CryptoProcessorTests {
         private fun assignHSMs() {
             CryptoConsts.Categories.all.forEach {
                 // cluster is assigned in the crypto processor
-                if(hsmRegistrationClient.findHSM(vnodeId, it) == null) {
+                if (hsmRegistrationClient.findHSM(vnodeId, it) == null) {
                     hsmRegistrationClient.assignSoftHSM(vnodeId, it)
                 }
             }

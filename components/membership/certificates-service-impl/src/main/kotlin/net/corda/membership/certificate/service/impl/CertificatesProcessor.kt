@@ -17,6 +17,7 @@ import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManagerFactory
@@ -89,9 +90,9 @@ internal class CertificatesProcessor(
         return if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
             ClusterCertificateProcessor(tenantId)
         } else {
-            virtualNodeInfoReadService.getByHoldingIdentityShortHash(tenantId) ?: throw NoSuchNode(tenantId)
+            virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId)) ?: throw NoSuchNode(tenantId)
             val factory = dbConnectionManager.getOrCreateEntityManagerFactory(
-                name = VirtualNodeDbType.VAULT.getConnectionName(tenantId),
+                name = VirtualNodeDbType.VAULT.getConnectionName(ShortHash.of(tenantId)),
                 privilege = DbPrivilege.DML,
                 entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                     ?: throw java.lang.IllegalStateException(

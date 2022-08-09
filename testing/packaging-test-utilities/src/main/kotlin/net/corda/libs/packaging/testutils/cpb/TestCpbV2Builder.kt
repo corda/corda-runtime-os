@@ -15,8 +15,6 @@ class TestCpbV2Builder {
         private set
     var manifest: Manifest? = null
         private set
-    var policy = "{\"groupId\":\"test\"}"
-        private set
     var cpks = arrayOf<TestCpkV2Builder>(
             TestCpkV2Builder().name("testCpk1-1.0.0.0.jar").bundleName("test.cpk1").bundleVersion("1.0.0.0"),
             TestCpkV2Builder().name("testCpk2-2.0.0.0.jar").bundleName("test.cpk2").bundleVersion("2.0.0.0")

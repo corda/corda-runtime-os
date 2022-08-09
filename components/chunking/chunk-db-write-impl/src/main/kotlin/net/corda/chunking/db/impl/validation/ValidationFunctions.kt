@@ -8,6 +8,7 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
@@ -197,7 +198,11 @@ fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
     )
 
     if (groupIdInDatabase != null) {
-        throw ValidationException("CPI already uploaded with groupId = $groupIdInDatabase")
+        // Carefully constructed message because the "409/conflict" exception:
+        // ResourceAlreadyExistsException
+        // just wants "the resource".
+        val resource = "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} (groupId=$groupIdInDatabase)"
+        throw DuplicateCpiUploadException(resource)
     }
 }
 

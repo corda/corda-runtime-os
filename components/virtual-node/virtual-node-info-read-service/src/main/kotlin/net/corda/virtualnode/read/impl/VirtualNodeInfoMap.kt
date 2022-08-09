@@ -2,6 +2,7 @@ package net.corda.virtualnode.read.impl
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.toCorda
 import java.util.Collections
 
@@ -15,21 +16,18 @@ import java.util.Collections
 internal class VirtualNodeInfoMap {
     private val virtualNodeInfoByHoldingIdentity: MutableMap<HoldingIdentity, VirtualNodeInfo> =
         Collections.synchronizedMap(mutableMapOf())
-    private val virtualNodeInfoById: MutableMap<String, VirtualNodeInfo> =
+    private val virtualNodeInfoById: MutableMap<ShortHash, VirtualNodeInfo> =
         Collections.synchronizedMap(mutableMapOf())
 
     /** Class to be used as a key for putting items. */
-    data class Key(val holdingIdentity: HoldingIdentity, val id: String)
+    data class Key(val holdingIdentity: HoldingIdentity, val holdingIdShortHash: ShortHash)
 
     /** Get everything as Corda objects NOT Avro objects */
     fun getAllAsCordaObjects(): Map<net.corda.virtualnode.HoldingIdentity, net.corda.virtualnode.VirtualNodeInfo> =
-        virtualNodeInfoByHoldingIdentity
-            .mapKeys { it.key.toCorda() }
-            .mapValues { it.value.toCorda() }
+        virtualNodeInfoByHoldingIdentity.mapKeys { it.key.toCorda() }.mapValues { it.value.toCorda() }
 
     /** Put (store/merge) the incoming map.  May throw [IllegalArgumentException] */
-    fun putAll(incoming: Map<Key, VirtualNodeInfo>) =
-        incoming.forEach { (key, value) -> put(key, value) }
+    fun putAll(incoming: Map<Key, VirtualNodeInfo>) = incoming.forEach { (key, value) -> put(key, value) }
 
     /** Put [VirtualNodeInfo] into internal maps. May throw [IllegalArgumentException] */
     private fun putValue(key: Key, value: VirtualNodeInfo) {
@@ -40,10 +38,12 @@ internal class VirtualNodeInfoMap {
         if (key.holdingIdentity != value.holdingIdentity) {
             throw IllegalArgumentException("Trying to add a VirtualNodeInfo with a mismatched HoldingIdentity: ($key , $value)")
         }
-        if (virtualNodeInfoById.containsKey(key.id) && virtualNodeInfoById[key.id]?.holdingIdentity != value.holdingIdentity) {
-            throw IllegalArgumentException("Cannot put different VirtualNodeInfo for same short hash value: (${key.id}, $key , $value)")
+        if (virtualNodeInfoById.containsKey(key.holdingIdShortHash)
+            && virtualNodeInfoById[key.holdingIdShortHash]?.holdingIdentity != value.holdingIdentity) {
+            throw IllegalArgumentException("Cannot put different VirtualNodeInfo for same short hash value: " +
+                    "(${key.holdingIdShortHash}, $key , $value)")
         }
-        virtualNodeInfoById[key.id] = value
+        virtualNodeInfoById[key.holdingIdShortHash] = value
         virtualNodeInfoByHoldingIdentity[key.holdingIdentity] = value
     }
 
@@ -63,16 +63,16 @@ internal class VirtualNodeInfoMap {
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoByHoldingIdentity[holdingIdentity]
 
     /** Get a [VirtualNodeInfo] by short hash ([net.corda.virtualnode.HoldingIdentity.shortHash]), `null` if not found */
-    fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoById[id]
+    fun getById(holdingIdShortHash: ShortHash): VirtualNodeInfo? = virtualNodeInfoById[holdingIdShortHash]
 
     /** Remove the [VirtualNodeInfo] for a given key, specifically from the 'by id' map, in this method. */
     private fun removeById(key: Key) {
         // yes, this is xor
-        if (virtualNodeInfoById.containsKey(key.id) xor virtualNodeInfoByHoldingIdentity.containsKey(key.holdingIdentity)) {
+        if (virtualNodeInfoById.containsKey(key.holdingIdShortHash) xor virtualNodeInfoByHoldingIdentity.containsKey(key.holdingIdentity)) {
             throw IllegalArgumentException("Keys should be present or missing in both maps - found key in only one map")
         }
 
-        virtualNodeInfoById.remove(key.id)
+        virtualNodeInfoById.remove(key.holdingIdShortHash)
     }
 
     /** Remove the [VirtualNodeInfo] from this collection and return it. */

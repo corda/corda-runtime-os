@@ -12,6 +12,7 @@ import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
+import net.corda.flow.utils.keyValueStoreOf
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -25,6 +26,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -70,7 +72,7 @@ class FlowRPCOpsImpl @Activate constructor(
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
@@ -79,7 +81,17 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val flowClassName = startFlow.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, startFlow.requestData)
+        // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
+        // This is a placeholder which indicates access to everything, see CORE-6076
+        val flowContextPlatformProperties = keyValueStoreOf("net.corda.account" to "account-zero")
+        val startEvent =
+            messageFactory.createStartFlowEvent(
+                clientRequestId,
+                vNode,
+                flowClassName,
+                startFlow.requestData,
+                flowContextPlatformProperties
+            )
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(
@@ -99,7 +111,7 @@ class FlowRPCOpsImpl @Activate constructor(
     }
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
-        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
 
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
@@ -111,7 +123,7 @@ class FlowRPCOpsImpl @Activate constructor(
     }
 
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
-        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
@@ -137,7 +149,7 @@ class FlowRPCOpsImpl @Activate constructor(
         publisher?.close()
     }
 
-    private fun getVirtualNode(shortId: String): VirtualNodeInfo {
+    private fun getVirtualNode(shortId: ShortHash): VirtualNodeInfo {
         return virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortId)?.toAvro()
             ?: throw FlowRPCOpsServiceException("Failed to find a Virtual Node for ID='${shortId}'")
     }

@@ -115,8 +115,8 @@ class MGMRegistrationServiceTest {
         on { encodeAsString(ecdhKey) } doReturn ECDH_KEY_STRING
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookup(mgmId, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookup(mgmId, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
+        on { lookup(mgmId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookup(mgmId.value, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
     }
 
     private val componentHandle: RegistrationHandle = mock()
