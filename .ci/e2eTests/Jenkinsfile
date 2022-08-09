@@ -185,3 +185,4 @@ pipeline {
 def sanitizedBranchName(){
     return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
 }
+
