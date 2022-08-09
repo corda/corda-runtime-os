@@ -2,11 +2,13 @@ package net.corda.applications.workers.rpc.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.applications.workers.rpc.http.TestToolkit
+import net.corda.applications.workers.rpc.kafka.KafkaTestToolKit
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.data.identity.HoldingIdentity
 import net.corda.httprpc.HttpFileUpload
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
@@ -24,8 +26,16 @@ import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.AppMessage
+import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.app.UnauthenticatedMessage
+import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.schema.Schemas
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -33,6 +43,10 @@ import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.jar.Attributes
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
@@ -73,7 +87,11 @@ data class ClusterTestData(
 data class MemberTestData(
     private val x500Name: String
 ) {
-    val name: String = MemberX500Name.parse(x500Name).toString()
+    val name: String = x500Name.clearX500Name()
+}
+
+private fun String.clearX500Name(): String {
+    return MemberX500Name.parse(this).toString()
 }
 
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
@@ -103,7 +121,7 @@ fun createMGMGroupPolicyJson(
 fun createStaticMemberGroupPolicyJson(
     ca: CertificateAuthority,
     groupId: String,
-    memberNames: Collection<String>,
+    cluster: ClusterTestData,
 ): ByteArray {
     val groupPolicy = mapOf(
         "fileFormatVersion" to 1,
@@ -116,11 +134,11 @@ fun createStaticMemberGroupPolicyJson(
             "sessionKeyPolicy" to "Combined",
             "staticNetwork" to mapOf(
                 "members" to
-                        memberNames.map {
+                        cluster.members.map {
                             mapOf(
-                                "name" to it,
+                                "name" to it.name,
                                 "memberStatus" to "ACTIVE",
-                                "endpointUrl-1" to "http://localhost:1080",
+                                "endpointUrl-1" to cluster.p2pUrl,
                                 "endpointProtocol-1" to 1
                             )
                         }
@@ -210,14 +228,14 @@ fun ClusterTestData.uploadCpi(
 }
 
 fun ClusterTestData.createVirtualNode(
-    x500Name: String,
+    member: MemberTestData,
     cpiCheckSum: String
 ) = with(testToolkit) {
     httpClientFor(VirtualNodeRPCOps::class.java)
         .use { client ->
             client.start().proxy.createVirtualNode(
                 VirtualNodeRequest(
-                    x500Name = x500Name,
+                    x500Name = member.name,
                     cpiFileChecksum = cpiCheckSum,
                     vaultDdlConnection = null,
                     vaultDmlConnection = null,
@@ -455,6 +473,130 @@ fun getMemberRegistrationContext(
     "corda.endpoints.0.connectionURL" to memberCluster.p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1"
 )
+
+/**
+ * Assert that a member represented by a holding ID can find the member represented by [MemberTestData] in it's
+ * member list.
+ */
+fun ClusterTestData.assertMemberInMemberList(
+    holdingId: String,
+    member: MemberTestData
+) {
+    eventually(
+        duration = 20.seconds,
+        waitBetween = 2.seconds
+    ) {
+        assertThat(
+            lookupMembers(holdingId).map {
+                it.name
+            }
+        ).contains(member.name)
+    }
+}
+
+fun KafkaTestToolKit.assertP2pConnectivity(
+    sender: HoldingIdentity,
+    receiver: HoldingIdentity,
+    groupId: String,
+    testToolkit: TestToolkit
+) {
+    val traceId = "e2e-test-$groupId"
+    val subSystem = "e2e-test"
+
+    // Create authenticated messages
+    val numberOfAuthenticatedMessages = 5
+    val authenticatedMessagesIdToContent = (1..numberOfAuthenticatedMessages).associate {
+        testToolkit.uniqueName to testToolkit.uniqueName
+    }
+    val authenticatedRecords = authenticatedMessagesIdToContent.map { (id, content) ->
+        val messageHeader = AuthenticatedMessageHeader.newBuilder()
+            .setDestination(receiver)
+            .setSource(sender)
+            .setTtl(null)
+            .setMessageId(id)
+            .setTraceId(traceId)
+            .setSubsystem(subSystem)
+            .build()
+        val message = AuthenticatedMessage.newBuilder()
+            .setHeader(messageHeader)
+            .setPayload(ByteBuffer.wrap(content.toByteArray()))
+            .build()
+        Record(Schemas.P2P.P2P_OUT_TOPIC, testToolkit.uniqueName, AppMessage(message))
+    }
+
+    // Create unauthenticated messages
+    val numberOfUnauthenticatedMessages = 3
+    val unauthenticatedMessagesContent = (1..numberOfUnauthenticatedMessages).map {
+        testToolkit.uniqueName
+    }
+    val unauthenticatedRecords = unauthenticatedMessagesContent.map { content ->
+        val messageHeader = UnauthenticatedMessageHeader.newBuilder()
+            .setDestination(receiver)
+            .setSource(sender)
+            .setSubsystem(subSystem)
+            .build()
+        val message = UnauthenticatedMessage.newBuilder()
+            .setHeader(messageHeader)
+            .setPayload(ByteBuffer.wrap(content.toByteArray()))
+            .build()
+        Record(Schemas.P2P.P2P_OUT_TOPIC, testToolkit.uniqueName, AppMessage(message))
+    }
+
+    // Accept messages
+    val receivedAuthenticatedMessages = ConcurrentHashMap<String, String>()
+    val receivedUnauthenticatedMessages = ConcurrentHashMap.newKeySet<String>()
+    val countDown = CountDownLatch(numberOfUnauthenticatedMessages + numberOfAuthenticatedMessages)
+    acceptRecordsFromKafka<String, AppMessage>(Schemas.P2P.P2P_IN_TOPIC) { record ->
+        val message = record.value?.message
+        if (message is AuthenticatedMessage) {
+            if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.destination.groupId != groupId) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.source.groupId != groupId) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.traceId != traceId) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.subsystem != subSystem) {
+                return@acceptRecordsFromKafka
+            }
+            receivedAuthenticatedMessages[message.header.messageId] = String(message.payload.array())
+            countDown.countDown()
+        } else if (message is UnauthenticatedMessage) {
+            if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.destination.groupId != groupId) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.source.groupId != groupId) {
+                return@acceptRecordsFromKafka
+            }
+            if (message.header.subsystem != subSystem) {
+                return@acceptRecordsFromKafka
+            }
+            receivedUnauthenticatedMessages.add(String(message.payload.array()))
+            countDown.countDown()
+        }
+    }.use {
+        // Send messages
+        publishRecordsToKafka(unauthenticatedRecords + authenticatedRecords)
+        countDown.await(5, TimeUnit.MINUTES)
+    }
+
+    assertThat(receivedAuthenticatedMessages).containsAllEntriesOf(authenticatedMessagesIdToContent)
+    assertThat(receivedUnauthenticatedMessages).containsAll(unauthenticatedMessagesContent)
+}
 
 fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
     val request = csrPem.reader().use { reader ->

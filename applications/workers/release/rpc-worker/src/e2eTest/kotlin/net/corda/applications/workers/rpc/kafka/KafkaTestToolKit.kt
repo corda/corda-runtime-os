@@ -11,7 +11,6 @@ import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
 import net.corda.messagebus.kafka.producer.builder.KafkaCordaProducerBuilderImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -24,12 +23,10 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-internal class KafkaTestToolKit(
+class KafkaTestToolKit(
     private val toolkit: TestToolkit,
 ) {
     private companion object {
@@ -100,6 +97,7 @@ internal class KafkaTestToolKit(
             coordinatorFactory
         )
     }
+
     fun publishRecordsToKafka(records: Collection<Record<*, *>>) {
         if (records.isNotEmpty()) {
             publisherFactory.createPublisher(
@@ -140,6 +138,7 @@ internal class KafkaTestToolKit(
             it.start()
         }
     }
+
     inline fun <reified K : Any, reified V : Any> acceptRecordsFromKafka(
         topic: String,
         noinline block: (Record<K, V>) -> Unit

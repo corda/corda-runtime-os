@@ -13,6 +13,7 @@ import net.corda.applications.workers.rpc.utils.P2P_GATEWAY
 import net.corda.applications.workers.rpc.utils.P2P_TENANT_ID
 import net.corda.applications.workers.rpc.utils.RPC_PORT
 import net.corda.applications.workers.rpc.utils.RPC_WORKER
+import net.corda.applications.workers.rpc.utils.assertMemberInMemberList
 import net.corda.applications.workers.rpc.utils.assertOnlyMgmIsInMemberList
 import net.corda.applications.workers.rpc.utils.assignSoftHsm
 import net.corda.applications.workers.rpc.utils.createMGMGroupPolicyJson
@@ -128,7 +129,7 @@ class MultiClusterDynamicNetworkTest {
         val mgm = mgmCluster.members[0]
         mgmCluster.disableCLRChecks()
         val cpiChecksum = mgmCluster.uploadCpi(createMGMGroupPolicyJson(), true)
-        val mgmHoldingId = mgmCluster.createVirtualNode(mgm.name, cpiChecksum)
+        val mgmHoldingId = mgmCluster.createVirtualNode(mgm, cpiChecksum)
         holdingIds[mgm.name] = mgmHoldingId
         println("MGM HoldingIdentity: $mgmHoldingId")
 
@@ -166,7 +167,7 @@ class MultiClusterDynamicNetworkTest {
             val memberCpiChecksum = cordaCluster.uploadCpi(toByteArray(memberGroupPolicy))
 
             cordaCluster.members.forEach { member ->
-                val memberHoldingId = cordaCluster.createVirtualNode(member.name, memberCpiChecksum)
+                val memberHoldingId = cordaCluster.createVirtualNode(member, memberCpiChecksum)
                 holdingIds[member.name] = memberHoldingId
                 println("${member.name} holding ID: $memberHoldingId")
 
@@ -201,16 +202,10 @@ class MultiClusterDynamicNetworkTest {
                 // Check registration complete.
                 // Eventually we can use the registration status endpoint.
                 // For now just assert we have received our own member data.
-                eventually(
-                    duration = 20.seconds,
-                    waitBetween = 2.seconds
-                ) {
-                    assertThat(
-                        cordaCluster.lookupMembers(memberHoldingId).map {
-                            it.name
-                        }
-                    ).contains(member.name)
-                }
+                cordaCluster.assertMemberInMemberList(
+                    memberHoldingId,
+                    member
+                )
             }
         }
 

@@ -11,6 +11,7 @@ import net.corda.applications.workers.rpc.utils.P2P_TENANT_ID
 import net.corda.applications.workers.rpc.utils.RPC_PORT
 import net.corda.applications.workers.rpc.utils.RPC_WORKER
 import net.corda.applications.workers.rpc.utils.SINGLE_CLUSTER_NS
+import net.corda.applications.workers.rpc.utils.assertMemberInMemberList
 import net.corda.applications.workers.rpc.utils.assertOnlyMgmIsInMemberList
 import net.corda.applications.workers.rpc.utils.assignSoftHsm
 import net.corda.applications.workers.rpc.utils.createMGMGroupPolicyJson
@@ -33,7 +34,6 @@ import net.corda.applications.workers.rpc.utils.uploadCpi
 import net.corda.applications.workers.rpc.utils.uploadTlsCertificate
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -73,7 +73,7 @@ class SingleClusterDynamicNetworkTest {
     fun `Create mgm and allow members to join the group`() {
         val holdingIds = mutableMapOf<String, String>()
         val cpiChecksum = cordaCluster.uploadCpi(createMGMGroupPolicyJson(), true)
-        val mgmHoldingId = cordaCluster.createVirtualNode(mgm.name, cpiChecksum)
+        val mgmHoldingId = cordaCluster.createVirtualNode(mgm, cpiChecksum)
         holdingIds[mgm.name] = mgmHoldingId
         println("MGM HoldingIdentity: $mgmHoldingId")
 
@@ -107,7 +107,7 @@ class SingleClusterDynamicNetworkTest {
 
         val memberCpiChecksum = cordaCluster.uploadCpi(toByteArray(memberGroupPolicy))
         cordaCluster.members.forEach { member ->
-            val memberHoldingId = cordaCluster.createVirtualNode(member.name, memberCpiChecksum)
+            val memberHoldingId = cordaCluster.createVirtualNode(member, memberCpiChecksum)
             holdingIds[member.name] = memberHoldingId
             println("${member.name} holding ID: $memberHoldingId")
 
@@ -142,16 +142,10 @@ class SingleClusterDynamicNetworkTest {
             // Check registration complete.
             // Eventually we can use the registration status endpoint.
             // For now just assert we have received our own member data.
-            eventually(
-                duration = 20.seconds,
-                waitBetween = 2.seconds
-            ) {
-                assertThat(
-                    cordaCluster.lookupMembers(memberHoldingId).map {
-                        it.name
-                    }
-                ).contains(member.name)
-            }
+            cordaCluster.assertMemberInMemberList(
+                memberHoldingId,
+                member
+            )
         }
 
         (cordaCluster.members + mgm).forEach {
