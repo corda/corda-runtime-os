@@ -214,16 +214,8 @@ class StaticNetworkTest {
 
     /*
     This test is disabled until CORE-6079 is ready.
-    To run it locally use either:
-    1. Minikube:
-        Start the cluster by using https://gist.github.com/yift-r3/3461c5b116de1e197f2cc69d54d34f56
-        and set the environment variables as describe at the end of the script.
-    2. To connect to a running cluster:
-        Connect to the cluster using https://gist.github.com/yift-r3/f975083b686c48193ca12077bd1dfa34
-        and set the environment variables as describe at the end of the script.
-    3. AWS:
-        Start the cluster by using https://gist.github.com/yift-r3/ffa55f1171787d88b3b5370bda5823b8
-        and set the environment variables as describe at the end of the script.
+    When CORE-6079 is ready, please delete the `register members` test (as this one will cover that use case as well)
+    To run it locally while disabled follow the instruction in resources/RunP2PTest.md:
      */
     @Test
     @Disabled("This test is disabled until CORE-6079 is ready")
