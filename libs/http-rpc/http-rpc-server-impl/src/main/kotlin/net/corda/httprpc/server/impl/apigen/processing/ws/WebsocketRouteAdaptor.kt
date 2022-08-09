@@ -32,51 +32,69 @@ internal class WebsocketRouteAdaptor(
         val log = contextLogger()
     }
 
+    @Volatile
     private var channel: DuplexChannel? = null
 
     // The handler is called when a WebSocket client connects.
     override fun handleConnect(ctx: WsConnectContext) {
+        try {
+            log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
-        log.info("Connected to remote: ${ctx.session.remoteAddress}")
+            ServerDuplexChannel(ctx).let { newChannel ->
+                channel = newChannel
 
-        ServerDuplexChannel(ctx).let { newChannel ->
-            channel = newChannel
+                val clientWsRequestContext = ClientWsRequestContext(ctx)
 
-            val clientWsRequestContext = ClientWsRequestContext(ctx)
+                try {
+                    val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
+                    authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
 
-            try {
-                val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
-                authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
+                    val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
+                    val fullListOfParams = listOf(newChannel) + paramsFromRequest
 
-                val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
-                val fullListOfParams = listOf(newChannel) + paramsFromRequest
-
-                @Suppress("SpreadOperator")
-                routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
-                newChannel.onConnect?.let { it() }
-            } catch (ex: UnauthorizedResponse) {
-                "Websocket operation not permitted".let {
-                    log.warn("$it - ${ex.message}")
-                    newChannel.close(CloseStatus(POLICY_VIOLATION, it))
+                    @Suppress("SpreadOperator")
+                    routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
+                    newChannel.onConnect?.let { it() }
+                } catch (ex: UnauthorizedResponse) {
+                    "Websocket operation not permitted".let {
+                        log.warn("$it - ${ex.message}")
+                        newChannel.close(CloseStatus(POLICY_VIOLATION, it))
+                    }
                 }
             }
+        }
+        catch(th: Throwable) {
+            log.error("Unexpected exception in handleConnect", th)
         }
     }
 
     // The handler is called when a WebSocket client sends a String message.
     override fun handleMessage(ctx: WsMessageContext) {
-        // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage hook has been defined. The
-        // hook will be responsible for ensuring the messages respect the protocol and terminate connections when malicious messages arrive.
-        requireNotNull(channel).onTextMessage?.invoke(ctx.message()) ?: log.info("Inbound messages are not supported.")
+        try {
+            // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage hook has been defined. The
+            // hook will be responsible for ensuring the messages respect the protocol and terminate connections when malicious messages arrive.
+            requireNotNull(channel).onTextMessage?.invoke(ctx.message())
+                ?: log.info("Inbound messages are not supported.")
+        } catch (th: Throwable) {
+            log.error("Unexpected exception in handleMessage", th)
+        }
     }
 
     // The handler is called when an error is detected.
     override fun handleError(ctx: WsErrorContext) {
-        requireNotNull(channel).onError?.let { it(ctx.error()) }
+        try {
+            requireNotNull(channel).onError?.let { it(ctx.error()) }
+        } catch(th: Throwable) {
+            log.error("Unexpected exception in handleError", th)
+        }
     }
 
     // The handler is called when a WebSocket client closes the connection.
     override fun handleClose(ctx: WsCloseContext) {
-        requireNotNull(channel).onClose?.let { it(ctx.status(), ctx.reason()) }
+        try {
+            requireNotNull(channel).onClose?.let { it(ctx.status(), ctx.reason()) }
+        } catch (th: Throwable) {
+            log.error("Unexpected exception in handleClose", th)
+        }
     }
 }
