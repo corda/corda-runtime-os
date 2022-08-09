@@ -141,10 +141,22 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.setupLocallyHostedIdentity("holdingIdentityShortHash", "Alias", "tlsTenantId", "sessionAlias")
+            client.setupLocallyHostedIdentity(
+                "holdingIdentityShortHash",
+                "Alias",
+                "tlsTenantId",
+                "sessionKeyTenantId",
+                "sessionAlias"
+            )
 
-            verify(mockHostedIdentityEntryFactory.constructed().first()).createIdentityRecord(
-                "holdingIdentityShortHash", "Alias", "tlsTenantId", "sessionAlias"
+            verify(
+                mockHostedIdentityEntryFactory.constructed().first()
+            ).createIdentityRecord(
+                "holdingIdentityShortHash",
+                "Alias",
+                "tlsTenantId",
+                "sessionKeyTenantId",
+                "sessionAlias"
             )
         }
 
@@ -177,6 +189,7 @@ class CertificatesClientImplTest {
                     "holdingIdentityShortHash",
                     "Alias",
                     "tlsTenantId",
+                    "sessionKeyTenantId",
                     "sessionAlias"
                 )
             }
@@ -196,6 +209,7 @@ class CertificatesClientImplTest {
                     "holdingIdentityShortHash",
                     "Alias",
                     "tlsTenantId",
+                    "sessionKeyTenantId",
                     "sessionAlias"
                 )
             }
@@ -204,7 +218,10 @@ class CertificatesClientImplTest {
         @Test
         fun `publishToLocallyHostedIdentities publish the correct record`() {
             val record = mock<Record<String, HostedIdentityEntry>>()
-            whenever(mockHostedIdentityEntryFactory.constructed().first().createIdentityRecord(any(), any(), any(), any())).doReturn(record)
+            whenever(
+                mockHostedIdentityEntryFactory.constructed().first()
+                    .createIdentityRecord(any(), any(), any(), any(), any())
+            ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
@@ -215,6 +232,7 @@ class CertificatesClientImplTest {
                 "holdingIdentityShortHash",
                 "Alias",
                 "tlsTenantId",
+                "sessionKeyTenantId",
                 "sessionAlias"
             )
 

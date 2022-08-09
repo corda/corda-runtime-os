@@ -3,6 +3,7 @@ package net.corda.virtualnode.read.impl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -20,8 +21,8 @@ class VirtualNodeInfoMapTest {
     private lateinit var map: VirtualNodeInfoMap
 
     private val secureHash = SecureHash("algorithm", "1234".toByteArray())
-    private val fakeShortHash = "BEEFDEADBEEF"
-    private val otherShortHash = "F0000000000D"
+    private val fakeShortHash = ShortHash.of("BEEFDEADBEEF")
+    private val otherShortHash = ShortHash.of("F0000000000D")
     private val cpiIdentifier = CpiIdentifier("ghi", "hjk", secureHash)
 
     @BeforeEach
@@ -142,7 +143,7 @@ class VirtualNodeInfoMapTest {
 
         val otherHoldingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", UUID.randomUUID().toString())
         val otherVirtualNodeInfo = newVirtualNodeInfo(otherHoldingIdentity, cpiIdentifier)
-        val otherFakeShortHash = "F000000D"
+        val otherFakeShortHash = ShortHash.of("1234567890ab")
         val otherKey = VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), otherFakeShortHash)
         map.put(otherKey, otherVirtualNodeInfo.toAvro())
 
@@ -199,7 +200,7 @@ class VirtualNodeInfoMapTest {
         // Check that we've added them
         for (i in 0..count) {
             assertThat(map.get(keys[i].holdingIdentity)).isNotNull
-            assertThat(map.getById(keys[i].id)).isNotNull
+            assertThat(map.getById(keys[i].holdingIdShortHash)).isNotNull
             assertThat(map.get(keys[i].holdingIdentity)!!.holdingIdentity!!).isEqualTo(keys[i].holdingIdentity)
         }
 

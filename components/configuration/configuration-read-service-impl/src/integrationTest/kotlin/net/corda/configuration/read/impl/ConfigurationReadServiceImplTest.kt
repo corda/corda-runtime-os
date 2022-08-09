@@ -30,6 +30,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,6 +39,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
+@Disabled
 class ConfigurationReadServiceImplTest {
 
     companion object {
@@ -99,7 +101,15 @@ class ConfigurationReadServiceImplTest {
         // Publish new configuration and verify it gets delivered
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
         val confString = flowConfig.root().render()
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, confString, 0, ConfigurationSchemaVersion(1,0)))))
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    FLOW_CONFIG,
+                    Configuration(confString, confString, 0, ConfigurationSchemaVersion(1, 0))
+                )
+            )
+        )
         eventually {
             assertTrue(receivedKeys.contains(FLOW_CONFIG), "$FLOW_CONFIG key was missing from received keys")
             assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
@@ -123,9 +133,17 @@ class ConfigurationReadServiceImplTest {
         // Publish flow config and wait until it has been received by the service
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "baz")))
         val confString = flowConfig.root().render()
-        val schemaVersion = ConfigurationSchemaVersion(1,0)
+        val schemaVersion = ConfigurationSchemaVersion(1, 0)
         val publisher = publisherFactory.createPublisher(PublisherConfig("foo"), bootConfig)
-        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, confString, 0, schemaVersion))))
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    FLOW_CONFIG,
+                    Configuration(confString, confString, 0, schemaVersion)
+                )
+            )
+        )
         eventually(duration = 5.seconds) {
             assertTrue(configurationReadService.isRunning)
         }

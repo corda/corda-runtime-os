@@ -9,6 +9,7 @@ import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.entityprocessor.impl.internal.exceptions.InvalidPaginationException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.serialization.SerializationService
@@ -17,6 +18,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 import javax.persistence.EntityManager
+import javax.persistence.Query
 import javax.persistence.criteria.Selection
 
 
@@ -151,15 +153,11 @@ class PersistenceServiceInternal(
         val all = cq.select(rootEntity as Selection<out Nothing>?)
 
         val typedQuery = entityManager.createQuery(all)
-        val innerMsg = when (val results = typedQuery.resultList) {
-            null -> EntityResponseSuccess()
-            else -> EntityResponseSuccess(payloadCheck(serializationService.toBytes(results)))
-        }
-        return EntityResponse(clock.instant(), requestId, innerMsg)
+        return findWithQuery(serializationService, typedQuery, payload.offset, payload.limit)
     }
 
     /*
-     * Find all entites that match a named query
+     * Find all entities that match a named query
      */
     fun findWithNamedQuery(
         serializationService: SerializationService,
@@ -188,11 +186,26 @@ class PersistenceServiceInternal(
             val bytes = rec.value.array()
             query.setParameter(rec.key, serializationService.deserialize<Any>(bytes))
         }
-        if (payload.offset != 0) {
-            query.firstResult = payload.offset
+        return findWithQuery(serializationService, query, payload.offset, payload.limit)
+    }
+
+
+    /*
+    * Find all entities that match a query, with pagination
+    */
+    private fun findWithQuery(
+        serializationService: SerializationService,
+        query: Query,
+        offset: Int = 0,
+        limit: Int = Int.MAX_VALUE,
+    ): EntityResponse {
+        if (offset < 0) throw InvalidPaginationException("Invalid negative offset $offset")
+        if (offset != 0) {
+            query.firstResult = offset
         }
-        if (payload.limit != Int.MAX_VALUE) {
-            query.maxResults = payload.limit
+        if (limit < 0) throw InvalidPaginationException("Invalid negative limit $limit")
+        if (limit != Int.MAX_VALUE) {
+            query.maxResults = limit
         }
         val innerMsg = when (val results = query.resultList) {
             null -> EntityResponseSuccess()

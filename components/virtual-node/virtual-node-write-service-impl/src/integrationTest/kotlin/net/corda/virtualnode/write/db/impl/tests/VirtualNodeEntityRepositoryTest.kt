@@ -19,6 +19,7 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
@@ -168,7 +169,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val holdingIdentityEntity = with(expectedHoldingIdentity) {
             HoldingIdentityEntity(
-                shortHash, fullHash, x500Name.toString(), groupId, null, null,
+                shortHash.value, fullHash, x500Name.toString(), groupId, null, null,
                 null, null, null
             )
         }
@@ -182,7 +183,7 @@ internal class VirtualNodeEntityRepositoryTest {
         Assertions.assertThat(holdingIdentity).isEqualTo(expectedHoldingIdentity)
 
         // Noll returned if not found
-        holdingIdentity = repository.getHoldingIdentity("111111")
+        holdingIdentity = repository.getHoldingIdentity(ShortHash.of("1234567890ab"))
         Assertions.assertThat(holdingIdentity).isNull()
     }
 
@@ -222,12 +223,12 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         val holdingIdentityEntity = entityManagerFactory.transaction {
-            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.shortHash)
+            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.shortHash.value)
         }
 
         Assertions.assertThat(holdingIdentityEntity).isNotNull
         with(holdingIdentityEntity) {
-            Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash)
+            Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash.value)
             Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.fullHash)
             Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name.toString())
             Assertions.assertThat(mgmGroupId).isEqualTo(expectedHoldingIdentity.groupId)
@@ -299,12 +300,12 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         val holdingIdentityEntity = entityManagerFactory.transaction {
-            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.shortHash)
+            it.find(HoldingIdentityEntity::class.java, expectedHoldingIdentity.shortHash.value)
         }
 
         Assertions.assertThat(holdingIdentityEntity).isNotNull
         with(holdingIdentityEntity) {
-            Assertions.assertThat(holdingIdentityShortHash).isEqualTo(expectedHoldingIdentity.shortHash)
+            Assertions.assertThat(ShortHash.of(holdingIdentityShortHash)).isEqualTo(expectedHoldingIdentity.shortHash)
             Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.fullHash)
             Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name.toString())
             Assertions.assertThat(mgmGroupId).isEqualTo(expectedHoldingIdentity.groupId)
@@ -339,7 +340,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                shortHash, fullHash, x500Name.toString(), groupId, null, null,
+                shortHash.value, fullHash, x500Name.toString(), groupId, null, null,
                 null, null, null
             )
         }
@@ -383,7 +384,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                shortHash, fullHash, x500Name.toString(), groupId, null, null,
+                shortHash.value, fullHash, x500Name.toString(), groupId, null, null,
                 null, null, null
             )
         }
@@ -404,7 +405,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         Assertions.assertThat(virtualNodeEntity).isNotNull
         with(virtualNodeEntity) {
-            Assertions.assertThat(holdingIdentityEntity.holdingIdentityShortHash).isEqualTo(holdingIdentity.shortHash)
+            Assertions.assertThat(holdingIdentityEntity.holdingIdentityShortHash).isEqualTo(holdingIdentity.shortHash.value)
             Assertions.assertThat(cpiName).isEqualTo(cpiId.name)
             Assertions.assertThat(cpiVersion).isEqualTo(cpiId.version)
             Assertions.assertThat(cpiSignerSummaryHash).isEqualTo(signerSummaryHash)

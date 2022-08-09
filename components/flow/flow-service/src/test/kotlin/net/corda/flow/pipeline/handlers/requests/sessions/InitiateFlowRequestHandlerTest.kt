@@ -10,6 +10,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,7 +48,15 @@ class InitiateFlowRequestHandlerTest {
         whenever(testContext.flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
-        whenever(testContext.flowStack.nearestFirst(any())).thenReturn(FlowStackItem("flow", true, listOf()))
+        whenever(testContext.flowStack.nearestFirst(any())).thenReturn(
+            FlowStackItem(
+                "flow",
+                true,
+                mutableListOf(),
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
+            )
+        )
     }
 
     @Test

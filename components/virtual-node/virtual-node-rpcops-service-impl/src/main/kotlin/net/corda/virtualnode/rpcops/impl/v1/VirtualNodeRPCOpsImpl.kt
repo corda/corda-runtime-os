@@ -132,7 +132,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =
-        HoldingIdentityEndpointType(x500Name.toString(), groupId, shortHash, fullHash)
+        HoldingIdentityEndpointType(x500Name.toString(), groupId, shortHash.value, fullHash)
 
     private fun net.corda.virtualnode.VirtualNodeInfo.toEndpointType(): VirtualNodeInfo =
         VirtualNodeInfo(
