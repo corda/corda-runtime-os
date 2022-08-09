@@ -12,6 +12,12 @@ fun keyValueStoreOf(vararg pairs: Pair<String, String>) = KeyValueStore().apply 
     }
 }
 
+fun keyValuePairListOf(map: Map<String, String>) = mutableKeyValuePairList().apply {
+    map.entries.forEach {
+        items.add(KeyValuePair(it.key, it.value))
+    }
+}
+
 /**
  * A KeyValueStore which operates much like a map from the user perspective. Internally it is backed by an Avro array
  * which means serialization and deserialization are guaranteed to produce the same object, which is not the case with

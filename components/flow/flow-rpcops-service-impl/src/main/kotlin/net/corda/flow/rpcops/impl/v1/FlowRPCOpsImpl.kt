@@ -80,7 +80,7 @@ class FlowRPCOpsImpl @Activate constructor(
         val flowClassName = startFlow.flowClassName
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
         // This is a placeholder which indicates access to everything, see CORE-6076
-        val flowContextPlatformProperties = keyValueStoreOf("net.corda.account" to "account-zero")
+        val flowContextPlatformProperties = mapOf("net.corda.account" to "account-zero")
         val startEvent =
             messageFactory.createStartFlowEvent(
                 clientRequestId,
