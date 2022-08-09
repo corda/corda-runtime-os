@@ -80,10 +80,10 @@ pipeline {
             steps {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
-               }
-               cordaClusterPrefixes = ["alice","bob","caroline"]
-               cordaClusterPrefixes.each {
-                    sh "helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set fullNameOverride=$it --set kafka.topicPrefix=$it --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s"
+                  cordaClusterPrefixes = ["alice","bob","caroline"]
+                  cordaClusterPrefixes.each {
+                        sh "helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set fullNameOverride=$it --set kafka.topicPrefix=$it --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s"
+                  }
                }
             }
             post {
