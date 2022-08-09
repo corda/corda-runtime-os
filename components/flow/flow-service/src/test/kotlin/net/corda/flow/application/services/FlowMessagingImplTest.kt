@@ -3,6 +3,7 @@ package net.corda.flow.application.services
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -33,14 +34,23 @@ class FlowMessagingImplTest {
 
     @Test
     fun `initiateFlow creates an uninitiated FlowSession when the current flow stack item represents an initiating flow`() {
-        whenever(flowStackService.peek()).thenReturn(FlowStackItem(FLOW_NAME, true, mutableListOf()))
+        whenever(flowStackService.peek()).thenReturn(
+            FlowStackItem(
+                FLOW_NAME,
+                true,
+                mutableListOf(),
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
+            )
+        )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
         verify(flowSessionFactory).create(any(), eq(ALICE_X500_NAME), initiated = eq(false))
     }
 
     @Test
     fun `initiateFlow adds the new session id to the current flow stack item (containing no sessions) when the item represents is an initiating flow`() {
-        val flowStackItem = FlowStackItem(FLOW_NAME, true, mutableListOf())
+        val flowStackItem =
+            FlowStackItem(FLOW_NAME, true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
         assertEquals(1, flowStackItem.sessionIds.size)
@@ -48,7 +58,13 @@ class FlowMessagingImplTest {
 
     @Test
     fun `initiateFlow adds the new session id to the current flow stack item (containing existing sessions) when the item represents is an initiating flow`() {
-        val flowStackItem = FlowStackItem(FLOW_NAME, true, mutableListOf("1", "2", "3"))
+        val flowStackItem = FlowStackItem(
+            FLOW_NAME,
+            true,
+            mutableListOf("1", "2", "3"),
+            mutableKeyValuePairList(),
+            mutableKeyValuePairList()
+        )
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
         assertEquals(4, flowStackItem.sessionIds.size)
@@ -56,7 +72,15 @@ class FlowMessagingImplTest {
 
     @Test
     fun `initiateFlow throws an error when the current flow stack item represents a non-initiating flow`() {
-        whenever(flowStackService.peek()).thenReturn(FlowStackItem(FLOW_NAME, false, emptyList()))
+        whenever(flowStackService.peek()).thenReturn(
+            FlowStackItem(
+                FLOW_NAME,
+                false,
+                emptyList(),
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
+            )
+        )
         assertThrows<CordaRuntimeException> { flowMessaging.initiateFlow(ALICE_X500_NAME) }
     }
 

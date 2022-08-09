@@ -10,6 +10,7 @@ import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -30,29 +31,29 @@ internal class HostedIdentityEntryFactory(
 ) {
 
     private fun getNode(holdingIdentityShortHash: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(holdingIdentityShortHash))
             ?: throw CertificatesResourceNotFoundException("No node with ID $holdingIdentityShortHash")
     }
 
     private fun getKey(
-        holdingIdentityShortHash: String,
+        tenantId: String,
         sessionKeyId: String?,
     ): String {
         val sessionKey = if (sessionKeyId != null) {
             cryptoOpsClient.lookup(
-                tenantId = holdingIdentityShortHash,
+                tenantId = tenantId,
                 ids = listOf(sessionKeyId)
             )
         } else {
             cryptoOpsClient.lookup(
-                tenantId = holdingIdentityShortHash,
+                tenantId = tenantId,
                 0,
                 1,
                 CryptoKeyOrderBy.NONE,
                 mapOf(CryptoConsts.SigningKeyFilters.CATEGORY_FILTER to CryptoConsts.Categories.SESSION_INIT,),
             )
         }.firstOrNull()
-            ?: throw CertificatesResourceNotFoundException("Can not find session key for $holdingIdentityShortHash")
+            ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
 
         val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
         return keyEncodingService.encodeAsString(sessionPublicKey)
@@ -87,11 +88,13 @@ internal class HostedIdentityEntryFactory(
         holdingIdentityShortHash: String,
         certificateChainAlias: String,
         tlsTenantId: String?,
+        sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
 
         val nodeInfo = getNode(holdingIdentityShortHash)
-        val sessionPublicKey = getKey(holdingIdentityShortHash, sessionKeyId)
+        val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash
+        val sessionPublicKey = getKey(actualSessionKeyTenantId, sessionKeyId)
         val actualTlsTenantId = tlsTenantId ?: holdingIdentityShortHash
         val tlsCertificates = getCertificates(
             actualTlsTenantId, certificateChainAlias,
@@ -100,14 +103,14 @@ internal class HostedIdentityEntryFactory(
 
         val hostedIdentityEntry = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
-            .setSessionKeyTenantId(holdingIdentityShortHash)
+            .setSessionKeyTenantId(actualSessionKeyTenantId)
             .setSessionPublicKey(sessionPublicKey)
             .setTlsCertificates(tlsCertificates)
             .setTlsTenantId(actualTlsTenantId)
             .build()
         return Record(
             topic = Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
-            key = nodeInfo.holdingIdentity.shortHash,
+            key = nodeInfo.holdingIdentity.shortHash.value,
             value = hostedIdentityEntry,
         )
     }

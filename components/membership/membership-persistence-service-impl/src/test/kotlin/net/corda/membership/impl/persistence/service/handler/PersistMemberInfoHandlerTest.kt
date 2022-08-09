@@ -22,6 +22,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -157,7 +158,7 @@ class PersistMemberInfoHandlerTest {
         )
 
         assertThat(result).isInstanceOf(Unit::class.java)
-        with(argumentCaptor<String>()) {
+        with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }

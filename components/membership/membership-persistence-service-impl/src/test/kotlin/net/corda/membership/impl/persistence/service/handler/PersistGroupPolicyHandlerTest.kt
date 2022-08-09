@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupPolicyEntity
@@ -62,7 +63,7 @@ class PersistGroupPolicyHandlerTest {
     private val connectionManager = mock<DbConnectionManager> {
         on {
             getOrCreateEntityManagerFactory(
-                "vnode_vault_${identity.shortHash.lowercase()}",
+                VirtualNodeDbType.VAULT.getConnectionName(identity.shortHash),
                 DbPrivilege.DML,
                 entitySet
             )

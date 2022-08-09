@@ -2,6 +2,7 @@ package net.corda.testutils.internal
 
 import net.corda.testutils.tools.CordaFlowChecker
 import net.corda.testutils.tools.FlowChecker
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
@@ -35,6 +36,9 @@ class InjectingFlowEngine(
     override fun sleep(duration: Duration) {
         TODO("Not yet implemented")
     }
+
+    override val flowContextProperties: FlowContextProperties
+        get() = TODO("Not yet implemented")
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         flowChecker.check(subFlow.javaClass)

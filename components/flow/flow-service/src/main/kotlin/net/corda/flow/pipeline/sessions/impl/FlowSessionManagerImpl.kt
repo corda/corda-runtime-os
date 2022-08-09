@@ -13,6 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -43,6 +44,9 @@ class FlowSessionManagerImpl @Activate constructor(
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            // TODO CORE-5991 populate with maps from the current context properties
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -164,8 +168,10 @@ class FlowSessionManagerImpl @Activate constructor(
         val sessionsToReport = missingSessionStates.map { "'${it}'=MISSING" } +
                 invalidSessions.map { "'${it.sessionId}'=${it.status}" }
 
-        throw FlowSessionStateException("${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
-                "sessions are invalid [${sessionsToReport.joinToString(", ")}]")
+        throw FlowSessionStateException(
+            "${missingSessionStates.size + invalidSessions.size} of ${sessionIds.size} " +
+                    "sessions are invalid [${sessionsToReport.joinToString(", ")}]"
+        )
     }
 
     private fun sendSessionMessageToExistingSession(

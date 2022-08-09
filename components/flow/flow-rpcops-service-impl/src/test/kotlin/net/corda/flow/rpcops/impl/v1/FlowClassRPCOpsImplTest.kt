@@ -91,7 +91,7 @@ class FlowClassRPCOpsImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
         val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         assertThrows<ResourceNotFoundException> {
-            flowClassRPCOps.getStartableFlows("")
+            flowClassRPCOps.getStartableFlows("1234567890ab")
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(0)).get(any())
@@ -103,7 +103,7 @@ class FlowClassRPCOpsImplTest {
 
         val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
         assertThrows<ResourceNotFoundException> {
-            flowClassRPCOps.getStartableFlows("")
+            flowClassRPCOps.getStartableFlows("1234567890ab")
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
@@ -112,7 +112,7 @@ class FlowClassRPCOpsImplTest {
     @Test
     fun `Get flow classes executes cpi service and vnode service and returns list of strings`() {
         val flowClassRPCOps = FlowClassRPCOpsImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
-        flowClassRPCOps.getStartableFlows("")
+        flowClassRPCOps.getStartableFlows("1234567890ab")
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
     }

@@ -25,7 +25,7 @@ internal class MembershipPackageHandler(
         logger.info("Received membership data package. Publishing to topic $SYNCHRONISATION_TOPIC.")
         return Record(
             SYNCHRONISATION_TOPIC,
-            header.destination.toCorda().shortHash,
+            header.destination.toCorda().shortHash.value,
             SynchronisationCommand(
                 ProcessMembershipUpdates(
                     header.destination,
