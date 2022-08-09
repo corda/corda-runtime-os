@@ -21,7 +21,6 @@ class MessageQueueWebsocketHandler(
 
     override fun onWebSocketClose(statusCode: Int, reason: String?) {
         log.info("Reacting to server closed: $statusCode - $reason")
-        super.getSession().close(statusCode, reason)
         super.onWebSocketClose(statusCode, reason)
     }
 
