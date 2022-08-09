@@ -41,7 +41,7 @@ internal class ConfigProcessor(
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         val config = mergeConfigs(currentData)
 
-        if (config.values.find { !it.isEmpty } != null) {
+        if (config.values.any { !it.isEmpty }) {
             currentData.forEach { (configSection, configuration) ->
                 addToCache(configSection, configuration)
             }
