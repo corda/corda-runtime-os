@@ -1,7 +1,7 @@
 package net.corda.chunking.db.impl.validation
 
 import net.corda.chunking.db.impl.persistence.CpiPersistence
-import net.corda.libs.cpiupload.ValidationException
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
-class UniqueGroupIdTest {
+class ValidateUniqueCpiAndGroupIdTest {
     @Test
     fun `succeeds with unique groupId`() {
         val requiredName = "aaa"
@@ -54,7 +54,7 @@ class UniqueGroupIdTest {
             on { getGroupId(requiredName, requiredVersion, hash.toString()) }.doReturn(groupId)
         }
 
-        assertThrows<ValidationException> { cpiExists.verifyGroupIdIsUniqueForCpi(cpi) }
+        assertThrows<DuplicateCpiUploadException> { cpiExists.verifyGroupIdIsUniqueForCpi(cpi) }
     }
 
 }
