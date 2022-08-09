@@ -81,6 +81,7 @@ class NetworkRpcOpsImplTest {
                 HostedIdentitySetupRequest(
                     "alias",
                     "tls",
+                    "session-tenant",
                     "session"
                 )
             )
@@ -89,6 +90,7 @@ class NetworkRpcOpsImplTest {
                 "id",
                 "alias",
                 "tls",
+                "session-tenant",
                 "session",
             )
         }
@@ -96,6 +98,7 @@ class NetworkRpcOpsImplTest {
         fun `it catches resource not found exception`() {
             whenever(
                 certificatesClient.setupLocallyHostedIdentity(
+                    any(),
                     any(),
                     any(),
                     any(),
@@ -109,6 +112,7 @@ class NetworkRpcOpsImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         "tls",
+                        "session-tenant",
                         "session"
                     )
                 )
@@ -122,6 +126,7 @@ class NetworkRpcOpsImplTest {
                     any(),
                     any(),
                     any(),
+                    any(),
                 )
             ).doThrow(RuntimeException("Nop"))
 
@@ -131,6 +136,7 @@ class NetworkRpcOpsImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         "tls",
+                        "session-tenant",
                         "session"
                     )
                 )

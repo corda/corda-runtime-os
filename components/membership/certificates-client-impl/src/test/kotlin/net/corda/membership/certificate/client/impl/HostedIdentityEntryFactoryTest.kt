@@ -35,10 +35,13 @@ class HostedIdentityEntryFactoryTest {
     private companion object {
         val validHoldingId = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group-1")
         val publicKeyBytes = "123".toByteArray()
+        val publicKeyBytesKnownTenant = "456".toByteArray()
         const val VALID_NODE = "validNode"
         const val INVALID_NODE = "invalidNode"
         const val PUBLIC_KEY_PEM = "publicKeyPem"
+        const val KNOWN_TENANT_PUBLIC_KEY_PEM = "knownTenantPublicKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
+        const val KNOWN_TENANT = "sessionKeyTenantId"
     }
 
     private val nodeInfo = mock<VirtualNodeInfo> {
@@ -50,6 +53,9 @@ class HostedIdentityEntryFactoryTest {
     }
     private val sessionKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
+    }
+    private val knownTenantSessionKey = mock<CryptoSigningKey> {
+        on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytesKnownTenant)
     }
     private val certificatePem =
         HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
@@ -77,6 +83,12 @@ class HostedIdentityEntryFactoryTest {
                 ids.capture()
             )
         } doReturn listOf(sessionKey)
+        on {
+            lookup(
+                eq(KNOWN_TENANT),
+                ids.capture()
+            )
+        } doReturn listOf(knownTenantSessionKey)
 
         on {
             filterMyKeys(eq(VALID_NODE), eq(listOf(certificatePublicKey)))
@@ -86,9 +98,12 @@ class HostedIdentityEntryFactoryTest {
         }.doReturn(listOf(certificatePublicKey))
     }
     private val sessionPublicKey = mock<PublicKey>()
+    private val knownTenantSessionPublicKey = mock<PublicKey>()
     private val keyEncodingService = mock<KeyEncodingService> {
         on { decodePublicKey(publicKeyBytes) } doReturn sessionPublicKey
+        on { decodePublicKey(publicKeyBytesKnownTenant) } doReturn knownTenantSessionPublicKey
         on { encodeAsString(sessionPublicKey) } doReturn PUBLIC_KEY_PEM
+        on { encodeAsString(knownTenantSessionPublicKey) } doReturn KNOWN_TENANT_PUBLIC_KEY_PEM
     }
     private val p2pParams: GroupPolicy.P2PParameters = mock {
         on { tlsTrustRoots } doReturn listOf(rootPem)
@@ -119,6 +134,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = null,
+            sessionKeyTenantId = null,
             sessionKeyId = null
         )
 
@@ -144,9 +160,38 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = INVALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
+    }
+
+    @Test
+    fun `createIdentityRecord will use session tenant ID if provided`() {
+        val record = factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsTenantId = VALID_NODE,
+            sessionKeyTenantId = KNOWN_TENANT,
+            sessionKeyId = "id1"
+        )
+
+        assertThat(record.value?.sessionKeyTenantId).isEqualTo(KNOWN_TENANT)
+        assertThat(record.value?.sessionPublicKey).isEqualTo(KNOWN_TENANT_PUBLIC_KEY_PEM)
+    }
+
+    @Test
+    fun `createIdentityRecord will default to holding identity short hash if session tenant ID is not provided`() {
+        val record = factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsTenantId = VALID_NODE,
+            sessionKeyTenantId = null,
+            sessionKeyId = "id1"
+        )
+
+        assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE)
+        assertThat(record.value?.sessionPublicKey).isEqualTo(PUBLIC_KEY_PEM)
     }
 
     @Test
@@ -155,6 +200,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE,
+            sessionKeyTenantId = null,
             sessionKeyId = "id1"
         )
 
@@ -169,6 +215,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE,
+            sessionKeyTenantId = null,
             sessionKeyId = null
         )
 
@@ -185,6 +232,7 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
@@ -197,6 +245,7 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = "NOP",
                 tlsTenantId = VALID_NODE,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
@@ -219,6 +268,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
+            sessionKeyTenantId = null,
             sessionKeyId = null
         )
 
@@ -231,6 +281,7 @@ class HostedIdentityEntryFactoryTest {
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
+            sessionKeyTenantId = null,
             sessionKeyId = null
         )
 
@@ -253,6 +304,7 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
@@ -267,6 +319,7 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
@@ -284,6 +337,7 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
@@ -301,6 +355,7 @@ class HostedIdentityEntryFactoryTest {
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
+                sessionKeyTenantId = null,
                 sessionKeyId = null
             )
         }
