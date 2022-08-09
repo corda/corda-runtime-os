@@ -80,7 +80,7 @@ private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldi
                     "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
                             "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
                 )
-                // Since this call can be made from `onConnect` it is best to defer calling close later on from a separate
+                // Since this call can be made from `onConnect` it is best deferring calling close later on from a separate
                 // thread or else Javalin may end-up in the unusable state sometimes.
                 deferClosePool.schedule({
                     close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
