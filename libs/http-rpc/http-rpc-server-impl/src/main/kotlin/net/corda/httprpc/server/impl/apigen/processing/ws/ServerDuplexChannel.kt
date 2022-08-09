@@ -8,8 +8,13 @@ import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.util.concurrent.Future
 import net.corda.httprpc.ws.WebSocketProtocolViolationException
+import net.corda.v5.base.util.contextLogger
 
 internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexChannel {
+
+    private companion object {
+        val logger = contextLogger()
+    }
 
     private var errorHook: ((Throwable?) -> Unit)? = null
     private var textMessageHook: ((message: String) -> Unit)? = null
@@ -42,7 +47,12 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
 
     fun close(closeStatus: CloseStatus) {
         closeHook?.let { it(closeStatus.code, closeStatus.phrase) }
-        ctx.closeSession(closeStatus)
+        if(ctx.session.isOpen) {
+            logger.info("ServerDuplexChannel closing open session with status ${closeStatus.code}, reason: ${closeStatus.phrase}.")
+            ctx.closeSession(closeStatus)
+        } else {
+            logger.warn("ServerDuplexChannel attempted to close session (${ctx.session.remoteAddress}) but it was not open.")
+        }
     }
 
     override var onConnect: (() -> Unit)?
