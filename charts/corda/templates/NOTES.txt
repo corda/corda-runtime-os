@@ -6,6 +6,3 @@ kubectl get secret {{ include "corda.initialAdminUserSecretName" . }} -o jsonpat
 kubectl port-forward --namespace {{ .Release.Namespace }} deployment/{{ include "corda.fullname" . }}-rpc-worker 8888 &
 
 3. The API endpoint definition can then be accessed via: https://localhost:8888/api/v1/swagger
-
-4. Expose the Kafka external port on localhost by running this command:
-kubectl port-forward --namespace {{ .Release.Namespace }} service/prereqs-kafka-0-external 9094

@@ -2,7 +2,7 @@ package net.corda.applications.workers.rpc
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.applications.workers.rpc.http.acceptRecordsFromKafka
+import net.corda.applications.workers.rpc.kafka.KafkaTestToolKit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.httprpc.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
@@ -22,10 +22,11 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.time.Clock
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -36,6 +37,9 @@ import java.util.zip.ZipEntry
 
 class StaticNetworkTest {
     private val testToolkit by TestToolkitProperty()
+    private val kafkaToolKit by lazy {
+        KafkaTestToolKit(testToolkit)
+    }
     private val json = ObjectMapper()
     private fun createCertificate() = StaticNetworkTest::class.java.classLoader.getResource("certificate.pem")!!.readText()
     private val groupId = testToolkit.uniqueName
@@ -208,8 +212,24 @@ class StaticNetworkTest {
         }
     }
 
+    /*
+    This test is disabled until CORE-6079 is ready.
+    To run it locally use either:
+    1. Minikube:
+        Start the cluster by using https://gist.github.com/yift-r3/3461c5b116de1e197f2cc69d54d34f56
+        and set the environment variables as describe at the end of the script.
+    2. To connect to a running cluster:
+        Connect to the cluster using https://gist.github.com/yift-r3/f975083b686c48193ca12077bd1dfa34
+        and set the environment variables as describe at the end of the script.
+    3. AWS:
+        Start the cluster by using https://gist.github.com/yift-r3/ffa55f1171787d88b3b5370bda5823b8
+        and set the environment variables as describe at the end of the script.
+     */
     @Test
-    fun `send P2P authenticated message`() {
+    @Disabled("This test is disabled until CORE-6079 is ready")
+    @Timeout(value = 10, unit = TimeUnit.MINUTES)
+    fun `send P2P messages`() {
+        // Create two identities
         val sender = HoldingIdentity(
             "C=GB, L=London, O=Member-${testToolkit.uniqueName}",
             groupId,
@@ -221,6 +241,7 @@ class StaticNetworkTest {
         )
         val holdingIds = createVirtualNodes(listOf(sender.x500Name, receiver.x500Name))
 
+        // Register the identities
         testToolkit.httpClientFor(MemberRegistrationRpcOps::class.java).use { client ->
             val proxy = client.start().proxy
             holdingIds.values.forEach { id ->
@@ -236,21 +257,20 @@ class StaticNetworkTest {
                 assertThat(registrationRequestProgress.registrationStatus).isEqualTo("SUBMITTED")
             }
         }
+
         val traceId = "e2e-test-$groupId"
         val subSystem = "e2e-test"
-        val numberOfMessages = 12
-        val receivedMessages = ConcurrentHashMap<String, String>()
-        val countDown = CountDownLatch(numberOfMessages)
 
-        val messagesIdToContent = (1..numberOfMessages).associate {
+        // Create authenticated messages
+        val numberOfAuthenticatedMessages = 5
+        val authenticatedMessagesIdToContent = (1..numberOfAuthenticatedMessages).associate {
             testToolkit.uniqueName to testToolkit.uniqueName
         }
-        val stamClock = Clock.systemUTC()
-        val records = messagesIdToContent.map { (id, content) ->
+        val authenticatedRecords = authenticatedMessagesIdToContent.map { (id, content) ->
             val messageHeader = AuthenticatedMessageHeader.newBuilder()
                 .setDestination(receiver)
                 .setSource(sender)
-                .setTtl(stamClock.instant().plusSeconds(200))
+                .setTtl(null)
                 .setMessageId(id)
                 .setTraceId(traceId)
                 .setSubsystem(subSystem)
@@ -261,86 +281,13 @@ class StaticNetworkTest {
                 .build()
             Record(P2P_OUT_TOPIC, testToolkit.uniqueName, AppMessage(message))
         }
-        println("QQQ records = $records")
 
-        testToolkit.acceptRecordsFromKafka<String, AppMessage>(P2P_IN_TOPIC) { record ->
-            println("QQQ Got record = $record")
-            val message = record.value?.message as? AuthenticatedMessage ?: return@acceptRecordsFromKafka
-            println("QQQ \t 1")
-            if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 2")
-            if (message.header.destination.groupId != groupId) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 3")
-            if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 4")
-            if (message.header.source.groupId != groupId) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 5")
-            if (message.header.traceId != traceId) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 6")
-            if (message.header.subsystem != subSystem) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 7")
-            receivedMessages[message.header.messageId] = String(message.payload.array())
-            println("QQQ \t 8 $countDown")
-            countDown.countDown()
-        }.use {
-            println("QQQ Sending...")
-            testToolkit.publishRecordsToKafka(records)
-            println("QQQ Sent.")
-            countDown.await(1, TimeUnit.MINUTES)
-        }
-
-        assertThat(receivedMessages).containsAllEntriesOf(messagesIdToContent)
-    }
-
-    @Test
-    fun `send P2P unauthenticated messages`() {
-        val sender = HoldingIdentity(
-            "C=GB, L=London, O=Member-${testToolkit.uniqueName}",
-            groupId,
-        )
-
-        val receiver = HoldingIdentity(
-            "C=GB, L=London, O=Member-${testToolkit.uniqueName}",
-            groupId,
-        )
-        val holdingIds = createVirtualNodes(listOf(sender.x500Name, receiver.x500Name))
-
-        testToolkit.httpClientFor(MemberRegistrationRpcOps::class.java).use { client ->
-            val proxy = client.start().proxy
-            holdingIds.values.forEach { id ->
-                val registrationRequestProgress = proxy.startRegistration(
-                    id,
-                    MemberRegistrationRequest(
-                        action = "requestJoin",
-                        context = mapOf(
-                            "corda.key.scheme" to "CORDA.ECDSA.SECP256R1"
-                        )
-                    )
-                )
-                assertThat(registrationRequestProgress.registrationStatus).isEqualTo("SUBMITTED")
-            }
-        }
-        val subSystem = "e2e-test"
-        val numberOfMessages = 8
-        val receivedMessages = ConcurrentHashMap.newKeySet<String>()
-        val countDown = CountDownLatch(numberOfMessages)
-
-        val messagesContent = (1..numberOfMessages).map {
+        // Create unauthenticated messages
+        val numberOfUnauthenticatedMessages = 3
+        val unauthenticatedMessagesContent = (1..numberOfUnauthenticatedMessages).map {
             testToolkit.uniqueName
         }
-        val records = messagesContent.map { content ->
+        val unauthenticatedRecords = unauthenticatedMessagesContent.map { content ->
             val messageHeader = UnauthenticatedMessageHeader.newBuilder()
                 .setDestination(receiver)
                 .setSource(sender)
@@ -353,43 +300,59 @@ class StaticNetworkTest {
             Record(P2P_OUT_TOPIC, testToolkit.uniqueName, AppMessage(message))
         }
 
-        println("QQQ recieving...")
-
-        testToolkit.acceptRecordsFromKafka<String, AppMessage>(P2P_IN_TOPIC) { record ->
-            println("QQQ record: $record")
-            val message = record.value?.message as? UnauthenticatedMessage ?: return@acceptRecordsFromKafka
-            println("QQQ \t message: $record")
-            if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
-                return@acceptRecordsFromKafka
+        // Accept messages
+        val receivedAuthenticatedMessages = ConcurrentHashMap<String, String>()
+        val receivedUnauthenticatedMessages = ConcurrentHashMap.newKeySet<String>()
+        val countDown = CountDownLatch(numberOfUnauthenticatedMessages + numberOfAuthenticatedMessages)
+        kafkaToolKit.acceptRecordsFromKafka<String, AppMessage>(P2P_IN_TOPIC) { record ->
+            val message = record.value?.message
+            if (message is AuthenticatedMessage) {
+                if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.destination.groupId != groupId) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.source.groupId != groupId) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.traceId != traceId) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.subsystem != subSystem) {
+                    return@acceptRecordsFromKafka
+                }
+                receivedAuthenticatedMessages[message.header.messageId] = String(message.payload.array())
+                countDown.countDown()
+            } else if (message is UnauthenticatedMessage) {
+                if (message.header.destination.x500Name.clearX500Name() != receiver.x500Name.clearX500Name()) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.destination.groupId != groupId) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.source.groupId != groupId) {
+                    return@acceptRecordsFromKafka
+                }
+                if (message.header.subsystem != subSystem) {
+                    return@acceptRecordsFromKafka
+                }
+                receivedUnauthenticatedMessages.add(String(message.payload.array()))
+                countDown.countDown()
             }
-            println("QQQ \t 1")
-            if (message.header.destination.groupId != groupId) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 2")
-            if (message.header.source.x500Name.clearX500Name() != sender.x500Name.clearX500Name()) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 3")
-            if (message.header.source.groupId != groupId) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 4")
-            if (message.header.subsystem != subSystem) {
-                return@acceptRecordsFromKafka
-            }
-            println("QQQ \t 6")
-            receivedMessages.add(String(message.payload.array()))
-            println("QQQ \t 7 $receivedMessages")
-            countDown.countDown()
-            println("QQQ \t 8 $countDown")
         }.use {
-            println("QQQ Sending $records")
-            testToolkit.publishRecordsToKafka(records)
-            println("QQQ SENT!")
+            // Send messages
+            kafkaToolKit.publishRecordsToKafka(unauthenticatedRecords + authenticatedRecords)
             countDown.await(5, TimeUnit.MINUTES)
         }
 
-        assertThat(receivedMessages).containsAll(messagesContent)
+        assertThat(receivedAuthenticatedMessages).containsAllEntriesOf(authenticatedMessagesIdToContent)
+        assertThat(receivedUnauthenticatedMessages).containsAll(unauthenticatedMessagesContent)
     }
 }

@@ -6,16 +6,9 @@ global:
 
 kafka:
   auth:
-    clientProtocol: sasl_tls
-  externalAccess:
     enabled: true
-    autoDiscovery:
-      enabled: true
+    clientProtocol: sasl_tls
   replicaCount: 3
-  serviceAccount:
-    create: true
-  rbac:
-    create: true
   resources:
     requests:
       memory: 390Mi
