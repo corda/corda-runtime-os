@@ -1,6 +1,6 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 

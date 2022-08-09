@@ -4,8 +4,8 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.mgm.VerifyMember
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler

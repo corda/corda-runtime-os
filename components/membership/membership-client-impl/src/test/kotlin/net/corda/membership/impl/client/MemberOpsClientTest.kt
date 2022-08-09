@@ -16,7 +16,6 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -133,14 +132,12 @@ class MemberOpsClientTest {
                             clock.instant()
                         ),
                         RegistrationRpcResponse(
-                            RegistrationStatus(
-                                clock.instant(),
-                                RegistrationRpcStatus.SUBMITTED,
-                                "Registration-ID",
-                                1,
-                                KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                                KeyValuePairList(emptyList())
-                            )
+                            "Registration-ID",
+                            clock.instant(),
+                            RegistrationRpcStatus.SUBMITTED,
+                            1,
+                            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                            KeyValuePairList(emptyList())
                         )
                     )
                 )
@@ -269,14 +266,12 @@ class MemberOpsClientTest {
                         clock.instant()
                     ),
                     RegistrationRpcResponse(
-                        RegistrationStatus(
-                            clock.instant(),
-                            RegistrationRpcStatus.SUBMITTED,
-                            "RegistrationID",
-                            1,
-                            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                            KeyValuePairList(emptyList())
-                        )
+                        "RegistrationID",
+                        clock.instant(),
+                        RegistrationRpcStatus.SUBMITTED,
+                        1,
+                        KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                        KeyValuePairList(emptyList())
                     )
                 )
             )
@@ -304,14 +299,12 @@ class MemberOpsClientTest {
                         clock.instant()
                     ),
                     RegistrationRpcResponse(
-                        RegistrationStatus(
-                            clock.instant(),
-                            RegistrationRpcStatus.SUBMITTED,
-                            "RegistrationID",
-                            1,
-                            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                            KeyValuePairList(emptyList())
-                        )
+                        "RegistrationID",
+                        clock.instant(),
+                        RegistrationRpcStatus.SUBMITTED,
+                        1,
+                        KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                        KeyValuePairList(emptyList())
                     )
                 )
             )

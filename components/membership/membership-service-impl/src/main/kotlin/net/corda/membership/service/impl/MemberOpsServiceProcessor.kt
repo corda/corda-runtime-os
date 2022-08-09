@@ -12,7 +12,6 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
@@ -117,7 +116,7 @@ class MemberOpsServiceProcessor(
         return factory.invoke(this) as RpcHandler<Any>
     }
 
-    private inner class RegistrationRequestHandler() : RpcHandler<RegistrationRpcRequest> {
+    private inner class RegistrationRequestHandler : RpcHandler<RegistrationRpcRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: RegistrationRpcRequest): Any {
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity =
@@ -136,14 +135,12 @@ class MemberOpsServiceProcessor(
                 RegistrationRpcStatus.valueOf(it.toString())
             } ?: RegistrationRpcStatus.NOT_SUBMITTED
             return RegistrationRpcResponse(
-                RegistrationStatus(
-                    context.requestTimestamp,
-                    registrationStatus,
-                    registrationId.toString(),
-                    REGISTRATION_PROTOCOL_VERSION,
-                    KeyValuePairList(emptyList()),
-                    KeyValuePairList(emptyList())
-                )
+                registrationId.toString(),
+                context.requestTimestamp,
+                registrationStatus,
+                REGISTRATION_PROTOCOL_VERSION,
+                KeyValuePairList(emptyList()),
+                KeyValuePairList(emptyList())
             )
         }
     }
@@ -155,7 +152,7 @@ class MemberOpsServiceProcessor(
     }
 
     @Suppress("MaxLineLength")
-    private inner class MGMGroupPolicyRequestHandler() : RpcHandler<MGMGroupPolicyRequest> {
+    private inner class MGMGroupPolicyRequestHandler : RpcHandler<MGMGroupPolicyRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: MGMGroupPolicyRequest): Any {
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService

@@ -8,6 +8,7 @@ import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 
 /**
  * RPC operations for registering a member (i.e. holding identity) within a group.
@@ -44,7 +45,7 @@ interface MemberRegistrationRpcOps : RpcOps {
      * outwards communication.
      *
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
-     * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
+     * @return [RegistrationRequestStatus] to indicate the last known status of the registration request based on
      *  local member data.
      */
     @HttpRpcGET(
@@ -54,7 +55,7 @@ interface MemberRegistrationRpcOps : RpcOps {
     fun checkRegistrationProgress(
         @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityShortHash: String
-    ): List<RegistrationRequestProgress>
+    ): List<RegistrationRequestStatus>
 
     /**
      * GET endpoint which checks specific status of registration based on a member's own local data and without
@@ -62,7 +63,7 @@ interface MemberRegistrationRpcOps : RpcOps {
      *
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @param registrationRequestId The ID of the registration request.
-     * @return [RegistrationRequestProgress] to indicate the last known status of the registration request based on
+     * @return [RegistrationRequestStatus] to indicate the last known status of the registration request based on
      *  local member data.
      */
     @HttpRpcGET(
@@ -74,5 +75,5 @@ interface MemberRegistrationRpcOps : RpcOps {
         holdingIdentityShortHash: String,
         @HttpRpcPathParameter(description = "ID of the request to be checked.")
         registrationRequestId: String,
-    ): RegistrationRequestProgress?
+    ): RegistrationRequestStatus?
 }

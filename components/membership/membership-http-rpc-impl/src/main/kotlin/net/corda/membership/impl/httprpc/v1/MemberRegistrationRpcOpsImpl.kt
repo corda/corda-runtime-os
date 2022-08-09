@@ -10,6 +10,7 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -34,11 +35,11 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress
 
-        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestProgress>
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus>
         fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String
-        ): RegistrationRequestProgress?
+        ): RegistrationRequestStatus?
     }
 
     private val className = this::class.java.simpleName
@@ -107,7 +108,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestProgress> =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -129,14 +130,14 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
             return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityShortHash)).fromDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestProgress> {
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
             return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).map { it.fromDto() }
         }
 
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String,
-        ): RegistrationRequestProgress? {
+        ): RegistrationRequestStatus? {
             return memberOpsClient.checkSpecificRegistrationProgress(
                 holdingIdentityShortHash,
                 registrationRequestId

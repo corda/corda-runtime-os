@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
