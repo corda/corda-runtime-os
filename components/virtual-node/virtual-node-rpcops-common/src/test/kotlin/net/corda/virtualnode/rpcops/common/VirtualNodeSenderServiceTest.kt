@@ -6,6 +6,8 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.rpcops.common.impl.RPCSenderFactory
+import net.corda.virtualnode.rpcops.common.impl.RPCSenderWrapperImpl
 import net.corda.virtualnode.rpcops.common.impl.VirtualNodeSenderServiceImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -86,7 +88,7 @@ class VirtualNodeSenderServiceTest {
 
         @Test
         fun `sendAndReceive throws CordaRuntimeException if timeout is null`() {
-            val service = VirtualNodeSenderServiceImpl(mockCoordinatorFactory, mock(), mock(), mock())
+            val service = VirtualNodeSenderServiceImpl(mockCoordinatorFactory, mock(), mock())
             val exception = assertThrows<CordaRuntimeException> {
                 service.sendAndReceive(mock())
             }
@@ -104,7 +106,11 @@ class VirtualNodeSenderServiceTest {
             val sender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>().apply {
                 whenever(sendRequest(any())) doReturn mockFuture
             }
-            val service = VirtualNodeSenderServiceImpl(mockCoordinatorFactory, mock(), mock(), sender, Duration.ofMillis(1000))
+            val senderWrapper = RPCSenderWrapperImpl(Duration.ofMillis(1000), sender)
+            val rpcSenderFactory = mock<RPCSenderFactory>().apply {
+                whenever(createSender(any(), any())) doReturn senderWrapper
+            }
+            val service = VirtualNodeSenderServiceImpl(mockCoordinatorFactory, mock(), rpcSenderFactory)
 
             service.sendAndReceive(mockRequest)
 

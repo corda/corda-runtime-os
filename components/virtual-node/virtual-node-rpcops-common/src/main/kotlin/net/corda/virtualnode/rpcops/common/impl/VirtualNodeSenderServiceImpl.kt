@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,12 +13,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.rpcops.common.SENDER_CONFIG
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -43,85 +40,64 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
+    @Reference(service = RPCSenderFactory::class)
+    private val rpcSenderFactory: RPCSenderFactory,
 ) : VirtualNodeSenderService {
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
         private val logger = contextLogger()
     }
-    private var configReadServiceRegistrationHandle: AutoCloseable? = null
-    private var configUpdateHandle: AutoCloseable? = null
-    private var rpcSenderWrapper: RPCSenderWrapper? = null
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeSenderService>()
     ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
         when (event) {
             is StartEvent -> {
-                configReadServiceRegistrationHandle?.close()
-                configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
-                    setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
-                )
+                configurationReadService.start()
+                coordinator.createManagedResource("REGISTRATION") {
+                    coordinator.followStatusChangesByName(
+                        setOf(
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        )
+                    )
+                }
             }
             is StopEvent -> {
-                configReadServiceRegistrationHandle?.close()
-                rpcSenderWrapper?.close()
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
-                    LifecycleStatus.ERROR -> coordinator.postEvent(StopEvent(errored = true))
+                    LifecycleStatus.ERROR -> {
+                        coordinator.closeManagedResources(setOf("CONFIG_HANDLE"))
+                        coordinator.postEvent(StopEvent(errored = true))
+                    }
                     LifecycleStatus.UP -> {
                         // Receive updates to the RPC and Messaging config
-                        configUpdateHandle?.close()
-                        configUpdateHandle =
-                            configurationReadService.registerComponentForUpdates(coordinator, requiredKeys)
+                        coordinator.createManagedResource("CONFIG_HANDLE") {
+                            configurationReadService.registerComponentForUpdates(
+                                coordinator,
+                                requiredKeys
+                            )
+                        }
                     }
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
                 logger.info("${this::javaClass.name} is now ${event.status}")
             }
-            is ConfigChangedEvent -> onConfigChange(coordinator, event.config, event.keys)
-        }
-    }
-
-    /**
-     * Manages updates to the config of the component
-     *
-     * Will destroy and recreate the rpc sender in the event of a config update.
-     *
-     * @property coordinator is a reference to the lifecycle coordinator
-     * @property config is a map containing the new config pushed to the bus
-     * @property changedKeys is a set used to determine whether the keys changed by the config update
-     *  are ones that we care about. This is done by comparing them to the [requiredKeys]
-     */
-
-    private fun onConfigChange(coordinator: LifecycleCoordinator, config: Map<String, SmartConfig>, changedKeys: Set<String>) {
-        if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
-            val rpcConfig = config.getConfig(ConfigKeys.RPC_CONFIG)
-            val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-            // Make sender unavailable while we're updating
-            coordinator.updateStatus(LifecycleStatus.DOWN)
-            rpcSenderWrapper?.close()
-            try {
-                rpcSenderWrapper = RPCSenderWrapper(
-                    publisherFactory.createRPCSender(SENDER_CONFIG, messagingConfig).apply {
-                        // Report as back up post start
-                        start()
-                        coordinator.updateStatus(LifecycleStatus.UP)
-                    },
-                    Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
-                )
-            } catch (e: Exception) {
-                logger.error("Exception was thrown while attempting to set up the sender or its timeout: $e")
-                // Exception will implicitly perform coordinator.updateStatus(LifecycleStatus.ERROR)
-                throw CordaRuntimeException(
-                    "Exception was thrown while attempting to set up the sender or its timeout",
-                    e
-                )
+            is ConfigChangedEvent -> {
+                if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
+                    val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
+                    val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                    val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
+                    // Make sender unavailable while we're updating
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                    coordinator.createManagedResource("SENDER") {
+                        rpcSenderFactory.createSender(duration, messagingConfig)
+                    }
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                }
             }
         }
     }
@@ -142,7 +118,7 @@ class VirtualNodeSenderServiceImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
 
-        return rpcSenderWrapper!!.sendAndReceive(request)
+        return lifecycleCoordinator.getManagedResource<RPCSenderWrapperImpl>("SENDER")!!.sendAndReceive(request)
     }
 
     // Mandatory lifecycle methods - def to coordinator

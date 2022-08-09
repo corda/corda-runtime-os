@@ -7,9 +7,9 @@ import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Duration
 
-class RPCSenderWrapper(
-    private var sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>,
-    private var timeout: Duration
+class RPCSenderWrapperImpl(
+    private val timeout: Duration,
+    private val sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>
 ) : AutoCloseable {
     /**
      * Sends the [request] to the configuration management topic on bus.
