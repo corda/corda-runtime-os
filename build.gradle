@@ -322,7 +322,7 @@ subprojects {
     normalization {
         runtimeClasspath {
             metaInf {
-                ignoreAttribute("Bnd-LastModified")
+                ignoreCompletely()
             }
         }
     }
