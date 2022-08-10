@@ -24,7 +24,6 @@ import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.ScheduledExecutorService
 import org.mockito.kotlin.mock
 
 class HttpRpcServerTest {

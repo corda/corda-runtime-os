@@ -38,11 +38,9 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.apigen.processing.ws.mapToWsStatusCode
-import org.apache.commons.lang3.concurrent.BasicThreadFactory
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
