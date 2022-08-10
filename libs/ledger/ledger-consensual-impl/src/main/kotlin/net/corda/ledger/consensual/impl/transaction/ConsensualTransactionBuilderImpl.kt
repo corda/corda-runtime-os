@@ -20,12 +20,11 @@ import java.security.SecureRandom
 import java.time.Instant
 
 class ConsensualTransactionBuilderImpl(
-    override val merkleTreeFactory: MerkleTreeFactory,
-    override val digestService: DigestService,
-    override val secureRandom: SecureRandom,
-    override val serializer: SerializationService,
-    override val signingService: SigningService,
-
+    private val merkleTreeFactory: MerkleTreeFactory,
+    private val digestService: DigestService,
+    private val secureRandom: SecureRandom,
+    private val serializer: SerializationService,
+    private val signingService: SigningService,
     override val timeStamp: Instant? = null,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
