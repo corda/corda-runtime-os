@@ -36,6 +36,9 @@ class Args {
     @CommandLine.Option(names = ["--shortHolderId"], description = ["Virtual Node Short Hash"])
     var shortHolderId: String = ""
 
+    @CommandLine.Option(names = ["--tokenCcy"], description = ["Currency to use for token query"])
+    var tokenCcy: String = "USD"
+
     @CommandLine.Option(names = ["--targetAmount"], description = ["List of target amounts for token selection"])
     var targetAmount: List<Long> = listOf()
 }

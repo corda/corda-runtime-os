@@ -31,7 +31,7 @@ class StartTokenFlows(private val context: TaskContext) : Task {
     "tokenType": "coin",
     "issuerHash": "${context.startArgs.shortHolderId}",
     "notaryHash": "n1",
-    "symbol": "USD",
+    "symbol": "${context.startArgs.tokenCcy}",
     "targetAmount": ${targetAmount},
     "tagRegex": null,
     "ownerHash": null

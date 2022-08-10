@@ -13,6 +13,7 @@ import net.corda.services.token.TokenCacheConfiguration
 import net.corda.services.token.TokenEventHandler
 import net.corda.services.token.TokenRecordFactory
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 
 class TokenClaimQueryEventHandler(
@@ -20,11 +21,17 @@ class TokenClaimQueryEventHandler(
     private val tokenRecordFactory: TokenRecordFactory,
     private val tokenCacheConfiguration: TokenCacheConfiguration
 ) : TokenEventHandler<TokenClaimQuery> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
     override fun handle(
         key: TokenSetKey,
         state: TokenState,
         event: TokenClaimQuery
     ): StateAndEventProcessor.Response<TokenState> {
+        log.info("Received token claim query event.")
         // For the PoC we implement a very basic select all tokens until target reached
         // this is fine for v1, but this will be replaced with a more sophisticated implementation.
         val lockedTokens = state.tokenClaims.flatMap { it.claimedTokens }.toSet()

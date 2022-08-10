@@ -49,10 +49,10 @@ class TokenSelectionFlow : RPCStartableFlow {
                     TokenSelectionResponse("SUCCESS", spendHalfTheClaimedTokens(claimResult))
                 }
                 ClaimedTokensResultType.AVAILABLE_CLAIMED -> {
-                    TokenSelectionResponse("AVAILABLE_CLAIMED", spendHalfTheClaimedTokens(claimResult))
+                    TokenSelectionResponse("AVAILABLE_CLAIMED", listOf())
                 }
                 ClaimedTokensResultType.NONE_AVAILABLE -> {
-                    TokenSelectionResponse("NONE_AVAILABLE", spendHalfTheClaimedTokens(claimResult))
+                    TokenSelectionResponse("NONE_AVAILABLE", listOf())
                 }
             }
 

@@ -18,6 +18,7 @@ class TokenClaimReleaseEventHandler : TokenEventHandler<TokenClaimRelease> {
         state: TokenState,
         event: TokenClaimRelease
     ): StateAndEventProcessor.Response<TokenState> {
+        log. info("Received token claim release...")
         val existingClaim = state.tokenClaims.firstOrNull { it.claimRequestId == event.requestContext.requestId }
         if (existingClaim == null) {
             log.info(
@@ -30,6 +31,7 @@ class TokenClaimReleaseEventHandler : TokenEventHandler<TokenClaimRelease> {
         existingClaim.claimedTokens = existingClaim.claimedTokens.filterNot { tokensToRemove.contains(it) }
 
         if (!existingClaim.claimedTokens.any()) {
+            log. info("All tokens used or released, claim '${existingClaim.claimRequestId}' will be removed.")
             state.tokenClaims = state.tokenClaims.filterNot { it.claimRequestId == event.requestContext.requestId }
         }
 

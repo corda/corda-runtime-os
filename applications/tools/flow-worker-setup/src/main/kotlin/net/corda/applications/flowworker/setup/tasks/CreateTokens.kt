@@ -19,7 +19,7 @@ class CreateTokens(private val context: TaskContext) : Task {
     private val buckets = listOf("B1", "B2", "B3", "B4")
 
     private companion object {
-        val log : Logger = LoggerFactory.getLogger("SetupVirtualNode")
+        val log: Logger = LoggerFactory.getLogger("SetupVirtualNode")
     }
 
     override fun execute() {
@@ -29,7 +29,7 @@ class CreateTokens(private val context: TaskContext) : Task {
         context.publish(records)
     }
 
-    private fun create200Tokens(shortHolderId: String, ccy: String) : Record<TokenSetKey, TokenEvent> {
+    private fun create200Tokens(shortHolderId: String, ccy: String): Record<TokenSetKey, TokenEvent> {
         val tokenSetKey = TokenSetKey().apply {
             this.shortHolderId = shortHolderId
             this.tokenType = "coin"
@@ -38,13 +38,24 @@ class CreateTokens(private val context: TaskContext) : Task {
             this.symbol = ccy
         }
 
-        val tokens = buckets.flatMap { bucket ->
-            List(50) { Random.nextLong(1, 50) }.map {
+        val tokens = if (ccy == "GBP") {
+            List(10) { it }.map {
                 Token().apply {
                     this.stateRef = UUID.randomUUID().toString()
                     this.ownerHash = shortHolderId
-                    this.tag = bucket
-                    this.amount = it
+                    this.tag = "B1"
+                    this.amount = 10
+                }
+            }
+        } else {
+            buckets.flatMap { bucket ->
+                List(50) { Random.nextLong(1, 50) }.map {
+                    Token().apply {
+                        this.stateRef = UUID.randomUUID().toString()
+                        this.ownerHash = shortHolderId
+                        this.tag = bucket
+                        this.amount = it
+                    }
                 }
             }
         }
