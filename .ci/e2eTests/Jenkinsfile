@@ -89,6 +89,7 @@ pipeline {
                         '''
                   }
                }
+               
                stage("Deploy Bob cluster") {
                   steps {
                       script {
