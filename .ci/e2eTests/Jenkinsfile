@@ -152,7 +152,6 @@ pipeline {
                   }
                }
            }
-
             post {
                 unsuccessful {
                     sh '''\
