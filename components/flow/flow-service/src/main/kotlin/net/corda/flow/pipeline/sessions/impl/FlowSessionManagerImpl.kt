@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
@@ -36,6 +37,8 @@ class FlowSessionManagerImpl @Activate constructor(
         x500Name: MemberX500Name,
         protocolName: String,
         protocolVersions: List<Int>,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList,
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
@@ -44,9 +47,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
-            // TODO CORE-5991 populate with maps from the current context properties
-            .setContextPlatformProperties(emptyKeyValuePairList())
-            .setContextUserProperties(emptyKeyValuePairList())
+            .setContextPlatformProperties(contextPlatformProperties)
+            .setContextUserProperties(contextUserProperties)
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)

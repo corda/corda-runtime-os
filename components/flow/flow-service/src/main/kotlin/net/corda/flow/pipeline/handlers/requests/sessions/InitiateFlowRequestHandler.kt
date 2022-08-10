@@ -29,7 +29,10 @@ class InitiateFlowRequestHandler @Activate constructor(
         return WaitingFor(SessionConfirmation(listOf(request.sessionId), SessionConfirmationType.INITIATE))
     }
 
-    override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.InitiateFlow): FlowEventContext<Any> {
+    override fun postProcess(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.InitiateFlow
+    ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
@@ -55,6 +58,8 @@ class InitiateFlowRequestHandler @Activate constructor(
                 request.x500Name,
                 protocolName,
                 protocolVersions,
+                contextUserProperties = request.contextUserProperties,
+                contextPlatformProperties = request.contextPlatformProperties,
                 Instant.now()
             )
         )
