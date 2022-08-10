@@ -19,6 +19,9 @@ interface LifecycleCoordinatorFactory {
      *             logs.
      * @param batchSize The maximum number of lifecycle events to process in a single batch. Larger values may
      *                  improve performance for components that trigger large numbers of lifecycle events.
+     * @param dependentComponents A set of static singleton component dependencies this coordinator will track.
+     *                            These dependencies will be stopped/started alongside this component.  Note that
+     *                            the component for this coordinator should also be a static singleton component.
      * @param handler The event handler for this component that processes lifecycle events. See
      *                [LifecycleEventHandler] for more detail on the event handler.
      */
@@ -43,6 +46,9 @@ interface LifecycleCoordinatorFactory {
      * Create a new lifecycle coordinator with the default batch size.
      *
      * @param name The name of this coordinator.
+     * @param dependentComponents A set of static singleton component dependencies this coordinator will track.
+     *                            These dependencies will be stopped/started alongside this component.  Note that
+     *                            the component for this coordinator should also be a static singleton component.
      * @param handler The event handler for the component that processes lifecycle events. See [LifecycleEventHandler]
      */
     fun createCoordinator(
@@ -81,6 +87,9 @@ inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
  * Note that this utility can only be used if the component can only be instantiated once. If the component is expected
  * to be used multiple times, then a [LifecycleCoordinatorName] should be created with an instance ID set.
  *
+ * @param dependentComponents A set of static singleton component dependencies this coordinator will track.
+ *                            These dependencies will be stopped/started alongside this component.  Note that
+ *                            the component for this coordinator should also be a static singleton component.
  * @param handler The event handler for this component that processes lifecycle events. See
  *                [LifecycleEventHandler] for more detail on the event handler.
  */
