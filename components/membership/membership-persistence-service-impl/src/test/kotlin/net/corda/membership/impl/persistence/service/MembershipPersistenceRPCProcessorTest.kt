@@ -176,7 +176,7 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap(context),
+                    KeyValuePairList(emptyList()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),
@@ -273,7 +273,7 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap(context),
+                    KeyValuePairList(emptyList()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),

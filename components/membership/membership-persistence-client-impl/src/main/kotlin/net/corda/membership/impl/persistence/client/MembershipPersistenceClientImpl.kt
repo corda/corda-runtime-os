@@ -130,7 +130,7 @@ class MembershipPersistenceClientImpl(
                 with(registrationRequest) {
                     MembershipRegistrationRequest(
                         registrationId,
-                        memberContext,
+                        memberContext.toAvro(),
                         CryptoSignatureWithKey(
                             publicKey,
                             signature,

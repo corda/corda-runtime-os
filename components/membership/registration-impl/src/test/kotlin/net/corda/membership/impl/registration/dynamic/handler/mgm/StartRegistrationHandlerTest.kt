@@ -1,7 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -80,7 +79,7 @@ class StartRegistrationHandlerTest {
                     holdingIdentity,
                     MembershipRegistrationRequest(
                         registrationId,
-                        memberContext.toByteBuffer(),
+                        memberContext,
                         CryptoSignatureWithKey(
                             ByteBuffer.wrap("456".toByteArray()),
                             ByteBuffer.wrap("789".toByteArray()),
@@ -99,7 +98,6 @@ class StartRegistrationHandlerTest {
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
     lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
 
@@ -139,12 +137,6 @@ class StartRegistrationHandlerTest {
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader
         }
-        deserializer = mock {
-            on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
-        }
-        cordaAvroSerializationFactory = mock {
-            on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-        }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
             on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.success()
@@ -164,7 +156,7 @@ class StartRegistrationHandlerTest {
             membershipGroupReaderProvider,
             membershipPersistenceClient,
             membershipQueryClient,
-            cordaAvroSerializationFactory
+            mock(),
         )
     }
 
@@ -189,7 +181,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
             deserialize = true,
             queryMemberInfo = true,
             persistMemberInfo = true
@@ -211,7 +202,6 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            createAvroDeserializer = true
         )
     }
 
@@ -231,7 +221,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
         )
     }
 
@@ -254,7 +243,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
         )
     }
 
@@ -284,7 +272,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
             deserialize = true,
         )
     }
@@ -316,7 +303,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
             deserialize = true,
         )
     }
@@ -339,7 +325,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
             deserialize = true,
             queryMemberInfo = true,
         )
@@ -360,7 +345,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
             deserialize = true,
             queryMemberInfo = true,
         )
@@ -383,7 +367,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            createAvroDeserializer = true,
             deserialize = true,
             queryMemberInfo = true,
             persistMemberInfo = true
@@ -410,7 +393,6 @@ class StartRegistrationHandlerTest {
         persistRegistrationRequest: Boolean = false,
         getGroupReader: Boolean = false,
         lookup: Boolean = false,
-        createAvroDeserializer: Boolean = false,
         deserialize: Boolean = false,
         queryMemberInfo: Boolean = false,
         persistMemberInfo: Boolean = false
@@ -425,9 +407,6 @@ class StartRegistrationHandlerTest {
 
         verify(membershipGroupReader, getVerificationMode(lookup))
             .lookup(eq(mgmX500Name))
-
-        verify(cordaAvroSerializationFactory, getVerificationMode(createAvroDeserializer))
-            .createAvroDeserializer(any(), eq(KeyValuePairList::class.java))
 
         verify(deserializer, getVerificationMode(deserialize))
             .deserialize(any())

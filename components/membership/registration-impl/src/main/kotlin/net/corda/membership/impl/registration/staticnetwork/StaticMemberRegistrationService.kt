@@ -153,7 +153,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 status = RegistrationStatus.APPROVED,
                 registrationId = registrationId.toString(),
                 requester = memberInfo.holdingIdentity,
-                memberContext = memberInfo.memberProvidedContext.toAvro().toByteBuffer(),
+                memberContext = memberInfo.memberProvidedContext,
                 publicKey = ByteBuffer.wrap(byteArrayOf()),
                 signature = ByteBuffer.wrap(byteArrayOf()),
             )

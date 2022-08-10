@@ -69,7 +69,7 @@ class RegistrationProcessorTest {
             ByteBuffer.wrap("789".toByteArray()),
             KeyValuePairList(emptyList())
         )
-        val registrationRequest = MembershipRegistrationRequest(registrationId, memberContext.toByteBuffer(), signature)
+        val registrationRequest = MembershipRegistrationRequest(registrationId, memberContext, signature)
 
         val startRegistrationCommand = RegistrationCommand(
             StartRegistration(
@@ -178,6 +178,7 @@ class RegistrationProcessorTest {
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
             membershipQueryClient,
+            mock(),
             mock(),
             mock(),
             mock(),

@@ -107,7 +107,7 @@ class MembershipPersistenceClientImplTest {
         RegistrationStatus.NEW,
         registrationId,
         ourHoldingIdentity,
-        ByteBuffer.wrap("123".toByteArray()),
+        mock(),
         ByteBuffer.wrap("456".toByteArray()),
         ByteBuffer.wrap("789".toByteArray()),
     )

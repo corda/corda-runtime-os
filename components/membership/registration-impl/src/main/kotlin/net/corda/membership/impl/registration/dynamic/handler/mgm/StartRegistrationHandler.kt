@@ -1,8 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -10,6 +7,7 @@ import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -23,6 +21,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -46,17 +45,12 @@ class StartRegistrationHandler(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
         val logger = contextLogger()
     }
-
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroDeserializer({
-            logger.error("Deserialization of registration request KeyValuePairList failed.")
-        }, KeyValuePairList::class.java)
 
     override val commandType = StartRegistration::class.java
 
@@ -163,11 +157,7 @@ class StartRegistrationHandler(
     }
 
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
-        val memberContext = keyValuePairListDeserializer
-            .deserialize(registrationRequest.memberContext.array())
-            ?.items?.associate { it.key to it.value }?.toSortedMap()
-            ?: emptyMap()
-
+        val memberContext = registrationRequest.memberContext
         validateRegistrationRequest(memberContext.entries.isNotEmpty()) {
             "Empty member context in the registration request."
         }
@@ -199,7 +189,7 @@ class StartRegistrationHandler(
         RegistrationStatus.NEW,
         memberRegistrationRequest.registrationId,
         source.toCorda(),
-        memberRegistrationRequest.memberContext,
+        layeredPropertyMapFactory.createMap(memberRegistrationRequest.memberContext.toMap()),
         memberRegistrationRequest.memberSignature.publicKey,
         memberRegistrationRequest.memberSignature.bytes
     )

@@ -227,7 +227,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 )
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
-                    ByteBuffer.wrap(serializedMemberContext),
+                    memberContext,
                     memberSignature
                 )
                 val record = buildUnauthenticatedP2PRequest(

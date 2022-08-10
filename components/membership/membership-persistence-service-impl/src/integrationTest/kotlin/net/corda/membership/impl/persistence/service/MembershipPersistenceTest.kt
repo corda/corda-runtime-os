@@ -52,6 +52,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -367,15 +368,7 @@ class MembershipPersistenceTest {
                 RegistrationStatus.NEW,
                 registrationId,
                 registeringHoldingIdentity,
-                ByteBuffer.wrap(
-                    cordaAvroSerializer.serialize(
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-                            )
-                        )
-                    )
-                ),
+                layeredPropertyMapFactory.createMap(mapOf(MEMBER_CONTEXT_KEY to MEMBER_CONTEXT_VALUE)),
                 ByteBuffer.wrap(byteArrayOf()),
                 ByteBuffer.wrap(byteArrayOf())
             )
@@ -600,11 +593,7 @@ class MembershipPersistenceTest {
                     RegistrationStatus.NEW,
                     registrationId,
                     holdingId,
-                    ByteBuffer.wrap(
-                        cordaAvroSerializer.serialize(
-                            context
-                        )
-                    ),
+                    layeredPropertyMapFactory.createMap(context.toMap()),
                     publicKey,
                     signature,
                 )
@@ -632,15 +621,7 @@ class MembershipPersistenceTest {
                 RegistrationStatus.NEW,
                 registrationId,
                 registeringHoldingIdentity,
-                ByteBuffer.wrap(
-                    cordaAvroSerializer.serialize(
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-                            )
-                        )
-                    )
-                ),
+                layeredPropertyMapFactory.createMap(mapOf(MEMBER_CONTEXT_KEY to MEMBER_CONTEXT_VALUE)),
                 ByteBuffer.wrap(byteArrayOf()),
                 ByteBuffer.wrap(byteArrayOf())
             )
@@ -715,14 +696,8 @@ class MembershipPersistenceTest {
                 RegistrationStatus.NEW,
                 registrationId,
                 member,
-                ByteBuffer.wrap(
-                    cordaAvroSerializer.serialize(
-                        KeyValuePairList(
-                            listOf(
-                                KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
-                            )
-                        )
-                    )
+                layeredPropertyMapFactory.createMap(
+                    mapOf(MEMBER_CONTEXT_KEY to MEMBER_CONTEXT_VALUE)
                 ),
                 ByteBuffer.wrap(byteArrayOf()),
                 ByteBuffer.wrap(byteArrayOf())

@@ -24,7 +24,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
                 .select(root)
                 .where(
                     criteriaBuilder.and(
-                        criteriaBuilder.equal(root.get<String>("holding_identity_id"), shortHash.value),
+                        criteriaBuilder.equal(root.get<String>("holdingIdentityShortHash"), shortHash.value),
                     )
                 ).orderBy(criteriaBuilder.asc(root.get<Instant>("created")))
             val details =

@@ -117,7 +117,7 @@ class PersistRegistrationRequestHandlerTest {
         ourHoldingIdentity.toAvro(),
         MembershipRegistrationRequest(
             ourRegistrationId,
-            ByteBuffer.wrap("membercontext".toByteArray()),
+            KeyValuePairList(emptyList()),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("123".toByteArray()),
                 ByteBuffer.wrap("456".toByteArray()),
