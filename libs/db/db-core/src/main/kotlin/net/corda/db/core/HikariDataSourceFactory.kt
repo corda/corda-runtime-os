@@ -2,6 +2,7 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 
 class HikariDataSourceFactory(
@@ -32,6 +33,7 @@ class HikariDataSourceFactory(
         conf.password = password
         conf.isAutoCommit = isAutoCommit
         conf.maximumPoolSize = maximumPoolSize
+        conf.maxLifetime = TimeUnit.MINUTES.toMillis(10)
         return hikariDataSourceFactory(conf)
     }
 }
