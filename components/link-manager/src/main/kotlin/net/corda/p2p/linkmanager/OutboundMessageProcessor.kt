@@ -149,10 +149,16 @@ internal class OutboundMessageProcessor(
         val source = messageAndKey.message.header.source.toCorda()
         val destination = messageAndKey.message.header.destination.toCorda()
         if (linkManagerHostingMap.isHostedLocally(destination)) {
-            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
-                recordForLMReceivedMarker(messageAndKey.message.header.messageId)
-            )
+            return if (isReplay) {
+                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                )
+            } else {
+                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                    recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                )
+            }
         } else if (members.getMemberInfo(source, destination) != null) {
             val markers = if (isReplay) {
                 emptyList()
@@ -163,7 +169,11 @@ internal class OutboundMessageProcessor(
         } else {
             logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
                     "but the destination is not part of the network. Message will be retried later.")
-            return listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
+            return if (isReplay) {
+                emptyList()
+            } else {
+                listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
+            }
         }
     }
     private fun processNoTtlRemoteAuthenticatedMessage(
