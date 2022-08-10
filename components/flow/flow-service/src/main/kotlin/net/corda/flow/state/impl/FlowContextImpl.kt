@@ -15,7 +15,7 @@ class FlowContextImpl(
 ) : FlowContext {
 
     companion object {
-        const val CORDA_RESERVED_PREFIX = "corda."
+        const val CORDA_RESERVED_PREFIX = "corda." // must be lowercase
     }
 
     override fun put(key: String, value: String) {
@@ -23,7 +23,7 @@ class FlowContextImpl(
             "'${key}' is already a platform context property, it cannot be overwritten with a user property"
         }
 
-        require(!key.lowercase().startsWith("corda.")) {
+        require(!key.lowercase().startsWith(CORDA_RESERVED_PREFIX)) {
             "'${key}' starts with '${CORDA_RESERVED_PREFIX}' which is reserved for Corda platform properties"
         }
 
