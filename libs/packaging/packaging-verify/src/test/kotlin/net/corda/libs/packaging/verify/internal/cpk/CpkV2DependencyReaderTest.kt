@@ -18,7 +18,7 @@ class CpkV2DependencyReaderTest {
     @Test
     fun `parses dependencies correctly`() {
         val dependenciesDocument = """
-        [
+        {"formatVersion":"2.0","dependencies":[
             {
                 "name": "net.acme.contract",
                 "version": "1.0.0",
@@ -32,7 +32,7 @@ class CpkV2DependencyReaderTest {
                 "version": "2.0.0",
                 "verifySameSignerAsMe": true
             }
-        ] 
+        ]}
         """.byteInputStream()
 
         val codeSigners = mock<List<CodeSigner>>()
@@ -55,7 +55,7 @@ class CpkV2DependencyReaderTest {
 
     @Test
     fun `parses empty dependencies correctly`() {
-        val dependenciesDocument = "[]".byteInputStream()
+        val dependenciesDocument = "{\"formatVersion\":\"2.0\",\"dependencies\":[]}".byteInputStream()
 
         val dependencies = CpkV2DependenciesReader.readDependencies("testCpk.cpk", dependenciesDocument, mock())
 
@@ -66,7 +66,7 @@ class CpkV2DependencyReaderTest {
     fun `throws if dependency document doesn't conform to schema (missing name)`() {
         // Name is missing
         val dependenciesDocument = """
-        [
+        {"formatVersion":"2.0","dependencies":[
             {
                 "version": "1.0.0",
                 "verifyFileHash": {
@@ -74,7 +74,7 @@ class CpkV2DependencyReaderTest {
                     "fileHash": "qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="
                 }
             }
-        ] 
+        ]}
         """.byteInputStream()
 
         val exception = assertThrows<DependencyMetadataException> {
@@ -82,14 +82,14 @@ class CpkV2DependencyReaderTest {
         }
         assertNotNull(exception.cause)
         assertNotNull(exception.cause!!.message)
-        assertTrue(exception.cause!!.message!!.contains("[\$[0].name: is missing but it is required]"))
+        assertTrue(exception.cause!!.message!!.contains("[\$.dependencies[0].name: is missing but it is required]"))
     }
 
     @Test
     fun `throws if dependency document doesn't conform to schema (missing version)`() {
         // Version is missing
         val dependenciesDocument = """
-        [
+        {"formatVersion":"2.0","dependencies":[
             {
                 "name": "net.acme.contract",
                 "verifyFileHash": {
@@ -97,7 +97,7 @@ class CpkV2DependencyReaderTest {
                     "fileHash": "qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="
                 }
             }
-        ] 
+        ]}
         """.byteInputStream()
 
         val exception = assertThrows<DependencyMetadataException> {
@@ -105,19 +105,19 @@ class CpkV2DependencyReaderTest {
         }
         assertNotNull(exception.cause)
         assertNotNull(exception.cause!!.message)
-        assertTrue(exception.cause!!.message!!.contains("[\$[0].version: is missing but it is required]"))
+        assertTrue(exception.cause!!.message!!.contains("[\$.dependencies[0].version: is missing but it is required]"))
     }
 
     @Test
     fun `throws if verifySameSignerAsMe set to false`() {
         val dependenciesDocument = """
-        [
+        {"formatVersion":"2.0","dependencies":[
             {
                 "name": "com.example.helloworld.hello-world-cpk-one",
                 "version": "2.0.0",
                 "verifySameSignerAsMe": false
             }
-        ] 
+        ]}
         """.byteInputStream()
 
         val exception = assertThrows<DependencyMetadataException> {
@@ -125,6 +125,7 @@ class CpkV2DependencyReaderTest {
         }
         assertNotNull(exception.cause)
         assertNotNull(exception.cause!!.message)
-        assertTrue(exception.cause!!.message!!.contains("[\$[0].verifySameSignerAsMe: does not have a value in the enumeration [true]"))
+        assertTrue(exception.cause!!.message!!.contains("[\$.dependencies[0].verifySameSignerAsMe: does not" +
+                " have a value in the enumeration [true]"))
     }
 }

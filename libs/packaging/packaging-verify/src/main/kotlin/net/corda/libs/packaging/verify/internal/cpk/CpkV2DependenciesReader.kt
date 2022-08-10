@@ -10,7 +10,7 @@ import net.corda.libs.packaging.core.exception.DependencyMetadataException
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.security.CodeSigner
-import java.util.*
+import java.util.Base64
 
 /**
  * CPK format version 2 CPKDependencies JSON file reader
@@ -21,6 +21,13 @@ internal object CpkV2DependenciesReader {
     private val schema: JsonSchema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(
         this::class.java.classLoader.getResourceAsStream(CORDA_CPK_V2_SCHEMA)
             ?: throw IllegalStateException("Corda CPK v2 schema missing")
+    )
+
+    private class CPKDependencyFileV2(
+        @JsonProperty("formatVersion")
+        val formatVersion: String,
+        @JsonProperty("dependencies")
+        val dependencies: Array<Dependency>
     )
 
     /** Mapping for dependency object in CPKDependencies JSON file */
@@ -63,7 +70,8 @@ internal object CpkV2DependenciesReader {
                 throw DependencyMetadataException("CPK dependencies document validation error(s): $errorSet")
             }
             // Read document
-            return mapper.readValue(mapper.treeAsTokens(node), object : TypeReference<List<Dependency>>() {})
+            return mapper.readValue(mapper.treeAsTokens(node), object : TypeReference<CPKDependencyFileV2>() {})
+                .dependencies
                 .map{ toCpkDependency(it, codeSigners) }
         } catch (e: Exception) {
             throw DependencyMetadataException("Error reading CPK dependencies in CPK \"$cpkName\"", e)
