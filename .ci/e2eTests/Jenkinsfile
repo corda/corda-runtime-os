@@ -93,9 +93,9 @@ pipeline {
                }
                sh '''
                     export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullNameOverride="alice" --set kafka.topicPrefix="alice" -n $NAMESPACE --wait --timeout 600s
-                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullNameOverride="bob" --set kafka.topicPrefix="bob" -n $NAMESPACE --wait --timeout 600s
-                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullNameOverride="caroline" --set kafka.topicPrefix="caroline" -n $NAMESPACE --wait --timeout 600s
+                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullnameOverride="alice" --set kafka.topicPrefix="alice" -n $NAMESPACE --wait --timeout 600s
+                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullnameOverride="bob" --set kafka.topicPrefix="bob" -n $NAMESPACE --wait --timeout 600s
+                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullnameOverride="caroline" --set kafka.topicPrefix="caroline" -n $NAMESPACE --wait --timeout 600s
                 '''
             }
             post {
