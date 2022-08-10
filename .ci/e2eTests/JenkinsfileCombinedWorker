@@ -55,7 +55,7 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
+        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.combined-worker --build-cache -Si"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
@@ -100,10 +100,9 @@ pipeline {
         }
         stage('Build  Jar') {
             steps {
-                sh './gradlew :applications:workers:release:combined-worker:assemble -Si' // builds the jar build/bin/*/*.jar
+                gradlew (':applications:workers:release:combined-worker:assemble') // builds the jar build/bin/*/*.jar
             }
-        }
- 			
+        } 			
         stage('Start jar / run tests') {
             
             environment {
@@ -121,9 +120,7 @@ pipeline {
                 '''
 
                 checkConnection()    
-
-                sh './gradlew smoketest -PisCombinedWorker=true'
-    
+                gradlew('smoketest -PisCombinedWorker=true')   
             }            
         }
     }
@@ -131,7 +128,8 @@ pipeline {
         always {
             
             script {      
-
+                    findBuildScans()
+                    splunkLogGenerator()
                     sh '''
                         for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> podLogs.txt; done
                     '''     
@@ -146,6 +144,17 @@ pipeline {
             
             junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
+            sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }
     }
+}
+
+
+def gradleCmd() {
+    return isUnix() ? './gradlew' : './gradlew.bat'
+}
+
+def gradlew(String... args) {
+    def allArgs = args.join(' ')
+    sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
 }
