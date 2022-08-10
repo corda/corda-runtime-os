@@ -1,5 +1,9 @@
 package net.corda.securitymanager.internal
 
+import java.io.IOException
+import java.io.InputStream
+import java.security.Security
+import java.text.ParseException
 import net.corda.securitymanager.ConditionalPermission
 import net.corda.securitymanager.ConditionalPermission.Access.ALLOW
 import net.corda.securitymanager.ConditionalPermission.Access.DENY
@@ -12,10 +16,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
 import org.osgi.service.condpermadmin.ConditionalPermissionInfo
-import java.io.IOException
-import java.io.InputStream
-import java.security.Security
-import java.text.ParseException
 
 /** An implementation of [SecurityManagerService]. */
 @Suppress("unused")
@@ -38,12 +38,12 @@ class SecurityManagerServiceImpl @Activate constructor(
     private var cordaSecurityManager: CordaSecurityManager? = null
 
     init {
-        enablePackageAccessPermission("net.corda.")
+        /*enablePackageAccessPermission("net.corda.")
         startRestrictiveMode()
         val url = bundleContext.bundle.getResource(DEFAULT_SECURITY_POLICY)
         log.info("Applying default security policy ($DEFAULT_SECURITY_POLICY)")
         val policy = readPolicy(url.openConnection().getInputStream())
-        updatePermissions(policy, clear = true)
+        updatePermissions(policy, clear = true)*/
     }
 
     /**
