@@ -7,7 +7,9 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
+import net.corda.flow.utils.KeyValueStore
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.HoldingIdentity
@@ -17,13 +19,21 @@ import org.mockito.kotlin.whenever
 class MockFlowFiberService : FlowFiberService {
     val flowFiber = mock<FlowFiber>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
-    val flowCheckpoint: FlowCheckpoint = mock()
-    val flowStack: FlowStack = mock()
+    val flowCheckpoint = mock<FlowCheckpoint>()
+    val flowStack = mock<FlowStack>()
     private val checkpointSerializer = mock<CheckpointSerializer>()
-    val sandboxGroupContext: FlowSandboxGroupContext = mock()
-    val holdingIdentity: HoldingIdentity =  HoldingIdentity(BOB_X500_NAME,"group1")
-    private val membershipGroupReader: MembershipGroupReader = mock()
+    val sandboxGroupContext = mock<FlowSandboxGroupContext>()
+    val holdingIdentity = HoldingIdentity(BOB_X500_NAME, "group1")
+    private val membershipGroupReader = mock<MembershipGroupReader>()
     val flowFiberExecutionContext: FlowFiberExecutionContext
+
+    val userContext = KeyValueStore().apply {
+        this["user"] = "user"
+    }
+    val platformContext = KeyValueStore().apply {
+        this["platform"] = "platform"
+    }
+    private val flowContext = mock<FlowContext>()
 
     init {
         /**
@@ -42,6 +52,10 @@ class MockFlowFiberService : FlowFiberService {
         )
 
         whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
+
+        whenever(flowContext.flattenUserProperties()).thenReturn(userContext.avro)
+        whenever(flowContext.flattenPlatformProperties()).thenReturn(platformContext.avro)
+        whenever(flowCheckpoint.flowContext).thenReturn(flowContext)
     }
 
     override fun getExecutingFiber(): FlowFiber {

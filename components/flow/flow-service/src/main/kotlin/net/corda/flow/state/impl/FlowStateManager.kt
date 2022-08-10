@@ -37,6 +37,8 @@ class FlowStateManager(private val initialState: FlowState) {
     val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
+    var flowContext = FlowContextImpl(stack)
+
     fun updateSuspendedFiber(fiber: ByteBuffer) {
         state.fiber = fiber
         state.suspendCount++

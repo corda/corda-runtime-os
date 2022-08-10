@@ -7,14 +7,18 @@ import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -35,8 +39,6 @@ class FlowSessionImplTest {
         whenever(deserialize(HI.toByteArray(), String::class.java)).thenReturn(HI)
     }
 
-
-
     private val mockFlowFiberService = MockFlowFiberService()
     private val flowFiber = mockFlowFiberService.flowFiber.apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
@@ -54,8 +56,15 @@ class FlowSessionImplTest {
     fun `calling sendAndReceive with an uninitiated session will cause the flow to suspend to initiate the session`() {
         val session = createSession(initiated = false)
         session.sendAndReceive(String::class.java, HI)
-        verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
-        verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
+
+        val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
+
+        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.SendAndReceive)
+
+        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
     }
 
     @Test
@@ -84,8 +93,15 @@ class FlowSessionImplTest {
     fun `calling receive with an uninitiated session will cause the flow to suspend to initiate the session`() {
         val session = createSession(initiated = false)
         session.receive(String::class.java)
-        verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
-        verify(flowFiber).suspend(any<FlowIORequest.Receive>())
+
+        val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
+
+        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.Receive)
+
+        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
     }
 
     @Test
@@ -114,8 +130,15 @@ class FlowSessionImplTest {
     fun `calling send with an uninitiated session will cause the flow to suspend to initiate the session`() {
         val session = createSession(initiated = false)
         session.send(HI)
-        verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
-        verify(flowFiber).suspend(any<FlowIORequest.Send>())
+
+        val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
+
+        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.Send)
+
+        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
     }
 
     @Test
@@ -140,5 +163,14 @@ class FlowSessionImplTest {
             mockFlowFiberService,
             initiated
         )
+    }
+
+    private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {
+        with(request) {
+            assertThat(contextUserProperties).isEqualTo(mockFlowFiberService.userContext.avro)
+            assertThat(contextPlatformProperties).isEqualTo(mockFlowFiberService.platformContext.avro)
+            assertThat(sessionId).isEqualTo(SESSION_ID)
+            assertThat(x500Name).isEqualTo(ALICE_X500_NAME)
+        }
     }
 }

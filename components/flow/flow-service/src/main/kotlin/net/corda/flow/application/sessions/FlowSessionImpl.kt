@@ -72,7 +72,15 @@ class FlowSessionImpl(
     @Suspendable
     private fun ensureSessionIsOpen() {
         if (!initiated) {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.InitiateFlow(counterparty, sourceSessionId))
+            val flowContext = fiber.getExecutionContext().flowCheckpoint.flowContext
+            fiber.suspend(
+                FlowIORequest.InitiateFlow(
+                    counterparty,
+                    sourceSessionId,
+                    contextUserProperties = flowContext.flattenUserProperties(),
+                    contextPlatformProperties = flowContext.flattenPlatformProperties()
+                )
+            )
             initiated = true
         }
     }
@@ -88,7 +96,10 @@ class FlowSessionImpl(
         return getSerializationService().serialize(payload).bytes
     }
 
-    private fun <R : Any> deserializeReceivedPayload(received: Map<String, ByteArray>, receiveType: Class<R>): UntrustworthyData<R> {
+    private fun <R : Any> deserializeReceivedPayload(
+        received: Map<String, ByteArray>,
+        receiveType: Class<R>
+    ): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
                 val payload = getSerializationService().deserialize(it, receiveType)
@@ -98,7 +109,8 @@ class FlowSessionImpl(
                 log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
                 throw e
             }
-        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+        }
+            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
     /**
@@ -123,5 +135,6 @@ class FlowSessionImpl(
 
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
-    override fun toString(): String = "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$initiated)"
+    override fun toString(): String =
+        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$initiated)"
 }
