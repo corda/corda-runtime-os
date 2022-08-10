@@ -54,7 +54,7 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
+        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.combined-worker -Dscan.tag.${env.NAMESPACE} --build-cache"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
