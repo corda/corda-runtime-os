@@ -5,10 +5,12 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -16,11 +18,13 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class ConfigProcessorTest {
 
@@ -30,7 +34,7 @@ class ConfigProcessorTest {
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
-        on { getDbConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
+        on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
         on { getCryptoConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
     }
 
@@ -38,6 +42,7 @@ class ConfigProcessorTest {
         private const val SOURCE_CONFIG_STRING = "{ }"
         private const val CONFIG_STRING = "{ bar: foo }"
         private const val BOOT_CONFIG_STRING = "{ a: b, b: c }"
+        private const val DB_CONFIG_STRING = "{ $JDBC_URL : testURL }"
         private const val MESSAGING_CONFIG_STRING = "{ b: d }"
         private val schemaVersion = ConfigurationSchemaVersion(1,0)
     }
@@ -69,13 +74,26 @@ class ConfigProcessorTest {
     }
 
     @Test
-    fun `No config is forwarded if the snapshot is empty`() {
+    fun `No config is forwarded if the snapshot is empty and db boot config is empty`() {
         val coordinator = mock<LifecycleCoordinator>()
         val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
         configProcessor.onSnapshot(mapOf())
         verify(coordinator, times(0)).postEvent(capture(eventCaptor))
         verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
+    }
+
+    @Test
+    fun `config is forwarded if the snapshot is empty but db boot config is set`() {
+        val coordinator = mock<LifecycleCoordinator>()
+        val dbConfig = DB_CONFIG_STRING.toSmartConfig()
+        whenever(configMerger.getDbConfig(any(), anyOrNull())).thenReturn(dbConfig)
+        val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
+        configProcessor.onSnapshot(mapOf())
+        verify(coordinator, times(1)).postEvent(capture(eventCaptor))
+        verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
+        verify(configMerger, times(1)).getDbConfig(any(), anyOrNull())
     }
 
     @Test
