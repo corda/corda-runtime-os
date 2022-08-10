@@ -10,6 +10,23 @@ cd script
 keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
 keytool -genkeypair -alias "signing key 2" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 2, o=R3, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
 
+# Trust the gradle plugin default signing key
+cat <<EOF | keytool -importcert -keystore keystore.pfx -storepass password -noprompt -alias gradle-plugin-default-key
+-----BEGIN CERTIFICATE-----
+MIIB7zCCAZOgAwIBAgIEFyV7dzAMBggqhkjOPQQDAgUAMFsxCzAJBgNVBAYTAkdC
+MQ8wDQYDVQQHDAZMb25kb24xDjAMBgNVBAoMBUNvcmRhMQswCQYDVQQLDAJSMzEe
+MBwGA1UEAwwVQ29yZGEgRGV2IENvZGUgU2lnbmVyMB4XDTIwMDYyNTE4NTI1NFoX
+DTMwMDYyMzE4NTI1NFowWzELMAkGA1UEBhMCR0IxDzANBgNVBAcTBkxvbmRvbjEO
+MAwGA1UEChMFQ29yZGExCzAJBgNVBAsTAlIzMR4wHAYDVQQDExVDb3JkYSBEZXYg
+Q29kZSBTaWduZXIwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQDjSJtzQ+ldDFt
+pHiqdSJebOGPZcvZbmC/PIJRsZZUF1bl3PfMqyG3EmAe0CeFAfLzPQtf2qTAnmJj
+lGTkkQhxo0MwQTATBgNVHSUEDDAKBggrBgEFBQcDAzALBgNVHQ8EBAMCB4AwHQYD
+VR0OBBYEFLMkL2nlYRLvgZZq7GIIqbe4df4pMAwGCCqGSM49BAMCBQADSAAwRQIh
+ALB0ipx6EplT1fbUKqgc7rjH+pV1RQ4oKF+TkfjPdxnAAiArBdAI15uI70wf+xlL
+zU+Rc5yMtcOY4/moZUq36r0Ilg==
+-----END CERTIFICATE-----
+EOF
+
 # To trust freetsa.org, download their CA cert and import into keystore
 keytool -importcert -alias "freetsa" -keystore signingkeys.pfx -storepass "keystore password" -file ~/Downloads/cacert.pem
 
