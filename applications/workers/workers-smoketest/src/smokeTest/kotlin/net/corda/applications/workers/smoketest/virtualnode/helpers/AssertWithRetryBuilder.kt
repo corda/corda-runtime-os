@@ -6,7 +6,7 @@ import org.junit.jupiter.api.fail
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
-    var timeout: Duration = Duration.ofSeconds(5)
+    var timeout: Duration = Duration.ofSeconds(10)
     var interval: Duration = Duration.ofMillis(500)
     var command: (() -> SimpleResponse)? = null
     var condition: ((SimpleResponse) -> Boolean)? = null
