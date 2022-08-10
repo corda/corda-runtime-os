@@ -6,15 +6,20 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
+import net.corda.data.membership.db.request.query.QueryRegistrationRequest
+import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
+import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
+import net.corda.data.membership.rpc.response.RegistrationStatusDetails
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -39,7 +44,7 @@ class MembershipQueryClientImpl(
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
     clock: Clock,
-    val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MembershipQueryClient, AbstractPersistenceClient(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
@@ -88,7 +93,7 @@ class MembershipQueryClientImpl(
             is MemberInfoQueryResponse -> {
                 logger.info("Found ${(result.payload as MemberInfoQueryResponse).members.size} results.")
                 MembershipQueryResult.Success(
-                    (result.payload as MemberInfoQueryResponse).members.map { memberInfoFactory.create(it) }
+                    payload.members.map { memberInfoFactory.create(it) }
                 )
             }
             is PersistenceFailedResponse -> {
@@ -104,11 +109,67 @@ class MembershipQueryClientImpl(
         }
     }
 
-    override fun queryRegistrationRequest(
+    private fun RegistrationStatusDetails.toStatus() : RegistrationRequestStatus {
+        return RegistrationRequestStatus(
+            status = this.registrationStatus,
+            registrationId = this.registrationId,
+            registrationSent = this.registrationSent,
+            registrationLastModified = this.registrationLastModified,
+            protocolVersion = this.registrationProtocolVersion,
+            memberContext = this.memberProvidedContext
+        )
+    }
+
+    override fun queryRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
-        registrationId: String
-    ): MembershipQueryResult<RegistrationRequest> {
-        throw UnsupportedOperationException("Function not yet implemented.")
+        registrationId: String,
+    ): MembershipQueryResult<RegistrationRequestStatus?> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            QueryRegistrationRequest(registrationId)
+        ).execute()
+        return when (val payload = result.payload) {
+            is RegistrationRequestQueryResponse -> {
+                MembershipQueryResult.Success(
+                    payload.registrationRequest?.toStatus()
+                )
+            }
+            is PersistenceFailedResponse -> {
+                val err = "Query failed because of: ${payload.errorMessage}"
+                logger.warn(err)
+                MembershipQueryResult.Failure(err)
+            }
+            else -> {
+                val err = "Query returned unexpected payload."
+                logger.warn(err)
+                MembershipQueryResult.Failure(err)
+            }
+        }
+    }
+
+    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity):
+            MembershipQueryResult<List<RegistrationRequestStatus>> {
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            QueryRegistrationRequests()
+        ).execute()
+        return when (val payload = result.payload) {
+            is RegistrationRequestsQueryResponse -> {
+                MembershipQueryResult.Success(
+                    payload.registrationRequests.map { it.toStatus() }
+                )
+            }
+            is PersistenceFailedResponse -> {
+                val err = "Query failed because of: ${payload.errorMessage}"
+                logger.warn(err)
+                MembershipQueryResult.Failure(err)
+            }
+            else -> {
+                val err = "Query returned unexpected payload."
+                logger.warn(err)
+                MembershipQueryResult.Failure(err)
+            }
+        }
     }
 
     override fun queryMembersSignatures(

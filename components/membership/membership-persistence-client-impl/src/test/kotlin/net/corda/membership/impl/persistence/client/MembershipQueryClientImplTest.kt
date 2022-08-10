@@ -45,7 +45,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -67,7 +66,6 @@ class MembershipQueryClientImplTest {
     private val ourGroupId = "Group ID 1"
     private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
     private val ourMemberInfo: MemberInfo = mock()
-    private val registrationId = "Group ID 2"
 
     private val lifecycleEventCaptor = argumentCaptor<LifecycleEventHandler>()
 
@@ -152,14 +150,6 @@ class MembershipQueryClientImplTest {
         val result = membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))
 
         assertThat(result).isInstanceOf(MembershipQueryResult.Failure::class.java)
-    }
-
-    @Test
-    fun `query registration request before starting component`() {
-        // Function is not yet implemented
-        assertThrows<UnsupportedOperationException> {
-            membershipQueryClient.queryRegistrationRequest(ourHoldingIdentity, registrationId)
-        }
     }
 
     @Test

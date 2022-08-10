@@ -7,11 +7,15 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationStatusDetails
+import net.corda.data.membership.rpc.response.RegistrationStatusResponse
+import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
@@ -32,6 +36,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.REGISTRATION_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.SYNC_PROTOCOL
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -67,6 +72,7 @@ class MemberOpsServiceProcessor(
             RegistrationRpcRequest::class.java to { it.RegistrationRequestHandler() },
             MGMGroupPolicyRequest::class.java to { it.MGMGroupPolicyRequestHandler() },
             RegistrationStatusRpcRequest::class.java to { it.RegistrationStatusRequestHandler() },
+            RegistrationStatusSpecificRpcRequest::class.java to { it.RegistrationStatusSpecificRpcRequestHandler() },
         )
 
         /**
@@ -145,9 +151,51 @@ class MemberOpsServiceProcessor(
         }
     }
 
+    private fun RegistrationRequestStatus.toAvro() : RegistrationStatusDetails {
+        return RegistrationStatusDetails.newBuilder()
+            .setRegistrationSent(this.registrationSent)
+            .setRegistrationLastModified(this.registrationLastModified)
+            .setRegistrationStatus(this.status)
+            .setRegistrationId(this.registrationId)
+            .setRegistrationProtocolVersion(this.protocolVersion)
+            .setMemberProvidedContext(this.memberContext)
+            .build()
+    }
+
+    private inner class RegistrationStatusSpecificRpcRequestHandler : RpcHandler<RegistrationStatusSpecificRpcRequest> {
+        override fun handle(context: MembershipRpcRequestContext, request: RegistrationStatusSpecificRpcRequest): Any {
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
+            val holdingIdentity = virtualNodeInfoReadService
+                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+                ?: throw GroupPolicyGenerationException(
+                    "Could not find holding identity associated with ${request.holdingIdentityId}"
+                )
+            val response = membershipQueryClient.queryRegistrationRequestStatus(
+                viewOwningIdentity = holdingIdentity,
+                registrationId = request.requestId
+            ).getOrThrow()
+            val details = response?.toAvro()
+            return RegistrationStatusResponse(details)
+        }
+    }
+
     private inner class RegistrationStatusRequestHandler : RpcHandler<RegistrationStatusRpcRequest> {
         override fun handle(context: MembershipRpcRequestContext, request: RegistrationStatusRpcRequest): Any {
-            TODO("Not yet implemented")
+            val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
+            val holdingIdentity = virtualNodeInfoReadService
+                .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
+                ?: throw GroupPolicyGenerationException(
+                    "Could not find holding identity associated with ${request.holdingIdentityId}"
+                )
+            val response = membershipQueryClient.queryRegistrationRequestsStatus(
+                viewOwningIdentity = holdingIdentity,
+            ).getOrThrow()
+
+            return RegistrationsStatusResponse(
+                response.map {
+                    it.toAvro()
+                }
+            )
         }
     }
 
