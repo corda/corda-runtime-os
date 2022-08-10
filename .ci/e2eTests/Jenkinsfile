@@ -88,6 +88,7 @@ pipeline {
                             export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
                             helm install corda-alice ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=alice --set kafka.topicPrefix=alice -n $NAMESPACE --wait --timeout 600s
                         '''
+                        
                   }
                }
                stage("Deploy Bob cluster") {
