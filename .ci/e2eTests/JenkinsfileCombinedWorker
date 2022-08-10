@@ -146,6 +146,9 @@ pipeline {
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }
+        failure {
+            sendSlackNotifications("danger", "BUILD FAILURE", true, "#corda-corda5-build-notifications")
+        }
     }
 }
 
