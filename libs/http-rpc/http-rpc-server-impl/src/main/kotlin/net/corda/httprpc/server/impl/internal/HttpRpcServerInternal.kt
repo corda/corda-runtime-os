@@ -42,7 +42,7 @@ import java.util.concurrent.ScheduledExecutorService
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.apigen.processing.ws.mapToWsStatusCode
 
-@Suppress("TooManyFunctions", "TooGenericExceptionThrown")
+@Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class HttpRpcServerInternal(
     private val resourceProvider: RouteProvider,
     private val securityManager: HttpRpcSecurityManager,
