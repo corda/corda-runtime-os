@@ -15,7 +15,7 @@ import java.util.zip.ZipFile
 import jdk.security.jarsigner.JarSigner
 import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
-internal object CpxSigner {
+internal object SigningHelpers {
     /**
      * Signs Cpx jar files.
      */

@@ -9,6 +9,7 @@ import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.zip.ZipEntry
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_1_ALIAS
 import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -72,7 +73,7 @@ class CreateCpbTest {
                 "--file=$outcomeCpb",
                 "--keystore=$testKeyStore",
                 "--storepass=keystore password",
-                "--key=signing key 1",
+                "--key=$SIGNING_KEY_1_ALIAS",
                 "--sig-file=$CPB_SIGNER_NAME"
             )
 
@@ -105,7 +106,7 @@ class CreateCpbTest {
                     "--file=never-generated-cpb.cpb",
                     "--keystore=$testKeyStore",
                     "--storepass=keystore password",
-                    "--key=signing key 1",
+                    "--key=$SIGNING_KEY_1_ALIAS",
                     "--sig-file=$CPB_SIGNER_NAME"
                 )
         }
@@ -139,13 +140,13 @@ class CreateCpbTest {
                 "--file=$outcomeCpb",
                 "--keystore=$testKeyStore",
                 "--storepass=keystore password",
-                "--key=signing key 1",
+                "--key=$SIGNING_KEY_1_ALIAS",
                 "--sig-file=$CPB_SIGNER_NAME"
             )
 
         checkCpbContainsEntries(
             outcomeCpb,
-            listOf("META-INF/$CPB_SIGNER_NAME.SF", "META-INF/$CPB_SIGNER_NAME.RSA")
+            listOf("META-INF/$CPB_SIGNER_NAME.SF", "META-INF/$CPB_SIGNER_NAME.EC")
         )
     }
 }
