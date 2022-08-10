@@ -1,0 +1,50 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.cli-plugin-packager'
+    id 'corda.common-publishing'
+}
+
+group 'net.corda.cli.deployment'
+
+dependencies {
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    compileOnly project(":libs:http-rpc:http-rpc")
+    compileOnly project(":libs:http-rpc:http-rpc-client")
+
+    implementation project(":components:membership:membership-http-rpc")
+
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "org.yaml:snakeyaml:${snakeyamlVersion}"
+    implementation "org.pf4j:pf4j:${pf4jVersion}"
+    kapt "org.pf4j:pf4j:${pf4jVersion}"
+
+    testImplementation "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+}
+
+cliPlugin {
+    cliPluginClass = 'net.corda.cli.plugins.network.NetworkPluginWrapper'
+    cliPluginDescription = 'Plugin for interacting with a network.'
+}
+
+tasks.named("installDist") {
+    dependsOn cliPlugin
+    def homePath = System.properties['user.home']
+    from cliPlugin
+    into "$homePath/.corda/cli/plugins"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
+            groupId project.group
+            artifact cliPluginTask
+        }
+    }
+}
