@@ -1,5 +1,45 @@
-
 group 'net.corda.cli.deployment'
+
+apply plugin: 'java'
+
+configurations {
+    cliHostDist
+}
+
+dependencies {
+    cliHostDist 'net.corda.cli.host:corda-cli:0.0.1-beta-+'
+}
+
+tasks.register('cliDistZip') {
+    copy {
+        from configurations.named('cliHostDist')
+        into "$buildDir/cli"
+        rename ('.*.jar', 'corda-cli.jar')
+    }
+    copy {
+        from subprojects.collect { it.tasks.named('cliPluginTask') }
+        into "$buildDir/cli/plugins"
+    }
+    copy {
+        from "$projectDir/buildsrc"
+        into "$buildDir/cli"
+    }
+}
+
+task myZip(type: Zip) {
+    dependsOn tasks.named("cliDistZip")
+    from "$buildDir/cli"
+    include '*'
+    include '*/*' //to include contents of a folder present inside Reports directory
+    archiveName 'corda-cli-dist.zip'
+    destinationDir(file("$buildDir/zip"))
+}
+
+
+
+artifacts {
+    myZip
+}
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
