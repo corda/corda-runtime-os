@@ -1,6 +1,9 @@
 package net.corda.ledger.common.impl.transactions
 
+import net.corda.v5.base.annotations.CordaSerializable
+
 //TODO(guarantee its serialization is deterministic)
+@CordaSerializable
 class TransactionMetaData(
     private val properties: Map<String, Any>
     ) {
