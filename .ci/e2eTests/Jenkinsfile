@@ -81,10 +81,15 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh '''
-                   export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                   helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s
-               '''
+               script {
+                   cordaClusterPrefix = ["alice","bob","caroline"]
+                   cordaClusterPrefix.each{
+                       sh """
+                           export SASL_SECRET=\$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
+                           helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set fullNameOverride=$it --set kafka.topicPrefix=$it -n $NAMESPACE --wait --timeout 600s
+                       """
+                   }
+               }
             }
             post {
                 unsuccessful {
