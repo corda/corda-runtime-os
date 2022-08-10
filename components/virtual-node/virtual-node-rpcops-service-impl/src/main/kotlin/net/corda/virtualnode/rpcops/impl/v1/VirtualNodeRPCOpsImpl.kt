@@ -135,7 +135,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
      * Sends the [request] to the configuration management topic on bus.
      *
      * @property request is a [VirtualNodeManagementRequest]. This an enveloper around the intended request
-     * @throws CordaRuntimeException If the updated configuration could not be published.
+     * @throws CordaRuntimeException If the message could not be published.
      * @return [VirtualNodeManagementResponse] which is an envelope around the actual response.
      *  This response corresponds to the [VirtualNodeManagementRequest] received by the function
      * @see VirtualNodeManagementRequest

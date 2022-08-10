@@ -19,6 +19,17 @@ class RPCSenderFactoryImpl @Activate constructor(
     companion object {
         private val logger = contextLogger()
     }
+
+    /**
+     * Sends the [request] to the configuration management topic on bus.
+     *
+     * @property timeout is a [Duration]. This acts as a timeout for how long to wait before assuming something went
+     *  wrong in a given request
+     * @property messagingConfig is a [SmartConfig]. This is the config for the given RPCSender to be created
+     * @throws CordaRuntimeException If the updated sender cannot not be created.
+     * @return [RPCSenderWrapper] is a wrapper object around a sender, and the accompanying timeout
+     * @see RPCSenderWrapper
+     */
     override fun createSender(timeout: Duration, messagingConfig: SmartConfig): RPCSenderWrapper {
         try {
             return RPCSenderWrapperImpl(
