@@ -10,19 +10,3 @@
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.corda.application'
-
-// Christian's branch:
-//-runrequires: \
-//    bnd.identity;id='net.corda.virtual-node-testing',\
-//    bnd.identity;id='org.apache.felix.framework.security',\
-//    bnd.identity;id='junit-jupiter-engine',\
-//    bnd.identity;id='junit-platform-launcher',\
-    //bnd.identity;id='net.corda.application',\
-    //bnd.identity;id='net.corda.ledger-consensual-impl',\
-//    bnd.identity;id='net.corda.flow-service',\
-//    bnd.identity;id='net.corda.serialization-amqp',\
-//    bnd.identity;id='ledger-consensual-impl-tests',\
-//    bnd.identity;id='net.corda.security-manager',\
-//    bnd.identity;id='net.corda.session-manager',\
-//    bnd.identity;id='net.corda.serialization-checkpoint-api',\
-//    bnd.identity;id='slf4j.simple'
