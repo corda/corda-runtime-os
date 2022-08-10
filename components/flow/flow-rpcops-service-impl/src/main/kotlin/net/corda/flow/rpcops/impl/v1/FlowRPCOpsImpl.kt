@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.impl.v1
 
-import java.lang.IllegalArgumentException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import net.corda.data.virtualnode.VirtualNodeInfo
