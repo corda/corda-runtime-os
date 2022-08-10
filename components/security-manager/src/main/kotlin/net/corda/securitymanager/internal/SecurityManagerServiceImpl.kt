@@ -23,7 +23,8 @@ import org.osgi.service.condpermadmin.ConditionalPermissionInfo
 class SecurityManagerServiceImpl @Activate constructor(
     @Reference
     private val conditionalPermissionAdmin: ConditionalPermissionAdmin,
-    bundleContext: BundleContext
+    @Suppress("unused")
+    private val bundleContext: BundleContext
 ) : SecurityManagerService {
     companion object {
         private val log = contextLogger()
