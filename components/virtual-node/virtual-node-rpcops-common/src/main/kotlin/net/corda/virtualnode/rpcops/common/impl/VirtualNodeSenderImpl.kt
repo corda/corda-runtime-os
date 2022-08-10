@@ -5,15 +5,15 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import java.time.Duration
 
-class RPCSenderWrapperImpl(
+class VirtualNodeSenderImpl(
     override val timeout: Duration,
     private val sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>
-) : RPCSenderWrapper {
+) : VirtualNodeSender {
     /**
-     * Sends the [request] to the configuration management topic on bus.
+     * Sends the [request] to the virtual node topic in the message bus.
      *
      * @property request is a [VirtualNodeManagementRequest]. This an enveloper around the intended request
      * @throws CordaRuntimeException If the updated configuration could not be published.

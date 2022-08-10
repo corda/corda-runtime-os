@@ -32,8 +32,8 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.rpcops.common.RPCSenderFactory
-import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
+import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,13 +48,17 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
-    @Reference(service = RPCSenderFactory::class)
-    private val rpcSenderFactory: RPCSenderFactory,
+    @Reference(service = VirtualNodeSenderFactory::class)
+    private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
 
     companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
         private val logger = contextLogger()
+
+        const val REGISTRATION = "REGISTRATION"
+        const val SENDER = "SENDER"
+        const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
     override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java
@@ -71,7 +75,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 configurationReadService.start()
-                coordinator.createManagedResource("REGISTRATION") {
+                coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
@@ -86,12 +90,12 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
-                        coordinator.closeManagedResources(setOf("CONFIG_HANDLE"))
+                        coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                         coordinator.postEvent(StopEvent(errored = true))
                     }
                     LifecycleStatus.UP -> {
                         // Receive updates to the RPC and Messaging config
-                        coordinator.createManagedResource("CONFIG_HANDLE") {
+                        coordinator.createManagedResource(CONFIG_HANDLE) {
                             configurationReadService.registerComponentForUpdates(
                                 coordinator,
                                 requiredKeys
@@ -110,8 +114,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
-                    coordinator.createManagedResource("SENDER") {
-                        rpcSenderFactory.createSender(duration, messagingConfig)
+                    coordinator.createManagedResource(SENDER) {
+                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
@@ -147,7 +151,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
 
-        val sender = lifecycleCoordinator.getManagedResource<RPCSenderWrapper>("SENDER")
+        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
             ?: throw CordaRuntimeException("Sender not initialized, check component status for ${this.javaClass.name}")
 
         return sender.sendAndReceive(request)
