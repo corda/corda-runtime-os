@@ -1,4 +1,4 @@
-package net.corda.ledger.common.impl.transactions
+package net.corda.ledger.common.impl.transaction
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
@@ -15,7 +15,7 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.ledger.common.transactions.PrivacySalt
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 
 internal const val ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D

@@ -1,5 +1,5 @@
 
-package net.corda.ledger.common.impl.transactions
+package net.corda.ledger.common.impl.transaction
 
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test

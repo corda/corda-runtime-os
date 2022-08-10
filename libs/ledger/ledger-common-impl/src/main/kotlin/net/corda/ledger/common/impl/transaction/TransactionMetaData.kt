@@ -1,4 +1,4 @@
-package net.corda.ledger.common.impl.transactions
+package net.corda.ledger.common.impl.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 

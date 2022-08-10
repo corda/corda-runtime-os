@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.impl
 
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.ledger.consensual.impl.transactions.ConsensualTransactionBuilderImpl
+import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestService

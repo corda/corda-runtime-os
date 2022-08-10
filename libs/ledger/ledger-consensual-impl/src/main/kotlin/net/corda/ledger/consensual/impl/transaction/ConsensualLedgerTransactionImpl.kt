@@ -1,6 +1,6 @@
-package net.corda.ledger.consensual.impl.transactions
+package net.corda.ledger.consensual.impl.transaction
 
-import net.corda.ledger.common.impl.transactions.WireTransaction
+import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
