@@ -194,7 +194,6 @@ class FlowStatusFeedSmokeTest {
         }
     }
 
-    /*
     @Order(60)
     @Test
     fun `websocket connection terminated when client registers for holding identity with invalid holding identity hex string`() {
@@ -224,7 +223,6 @@ class FlowStatusFeedSmokeTest {
             assertFalse(wsHandler.isConnected)
         }
     }
-     */
 
     private fun startFlow(clientRequestId: String) {
         val requestBody = RpcSmokeTestInput().apply {

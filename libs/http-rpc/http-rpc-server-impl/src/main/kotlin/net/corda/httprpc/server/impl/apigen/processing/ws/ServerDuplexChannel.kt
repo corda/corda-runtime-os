@@ -6,9 +6,14 @@ import net.corda.httprpc.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.util.concurrent.Future
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import net.corda.v5.base.util.contextLogger
 
-internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexChannel {
+internal class ServerDuplexChannel(
+    private val ctx: WsConnectContext,
+    private val deferredWebsocketClosePool: ScheduledExecutorService
+) : DuplexChannel {
 
     private companion object {
         val logger = contextLogger()
@@ -41,12 +46,16 @@ internal class ServerDuplexChannel(private val ctx: WsConnectContext) : DuplexCh
 
     fun close(closeStatus: CloseStatus) {
         closeHook?.let { it(closeStatus.code, closeStatus.phrase) }
-        if(ctx.session.isOpen) {
-            logger.info("ServerDuplexChannel closing open session with status ${closeStatus.code}, reason: ${closeStatus.phrase}.")
+        // Since this call can be made from `onConnect` it is best deferring calling close later on from a separate
+        // thread or else Javalin may end-up in the unusable state sometimes.
+        deferredWebsocketClosePool.schedule({
+            if (ctx.session.isOpen) {
+                logger.info("Closing open session with status ${closeStatus.code}, reason: ${closeStatus.phrase}.")
+            } else {
+                logger.info("Closing session that reported not open with Status ${closeStatus.code}, reason: ${closeStatus.phrase}.")
+            }
             ctx.closeSession(closeStatus)
-        } else {
-            logger.warn("ServerDuplexChannel attempted to close session (${ctx.session.remoteAddress}) but it was not open.")
-        }
+        }, 1, TimeUnit.SECONDS)
     }
 
     override var onConnect: (() -> Unit)?

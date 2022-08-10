@@ -38,8 +38,10 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
+import java.util.concurrent.Executors
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.apigen.processing.ws.mapToWsStatusCode
+import org.apache.commons.lang3.concurrent.BasicThreadFactory
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -362,11 +364,14 @@ internal class HttpRpcServerInternal(
         }
     }
 
+    private val deferredWebsocketClosePool = Executors.newScheduledThreadPool(1,
+        BasicThreadFactory.Builder().namingPattern("wsFlowStatusClose-%d").daemon(true).build())
+
     private fun Javalin.registerWsHandlerForRoute(routeInfo: RouteInfo) {
         try {
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
-            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver))
+            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver, deferredWebsocketClosePool))
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {

@@ -9,6 +9,7 @@ import io.javalin.websocket.WsErrorContext
 import io.javalin.websocket.WsErrorHandler
 import io.javalin.websocket.WsMessageContext
 import io.javalin.websocket.WsMessageHandler
+import java.util.concurrent.ScheduledExecutorService
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientWsRequestContext
 import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
@@ -24,7 +25,8 @@ import org.eclipse.jetty.websocket.api.StatusCode.POLICY_VIOLATION
 internal class WebsocketRouteAdaptor(
     private val routeInfo: RouteInfo,
     private val securityManager: HttpRpcSecurityManager,
-    private val credentialResolver: DefaultCredentialResolver
+    private val credentialResolver: DefaultCredentialResolver,
+    private val deferredWebsocketClosePool: ScheduledExecutorService
 ) : WsMessageHandler, WsCloseHandler,
     WsConnectHandler, WsErrorHandler {
 
@@ -41,7 +43,7 @@ internal class WebsocketRouteAdaptor(
         try {
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
-            ServerDuplexChannel(ctx).let { newChannel ->
+            ServerDuplexChannel(ctx, deferredWebsocketClosePool).let { newChannel ->
                 channel = newChannel
 
                 val clientWsRequestContext = ClientWsRequestContext(ctx)
