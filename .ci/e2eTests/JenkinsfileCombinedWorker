@@ -130,7 +130,8 @@ pipeline {
         always {
             
             script {      
-
+                    findBuildScans()
+                    splunkLogGenerator()
                     sh '''
                         for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> podLogs.txt; done
                     '''     
