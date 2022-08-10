@@ -37,6 +37,11 @@ pipeline {
             alwaysPull true
         }
     }
+
+    triggers {
+        cron('H/20 * * * *')
+    }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
