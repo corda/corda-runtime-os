@@ -32,36 +32,37 @@ internal class WebsocketRouteAdaptor(
 
     private companion object {
         val log = contextLogger()
-        const val WEBSOCKET_CONNECTION_IDLE_TIMEOUT = 10000L
     }
 
     @Volatile
     private var channel: DuplexChannel? = null
 
     // The handler is called when a WebSocket client connects.
+    @Suppress("NestedBlockDepth")
     override fun handleConnect(ctx: WsConnectContext) {
         try {
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
-            ctx.session.idleTimeout = WEBSOCKET_CONNECTION_IDLE_TIMEOUT
-            val newChannel = ServerDuplexChannel(ctx, deferredWebsocketClosePool)
+            ServerDuplexChannel(ctx, deferredWebsocketClosePool).let { newChannel ->
+                channel = newChannel
 
-            val clientWsRequestContext = ClientWsRequestContext(ctx)
+                val clientWsRequestContext = ClientWsRequestContext(ctx)
 
-            try {
-                val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
-                authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
+                try {
+                    val authorizingSubject = authenticate(clientWsRequestContext, securityManager, credentialResolver)
+                    authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
 
-                val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
-                val fullListOfParams = listOf(newChannel) + paramsFromRequest
+                    val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
+                    val fullListOfParams = listOf(newChannel) + paramsFromRequest
 
-                @Suppress("SpreadOperator")
-                routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
-                newChannel.onConnect?.let { it() }
-            } catch (ex: UnauthorizedResponse) {
-                "Websocket operation not permitted".let {
-                    log.warn("$it - ${ex.message}")
-                    newChannel.close(CloseStatus(POLICY_VIOLATION, it))
+                    @Suppress("SpreadOperator")
+                    routeInfo.invokeDelegatedMethod(*fullListOfParams.toTypedArray())
+                    newChannel.onConnect?.let { it() }
+                } catch (ex: UnauthorizedResponse) {
+                    "Websocket operation not permitted".let {
+                        log.warn("$it - ${ex.message}")
+                        newChannel.close(CloseStatus(POLICY_VIOLATION, it))
+                    }
                 }
             }
         } catch (th: Throwable) {
