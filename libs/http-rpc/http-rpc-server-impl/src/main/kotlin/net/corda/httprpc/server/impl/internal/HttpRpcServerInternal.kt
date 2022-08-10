@@ -39,6 +39,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.apigen.processing.ws.mapToWsStatusCode
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
@@ -49,7 +50,8 @@ internal class HttpRpcServerInternal(
     private val securityManager: HttpRpcSecurityManager,
     private val configurationsProvider: HttpRpcSettingsProvider,
     private val openApiInfoProvider: OpenApiInfoProvider,
-    multiPartDir: Path
+    multiPartDir: Path,
+    private val deferredWebsocketClosePool: ScheduledExecutorService
 ) {
 
     internal companion object {
@@ -66,8 +68,6 @@ internal class HttpRpcServerInternal(
     }
 
     private val credentialResolver = DefaultCredentialResolver()
-    private val deferredWebsocketClosePool = Executors.newScheduledThreadPool(1,
-        BasicThreadFactory.Builder().namingPattern("wsFlowStatusClose-%d").daemon(true).build())
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
         it.registerPlugin(RedirectToLowercasePathPlugin())
