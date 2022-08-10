@@ -59,8 +59,8 @@ class FlowRunnerImpl @Activate constructor(
             context,
             createFlow = { sgc -> flowFactory.createFlow(startFlowEvent, sgc) },
             updateFlowStackItem = { },
-            contextPlatformProperties = startFlowEvent.startContext.contextPlatformProperties,
-            contextUserProperties = emptyKeyValuePairList()
+            contextUserProperties = emptyKeyValuePairList(),
+            contextPlatformProperties = startFlowEvent.startContext.contextPlatformProperties
         )
     }
 
@@ -73,8 +73,8 @@ class FlowRunnerImpl @Activate constructor(
             context,
             createFlow = { sgc -> flowFactory.createInitiatedFlow(flowStartContext, sgc) },
             updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) },
-            contextPlatformProperties = sessionInitEvent.contextPlatformProperties,
-            contextUserProperties = sessionInitEvent.contextUserProperties
+            contextUserProperties = sessionInitEvent.contextUserProperties,
+            contextPlatformProperties = sessionInitEvent.contextPlatformProperties
         )
     }
 
@@ -82,16 +82,16 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         createFlow: (SandboxGroupContext) -> FlowLogicAndArgs,
         updateFlowStackItem: (FlowStackItem) -> Unit,
-        contextPlatformProperties: KeyValuePairList,
         contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList
     ): FiberFuture {
         val checkpoint = context.checkpoint
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         val flow = createFlow(fiberContext.sandboxGroupContext)
         val stackItem = fiberContext.flowStackService.pushWithContext(
             flow = flow.logic,
+            contextUserProperties = contextUserProperties,
             contextPlatformProperties = contextPlatformProperties,
-            contextUserProperties = contextUserProperties
         )
         updateFlowStackItem(stackItem)
         fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)
