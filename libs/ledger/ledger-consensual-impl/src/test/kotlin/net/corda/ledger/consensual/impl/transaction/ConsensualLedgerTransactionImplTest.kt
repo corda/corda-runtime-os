@@ -74,7 +74,7 @@ internal class ConsensualLedgerTransactionImplTest{
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
         val signedTransaction = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-            .withTimeStamp(testTimestamp)
+            .withTimestamp(testTimestamp)
             .withState(testConsensualState)
             .signInitial(testPublicKey)
         val ledgerTransaction = signedTransaction.toLedgerTransaction(serializer)

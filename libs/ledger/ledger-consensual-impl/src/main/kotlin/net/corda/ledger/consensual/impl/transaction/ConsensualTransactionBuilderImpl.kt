@@ -25,12 +25,12 @@ class ConsensualTransactionBuilderImpl(
     private val secureRandom: SecureRandom,
     private val serializer: SerializationService,
     private val signingService: SigningService,
-    override val timeStamp: Instant? = null,
+    override val timestamp: Instant? = null,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
     private fun copy(
-        timeStamp: Instant? = this.timeStamp,
+        timeStamp: Instant? = this.timestamp,
         states: List<ConsensualState> = this.states
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
@@ -39,8 +39,8 @@ class ConsensualTransactionBuilderImpl(
         )
     }
 
-    override fun withTimeStamp(timeStamp: Instant): ConsensualTransactionBuilder =
-        this.copy(timeStamp = timeStamp)
+    override fun withTimestamp(timestamp: Instant): ConsensualTransactionBuilder =
+        this.copy(timeStamp = timestamp)
 
     override fun withState(state: ConsensualState): ConsensualTransactionBuilder =
         this.copy(states = states + state)
@@ -55,7 +55,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
-        require(timeStamp != null){"Null timeStamp is not allowed"}
+        require(timestamp != null){"Null timeStamp is not allowed"}
 
         val requiredSigningKeys = states //TODO: unique? ordering
             .map{it.participants}
@@ -68,7 +68,7 @@ class ConsensualTransactionBuilderImpl(
                 ConsensualComponentGroupEnum.METADATA ->
                     listOf(serializer.serialize(calculateMetaData()).bytes)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
-                    listOf(serializer.serialize(timeStamp).bytes)
+                    listOf(serializer.serialize(timestamp).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
                     requiredSigningKeys.map{serializer.serialize(it).bytes}
                 ConsensualComponentGroupEnum.OUTPUT_STATES ->

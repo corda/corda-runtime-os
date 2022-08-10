@@ -70,7 +70,7 @@ internal class ConsensualTransactionBuilderImplTest{
     @Test
     fun `can build a simple Transaction`() {
         ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-            .withTimeStamp(Instant.now())
+            .withTimestamp(Instant.now())
             .withState(testConsensualState)
             .signInitial(testPublicKey)
     }
@@ -89,7 +89,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withTimeStamp(Instant.now())
+                .withTimestamp(Instant.now())
                 .signInitial(testPublicKey)
         }
         assertEquals("At least one Consensual State is required", exception.message)
@@ -99,7 +99,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction with Consensual States without participants`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withTimeStamp(Instant.now())
+                .withTimestamp(Instant.now())
                 .withState(testConsensualState)
                 .withState(TestConsensualState("test", emptyList()))
                 .signInitial(testPublicKey)
