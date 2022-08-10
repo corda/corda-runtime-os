@@ -121,26 +121,6 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `if destination identity is hosted locally, replaying an authenticated messages results in no records`() {
-        val payload = "test"
-        val authenticatedMsg = AuthenticatedMessage(
-            AuthenticatedMessageHeader(
-                myIdentity.toAvro(),
-                localIdentity.toAvro(),
-                null, "message-id", "trace-id", "system-1"
-            ),
-            ByteBuffer.wrap(payload.toByteArray())
-        )
-        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
-            authenticatedMsg,
-            "key"
-        )
-
-        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
-        assertThat(records).isEmpty()
-    }
-
-    @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
@@ -199,6 +179,34 @@ class OutboundMessageProcessorTest {
         }.allMatch {
             (it.value as? LinkOutMessage)?.payload == unauthenticatedMsg
         }
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if destination identity is not in the members map or locally hosted`() {
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(
+                HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
+                myIdentity.toAvro(),
+                "subsystem"
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
     }
 
     @Test
@@ -544,7 +552,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces only a LinkManagerProcessedMarker if SessionEstablished and receiver is not in the network map`() {
+    fun `onNext produces only a LinkManagerProcessedMarker if destination is not in the network map or locally hosted`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val appMessage = AppMessage(
@@ -561,18 +569,16 @@ class OutboundMessageProcessorTest {
 
         val records = processor.onNext(messages)
 
-        assertThat(records).hasSize(2)
+        assertThat(records).hasSize(1)
 
         val markers = records.filter { it.value is AppMessageMarker }
         assertSoftly {
             it.assertThat(markers.map { it.key }).allMatch {
                 it.equals("message-id")
             }
-            it.assertThat(markers).hasSize(2)
+            it.assertThat(markers).hasSize(1)
             it.assertThat(markers.map { it.value as AppMessageMarker }
                 .filter { it.marker is LinkManagerProcessedMarker }).hasSize(1)
-            it.assertThat(markers.map { it.value as AppMessageMarker }
-                .filter { it.marker is LinkManagerSentMarker }).hasSize(1)
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
         verify(messagesPendingSession, never()).queueMessage(any())

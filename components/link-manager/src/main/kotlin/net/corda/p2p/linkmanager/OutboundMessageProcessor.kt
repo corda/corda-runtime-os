@@ -106,9 +106,13 @@ internal class OutboundMessageProcessor(
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
         return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
-        } else {
+        } else if (members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda()) != null) {
             val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, groups, members)
             listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
+        } else {
+            logger.warn("Trying to send unauthenticated message from ${message.header.source.toCorda()} " +
+                    "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")
+            return emptyList()
         }
     }
 
@@ -142,27 +146,24 @@ internal class OutboundMessageProcessor(
             }
         }
 
-        if (linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toCorda())) {
-            return if (isReplay) {
-                /* This code block was added to fix a race which happens if the OutboundMessageProcessor runs quicker than the
-                 * DeliveryTracker. Under normal circumstances a message to locally hosted holding identity will be added and then removed
-                 * from the delivery tracker, before the message is replayed (as the OutboundMessageProcessor adds both a LinkManagerSent
-                 * and a LinkManagerReceived marker).
-                 */
-                emptyList()
-            } else {
-                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                    recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
-                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
-                )
-            }
-        } else {
+        val source = messageAndKey.message.header.source.toCorda()
+        val destination = messageAndKey.message.header.destination.toCorda()
+        if (linkManagerHostingMap.isHostedLocally(destination)) {
+            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
+                recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+            )
+        } else if (members.getMemberInfo(source, destination) != null) {
             val markers = if (isReplay) {
                 emptyList()
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
+        } else {
+            logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
+                    "but the destination is not part of the network. Message will be retried later.")
+            return listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
         }
     }
     private fun processNoTtlRemoteAuthenticatedMessage(
