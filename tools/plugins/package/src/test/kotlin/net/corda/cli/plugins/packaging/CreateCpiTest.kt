@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.packaging
 
-import jdk.security.jarsigner.JarSigner
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -12,13 +11,15 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
-import java.security.KeyStore
-import java.security.cert.CertificateFactory
 import java.util.jar.JarInputStream
-import java.util.jar.JarOutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_1
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2_ALIAS
 import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
+import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder
+import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
+import net.corda.utilities.exists
+import org.junit.jupiter.api.Assertions.assertFalse
 import picocli.CommandLine.Help
 
 class CreateCpiTest {
@@ -28,10 +29,16 @@ class CreateCpiTest {
     private lateinit var testCpb: Path
 
     companion object {
-        private const val SIGNER_NAME = "CPI-SIG"
+        const val CPI_FILE_NAME = "output.cpi"
+
+        private const val CPK_SIGNER_NAME = "CPK-SIG"
+        private const val CPB_SIGNER_NAME = "CORDAPP"
+        private const val CPI_SIGNER_NAME = "CPI-SIG"
+        private val CPK_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(CPK_SIGNER_NAME, SIGNING_KEY_2)
+        private val CPB_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(CPB_SIGNER_NAME, SIGNING_KEY_1)
     }
 
-    private val app = CreateCpi()
+    private lateinit var app: CreateCpi
     private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
         ?: error("TestGroupPolicy.json not found"))
     private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
@@ -39,64 +46,24 @@ class CreateCpiTest {
 
     @BeforeEach
     fun setup() {
+        app = CreateCpi()
         testCpb = createCpb()
     }
 
     private fun createCpb(): Path {
-        val tmpFile = Path.of(tempDir.toString(), "test.jar")
         val cpbFile = Path.of(tempDir.toString(), "test.cpb")
+        val cpbStream = TestCpbV1Builder()
+            .signers(CPB_SIGNER)
+            .build()
+            .inputStream()
 
-        try {
-            // Build test CPB
-            buildTestCpb(tmpFile)
-
-            // Sign test CPB
-            signTestCpb(tmpFile, cpbFile)
-        } finally {
-            Files.deleteIfExists(tmpFile)
+        Files.newOutputStream(cpbFile, StandardOpenOption.CREATE_NEW).use { outStream ->
+            cpbStream.use {
+                it.copyTo(outStream)
+            }
         }
 
         return cpbFile
-    }
-
-    private fun buildTestCpb(tmpFile: Path) {
-        val testContent = "TEST".toByteArray()
-        JarOutputStream(Files.newOutputStream(tmpFile, StandardOpenOption.CREATE_NEW)).use { jar ->
-            arrayOf(
-                "META-INF/MANIFEST.MF",
-                "test-cpk-1.cpk",
-                "test-cpk-2.cpk"
-            ).forEach { fileName ->
-                jar.putNextEntry(ZipEntry(fileName))
-                jar.write(testContent)
-            }
-        }
-    }
-
-    private fun signTestCpb(tmpFile: Path, cpbFile: Path) {
-        val passwordCharArray = "keystore password".toCharArray()
-        val keyEntry = KeyStore.getInstance(testKeyStore.toFile(), passwordCharArray).getEntry(
-            "signing key 2",
-            KeyStore.PasswordProtection(passwordCharArray)
-        ) as? KeyStore.PrivateKeyEntry ?: error("Alias \"${"signing key 2"}\" is not a private key")
-
-        ZipFile(tmpFile.toFile()).use { unsignedCpi ->
-            Files.newOutputStream(
-                cpbFile,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.CREATE_NEW
-            ).use { signedCpi ->
-                val certPath = CertificateFactory
-                    .getInstance("X.509")
-                    .generateCertPath(keyEntry.certificateChain.asList())
-
-                // Sign jar
-                JarSigner.Builder(keyEntry.privateKey, certPath)
-                    .signerName("CORDAPP")
-                    .build()
-                    .sign(unsignedCpi, signedCpi)
-            }
-        }
     }
 
     private fun tmpOutputFile() = Path.of(tempDir.toString(), "output.cpi")
@@ -112,8 +79,8 @@ class CreateCpiTest {
                 "--file=$outputFile",
                 "--keystore=${testKeyStore}",
                 "--storepass=keystore password",
-                "--key=signing key 1",
-                "--sig-file=$SIGNER_NAME"
+                "--key=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=$CPI_SIGNER_NAME"
             )
         }
 
@@ -134,8 +101,8 @@ class CreateCpiTest {
                 "-f=$outputFile",
                 "-s=${testKeyStore}",
                 "-p=keystore password",
-                "-k=signing key 1",
-                "--sig-file=$SIGNER_NAME"
+                "-k=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=$CPI_SIGNER_NAME"
             )
         }
 
@@ -156,8 +123,8 @@ class CreateCpiTest {
                 "-g=${testGroupPolicy}",
                 "-s=${testKeyStore}",
                 "-p=keystore password",
-                "-k=signing key 1",
-                "--sig-file=$SIGNER_NAME"
+                "-k=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=$CPI_SIGNER_NAME"
             )
         }
 
@@ -188,8 +155,8 @@ class CreateCpiTest {
             while (entry != null) {
                 when (entry.name) {
                     "META-INF/GroupPolicy.json" -> groupPolicyPresent = true
-                    "test-cpk-1.cpk" -> cpk1Present = true
-                    "test-cpk-2.cpk" -> cpk2Present = true
+                    "testCpk1-1.0.0.0.cpk" -> cpk1Present = true
+                    "testCpk2-2.0.0.0.cpk" -> cpk2Present = true
                     "META-INF/CPI-SIG.SF" -> cpiSignaturePresent = true
                     "META-INF/CORDAPP.SF" -> cpbSignaturePresent = true
                 }
@@ -241,5 +208,42 @@ Creates a CPI from a CPB and GroupPolicy.json file.
       --sig-file=<_sigFile> Base file name for signature related files
   -t, --tsa=<tsaUrl>        Time Stamping Authority (TSA) URL
 """, errText)
+    }
+
+    @Test
+    fun `cpi create tool aborts if its not a cpb before packing it into a cpi`() {
+        // Attempt to pack a Cpk into a Cpi - should fail since it's not a Cpb
+        val cpkBuilder = TestCpkV1Builder()
+        val cpkStream = cpkBuilder
+            .signers(CPK_SIGNER).build().inputStream()
+        val cpkPath = Path.of(tempDir.toString(), cpkBuilder.name)
+        Files.newOutputStream(cpkPath, StandardOpenOption.CREATE_NEW).use { outStream ->
+            cpkStream.use {
+                it.copyTo(outStream)
+            }
+        }
+
+        val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
+
+        val outText = captureStdErr {
+            CommandLine(app).execute (
+                "--cpb=${cpkPath}",
+                "--group-policy=${testGroupPolicy}",
+                "--file=$cpiOutputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=$SIGNING_KEY_2_ALIAS",
+                "--sig-file=${CPI_SIGNER_NAME}"
+            )
+        }
+
+        assertFalse(cpiOutputFile.exists())
+        assertTrue(outText.contains("java.lang.IllegalArgumentException: Cpb is invalid"))
+        assertTrue(
+            outText.contains(
+                "net.corda.libs.packaging.core.exception.CordappManifestException: " +
+                        "Manifest is missing required attribute \"Corda-CPB-Name\""
+            )
+        )
     }
 }

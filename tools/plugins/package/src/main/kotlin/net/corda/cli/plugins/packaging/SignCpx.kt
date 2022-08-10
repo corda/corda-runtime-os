@@ -3,7 +3,7 @@ package net.corda.cli.plugins.packaging
 import java.nio.file.Files
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.CpxSigner
+import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import picocli.CommandLine
 
@@ -32,7 +32,7 @@ class SignCpx : Runnable {
         val signedCpxPath = requireFileDoesNotExist(outputSignedCpxFile)
 
         if (multipleSignatures) {
-            CpxSigner.sign(
+            SigningHelpers.sign(
                 cpxFilePath,
                 signedCpxPath,
                 signingOptions.keyStoreFileName,
@@ -44,8 +44,8 @@ class SignCpx : Runnable {
         } else {
             val removedSignaturesCpx = Files.createTempFile("removedSignaturesCpx", null)
             try {
-                CpxSigner.removeSignatures(cpxFilePath, removedSignaturesCpx)
-                CpxSigner.sign(
+                SigningHelpers.removeSignatures(cpxFilePath, removedSignaturesCpx)
+                SigningHelpers.sign(
                     removedSignaturesCpx,
                     signedCpxPath,
                     signingOptions.keyStoreFileName,
