@@ -2,6 +2,7 @@ package net.corda.flow.rpcops.impl
 
 import com.google.common.collect.Multimap
 import com.google.common.collect.Multimaps
+import java.util.LinkedList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
@@ -29,7 +30,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -122,7 +122,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
                 cache[flowKey] = flowStatus
                 updateAllStatusListenersForFlowKey(flowKey, flowStatus)
             }
-        } catch(ex: Exception) {
+        } catch (ex: Exception) {
             log.error("Unhandled error when processing onNext for FlowStatus", ex)
         }
     }
@@ -164,8 +164,10 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val removed = lock.writeLock()
             .withLock { statusListenersPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
         if (removed) {
-            log.info("Unregistered flow status listener: ${listener.id} for clientId: $clientRequestId." +
-                    " Total number of open listeners: ${statusListenersPerFlowKey.size()}.")
+            log.info(
+                "Unregistered flow status listener: ${listener.id} for clientId: $clientRequestId." +
+                        " Total number of open listeners: ${statusListenersPerFlowKey.size()}."
+            )
         }
     }
 
@@ -174,8 +176,10 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
         if (handlersForRequestAndHoldingIdAlreadyExist) {
             if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
-                errors.add("Max WebSocket connections for clientRequestId ${flowKey.id}, holdingIdentity ${flowKey.identity} has been " +
-                        "reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY).")
+                errors.add(
+                    "Max WebSocket connections for clientRequestId ${flowKey.id}, holdingIdentity ${flowKey.identity} has been " +
+                            "reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY)."
+                )
             }
         }
     }

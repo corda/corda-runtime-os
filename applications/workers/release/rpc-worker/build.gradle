@@ -68,8 +68,6 @@ dependencies {
     e2eTestImplementation "net.corda:corda-avro-schema"
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
-    e2eTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
-    e2eTestImplementation "io.javalin:javalin-osgi:$javalinVersion"
 
     dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

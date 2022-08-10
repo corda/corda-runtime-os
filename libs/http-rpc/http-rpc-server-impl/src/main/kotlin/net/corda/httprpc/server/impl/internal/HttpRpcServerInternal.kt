@@ -66,6 +66,8 @@ internal class HttpRpcServerInternal(
     }
 
     private val credentialResolver = DefaultCredentialResolver()
+    private val deferredWebsocketClosePool = Executors.newScheduledThreadPool(1,
+        BasicThreadFactory.Builder().namingPattern("wsFlowStatusClose-%d").daemon(true).build())
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
         it.registerPlugin(RedirectToLowercasePathPlugin())
@@ -363,9 +365,6 @@ internal class HttpRpcServerInternal(
             }
         }
     }
-
-    private val deferredWebsocketClosePool = Executors.newScheduledThreadPool(1,
-        BasicThreadFactory.Builder().namingPattern("wsFlowStatusClose-%d").daemon(true).build())
 
     private fun Javalin.registerWsHandlerForRoute(routeInfo: RouteInfo) {
         try {
