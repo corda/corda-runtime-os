@@ -99,7 +99,7 @@ pipeline {
         }
         stage('Build  Jar') {
             steps {
-                gradlew (' :applications:workers:release:combined-worker:assemble') // builds the jar build/bin/*/*.jar
+                gradlew (':applications:workers:release:combined-worker:assemble') // builds the jar build/bin/*/*.jar
             }
         } 			
         stage('Start jar / run tests') {
@@ -143,6 +143,7 @@ pipeline {
             
             junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
+            sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }
     }
 }
