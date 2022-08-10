@@ -9,7 +9,7 @@ import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
 import java.time.Duration
 
 class RPCSenderWrapperImpl(
-    private val timeout: Duration,
+    override val timeout: Duration,
     private val sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>
 ) : RPCSenderWrapper {
     /**

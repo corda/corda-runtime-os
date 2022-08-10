@@ -1,4 +1,4 @@
-package net.corda.virtualnode.rpcops.common
+package net.corda.virtualnode.rpcops.common.impl
 
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse

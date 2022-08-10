@@ -34,7 +34,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.rpcops.common.RPCSenderFactory
 import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
-import net.corda.virtualnode.rpcops.common.impl.RPCSenderWrapperImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -83,10 +82,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
                 logger.info("${this::javaClass.name} is now Up")
             }
-            is StopEvent -> {
-                coordinator.closeManagedResources()
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-            }
+            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
@@ -136,10 +132,10 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     }
 
     /**
-     * Sends the [request] to the configuration management topic on bus.
+     * Sends the [request] to the virtual topic on bus.
      *
-     * @property request is a [VirtualNodeManagementRequest]. This an enveloper around the intended request
-     * @throws CordaRuntimeException If the updated configuration could not be published.
+     * @property request is a [VirtualNodeManagementRequest]. This an envelope around the intended request
+     * @throws CordaRuntimeException If the sender wasn't initialized or the request fails.
      * @return [VirtualNodeManagementResponse] which is an envelope around the actual response.
      *  This response corresponds to the [VirtualNodeManagementRequest] received by the function
      * @see VirtualNodeManagementRequest
@@ -151,7 +147,10 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
 
-        return lifecycleCoordinator.getManagedResource<RPCSenderWrapper>("SENDER")!!.sendAndReceive(request)
+        val sender = lifecycleCoordinator.getManagedResource<RPCSenderWrapper>("SENDER")
+            ?: throw CordaRuntimeException("Sender not initialized, check component status for ${this.javaClass.name}")
+
+        return sender.sendAndReceive(request)
     }
 
     // Lookup and update the virtual node for the given virtual node short ID.
@@ -184,10 +183,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
-                ChangeVirtualNodeStateResponse(
-                    resolvedResponse.holdingIdentityShortHash,
-                    resolvedResponse.virtualNodeState
-                )
+                resolvedResponse.run {
+                    ChangeVirtualNodeStateResponse(holdingIdentityShortHash, virtualNodeState)
+                }
             }
             is VirtualNodeManagementResponseFailure -> {
                 val exception = resolvedResponse.exception

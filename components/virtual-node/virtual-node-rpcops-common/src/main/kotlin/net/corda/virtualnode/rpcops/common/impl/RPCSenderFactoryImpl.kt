@@ -6,7 +6,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.rpcops.common.RPCSenderFactory
 import net.corda.virtualnode.rpcops.common.RPCSenderWrapper
-import net.corda.virtualnode.rpcops.common.SENDER_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

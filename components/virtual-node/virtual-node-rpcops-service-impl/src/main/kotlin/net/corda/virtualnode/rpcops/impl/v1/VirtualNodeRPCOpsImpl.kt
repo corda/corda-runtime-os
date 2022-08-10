@@ -45,7 +45,6 @@ import org.osgi.service.component.annotations.Reference
 import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
-@Suppress("Unused")
 @Component(service = [PluggableRPCOps::class])
 // Primary constructor is for test. This is until a clock service is available
 internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
@@ -72,13 +71,12 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         val logger = contextLogger()
     }
 
+    // Http RPC values
     override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
 
-    private val dependentComponents = DependentComponents.of(
-        ::virtualNodeInfoReadService
-    )
-
+    // Lifecycle
+    private val dependentComponents = DependentComponents.of(::virtualNodeInfoReadService)
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<VirtualNodeRPCOps>()
     ) { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
@@ -96,10 +94,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
                 logger.info("${this::javaClass.name} is now Up")
             }
-            is StopEvent -> {
-                coordinator.closeManagedResources()
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-            }
+            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
@@ -146,7 +141,6 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
      * @see VirtualNodeManagementRequest
      * @see VirtualNodeManagementResponse
      */
-    @Suppress("ThrowsCount")
     private fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
@@ -155,6 +149,15 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         return lifecycleCoordinator.getManagedResource<RPCSenderWrapper>("SENDER")!!.sendAndReceive(request)
     }
 
+    /**
+     * Retrieves the list of virtual nodes stored on the message bus
+     *
+     * @throws IllegalStateException is thrown if the component isn't running and therefore able to service requests.
+     * @return [VirtualNodes] which is a list of [VirtualNodeInfo]
+     *
+     * @see VirtualNodes
+     * @see VirtualNodeInfo
+     */
     override fun getAllVirtualNodes(): VirtualNodes {
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
@@ -162,6 +165,16 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
     }
 
+    /**
+     * Publishes a virtual node create request onto the message bus that results in persistence of a new virtual node
+     *  in the database, as well as a copy of the persisted object being published back into the bus
+     *
+     * @property VirtualNodeRequest is contains the data we want to use to construct our virtual node
+     * @throws IllegalStateException is thrown if the component isn't running and therefore able to service requests.
+     * @return [VirtualNodeInfo] which is a data class containing information on the virtual node created
+     *
+     * @see VirtualNodeInfo
+     */
     override fun createVirtualNode(request: VirtualNodeRequest): VirtualNodeInfo {
         val instant = clock.instant()
         if (!isRunning) throw IllegalStateException(
@@ -185,20 +198,21 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             )
         }
         val resp = sendAndReceive(rpcRequest)
-        logger.info(resp.responseType.toString())
-
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeCreateResponse -> {
-                VirtualNodeInfo(
-                    HoldingIdentity(MemberX500Name.parse(resolvedResponse.x500Name), resolvedResponse.mgmGroupId).toEndpointType(),
-                    CpiIdentifier.fromAvro(resolvedResponse.cpiIdentifier),
-                    resolvedResponse.vaultDdlConnectionId,
-                    resolvedResponse.vaultDmlConnectionId,
-                    resolvedResponse.cryptoDdlConnectionId,
-                    resolvedResponse.cryptoDmlConnectionId,
-                    resolvedResponse.hsmConnectionId,
-                    resolvedResponse.virtualNodeState
-                )
+                // Convert response into expected type
+                resolvedResponse.run {
+                    VirtualNodeInfo(
+                        HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId).toEndpointType(),
+                        CpiIdentifier.fromAvro(cpiIdentifier),
+                        vaultDdlConnectionId,
+                        vaultDmlConnectionId,
+                        cryptoDdlConnectionId,
+                        cryptoDmlConnectionId,
+                        hsmConnectionId,
+                        virtualNodeState
+                    )
+                }
             }
             is VirtualNodeManagementResponseFailure -> {
                 val exception = resolvedResponse.exception
