@@ -1,6 +1,10 @@
 package net.corda.uniqueness.common.datamodel
 
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds
 import org.apache.avro.specific.SpecificRecord
 import java.time.Instant
 
@@ -22,7 +26,7 @@ sealed class UniquenessCheckInternalResult(val commitTimestamp: Instant) {
     class Failure(
         commitTimestamp: Instant,
         val error: UniquenessCheckInternalError
-        ) : UniquenessCheckInternalResult(commitTimestamp) {
+    ) : UniquenessCheckInternalResult(commitTimestamp) {
         override fun toCharacterRepresentation(): Char = RESULT_REJECTED_REPRESENTATION
 
         /**
@@ -32,16 +36,20 @@ sealed class UniquenessCheckInternalResult(val commitTimestamp: Instant) {
             return when (error) {
                 is UniquenessCheckInternalError.InputStateConflict ->
                     UniquenessCheckResultInputStateConflict(
-                        error.conflictingStates.map { it.stateRef.toString() })
+                        error.conflictingStates.map { it.stateRef.toString() }
+                    )
                 is UniquenessCheckInternalError.InputStateUnknown ->
                     UniquenessCheckResultInputStateUnknown(
-                        error.unknownStates.map { it.toString() })
+                        error.unknownStates.map { it.toString() }
+                    )
                 is UniquenessCheckInternalError.ReferenceStateConflict ->
                     UniquenessCheckResultReferenceStateConflict(
-                        error.conflictingStates.map { it.stateRef.toString() })
+                        error.conflictingStates.map { it.stateRef.toString() }
+                    )
                 is UniquenessCheckInternalError.ReferenceStateUnknown ->
                     UniquenessCheckResultReferenceStateUnknown(
-                        error.unknownStates.map { it.toString() })
+                        error.unknownStates.map { it.toString() }
+                    )
                 is UniquenessCheckInternalError.TimeWindowOutOfBounds ->
                     with(error) {
                         UniquenessCheckResultTimeWindowOutOfBounds(

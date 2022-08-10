@@ -2,7 +2,11 @@ package net.corda.uniqueness.backingstore
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
-import net.corda.uniqueness.common.datamodel.*
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
 import net.corda.v5.crypto.SecureHash
 
 /**

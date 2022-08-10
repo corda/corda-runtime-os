@@ -6,16 +6,29 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
-import net.corda.lifecycle.*
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.common.datamodel.*
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalError
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_REJECTED_REPRESENTATION
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -23,8 +36,13 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import javax.persistence.*
+import javax.persistence.EntityExistsException
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.OptimisticLockException
+import javax.persistence.RollbackException
 
+@Suppress("ForbiddenComment")
 // TODO: Reimplement metrics, config
 /**
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
@@ -62,6 +80,7 @@ open class JPABackingStoreImpl @Activate constructor(
     override fun session(block: (BackingStore.Session) -> Unit) {
         val entityManager = entityManagerFactory.createEntityManager()
 
+        @Suppress("TooGenericExceptionCaught")
         try {
             block(SessionImpl(entityManager))
             entityManager.close()
@@ -94,6 +113,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
         protected open val transactionOps = TransactionOpsImpl()
 
+        @Suppress("NestedBlockDepth")
         override fun executeTransaction(
             block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit
         ) {
@@ -114,8 +134,9 @@ open class JPABackingStoreImpl @Activate constructor(
                             // batch by the code passed in as `block`.
                             contextLogger().warn(
                                 "Retrying DB operation. The request might have been " +
-                                        "handled by a different notary worker or a DB error " +
-                                        "occurred when attempting to commit.", e
+                                    "handled by a different notary worker or a DB error " +
+                                    "occurred when attempting to commit.",
+                                e
                             )
                             // TODO This is needed because some of the exceptions
                             //  we retry do not roll the transaction back. Once
@@ -144,7 +165,7 @@ open class JPABackingStoreImpl @Activate constructor(
             }
             throw IllegalStateException(
                 "Database operation reached the maximum number of " +
-                        "retries: $MAX_RETRIES, something went wrong."
+                    "retries: $MAX_RETRIES, something went wrong."
             )
         }
 
@@ -153,7 +174,7 @@ open class JPABackingStoreImpl @Activate constructor(
         ): Map<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails> {
 
             val results = HashMap<
-                    UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
+                UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
 
             states.forEach { state ->
                 val txId = state.txHash
@@ -206,13 +227,15 @@ open class JPABackingStoreImpl @Activate constructor(
                             UniquenessCheckInternalResult.Failure(
                                 txEntity.commitTimestamp,
                                 getTransactionError(txEntity) ?: throw IllegalStateException(
-                                "Transaction with id $txId was rejected but no records were " +
+                                    "Transaction with id $txId was rejected but no records were " +
                                         "found in the rejected transactions table"
                                 )
                             )
                         }
-                        else -> throw IllegalStateException("Transaction result can only be " +
-                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'")
+                        else -> throw IllegalStateException(
+                            "Transaction result can only be " +
+                                "'$RESULT_ACCEPTED_REPRESENTATION' or '$RESULT_REJECTED_REPRESENTATION'"
+                        )
                     }
 
                     results[txId] = UniquenessCheckInternalTransactionDetails(txId, result)
@@ -236,7 +259,8 @@ open class JPABackingStoreImpl @Activate constructor(
 
             return existing.firstOrNull()?.let { rejectedTxEntity ->
                 jpaBackingStoreObjectMapper().readValue(
-                    rejectedTxEntity.errorDetails, UniquenessCheckInternalError::class.java)
+                    rejectedTxEntity.errorDetails, UniquenessCheckInternalError::class.java
+                )
             }
         }
 
@@ -246,13 +270,15 @@ open class JPABackingStoreImpl @Activate constructor(
                 stateRefs: Collection<UniquenessCheckInternalStateRef>
             ) {
                 stateRefs.forEach { stateRef ->
-                    entityManager.persist(UniquenessStateDetailEntity(
-                        stateRef.txHash.algorithm,
-                        stateRef.txHash.bytes,
-                        stateRef.stateIndex.toLong(),
-                        null, // Unconsumed
-                        null // Unconsumed
-                    ))
+                    entityManager.persist(
+                        UniquenessStateDetailEntity(
+                            stateRef.txHash.algorithm,
+                            stateRef.txHash.bytes,
+                            stateRef.stateIndex.toLong(),
+                            null, // Unconsumed
+                            null // Unconsumed
+                        )
+                    )
                 }
             }
 
@@ -275,7 +301,8 @@ open class JPABackingStoreImpl @Activate constructor(
                     if (updatedRowCount == 0) {
                         // TODO: Figure out application specific exceptions
                         throw EntityExistsException(
-                            "No states were consumed, this might be an in-flight double spend")
+                            "No states were consumed, this might be an in-flight double spend"
+                        )
                     }
                 }
             }
@@ -285,20 +312,24 @@ open class JPABackingStoreImpl @Activate constructor(
                         UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
             ) {
                 transactionDetails.forEach { (request, result) ->
-                    entityManager.persist(UniquenessTransactionDetailEntity(
-                        request.txId.algorithm,
-                        request.txId.bytes,
-                        request.timeWindowUpperBound,
-                        result.commitTimestamp,
-                        result.toCharacterRepresentation()
-                    ))
-
-                    if ( result is UniquenessCheckInternalResult.Failure) {
-                        entityManager.persist(UniquenessRejectedTransactionEntity(
+                    entityManager.persist(
+                        UniquenessTransactionDetailEntity(
                             request.txId.algorithm,
                             request.txId.bytes,
-                            jpaBackingStoreObjectMapper().writeValueAsBytes(result.error)
-                        ))
+                            request.timeWindowUpperBound,
+                            result.commitTimestamp,
+                            result.toCharacterRepresentation()
+                        )
+                    )
+
+                    if (result is UniquenessCheckInternalResult.Failure) {
+                        entityManager.persist(
+                            UniquenessRejectedTransactionEntity(
+                                request.txId.algorithm,
+                                request.txId.bytes,
+                                jpaBackingStoreObjectMapper().writeValueAsBytes(result.error)
+                            )
+                        )
                     }
                 }
             }
@@ -324,9 +355,10 @@ open class JPABackingStoreImpl @Activate constructor(
                         DEFAULT_UNIQUENESS_DB_NAME,
                         DbPrivilege.DML,
                         entitiesSet = jpaEntitiesRegistry.get(CordaDb.Uniqueness.persistenceUnitName)
-                            ?: throw IllegalStateException("persistenceUnitName " +
+                            ?: throw IllegalStateException(
+                                "persistenceUnitName " +
                                     "${CordaDb.Uniqueness.persistenceUnitName} is not registered."
-                        )
+                            )
                     )
                 }
 
@@ -347,7 +379,8 @@ open class JPABackingStoreImpl @Activate constructor(
     private fun createDefaultUniquenessDb() {
         jpaEntitiesRegistry.register(
             CordaDb.Uniqueness.persistenceUnitName,
-            JPABackingStoreEntities.classes)
+            JPABackingStoreEntities.classes
+        )
 
         val schemaMigrator = LiquibaseSchemaMigratorImpl()
         val changeLog = ClassloaderChangeLog(

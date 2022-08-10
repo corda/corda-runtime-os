@@ -3,7 +3,9 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.testkit.SecureHashUtils.randomBytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckRequest
+import net.corda.data.uniqueness.UniquenessCheckResponse
+import net.corda.data.uniqueness.UniquenessCheckResultSuccess
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
 import net.corda.uniqueness.checker.UniquenessChecker
@@ -17,14 +19,20 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateRe
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertIterableEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertAll
 import org.mockito.kotlin.mock
-import java.time.*
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.*
+import kotlin.test.assertEquals
 
 /**
  * Unit tests for uniqueness checker implementations. Currently, this tests our single batched
@@ -48,8 +56,7 @@ class UniquenessCheckerImplTests {
 
     private fun currentTime(): Instant = testClock.peekTime()
 
-    private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
-    : UniquenessCheckRequest.Builder =
+    private fun newRequestBuilder(txId: SecureHash = randomSecureHash()): UniquenessCheckRequest.Builder =
         UniquenessCheckRequest.newBuilder(
             UniquenessCheckRequest(
                 txId.toString(),
@@ -69,7 +76,7 @@ class UniquenessCheckerImplTests {
         val unspentStateRefs = LinkedList<String>()
 
         repeat(numOutputStates) {
-            unspentStateRefs.push("${issueTxId}:${it}")
+            unspentStateRefs.push("$issueTxId:$it")
         }
 
         processRequests(
@@ -121,8 +128,11 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertMalformedRequestResponse(
-                        responses[0], "Number of output states cannot be less than 0.") }
+                    {
+                        assertMalformedRequestResponse(
+                            responses[0], "Number of output states cannot be less than 0."
+                        )
+                    }
                 )
             }
         }
@@ -889,7 +899,7 @@ class UniquenessCheckerImplTests {
                 newRequestBuilder(issueTxId)
                     .setNumOutputStates(3)
                     .build(),
-                ).let { responses ->
+            ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     { assertStandardSuccessResponse(responses[0], testClock) },
@@ -917,17 +927,20 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(List(2048) { "${issueTxId}:${it}" })
+                    .setInputStates(List(2048) { "$issueTxId:$it" })
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf("${issueTxId}:${Short.MAX_VALUE}"))
+                    .setInputStates(listOf("$issueTxId:${Short.MAX_VALUE}"))
                     .build(),
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
                     { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertUnknownInputStateResponse(
-                        responses[1], listOf("${issueTxId}:${Short.MAX_VALUE}")) }
+                    {
+                        assertUnknownInputStateResponse(
+                            responses[1], listOf("$issueTxId:${Short.MAX_VALUE}")
+                        )
+                    }
                 )
             }
         }
@@ -1070,7 +1083,7 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Empty request list returns no results`() {
             assertEquals(
-                emptyList<UniquenessCheckResponse>(),
+                emptyList(),
                 uniquenessChecker.processRequests(emptyList())
             )
         }
@@ -1100,20 +1113,20 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf("${hash1}:0"))
+                    .setInputStates(listOf("$hash1:0"))
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf("${hash2}:0"))
+                    .setInputStates(listOf("$hash2:0"))
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf("${hash3}:0"))
+                    .setInputStates(listOf("$hash3:0"))
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
                     { assertStandardSuccessResponse(responses[0], testClock) },
                     { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertUnknownInputStateResponse(responses[2], listOf("${hash3}:0")) },
+                    { assertUnknownInputStateResponse(responses[2], listOf("$hash3:0")) },
                     { assertUniqueCommitTimestamps(listOf(responses[0], responses[1])) }
                 )
             }
@@ -1128,7 +1141,7 @@ class UniquenessCheckerImplTests {
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf("${issueTxId}:0"))
+                    .setInputStates(listOf("$issueTxId:0"))
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1146,7 +1159,7 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf("${issueTxId}:0"))
+                    .setInputStates(listOf("$issueTxId:0"))
                     .build(),
                 newRequestBuilder(issueTxId)
                     .setNumOutputStates(1)
@@ -1154,7 +1167,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertUnknownInputStateResponse(responses[0], listOf("${issueTxId}:0")) },
+                    { assertUnknownInputStateResponse(responses[0], listOf("$issueTxId:0")) },
                     { assertStandardSuccessResponse(responses[1], testClock) }
                 )
             }
@@ -1220,6 +1233,7 @@ class UniquenessCheckerImplTests {
             }
         }
 
+        @Suppress("LongMethod")
         @Test
         fun `Complex test scenario with multiple successes and failures in one batch`() {
             val priorSpentStates = List(2) { generateUnspentStates(1).single() }
@@ -1306,8 +1320,8 @@ class UniquenessCheckerImplTests {
                 newRequestBuilder()
                     .setInputStates(
                         generateUnspentStates(10) +
-                                priorSpentStates[0] +
-                                priorSpentStates[1]
+                            priorSpentStates[0] +
+                            priorSpentStates[1]
                     )
                     .build(),
                 retryableFailedRequest,
@@ -1354,9 +1368,11 @@ class UniquenessCheckerImplTests {
                     { assertStandardSuccessResponse(responses[8], testClock) },
                     { assertStandardSuccessResponse(responses[9], testClock) },
                     {
-                        assertUniqueCommitTimestamps(responses.filter {
-                            it.result is UniquenessCheckResultSuccess
-                        })
+                        assertUniqueCommitTimestamps(
+                            responses.filter {
+                                it.result is UniquenessCheckResultSuccess
+                            }
+                        )
                     }
                 )
             }

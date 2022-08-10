@@ -4,7 +4,13 @@ import net.corda.uniqueness.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGT
 import net.corda.uniqueness.common.UniquenessConstants.TRANSACTION_ID_LENGTH
 import java.io.Serializable
 import java.time.Instant
-import javax.persistence.*
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.Id
+import javax.persistence.IdClass
+import javax.persistence.NamedQueries
+import javax.persistence.NamedQuery
+import javax.persistence.Table
 
 /*
  * JPA entity definitions used by the JPA backing store implementation
@@ -22,6 +28,7 @@ data class UniquenessTxAlgoStateRefKey(
     val issueTxId: ByteArray = ByteArray(0),
     val issueTxOutputIndex: Long = 0
 ) : Serializable {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -40,6 +47,10 @@ data class UniquenessTxAlgoStateRefKey(
         result = 31 * result + issueTxId.contentHashCode()
         result = 31 * result + issueTxOutputIndex.hashCode()
         return result
+    }
+
+    companion object {
+        private const val serialVersionUID = -14548L
     }
 }
 
@@ -62,6 +73,10 @@ data class UniquenessTxAlgoIdKey(
         result = 31 * result + txId.contentHashCode()
         return result
     }
+
+    companion object {
+        private const val serialVersionUID = -30950023065170341L
+    }
 }
 
 @Entity
@@ -72,14 +87,14 @@ data class UniquenessTxAlgoIdKey(
     NamedQuery(
         name = "UniquenessStateDetailEntity.select",
         query = "SELECT c FROM UniquenessStateDetailEntity c " +
-                "WHERE c.issueTxIdAlgo = :txAlgo AND c.issueTxId = :txId AND c.issueTxOutputIndex = :stateIndex"
+            "WHERE c.issueTxIdAlgo = :txAlgo AND c.issueTxId = :txId AND c.issueTxOutputIndex = :stateIndex"
     ),
     NamedQuery(
         name = "UniquenessStateDetailEntity.consumeWithProtection",
         query = "UPDATE UniquenessStateDetailEntity SET " +
-                "consumingTxIdAlgo = :consumingTxAlgo, consumingTxId = :consumingTxId " +
-                "WHERE issueTxIdAlgo = :issueTxAlgo AND issueTxId = :issueTxId AND issueTxOutputIndex = :stateIndex " +
-                "AND consumingTxId IS NULL" // In-flight double spend protection
+            "consumingTxIdAlgo = :consumingTxAlgo, consumingTxId = :consumingTxId " +
+            "WHERE issueTxIdAlgo = :issueTxAlgo AND issueTxId = :issueTxId AND issueTxOutputIndex = :stateIndex " +
+            "AND consumingTxId IS NULL" // In-flight double spend protection
     )
 )
 

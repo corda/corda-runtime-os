@@ -6,9 +6,20 @@ package net.corda.uniqueness.backingstore.impl.fake
  *
  * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.common.datamodel.*
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -94,9 +105,11 @@ open class BackingStoreImplFake @Activate constructor(
             override fun createUnconsumedStates(
                 stateRefs: Collection<UniquenessCheckInternalStateRef>
             ) {
-                sessionStateData.putAll(stateRefs.map {
-                    Pair(it, UniquenessCheckInternalStateDetails(it, null))
-                })
+                sessionStateData.putAll(
+                    stateRefs.map {
+                        Pair(it, UniquenessCheckInternalStateDetails(it, null))
+                    }
+                )
             }
 
             @Synchronized
@@ -105,27 +118,31 @@ open class BackingStoreImplFake @Activate constructor(
                 stateRefs: Collection<UniquenessCheckInternalStateRef>
             ) {
 
-                sessionStateData.putAll(stateRefs.map {
-                    // Check session data first in case this has already been updated in this batch
-                    val existingState = sessionStateData[it] ?: persistedStateData[it]
+                sessionStateData.putAll(
+                    stateRefs.map {
+                        // Check session data first in case this has already been updated in this batch
+                        val existingState = sessionStateData[it] ?: persistedStateData[it]
 
-                    if (existingState == null) {
-                        throw NoSuchElementException(
-                            "Could not find existing unspent state for state ref $it"
-                        )
-                    } else if (existingState.consumingTxId != null &&
-                        existingState.consumingTxId != consumingTxId
-                    ) {
-                        throw IllegalStateException(
-                            "State ref $it has already been consumed by transaction $consumingTxId"
+                        if (existingState == null) {
+                            throw NoSuchElementException(
+                                "Could not find existing unspent state for state ref $it"
+                            )
+                        } else if (existingState.consumingTxId != null &&
+                            existingState.consumingTxId != consumingTxId
+                        ) {
+                            @Suppress("UseCheckOrError")
+                            // TODO: Revisit this suppression
+                            throw IllegalStateException(
+                                "State ref $it has already been consumed by transaction $consumingTxId"
+                            )
+                        }
+
+                        Pair(
+                            existingState.stateRef,
+                            UniquenessCheckInternalStateDetails(existingState.stateRef, consumingTxId)
                         )
                     }
-
-                    Pair(
-                        existingState.stateRef,
-                        UniquenessCheckInternalStateDetails(existingState.stateRef, consumingTxId)
-                    )
-                })
+                )
             }
 
             @Synchronized
@@ -133,12 +150,14 @@ open class BackingStoreImplFake @Activate constructor(
                 transactionDetails: Collection<Pair<
                         UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
             ) {
-                sessionTxnData.putAll(transactionDetails.map {
-                    Pair(
-                        it.first.txId,
-                        UniquenessCheckInternalTransactionDetails(it.first.txId, it.second)
-                    )
-                })
+                sessionTxnData.putAll(
+                    transactionDetails.map {
+                        Pair(
+                            it.first.txId,
+                            UniquenessCheckInternalTransactionDetails(it.first.txId, it.second)
+                        )
+                    }
+                )
             }
         }
     }
