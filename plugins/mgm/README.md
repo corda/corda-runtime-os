@@ -1,4 +1,4 @@
-# Package Plugin
+# MGM Plugin
 
 MGM Plugin has been ported to `corda-runtime-os` under `:tools:plugins:mgm`.
 
