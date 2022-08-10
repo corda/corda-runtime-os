@@ -26,6 +26,7 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -110,8 +111,15 @@ class FlowRunnerImplTest {
 
     @Test
     fun `initiate flow session event should create a new flow and execute it in a new fiber`() {
+        val userKeyValuePairList = emptyKeyValuePairList()
+        val platformKeyValuePairList = emptyKeyValuePairList()
+
         val flowContinuation = FlowContinuation.Run()
-        val sessionInit = SessionInit()
+        val sessionInit = SessionInit().apply {
+            setContextPlatformProperties(platformKeyValuePairList)
+            setContextUserProperties(userKeyValuePairList)
+        }
+        
         val flowStartContext = FlowStartContext().apply {
             statusKey = FlowKey().apply {
                 id = SESSION_ID_1
@@ -136,7 +144,8 @@ class FlowRunnerImplTest {
                 eq(logicAndArgs)
             )
         ).thenReturn(fiberFuture)
-        whenever(flowStack.push(initiatedFlow)).thenReturn(flowStackItem)
+
+        whenever(flowStack.pushWithContext(initiatedFlow, any(), any())).thenReturn(flowStackItem)
 
         val result = flowRunner.runFlow(context, flowContinuation)
 
