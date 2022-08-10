@@ -76,6 +76,53 @@ class KeyValueStoreTest {
     }
 
     @Test
+    fun `KeyValueStore plusAssign`() {
+        val store1 = keyValueStoreOf("key1" to "value1", "key2" to "value2")
+        val store2 = keyValueStoreOf(
+            "key3" to "value3", "key4" to "value4", "key1" to "value1-overwritten"
+        )
+
+        store1 += store2
+
+        // Check store1 has the new entries
+        assertThat(store1.get("key1")).isEqualTo("value1-overwritten")
+        assertThat(store1.get("key2")).isEqualTo("value2")
+        assertThat(store1.get("key3")).isEqualTo("value3")
+        assertThat(store1.get("key4")).isEqualTo("value4")
+
+        assertThat(store1.avro.items.size).isEqualTo(4)
+
+        // Check store2 was unmodified
+        assertThat(store2.get("key1")).isEqualTo("value1-overwritten")
+        assertThat(store2.get("key3")).isEqualTo("value3")
+        assertThat(store2.get("key4")).isEqualTo("value4")
+
+        assertThat(store2.avro.items.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `mutableKeyValuePairList with initial properties`() {
+        val store = keyValueStoreOf("key1" to "value1", "key2" to "value2")
+        val initialKeyValuePairList = store.avro
+
+        val mutableKeyValuePairList = mutableKeyValuePairListOf(initialKeyValuePairList)
+
+        // Check initial items appear in the new list
+        assertThat(mutableKeyValuePairList.items[0]).isEqualTo(KeyValuePair("key1", "value1"))
+        assertThat(mutableKeyValuePairList.items[1]).isEqualTo(KeyValuePair("key2", "value2"))
+        assertThat(mutableKeyValuePairList.items.size).isEqualTo(2)
+
+        // Check the list is mutable
+        mutableKeyValuePairList.items.add(KEY_VALUE_PAIR)
+        assertThat(mutableKeyValuePairList.items[2]).isEqualTo(KEY_VALUE_PAIR)
+        assertThat(mutableKeyValuePairList.items.size).isEqualTo(3)
+
+        // Check the initial list is unchanged, i.e. items were cloned into it rather than a reference to the initial
+        // list was taken
+        assertThat(initialKeyValuePairList.items.size).isEqualTo(2)
+    }
+
+    @Test
     fun `keyValuePairListOf creates list from map`() {
         val map = mapOf("key1" to "value1", "key2" to "value2")
         val keyValuePairList = keyValuePairListOf(map)
