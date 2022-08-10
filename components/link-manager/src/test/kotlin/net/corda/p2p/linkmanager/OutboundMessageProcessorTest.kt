@@ -417,6 +417,59 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
+    fun `processReplayedAuthenticatedMessage will loop back message if destination is locally hosted`() {
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(authenticatedMsg, "key")
+
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        assertSoftly { softAssertions ->
+            softAssertions.assertThat(records).hasSize(2)
+            val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+                .filterIsInstance<AppMessageMarker>()
+            softAssertions.assertThat(markers).hasSize(1)
+
+            val receivedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerReceivedMarker>()
+            softAssertions.assertThat(receivedMarkers).hasSize(1)
+
+            val messages = records
+                .filter {
+                    it.topic == Schemas.P2P.P2P_IN_TOPIC
+                }.filter {
+                    it.key == "key"
+                }.map { it.value }.filterIsInstance<AppMessage>()
+            softAssertions.assertThat(messages).hasSize(1)
+            softAssertions.assertThat(messages.first().message).isEqualTo(authenticatedMessageAndKey.message)
+        }
+    }
+
+    @Test
+    fun `processReplayedAuthenticatedMessage will not write any records if destination is not in the members map or locally hosted`() {
+        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
+        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        val authenticatedMessage = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
+                localIdentity.toAvro(),
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap("payload".toByteArray())
+        )
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(authenticatedMessage, "key")
+
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+        assertThat(records).isEmpty()
+    }
+
+    @Test
     fun `onNext produces a LinkOutMessage and a LinkManagerProcessedMarker per message if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
