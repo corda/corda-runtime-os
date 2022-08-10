@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle.tests
+package net.corda.crypto.merkle.impl.tests
 
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.MerkleTreeFactory

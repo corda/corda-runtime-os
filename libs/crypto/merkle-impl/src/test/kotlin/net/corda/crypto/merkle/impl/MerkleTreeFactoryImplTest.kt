@@ -1,4 +1,4 @@
-package net.corda.crypto.merkle
+package net.corda.crypto.merkle.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
@@ -68,7 +68,8 @@ class MerkleTreeFactoryImplTest {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME,
-                digestAlgorithm) is NonceHashDigestProvider.Verify
+                digestAlgorithm
+            ) is NonceHashDigestProvider.Verify
         )
     }
 
@@ -77,7 +78,8 @@ class MerkleTreeFactoryImplTest {
         assertTrue(
             merkleTreeFactory.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
-                digestAlgorithm) is NonceHashDigestProvider.SizeOnlyVerify
+                digestAlgorithm
+            ) is NonceHashDigestProvider.SizeOnlyVerify
         )
     }
 
