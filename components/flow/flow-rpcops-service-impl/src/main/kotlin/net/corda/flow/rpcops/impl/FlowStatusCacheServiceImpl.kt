@@ -8,7 +8,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.flowstatus.FlowStatusListenerException
+import net.corda.flow.rpcops.flowstatus.FlowStatusListenerValidationException
 import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -133,13 +133,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         listener: FlowStatusUpdateListener
     ) {
         val flowKey = FlowKey(clientRequestId, holdingIdentity)
-        val errors = mutableListOf<String>()
 
-        validateMaxConnectionsPerFlowKey(flowKey, errors)
-
-        if (errors.isNotEmpty()) {
-            throw FlowStatusListenerException("${errors.size} errors during registration for flow status updates.", errors)
-        }
+        validateMaxConnectionsPerFlowKey(flowKey)
 
         lock.writeLock().withLock {
             statusListenersPerFlowKey.put(flowKey, listener)
@@ -171,14 +166,14 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         }
     }
 
-    private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey, errors: MutableList<String>) {
+    private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey) {
         val existingHandlers = lock.readLock().withLock { statusListenersPerFlowKey[flowKey] }
         val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
         if (handlersForRequestAndHoldingIdAlreadyExist) {
             if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
-                errors.add(
-                    "Max WebSocket connections for clientRequestId ${flowKey.id}, holdingIdentity ${flowKey.identity} has been " +
-                            "reached ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY)."
+                throw FlowStatusListenerValidationException(
+                    "Max WebSocket connections ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) reached for req: ${flowKey.id}, " +
+                            "identity ${flowKey.identity}."
                 )
             }
         }

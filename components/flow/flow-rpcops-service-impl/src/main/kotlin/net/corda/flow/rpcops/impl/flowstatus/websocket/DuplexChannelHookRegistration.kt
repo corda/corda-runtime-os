@@ -15,6 +15,7 @@ import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import java.util.concurrent.TimeUnit
+import net.corda.httprpc.ws.WebSocketValidationException
 
 fun DuplexChannel.registerFlowStatusFeedHooks(
     flowStatusCacheService: FlowStatusCacheService,
@@ -35,6 +36,9 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
         log.debug { "Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)." }
         try {
             flowStatusCacheService.registerFlowStatusListener(clientRequestId, holdingIdentity, listener)
+        } catch (e: WebSocketValidationException) {
+            log.warn("Validation error while registering flow status listener.")
+            error(e)
         } catch (e: Exception) {
             log.error("Unexpected error at registerFlowStatusListener")
             error(e)
