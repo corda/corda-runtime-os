@@ -140,6 +140,7 @@ pipeline {
                       deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
+               
                stage("Deploy Bob cluster") {
                   steps {
                       deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}")
