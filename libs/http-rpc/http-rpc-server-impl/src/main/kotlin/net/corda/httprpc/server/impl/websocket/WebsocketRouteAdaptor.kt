@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.apigen.processing.ws
+package net.corda.httprpc.server.impl.websocket
 
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.websocket.WsCloseContext
@@ -32,6 +32,7 @@ internal class WebsocketRouteAdaptor(
 
     private companion object {
         val log = contextLogger()
+        const val WEBSOCKET_IDLE_TIMEOUT = 20000L
     }
 
     @Volatile
@@ -46,6 +47,7 @@ internal class WebsocketRouteAdaptor(
             ServerDuplexChannel(ctx, deferredWebsocketClosePool).let { newChannel ->
                 channel = newChannel
 
+                ctx.session.idleTimeout = WEBSOCKET_IDLE_TIMEOUT
                 val clientWsRequestContext = ClientWsRequestContext(ctx)
 
                 try {

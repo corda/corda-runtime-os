@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.apigen.processing.ws
+package net.corda.httprpc.server.impl.websocket
 
 import io.javalin.websocket.WsConnectContext
 import java.lang.Exception
@@ -50,9 +50,9 @@ internal class ServerDuplexChannel(
         // thread or else Javalin may end-up in the unusable state sometimes.
         deferredWebsocketClosePool.schedule({
             if (ctx.session.isOpen) {
-                logger.info("Closing open session with status ${closeStatus.code}, reason: ${closeStatus.phrase}.")
+                logger.info("Closing open session with status ${closeStatus.code}, reason: ${closeStatus.phrase}")
             } else {
-                logger.info("Closing session that reported not open with Status ${closeStatus.code}, reason: ${closeStatus.phrase}.")
+                logger.info("Closing session that reported not open with Status ${closeStatus.code}, reason: ${closeStatus.phrase}")
             }
             ctx.closeSession(closeStatus)
         }, 1, TimeUnit.SECONDS)

@@ -32,30 +32,16 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
         onCloseCallback(),
         onStatusUpdate(log, holdingIdentity, clientRequestId)
     )
-    onConnect = {
-        log.debug { "Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)." }
-        try {
-            flowStatusCacheService.registerFlowStatusListener(clientRequestId, holdingIdentity, listener)
-        } catch (e: WebSocketValidationException) {
-            log.warn("Validation error while registering flow status listener.")
-            error(e)
-        } catch (e: Exception) {
-            log.error("Unexpected error at registerFlowStatusListener")
-            error(e)
-        }
-    }
     onClose = { statusCode, reason ->
         log.info(
-            "Close hook called for id ${listener.id} with status $statusCode, reason: $reason. " +
+            "Close hook called for id ${listener.id} with status $statusCode, reason: $reason. Closing listener. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
         )
-        listener.let {
-            flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, it)
-        }
+        flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, listener)
     }
     onError = { e ->
         log.warn(
-            "Flow status feed ${listener.id} received an error. " +
+            "Error hook called for id ${listener.id}. Closing listener. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)",
             e
         )
@@ -63,6 +49,18 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     onTextMessage = {
         log.debug { "Flow status feed ${listener.id} does not support receiving messages. Terminating connection." }
         error(WebSocketProtocolViolationException("Inbound messages are not permitted."))
+    }
+    onConnect = {
+        log.debug { "Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)." }
+        try {
+            flowStatusCacheService.registerFlowStatusListener(clientRequestId, holdingIdentity, listener)
+        } catch (e: WebSocketValidationException) {
+            log.warn("Validation error while registering flow status listener - ${e.message}")
+            error(e)
+        } catch (e: Exception) {
+            log.error("Unexpected error at registerFlowStatusListener")
+            error(e)
+        }
     }
 }
 

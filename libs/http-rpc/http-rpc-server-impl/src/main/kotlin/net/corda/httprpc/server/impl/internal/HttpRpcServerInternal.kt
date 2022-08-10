@@ -40,7 +40,7 @@ import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
 import java.util.concurrent.ScheduledExecutorService
 import javax.servlet.MultipartConfigElement
-import net.corda.httprpc.server.impl.apigen.processing.ws.mapToWsStatusCode
+import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class HttpRpcServerInternal(

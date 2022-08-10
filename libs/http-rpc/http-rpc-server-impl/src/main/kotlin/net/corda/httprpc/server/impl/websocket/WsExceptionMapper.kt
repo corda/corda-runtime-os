@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.apigen.processing.ws
+package net.corda.httprpc.server.impl.websocket
 
 import java.lang.IllegalArgumentException
 import net.corda.httprpc.ws.WebSocketProtocolViolationException

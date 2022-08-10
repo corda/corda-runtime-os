@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
-import net.corda.httprpc.server.impl.apigen.processing.ws.WebsocketRouteAdaptor
+import net.corda.httprpc.server.impl.websocket.WebsocketRouteAdaptor
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver

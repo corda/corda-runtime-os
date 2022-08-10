@@ -136,10 +136,10 @@ class FlowRPCOpsImpl @Activate constructor(
         val holdingIdentity = try {
             getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
         } catch (e: ShortHashException) {
-            channel.error(WebSocketValidationException("Invalid holding identifier.", e))
+            channel.error(WebSocketValidationException("Invalid holding identifier", e))
             return
         } catch (e: FlowRPCOpsServiceException) {
-            channel.error(WebSocketValidationException("Invalid virtual node.", e))
+            channel.error(WebSocketValidationException("Invalid virtual node", e))
             return
         }
         channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)

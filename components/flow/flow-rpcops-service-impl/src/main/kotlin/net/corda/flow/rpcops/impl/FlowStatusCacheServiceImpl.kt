@@ -173,7 +173,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
             if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
                 throw FlowStatusListenerValidationException(
                     "Max WebSocket connections ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) reached for req: ${flowKey.id}, " +
-                            "identity ${flowKey.identity}."
+                            "identity ${flowKey.identity.toCorda().shortHash}."
                 )
             }
         }
