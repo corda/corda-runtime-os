@@ -1,6 +1,13 @@
 package net.corda.processors.uniqueness.internal
 
-import net.corda.lifecycle.*
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.v5.base.util.contextLogger
