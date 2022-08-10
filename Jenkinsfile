@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@ronab/ad-hoc-test') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
