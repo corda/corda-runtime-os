@@ -6,7 +6,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
