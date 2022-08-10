@@ -1,7 +1,22 @@
 package net.corda.uniqueness.checker.impl.fake
 
-import net.corda.data.uniqueness.*
-import net.corda.lifecycle.*
+import net.corda.data.uniqueness.UniquenessCheckRequest
+import net.corda.data.uniqueness.UniquenessCheckResponse
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckResultSuccess
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -58,7 +73,7 @@ class UniquenessCheckerImplFake(
     }
 
     @Synchronized
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override fun processRequests(
         requests: List<UniquenessCheckRequest>
     ): List<UniquenessCheckResponse> {
@@ -115,7 +130,8 @@ class UniquenessCheckerImplFake(
                     !isTimeWindowValid(
                         timeWindowEvaluationTime,
                         request.timeWindowLowerBound,
-                        request.timeWindowUpperBound) -> {
+                        request.timeWindowUpperBound
+                    ) -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultTimeWindowOutOfBounds(
@@ -129,7 +145,7 @@ class UniquenessCheckerImplFake(
                     else -> {
                         // Write unspent states
                         repeat(request.numOutputStates) {
-                            stateCache["${request.txId}:${it}"] = null
+                            stateCache["${request.txId}:$it"] = null
                         }
                         // Write spent states - overwrites any earlier entries for unspent states
                         stateCache.putAll(request.inputStates.associateWith { request.txId })
@@ -151,8 +167,10 @@ class UniquenessCheckerImplFake(
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
     ): Boolean {
-        return ((timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
-                timeWindowUpperBound.isAfter(currentTime))
+        return (
+            (timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
+                timeWindowUpperBound.isAfter(currentTime)
+            )
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
