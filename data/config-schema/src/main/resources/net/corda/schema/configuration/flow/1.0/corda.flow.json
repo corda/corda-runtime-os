@@ -12,27 +12,31 @@
       "default": {},
       "properties": {
         "maxRetryAttempts": {
-          "description": "The maximum number of retry attempts a transient error will be retried before failing the flow. a value of zero disables retries.",
+          "description": "The maximum number of retry attempts a transient error will be retried before failing the flow. A value of zero disables retries.",
           "type": "integer",
           "minimum": 0,
+          "maximum": 1000,
           "default": 5
         },
         "maxRetryDelay": {
           "description": "The maximum delay before a retry is scheduled, in milliseconds",
           "type": "integer",
           "minimum": 1000,
+          "maximum": 2147483647,
           "default": 16000
         },
         "maxFlowSleepDuration": {
           "description": "The maximum delay before a periodic WakeUp is scheduled, in milliseconds",
           "type": "integer",
           "minimum": 1000,
+          "maximum": 2147483647,
           "default": 60000
         },
         "maxFlowExecutionDuration": {
           "description": "The maximum amount of time in milliseconds a Flow can execute between suspends before it is considered faulty and a candidate for forced failure",
           "type": "integer",
           "minimum": 5000,
+          "maximum": 2147483647,
           "default": 60000
         }
       }
@@ -46,18 +50,21 @@
           "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",
           "type": "integer",
           "minimum": 1000,
+          "maximum": 2147483647,
           "default": 120000
         },
         "heartbeatTimeout": {
           "description": "Length of time to wait when no message has been received from a counterparty before causing the session to error, in milliseconds",
           "type": "integer",
           "minimum": 600000,
+          "maximum": 2147483647,
           "default": 3600000
         },
         "p2pTTL": {
           "description": "TTL set on on messages passed to the P2P layer to be sent to a counterparty.",
           "type": "integer",
           "minimum": 10000,
+          "maximum": 2147483647,
           "default": 240000
         }
       }
@@ -71,12 +78,14 @@
           "description": "Length of time to wait before resending unacknowledged query messages, in milliseconds",
           "type": "integer",
           "minimum": 100,
+          "maximum": 2147483647,
           "default": 5000
         },
         "maxRetries": {
           "description": "The maximum amount of times to retry a request before returning an exception to the user code.",
           "type": "integer",
           "minimum": 0,
+          "maximum": 2147483647,
           "default": 5
         }
       }
@@ -90,12 +99,14 @@
           "description": "Length of time to wait before resending unacknowledged crypto events, in milliseconds",
           "type": "integer",
           "minimum": 100,
+          "maximum": 2147483647,
           "default": 5000
         },
         "maxRetries": {
           "description": "The maximum amount of times to retry a request before returning an exception to the user code.",
           "type": "integer",
           "minimum": 0,
+          "maximum": 2147483647,
           "default": 5
         }
       }

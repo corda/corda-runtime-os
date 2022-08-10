@@ -7,33 +7,38 @@
   "default": {},
   "properties": {
     "permissionSummaryIntervalMs": {
-      "description": "",
+      "description": "Interval in ms between permission summary reconciliation rounds.",
       "type": "integer",
       "minimum": 5000,
+      "maximum": 2147483647,
       "default": 30000
     },
     "cpkWriteIntervalMs": {
       "description": "",
       "type": "integer",
       "minimum": 5000,
+      "maximum": 2147483647,
       "default": 10000
     },
     "cpiInfoIntervalMs": {
       "description": "",
       "type": "integer",
       "minimum": 5000,
+      "maximum": 2147483647,
       "default": 30000
     },
     "vnodeInfoIntervalMs": {
       "description": "",
       "type": "integer",
       "minimum": 5000,
+      "maximum": 2147483647,
       "default": 30000
     },
     "configIntervalMs": {
       "description": "",
       "type": "integer",
       "minimum": 5000,
+      "maximum": 2147483647,
       "default": 30000
     }
   }

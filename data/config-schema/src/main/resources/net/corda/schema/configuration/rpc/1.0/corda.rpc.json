@@ -29,9 +29,11 @@
       }
     },
     "maxContentLength": {
-      "description": "",
+      "description": "Maximum length in bytes that can be sent over HTTP transport.",
       "type": "integer",
-      "default": 2000000000
+      "minimum": 1024,
+      "maximum": 2147483647,
+      "default": 200000000
     },
     "endpoint": {
       "description": "",
@@ -39,8 +41,10 @@
       "default": {},
       "properties": {
         "timeoutMs": {
-          "description": "",
+          "description": "Amount of time in milliseconds to wait for response on Kafka bus for a remote operation before timing out the HTTP RPC call.",
           "type": "integer",
+          "minimum": 100,
+          "maximum": 2147483647,
           "default": 12000
         }
       }

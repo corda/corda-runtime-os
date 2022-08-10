@@ -9,6 +9,7 @@
       "description": "Time in ms to wait when closing underlying bus objects on close.",
       "type": "integer",
       "minimum": 100,
+      "maximum": 2147483647,
       "default": 600
     },
     "transactional": {
