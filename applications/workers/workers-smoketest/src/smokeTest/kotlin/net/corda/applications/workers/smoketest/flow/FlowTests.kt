@@ -105,6 +105,7 @@ class FlowTests {
     }
 
     @Test
+    @Disabled
     fun `start RPC flow twice, second returns an error code of 409`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "echo"
@@ -116,6 +117,7 @@ class FlowTests {
     }
 
     @Test
+    @Disabled
     fun `start RPC flow - flow failure test`() {
         // 1) Start the flow but signal it to throw an exception when it starts
         val requestBody = RpcSmokeTestInput().apply {
@@ -182,6 +184,7 @@ class FlowTests {
     }
 
     @Test
+    @Disabled
     fun `Pipeline error results in flow marked as failed`() {
         val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)

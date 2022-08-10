@@ -2,12 +2,13 @@ package net.corda.applications.workers.rpc
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
-import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
+import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 /**
@@ -76,6 +77,7 @@ class LimitedUserAuthorizationE2eTest {
     }
 
     @Test
+    @Disabled
     fun `verify limited user cannot add role to user with explicit DENY on addRole despite explicit ALLOW set for user operations`() {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.addRoleToUser(limitedUserLogin, creatorRoleId)

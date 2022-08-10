@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.GROUP_ID
@@ -20,11 +21,11 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.temporal.ChronoUnit
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -106,6 +107,7 @@ class VirtualNodeRpcTest {
      * Runs second to ensure that we reject this with a correct message
      */
     @Test
+    @Disabled
     @Order(20)
     fun `cannot upload CPI without group policy file aka CPB`() {
         cluster {
@@ -136,6 +138,7 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Disabled
     @Order(30)
     fun `cannot upload same CPI`() {
         cluster {
@@ -198,6 +201,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(50)
+    @Disabled
     fun `cannot create duplicate virtual node`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -266,6 +270,7 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(65)
+    @Disabled
     fun `cpi status returns 400 for unknown request id`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
