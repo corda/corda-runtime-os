@@ -38,7 +38,7 @@ by Corda into an `RPCRequestData` interface. This is represented in the CordaMoc
 which allows the `RPCRequestData` to be easily constructed. There are three different construction
 methods available:
 
-- A Json-formatted string, as you would submit with `curl`:
+- A JSON-formatted string, as you would submit with `curl`:
 
 ```kotlin
   val input = """
@@ -73,10 +73,10 @@ val requestBody = RPCRequestDataMock.fromData("r1",
 ## Instance vs Class upload
 
 The CordaMock has two methods of uploading responder flows:
-- via a class, which will be constructed when a response flow is initialized
+- via a class, which will be constructed when a response flow is initialized.
 - via an instance, which must be uploaded against a protocol.
 
-Uploading an instance allows flows to be constructed containing other mocks, injected logic, etc.. It also allows
+Uploading an instance allows flows to be constructed containing other mocks, injected logic, etc. It also allows
 the ResponderMock to be used.
 
 ## ResponderMock
@@ -93,10 +93,10 @@ cordaMock.upload(x500, "count-protocol", responder)
 
 The CordaMock has several components which can also be used independently:
 
-- A `CordaFlowChecker` which checks your flow for a default constructor and required Corda annotations
-- A `SimpleJSonMarshallingService` which can be used to convert objects to JSON and vice-versa
-- A `PassThroughFlowEngine` which will call any `SubFlows` you give to it
-- A `DbPersistenceService` using an in-memory HSQLDB
+- A `CordaFlowChecker` which checks your flow for a default constructor and required Corda annotations.
+- A `SimpleJSonMarshallingService` which can be used to convert objects to JSON and vice-versa.
+- A `PassThroughFlowEngine` which will call any `SubFlows` you give to it.
+- A `DbPersistenceService` using an in-memory HSQLDB.
 
 Note these will eventually move to being `cordaProvided` from a factory.
 
