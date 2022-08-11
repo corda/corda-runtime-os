@@ -86,7 +86,7 @@ class FakeCordaTest {
         corda.close()
 
         // Then it should close the fiber too
-        verify(fiber.close(), times(1))
+        verify(fiber, times(1)).close()
     }
 }
 

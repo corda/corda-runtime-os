@@ -57,7 +57,8 @@ class DBPersistenceServiceTest {
 
         // When we try to save something in it
         // Then it should throw an error
-        assertThrows<CordaPersistenceException>{ persistence.persist(GreetingEntity(UUID.randomUUID(),"Hello!"))}
+        assertThrows<IllegalStateException>{
+            persistence.persist(GreetingEntity(UUID.randomUUID(),"Hello!"))}
     }
 
     @Test
