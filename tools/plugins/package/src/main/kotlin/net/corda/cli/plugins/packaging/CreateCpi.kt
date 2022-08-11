@@ -3,6 +3,8 @@ package net.corda.cli.plugins.packaging
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.io.FileInputStream
+import java.lang.IllegalArgumentException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.READ
@@ -12,8 +14,12 @@ import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.CpxSigner
+import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
+import net.corda.libs.packaging.verify.PackageType
+import net.corda.libs.packaging.verify.VerifierBuilder
+import net.corda.libs.packaging.verify.internal.VerifierFactory
 import picocli.CommandLine
 
 /**
@@ -71,10 +77,12 @@ class CreateCpi : Runnable {
      */
     override fun run() {
 
-        // Check input files exist, output file does not exist
+        // Check input files exist
         val cpbPath = requireFileExists(cpbFileName)
         requireFileExists(signingOptions.keyStoreFileName)
 
+        // Check input Cpb file is indeed a Cpb
+        verifyIsValidCpbV1(cpbPath)
         // Create output filename if none specified
         var outputName = outputFileName
         if (outputName == null) {
@@ -82,6 +90,7 @@ class CreateCpi : Runnable {
             val cpiFilename = "${File(cpbFileName).nameWithoutExtension}$CPI_EXTENSION"
             outputName = Path.of(cpbDirectory, cpiFilename).toString()
         }
+        // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
         // Allow piping group policy file into stdin
@@ -91,6 +100,24 @@ class CreateCpi : Runnable {
             GroupPolicySource.File(requireFileExists(groupPolicyFileName))
 
         buildAndSignCpi(cpbPath, outputFilePath, groupPolicy)
+    }
+
+    /**
+     * @throws IllegalArgumentException if it fails to verify Cpb V1
+     */
+    private fun verifyIsValidCpbV1(cpbPath: Path) {
+        try {
+            VerifierBuilder()
+                .type(PackageType.CPB)
+                .format(VerifierFactory.FORMAT_1)
+                .name(cpbPath.toString())
+                .inputStream(FileInputStream(cpbPath.toString()))
+                .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
+                .build()
+                .verify()
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Cpb is invalid", e)
+        }
     }
 
     /**
@@ -105,7 +132,7 @@ class CreateCpi : Runnable {
             buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
 
             // Sign CPI jar
-            CpxSigner.sign(
+            SigningHelpers.sign(
                 unsignedCpi,
                 outputFilePath,
                 signingOptions.keyStoreFileName,

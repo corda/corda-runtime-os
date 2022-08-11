@@ -9,7 +9,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     api project(':libs:lifecycle:lifecycle')
-    api project(':libs:uniqueness')
+    api project(':libs:uniqueness:common')
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation 'net.corda:corda-base'

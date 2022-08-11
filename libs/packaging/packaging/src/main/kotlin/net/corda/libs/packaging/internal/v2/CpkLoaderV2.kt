@@ -5,7 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
-import net.corda.libs.packaging.certSummaryHash
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
@@ -80,7 +80,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
         // Get code signers
         val cordappCertificates = readCodeSigners(cpkEntries)
-        val signerSummaryHash = cordappCertificates.asSequence().certSummaryHash()
+        val signerSummaryHash = cordappCertificates.asSequence().signerSummaryHash()
 
         // List all libraries
         val libNames = readLibNames(cpkEntries)

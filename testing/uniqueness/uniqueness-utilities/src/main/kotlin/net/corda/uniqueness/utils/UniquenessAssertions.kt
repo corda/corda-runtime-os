@@ -1,11 +1,20 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness.utils
 
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckResponse
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckResultSuccess
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.assertAll
 import java.time.Instant
+import kotlin.test.assertEquals
 
 /**
  * Uniqueness check related assertions for use in tests
@@ -16,17 +25,17 @@ object UniquenessAssertions {
      * Checks for a valid, standard success response. If a clock is specified, will additionally
      * check the commit timestamp is valid with respect to the provider.
      */
-    fun assertStandardSuccessResponse(response: UniquenessCheckResponse,
-                                      clock: AutoTickTestClock? = null
+    fun assertStandardSuccessResponse(
+        response: UniquenessCheckResponse,
+        clock: AutoTickTestClock? = null
     ) =
         getResultOfType<UniquenessCheckResultSuccess>(response).run {
             assertThat(commitTimestamp).isAfter(Instant.MIN)
-            if ( clock != null) {
+            if (clock != null) {
                 assertThat(commitTimestamp)
                     .isBeforeOrEqualTo(clock.peekTime())
             }
         }
-
 
     /**
      * Checks for a malformed request response with the specified error text
@@ -117,12 +126,15 @@ object UniquenessAssertions {
      * Checks that all commit timestamps within a list of responses are unique
      */
     fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponse>) {
-        assertEquals(responses.size, responses.distinctBy {
-            (it.result as UniquenessCheckResultSuccess).commitTimestamp
-        }.size)
+        assertEquals(
+            responses.size,
+            responses.distinctBy {
+                (it.result as UniquenessCheckResultSuccess).commitTimestamp
+            }.size
+        )
     }
 
-    private inline fun<reified T> getResultOfType(response: UniquenessCheckResponse) : T {
+    private inline fun<reified T> getResultOfType(response: UniquenessCheckResponse): T {
         assertInstanceOf(T::class.java, response.result)
         @Suppress("UNCHECKED_CAST")
         return response.result as T
