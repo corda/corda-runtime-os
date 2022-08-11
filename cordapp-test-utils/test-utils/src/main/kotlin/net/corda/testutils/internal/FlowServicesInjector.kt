@@ -16,7 +16,7 @@ interface FlowServicesInjector {
     fun injectServices(
         flow: Flow,
         member: MemberX500Name,
-        fiberFake: FiberFake,
+        fakeFiber: FakeFiber,
         flowFactory: FlowFactory = BaseFlowFactory()
     )
 }

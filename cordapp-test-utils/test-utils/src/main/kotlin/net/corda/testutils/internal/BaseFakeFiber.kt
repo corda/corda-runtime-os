@@ -1,5 +1,6 @@
 package net.corda.testutils.internal
 
+import net.corda.testutils.services.CloseablePersistenceService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
@@ -7,11 +8,12 @@ import net.corda.v5.base.types.MemberX500Name
 /**
  * Registers, and looks up, responder flows via their protocol.
  */
-class BaseFiberFake : FiberFake {
+class BaseFakeFiber(private val persistenceServiceFactory : PersistenceServiceFactory = HsqlPersistenceServiceFactory())
+    : FakeFiber {
 
     private val nodeClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
     private val nodeInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
-    private val persistenceServices = HashMap<MemberX500Name, PersistenceService>()
+    private val persistenceServices = HashMap<MemberX500Name, CloseablePersistenceService>()
 
     override fun registerResponderClass(responder: MemberX500Name, protocol: String, flowClass: Class<out ResponderFlow>) {
         if(nodeInstances[responder]?.get(protocol) != null) {
@@ -45,17 +47,19 @@ class BaseFiberFake : FiberFake {
         }
     }
 
-    override fun registerPersistenceService(member: MemberX500Name, persistence: PersistenceService) {
-        persistenceServices[member] = persistence
-    }
-
     override fun lookUpResponderInstance(member: MemberX500Name, protocol: String): ResponderFlow? {
         return nodeInstances[member]?.get(protocol)
     }
 
-    override fun getPersistenceService(member: MemberX500Name): PersistenceService {
-        return persistenceServices[member] ?:
-            throw IllegalArgumentException("No persistence service created for member $member")
+    override fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService {
+        if (!persistenceServices.contains(member)) {
+            persistenceServices[member] = persistenceServiceFactory.createPersistenceService(member)
+        }
+        return persistenceServices[member]!!
+    }
+
+    override fun close() {
+        persistenceServices.values.forEach { it.close() }
     }
 
     override fun lookUpResponderClass(member: MemberX500Name, protocol: String) : Class<out ResponderFlow>? {

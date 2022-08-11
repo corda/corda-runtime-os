@@ -5,7 +5,6 @@ import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.sandboxName
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
-import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.persistence.CordaPersistenceException
 import org.hibernate.cfg.AvailableSettings.DIALECT
@@ -19,12 +18,12 @@ import org.hibernate.jpa.HibernatePersistenceProvider
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-class DbPersistenceService(member : MemberX500Name) : PersistenceService {
+class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceService {
 
     private val emf = createEntityManagerFactory(member)
     companion object {
-        fun createEntityManagerFactory(member : MemberX500Name): EntityManagerFactory {
-            val emf = HibernatePersistenceProvider()
+        fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
+            return HibernatePersistenceProvider()
                 .createContainerEntityManagerFactory(
                     JpaPersistenceUnitInfo(),
                     mapOf(
@@ -36,8 +35,6 @@ class DbPersistenceService(member : MemberX500Name) : PersistenceService {
                         HBM2DDL_AUTO to "create",
                     )
                 )
-            Runtime.getRuntime().addShutdownHook(Thread { if (emf.isOpen) { emf.close() }})
-            return emf
         }
     }
 
@@ -109,6 +106,10 @@ class DbPersistenceService(member : MemberX500Name) : PersistenceService {
                 it.remove(if (it.contains(entity)) { entity } else { it.merge(entity) })
             }
         }
+    }
+
+    override fun close() {
+        emf.close()
     }
 }
 

@@ -1,11 +1,11 @@
 package net.corda.testutils
 
-import net.corda.testutils.internal.BaseFiberFake
+import net.corda.testutils.internal.BaseFakeFiber
 import net.corda.testutils.internal.BaseFlowFactory
-import net.corda.testutils.internal.FiberFake
+import net.corda.testutils.internal.DefaultServicesInjector
+import net.corda.testutils.internal.FakeFiber
 import net.corda.testutils.internal.FlowFactory
 import net.corda.testutils.internal.FlowServicesInjector
-import net.corda.testutils.internal.DefaultServicesInjector
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.CordaFlowChecker
 import net.corda.testutils.tools.FlowChecker
@@ -15,13 +15,14 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import java.io.Closeable
 
 /**
  * This is a fake of the Corda network which will run in-process. It allows a fake "virtual node" to be created
  * by "uploading" a particular flow class for a `MemberX500Name`. Note that the upload does not have to be symmetrical;
  * an initiating flow class can be registered for one party with a responding flow class registered for another.
  *
- * The CordaMock uses three fake services to help mimic the Corda network while ensuring that your flow will work well
+ * The FakeCorda uses three fake services to help mimic the Corda network while ensuring that your flow will work well
  * with the real thing. These can be mocked out or wrapped if required, but most of the time the defaults will be
  * enough.
  *
@@ -33,16 +34,16 @@ import net.corda.v5.base.types.MemberX500Name
  * @flowServices A factory for constructing services that will be injected into the flows
  * @fiberMock The "fiber" with which responder flows will be registered by protocol
  */
-class CordaMock(
+class FakeCorda(
     private val flowChecker: FlowChecker = CordaFlowChecker(),
-    private val fiberFake: FiberFake = BaseFiberFake(),
+    private val fakeFiber: FakeFiber = BaseFakeFiber(),
     private val injector: FlowServicesInjector = DefaultServicesInjector()
-) {
+) : Closeable {
 
     private val flowFactory: FlowFactory = BaseFlowFactory()
 
     /**
-     * Registers a flow class against a given member with the CordaMock. Flow classes "uploaded" here will be checked
+     * Registers a flow class against a given member with the FakeCorda. Flow classes "uploaded" here will be checked
      * for validity. Responder flows will also be registered with the "fiber".
      *
      * @member The member for whom this flow will be registered.
@@ -60,7 +61,7 @@ class CordaMock(
         val protocolIfResponder = flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
         if (protocolIfResponder != null) {
             val responderFlowClass = castInitiatingFlowToResponder(flowClass)
-            fiberFake.registerResponderClass(member, protocolIfResponder, responderFlowClass)
+            fakeFiber.registerResponderClass(member, protocolIfResponder, responderFlowClass)
         }
     }
 
@@ -83,7 +84,7 @@ class CordaMock(
     fun invoke(initiator: MemberX500Name, input: RPCRequestDataMock): String {
         val flowClassName = input.flowClassName
         val flow = flowFactory.createInitiatingFlow(initiator, flowClassName)
-        injector.injectServices(flow, initiator, fiberFake, flowFactory)
+        injector.injectServices(flow, initiator, fakeFiber, flowFactory)
         return flow.call(input.toRPCRequestData())
     }
 
@@ -91,8 +92,11 @@ class CordaMock(
      * Uploads a concrete instance of a responder flow.
      */
     fun upload(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow) {
-        fiberFake.registerResponderInstance(responder, protocol, responderFlow)
+        fakeFiber.registerResponderInstance(responder, protocol, responderFlow)
     }
 
-    fun getPersistenceServiceFor(member: MemberX500Name): PersistenceService = fiberFake.getPersistenceService(member)
+    fun getPersistenceServiceFor(member: MemberX500Name): PersistenceService = fakeFiber.getOrCreatePersistenceService(member)
+    override fun close() {
+        fakeFiber.close()
+    }
 }

@@ -1,17 +1,21 @@
 package net.corda.testutils.internal
 
+import net.corda.testutils.services.CloseablePersistenceService
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
-class BaseFiberFakeTest {
+class BaseFakeFiberTest {
 
     private val memberA = MemberX500Name.parse("CN=CorDapperA, OU=Application, O=R3, L=London, C=GB")
     private val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
@@ -19,7 +23,7 @@ class BaseFiberFakeTest {
     @Test
     fun `should look up concrete implementations for a given protocol and a given party`() {
         // Given a fiber with a concrete implementation registered for a protocol
-        val fiber = BaseFiberFake()
+        val fiber = BaseFakeFiber()
         val flow = Flow1()
         fiber.registerResponderInstance(memberA, "protocol-1", flow)
 
@@ -33,7 +37,7 @@ class BaseFiberFakeTest {
     @Test
     fun `should look up the matching flow class for a given protocol and a given party`() {
         // Given a fiber and two nodes with some shared flow protocol
-        val fiber = BaseFiberFake()
+        val fiber = BaseFakeFiber()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderClass(memberA, "protocol-2", Flow2::class.java)
         fiber.registerResponderClass(memberB, "protocol-1", Flow3InitBy1::class.java)
@@ -49,7 +53,7 @@ class BaseFiberFakeTest {
     @Test
     fun `should prevent us from uploading a responder twice for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = BaseFiberFake()
+        val fiber = BaseFakeFiber()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-1", Flow2())
 
@@ -73,7 +77,7 @@ class BaseFiberFakeTest {
     @Test
     fun `should tell us if it cant find a flow for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = BaseFiberFake()
+        val fiber = BaseFakeFiber()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-2", Flow2())
 
@@ -87,11 +91,27 @@ class BaseFiberFakeTest {
     }
 
     @Test
-    fun `should allow us to register and retrieve a persistence service`() {
-        val fiber = BaseFiberFake()
-        val persistence = mock<PersistenceService>()
-        fiber.registerPersistenceService(memberA, persistence)
-        assertThat(fiber.getPersistenceService(memberA), `is`(persistence))
+    fun `should create then retrieve the same persistence service for a member`() {
+        val fiber = BaseFakeFiber()
+        val persistenceService1 = fiber.getOrCreatePersistenceService(memberA)
+        val persistenceService2 = fiber.getOrCreatePersistenceService(memberA)
+        assertThat(persistenceService1, `is`(persistenceService2))
+    }
+
+    @Test
+    fun `should close all persistence services when closed`() {
+        // Given a mock factory that will create a persistence service for us
+        val psFactory = mock<PersistenceServiceFactory>()
+        val persistenceService = mock<CloseablePersistenceService>()
+        whenever(psFactory.createPersistenceService(any())).thenReturn(persistenceService)
+
+        // When we create a persistence service, then close the fiber
+        val fiber = BaseFakeFiber(psFactory)
+        fiber.getOrCreatePersistenceService(memberA)
+        fiber.close()
+
+        // Then it should have closed the persistence service too
+        verify(persistenceService, times(1)).close()
     }
 
     class Flow1 : ResponderFlow { override fun call(session: FlowSession) {} }

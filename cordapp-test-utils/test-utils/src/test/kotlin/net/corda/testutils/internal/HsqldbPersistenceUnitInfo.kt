@@ -3,7 +3,8 @@ package net.corda.testutils.internal
 import java.io.IOException
 import java.io.UncheckedIOException
 import java.net.URL
-import java.util.*
+import java.util.Collections
+import java.util.Properties
 import javax.persistence.SharedCacheMode
 import javax.persistence.ValidationMode
 import javax.persistence.spi.ClassTransformer
@@ -12,7 +13,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType
 import javax.sql.DataSource
 
 class HsqldbPersistenceUnitInfo : PersistenceUnitInfo {
-    override fun getPersistenceUnitName(): String = "CordaMockPersistenceUnit"
+    override fun getPersistenceUnitName(): String = "FakeCordaPersistenceUnit"
 
     override fun getPersistenceProviderClassName(): String = "org.hibernate.jpa.HibernatePersistenceProvider"
 

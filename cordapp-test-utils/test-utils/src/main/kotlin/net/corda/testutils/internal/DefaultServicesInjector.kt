@@ -1,6 +1,5 @@
 package net.corda.testutils.internal
 
-import net.corda.testutils.services.DbPersistenceService
 import net.corda.testutils.services.SimpleJsonMarshallingService
 import net.corda.testutils.tools.injectIfRequired
 import net.corda.v5.application.flows.Flow
@@ -11,7 +10,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 
 /**
- * Injector for default services for the CordaMock.
+ * Injector for default services for the FakeCorda.
  */
 class DefaultServicesInjector : FlowServicesInjector {
 
@@ -32,35 +31,33 @@ class DefaultServicesInjector : FlowServicesInjector {
     override fun injectServices(
         flow: Flow,
         member: MemberX500Name,
-        fiberFake: FiberFake,
+        fakeFiber: FakeFiber,
         flowFactory: FlowFactory,
     ) {
         val flowClass = flow.javaClass
         flow.injectIfRequired(JsonMarshallingService::class.java,
             createJsonMarshallingService())
         flow.injectIfRequired(FlowEngine::class.java,
-            createFlowEngine(member, fiberFake))
+            createFlowEngine(member, fakeFiber))
         flow.injectIfRequired(FlowMessaging::class.java,
-            createFlowMessaging(member, flowClass, fiberFake, flowFactory))
+            createFlowMessaging(member, flowClass, fakeFiber, flowFactory))
         flow.injectIfRequired(
             PersistenceService::class.java,
-            createPersistenceService(member, fiberFake))
+            getOrCreatePersistenceService(member, fakeFiber))
     }
 
-    private fun createPersistenceService(member: MemberX500Name, fiberFake: FiberFake): PersistenceService  {
-        val persistence = DbPersistenceService(member)
-        fiberFake.registerPersistenceService(member, persistence)
-        return persistence
+    private fun getOrCreatePersistenceService(member: MemberX500Name, fakeFiber: FakeFiber): PersistenceService  {
+        return fakeFiber.getOrCreatePersistenceService(member)
     }
 
     private fun createJsonMarshallingService() : JsonMarshallingService = SimpleJsonMarshallingService()
-    private fun createFlowEngine(member: MemberX500Name, fiberFake: FiberFake): FlowEngine
-        = InjectingFlowEngine(member, fiberFake)
+    private fun createFlowEngine(member: MemberX500Name, fakeFiber: FakeFiber): FlowEngine
+        = InjectingFlowEngine(member, fakeFiber)
     private fun createFlowMessaging(
         member: MemberX500Name,
         flowClass: Class<out Flow>,
-        fiberFake: FiberFake,
+        fakeFiber: FakeFiber,
         flowFactory: FlowFactory
-    ): FlowMessaging = ConcurrentFlowMessaging(member, flowClass, fiberFake, this, flowFactory)
+    ): FlowMessaging = ConcurrentFlowMessaging(member, flowClass, fakeFiber, this, flowFactory)
 }
 

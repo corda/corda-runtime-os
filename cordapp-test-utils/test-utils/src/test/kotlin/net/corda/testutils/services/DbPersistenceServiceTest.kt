@@ -9,7 +9,7 @@ import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
-import java.util.*
+import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -47,6 +47,17 @@ class DBPersistenceServiceTest {
         // Then it should not show up in the other one
         val greetings = persistence2.findAll(GreetingEntity::class.java).execute()
         assertThat("Greetings should be empty", greetings.isEmpty())
+    }
+
+    @Test
+    fun `should be able to close a persistence service`() {
+        // Given a db service we've closed
+        val persistence = DbPersistenceService(member)
+        persistence.close()
+
+        // When we try to save something in it
+        // Then it should throw an error
+        assertThrows<CordaPersistenceException>{ persistence.persist(GreetingEntity(UUID.randomUUID(),"Hello!"))}
     }
 
     @Test

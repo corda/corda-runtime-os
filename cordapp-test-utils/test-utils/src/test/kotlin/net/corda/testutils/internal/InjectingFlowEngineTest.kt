@@ -22,7 +22,7 @@ class InjectingFlowEngineTest {
     @Test
     fun `should inject subflow with provided services then call it`() {
         // Given some services and an injector
-        val fiber = mock<FiberFake>()
+        val fiber = mock<FakeFiber>()
         val injector = mock<FlowServicesInjector>()
 
         // And a flow engine which uses them
@@ -44,7 +44,7 @@ class InjectingFlowEngineTest {
     @Test
     fun `should run the flow checker on injected flows`() {
         // Given some services and an injector, and a flow checker which will throw an error
-        val fiber = mock<FiberFake>()
+        val fiber = mock<FakeFiber>()
         val injector = mock<FlowServicesInjector>()
         val flowChecker = mock<FlowChecker>()
         whenever(flowChecker.check(any())).thenThrow(IllegalArgumentException())
