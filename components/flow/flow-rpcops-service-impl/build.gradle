@@ -27,6 +27,8 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "com.google.guava:guava:$guavaVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
