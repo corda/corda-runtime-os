@@ -11,8 +11,6 @@ ext {
     kryoCglibVersion = '3.1'
     kryoDexxCollectionVersion = '0.6'
     kryoJodaTimeVersion = '1.6.2'
-    kryoProtobufVersion = '3.6.1'
-    kryoWicketVersion = '1.4.17'
     guavaOsgiVersion = provider {
         parseMavenString(guavaVersion).getOSGiVersion()
     }
@@ -29,8 +27,6 @@ dependencies {
     // This information has been read from kryo-serializers' original POM.
     compileOnly "de.javakaffee:kryo-serializers:$kryoSerializerVersion"
     compileOnly "com.github.andrewoma.dexx:collection:$kryoDexxCollectionVersion"
-    compileOnly "com.google.protobuf:protobuf-java:$kryoProtobufVersion"
-    compileOnly "org.apache.wicket:wicket:$kryoWicketVersion"
     compileOnly "joda-time:joda-time:$kryoJodaTimeVersion"
     compileOnly "cglib:cglib:$kryoCglibVersion"
     api "com.esotericsoftware:kryo:$kryoVersion"

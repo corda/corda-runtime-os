@@ -62,6 +62,13 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 }
 
+// excluding these transitive dependencies because we don't need them and
+//  sometimes they raise security issues.
+configurations.implementation {
+    exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    exclude group: 'org.apache.wicket', module: 'wicket'
+}
+
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
     from configurations.cpbs
 }
