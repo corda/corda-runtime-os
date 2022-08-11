@@ -2,18 +2,42 @@
 
 This is a plug-in for [Corda CLI plug-in host](https://github.com/corda/corda-cli-plugin-host) for working with CPB and CPI files.
 
-```shell
-# These commands assume you have access to ./corda-cli.sh
-cd script
+## Examples
 
+These commands assume you have access to ./corda-cli.sh
+
+### Generate two self-signed signing keys 
+
+```shell
 # Generate two self-signed signing keys to show how we select one key among multiple
 keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
 keytool -genkeypair -alias "signing key 2" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 2, o=R3, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+```
 
-# To trust freetsa.org, download their CA cert and import into keystore
-keytool -importcert -alias "freetsa" -keystore signingkeys.pfx -storepass "keystore password" -file ~/Downloads/cacert.pem
+### Trust the gradle plugin default signing key
+Save the following content in a text file named `gradle-plugin-default-key.pem`
+```text
+-----BEGIN CERTIFICATE-----
+MIIB7zCCAZOgAwIBAgIEFyV7dzAMBggqhkjOPQQDAgUAMFsxCzAJBgNVBAYTAkdC
+MQ8wDQYDVQQHDAZMb25kb24xDjAMBgNVBAoMBUNvcmRhMQswCQYDVQQLDAJSMzEe
+MBwGA1UEAwwVQ29yZGEgRGV2IENvZGUgU2lnbmVyMB4XDTIwMDYyNTE4NTI1NFoX
+DTMwMDYyMzE4NTI1NFowWzELMAkGA1UEBhMCR0IxDzANBgNVBAcTBkxvbmRvbjEO
+MAwGA1UEChMFQ29yZGExCzAJBgNVBAsTAlIzMR4wHAYDVQQDExVDb3JkYSBEZXYg
+Q29kZSBTaWduZXIwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQDjSJtzQ+ldDFt
+pHiqdSJebOGPZcvZbmC/PIJRsZZUF1bl3PfMqyG3EmAe0CeFAfLzPQtf2qTAnmJj
+lGTkkQhxo0MwQTATBgNVHSUEDDAKBggrBgEFBQcDAzALBgNVHQ8EBAMCB4AwHQYD
+VR0OBBYEFLMkL2nlYRLvgZZq7GIIqbe4df4pMAwGCCqGSM49BAMCBQADSAAwRQIh
+ALB0ipx6EplT1fbUKqgc7rjH+pV1RQ4oKF+TkfjPdxnAAiArBdAI15uI70wf+xlL
+zU+Rc5yMtcOY4/moZUq36r0Ilg==
+-----END CERTIFICATE-----
+```
+Then run the following command to import the certificate into the keystore:
+```shell
+keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file gradle-plugin-default-key.pem
+```
 
-# Build a CPB
+### Build a CPB
+```shell
 ./corda-cli.sh package create-cpb \
     mycpk0.cpk mycpk1.cpk \
     --cpb-name manifest-attribute-cpb-name \
@@ -21,70 +45,78 @@ keytool -importcert -alias "freetsa" -keystore signingkeys.pfx -storepass "keyst
     --file output.cpb \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
-    --key "signing key 1" \
-    --tsa https://freetsa.org/tsr
+    --key "signing key 1"
+```
 
-# Check CPB jarsigner signatures
-jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify output.cpb
-
-# Build a group policy file
+### Build a group policy file
+```shell
 ./corda-cli.sh mgm groupPolicy > TestGroupPolicy.json
+```
 
-# Build a CPI
+### Build a CPI
+```shell
 ./corda-cli.sh package create \
     --cpb mycpb.cpb \
     --group-policy TestGroupPolicy.json \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
-    --key "signing key 1" \
-    --tsa https://freetsa.org/tsr
+    --key "signing key 1"
+```
 
-# Pipe group policy into CPI
+### Pipe group policy into CPI
+```shell
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create \
     --cpb mycpb.cpb \
     --group-policy - \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
-    --key "signing key 1" \
-    --tsa https://freetsa.org/tsr
-    
-# Build a CPI v2
+    --key "signing key 1"
+```
+
+### Verify a CPI
+```shell
+./corda-cli.sh package verify mycpi.cpi
+```
+
+### Sign a CPI or CPB or CPK
+
+After QA, CorDapp developers will want to release sign their files. This command will remove existing (development) signatures and apply new signatures.
+
+```shell
+./corda-cli.sh package sign \
+    mycpb.cpb \
+    --file signed.cpb \
+    --keystore signingkeys.pfx \
+    --storepass "keystore password" \
+    --key "signing key 1"
+```
+
+### Build a CPI v2
+```shell
 ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy TestGroupPolicy.json \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
-    --key "signing key 1" \
-    --tsa https://freetsa.org/tsr    
-    
-# Pipe group policy into CPI v2
+    --key "signing key 1"
+```
+
+### Pipe group policy into CPI v2
+```shell
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy - \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
-    --key "signing key 1" \
-    --tsa https://freetsa.org/tsr
- 
-# Check CPI jarsigner signatures
+    --key "signing key 1"
+```
+
+
+### Check signatures using jarsigner
+```shell
 jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify output.cpi
-
-# Verify a CPI
-./corda-cli.sh package verify mycpi.cpi
-
-# Sign a CPI or CPB or CPK
-./corda-cli.sh package sign \
-    mycpb.cpb \
-    --file signed.cpb \
-    --keystore signingkeys.pfx \
-    --storepass "keystore password" \
-    --key "signing key 1" \
-    --tsa https://freetsa.org/tsr
-
-# Check a CPI or CPB or CPK jarsigner signatures
-jarsigner -keystore signingkeys.pfx -storepass "keystore password" -verbose -certs  -verify signed.cpb
 ```

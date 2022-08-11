@@ -9,6 +9,8 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.HttpRpcWS
+import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
 
 /** RPC operations for flow management. */
@@ -62,4 +64,18 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Short hash of the holding identity")
         holdingIdentityShortHash: String
     ): FlowStatusResponses
+
+    @HttpRpcWS(
+        path = "{holdingIdentityShortHash}/{clientRequestId}",
+        title = "Get status updates for a flow via websockets.",
+        description = "Gets a stream of status updates for a given flow.",
+        responseDescription = "Flow status updates."
+    )
+    fun registerFlowStatusUpdatesFeed(
+        channel: DuplexChannel,
+        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(description = "Client provided flow identifier")
+        clientRequestId: String
+    )
 }

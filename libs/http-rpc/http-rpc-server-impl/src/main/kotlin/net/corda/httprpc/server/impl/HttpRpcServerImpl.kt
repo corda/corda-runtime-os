@@ -20,8 +20,10 @@ import net.corda.v5.base.util.trace
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import java.nio.file.Path
+import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
+import org.apache.commons.lang3.concurrent.BasicThreadFactory
 
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
@@ -45,6 +47,10 @@ class HttpRpcServerImpl(
 
     private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
+
+    private val deferredWebsocketClosePool = Executors.newScheduledThreadPool(1,
+        BasicThreadFactory.Builder().namingPattern("wsFlowStatusClose-%d").daemon(true).build())
+
     private val httpRpcServerInternal = HttpRpcServerInternal(
         JavalinRouteProviderImpl(
             httpRpcSettings.context.basePath,
@@ -54,7 +60,8 @@ class HttpRpcServerImpl(
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider),
-        multiPartDir
+        multiPartDir,
+        deferredWebsocketClosePool
     )
 
 

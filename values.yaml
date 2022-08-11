@@ -18,7 +18,8 @@ image:
   tag: latest-local
 
 logging:
-  format: text
+  format: "text"
+  level: "info"
 
 bootstrap:
   initialAdminUser:
