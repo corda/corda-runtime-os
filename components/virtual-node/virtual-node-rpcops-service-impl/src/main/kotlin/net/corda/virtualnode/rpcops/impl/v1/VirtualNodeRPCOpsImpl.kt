@@ -150,7 +150,10 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
 
-        return lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)!!.sendAndReceive(request)
+        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
+            ?: throw IllegalStateException("Sender not initialized, check component status for ${this.javaClass.name}")
+
+        return sender.sendAndReceive(request)
     }
 
     /**
