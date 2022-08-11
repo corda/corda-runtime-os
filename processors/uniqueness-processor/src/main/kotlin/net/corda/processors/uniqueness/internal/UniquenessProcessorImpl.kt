@@ -31,12 +31,12 @@ class UniquenessProcessorImpl @Activate constructor(
         private val log = contextLogger()
     }
 
-    private val lifecycleCoordinator =
-        coordinatorFactory.createCoordinator<UniquenessProcessorImpl>(::eventHandler)
-
     private val dependentComponents = DependentComponents.of(
         ::uniquenessChecker
     )
+
+    private val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<UniquenessProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start() {
         log.info("Uniqueness processor starting.")
@@ -52,10 +52,10 @@ class UniquenessProcessorImpl @Activate constructor(
         log.info("Uniqueness processor received event $event.")
         when (event) {
             is StartEvent -> {
-                dependentComponents.registerAndStartAll(coordinator)
+                // Nothing to do
             }
             is StopEvent -> {
-                dependentComponents.stopAll()
+                // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Uniqueness processor is ${event.status}")

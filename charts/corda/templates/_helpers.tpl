@@ -187,6 +187,8 @@ Worker environment variables
     {{- end }}
 - name: LOG4J_CONFIG_FILE
   value: "log4j2-console{{ if eq .Values.logging.format "json" }}-json{{ end }}.xml"
+- name: CONSOLE_LOG_LEVEL
+  value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level }}
 {{- end }}
 
 {{/*
