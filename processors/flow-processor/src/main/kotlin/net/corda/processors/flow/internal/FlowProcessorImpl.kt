@@ -52,7 +52,6 @@ class FlowProcessorImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::flowService,
@@ -63,6 +62,7 @@ class FlowProcessorImpl @Activate constructor(
         ::sandboxGroupContextComponent,
         ::membershipGroupReaderProvider
     )
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
@@ -75,13 +75,12 @@ class FlowProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "Flow processor received event $event." }
 
         when (event) {
             is StartEvent -> {
-                dependentComponents.registerAndStartAll(coordinator)
+                // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Flow processor is ${event.status}")
@@ -91,7 +90,7 @@ class FlowProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                dependentComponents.stopAll()
+                // Nothing to do
             }
             else -> {
                 log.error("Unexpected event $event!")

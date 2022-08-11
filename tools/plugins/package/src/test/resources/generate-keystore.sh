@@ -10,10 +10,10 @@ keytool -genkeypair -alias rootca -dname 'CN=Corda Dev Root CA, OU=R3, O=Corda, 
         -keyalg ${KEY_ALG} -validity 4000 -keystore signingkeys.pfx -storetype pkcs12 -storepass "${STOREPASS}" \
         -ext BasicConstraints:critical -ext KeyUsage=cRLSign,digitalSignature,keyCertSign
 
-keytool -genkeypair -alias "${SIGNING_KEY_1}" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, c=GB" \
+keytool -genkeypair -alias "${SIGNING_KEY_1}" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" \
         -keyalg ${KEY_ALG} -validity 4000 -keystore signingkeys.pfx -storetype pkcs12 -storepass "${STOREPASS}"
 
-keytool -genkeypair -alias "${SIGNING_KEY_2}" -dname "cn=CPI Plugin Example - Signing Key 2, o=R3, c=GB" \
+keytool -genkeypair -alias "${SIGNING_KEY_2}" -dname "cn=CPI Plugin Example - Signing Key 2, o=R3, L=London, c=GB" \
         -keyalg ${KEY_ALG} -validity 4000 -keystore signingkeys.pfx -storetype pkcs12 -storepass "${STOREPASS}" \
 
 # Export root CA

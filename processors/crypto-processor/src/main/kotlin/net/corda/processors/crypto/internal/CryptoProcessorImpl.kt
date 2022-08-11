@@ -102,8 +102,6 @@ class CryptoProcessorImpl @Activate constructor(
         entitiesRegistry.register(CordaDb.CordaCluster.persistenceUnitName, ConfigurationEntities.classes)
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(::eventHandler)
-
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::cryptoConnectionsFactory,
@@ -121,6 +119,8 @@ class CryptoProcessorImpl @Activate constructor(
         ::dbConnectionManager,
         ::vnodeInfo
     )
+
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
     @Volatile
     private var hsmAssociated: Boolean = false
@@ -147,10 +147,10 @@ class CryptoProcessorImpl @Activate constructor(
         logger.info("Crypto processor received event $event.")
         when (event) {
             is StartEvent -> {
-                dependentComponents.registerAndStartAll(coordinator)
+                // Nothing to do
             }
             is StopEvent -> {
-                dependentComponents.stopAll()
+                // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {

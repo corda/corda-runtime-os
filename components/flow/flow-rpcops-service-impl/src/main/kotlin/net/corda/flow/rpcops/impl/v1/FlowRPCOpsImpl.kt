@@ -6,6 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
+import net.corda.flow.rpcops.impl.flowstatus.websocket.registerFlowStatusFeedHooks
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
@@ -13,6 +14,8 @@ import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.ws.DuplexChannel
+import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
@@ -23,6 +26,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -122,6 +126,23 @@ class FlowRPCOpsImpl @Activate constructor(
         val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun registerFlowStatusUpdatesFeed(
+        channel: DuplexChannel,
+        holdingIdentityShortHash: String,
+        clientRequestId: String
+    ) {
+        val holdingIdentity = try {
+            getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
+        } catch (e: ShortHashException) {
+            channel.error(WebSocketValidationException("Invalid holding identifier", e))
+            return
+        } catch (e: FlowRPCOpsServiceException) {
+            channel.error(WebSocketValidationException("Invalid virtual node", e))
+            return
+        }
+        channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
     }
 
     override fun start() = Unit
