@@ -1,20 +1,15 @@
+package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
+
 import net.corda.chunking.ChunkWriter
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.data.virtualnode.VirtualNodeManagementResponse
-import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.httprpc.HttpFileUpload
-import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.cpiupload.CpiUploadManager
-import net.corda.libs.virtualnode.maintenance.rpcops.impl.v1.UnknownMaintenanceResponseTypeException
-import net.corda.libs.virtualnode.maintenance.rpcops.impl.v1.VirtualNodeMaintenanceRPCOpsImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderService
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -59,7 +54,8 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         }
         @Test
         fun `verify coordinator is started on start`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock())
+            val vnodeMaintenanceRpcOps =
+                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.start()
 
             verify(mockCoordinator).start()
@@ -67,7 +63,8 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
         @Test
         fun `verify coordinator is closed on stop`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock())
+            val vnodeMaintenanceRpcOps =
+                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.stop()
 
             verify(mockCoordinator).close()
@@ -75,16 +72,18 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock())
+            val vnodeMaintenanceRpcOps =
+                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock())
             vnodeMaintenanceRpcOps.isRunning
 
             verify(mockCoordinator).isRunning
-            assertTrue(vnodeMaintenanceRpcOps.isRunning)
+            Assertions.assertTrue(vnodeMaintenanceRpcOps.isRunning)
         }
 
         @Test
         fun `verify exception throw if forceCpiUpload is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock())
+            val vnodeMaintenanceRpcOps =
+                VirtualNodeMaintenanceRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.forceCpiUpload(mock())
             }
@@ -94,7 +93,8 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
         @Test
         fun `verify exception throw if updateVirtualNodeState is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock())
+            val vnodeMaintenanceRpcOps =
+                VirtualNodeMaintenanceRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.updateVirtualNodeState("someId", "someState")
             }
@@ -105,21 +105,6 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
 
     @Nested
     inner class ServiceAPITests {
-        // Fake response to trigger else branch
-        inner class DummyResponse
-
-        // Mocks
-        private val mockVirtualNodeUpdateResponse = mock<VirtualNodeStateChangeResponse>().apply {
-            whenever(holdingIdentityShortHash) doReturn "someID"
-            whenever(virtualNodeState) doReturn "someState"
-        }
-        private val mockVirtualNodeFailedResponse = mock<VirtualNodeManagementResponseFailure>()
-        private val mockFailedVirtualNodeManagementResponse = mock<VirtualNodeManagementResponse>().apply {
-            whenever(responseType) doReturn mockVirtualNodeFailedResponse
-        }
-        private val mockBadVirtualNodeManagementResponse = mock<VirtualNodeManagementResponse>().apply {
-            whenever(responseType) doReturn DummyResponse()
-        }
         val mockUpload = mock<HttpFileUpload>().apply {
             whenever(fileName) doReturn "test"
             whenever(content) doReturn InputStream.nullInputStream()
@@ -133,22 +118,11 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
         private val mockCpiUploadRPCOpsService = mock<CpiUploadRPCOpsService>().apply {
             whenever(cpiUploadManager) doReturn mockCpiUploadManager
         }
-        private val mockUpdateResponse = mock<VirtualNodeManagementResponse>().apply {
-            whenever(responseType) doReturn mockVirtualNodeUpdateResponse
-        }
-        private val mockVirtualNodeSenderService = mock<VirtualNodeSenderService>().apply {
-            whenever(sendAndReceive(any())) doReturn mockUpdateResponse
-        }
-        private val mockFailVirtualNodeSenderService = mock<VirtualNodeSenderService>().apply {
-            whenever(sendAndReceive(any())) doReturn mockFailedVirtualNodeManagementResponse
-        }
-        private val mockBadVirtualNodeSenderService = mock<VirtualNodeSenderService>().apply {
-            whenever(sendAndReceive(any())) doReturn mockBadVirtualNodeManagementResponse
-        }
 
         @Test
         fun `verify forceCpiUpload performs call to uploadCpi on cpiUploadManager`() {
-            val vnodeRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mockCpiUploadRPCOpsService, mock())
+            val vnodeRpcOps =
+                VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mockCpiUploadRPCOpsService, mock())
             vnodeRpcOps.forceCpiUpload(mockUpload)
 
             verify(mockCpiUploadRPCOpsService.cpiUploadManager)
@@ -157,32 +131,6 @@ class VirtualNodeMaintenanceRPCOpsImplTest {
                     any(),
                     any()
                 )
-        }
-
-        @Test
-        fun `verify updateVirtualNodeState performs call to sendAndReceive on sender service`() {
-            val vnodeRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mockVirtualNodeSenderService)
-            vnodeRpcOps.updateVirtualNodeState("someId", "someNewState")
-
-            verify(mockVirtualNodeSenderService).sendAndReceive(any())
-        }
-
-        @Test
-        fun `verify createVirtualNode throws an exception on a failure response`() {
-            val vnodeRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mockFailVirtualNodeSenderService)
-
-            assertThrows<InternalServerException> {
-                vnodeRpcOps.updateVirtualNodeState("someId", "someNewState")
-            }
-        }
-
-        @Test
-        fun `verify createVirtualNode throws an exception on an unknown response`() {
-            val vnodeRpcOps = VirtualNodeMaintenanceRPCOpsImpl(mockCoordinatorFactory, mock(), mockBadVirtualNodeSenderService)
-
-            assertThrows<UnknownMaintenanceResponseTypeException> {
-                vnodeRpcOps.updateVirtualNodeState("someId", "someNewState")
-            }
         }
     }
 }
