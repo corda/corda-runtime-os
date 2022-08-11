@@ -21,6 +21,7 @@ import javax.persistence.EntityManagerFactory
 class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceService {
 
     private val emf = createEntityManagerFactory(member)
+
     companion object {
         fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
             return HibernatePersistenceProvider()
@@ -114,32 +115,38 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
 }
 
 inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R {
-
-    val em = this.createEntityManager()
-    val t = em.transaction
-    t.begin()
-    return try {
-        block(em)
-    } catch (e: Exception) {
-        t.setRollbackOnly()
-        throw CordaPersistenceException(e.message ?: "Error in persistence", e)
-    } finally {
-        if (!t.rollbackOnly) {
-            t.commit()
-        } else {
-            t.rollback()
+    this.createEntityManager().use {
+        val t = it.transaction
+        t.begin()
+        return try {
+            block(it)
+        } catch (e: Exception) {
+            t.setRollbackOnly()
+            throw CordaPersistenceException(e.message ?: "Error in persistence", e)
+        } finally {
+            if (!t.rollbackOnly) {
+                t.commit()
+            } else {
+                t.rollback()
+            }
         }
-        em.close()
     }
 }
 
 inline fun <R> EntityManagerFactory.guard(block: (EntityManager) -> R): R {
-    val em = this.createEntityManager()
+    this.createEntityManager().use {
+        return try {
+            block(it)
+        } catch (e: Exception) {
+            throw CordaPersistenceException(e.message ?: "Error in persistence", e)
+        }
+    }
+}
+
+inline fun <R> EntityManager.use(block: (EntityManager) -> R): R {
     return try {
-        block(em)
-    } catch (e: Exception) {
-        throw CordaPersistenceException(e.message ?: "Error in persistence", e)
+        block(this)
     } finally {
-        em.close()
+        close()
     }
 }
