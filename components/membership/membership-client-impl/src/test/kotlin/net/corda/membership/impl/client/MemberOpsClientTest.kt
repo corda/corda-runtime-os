@@ -16,6 +16,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -35,7 +36,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -47,6 +47,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import net.corda.test.util.time.TestClock
 import org.assertj.core.api.Assertions.assertThat
+import org.mockito.kotlin.argumentCaptor
 import java.time.Instant
 
 class MemberOpsClientTest {
@@ -75,17 +76,26 @@ class MemberOpsClientTest {
         }
     }
 
-    private var rpcRequest: MembershipRpcRequest? = null
+    private val rpcSender = mock<RPCSender<MembershipRpcRequest, MembershipRpcResponse>>()
 
-    private lateinit var rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
-
-    private lateinit var publisherFactory: PublisherFactory
+    private val publisherFactory = mock<PublisherFactory> {
+        on {
+            createRPCSender(
+                any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(),
+                any()
+            )
+        } doReturn rpcSender
+    }
 
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
 
-    private lateinit var memberOpsClient: MemberOpsClientImpl
+    private val memberOpsClient = MemberOpsClientImpl(
+        lifecycleCoordinatorFactory,
+        publisherFactory,
+        configurationReadService
+    )
 
     private val messagingConfig: SmartConfig = mock()
     private val bootConfig: SmartConfig = mock ()
@@ -107,8 +117,6 @@ class MemberOpsClientTest {
     )
 
     private fun setUpRpcSender() {
-        // re-sets the rpc request
-        rpcRequest = null
         // kicks off the MessagingConfigurationReceived event to be able to mock the rpc sender
         changeConfig()
     }
@@ -119,18 +127,16 @@ class MemberOpsClientTest {
         mapOf("property" to "test"),
     )
 
-    @BeforeEach
+    /*@BeforeEach
     fun setUp() {
         rpcSender = mock {
-            on { sendRequest(any()) } doAnswer {
-                rpcRequest = it.arguments.first() as MembershipRpcRequest
-                CompletableFuture.completedFuture(
-                    MembershipRpcResponse(
-                        MembershipRpcResponseContext(
-                            rpcRequest!!.requestContext.requestId,
-                            rpcRequest!!.requestContext.requestTimestamp,
-                            clock.instant()
-                        ),
+            on { sendRequest(rpcRequest.capture()) } doAnswer {
+                println("QQQ it.arguments -> ${it.arguments.size}")
+                println("QQQ \t -> ${it.arguments.first()}")
+                val rpcRequest = it.arguments.first() as MembershipRpcRequest
+                val request = rpcRequest.request
+                val reply = when(request) {
+                    is RegistrationRpcRequest -> {
                         RegistrationRpcResponse(
                             "Registration-ID",
                             clock.instant(),
@@ -139,26 +145,54 @@ class MemberOpsClientTest {
                             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                             KeyValuePairList(emptyList())
                         )
+                    }
+                    is RegistrationStatusRpcRequest -> {
+                        RegistrationsStatusResponse(
+                            listOf(
+                                RegistrationStatusDetails(
+                                    clock.instant(),
+                                    clock.instant(),
+                                    RegistrationStatus.NEW,
+                                    "id",
+                                    1,
+                                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                                )
+                            )
+                        )
+                    }
+                    is MGMGroupPolicyRequest -> {
+                        MGMGroupPolicyResponse("greoupPolicy")
+                    }
+                    is RegistrationStatusSpecificRpcRequest -> {
+                        RegistrationStatusResponse(
+                            RegistrationStatusDetails(
+                                clock.instant(),
+                                clock.instant(),
+                                RegistrationStatus.NEW,
+                                "id",
+                                1,
+                                KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                            )
+                        )
+                    }
+
+                    else -> {
+                        throw CordaRuntimeException("Invalid request: $request")
+                    }
+                }
+                CompletableFuture.completedFuture(
+                    MembershipRpcResponse(
+                        MembershipRpcResponseContext(
+                            rpcRequest.requestContext.requestId,
+                            rpcRequest.requestContext.requestTimestamp,
+                            clock.instant()
+                        ),
+                        reply,
                     )
                 )
             }
         }
-
-        publisherFactory = mock {
-            on {
-                createRPCSender(
-                    any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(),
-                    any()
-                )
-            } doReturn rpcSender
-        }
-
-        memberOpsClient = MemberOpsClientImpl(
-            lifecycleCoordinatorFactory,
-            publisherFactory,
-            configurationReadService
-        )
-    }
+    }*/
 
     @Test
     fun `starting and stopping the service succeeds`() {
@@ -170,12 +204,34 @@ class MemberOpsClientTest {
 
     @Test
     fun `rpc sender sends the expected request - starting registration process`() {
+        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
+        val response = RegistrationRpcResponse(
+            "Registration-ID",
+            clock.instant(),
+            RegistrationRpcStatus.SUBMITTED,
+            1,
+            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+            KeyValuePairList(emptyList())
+        )
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    response,
+                )
+            )
+        }
         memberOpsClient.start()
         setUpRpcSender()
         memberOpsClient.startRegistration(request)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationRpcRequest
+        val requestSent = rpcRequest.firstValue.request as RegistrationRpcRequest
 
         assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityShortHash)
         assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
@@ -184,12 +240,29 @@ class MemberOpsClientTest {
 
     @Test
     fun `rpc sender sends the expected request - checking registration progress`() {
+        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
+        val response = RegistrationsStatusResponse(
+            emptyList()
+        )
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    response,
+                )
+            )
+        }
         memberOpsClient.start()
         setUpRpcSender()
         memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationStatusRpcRequest
+        val requestSent = rpcRequest.firstValue.request as RegistrationStatusRpcRequest
 
         assertEquals(request.holdingIdentityShortHash, requestSent.holdingIdentityId)
     }
@@ -231,12 +304,12 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
-                        rpcRequest!!.requestContext.requestId,
-                        rpcRequest!!.requestContext.requestTimestamp,
+                        rpcRequest.requestContext.requestId,
+                        rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
                     null
@@ -257,12 +330,13 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
+
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
                         "wrongId",
-                        rpcRequest!!.requestContext.requestTimestamp,
+                        rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
                     RegistrationRpcResponse(
@@ -290,11 +364,11 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
-                        rpcRequest!!.requestContext.requestId,
+                        rpcRequest.requestContext.requestId,
                         clock.instant().plusMillis(10000000),
                         clock.instant()
                     ),
@@ -323,12 +397,12 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
-                        rpcRequest!!.requestContext.requestId,
-                        rpcRequest!!.requestContext.requestTimestamp,
+                        rpcRequest.requestContext.requestId,
+                        rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
                     "WRONG RESPONSE TYPE"
