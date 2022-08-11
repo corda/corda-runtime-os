@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroDeserializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -11,6 +10,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -26,6 +26,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -36,6 +37,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -97,7 +99,6 @@ class StartRegistrationHandlerTest {
     lateinit var memberInfoFactory: MemberInfoFactory
     lateinit var membershipGroupReader: MembershipGroupReader
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-    lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
 
@@ -124,6 +125,14 @@ class StartRegistrationHandlerTest {
         on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
+    }
+    private val layeredPropertyMapFactor = mock<LayeredPropertyMapFactory> {
+        on { createMap(any()) } doAnswer {
+            val argument = it.getArgument<Map<String, String?>>(0)
+            mock<LayeredPropertyMap> {
+                on { entries } doReturn argument.entries
+            }
+        }
     }
 
     @BeforeEach
@@ -156,7 +165,7 @@ class StartRegistrationHandlerTest {
             membershipGroupReaderProvider,
             membershipPersistenceClient,
             membershipQueryClient,
-            mock(),
+            layeredPropertyMapFactor,
         )
     }
 
@@ -181,7 +190,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            deserialize = true,
             queryMemberInfo = true,
             persistMemberInfo = true
         )
@@ -272,7 +280,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            deserialize = true,
         )
     }
 
@@ -303,14 +310,13 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            deserialize = true,
         )
     }
 
     @Test
     fun `declined if member already exists`() {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult.Success<Collection<MemberInfo>>(listOf(mock())))
+            .doReturn(MembershipQueryResult.Success(listOf(mock())))
         with(
             handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
@@ -325,7 +331,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            deserialize = true,
             queryMemberInfo = true,
         )
     }
@@ -345,7 +350,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            deserialize = true,
             queryMemberInfo = true,
         )
     }
@@ -367,7 +371,6 @@ class StartRegistrationHandlerTest {
             persistRegistrationRequest = true,
             getGroupReader = true,
             lookup = true,
-            deserialize = true,
             queryMemberInfo = true,
             persistMemberInfo = true
         )
@@ -393,7 +396,6 @@ class StartRegistrationHandlerTest {
         persistRegistrationRequest: Boolean = false,
         getGroupReader: Boolean = false,
         lookup: Boolean = false,
-        deserialize: Boolean = false,
         queryMemberInfo: Boolean = false,
         persistMemberInfo: Boolean = false
     ) {
@@ -407,9 +409,6 @@ class StartRegistrationHandlerTest {
 
         verify(membershipGroupReader, getVerificationMode(lookup))
             .lookup(eq(mgmX500Name))
-
-        verify(deserializer, getVerificationMode(deserialize))
-            .deserialize(any())
 
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())

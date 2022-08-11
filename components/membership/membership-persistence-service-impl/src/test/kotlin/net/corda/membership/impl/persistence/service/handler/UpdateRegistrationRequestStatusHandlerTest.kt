@@ -114,7 +114,9 @@ class UpdateRegistrationRequestStatusHandlerTest {
     @Test
     fun `invoke updates registration request status`() {
         val registrationId = "regId"
-        val registrationRequestEntity = mock<RegistrationRequestEntity>()
+        val registrationRequestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
         whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)

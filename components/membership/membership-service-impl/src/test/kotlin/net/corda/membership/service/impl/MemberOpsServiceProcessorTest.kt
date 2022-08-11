@@ -140,7 +140,7 @@ class MemberOpsServiceProcessorTest {
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient
-    )
+    ) { UUID(3, 5) }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {
         assertEquals(expected.requestId, actual.requestId)
@@ -154,7 +154,7 @@ class MemberOpsServiceProcessorTest {
     fun `should successfully submit registration request`() {
         val requestTimestamp = TestClock(Instant.now()).instant()
         val requestContext = MembershipRpcRequestContext(
-            UUID.randomUUID().toString(),
+            UUID(0, 1).toString(),
             requestTimestamp
         )
         val request = MembershipRpcRequest(
@@ -169,7 +169,7 @@ class MemberOpsServiceProcessorTest {
         processor.onNext(request, future)
         val result = future.get()
         val expectedResponse = RegistrationRpcResponse(
-            "registration-id",
+            UUID(3, 5).toString(),
             requestTimestamp,
             RegistrationRpcStatus.SUBMITTED,
             1,

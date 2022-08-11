@@ -42,7 +42,7 @@ class VerifyMemberHandlerTest {
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
     private val command = VerifyMember()
 
-    val state = RegistrationState(
+    private val state = RegistrationState(
         REGISTRATION_ID,
         member,
         mgm
@@ -78,16 +78,18 @@ class VerifyMemberHandlerTest {
             RegistrationStatus.PENDING_MEMBER_VERIFICATION
         )
 
-        assertThat(result.outputStates).hasSize(1)
-        val appMessage = result.outputStates.first().value as AppMessage
-        with(appMessage.message as AuthenticatedMessage) {
-            assertThat(this.header.source).isEqualTo(mgm)
-            assertThat(this.header.destination).isEqualTo(member)
-            assertThat(this.header.ttl).isNull()
-            assertThat(this.header.messageId).isNotNull
-            assertThat(this.header.traceId).isNull()
-            assertThat(this.header.subsystem).isEqualTo("membership")
-        }
+        assertThat(result.outputStates).hasSize(2)
+            .anyMatch {
+                val appMessage = it.value as? AppMessage
+                val message =  appMessage?.message as? AuthenticatedMessage
+                message != null &&
+                        message.header.source == mgm &&
+                        message.header.destination == member &&
+                        message.header.ttl == null &&
+                        message.header.messageId != null &&
+                        message.header.traceId == null &&
+                        message.header.subsystem == "membership"
+            }
     }
 
     @Test

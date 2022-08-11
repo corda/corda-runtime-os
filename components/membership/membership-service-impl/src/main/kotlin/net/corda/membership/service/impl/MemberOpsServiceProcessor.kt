@@ -58,7 +58,8 @@ class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val membershipQueryClient: MembershipQueryClient
+    private val membershipQueryClient: MembershipQueryClient,
+    private val idFactory: ()->UUID = { UUID.randomUUID() }
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
     interface RpcHandler<REQUEST> {
@@ -130,7 +131,7 @@ class MemberOpsServiceProcessor(
                     ?: throw MembershipRegistrationException(
                         "Could not find holding identity associated with ${request.holdingIdentityId}"
                     )
-            val registrationId = UUID.randomUUID()
+            val registrationId = idFactory()
             val result = try {
                 registrationProxy.register(registrationId, holdingIdentity, request.context.toMap())
             } catch (e: RegistrationProtocolSelectionException) {

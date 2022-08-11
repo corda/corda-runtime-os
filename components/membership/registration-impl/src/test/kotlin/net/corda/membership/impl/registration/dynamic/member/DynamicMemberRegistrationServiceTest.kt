@@ -7,6 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -181,6 +182,14 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val layeredPropertyMapFactory = mock<LayeredPropertyMapFactory> {
+        on {createMap(any())} doAnswer {
+            val map = it.getArgument<Map<String, String?>>(0)
+            mock {
+                on { entries } doReturn map.entries
+            }
+        }
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -190,7 +199,7 @@ class DynamicMemberRegistrationServiceTest {
         serializationFactory,
         membershipGroupReaderProvider,
         mock(),
-        mock(),
+        layeredPropertyMapFactory,
     )
 
     private val context = mapOf(
