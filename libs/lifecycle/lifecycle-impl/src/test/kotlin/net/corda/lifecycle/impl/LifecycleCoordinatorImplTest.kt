@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.CustomEvent
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -25,10 +26,12 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -1244,14 +1247,37 @@ internal class LifecycleCoordinatorImplTest {
         coordinator1.close()
     }
 
+    // Should go in the test but that is hard to specify as a KProperty
+    private val dependency = mock<LifecycleCoordinator>()
+    @Test
+    fun `coordinator calls start and stop on dependency`() {
+        val registry = mock<LifecycleRegistryCoordinatorAccess>().also {
+            doAnswer { mock<LifecycleCoordinatorInternal>() }.whenever(it).getCoordinator(any())
+        }
+        val dependentComponents = DependentComponents.of(::dependency)
+
+        val coordinator = createTestCoordinator(
+            registry = registry,
+            dependentComponents = dependentComponents
+        ) { _, _ -> }
+
+        coordinator.start()
+        verify(dependency).start()
+
+        coordinator.stop()
+        verify(dependency).stop()
+    }
+
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
+        dependentComponents: DependentComponents = mock(),
         scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(executor, timerExecutor),
         processor: LifecycleEventHandler
     ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,
+            dependentComponents,
             registry,
             scheduler,
             processor
@@ -1260,12 +1286,14 @@ internal class LifecycleCoordinatorImplTest {
 
     private fun createTestCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
+        dependentComponents: DependentComponents = mock(),
         scheduler: LifecycleCoordinatorScheduler = TestLifecycleCoordinatorScheduler(),
         processor: LifecycleEventHandler
     ): LifecycleCoordinatorInternal {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,
+            dependentComponents,
             registry,
             scheduler,
             processor

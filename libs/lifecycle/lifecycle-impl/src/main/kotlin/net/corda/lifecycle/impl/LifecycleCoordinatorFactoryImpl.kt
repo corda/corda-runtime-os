@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -24,14 +25,16 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
     override fun createCoordinator(
         name: LifecycleCoordinatorName,
         batchSize: Int,
+        dependentComponents: DependentComponents?,
         handler: LifecycleEventHandler
     ): LifecycleCoordinator {
-        return internalCreateCoordinator(name, batchSize, handler)
+        return internalCreateCoordinator(name, batchSize, dependentComponents, handler)
     }
 
     private fun internalCreateCoordinator(
         name: LifecycleCoordinatorName,
         batchSize: Int,
+        dependentComponents: DependentComponents?,
         handler: LifecycleEventHandler
     ): LifecycleCoordinator {
         if (batchSize <= 0) {
@@ -41,7 +44,7 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
             )
         }
 
-        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, schedulerFactory.create(), handler)
+        val coordinator = LifecycleCoordinatorImpl(name, batchSize, dependentComponents, registry, schedulerFactory.create(), handler)
         registry.registerCoordinator(name, coordinator)
         return coordinator
     }
