@@ -2,7 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.initiateFlowMessageFor
+import net.corda.flow.testing.context.initiateFlowMessage
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,10 +38,10 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_2))
+                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
         }
 
         `when` {
@@ -60,10 +60,10 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     fun `(SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_2))
+                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
