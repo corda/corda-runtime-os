@@ -24,6 +24,7 @@ interface LifecycleCoordinatorFactory {
      *                            the component for this coordinator should also be a static singleton component.
      * @param handler The event handler for this component that processes lifecycle events. See
      *                [LifecycleEventHandler] for more detail on the event handler.
+     * @return a new [LifecycleCoordinator] to manage the lifecycle of the component.
      */
     fun createCoordinator(
         name: LifecycleCoordinatorName,
@@ -37,6 +38,7 @@ interface LifecycleCoordinatorFactory {
      *
      * @param name The name of this coordinator.
      * @param handler The event handler for the component that processes lifecycle events. See [LifecycleEventHandler]
+     * @return a new [LifecycleCoordinator] to manage the lifecycle of the component.
      */
     fun createCoordinator(name: LifecycleCoordinatorName, handler: LifecycleEventHandler): LifecycleCoordinator {
         return createCoordinator(name, DEFAULT_BATCH_SIZE, null, handler)
@@ -50,6 +52,7 @@ interface LifecycleCoordinatorFactory {
      *                            These dependencies will be stopped/started alongside this component.  Note that
      *                            the component for this coordinator should also be a static singleton component.
      * @param handler The event handler for the component that processes lifecycle events. See [LifecycleEventHandler]
+     * @return a new [LifecycleCoordinator] to manage the lifecycle of the component.
      */
     fun createCoordinator(
         name: LifecycleCoordinatorName,
@@ -71,6 +74,7 @@ interface LifecycleCoordinatorFactory {
  *
  * @param handler The event handler for this component that processes lifecycle events. See
  *                [LifecycleEventHandler] for more detail on the event handler.
+ * @return a new [LifecycleCoordinator] to manage the lifecycle of the component.
  */
 inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
     handler: LifecycleEventHandler
@@ -92,6 +96,7 @@ inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
  *                            the component for this coordinator should also be a static singleton component.
  * @param handler The event handler for this component that processes lifecycle events. See
  *                [LifecycleEventHandler] for more detail on the event handler.
+ * @return a new [LifecycleCoordinator] to manage the lifecycle of the component.
  */
 inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
     dependentComponents: DependentComponents,

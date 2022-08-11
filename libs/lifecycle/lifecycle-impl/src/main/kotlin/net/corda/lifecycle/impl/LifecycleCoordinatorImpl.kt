@@ -37,6 +37,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * @param name The name of the component for this lifecycle coordinator.
  * @param batchSize max number of events processed in a single [processEvents] call.
+ * @param dependentComponents A set of static singleton component dependencies this coordinator will track.
+ *                            These dependencies will be stopped/started alongside this component.  Note that
+ *                            the component for this coordinator should also be a static singleton component.
  * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
  * @param lifecycleEventHandler The user event handler for lifecycle events.
  */
