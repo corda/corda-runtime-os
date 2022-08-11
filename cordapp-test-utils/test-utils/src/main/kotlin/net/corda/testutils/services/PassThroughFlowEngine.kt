@@ -6,11 +6,11 @@ import net.corda.v5.base.types.MemberX500Name
 import java.time.Duration
 import java.util.*
 
-class PassThroughFlowEngine(private val x500: MemberX500Name) : FlowEngine {
+class PassThroughFlowEngine(private val member: MemberX500Name) : FlowEngine {
     override val flowId: UUID
         get() = TODO()
     override val virtualNodeName: MemberX500Name
-        get() = x500
+        get() = member
 
     override fun sleep(duration: Duration) = TODO()
 

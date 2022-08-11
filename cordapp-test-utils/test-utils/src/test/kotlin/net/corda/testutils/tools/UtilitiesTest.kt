@@ -33,11 +33,11 @@ class UtilitiesTest {
 
     @Test
     fun `should extend MemberX500 names with something that returns a unique db-friendly string back`() {
-        // Given an x500
-        val x500 = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+        // Given a member
+        val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
 
         // When we turn it into a db-friendly name
-        val name = x500.sandboxName
+        val name = member.sandboxName
 
         // Then it should be something readable and unique
         assertThat(name, `is`("CN_IRunCorDapps_OU_Application_O_R3_L_London_C_GB"))

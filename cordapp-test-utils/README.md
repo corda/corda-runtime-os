@@ -21,9 +21,10 @@ the `CPI_HASH`).
 
 ```kotlin
         val corda = CordaMock()
-        corda.upload(x500, HelloFlow::class.java)
+        val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+        corda.upload(member, HelloFlow::class.java)
 
-        val response = corda.invoke(x500,
+        val response = corda.invoke(member,
             RPCRequestDataMock("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
         )
 ```
@@ -86,7 +87,7 @@ independently in conjunction with the CordaMock's instance-upload capability.
 
 ```kotlin
 responder.whenever(CountRequest(7), listOf(CountResponse(1, 2, 3, 4, 5, 6, 7)))
-cordaMock.upload(x500, "count-protocol", responder)
+cordaMock.upload(member, "count-protocol", responder)
 ```
 
 ## Standalone tools and services

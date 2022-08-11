@@ -1,11 +1,11 @@
 package net.corda.testutils
 
-import net.corda.testutils.internal.BaseFiberMock
+import net.corda.testutils.internal.BaseFiberFake
 import net.corda.testutils.internal.BaseFlowFactory
-import net.corda.testutils.internal.FiberMock
+import net.corda.testutils.internal.FiberFake
 import net.corda.testutils.internal.FlowFactory
 import net.corda.testutils.internal.FlowServicesInjector
-import net.corda.testutils.internal.SensibleServicesInjector
+import net.corda.testutils.internal.DefaultServicesInjector
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.CordaFlowChecker
 import net.corda.testutils.tools.FlowChecker
@@ -35,8 +35,8 @@ import net.corda.v5.base.types.MemberX500Name
  */
 class CordaMock(
     private val flowChecker: FlowChecker = CordaFlowChecker(),
-    private val fiberMock: FiberMock = BaseFiberMock(),
-    private val injector: FlowServicesInjector = SensibleServicesInjector()
+    private val fiberFake: FiberFake = BaseFiberFake(),
+    private val injector: FlowServicesInjector = DefaultServicesInjector()
 ) {
 
     private val flowFactory: FlowFactory = BaseFlowFactory()
@@ -45,22 +45,22 @@ class CordaMock(
      * Registers a flow class against a given member with the CordaMock. Flow classes "uploaded" here will be checked
      * for validity. Responder flows will also be registered with the "fiber".
      *
-     * @x500 The member for whom this flow will be registered.
+     * @member The member for whom this flow will be registered.
      * @flowClass The flow to register. Must be an `RPCStartableFlow` or a `ResponderFlow`.
      */
-    fun upload(x500: MemberX500Name, flowClass: Class<out Flow>) {
+    fun upload(member: MemberX500Name, flowClass: Class<out Flow>) {
         flowChecker.check(flowClass)
-        registerAnyResponderWithFiber(x500, flowClass)
+        registerAnyResponderWithFiber(member, flowClass)
     }
 
     private fun registerAnyResponderWithFiber(
-        x500: MemberX500Name,
+        member: MemberX500Name,
         flowClass: Class<out Flow>
     ) {
         val protocolIfResponder = flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
         if (protocolIfResponder != null) {
             val responderFlowClass = castInitiatingFlowToResponder(flowClass)
-            fiberMock.registerResponderClass(x500, protocolIfResponder, responderFlowClass)
+            fiberFake.registerResponderClass(member, protocolIfResponder, responderFlowClass)
         }
     }
 
@@ -74,7 +74,8 @@ class CordaMock(
      * Calls the flow with the given request. Note that this call happens on the calling thread, which will wait until
      * the flow has completed before returning the response.
      *
-     * @x500 the name of the initating node (not the responder(s), whose x500 names should be parsed from input data)
+     * @initiator the holding identity of the initating node (not the responder(s), whose identities should be
+     * parsed from input data)
      * @input the data to input to the flow
      *
      * @return the response from the flow
@@ -82,16 +83,16 @@ class CordaMock(
     fun invoke(initiator: MemberX500Name, input: RPCRequestDataMock): String {
         val flowClassName = input.flowClassName
         val flow = flowFactory.createInitiatingFlow(initiator, flowClassName)
-        injector.injectServices(flow, initiator, fiberMock, flowFactory)
+        injector.injectServices(flow, initiator, fiberFake, flowFactory)
         return flow.call(input.toRPCRequestData())
     }
 
     /**
      * Uploads a concrete instance of a responder flow.
      */
-    fun upload(x500: MemberX500Name, protocol: String, responder: ResponderFlow) {
-        fiberMock.registerResponderInstance(x500, protocol, responder)
+    fun upload(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow) {
+        fiberFake.registerResponderInstance(responder, protocol, responderFlow)
     }
 
-    fun getPersistenceServiceFor(x500: MemberX500Name): PersistenceService = fiberMock.getPersistenceService(x500)
+    fun getPersistenceServiceFor(member: MemberX500Name): PersistenceService = fiberFake.getPersistenceService(member)
 }

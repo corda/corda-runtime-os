@@ -13,7 +13,7 @@ import net.corda.v5.base.types.MemberX500Name
 /**
  * Injector for default services for the CordaMock.
  */
-class SensibleServicesInjector : FlowServicesInjector {
+class DefaultServicesInjector : FlowServicesInjector {
 
     /**
      * Injects sensible default services into the provided flow. Currently injects:<br>
@@ -25,42 +25,42 @@ class SensibleServicesInjector : FlowServicesInjector {
      * As with the real Corda, injected service properties must be marked with the @CordaInject annotation.
      *
      * @flow The flow to inject services into
-     * @x500 The name of the "virtual node"
+     * @member The name of the "virtual node"
      * @protocolLookUp The "fiber" through which flow messaging will look up peers
      * @flowFactory A factory for constructing flows
      */
     override fun injectServices(
         flow: Flow,
-        x500: MemberX500Name,
-        fiberMock: FiberMock,
+        member: MemberX500Name,
+        fiberFake: FiberFake,
         flowFactory: FlowFactory,
     ) {
         val flowClass = flow.javaClass
         flow.injectIfRequired(JsonMarshallingService::class.java,
             createJsonMarshallingService())
         flow.injectIfRequired(FlowEngine::class.java,
-            createFlowEngine(x500, fiberMock))
+            createFlowEngine(member, fiberFake))
         flow.injectIfRequired(FlowMessaging::class.java,
-            createFlowMessaging(x500, flowClass, fiberMock, flowFactory))
+            createFlowMessaging(member, flowClass, fiberFake, flowFactory))
         flow.injectIfRequired(
             PersistenceService::class.java,
-            createPersistenceService(x500, fiberMock))
+            createPersistenceService(member, fiberFake))
     }
 
-    private fun createPersistenceService(x500: MemberX500Name, fiberMock: FiberMock): PersistenceService  {
-        val persistence = DbPersistenceService(x500)
-        fiberMock.registerPersistenceService(x500, persistence)
+    private fun createPersistenceService(member: MemberX500Name, fiberFake: FiberFake): PersistenceService  {
+        val persistence = DbPersistenceService(member)
+        fiberFake.registerPersistenceService(member, persistence)
         return persistence
     }
 
     private fun createJsonMarshallingService() : JsonMarshallingService = SimpleJsonMarshallingService()
-    private fun createFlowEngine(x500: MemberX500Name, fiberMock: FiberMock): FlowEngine
-        = InjectingFlowEngine(x500, fiberMock)
+    private fun createFlowEngine(member: MemberX500Name, fiberFake: FiberFake): FlowEngine
+        = InjectingFlowEngine(member, fiberFake)
     private fun createFlowMessaging(
-        x500: MemberX500Name,
+        member: MemberX500Name,
         flowClass: Class<out Flow>,
-        fiberMock: FiberMock,
+        fiberFake: FiberFake,
         flowFactory: FlowFactory
-    ): FlowMessaging = ConcurrentFlowMessaging(x500, flowClass, fiberMock, this, flowFactory)
+    ): FlowMessaging = ConcurrentFlowMessaging(member, flowClass, fiberFake, this, flowFactory)
 }
 

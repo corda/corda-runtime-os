@@ -19,23 +19,25 @@ import org.hibernate.jpa.HibernatePersistenceProvider
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-class DbPersistenceService(x500 : MemberX500Name) : PersistenceService {
+class DbPersistenceService(member : MemberX500Name) : PersistenceService {
 
-    private val emf = createEntityManagerFactory(x500)
+    private val emf = createEntityManagerFactory(member)
     companion object {
-        fun createEntityManagerFactory(x500 : MemberX500Name): EntityManagerFactory {
-            return HibernatePersistenceProvider()
+        fun createEntityManagerFactory(member : MemberX500Name): EntityManagerFactory {
+            val emf = HibernatePersistenceProvider()
                 .createContainerEntityManagerFactory(
                     JpaPersistenceUnitInfo(),
                     mapOf(
                         JPA_JDBC_DRIVER to "org.hsqldb.jdbcDriver",
-                        JPA_JDBC_URL to "jdbc:hsqldb:mem:${x500.sandboxName}",
+                        JPA_JDBC_URL to "jdbc:hsqldb:mem:${member.sandboxName};shutdown=true",
                         JPA_JDBC_USER to "admin",
                         JPA_JDBC_PASSWORD to "",
                         DIALECT to HSQLDialect::class.java.name,
                         HBM2DDL_AUTO to "create",
                     )
                 )
+            Runtime.getRuntime().addShutdownHook(Thread { if (emf.isOpen) { emf.close() }})
+            return emf
         }
     }
 
@@ -126,6 +128,7 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
         } else {
             t.rollback()
         }
+        em.close()
     }
 }
 
@@ -135,5 +138,7 @@ inline fun <R> EntityManagerFactory.guard(block: (EntityManager) -> R): R {
         block(em)
     } catch (e: Exception) {
         throw CordaPersistenceException(e.message ?: "Error in persistence", e)
+    } finally {
+        em.close()
     }
 }

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
-class BaseFiberMockTest {
+class BaseFiberFakeTest {
 
     private val memberA = MemberX500Name.parse("CN=CorDapperA, OU=Application, O=R3, L=London, C=GB")
     private val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
@@ -19,7 +19,7 @@ class BaseFiberMockTest {
     @Test
     fun `should look up concrete implementations for a given protocol and a given party`() {
         // Given a fiber with a concrete implementation registered for a protocol
-        val fiber = BaseFiberMock()
+        val fiber = BaseFiberFake()
         val flow = Flow1()
         fiber.registerResponderInstance(memberA, "protocol-1", flow)
 
@@ -33,7 +33,7 @@ class BaseFiberMockTest {
     @Test
     fun `should look up the matching flow class for a given protocol and a given party`() {
         // Given a fiber and two nodes with some shared flow protocol
-        val fiber = BaseFiberMock()
+        val fiber = BaseFiberFake()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderClass(memberA, "protocol-2", Flow2::class.java)
         fiber.registerResponderClass(memberB, "protocol-1", Flow3InitBy1::class.java)
@@ -49,7 +49,7 @@ class BaseFiberMockTest {
     @Test
     fun `should prevent us from uploading a responder twice for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = BaseFiberMock()
+        val fiber = BaseFiberFake()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-1", Flow2())
 
@@ -73,7 +73,7 @@ class BaseFiberMockTest {
     @Test
     fun `should tell us if it cant find a flow for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = BaseFiberMock()
+        val fiber = BaseFiberFake()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-2", Flow2())
 
@@ -88,7 +88,7 @@ class BaseFiberMockTest {
 
     @Test
     fun `should allow us to register and retrieve a persistence service`() {
-        val fiber = BaseFiberMock()
+        val fiber = BaseFiberFake()
         val persistence = mock<PersistenceService>()
         fiber.registerPersistenceService(memberA, persistence)
         assertThat(fiber.getPersistenceService(memberA), `is`(persistence))

@@ -25,8 +25,8 @@ import java.util.*
  */
 class InjectingFlowEngine(
     override val virtualNodeName: MemberX500Name,
-    private val fiberMock: FiberMock,
-    private val injector: FlowServicesInjector = SensibleServicesInjector(),
+    private val fiberFake: FiberFake,
+    private val injector: FlowServicesInjector = DefaultServicesInjector(),
     private val flowChecker: FlowChecker = CordaFlowChecker()
 ) : FlowEngine {
     override val flowId: UUID
@@ -38,7 +38,7 @@ class InjectingFlowEngine(
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         flowChecker.check(subFlow.javaClass)
-        injector.injectServices(subFlow, virtualNodeName, fiberMock)
+        injector.injectServices(subFlow, virtualNodeName, fiberFake)
         return subFlow.call()
     }
 
