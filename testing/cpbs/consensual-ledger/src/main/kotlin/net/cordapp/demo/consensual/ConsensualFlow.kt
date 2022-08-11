@@ -8,6 +8,12 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.ledger.consensual.ConsensualState
+import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import java.security.KeyPairGenerator
+import java.time.Instant
 
 /**
  * Example consensual flow. Currently, does almost nothing other than verify that
@@ -18,6 +24,13 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 class ConsensualFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
     data class ResultMessage(val text: String)
+
+    class TestConsensualState(
+        val testField: String,
+        override val participants: List<Party>
+    ) : ConsensualState {
+        override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
+    }
 
     private companion object {
         val log = contextLogger()
@@ -36,10 +49,28 @@ class ConsensualFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
-            log.info("Consensual state demo. Inputs: $inputs")
-            log.info("flowEngine: $flowEngine")
-            val resultMessage = ResultMessage(text = consensualLedgerService.getTransactionBuilder().toString())
+            val kpg = KeyPairGenerator.getInstance("RSA")
+            kpg.initialize(512) // Shortest possible to not slow down tests.
+            val testPublicKey = kpg.genKeyPair().public
+
+            val testConsensualState =
+                TestConsensualState(
+                    "test",
+                    listOf(
+                        PartyImpl(
+                            testMemberX500Name,
+                            testPublicKey
+                        )
+                    )
+                )
+
+            val txBuilder = consensualLedgerService.getTransactionBuilder()
+            val signedTransaction = txBuilder
+                .withTimestamp(Instant.now())
+                .withState(testConsensualState)
+                .signInitial(testPublicKey)
+
+            val resultMessage = ResultMessage(text = signedTransaction.toString())
             log.info("Success! Response: $resultMessage")
             return jsonMarshallingService.format(resultMessage)
         } catch (e: Exception) {

@@ -34,6 +34,10 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.ledger.consensual.ConsensualState
+import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
@@ -41,6 +45,9 @@ import org.osgi.framework.Bundle
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.KeyPairGenerator
+import java.security.PublicKey
+import java.time.Instant
 
 //TODO(Deduplicate with net.corda.internal.serialization.amqp.testutils and with net.corda.ledger.consensual.MockFlowFiberService)
 
@@ -129,6 +136,16 @@ class MockFlowFiberService @Activate constructor(
 @Suppress("FunctionName")
 class ConsensualLedgerServiceTest {
 
+    private lateinit var testPublicKey: PublicKey
+    private lateinit var testConsensualState: ConsensualState
+
+    class TestConsensualState(
+        val testField: String,
+        override val participants: List<Party>
+    ) : ConsensualState {
+        override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
+    }
+
     @InjectService(timeout = 1000)
     lateinit var consensualLedgerService: ConsensualLedgerService
 
@@ -136,5 +153,27 @@ class ConsensualLedgerServiceTest {
     fun `getTransactionBuilder should return a Transaction Builder`() {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         assertThat(transactionBuilder).isInstanceOf(ConsensualTransactionBuilder::class.java)
+    }
+
+    @Test
+    fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
+
+        val kpg = KeyPairGenerator.getInstance("RSA")
+        kpg.initialize(512) // Shortest possible to not slow down tests.
+        testPublicKey = kpg.genKeyPair().public
+
+        // val testMemberX500Name = MemberX500Name("R3", "London", "GB")
+
+        testConsensualState = TestConsensualState(
+            "test",
+            listOf(mock(Party::class.java)) // was: listOf(PartyImpl(testMemberX500Name, testPublicKey))
+        )
+
+        val transactionBuilder = consensualLedgerService.getTransactionBuilder()
+        val signedTransaction = transactionBuilder
+            .withTimestamp(Instant.now())
+            .withState(testConsensualState)
+            .signInitial(testPublicKey)
+        assertThat(signedTransaction).isInstanceOf(ConsensualSignedTransaction::class.java)
     }
 }
