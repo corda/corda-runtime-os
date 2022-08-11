@@ -1,5 +1,9 @@
 group 'net.corda.cli.deployment'
 
+plugins {
+    id 'corda.common-publishing'
+}
+
 apply plugin: 'java'
 
 configurations {
@@ -26,7 +30,7 @@ tasks.register('cliDistZip') {
     }
 }
 
-task myZip(type: Zip) {
+task cliInstallArchive(type: Zip) {
     dependsOn tasks.named("cliDistZip")
     from "$buildDir/cli"
     include '*'
@@ -35,10 +39,8 @@ task myZip(type: Zip) {
     destinationDir(file("$buildDir/zip"))
 }
 
-
-
 artifacts {
-    myZip
+    cliInstallArchive
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
@@ -84,5 +86,15 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "corda-cli-installer"
+            groupId project.group
+            artifact cliInstallArchive
+        }
     }
 }
