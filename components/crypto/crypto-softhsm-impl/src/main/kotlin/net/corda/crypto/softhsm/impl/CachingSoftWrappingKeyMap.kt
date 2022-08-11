@@ -2,6 +2,7 @@ package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.WrappingKeyStore
@@ -15,10 +16,10 @@ class CachingSoftWrappingKeyMap(
     private val store: WrappingKeyStore,
     private val master: WrappingKey
 ) : SoftWrappingKeyMap {
-    private val cache: Cache<String, WrappingKey> = Caffeine.newBuilder()
-        .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
-        .maximumSize(config.maximumSize)
-        .build()
+    private val cache: Cache<String, WrappingKey> = CacheFactoryImpl().build(
+        Caffeine.newBuilder()
+            .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
+            .maximumSize(config.maximumSize))
 
     override fun getWrappingKey(alias: String): WrappingKey = cache.get(alias) {
         val wrappingKeyInfo = store.findWrappingKey(alias)
