@@ -1,8 +1,9 @@
 {{- if .Values.bootstrap.db.enabled }}
+{{- $_ := set . "job" "db" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: corda-setup-db
+  name: {{ include "corda.jobName" . }}
   labels:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:
