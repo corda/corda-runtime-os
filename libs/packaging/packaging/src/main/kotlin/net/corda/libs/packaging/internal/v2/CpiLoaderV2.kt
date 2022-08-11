@@ -5,7 +5,7 @@ import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader
 import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.libs.packaging.certSummaryHash
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
@@ -52,7 +52,7 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                             ?: throw PackagingException("CPI name missing from manifest"),
                         mainAttributes.getValue(PackagingConstants.CPI_VERSION_ATTRIBUTE)
                             ?: throw PackagingException("CPI version missing from manifest"),
-                        groupPolicy.entry.certificates.asSequence().certSummaryHash()
+                        groupPolicy.entry.certificates.asSequence().signerSummaryHash()
                     ),
                     fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
                     cpksMetadata = cpks.map { it.metadata },
