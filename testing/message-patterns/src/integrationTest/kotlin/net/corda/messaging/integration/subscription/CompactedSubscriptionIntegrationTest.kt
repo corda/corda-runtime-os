@@ -114,7 +114,7 @@ class CompactedSubscriptionIntegrationTest {
         assertTrue(onNextLatch.await(5, TimeUnit.SECONDS))
         assertThat(snapshotLatch.count).isEqualTo(0)
 
-        compactedSub.stop()
+        compactedSub.close()
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
         }
@@ -162,7 +162,7 @@ class CompactedSubscriptionIntegrationTest {
         assertThat(onNextLatch.count).isEqualTo(5)
 
         publisher.close()
-        compactedSub.stop()
+        compactedSub.close()
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
         }

@@ -1,9 +1,9 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,6 +15,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class EventLogSubscriptionIntegrationTest {
@@ -114,7 +117,7 @@ class EventLogSubscriptionIntegrationTest {
         }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS))
-        eventLogSub.stop()
+        eventLogSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
@@ -149,23 +152,22 @@ class EventLogSubscriptionIntegrationTest {
         futures[0].get()
 
         val latch = CountDownLatch(30)
-        val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2),
-            TestEventLogProcessor(latch),
-            TEST_CONFIG,
-            null
-        )
-
         val secondSubConfig = TEST_CONFIG.withValue(
             INSTANCE_ID,
             ConfigValueFactory.fromAnyRef(2)
         )
-        val eventLogSub2 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2),
-            TestEventLogProcessor(latch),
-            secondSubConfig,
-            null
-        )
+
+        fun createSub(processor: TestEventLogProcessor, config: SmartConfig): Subscription<String, DemoRecord> {
+            return subscriptionFactory.createEventLogSubscription(
+                SubscriptionConfig("$TOPIC2-group", TOPIC2),
+                processor,
+                config,
+                null
+            )
+        }
+
+        val eventLogSub1 = createSub(TestEventLogProcessor(latch), TEST_CONFIG)
+        val eventLogSub2 = createSub(TestEventLogProcessor(latch), secondSubConfig)
 
         coordinator.followStatusChangesByName(setOf(eventLogSub1.subscriptionName, eventLogSub2.subscriptionName))
 
@@ -177,16 +179,19 @@ class EventLogSubscriptionIntegrationTest {
             assertThat(latch.count).isEqualTo(20)
         }
 
-        eventLogSub1.stop()
-        eventLogSub2.stop()
+        eventLogSub1.close()
+        eventLogSub2.close()
 
         publisher.publish(getDemoRecords(TOPIC2, 10, 2)).forEach { it.get() }
 
-        eventLogSub1.start()
-        eventLogSub2.start()
+        val eventLogSub1part2 = createSub(TestEventLogProcessor(latch), TEST_CONFIG)
+        val eventLogSub2part2 = createSub(TestEventLogProcessor(latch), secondSubConfig)
+
+        eventLogSub1part2.start()
+        eventLogSub2part2.start()
         assertTrue(latch.await(40, TimeUnit.SECONDS))
-        eventLogSub1.stop()
-        eventLogSub2.stop()
+        eventLogSub1part2.close()
+        eventLogSub2part2.close()
         publisher.close()
     }
 

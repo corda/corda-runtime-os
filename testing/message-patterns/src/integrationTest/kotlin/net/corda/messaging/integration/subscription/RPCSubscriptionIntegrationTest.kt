@@ -1,14 +1,9 @@
 package net.corda.messaging.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -156,7 +151,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator1.status)
@@ -219,7 +214,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
     }
 
     @Test
@@ -262,7 +257,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
     }
 
     @Test
@@ -304,7 +299,7 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
-        rpcSub.stop()
+        rpcSub.close()
     }
 
     @Test
@@ -345,6 +340,6 @@ class RPCSubscriptionIntegrationTest {
                 future.getOrThrow()
             }
         }
-        rpcSub.stop()
+        rpcSub.close()
     }
 }

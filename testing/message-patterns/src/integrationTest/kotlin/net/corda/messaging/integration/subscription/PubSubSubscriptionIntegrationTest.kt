@@ -108,7 +108,7 @@ class PubSubSubscriptionIntegrationTest {
         }
 
         publisher.close()
-        pubsubSub.stop()
+        pubsubSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
@@ -175,7 +175,7 @@ class PubSubSubscriptionIntegrationTest {
         latch.await()
 
         publisher.close()
-        pubsubSub.stop()
+        pubsubSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)

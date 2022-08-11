@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription.consumer
 
+import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -23,7 +24,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override val stateConsumer: CordaConsumer<K, S>,
     partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
-) : StateAndEventConsumer<K, S, E>, AutoCloseable {
+) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
@@ -77,6 +78,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         if (syncPartitions && partitionsSynced.isNotEmpty()) {
             resumeConsumerAndExecuteListener(partitionsSynced)
         }
+    }
+
+    override fun start() {
+        // Nothing to do
     }
 
     override fun close() {
