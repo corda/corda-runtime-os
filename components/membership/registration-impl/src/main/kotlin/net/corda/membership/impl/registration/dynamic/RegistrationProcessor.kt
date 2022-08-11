@@ -70,7 +70,7 @@ class RegistrationProcessor(
             cryptoOpsClient,
             cordaAvroSerializationFactory,
         ),
-        DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient),
+        DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient,membershipQueryClient),
 
         ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(clock, cordaAvroSerializationFactory,membershipGroupReaderProvider),
         VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient,membershipGroupReaderProvider),
