@@ -11,12 +11,12 @@ import java.security.PublicKey
 
 class ConsensualSignedTransactionImpl(
     val wireTransaction: WireTransaction,
-    override val sigs: List<DigitalSignatureAndMetadata>
+    override val signatures: List<DigitalSignatureAndMetadata>
     ): ConsensualSignedTransaction
 {
 
     init {
-        require(sigs.isNotEmpty()) {
+        require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
     }
@@ -28,15 +28,15 @@ class ConsensualSignedTransactionImpl(
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
 
     /** Returns the same transaction but with an additional (unchecked) signature. */
-    override fun withAdditionalSignature(sig: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(wireTransaction, sigs + sig)
+    override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
+        ConsensualSignedTransactionImpl(wireTransaction, signatures + signature)
 
     /** Returns the same transaction but with an additional (unchecked) signatures. */
-    override fun withAdditionalSignatures(sigList: Iterable<DigitalSignatureAndMetadata>): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(wireTransaction, sigs + sigList)
+    override fun addSignatures(signatures: Iterable<DigitalSignatureAndMetadata>): ConsensualSignedTransaction =
+        ConsensualSignedTransactionImpl(wireTransaction, this.signatures + signatures)
 
-    override fun missingSigningKeys(serializer: SerializationService): Set<PublicKey> {
-        val alreadySigned = sigs.map{it.by}.toSet()
+    override fun getMissingSigningKeys(serializer: SerializationService): Set<PublicKey> {
+        val alreadySigned = signatures.map{it.by}.toSet()
         val requiredSigningKeys = this.toLedgerTransaction(serializer).requiredSigningKeys
         return requiredSigningKeys.filter { !it.isFulfilledBy(alreadySigned) }.toSet()
     }
