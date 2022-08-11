@@ -9,7 +9,7 @@ Write-Output "copying files and plugins"
 Copy-Item -Path ".\*" -Destination $cliHomeDir -Recurse
 
 Write-Output "Creating corda-cli Script"
-$cliCommand = "java -Dpf4j.pluginsDir=$cliHomeDir\plugins -jar corda-cli.jar %*"
+$cliCommand = "$ENV:JAVA_HOME\bin\java -Dpf4j.pluginsDir=$cliHomeDir\plugins -jar corda-cli.jar %*"
 New-Item "$cliHomeDir\corda-cli.cmd" -ItemType File -Value $cliCommand
 
 if($addToPath) {

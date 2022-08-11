@@ -7,7 +7,7 @@ configurations {
 }
 
 dependencies {
-    cliHostDist 'net.corda.cli.host:corda-cli:0.0.1-beta-+'
+    cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }
 
 tasks.register('cliDistZip') {
@@ -21,7 +21,7 @@ tasks.register('cliDistZip') {
         into "$buildDir/cli/plugins"
     }
     copy {
-        from "$projectDir/buildsrc"
+        from "$projectDir/installScripts"
         into "$buildDir/cli"
     }
 }
