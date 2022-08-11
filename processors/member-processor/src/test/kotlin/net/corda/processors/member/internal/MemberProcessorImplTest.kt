@@ -20,7 +20,7 @@ class MemberProcessorImplTest {
 
     private val coordinator: LifecycleCoordinator = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
+        on { createCoordinator(any(), any(), any()) } doReturn coordinator
     }
 
     @BeforeEach
@@ -43,7 +43,7 @@ class MemberProcessorImplTest {
             mock(),
         )
 
-        verify(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        verify(lifecycleCoordinatorFactory).createCoordinator(any(), any(), any())
     }
 
     @Test
