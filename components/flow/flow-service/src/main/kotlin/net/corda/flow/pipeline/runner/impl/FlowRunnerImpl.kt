@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.runner.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
@@ -12,6 +13,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -38,8 +40,9 @@ class FlowRunnerImpl @Activate constructor(
         return when (val receivedEvent = context.inputEvent.payload) {
             is StartFlow -> startFlow(context, receivedEvent)
             is SessionEvent -> {
-                if (receivedEvent.payload is SessionInit) {
-                    startInitiatedFlow(context)
+                val payload = receivedEvent.payload
+                if (payload is SessionInit) {
+                    startInitiatedFlow(context, payload)
                 } else {
                     resumeFlow(context, flowContinuation)
                 }
@@ -55,30 +58,41 @@ class FlowRunnerImpl @Activate constructor(
         return startFlow(
             context,
             createFlow = { sgc -> flowFactory.createFlow(startFlowEvent, sgc) },
-            updateFlowStackItem = { }
+            updateFlowStackItem = { },
+            contextUserProperties = emptyKeyValuePairList(),
+            contextPlatformProperties = startFlowEvent.startContext.contextPlatformProperties
         )
     }
 
     private fun startInitiatedFlow(
-        context: FlowEventContext<Any>
+        context: FlowEventContext<Any>,
+        sessionInitEvent: SessionInit
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
         return startFlow(
             context,
             createFlow = { sgc -> flowFactory.createInitiatedFlow(flowStartContext, sgc) },
-            updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) }
+            updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) },
+            contextUserProperties = sessionInitEvent.contextUserProperties,
+            contextPlatformProperties = sessionInitEvent.contextPlatformProperties
         )
     }
 
     private fun startFlow(
         context: FlowEventContext<Any>,
         createFlow: (SandboxGroupContext) -> FlowLogicAndArgs,
-        updateFlowStackItem: (FlowStackItem) -> Unit
+        updateFlowStackItem: (FlowStackItem) -> Unit,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList
     ): FiberFuture {
         val checkpoint = context.checkpoint
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         val flow = createFlow(fiberContext.sandboxGroupContext)
-        val stackItem = fiberContext.flowStackService.push(flow.logic)
+        val stackItem = fiberContext.flowStackService.pushWithContext(
+            flow = flow.logic,
+            contextUserProperties = contextUserProperties,
+            contextPlatformProperties = contextPlatformProperties,
+        )
         updateFlowStackItem(stackItem)
         fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)
         return flowFiberFactory.createAndStartFlowFiber(fiberContext, checkpoint.flowId, flow)
