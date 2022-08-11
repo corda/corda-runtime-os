@@ -1,10 +1,9 @@
-group 'net.corda.cli.deployment'
-
 plugins {
     id 'corda.common-publishing'
+    id 'java'
 }
 
-apply plugin: 'java'
+group 'net.corda.cli.deployment'
 
 configurations {
     cliHostDist
@@ -14,7 +13,7 @@ dependencies {
     cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }
 
-tasks.register('cliDistZip') {
+tasks.register('copyCliFiles') {
     copy {
         from configurations.named('cliHostDist')
         into "$buildDir/cli"
@@ -31,10 +30,10 @@ tasks.register('cliDistZip') {
 }
 
 task cliInstallArchive(type: Zip) {
-    dependsOn tasks.named("cliDistZip")
+    dependsOn tasks.named('copyCliFiles')
     from "$buildDir/cli"
     include '*'
-    include '*/*' //to include contents of a folder present inside Reports directory
+    include '*/*'
     archiveName 'corda-cli-dist.zip'
     destinationDir(file("$buildDir/zip"))
 }
