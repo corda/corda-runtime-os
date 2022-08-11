@@ -32,8 +32,8 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
