@@ -56,9 +56,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
         private val logger = contextLogger()
 
-        const val REGISTRATION = "REGISTRATION"
-        const val SENDER = "SENDER"
-        const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val REGISTRATION = "REGISTRATION"
+        private const val SENDER = "SENDER"
+        private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
     override val targetInterface: Class<VirtualNodeMaintenanceRPCOps> = VirtualNodeMaintenanceRPCOps::class.java

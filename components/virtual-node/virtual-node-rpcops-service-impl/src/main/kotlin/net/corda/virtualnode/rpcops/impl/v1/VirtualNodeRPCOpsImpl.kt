@@ -70,9 +70,9 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
         val logger = contextLogger()
 
-        const val REGISTRATION = "REGISTRATION"
-        const val SENDER = "SENDER"
-        const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val REGISTRATION = "REGISTRATION"
+        private const val SENDER = "SENDER"
+        private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
     // Http RPC values
