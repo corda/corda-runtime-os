@@ -13,6 +13,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -42,7 +43,7 @@ class FlowPersistenceServiceImpl  @Activate constructor(
     @Reference(service = EntityProcessorFactory::class)
     private val flowEventProcessorFactory: EntityProcessorFactory
 ) : FlowPersistenceService {
-    private var configHandle: AutoCloseable? = null
+    private var configHandle: Resource? = null
     private var flowPersistenceProcessor: FlowPersistenceProcessor? = null
 
     companion object {
