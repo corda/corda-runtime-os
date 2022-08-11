@@ -3,6 +3,7 @@ package net.corda.flow.testing.tests
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
+import net.corda.flow.testing.context.initiateFlowMessageFor
 import net.corda.v5.application.flows.exceptions.FlowException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,10 +42,10 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     fun `Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_2))
         }
 
         `when` {
@@ -64,7 +65,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     fun `Calling 'send' on an invalid session fails and reports the exception to user code`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
@@ -76,7 +77,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         }
 
         then {
-            expectOutputForFlow(FLOW_ID1){
+            expectOutputForFlow(FLOW_ID1) {
                 hasPendingUserException()
                 wakeUpEvent()
             }
@@ -99,10 +100,10 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     fun `Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_2))
         }
 
         `when` {
@@ -140,10 +141,10 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     fun `Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+                .suspendsWith(initiateFlowMessageFor(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
