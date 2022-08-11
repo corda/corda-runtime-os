@@ -11,7 +11,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
 import net.corda.utilities.time.Clock
 
-internal class VerificationRequestHandler(
+internal class ProcessMemberVerificationRequestHandler(
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
@@ -22,8 +22,10 @@ internal class VerificationRequestHandler(
     override val commandType = ProcessMemberVerificationRequest::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
-        val mgm = command.source
         val member = command.destination
+        val mgm = command.source
+        val registrationId = command.verificationRequest.registrationId
+
         return RegistrationHandlerResult(
             null,
             listOf(
@@ -31,7 +33,7 @@ internal class VerificationRequestHandler(
                     member,
                     mgm,
                     VerificationResponse(
-                        command.verificationRequest.registrationId,
+                        registrationId,
                         KeyValuePairList(emptyList<KeyValuePair>())
                     )
                 )

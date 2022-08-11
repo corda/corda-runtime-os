@@ -23,7 +23,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.time.Instant
 
-class VerificationRequestHandlerTest {
+class ProcessMemberVerificationRequestHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
@@ -47,11 +47,11 @@ class VerificationRequestHandlerTest {
         on { createAvroSerializer<VerificationResponse>(any()) } doReturn responseSerializer
     }
 
-    private val verificationRequestHandler = VerificationRequestHandler(clock, cordaAvroSerializationFactory)
+    private val processMemberVerificationRequestHandler = ProcessMemberVerificationRequestHandler(clock, cordaAvroSerializationFactory)
 
     @Test
     fun `handler returns response message`() {
-        val result = verificationRequestHandler.invoke(
+        val result = processMemberVerificationRequestHandler.invoke(
             null,
             Record(
                 "dummyTopic",

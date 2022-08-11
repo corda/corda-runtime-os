@@ -10,6 +10,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -35,7 +37,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -88,6 +93,10 @@ class DynamicMemberRegistrationService @Activate constructor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -237,6 +246,19 @@ class DynamicMemberRegistrationService @Activate constructor(
                     // for the same member.
                     member.shortHash.value
                 )
+
+                membershipPersistenceClient.persistRegistrationRequest(
+                    viewOwningIdentity = member,
+                    registrationRequest = RegistrationRequest(
+                        status = RegistrationStatus.NEW,
+                        registrationId = registrationId.toString(),
+                        requester = member,
+                        memberContext = layeredPropertyMapFactory.createMap(memberContext.toMap()),
+                        publicKey = ByteBuffer.wrap(byteArrayOf()),
+                        signature = ByteBuffer.wrap(byteArrayOf()),
+                    )
+                )
+
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
@@ -245,7 +267,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
-            // YIFT: Persist request (1)
+
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 

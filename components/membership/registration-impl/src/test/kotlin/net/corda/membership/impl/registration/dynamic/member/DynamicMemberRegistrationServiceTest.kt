@@ -189,6 +189,8 @@ class DynamicMemberRegistrationServiceTest {
         keyEncodingService,
         serializationFactory,
         membershipGroupReaderProvider,
+        mock(),
+        mock(),
     )
 
     private val context = mapOf(

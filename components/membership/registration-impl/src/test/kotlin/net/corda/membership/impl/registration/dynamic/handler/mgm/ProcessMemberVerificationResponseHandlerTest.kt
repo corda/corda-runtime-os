@@ -22,7 +22,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
-class VerificationResponseHandlerTest {
+class ProcessMemberVerificationResponseHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
@@ -53,11 +53,15 @@ class VerificationResponseHandlerTest {
         } doReturn MembershipPersistenceResult.success()
     }
 
-    private val verificationResponseHandler = VerificationResponseHandler(membershipPersistenceClient)
+    private val processMemberVerificationResponseHandler = ProcessMemberVerificationResponseHandler(
+        membershipPersistenceClient,
+        mock(),
+        mock()
+    )
 
     @Test
     fun `handler returns approve member command`() {
-        val result = verificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        val result = processMemberVerificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
             mgm.toCorda(),
@@ -79,7 +83,7 @@ class VerificationResponseHandlerTest {
     @Test
     fun `exception is thrown when RegistrationState is null`() {
         assertThrows<MissingRegistrationStateException> {
-            verificationResponseHandler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+            processMemberVerificationResponseHandler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         }
     }
 }

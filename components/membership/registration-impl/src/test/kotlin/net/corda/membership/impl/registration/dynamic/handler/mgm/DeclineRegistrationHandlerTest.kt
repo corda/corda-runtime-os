@@ -44,7 +44,7 @@ class DeclineRegistrationHandlerTest {
         } doReturn MembershipPersistenceResult.success()
     }
 
-    private val handler = DeclineRegistrationHandler(membershipPersistenceClient)
+    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock())
 
     @Test
     fun `handler calls persistence client and returns no output states`() {

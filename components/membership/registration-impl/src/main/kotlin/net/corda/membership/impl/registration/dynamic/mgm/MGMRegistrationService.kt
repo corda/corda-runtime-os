@@ -66,9 +66,9 @@ import java.util.concurrent.TimeUnit
 @Component(service = [MemberRegistrationService::class])
 class MGMRegistrationService @Activate constructor(
     @Reference(service = PublisherFactory::class)
-    val publisherFactory: PublisherFactory,
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
-    val configurationReadService: ConfigurationReadService,
+    private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CryptoOpsClient::class)
@@ -76,9 +76,9 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory,
+    private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
-    val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = LayeredPropertyMapFactory::class)
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MemberRegistrationService {
