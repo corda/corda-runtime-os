@@ -2,6 +2,7 @@ package net.corda.cli.plugins.packaging
 
 import java.nio.file.Path
 import net.corda.cli.plugins.packaging.CreateCpbTest.Companion.CPB_SIGNER_NAME
+import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2_ALIAS
 import net.corda.cli.plugins.packaging.TestUtils.jarEntriesContentIsEqualInCpxs
 import net.corda.cli.plugins.packaging.TestUtils.jarEntriesExistInCpx
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,11 +32,11 @@ class SignCpbTest {
 
         const val SIG_NAME = CPB_SIGNER_NAME
         const val SIG_FILE_NAME = "META-INF/$SIG_NAME.SF"
-        const val SIG_BLOCK_FILE_NAME = "META-INF/$SIG_NAME.RSA"
+        const val SIG_BLOCK_FILE_NAME = "META-INF/$SIG_NAME.EC"
 
         const val SIG_NAME_2 = "CPB-SIG2"
         const val SIG_FILE_NAME_2 = "META-INF/$SIG_NAME_2.SF"
-        const val SIG_BLOCK_FILE_NAME_2 = "META-INF/$SIG_NAME_2.RSA"
+        const val SIG_BLOCK_FILE_NAME_2 = "META-INF/$SIG_NAME_2.EC"
 
         private val testKeyStore = Path.of(
             this::class.java.getResource("/signingkeys.pfx")?.toURI()
@@ -62,7 +63,7 @@ class SignCpbTest {
             "--file=$signedCpb",
             "--keystore=${testKeyStore}",
             "--storepass=keystore password",
-            "--key=signing key 2",
+            "--key=${SIGNING_KEY_2_ALIAS}",
             "--sig-file=$CPx_SIGNER_NAME"
         )
 
@@ -80,7 +81,7 @@ class SignCpbTest {
                     TestUtils.getSignatureJarEntries(signedCpb).map { it.name }).toSet()
 
         assertEquals(setOf(SIG_FILE_NAME, SIG_BLOCK_FILE_NAME), createdCpbSignatureRelatedFiles)
-        assertEquals(setOf("META-INF/$CPx_SIGNER_NAME.RSA", "META-INF/$CPx_SIGNER_NAME.SF"), signedCpbSignatureRelatedFiles)
+        assertEquals(setOf("META-INF/$CPx_SIGNER_NAME.EC", "META-INF/$CPx_SIGNER_NAME.SF"), signedCpbSignatureRelatedFiles)
 
         // check signature file contents are same
         assertTrue {
@@ -105,7 +106,7 @@ class SignCpbTest {
             }
 
             val signedSigBlockFile = signedCpbSignatureRelatedFiles.single {
-                it == "META-INF/$CPx_SIGNER_NAME.RSA"
+                it == "META-INF/$CPx_SIGNER_NAME.EC"
             }
 
             !jarEntriesContentIsEqualInCpxs(
@@ -125,7 +126,7 @@ class SignCpbTest {
             "--file=$signedCpb",
             "--keystore=${testKeyStore}",
             "--storepass=keystore password",
-            "--key=signing key 2",
+            "--key=${SIGNING_KEY_2_ALIAS}",
             "--sig-file=$SIG_NAME_2",
         )
 
@@ -187,7 +188,7 @@ class SignCpbTest {
             "--file=$signedCpb",
             "--keystore=${testKeyStore}",
             "--storepass=keystore password",
-            "--key=signing key 2"
+            "--key=${SIGNING_KEY_2_ALIAS}"
         )
 
         // Since sig file option is missing it will
@@ -197,7 +198,7 @@ class SignCpbTest {
                 signedCpb,
                 listOf(
                     "META-INF/SIGNING_.SF",
-                    "META-INF/SIGNING_.RSA",
+                    "META-INF/SIGNING_.EC",
                 )
             )
         )
