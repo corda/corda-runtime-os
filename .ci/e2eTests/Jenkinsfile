@@ -87,43 +87,43 @@ pipeline {
             }
         }
         stage('Deploy clusters') {
-            steps {
-               parallel {
-                   alice: {
-                      script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
-                      }
-                      sh '''
-                            export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                            helm install corda-alice ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=alice --set kafka.topicPrefix=alice -n $NAMESPACE --wait --timeout 600s
-                        '''
-                   }
-
-                   bob: {
-                      script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
-                      }
-                      sh '''
-                            export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                            helm install corda-bob ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=bob --set kafka.topicPrefix=bob -n $NAMESPACE --wait --timeout 600s
-                        '''
-                   }
-
-                   caroline: {
-                      script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
-                      }
-                      sh '''
-                            export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                            helm install corda-caroline ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=caroline --set kafka.topicPrefix=caroline -n $NAMESPACE --wait --timeout 600s
-                        '''
-                   }
+           parallel {
+               stage("Deploy Alice cluster") {
+                  script {
+                     env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
+                  }
+                  sh '''
+                        export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
+                        helm install corda-alice ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=alice --set kafka.topicPrefix=alice -n $NAMESPACE --wait --timeout 600s
+                    '''
                }
-            }
+
+               stage("Deploy Bob cluster") {
+                  script {
+                     env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
+                  }
+                  sh '''
+                        export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
+                        helm install corda-bob ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=bob --set kafka.topicPrefix=bob -n $NAMESPACE --wait --timeout 600s
+                    '''
+               }
+
+               stage("Deploy Caroline cluster") {
+                  script {
+                     env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
+                  }
+                  sh '''
+                        export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
+                        helm install corda-caroline ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=caroline --set kafka.topicPrefix=caroline -n $NAMESPACE --wait --timeout 600s
+                    '''
+               }
+           }
             post {
                 unsuccessful {
                     sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
                     archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
