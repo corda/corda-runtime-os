@@ -11,18 +11,19 @@ import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.concurrent.ConcurrentHashMap
 
 class LifecycleTest<T : Lifecycle>(
     initializer: LifecycleTest<T>.() -> T
 ) {
 
-    private val dependencies: MutableSet<LifecycleCoordinatorName> = mutableSetOf()
+    private val dependencies = ConcurrentHashMap.newKeySet<LifecycleCoordinatorName>()
     private val coordinatorToConfigKeys = mutableMapOf<LifecycleCoordinator, Set<String>>()
     private val configCoordinator = argumentCaptor<LifecycleCoordinator>()
     private val configKeys = argumentCaptor<Set<String>>()
 
     /**
-     * This is the coordinator factory which the component under test can use to create it's coordinator.
+     * This is the coordinator factory which the component under test can use to create its coordinator.
      *
      * This will replace the OSGi injected factory.
      */

@@ -4,7 +4,17 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 
 fun mutableKeyValuePairList() = KeyValuePairList(mutableListOf())
+
 fun emptyKeyValuePairList() = KeyValuePairList(emptyList())
+
+/**
+ * Creates a mutable [KeyValuePairList] (this is a [KeyValuePairList] backed by a mutable list) out of another
+ * [KeyValuePairList]. This method can be used to create a new [KeyValuePairList] with a new backing list which contains
+ * copies of the list passed to it.
+ */
+fun mutableKeyValuePairListOf(initialProperties: KeyValuePairList) = mutableKeyValuePairList().apply {
+    items.addAll(initialProperties.items)
+}
 
 /**
  * Creates a [KeyValueStore] from a variable number of pairs of strings.
@@ -51,6 +61,12 @@ class KeyValueStore(private val backingList: KeyValuePairList = mutableKeyValueP
     operator fun set(key: String, value: String) = backingList.setValue(key, value)
     fun put(key: String, value: String) = set(key, value)
     operator fun get(key: String) = backingList.items.find { it.key == key }?.value
+
+    operator fun plusAssign(toAdd: KeyValueStore) {
+        toAdd.avro.items.forEach { keyValuePair ->
+            this[keyValuePair.key] = keyValuePair.value
+        }
+    }
 
     /**
      * Importantly, this property exposes the mutable Avro array directly, no conversion is carried out.

@@ -18,12 +18,15 @@ const val RPC_FLOW_STATUS_FAILED = "FAILED"
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
-fun startRpcFlow(holdingId: String, args: RpcSmokeTestInput, expectedCode: Int = 200): String {
+fun startRpcFlow(
+    holdingId: String,
+    args: RpcSmokeTestInput,
+    expectedCode: Int = 200,
+    requestId: String = UUID.randomUUID().toString()
+): String {
 
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-        val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
             command {
@@ -70,7 +73,7 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
         ObjectMapper().readValue(
             assertWithRetry {
                 command { flowStatus(holdingId, requestId) }
-                timeout(Duration.ofSeconds(20))
+                timeout(Duration.ofSeconds(90))
                 condition {
                     it.code == 200 &&
                             (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||

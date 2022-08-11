@@ -5,7 +5,7 @@ import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.libs.packaging.certSummaryHash
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
@@ -85,7 +85,7 @@ internal object CpiLoaderV1 : CpiLoader {
             cpiId = CpiIdentifier(
                 name ?: throw PackagingException("CPI name missing from manifest"),
                 version ?: throw PackagingException("CPI version missing from manifest"),
-                signatureCollector.certificates.asSequence().certSummaryHash()),
+                signatureCollector.certificates.asSequence().signerSummaryHash()),
             fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
             cpksMetadata = cpkMetadata,
             groupPolicy = groupPolicy,

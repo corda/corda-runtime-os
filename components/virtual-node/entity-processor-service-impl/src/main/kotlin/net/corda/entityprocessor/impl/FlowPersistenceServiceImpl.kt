@@ -49,20 +49,19 @@ class FlowPersistenceServiceImpl  @Activate constructor(
         private val logger = contextLogger()
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowPersistenceService>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::sandboxGroupContextComponent,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
     )
+    private val coordinator = coordinatorFactory.createCoordinator<FlowPersistenceService>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.debug { "FlowPersistenceService received: $event" }
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting flow persistence component." }
-                dependentComponents.registerAndStartAll(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -87,7 +86,6 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             is StopEvent -> {
                 flowPersistenceProcessor?.stop()
                 logger.debug { "Stopping FlowPersistenceProcessor." }
-                dependentComponents.stopAll()
             }
         }
     }

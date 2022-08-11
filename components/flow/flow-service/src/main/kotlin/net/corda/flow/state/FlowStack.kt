@@ -1,5 +1,6 @@
 package net.corda.flow.state
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
@@ -10,6 +11,23 @@ import net.corda.v5.application.flows.Flow
 interface FlowStack : NonSerializable {
 
     val size: Int
+
+    /**
+     * Pushes a flow onto the stack with some initial context properties. These context properties form an initial set
+     * for this stack item and thus behave just like any other context properties added at a particular point in the
+     * context stack. Initial context properties for a Flow can be added by calling this method for the first item
+     * added to its [FlowStack].
+     *
+     * @param flow the flow to be pushed onto the stack
+     * @param contextUserProperties the user context properties to add to this stack item
+     * @param contextPlatformProperties the platform context properties to add to this stack item
+     * @return the [FlowStackItem] created
+     */
+    fun pushWithContext(
+        flow: Flow,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList,
+    ): FlowStackItem
 
     /**
      * Pushes a flow onto the stack
