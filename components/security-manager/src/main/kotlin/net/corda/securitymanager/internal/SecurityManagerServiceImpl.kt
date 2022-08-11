@@ -38,6 +38,10 @@ class SecurityManagerServiceImpl @Activate constructor(
     private var cordaSecurityManager: CordaSecurityManager? = null
 
     init {
+        // TODO Might need to be moved somewhere else and set when osgi security property is set
+        System.setProperty(
+            "java.util.concurrent.ForkJoinPool.common.threadFactory",
+            "net.corda.osgi.framework.SecManagerForkJoinWorkerThreadFactory")
         enablePackageAccessPermission("net.corda.")
         startRestrictiveMode()
         val url = bundleContext.bundle.getResource(DEFAULT_SECURITY_POLICY)

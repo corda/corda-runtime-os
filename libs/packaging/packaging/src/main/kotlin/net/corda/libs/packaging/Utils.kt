@@ -1,5 +1,6 @@
 package net.corda.libs.packaging
 
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -59,14 +60,14 @@ internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     }.takeIf { counter > 0 }
 }
 
-fun Sequence<Certificate>.certSummaryHash(): SecureHash? =
+fun Sequence<Certificate>.signerSummaryHash(): SecureHash? =
     map {
         require(it is X509Certificate) {
             "Certificate should be of type ${X509Certificate::class.java.name}"
         }
         it
     }.map {
-        it.subjectX500Principal.name.toByteArray().hash()
+        MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash()
     }.summaryHash()
 
 private const val DEFAULT_VERIFY_JAR_SIGNATURES_KEY = "net.corda.packaging.jarSignatureVerification"
