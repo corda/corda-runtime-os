@@ -2,7 +2,6 @@ package net.corda.ledger.consensual.impl.converter
 
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
@@ -40,12 +39,12 @@ class PartyConverterTest {
             )
         )
 
-        val nodeParty = PartyImpl(
+        val nodeParty = Party(
             MemberX500Name.parse(partyName),
             key
         )
 
-        val notaryServiceParty = PartyImpl(
+        val notaryServiceParty = Party(
             MemberX500Name.parse(notaryName),
             key
         )

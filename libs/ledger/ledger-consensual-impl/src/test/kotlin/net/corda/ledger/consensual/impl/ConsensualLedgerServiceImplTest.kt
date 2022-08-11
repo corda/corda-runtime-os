@@ -9,9 +9,7 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.ledger.consensual.impl.ConsensualLedgerServiceImpl
-import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.TestSerializationService
-import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImplTest
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
@@ -102,7 +100,7 @@ class ConsensualLedgerServiceImplTest {
                 TestConsensualState(
                     "test",
                     listOf(
-                        PartyImpl(
+                        Party(
                             testMemberX500Name,
                             testPublicKey
                         )

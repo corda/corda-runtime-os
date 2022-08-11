@@ -5,7 +5,6 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
-import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.TestSerializationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
@@ -62,7 +61,7 @@ internal class ConsensualTransactionBuilderImplTest{
 
             testConsensualState = TestConsensualState(
                 "test",
-                listOf(PartyImpl(testMemberX500Name, testPublicKey))
+                listOf(Party(testMemberX500Name, testPublicKey))
             )
         }
     }
