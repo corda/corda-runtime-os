@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
@@ -19,6 +20,7 @@ import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeExcept
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
+import net.corda.ledger.consensual.impl.internal.ConsensualLedgerDAO
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -123,50 +125,55 @@ class EntityMessageProcessor(
             payloadCheck
         )
 
+        val consensualLedgerDAO = ConsensualLedgerDAO(requestId, clock::instant, entitySandboxService::getClass) // TODO: find a way to delete / invert this dependency
+
         // We match on the type, and pass the cast into the persistence service.
         // Any exception that occurs next we assume originates in Hibernate and categorise
         // it accordingly.
         val response = try {
             entityManagerFactory.createEntityManager().transaction {
-                when (request.request) {
+                val req = request.request
+                when (req) {
                     is PersistEntity -> persistenceServiceInternal.persist(
                         serializationService,
                         it,
-                        request.request as PersistEntity
+                        req
                     )
                     is DeleteEntity -> persistenceServiceInternal.remove(
                         serializationService,
                         it,
-                        request.request as DeleteEntity
+                        req
                     )
                     is DeleteEntityById -> persistenceServiceInternal.removeById(
                         serializationService,
                         it,
-                        request.request as DeleteEntityById,
+                        req,
                         holdingIdentity
                     )
                     is MergeEntity -> persistenceServiceInternal.merge(
                         serializationService,
                         it,
-                        request.request as MergeEntity
+                        req
                     )
                     is FindEntity -> persistenceServiceInternal.find(
                         serializationService,
                         it,
-                        request.request as FindEntity,
+                        req,
                         holdingIdentity
                     )
                     is FindAll -> persistenceServiceInternal.findAll(
                         serializationService,
                         it,
-                        request.request as FindAll,
+                        req,
                         holdingIdentity
                     )
                     is FindWithNamedQuery -> persistenceServiceInternal.findWithNamedQuery(
                         serializationService,
                         it,
-                        request.request as FindWithNamedQuery
+                        req
                     )
+                    is PersistTransaction -> consensualLedgerDAO.persistTransaction(req, it)
+
                     else -> {
                         failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
                     }
