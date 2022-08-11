@@ -47,12 +47,6 @@ class EventLogSubscription<K : Any, V : Any>(
         )
     ) { _, _ -> }
 
-    override fun stop() {
-        logger.debug { "Stopping event log subscription with config: $subscriptionConfig" }
-        stopConsumer()
-        lifecycleCoordinator.stop()
-    }
-
     override fun close() {
         logger.debug { "Closing event log subscription with config: $subscriptionConfig" }
         stopConsumer()

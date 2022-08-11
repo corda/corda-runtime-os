@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.processor.DurableProcessor
@@ -38,7 +39,7 @@ class MembershipP2PReadServiceImplTest {
     private var eventHandlerCaptor = argumentCaptor<LifecycleEventHandler>()
     private val registrationHandle: RegistrationHandle = mock()
     private val subRegistrationHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
     private val subscription: Subscription<String, AppMessage> = mock()
 
     private val coordinator: LifecycleCoordinator = mock {
@@ -261,7 +262,7 @@ class MembershipP2PReadServiceImplTest {
             ), coordinator
         )
 
-        verify(subscription, never()).stop()
+        verify(subscription, never()).close()
         verify(subscriptionFactory).createDurableSubscription(
             any(),
             any<DurableProcessor<String, AppMessage>>(),

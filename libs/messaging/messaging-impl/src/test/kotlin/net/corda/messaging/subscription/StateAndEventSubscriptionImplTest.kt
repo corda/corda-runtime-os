@@ -274,7 +274,7 @@ class StateAndEventSubscriptionImplTest {
         while (subscription.isRunning && !eventsPaused) {
             Thread.sleep(10)
         }
-        subscription.stop()
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
@@ -327,7 +327,7 @@ class StateAndEventSubscriptionImplTest {
         while (subscription.isRunning && !eventsPaused) {
             Thread.sleep(10)
         }
-        subscription.stop()
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
@@ -386,7 +386,7 @@ class StateAndEventSubscriptionImplTest {
         while (subscription.isRunning && callCount <= 1) {
             Thread.sleep(10)
         }
-        subscription.stop()
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
@@ -447,7 +447,7 @@ class StateAndEventSubscriptionImplTest {
         while (subscription.isRunning && callCount <= 1) {
             Thread.sleep(10)
         }
-        subscription.stop()
+        subscription.close()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),

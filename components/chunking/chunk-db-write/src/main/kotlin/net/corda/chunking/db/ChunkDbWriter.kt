@@ -1,5 +1,5 @@
 package net.corda.chunking.db
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 
-interface ChunkDbWriter : Lifecycle
+interface ChunkDbWriter : Resource

@@ -15,7 +15,6 @@ import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_DB
 import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_RPC
 import net.corda.virtualnode.write.db.impl.writer.GROUP_NAME
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -43,16 +42,6 @@ class VirtualNodeWriterFactoryTests {
     private fun getDbConnectionManager() = mock<DbConnectionManager>().apply {
         whenever(clusterConfig).thenReturn(mock<SmartConfig>())
         whenever(getClusterEntityManagerFactory()).thenReturn(mock<EntityManagerFactory>())
-    }
-
-    @Test
-    fun `factory does not start the virtual node writer`() {
-        val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock()
-        )  { _, _ -> listOf()
-        }
-        val virtualNodeWriter = virtualNodeWriterFactory.create(mock())
-        assertFalse(virtualNodeWriter.isRunning)
     }
 
     @Test

@@ -41,13 +41,6 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
     private var latestValues: MutableMap<K, V>? = null
 
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-        }
-    }
-
     override fun close() {
         if (!stopped) {
             stopConsumeLoop()
@@ -124,7 +117,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        close()
                     }
                 }
             }

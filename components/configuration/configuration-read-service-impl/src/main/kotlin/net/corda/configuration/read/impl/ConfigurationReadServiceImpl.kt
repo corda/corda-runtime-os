@@ -1,8 +1,7 @@
 package net.corda.configuration.read.impl
 
-import java.util.stream.Stream
-import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.data.config.Configuration
@@ -11,12 +10,14 @@ import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.Resource
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import java.util.stream.Stream
 
 /**
  * Configuration read service implementation.
@@ -48,12 +49,12 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
-    override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {
+    override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): Resource {
         val handler = ComponentConfigHandler(coordinator, requiredKeys)
         return registerForUpdates(handler)
     }
 
-    override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
+    override fun registerForUpdates(configHandler: ConfigurationHandler): Resource {
         val registration = ConfigurationChangeRegistration(lifecycleCoordinator, configHandler)
         lifecycleCoordinator.postEvent(ConfigRegistrationAdd(registration))
         return registration

@@ -1,9 +1,9 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.component.test.utils.reportDownComponents
+import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.crypto.service.impl.infra.TestRPCSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
-import net.corda.crypto.service.impl.SigningServiceFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleStatus
@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -37,9 +36,13 @@ class CryptoOpsBusServiceTests {
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        subscription = TestRPCSubscription(factory.coordinatorFactory)
         subscriptionFactory = mock {
-            on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
+            on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) }
+                .thenAnswer {
+                    TestRPCSubscription<RpcOpsRequest, RpcOpsResponse>(factory.coordinatorFactory).also {
+                        subscription = it
+                    }
+                }
         }
         component = CryptoOpsBusServiceImpl(
             factory.coordinatorFactory,
@@ -90,7 +93,7 @@ class CryptoOpsBusServiceTests {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertEquals(1, subscription.stopped.get())
+        assertThat(subscription.isRunning).isEqualTo(false)
     }
 
     @Test
@@ -155,6 +158,7 @@ class CryptoOpsBusServiceTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val originalImpl = component.impl
+        val originalSubscription = component.impl.subscription
         assertNotNull(component.impl.subscription)
         factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
@@ -167,7 +171,7 @@ class CryptoOpsBusServiceTests {
         factory.configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
         eventually {
             assertNotSame(originalImpl, component.impl)
+            assertNotSame(originalSubscription, component.impl.subscription)
         }
-        assertThat(subscription.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 }

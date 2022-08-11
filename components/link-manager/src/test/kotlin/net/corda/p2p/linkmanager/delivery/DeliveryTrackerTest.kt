@@ -18,8 +18,8 @@ import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
+import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.AfterEach
@@ -107,9 +107,9 @@ class DeliveryTrackerTest {
 
     class MockStateAndEventSubscription<K : Any, S: Any, E: Any>: StateAndEventSubscription<K, S, E> {
         @Volatile
-        override var isRunning = false
+        var isRunning = false
 
-        override fun stop() {
+        override fun close() {
             isRunning = false
             return
         }

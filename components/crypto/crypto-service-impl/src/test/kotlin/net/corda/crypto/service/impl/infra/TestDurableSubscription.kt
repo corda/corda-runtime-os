@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.atomic.AtomicInteger
 
 class TestDurableSubscription<K, V>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -17,7 +16,6 @@ class TestDurableSubscription<K, V>(
         private val logger = contextLogger()
     }
 
-    var stopped = AtomicInteger()
 
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(subscriptionName) { event, coordinator ->
         logger.info("LifecycleEvent received: $event")
@@ -31,8 +29,7 @@ class TestDurableSubscription<K, V>(
         lifecycleCoordinator.start()
     }
 
-    override fun stop() {
-        lifecycleCoordinator.stop()
-        stopped.incrementAndGet()
+    override fun close() {
+        lifecycleCoordinator.close()
     }
 }

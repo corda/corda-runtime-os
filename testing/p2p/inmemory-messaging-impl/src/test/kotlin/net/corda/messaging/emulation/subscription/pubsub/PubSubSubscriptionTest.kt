@@ -77,7 +77,7 @@ class PubSubSubscriptionTest {
     @Test
     fun `stop will stop any running thread`() {
         pubSubSubscription.start()
-        pubSubSubscription.stop()
+        pubSubSubscription.close()
 
         verify(consumeLifeCycle).stop()
     }
@@ -85,8 +85,8 @@ class PubSubSubscriptionTest {
     @Test
     fun `stop will stop any running thread only once`() {
         pubSubSubscription.start()
-        pubSubSubscription.stop()
-        pubSubSubscription.stop()
+        pubSubSubscription.close()
+        pubSubSubscription.close()
 
         verify(consumeLifeCycle, times(1)).stop()
     }

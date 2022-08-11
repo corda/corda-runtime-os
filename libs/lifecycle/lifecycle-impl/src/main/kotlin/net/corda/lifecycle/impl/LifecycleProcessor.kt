@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -48,7 +49,7 @@ internal class LifecycleProcessor(
     /**
      * A map of the current resources managed by this coordinator.
      */
-    private val managedResources = ConcurrentHashMap<String, AutoCloseable>()
+    private val managedResources = ConcurrentHashMap<String, Resource>()
 
     /**
      * Process a batch of events.
@@ -256,12 +257,12 @@ internal class LifecycleProcessor(
         }
     }
 
-    fun addManagedResource(name: String, generator: () -> AutoCloseable) {
+    fun addManagedResource(name: String, generator: () -> Resource) {
         managedResources[name]?.close()
         managedResources[name] = generator.invoke()
     }
 
-    fun getManagedResource(name: String): AutoCloseable? {
+    fun getManagedResource(name: String): Resource? {
         return managedResources[name]
     }
 

@@ -1,6 +1,5 @@
 package net.corda.lifecycle.domino.logic.util
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -8,6 +7,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.DominoTileState
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference
 abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
     // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
-    private val subscription: Lifecycle,
+    private val subscription: Resource,
     private val subscriptionName: LifecycleCoordinatorName,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<NamedLifecycle>
@@ -162,11 +162,11 @@ abstract class SubscriptionDominoTileBase(
                                 }
                                 LifecycleStatus.DOWN -> {
                                     logger.info("One of the dependencies went down, stopping subscription.")
-                                    subscription.stop()
+                                    subscription.close()
                                 }
                                 LifecycleStatus.ERROR -> {
                                     logger.info("One of the dependencies had an error, stopping subscription.")
-                                    subscription.stop()
+                                    subscription.close()
                                 }
                             }
                         }

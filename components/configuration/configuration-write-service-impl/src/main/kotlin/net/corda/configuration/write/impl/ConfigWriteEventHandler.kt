@@ -75,7 +75,7 @@ internal class ConfigWriteEventHandler(
             }
 
             is StopEvent -> {
-                rpcSubscription?.stop()
+                rpcSubscription?.close()
                 rpcSubscription = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }

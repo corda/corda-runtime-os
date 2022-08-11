@@ -89,7 +89,7 @@ internal class VirtualNodeWriteEventHandler(
 
     /** Shuts down the service. */
     private fun stop() {
-        virtualNodeWriter?.stop()
+        virtualNodeWriter?.close()
         registrationHandle?.close()
         configUpdateHandle?.close()
     }

@@ -3,13 +3,14 @@ package net.corda.configuration.read.impl
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.Resource
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ConfigurationChangeRegistration(
     private val coordinator: LifecycleCoordinator,
     private val handler: ConfigurationHandler
-) : AutoCloseable {
+) : Resource {
 
     private companion object {
         private val logger = contextLogger()
@@ -28,6 +29,10 @@ class ConfigurationChangeRegistration(
                 )
             }
         }
+    }
+
+    override fun start() {
+        // Nothing to do
     }
 
     override fun close() {

@@ -54,12 +54,6 @@ internal class DurableSubscription<K : Any, V : Any>(
         }
     }
 
-    override fun stop() {
-        log.debug { "Stopping durable subscription with config: $subscriptionConfig" }
-        stopConsumer()
-        lifecycleCoordinator.stop()
-    }
-
     override fun close() {
         log.debug { "Closing durable subscription with config: $subscriptionConfig" }
         stopConsumer()

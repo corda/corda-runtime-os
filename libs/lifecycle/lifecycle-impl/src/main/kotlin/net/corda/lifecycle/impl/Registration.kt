@@ -98,6 +98,10 @@ internal class Registration(
         }
     }
 
+    override fun start() {
+        // Nothing to do
+    }
+
     /**
      * Cancel the registration. On cancellation no further status updates are delivered, and the state on the
      * coordinators on both sides is cleaned up.

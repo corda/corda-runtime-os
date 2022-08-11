@@ -50,7 +50,7 @@ class RPCSubscriptionImplTest {
                 clientIdCounter.getAndIncrement().toString()
             )
 
-        rpcSubscription.stop()
+        rpcSubscription.close()
         assertThat(rpcSubscription.isRunning).isFalse
         verify(rpcTopicService, times(1)).unsubscribe("test", responseProcessor)
     }

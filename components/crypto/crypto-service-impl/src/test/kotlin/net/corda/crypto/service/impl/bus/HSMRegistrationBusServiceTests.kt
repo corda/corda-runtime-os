@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -30,9 +29,13 @@ class HSMRegistrationBusServiceTests {
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        subscription = TestRPCSubscription(factory.coordinatorFactory)
         subscriptionFactory = mock {
-            on { createRPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any(), any()) } doReturn subscription
+            on { createRPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any(), any()) }
+                .thenAnswer {
+                    TestRPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>(factory.coordinatorFactory).also {
+                        subscription = it
+                    }
+                }
         }
         component = HSMRegistrationBusServiceImpl(
             factory.coordinatorFactory,
@@ -73,7 +76,7 @@ class HSMRegistrationBusServiceTests {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertEquals(1, subscription.stopped.get())
+        assertThat(subscription.isRunning).isEqualTo(false)
     }
 
     @Test
@@ -134,6 +137,7 @@ class HSMRegistrationBusServiceTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val originalImpl = component.impl
+        val originalSubscription = component.impl.subscription
         assertNotNull(component.impl.subscription)
         factory.configurationReadService.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
@@ -146,7 +150,7 @@ class HSMRegistrationBusServiceTests {
         factory.configurationReadService.reissueConfigChangedEvent(component.lifecycleCoordinator)
         eventually {
             assertNotSame(originalImpl, component.impl)
+            assertNotSame(originalSubscription, component.impl.subscription)
         }
-        assertThat(subscription.stopped.get()).isGreaterThanOrEqualTo(1)
     }
 }

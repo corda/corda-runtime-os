@@ -1,7 +1,7 @@
 package net.corda.messaging.api.subscription
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.Resource
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -15,7 +15,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
  * A subscription will begin consuming events upon start().
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface Subscription<K, V> : Lifecycle {
+interface Subscription<K, V> : Resource {
 
     /**
      * Start a subscription.
@@ -25,7 +25,7 @@ interface Subscription<K, V> : Lifecycle {
     /**
      * Check the state of a subscription. true if subscription is still active. false otherwise.
      */
-    override val isRunning: Boolean
+    val isRunning: Boolean
 
     /**
      * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
@@ -53,7 +53,7 @@ interface Subscription<K, V> : Lifecycle {
  *
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface RPCSubscription<REQUEST, RESPONSE> : Lifecycle {
+interface RPCSubscription<REQUEST, RESPONSE> : Resource {
 
     /**
      * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
@@ -80,7 +80,7 @@ interface RPCSubscription<REQUEST, RESPONSE> : Lifecycle {
  * (that is, within a single _transaction_).  However, records for different keys may be batched up to
  * improve performance.
  */
-interface StateAndEventSubscription<K, S, E> : Lifecycle {
+interface StateAndEventSubscription<K, S, E> : Resource {
     /**
      * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
      * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.

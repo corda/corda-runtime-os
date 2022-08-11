@@ -40,13 +40,6 @@ class RPCSubscriptionFactoryTests {
     }
 
     @Test
-    fun `factory does not start the config writer`() {
-        val configWriterFactory = RPCSubscriptionFactory(getSubscriptionFactory(), getConfigValidatorFactory(), dbConnectionManager, mock())
-        val configWriter = configWriterFactory.create(mock())
-        assertFalse(configWriter.isRunning)
-    }
-
-    @Test
     fun `factory creates an RPC subscription with the correct configuration`() {
         val expectedRPCConfig = RPCConfig(
             GROUP_NAME,

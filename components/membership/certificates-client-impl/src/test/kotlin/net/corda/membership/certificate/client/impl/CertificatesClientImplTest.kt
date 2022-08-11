@@ -15,6 +15,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -316,7 +317,7 @@ class CertificatesClientImplTest {
             fun `StopEvent will stop everything`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 handler.firstValue.processEvent(StartEvent(), coordinator)
                 val event = ConfigChangedEvent(
@@ -365,7 +366,7 @@ class CertificatesClientImplTest {
 
             @Test
             fun `client stop listen to configuration when configuration is ready in the second time`() {
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
@@ -409,7 +410,7 @@ class CertificatesClientImplTest {
 
             @Test
             fun `client goes down and stop listen to configuration when configuration goes down`() {
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
