@@ -72,8 +72,8 @@ class RegistrationProcessor(
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient),
 
-        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(clock, cordaAvroSerializationFactory),
-        VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient),
+        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(clock, cordaAvroSerializationFactory,membershipGroupReaderProvider),
+        VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient,membershipGroupReaderProvider),
         ProcessMemberVerificationResponse::class.java to VerificationResponseHandler(membershipPersistenceClient)
     )
 

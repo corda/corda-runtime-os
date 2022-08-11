@@ -8,20 +8,30 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.time.Instant
+import java.util.*
 
 class VerificationRequestHandlerTest {
     private companion object {
@@ -47,7 +57,32 @@ class VerificationRequestHandlerTest {
         on { createAvroSerializer<VerificationResponse>(any()) } doReturn responseSerializer
     }
 
-    private val verificationRequestHandler = VerificationRequestHandler(clock, cordaAvroSerializationFactory)
+    val mgmX500Name = MemberX500Name.parse("C=GB, L=London, O=MGM")
+
+    val groupId = UUID.randomUUID().toString()
+
+    val mgmMemberContext: MemberContext = mock {
+        on { parse(eq(MemberInfoExtension.GROUP_ID), eq(String::class.java)) } doReturn GROUP_ID
+    }
+    val mgmContext: MGMContext = mock {
+        on { parseOrNull(eq(MemberInfoExtension.IS_MGM), any<Class<Boolean>>()) } doReturn true
+    }
+
+    val mgmMemberInfo: MemberInfo = mock {
+        on { name } doReturn mgmX500Name
+        on { memberProvidedContext } doReturn mgmMemberContext
+        on { mgmProvidedContext } doReturn mgmContext
+    }
+
+    var membershipGroupReader: MembershipGroupReader = mock {
+        on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
+    }
+
+    var membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
+        on { getGroupReader(eq(mgm.toCorda())) } doReturn membershipGroupReader
+    }
+
+    private val verificationRequestHandler = VerificationRequestHandler(clock, cordaAvroSerializationFactory,membershipGroupReaderProvider)
 
     @Test
     fun `handler returns response message`() {
