@@ -90,9 +90,7 @@ class FlowProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                if (event.errored) {
-                    log.warn("Stopped due to error")
-                }
+                // Nothing to do
             }
             else -> {
                 log.error("Unexpected event $event!")
