@@ -8,6 +8,7 @@ plugins {
     id 'jacoco' // test coverage
     id 'corda.root-publish'
     id 'io.snyk.gradle.plugin.snykplugin'
+    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
 
 snyk {
@@ -114,6 +115,17 @@ tasks.register("copyScripts", Copy){
     filter {
             String line -> line.replaceAll("corda-cli-.(.)*.jar", "corda-cli-${version}.jar")
         }
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
+    }
 }
 
 // Automatically ran as part of build process
