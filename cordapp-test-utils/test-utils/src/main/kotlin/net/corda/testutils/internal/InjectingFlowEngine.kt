@@ -7,15 +7,15 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 /**
  * A flow engine which, for the provided subflow, injects services into that subflow then calls it and returns any
  * response. Note that the FiberMock provided must be able to look up any members that will be contacted by the
  * subflow (so if you're using the ProtocolLookUpFiberMock, it should be the same instance that was provided to
- * the CordaMock).
+ * the FakeCorda).
  *
- * Note that if you're doing anything that complicated, you might want to just use the CordaMock instead.
+ * Note that if you're doing anything that complicated, you might want to just use the FakeCorda instead.
  *
  * @virtualNodeName the name of the virtual node owner
  * @fiber a FiberMock through which responders should be registered
@@ -26,8 +26,8 @@ import java.util.*
  */
 class InjectingFlowEngine(
     override val virtualNodeName: MemberX500Name,
-    private val fiber: ProtocolLookUp,
-    private val injector: FlowServicesInjector = SensibleServicesInjector(),
+    private val fakeFiber: FakeFiber,
+    private val injector: FlowServicesInjector = DefaultServicesInjector(),
     private val flowChecker: FlowChecker = CordaFlowChecker()
 ) : FlowEngine {
     override val flowId: UUID
@@ -42,7 +42,7 @@ class InjectingFlowEngine(
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         flowChecker.check(subFlow.javaClass)
-        injector.injectServices(subFlow, virtualNodeName, fiber)
+        injector.injectServices(subFlow, virtualNodeName, fakeFiber)
         return subFlow.call()
     }
 
