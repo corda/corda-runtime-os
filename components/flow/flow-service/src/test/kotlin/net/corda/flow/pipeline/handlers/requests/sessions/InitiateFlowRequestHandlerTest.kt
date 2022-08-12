@@ -11,7 +11,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.flow.utils.KeyValueStore
-import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

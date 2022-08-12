@@ -14,7 +14,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name

@@ -15,7 +15,6 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.utils.KeyValueStore
-import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
