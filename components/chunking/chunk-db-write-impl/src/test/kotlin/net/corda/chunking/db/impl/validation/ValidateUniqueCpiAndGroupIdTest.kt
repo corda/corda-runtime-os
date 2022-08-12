@@ -56,4 +56,5 @@ class ValidateUniqueCpiAndGroupIdTest {
 
         assertThrows<DuplicateCpiUploadException> { cpiExists.verifyGroupIdIsUniqueForCpi(cpi) }
     }
+    
 }
