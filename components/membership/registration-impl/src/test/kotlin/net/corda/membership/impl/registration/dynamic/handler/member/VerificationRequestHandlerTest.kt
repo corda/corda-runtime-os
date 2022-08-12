@@ -58,6 +58,7 @@ class VerificationRequestHandlerTest {
     }
 
     val mgmX500Name = MemberX500Name.parse("C=GB, L=London, O=MGM")
+    val memberX500Name = MemberX500Name.parse("C=GB, L=London, O=Alice")
 
     val groupId = UUID.randomUUID().toString()
 
@@ -68,18 +69,33 @@ class VerificationRequestHandlerTest {
         on { parseOrNull(eq(MemberInfoExtension.IS_MGM), any<Class<Boolean>>()) } doReturn true
     }
 
+    val memberContext: MemberContext = mock {
+        on { parse(eq(MemberInfoExtension.GROUP_ID), eq(String::class.java)) } doReturn GROUP_ID
+    }
+    val memberMGMContext: MGMContext = mock {
+        on { parseOrNull(eq(MemberInfoExtension.IS_MGM), any<Class<Boolean>>()) } doReturn false
+    }
+
     val mgmMemberInfo: MemberInfo = mock {
         on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
 
+    val memberInfo: MemberInfo = mock {
+        on { name } doReturn memberX500Name
+        on { memberProvidedContext } doReturn memberContext
+        on { mgmProvidedContext } doReturn memberMGMContext
+    }
+
     var membershipGroupReader: MembershipGroupReader = mock {
         on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
+        on { lookup(eq(memberX500Name)) } doReturn memberInfo
     }
 
     var membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(eq(mgm.toCorda())) } doReturn membershipGroupReader
+        on { getGroupReader(eq(member.toCorda())) } doReturn membershipGroupReader
     }
 
     private val verificationRequestHandler = VerificationRequestHandler(clock, cordaAvroSerializationFactory,membershipGroupReaderProvider)

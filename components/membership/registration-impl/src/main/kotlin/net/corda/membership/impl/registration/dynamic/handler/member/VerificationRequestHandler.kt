@@ -9,7 +9,6 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -42,11 +41,13 @@ internal class VerificationRequestHandler(
         val member = command.destination
 
         val mgmMemberInfo = getMGMMemberInfo(mgm.toCorda())
+        val memberInfo = getMemberHoldingIdentityId(member.toCorda())
+
         return RegistrationHandlerResult(
             null,
             listOf(
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
-                    member,
+                    memberInfo.holdingIdentity.toAvro(),
                     mgmMemberInfo.holdingIdentity.toAvro(),
                     VerificationResponse(
                         command.verificationRequest.registrationId,
@@ -65,6 +66,16 @@ internal class VerificationRequestHandler(
             }
             validateRegistrationRequest(this!!.isMgm) {
                 "Registration request is targeted at non-MGM holding identity."
+            }
+        }!!
+    }
+
+    private fun getMemberHoldingIdentityId(member: HoldingIdentity): MemberInfo {
+
+        return membershipGroupReaderProvider.getGroupReader(member).lookup(member.x500Name)?.apply {
+            validateRegistrationRequest(!this.isMgm)
+            {
+                "Registration request is originated from a MGM holding identity."
             }
         }!!
     }
