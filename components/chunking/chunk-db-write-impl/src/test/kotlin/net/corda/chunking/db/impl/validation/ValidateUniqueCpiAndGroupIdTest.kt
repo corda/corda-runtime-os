@@ -57,4 +57,50 @@ class ValidateUniqueCpiAndGroupIdTest {
         assertThrows<DuplicateCpiUploadException> { cpiExists.verifyGroupIdIsUniqueForCpi(cpi) }
     }
 
+    @Test
+    fun `succeeds with existing forceupload and existing version`() {
+        val requiredName = "aaa"
+        val requiredVersion = "1.0"
+        val hash = SecureHash.create("DUMMY:1234567890")
+
+        val groupId = "ABC"
+        val mockCpiId = mock<CpiIdentifier> {
+            on { name }.doReturn(requiredName)
+            on { version }.doReturn(requiredVersion)
+            on { signerSummaryHash }.doReturn(hash)
+        }
+        val mockMetadata = mock<CpiMetadata> { on { cpiId }.doReturn(mockCpiId) }
+        val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
+
+        // Return the group id to indicate this *does* exist.
+        val cpiExists = mock<CpiPersistence> {
+            on { getGroupId(requiredName, requiredVersion, hash.toString()) }.doReturn(groupId)
+        }
+
+        assertThrows<DuplicateCpiUploadException> { cpiExists.verifyGroupIdIsUniqueForCpi(cpi) }
+    }
+
+    @Test
+    fun `fails with existing forceupload and non-existing version`() {
+        val requiredName = "aaa"
+        val requiredVersion = "1.0"
+        val hash = SecureHash.create("DUMMY:1234567890")
+
+        val groupId = "ABC"
+        val mockCpiId = mock<CpiIdentifier> {
+            on { name }.doReturn(requiredName)
+            on { version }.doReturn(requiredVersion)
+            on { signerSummaryHash }.doReturn(hash)
+        }
+        val mockMetadata = mock<CpiMetadata> { on { cpiId }.doReturn(mockCpiId) }
+        val cpi = mock<Cpi> { on { metadata }.doReturn(mockMetadata) }
+
+        // Return the group id to indicate this *does* exist.
+        val cpiExists = mock<CpiPersistence> {
+            on { getGroupId(requiredName, requiredVersion, hash.toString()) }.doReturn(groupId)
+        }
+
+        assertThrows<DuplicateCpiUploadException> { cpiExists.verifyGroupIdIsUniqueForCpi(cpi) }
+    }
+
 }
