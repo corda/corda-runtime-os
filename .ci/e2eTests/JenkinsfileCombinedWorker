@@ -104,7 +104,9 @@ pipeline {
             }
         } 			
         stage('Start jar / run tests') {
-            
+            options {
+                timeout(time: 12, unit: 'MINUTES')
+            }
             environment {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
