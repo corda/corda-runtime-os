@@ -92,7 +92,6 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':testing:virtual-node')
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
     integrationTestImplementation project(':testing:test-utilities')
