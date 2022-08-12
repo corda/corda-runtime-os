@@ -41,6 +41,8 @@ dependencies {
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
+    // TODO: find a way to remove this direct dependency
+    implementation project(':libs:ledger:ledger-consensual-impl')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'

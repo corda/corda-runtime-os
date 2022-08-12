@@ -2,7 +2,6 @@ package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
@@ -737,33 +736,6 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query result which hits Kafka message size limit`() {
         assertQuery(QuerySetup.NamedQuery(mapOf(), "Dog.all"), expectFailure="Too large", sizeLimit = 10)
-    }
-
-    // TODO: refactor this out to its own test
-    @Test
-    fun `persistTransaction for consensual ledger actually persists`() {
-        val payload = listOf(0)
-        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistTransaction(payload))
-
-        // send request to message processor
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-        val requestId = UUID.randomUUID().toString()
-        val records = listOf(Record(TOPIC, requestId, request))
-
-        // Process the messages. This should result in ConsensualStateDAO persisting things to the DB
-        val responses = assertSuccessResponses(processor.onNext(records))
-
-        // assert persisted
-        assertThat(responses.size).isEqualTo(1)
-
-        /*
-        // check the db directly (rather than using our code)
-        val findDog = ctx.findDog(dogId)
-
-        // It's the dog we persisted.
-        assertThat(findDog).isEqualTo(dog)
-        logger.info("Woof $findDog")
-         */
     }
 
     private fun createDbTestContext(): DbTestContext {
