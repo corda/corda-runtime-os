@@ -97,10 +97,6 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     // osgi.service: (objectClass=net.corda.session.manager.SessionManager)
 
-    // ??? This may not be needed.
-    integrationTestRuntimeOnly "net.corda:corda-ledger-consensual"
-    // osgi.wiring.package: (osgi.wiring.package=net.corda.v5.ledger.consensual.transaction)
-
     // I have removed import kotlin.test.assertIs
     //osgi.wiring.package: (osgi.wiring.package=kotlin.test)
 
