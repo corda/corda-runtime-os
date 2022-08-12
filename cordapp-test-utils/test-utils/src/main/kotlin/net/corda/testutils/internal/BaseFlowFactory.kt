@@ -13,7 +13,7 @@ import net.corda.v5.base.types.MemberX500Name
  */
 class BaseFlowFactory : FlowFactory {
 
-    override fun createInitiatingFlow(x500: MemberX500Name, flowClassName: String): RPCStartableFlow {
+    override fun createInitiatingFlow(member: MemberX500Name, flowClassName: String): RPCStartableFlow {
         val flowClass = Class.forName(flowClassName)
             ?: throw FlowClassNotFoundException(flowClassName)
 
@@ -23,7 +23,7 @@ class BaseFlowFactory : FlowFactory {
         return createFlow(flowClass) as RPCStartableFlow
     }
 
-    override fun createResponderFlow(x500: MemberX500Name, flowClass: Class<out Flow>): ResponderFlow {
+    override fun createResponderFlow(member: MemberX500Name, flowClass: Class<out Flow>): ResponderFlow {
         if (!(ResponderFlow::class.java.isAssignableFrom(flowClass))) {
             throw UnrecognizedFlowClassException(flowClass, listOf(ResponderFlow::class.java))
         }
