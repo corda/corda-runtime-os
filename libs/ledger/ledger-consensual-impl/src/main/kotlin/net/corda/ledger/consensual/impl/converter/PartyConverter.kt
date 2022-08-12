@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.impl.converter
 
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
+import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
@@ -27,7 +28,7 @@ class PartyConverter @Activate constructor(
         get() = Party::class.java
 
     override fun convert(context: ConversionContext): Party =
-        Party(
+        PartyImpl(
             name = context.value(NAME)?.let {
                 MemberX500Name.parse(it)
             } ?: throw ValueNotFoundException("'$NAME' is null or missing"),
