@@ -147,7 +147,7 @@ pipeline {
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
         }
         failure {
-            sendSlackNotifications("danger", "BUILD FAILURE", true, "#corda-corda5-build-notifications")
+            sendSlackNotifications("danger", "BUILD FAILURE - Combined Worker E2E Tests", true, "#corda-corda5-build-notifications")
         }
     }
 }
