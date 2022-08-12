@@ -63,7 +63,7 @@ pipeline {
     }
     stages {
 		  //stage create DB - see shared pipline
-        stage('Create DBs') {
+        stage('create DBs') {
             environment {
                 KUBECONFIG = credentials('e2e-tests-credentials')
             }
@@ -97,12 +97,12 @@ pipeline {
                 }
             }
         }
-        stage('Build') {
+        stage('build') {
             steps {
                 gradlew (':applications:workers:release:combined-worker:assemble')
             }
         } 			
-        stage('Start Combined Worker') {       
+        stage('start combined worker') {       
             environment {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
