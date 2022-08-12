@@ -33,7 +33,6 @@ class HikariDataSourceFactory(
         conf.password = password
         conf.isAutoCommit = isAutoCommit
         conf.maximumPoolSize = maximumPoolSize
-        conf.maxLifetime = TimeUnit.MINUTES.toMillis(10)
         return hikariDataSourceFactory(conf)
     }
 }
