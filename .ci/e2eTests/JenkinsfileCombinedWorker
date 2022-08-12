@@ -12,7 +12,6 @@ String postgresCredentialsId = 'e2e-postgresql-credentials'
 String postgresDb = "test_${UUID.randomUUID().toString().replace("-", "")}"
 
 def checkConnection(){
-
     def status = null
     sleep(time: 30, unit: "SECONDS") 
 
@@ -68,7 +67,7 @@ pipeline {
     }
     stages {
 		  //stage create DB - see shared pipline
-        stage('Create DBs') {
+        stage('create DBs') {
             environment {
                 KUBECONFIG = credentials('e2e-tests-credentials')
             }
@@ -102,13 +101,12 @@ pipeline {
                 }
             }
         }
-        stage('Build  Jar') {
+        stage('build') {
             steps {
-                gradlew (':applications:workers:release:combined-worker:assemble') // builds the jar build/bin/*/*.jar
+                gradlew (':applications:workers:release:combined-worker:assemble')
             }
         } 			
-        stage('Start jar / run tests') {
-            
+        stage('start combined worker') {       
             environment {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
@@ -117,16 +115,28 @@ pipeline {
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {
-                
                 sh '''
                     nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
                     export PROCNO=$!
-                '''
-
-                checkConnection()    
-                gradlew('smoketest -PisCombinedWorker=true')   
+                '''        
             }            
         }
+        stage('connect to worker') {
+            options {
+                timeout(time: 3, unit: 'MINUTES')
+            }  
+            steps {
+                checkConnection()
+            }
+        } 
+        stage('smoketests') {
+            options {
+                timeout(time: 15, unit: 'MINUTES')
+            }  
+            steps {
+               gradlew('smoketest -PisCombinedWorker=true')
+            }
+        } 	        
     }
     post {
         always {

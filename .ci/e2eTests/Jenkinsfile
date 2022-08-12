@@ -46,16 +46,6 @@ pipeline {
     }
 
     stages {
-        stage('Install CLI') {
-            steps {
-                sh 'mkdir -p "${GRADLE_USER_HOME}"'
-                //download and set up CLI
-                sh "curl -u '${CORDA_ARTIFACTORY_USERNAME}:${CORDA_ARTIFACTORY_PASSWORD}' https://software.r3.com/artifactory/engineering-tools-maven-unstable/net/corda/cli/corda-cli-developer/[RELEASE]/corda-cli-developer-[RELEASE].tar\\;source.branch+=main --output ./corda-cli.tar"
-                sh "rm -rf ./corda-cli && mkdir ./corda-cli"
-                sh "tar -C ./corda-cli --strip 1 -xf ./corda-cli.tar"
-                sh "./corda-cli/bin/corda-cli -v"
-            }
-        }
         stage ('Create namespace') {
             steps {
                 sh """
