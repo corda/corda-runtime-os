@@ -12,7 +12,7 @@ internal class QueryRegistrationRequestHandler(persistenceHandlerServices: Persi
     override fun invoke(
         context: MembershipRequestContext,
         request: QueryRegistrationRequest,
-    ): RegistrationRequestQueryResponse? {
+    ): RegistrationRequestQueryResponse {
         val shortHash = context.holdingIdentity.toCorda().shortHash
         return transaction(shortHash) { em ->
 

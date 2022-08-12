@@ -23,9 +23,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
             val query = queryBuilder
                 .select(root)
                 .where(
-                    criteriaBuilder.and(
-                        criteriaBuilder.equal(root.get<String>("holdingIdentityShortHash"), shortHash.value),
-                    )
+                    criteriaBuilder.equal(root.get<String>("holdingIdentityShortHash"), shortHash.value),
                 ).orderBy(criteriaBuilder.asc(root.get<Instant>("created")))
             val details =
                 em.createQuery(query)

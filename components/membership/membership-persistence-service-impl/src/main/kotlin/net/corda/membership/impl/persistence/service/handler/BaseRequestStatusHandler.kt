@@ -26,18 +26,19 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             it.name.equals(this, ignoreCase = true)
         } ?: throw MembershipPersistenceException("Could not find status $this")
     }
-        fun RegistrationRequestEntity.toDetails() : RegistrationStatusDetails {
-            val context = keyValuePairListDeserializer.deserialize(this.context)
-            val registrationProtocolVersion = context?.items?.firstOrNull {
-                it.key == "registrationProtocolVersion"
-            }?.value?.toInt() ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
-            return RegistrationStatusDetails.newBuilder()
-                .setRegistrationSent(this.created)
-                .setRegistrationLastModified(this.lastModified)
-                .setRegistrationStatus(this.status.toStatus())
-                .setRegistrationId(this.registrationId)
-                .setRegistrationProtocolVersion(registrationProtocolVersion)
-                .setMemberProvidedContext(context)
-                .build()
-        }
+
+    fun RegistrationRequestEntity.toDetails() : RegistrationStatusDetails {
+        val context = keyValuePairListDeserializer.deserialize(this.context)
+        val registrationProtocolVersion = context?.items?.firstOrNull {
+            it.key == "registrationProtocolVersion"
+        }?.value?.toIntOrNull() ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
+        return RegistrationStatusDetails.newBuilder()
+            .setRegistrationSent(this.created)
+            .setRegistrationLastModified(this.lastModified)
+            .setRegistrationStatus(this.status.toStatus())
+            .setRegistrationId(this.registrationId)
+            .setRegistrationProtocolVersion(registrationProtocolVersion)
+            .setMemberProvidedContext(context)
+            .build()
+    }
 }

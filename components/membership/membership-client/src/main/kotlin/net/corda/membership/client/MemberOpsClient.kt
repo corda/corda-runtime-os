@@ -14,7 +14,7 @@ interface MemberOpsClient : Lifecycle {
      * Starts the registration process for a member.
      *
      * @param memberRegistrationRequest Data necessary to include in order to initiate registration.
-     * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
+     * @return [RegistrationRequestProgressDto] to indicate the status of the request at time of submission.
      */
     fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
@@ -23,7 +23,7 @@ interface MemberOpsClient : Lifecycle {
      * outwards communication.
      *
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
-     * @return [RegistrationRequestStatusDto] to indicate the last known status of the registration request based on
+     * @return [List<RegistrationRequestStatusDto>] to indicate the last known status of the registration request based on
      * local member data.
      */
     fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatusDto>
