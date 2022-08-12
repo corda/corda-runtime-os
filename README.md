@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Build Status](https://ci02.dev.r3.com/buildStatus/icon?job=Corda5%2Fcorda-runtime-os%2Frelease%252Fos%252F5.0)](https://ci02.dev.r3.com/job/Corda5/job/corda-runtime-os/job/release%252Fos%252F5.0/)
 
-<h2>Project Overview</h2>
+<h2>Project Overview   </h2>
 
 Corda is a scalable, permissioned peer-to-peer (P2P) distributed ledger technology (DLT) platform that enables the building of applications that foster and deliver digital trust between parties in regulated markets.
 
