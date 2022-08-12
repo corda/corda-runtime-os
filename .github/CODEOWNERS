@@ -1,7 +1,15 @@
 
-# Build scripts should be audited by BLT
+# Build scripts and Jenkins files should be audited by BLT
+# Any changes to source code of corda-api to be reviewd by C5 team leads
+
+Jenkinsfile        @corda/blt
+.ci/**             @corda/blt
+
+gradle/*           @corda/blt
 *.gradle           @corda/blt
 gradle.properties  @corda/corda5-team-leads
-Jenkinsfile        @corda/blt
-.ci/*              @corda/blt
-gradle/*           @corda/blt
+
+*.kt               @corda/corda5-team-leads
+*.java             @corda/corda5-team-leads
+
+CODEOWNERS         @corda/blt @corda/corda5-team-leads
