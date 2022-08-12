@@ -9,7 +9,6 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
-import net.corda.flow.utils.KeyValueStore
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.HoldingIdentity
@@ -27,12 +26,9 @@ class MockFlowFiberService : FlowFiberService {
     private val membershipGroupReader = mock<MembershipGroupReader>()
     val flowFiberExecutionContext: FlowFiberExecutionContext
 
-    val userContext = KeyValueStore().apply {
-        this["user"] = "user"
-    }
-    val platformContext = KeyValueStore().apply {
-        this["platform"] = "platform"
-    }
+    val userContext = mapOf("user" to "user")
+    val platformContext = mapOf("platform" to "platform")
+
     private val flowContext = mock<FlowContext>()
 
     init {
@@ -53,8 +49,8 @@ class MockFlowFiberService : FlowFiberService {
 
         whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
 
-        whenever(flowContext.flattenUserProperties()).thenReturn(userContext.avro)
-        whenever(flowContext.flattenPlatformProperties()).thenReturn(platformContext.avro)
+        whenever(flowContext.flattenUserProperties()).thenReturn(userContext)
+        whenever(flowContext.flattenPlatformProperties()).thenReturn(platformContext)
         whenever(flowCheckpoint.flowContext).thenReturn(flowContext)
     }
 

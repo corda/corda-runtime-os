@@ -62,12 +62,6 @@ class KeyValueStore(private val backingList: KeyValuePairList = mutableKeyValueP
     fun put(key: String, value: String) = set(key, value)
     operator fun get(key: String) = backingList.items.find { it.key == key }?.value
 
-    operator fun plusAssign(toAdd: KeyValueStore) {
-        toAdd.avro.items.forEach { keyValuePair ->
-            this[keyValuePair.key] = keyValuePair.value
-        }
-    }
-
     /**
      * Importantly, this property exposes the mutable Avro array directly, no conversion is carried out.
      */

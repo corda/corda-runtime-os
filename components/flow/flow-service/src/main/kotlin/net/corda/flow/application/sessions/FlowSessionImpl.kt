@@ -71,16 +71,21 @@ class FlowSessionImpl(
 
     @Suspendable
     private fun ensureSessionIsOpen() {
-        if (!initiated) {
+        fun createInitiateFlowRequest(): FlowIORequest.InitiateFlow {
+            // The creation of this message is pushed out to this nested builder method in order to ensure that when the
+            // suspend method which receives it as an argument does a suspend that there is nothing on the stack to
+            // accidentally serialize
             val flowContext = fiber.getExecutionContext().flowCheckpoint.flowContext
-            fiber.suspend(
-                FlowIORequest.InitiateFlow(
-                    counterparty,
-                    sourceSessionId,
-                    contextUserProperties = flowContext.flattenUserProperties(),
-                    contextPlatformProperties = flowContext.flattenPlatformProperties()
-                )
+            return FlowIORequest.InitiateFlow(
+                counterparty,
+                sourceSessionId,
+                contextUserProperties = flowContext.flattenUserProperties(),
+                contextPlatformProperties = flowContext.flattenPlatformProperties()
             )
+        }
+
+        if (!initiated) {
+            fiber.suspend(createInitiateFlowRequest())
             initiated = true
         }
     }
