@@ -1,5 +1,9 @@
+
 plugins {
     id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.quasar-utils'
+    id 'org.jetbrains.kotlin.plugin.jpa'
+    id 'org.jetbrains.kotlin.plugin.allopen'
 }
 
 group = "net.cordacon"
