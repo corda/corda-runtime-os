@@ -100,7 +100,12 @@ class VerifyMemberHandlerTest {
         } doReturn MembershipPersistenceResult.success()
     }
 
-    private val verifyMemberHandler = VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient,membershipGroupReaderProvider)
+    private val verifyMemberHandler = VerifyMemberHandler(
+        clock,
+        cordaAvroSerializationFactory,
+        membershipPersistenceClient,
+        membershipGroupReaderProvider
+    )
 
     @Test
     fun `handler returns request message`() {
