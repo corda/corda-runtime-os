@@ -29,6 +29,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
 
     api project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:messaging:messaging")

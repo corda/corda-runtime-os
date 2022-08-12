@@ -22,6 +22,7 @@ import net.corda.httprpc.RpcOps
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
+import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
 
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
@@ -45,6 +46,7 @@ class HttpRpcServerImpl(
 
     private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
+
     private val httpRpcServerInternal = HttpRpcServerInternal(
         JavalinRouteProviderImpl(
             httpRpcSettings.context.basePath,
@@ -54,7 +56,8 @@ class HttpRpcServerImpl(
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider),
-        multiPartDir
+        multiPartDir,
+        DeferredWebSocketCloserService()
     )
 
 

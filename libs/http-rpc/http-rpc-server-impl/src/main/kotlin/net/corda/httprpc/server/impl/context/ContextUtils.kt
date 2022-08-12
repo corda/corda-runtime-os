@@ -85,7 +85,7 @@ internal object ContextUtils {
             MDC.put("http.method", ctx.method())
             MDC.put("http.path", ctx.path())
             MDC.put("http.user", rpcContext()?.principal ?: "<anonymous>")
-            log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
+            log.info("Servicing ${ctx.method()} request to '${ctx.path()}'")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
             try {

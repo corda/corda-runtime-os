@@ -3,6 +3,13 @@ package net.corda.applications.workers.smoketest
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.net.URI
+import java.time.Duration
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 const val X500_BOB = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
 const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
@@ -25,3 +32,12 @@ fun truncateLongHash(shortHash:String):String {
 }
 
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
+
+fun Any.contextLogger(): Logger = LoggerFactory.getLogger(javaClass.enclosingClass)
+
+@Throws(InterruptedException::class, TimeoutException::class)
+fun <V> Future<V>.getOrThrow(timeout: Duration?): V = try {
+    if (timeout == null) get() else get(timeout.toNanos(), TimeUnit.NANOSECONDS)
+} catch (e: ExecutionException) {
+    throw e.cause!!
+}
