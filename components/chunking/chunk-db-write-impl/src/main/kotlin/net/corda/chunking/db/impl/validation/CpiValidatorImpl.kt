@@ -69,7 +69,6 @@ class CpiValidatorImpl constructor(
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
             cpiPersistence.verifyGroupIdIsUniqueForCpi(cpi)
-            // Check version matches here
         }
 
         publisher.update(
