@@ -6,7 +6,8 @@ bootstrap:
     password: "admin"
 
 logging:
-  format: text
+  format: "text"
+  level: "info"
 
 kafka:
   bootstrapServers: prereqs-kafka:9092
