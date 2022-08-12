@@ -127,4 +127,20 @@ class UpdateRegistrationRequestStatusHandlerTest {
         verify(registrationRequestEntity).lastModified = Instant.ofEpochMilli(500)
         verify(entityManager, times(1)).merge(registrationRequestEntity)
     }
+
+    @Test
+    fun `invoke updates fails to downgrade status`() {
+        val registrationId = "regId"
+        val registrationRequestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "APPROVED"
+        }
+        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
+        clock.setTime(Instant.ofEpochMilli(500))
+
+        assertThrows<MembershipPersistenceException> {
+            updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
+        }
+    }
 }

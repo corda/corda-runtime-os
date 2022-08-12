@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
@@ -16,10 +17,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.isA
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -52,7 +50,15 @@ class DeclineRegistrationHandlerTest {
 
     private val record = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
-        on { createAuthenticatedMessageRecord(any(), any(), isA<SetOwnRegistrationStatus>(), isNull()) } doReturn record
+        on { createAuthenticatedMessageRecord(
+            mgm,
+            member,
+            SetOwnRegistrationStatus(
+                REGISTRATION_ID,
+                RegistrationStatus.DECLINED,
+            ),
+            null)
+        } doReturn record
     }
 
     private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), p2pRecordsFactory)

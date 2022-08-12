@@ -7,6 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,6 +21,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -42,6 +46,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
@@ -190,6 +195,7 @@ class DynamicMemberRegistrationServiceTest {
             }
         }
     }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -198,7 +204,7 @@ class DynamicMemberRegistrationServiceTest {
         keyEncodingService,
         serializationFactory,
         membershipGroupReaderProvider,
-        mock(),
+        membershipPersistenceClient,
         layeredPropertyMapFactory,
     )
 
@@ -280,6 +286,25 @@ class DynamicMemberRegistrationServiceTest {
             it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(REQUEST_BYTES))
         }
         registrationService.stop()
+    }
+
+    @Test
+    fun `registration successfully persist the status to new`() {
+        postConfigChangedEvent()
+        registrationService.start()
+        val status = argumentCaptor<RegistrationRequest>()
+        whenever(
+            membershipPersistenceClient.persistRegistrationRequest(
+                eq(member),
+                status.capture()
+            )
+        ).doReturn(
+            MembershipPersistenceResult.success()
+        )
+
+        registrationService.register(registrationResultId, member, context)
+
+        assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.NEW)
     }
 
     @Test

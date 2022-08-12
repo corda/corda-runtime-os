@@ -8,6 +8,7 @@ import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
@@ -39,6 +40,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -158,9 +160,11 @@ class MGMRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
         on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
+        on { persistRegistrationRequest(eq(mgm), statusUpdate.capture()) } doReturn MembershipPersistenceResult.success()
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -297,6 +301,8 @@ class MGMRegistrationServiceTest {
             it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
             it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
             it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
+            it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+            it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
         }
         registrationService.stop()
     }

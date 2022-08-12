@@ -20,10 +20,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.isA
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -60,7 +57,17 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
     private val record = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
-        on { createAuthenticatedMessageRecord(any(), any(), isA<SetOwnRegistrationStatus>(), isNull()) } doReturn record
+        on {
+            createAuthenticatedMessageRecord(
+                mgm,
+                member,
+                SetOwnRegistrationStatus(
+                    REGISTRATION_ID,
+                    RegistrationStatus.PENDING_AUTO_APPROVAL
+                ),
+                null
+            )
+        } doReturn record
     }
 
     private val processMemberVerificationResponseHandler = ProcessMemberVerificationResponseHandler(

@@ -35,7 +35,11 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -50,6 +54,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -59,6 +64,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -167,6 +173,7 @@ class StaticMemberRegistrationServiceTest {
     private val mockContext: Map<String, String> = mock {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
+    private val persistenceClient = mock<MembershipPersistenceClient>()
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -177,7 +184,7 @@ class StaticMemberRegistrationServiceTest {
         lifecycleCoordinatorFactory,
         hsmRegistrationClient,
         memberInfoFactory,
-        mock(),
+        persistenceClient,
     )
 
     private fun setUpPublisher() {
@@ -251,6 +258,21 @@ class StaticMemberRegistrationServiceTest {
         assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
 
         assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
+    }
+
+    @Test
+    fun `registration persist the status`() {
+        val status = argumentCaptor<RegistrationRequest>()
+        whenever(persistenceClient.persistRegistrationRequest(
+            eq(alice),
+            status.capture()
+        )).doReturn(MembershipPersistenceResult.success())
+        setUpPublisher()
+        registrationService.start()
+
+        registrationService.register(registrationId, alice, mockContext)
+
+        assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
     }
 
     @Test

@@ -64,7 +64,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
-    val publisherFactory: PublisherFactory,
+    internal val publisherFactory: PublisherFactory,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = CryptoOpsClient::class)
@@ -76,9 +76,9 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory,
+    private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
-    val persistenceClient: MembershipPersistenceClient,
+    private val persistenceClient: MembershipPersistenceClient,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()

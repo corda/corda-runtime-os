@@ -44,6 +44,7 @@ import net.corda.membership.registration.GroupPolicyGenerationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
@@ -54,11 +55,13 @@ import org.slf4j.Logger
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
+@Suppress("LongParameterList")
 class MemberOpsServiceProcessor(
     private val registrationProxy: RegistrationProxy,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val clock : Clock = UTCClock(),
     private val idFactory: ()->UUID = { UUID.randomUUID() }
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -80,8 +83,6 @@ class MemberOpsServiceProcessor(
          * Temporarily hardcoded to 1.
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
-
-        private val clock = UTCClock()
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
