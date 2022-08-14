@@ -248,8 +248,8 @@ class UpsertCpiTests {
     }
 
     @Test fun `can't upsert on force upload if first instance of cpi`() {
-        val groupId = "newGroup"
-        val name = "newTest"
+        val groupId = "nonExistent"
+        val name = "neverBefore"
         val version = "1.0.0"
         val ex = assertThrows<ValidationException> {
             cpiPersistence.canUpsertCpi(name, groupId, true, version)
