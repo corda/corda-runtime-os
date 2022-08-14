@@ -103,21 +103,17 @@ class CpiValidatorImpl constructor(
      *  of one CPI per mgm group id.
      */
     private fun canUpsertCpi(cpi: Cpi, groupId: String, forceUpload: Boolean) {
-        try {
-            if (!cpiPersistence.canUpsertCpi(
-                    cpi.metadata.cpiId.name,
-                    groupId,
-                    forceUpload,
-                    cpi.metadata.cpiId.version
-                )
-            ) {
-                throw ValidationException(
-                    "Group id ($groupId) in use with another CPI.  " +
-                            "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
-                )
-            }
-        } catch (e: ValidationException) {
-            throw ValidationException("A error occurred during validation: ", e)
+        if (!cpiPersistence.canUpsertCpi(
+                cpi.metadata.cpiId.name,
+                groupId,
+                forceUpload,
+                cpi.metadata.cpiId.version
+            )
+        ) {
+            throw ValidationException(
+                "Group id ($groupId) in use with another CPI.  " +
+                        "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
+            )
         }
     }
 

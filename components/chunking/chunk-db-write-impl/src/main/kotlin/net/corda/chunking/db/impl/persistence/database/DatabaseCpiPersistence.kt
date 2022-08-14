@@ -310,7 +310,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         if (entitiesFound.isEmpty() && !forceUpload) return true
 
         if (forceUpload && cpiVersion != null) {
-            log.info("Force upload stuff, $forceUpload", cpiName, cpiVersion)
             checkForMatchingEntity(entitiesFound, cpiName, cpiVersion)
             // We can update this CPI if we find one with the same version in the case of a forceUpload
             return true
