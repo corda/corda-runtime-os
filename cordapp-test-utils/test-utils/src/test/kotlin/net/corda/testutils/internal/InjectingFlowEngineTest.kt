@@ -17,16 +17,16 @@ import org.mockito.kotlin.whenever
 
 class InjectingFlowEngineTest {
 
-    private val x500 = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+    private val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
 
     @Test
     fun `should inject subflow with provided services then call it`() {
         // Given some services and an injector
-        val protocolLookUp = mock<ProtocolLookUp>()
+        val fiber = mock<FakeFiber>()
         val injector = mock<FlowServicesInjector>()
 
         // And a flow engine which uses them
-        val engine = InjectingFlowEngine(x500, protocolLookUp, injector, CordaFlowChecker())
+        val engine = InjectingFlowEngine(member, fiber, injector, CordaFlowChecker())
 
         // When we pass a subflow to the flow engine
         val flow = mock<SubFlow<String>>()
@@ -35,7 +35,7 @@ class InjectingFlowEngineTest {
         val response = engine.subFlow(flow)
 
         // Then it should inject those
-        verify(injector, times(1)).injectServices(eq(flow), eq(x500), eq(protocolLookUp), any())
+        verify(injector, times(1)).injectServices(eq(flow), eq(member), eq(fiber), any())
 
         // And it should call the subFlow
         assertThat(response, `is`("Yo!"))
@@ -44,13 +44,13 @@ class InjectingFlowEngineTest {
     @Test
     fun `should run the flow checker on injected flows`() {
         // Given some services and an injector, and a flow checker which will throw an error
-        val protocolLookUp = mock<ProtocolLookUp>()
+        val fiber = mock<FakeFiber>()
         val injector = mock<FlowServicesInjector>()
         val flowChecker = mock<FlowChecker>()
         whenever(flowChecker.check(any())).thenThrow(IllegalArgumentException())
 
         // And a flow engine which uses them
-        val engine = InjectingFlowEngine(x500, protocolLookUp, injector, flowChecker)
+        val engine = InjectingFlowEngine(member, fiber, injector, flowChecker)
 
         // When we pass a subflow to the flow engine
         val flow = mock<SubFlow<String>>()

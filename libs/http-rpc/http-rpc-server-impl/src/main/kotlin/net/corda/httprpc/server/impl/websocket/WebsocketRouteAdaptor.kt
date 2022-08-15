@@ -9,7 +9,6 @@ import io.javalin.websocket.WsErrorContext
 import io.javalin.websocket.WsErrorHandler
 import io.javalin.websocket.WsMessageContext
 import io.javalin.websocket.WsMessageHandler
-import java.util.concurrent.ScheduledExecutorService
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.context.ClientWsRequestContext
 import net.corda.httprpc.server.impl.context.ContextUtils.authenticate
@@ -26,7 +25,7 @@ internal class WebsocketRouteAdaptor(
     private val routeInfo: RouteInfo,
     private val securityManager: HttpRpcSecurityManager,
     private val credentialResolver: DefaultCredentialResolver,
-    private val deferredWebsocketClosePool: ScheduledExecutorService
+    private val webSocketCloserService: WebSocketCloserService
 ) : WsMessageHandler, WsCloseHandler,
     WsConnectHandler, WsErrorHandler {
 
@@ -44,7 +43,7 @@ internal class WebsocketRouteAdaptor(
         try {
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
-            ServerDuplexChannel(ctx, deferredWebsocketClosePool).let { newChannel ->
+            ServerDuplexChannel(ctx, webSocketCloserService).let { newChannel ->
                 channel = newChannel
 
                 ctx.session.idleTimeout = WEBSOCKET_IDLE_TIMEOUT

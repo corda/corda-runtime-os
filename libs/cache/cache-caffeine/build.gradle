@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Caffeine cache utilities'
+
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:utilities")
+    implementation 'net.corda:corda-base'
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

@@ -1,6 +1,6 @@
 package net.cordacon.example
 
-import net.corda.testutils.CordaMock
+import net.corda.testutils.FakeCorda
 import net.corda.testutils.services.SimpleJsonMarshallingService
 import net.corda.testutils.tools.RPCRequestDataMock
 import net.corda.testutils.tools.ResponderMock
@@ -22,7 +22,7 @@ class RollCallFlowTest {
     fun `should request each student to respond to roll call`() {
         // Given a teacher with an initiating flow
         val teacher = MemberX500Name.parse("CN=Teach, OU=Economics, O=Grange Hill, L=London, C=GB")
-        val corda = CordaMock()
+        val corda = FakeCorda()
         corda.upload(teacher, RollCallFlow::class.java)
 
         // And a list of students who will respond predictably
@@ -57,6 +57,7 @@ class RollCallFlowTest {
             BETA: Here
             TEACH: Gamma?
             GAMMA: Yo
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
     }
 
@@ -64,7 +65,7 @@ class RollCallFlowTest {
     fun `should retry twice if any student fails to respond`() {
         // Given a teacher with an initiating flow
         val teacher = MemberX500Name.parse("CN=Teach, OU=Economics, O=Grange Hill, L=London, C=GB")
-        val corda = CordaMock()
+        val corda = FakeCorda()
         corda.upload(teacher, RollCallFlow::class.java)
 
         // And a student who will respond with empty string repeatedly
@@ -87,6 +88,7 @@ class RollCallFlowTest {
             TEACH: Zammo?
             TEACH: Zammo?
             TEACH: Zammo?
+            
         """.trimIndent().replace("\n", System.lineSeparator())))
     }
 
@@ -97,6 +99,7 @@ class RollCallFlowTest {
         val flow = RollCallFlow()
         flow.flowMessaging = mock()
         flow.flowEngine = mock()
+        flow.persistenceService = mock()
         flow.jsonMarshallingService = SimpleJsonMarshallingService()
 
         whenever(flow.flowEngine.virtualNodeName).thenReturn(teacher)

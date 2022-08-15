@@ -85,5 +85,5 @@ interface CpiPersistence {
      *
      * true: If nothing is in the db we can clearly insert `(any, any)`
      */
-    fun canUpsertCpi(cpiName: String, groupId: String): Boolean
+    fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean = false, cpiVersion: String? = null): Boolean
 }

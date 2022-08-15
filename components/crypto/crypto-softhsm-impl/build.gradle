@@ -21,6 +21,7 @@ dependencies {
     implementation project(":components:crypto:crypto-ecies")
     implementation project(":components:crypto:crypto-ecies-core-impl")
     implementation project(":components:crypto:crypto-persistence")
+    implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:crypto:cipher-suite-impl')
     implementation project(":libs:lifecycle:lifecycle")

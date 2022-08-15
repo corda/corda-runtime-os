@@ -178,6 +178,7 @@ include 'cordapp-test-utils:example-app'
 include 'cordapp-test-utils:test-utils'
 include 'libs:application:application-db-setup'
 include 'libs:application:application-impl'
+include 'libs:cache:cache-caffeine'
 include 'libs:chunking:chunking-core'
 include 'libs:chunking:chunking-datamodel'
 include 'libs:configuration:configuration-core'
@@ -391,7 +392,6 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
     }
