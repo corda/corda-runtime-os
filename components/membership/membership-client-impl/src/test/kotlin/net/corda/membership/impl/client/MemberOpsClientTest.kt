@@ -177,7 +177,7 @@ class MemberOpsClientTest {
 
         val requestSent = rpcRequest?.request as RegistrationRpcRequest
 
-        assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityId)
+        assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityShortHash)
         assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
         assertThat(requestSent.context.toMap()).isEqualTo(request.context)
     }
@@ -186,19 +186,19 @@ class MemberOpsClientTest {
     fun `rpc sender sends the expected request - checking registration progress`() {
         memberOpsClient.start()
         setUpRpcSender()
-        memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+        memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         memberOpsClient.stop()
 
         val requestSent = rpcRequest?.request as RegistrationStatusRpcRequest
 
-        assertEquals(request.holdingIdentityId, requestSent.holdingIdentityId)
+        assertEquals(request.holdingIdentityShortHash, requestSent.holdingIdentityId)
     }
 
     @Test
     fun `should fail when rpc sender is not ready`() {
         memberOpsClient.start()
         val ex = assertFailsWith<IllegalStateException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
         memberOpsClient.stop()
@@ -207,7 +207,7 @@ class MemberOpsClientTest {
     @Test
     fun `should fail when service is not running`() {
         val ex = assertFailsWith<IllegalStateException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
     }
@@ -219,7 +219,7 @@ class MemberOpsClientTest {
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).thenThrow(CordaRPCAPISenderException(message))
         val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains(message) }
         memberOpsClient.stop()
@@ -245,7 +245,7 @@ class MemberOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains("null") }
         memberOpsClient.stop()
@@ -277,7 +277,7 @@ class MemberOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains("ID") }
         memberOpsClient.stop()
@@ -309,7 +309,7 @@ class MemberOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains("timestamp") }
         memberOpsClient.stop()
@@ -335,7 +335,7 @@ class MemberOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityId)
+            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
         assertTrue { ex.message!!.contains("Expected class") }
         memberOpsClient.stop()

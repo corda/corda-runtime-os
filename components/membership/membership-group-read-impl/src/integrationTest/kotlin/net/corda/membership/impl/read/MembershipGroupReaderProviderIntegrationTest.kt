@@ -55,7 +55,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     private val aliceX500Name = "C=GB, L=London, O=Alice"
     private val aliceMemberName = MemberX500Name.parse(aliceX500Name)
     private val groupId = "ABC123"
-    private val aliceHoldingIdentity = HoldingIdentity(aliceX500Name, groupId)
+    private val aliceHoldingIdentity = HoldingIdentity(aliceMemberName, groupId)
     private val bootConf = """
         $INSTANCE_ID=1
         $BUS_TYPE = INMEMORY
@@ -103,7 +103,7 @@ class MembershipGroupReaderProviderIntegrationTest {
                     Record(
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(messagingConf, 0, schemaVersion)
+                        Configuration(messagingConf, messagingConf, 0, schemaVersion)
                     )
                 )
             )[0]
@@ -221,7 +221,8 @@ class MembershipGroupReaderProviderIntegrationTest {
     }
 
     private fun Publisher.publishMessagingConf() =
-        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))
+        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG,
+            Configuration(messagingConf, messagingConf, 0, schemaVersion))
 
     private fun <K : Any, V : Any> Publisher.publishRecord(topic: String, key: K, value: V) =
         publish(listOf(Record(topic, key, value)))

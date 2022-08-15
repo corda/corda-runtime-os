@@ -30,6 +30,7 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 
 internal class InboundMessageProcessor(
@@ -64,7 +65,7 @@ internal class InboundMessageProcessor(
                     processSessionMessage(message)
                 }
                 is UnauthenticatedMessage -> {
-                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), payload))
+                    listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(payload)))
                 }
                 else -> {
                     logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
@@ -163,7 +164,7 @@ internal class InboundMessageProcessor(
         val sessionDestination = counterparties.ourId
         val messageDestination = innerMessage.message.header.destination
         val messageSource = innerMessage.message.header.source
-        if (sessionSource == messageSource && sessionDestination == messageDestination) {
+        if (sessionSource == messageSource.toCorda() && sessionDestination == messageDestination.toCorda()) {
             logger.debug {
                 "Processing message ${innerMessage.message.header.messageId} " +
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
@@ -171,7 +172,7 @@ internal class InboundMessageProcessor(
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
-        } else if (sessionSource != messageSource) {
+        } else if (sessionSource != messageSource.toCorda()) {
             logger.warn(
                 "The identity in the message's source header ($messageSource)" +
                     " does not match the session's source identity ($sessionSource)," +
@@ -239,8 +240,8 @@ internal class InboundMessageProcessor(
         session: Session
     ): Record<String, LinkOutMessage>? {
         // We route the ACK back to the original source
-        val ackDest = message.header.source
-        val ackSource = message.header.destination
+        val ackDest = message.header.source.toCorda()
+        val ackSource = message.header.destination.toCorda()
         val ack = MessageConverter.linkOutMessageFromAck(
             MessageAck(AuthenticatedMessageAck(message.header.messageId)),
             ackSource,

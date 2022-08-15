@@ -1,6 +1,6 @@
+{{- if .Values.bootstrap.db.enabled }}
 apiVersion: batch/v1
 kind: Job
-{{- if .Values.bootstrap.auto }}
 metadata:
   name: corda-setup-db
   labels:
@@ -9,6 +9,9 @@ metadata:
     "helm.sh/hook": pre-install
 spec:
   template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
@@ -115,21 +118,21 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [ 'initial-config', 'create-user-config', '-l', '/tmp/working_dir', 'create-dev-config']
+          args: [ 'initial-config', 'create-user-config', '-u', '$(INITIAL_ADMIN_USER_USERNAME)', '-p', '$(INITIAL_ADMIN_USER_PASSWORD)', '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
           env:
-            - name: SALT
+            - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: salt
-            - name: PASSPHRASE
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+            - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
-                  key: passphrase
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
         - name: apply-initial-rpc-admin
           image: {{ include "corda.dbClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}

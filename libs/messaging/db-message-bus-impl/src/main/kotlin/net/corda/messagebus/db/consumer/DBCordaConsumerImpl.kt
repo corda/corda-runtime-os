@@ -232,6 +232,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     internal fun getNextTopicPartition(): CordaTopicPartition? {
         updateTopicPartitions()
 
+        if (topicPartitions.isEmpty()) {
+            return null
+        }
+
         @Synchronized
         fun nextPartition(): CordaTopicPartition {
             return if (!currentTopicPartition.hasNext()) {

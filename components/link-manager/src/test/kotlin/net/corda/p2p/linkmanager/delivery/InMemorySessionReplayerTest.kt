@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -19,6 +18,7 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -42,8 +42,8 @@ class InMemorySessionReplayerTest {
 
     companion object {
         private const val GROUP_ID = "myGroup"
-        private val US = HoldingIdentity("Us",GROUP_ID)
-        private val COUNTER_PARTY = HoldingIdentity("CounterParty", GROUP_ID)
+        private val US = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB",GROUP_ID)
+        private val COUNTER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         private val SESSION_COUNTERPARTIES = SessionManager.SessionCounterparties(US, COUNTER_PARTY)
         private const val MAX_MESSAGE_SIZE = 100000
         lateinit var loggingInterceptor: LoggingInterceptor
@@ -205,7 +205,8 @@ class InMemorySessionReplayerTest {
     @Test
     fun `The replaySchedular callback logs a warning when the responder is not in the network map`() {
         val members = mock<LinkManagerMembershipGroupReader> {
-            on { getMemberInfo(COUNTER_PARTY) } doReturnConsecutively listOf(null, groupsAndMembers.first.getMemberInfo(COUNTER_PARTY))
+            on { getMemberInfo(US, COUNTER_PARTY) } doReturnConsecutively
+                listOf(null, groupsAndMembers.first.getMemberInfo(US, COUNTER_PARTY))
             val mockDominoTile = mock<ComplexDominoTile> {
                 whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
             }

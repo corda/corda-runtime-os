@@ -1,0 +1,25 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+dependencies {
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-application:$cordaApiVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'cordapp-test-utils'
+}

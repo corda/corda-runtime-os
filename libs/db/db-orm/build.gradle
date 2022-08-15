@@ -13,4 +13,7 @@ dependencies {
 
     compileOnly "org.osgi:osgi.annotation"
     api "javax.persistence:javax.persistence-api"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

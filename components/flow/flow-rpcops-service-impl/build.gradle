@@ -12,11 +12,13 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:flow:flow-rpcops-service')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:http-rpc:http-rpc')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(":libs:flows:utils")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'
@@ -25,6 +27,10 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "com.google.guava:guava:$guavaVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+    testImplementation project(':testing:test-utilities')
 }

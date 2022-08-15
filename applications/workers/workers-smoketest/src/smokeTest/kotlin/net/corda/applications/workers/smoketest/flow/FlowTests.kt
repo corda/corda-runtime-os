@@ -8,17 +8,17 @@ import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
-import net.corda.applications.workers.smoketest.X500_SESSION_USER1
-import net.corda.applications.workers.smoketest.X500_SESSION_USER2
-import net.corda.applications.workers.smoketest.addSoftHsmFor
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
 import net.corda.applications.workers.smoketest.createVirtualNodeFor
+import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getRpcFlowResult
+import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
@@ -40,6 +40,16 @@ class FlowTests {
         var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
+        val expectedFlows = listOf(
+            "net.cordapp.flowworker.development.flows.MessagingFlow",
+            "net.cordapp.flowworker.development.flows.PersistenceFlow",
+            "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
+            "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
+            "net.cordapp.flowworker.development.flows.TestFlow",
+            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
+        )
+
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
@@ -58,10 +68,8 @@ class FlowTests {
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
-            createVirtualNodeFor(X500_SESSION_USER1)
-            createVirtualNodeFor(X500_SESSION_USER2)
-
-            addSoftHsmFor(bobHoldingId, "LEDGER")
+            registerMember(bobHoldingId)
+            registerMember(charlieHoldingId)
         }
     }
 
@@ -90,11 +98,9 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(charlieHoldingId, requestBody)
         startRpcFlow(davidHoldingId, requestBody)
         startRpcFlow(davidHoldingId, requestBody)
 
-        awaitMultipleRpcFlowFinished(charlieHoldingId, 1)
         awaitMultipleRpcFlowFinished(davidHoldingId, 2)
     }
 
@@ -135,7 +141,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "start_sessions"
             data = mapOf(
-                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "sessions" to "${X500_BOB};${X500_CHARLIE}",
                 "messages" to "m1;m2"
             )
         }
@@ -150,18 +156,19 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("start_sessions")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
-   /**
-    * This test is failing unexpectedly, a bug has been raised to investigate
-    * https://r3-cev.atlassian.net/browse/CORE-5372
-    */
-    @Test @Disabled
-    fun `Platform Error - user code receives platform errors`(){
+    /**
+     * This test is failing unexpectedly, a bug has been raised to investigate
+     * https://r3-cev.atlassian.net/browse/CORE-5372
+     */
+    @Test
+    @Disabled
+    fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
-            data = mapOf("x500" to X500_SESSION_USER1)
+            data = mapOf("x500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -175,7 +182,14 @@ class FlowTests {
     }
 
     @Test
-    fun `Persistence - insert a record`(){
+    fun `Pipeline error results in flow marked as failed`() {
+        val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+    }
+
+    @Test
+    fun `Persistence - insert a record`() {
         val id = UUID.randomUUID()
         val requestBody = RpcSmokeTestInput().apply {
             command = "persist_insert"
@@ -193,7 +207,7 @@ class FlowTests {
     }
 
     @Test
-    fun `Flow persistence`(){
+    fun `Flow persistence`() {
         val id = UUID.randomUUID()
 
         // Insert a dog
@@ -244,6 +258,19 @@ class FlowTests {
         flowResult = result.getRpcFlowResult()
         assertThat(flowResult.result).isEqualTo("found dog id='${id}' name='${newDogName}")
 
+        // find all dogs
+        requestBody = RpcSmokeTestInput().apply {
+            command = "persist_findall"
+        }
+
+        requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found one or more dogs")
+
         // delete a dog
         requestBody = RpcSmokeTestInput().apply {
             command = "persist_delete"
@@ -262,12 +289,20 @@ class FlowTests {
     }
 
     @Test
+    fun `Get runnable flows for a holdingId`() {
+        val flows = getFlowClasses(bobHoldingId)
+
+        assertThat(flows.size).isEqualTo(expectedFlows.size)
+        assertTrue(flows.containsAll(expectedFlows))
+    }
+
+    @Test
     fun `SubFlow - Create an initiated session in an initiating flow and pass it to a inline subflow`() {
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "subflow_passed_in_initiated_session"
             data = mapOf(
-                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "sessions" to "${X500_BOB};${X500_CHARLIE}",
                 "messages" to "m1;m2"
             )
         }
@@ -282,7 +317,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
     @Test
@@ -291,7 +326,7 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "subflow_passed_in_non_initiated_session"
             data = mapOf(
-                "sessions" to "${X500_SESSION_USER1};${X500_SESSION_USER2}",
+                "sessions" to "${X500_BOB};${X500_CHARLIE}",
                 "messages" to "m1;m2"
             )
         }
@@ -306,7 +341,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_SESSION_USER1}=echo:m1; ${X500_SESSION_USER2}=echo:m2")
+            .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
     @Test

@@ -53,6 +53,42 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `A flow finishing when previously in a retry state publishes a completed flow status and schedules flow cleanup`() {
+        // Trigger a retry state
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noFlowEvents()
+                checkpointHasRetry(1)
+                flowStatus(FlowStates.RETRYING)
+            }
+        }
+
+        // Now add the missing vnode and trigger a flow completion
+        given {
+            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY)
+            membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
+        }
+
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.FlowFinished(DONE))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                flowStatus(FlowStates.COMPLETED, result = DONE)
+                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
+            }
+        }
+
+    }
+
+    @Test
     fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)

@@ -11,6 +11,7 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
@@ -81,7 +82,6 @@ class SessionEventHandler @Activate constructor(
             // will get the right failure eventually, so this is fine for now.
             throw FlowTransientException(
                 "Failed to create the flow sandbox: ${e.message}",
-                context,
                 e
             )
         }
@@ -94,10 +94,11 @@ class SessionEventHandler @Activate constructor(
             .setCpiId(sessionInit.cpiId)
             .setInitiatedBy(initiatingIdentity)
             .setFlowClassName(initiatedFlow)
+            .setContextPlatformProperties(emptyKeyValuePairList())
             .setCreatedTimestamp(Instant.now())
             .build()
 
-        context.checkpoint.initFromNew(sessionInit.flowId, startContext)
+        context.checkpoint.initFlowState(startContext)
         context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
     }
 
@@ -108,8 +109,7 @@ class SessionEventHandler @Activate constructor(
         )
         throw FlowEventException(
             "Received a ${context.inputEventPayload.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
-                    "does not exist",
-            context
+                    "does not exist"
         )
     }
 }

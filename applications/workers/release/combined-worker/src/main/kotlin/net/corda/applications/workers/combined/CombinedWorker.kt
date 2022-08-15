@@ -9,8 +9,8 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -19,9 +19,12 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
+import net.corda.processors.p2p.gateway.GatewayProcessor
+import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -45,6 +48,10 @@ class CombinedWorker @Activate constructor(
     private val rpcProcessor: RPCProcessor,
     @Reference(service = MemberProcessor::class)
     private val memberProcessor: MemberProcessor,
+    @Reference(service = LinkManagerProcessor::class)
+    private val linkManagerProcessor: LinkManagerProcessor,
+    @Reference(service = GatewayProcessor::class)
+    private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -58,16 +65,16 @@ class CombinedWorker @Activate constructor(
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
+    @Suppress("ComplexMethod")
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
 
-        PostgresDbSetup().run()
-
-        JavaSerialisationFilter.install()
+        if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
+            logger.info("Quasar's instrumentation verification is enabled")
+        }
 
         val params = getParams(args, CombinedWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
-        setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
@@ -76,9 +83,37 @@ class CombinedWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig, cryptoConfig)
         ).addDefaultBootCryptoConfig(
-            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
+
+        val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
+        val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
+        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.JDBC_URL))
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbName = dbUrl.split("/").last().split("?").first()
+        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_USER))
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER) else "user"
+        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_PASS))
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_PASS) else "password"
+        val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
+        val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
+
+        PostgresDbSetup(
+            dbUrl,
+            superUser,
+            superUserPassword,
+            dbAdmin,
+            dbAdminPassword,
+            dbName,
+            secretsSalt,
+            secretsPassphrase
+        ).run()
+
+        setUpHealthMonitor(healthMonitor, params.defaultParams)
+
+        JavaSerialisationFilter.install()
+
+        logger.info("CONFIG = $config")
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)
@@ -86,6 +121,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.start(config)
         memberProcessor.start(config)
         rpcProcessor.start(config)
+        linkManagerProcessor.start(config, false)
+        gatewayProcessor.start(config, false)
     }
 
     override fun shutdown() {
@@ -97,6 +134,8 @@ class CombinedWorker @Activate constructor(
         flowProcessor.stop()
         memberProcessor.stop()
         rpcProcessor.stop()
+        linkManagerProcessor.stop()
+        gatewayProcessor.stop()
 
         healthMonitor.stop()
     }

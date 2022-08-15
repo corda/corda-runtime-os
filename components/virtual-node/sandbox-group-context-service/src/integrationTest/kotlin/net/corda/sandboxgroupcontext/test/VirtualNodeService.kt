@@ -4,12 +4,12 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
@@ -33,7 +33,7 @@ class VirtualNodeService @Activate constructor(
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
-        private fun generateHoldingIdentity() = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
+        private fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
     init {
         // setting cache size to 2 as some tests require 2 concurrent sandboxes for validating they don't overlap
@@ -48,13 +48,13 @@ class VirtualNodeService @Activate constructor(
         sandboxGroupContextComponent.close()
     }
 
-    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
+    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo, type: SandboxGroupType): SandboxGroupContext {
         val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val vNodeContext = VirtualNodeContext(
             virtualNodeInfo.holdingIdentity,
             cpi.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
-            SandboxGroupType.FLOW,
+            type,
             SingletonSerializeAsToken::class.java,
             null
         )
@@ -63,9 +63,9 @@ class VirtualNodeService @Activate constructor(
         }
     }
 
-    fun loadSandbox(resourceName: String): SandboxGroupContext {
+    fun loadSandbox(resourceName: String, type: SandboxGroupType): SandboxGroupContext {
         val vnodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
-        return getOrCreateSandbox(vnodeInfo).also { ctx ->
+        return getOrCreateSandbox(vnodeInfo, type).also { ctx ->
             vnodes[ctx] = vnodeInfo
         }
     }

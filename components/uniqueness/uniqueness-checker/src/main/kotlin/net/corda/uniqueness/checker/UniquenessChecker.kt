@@ -11,5 +11,5 @@ import net.corda.lifecycle.Lifecycle
  * See [UniquenessCheckRequest] and [UniquenessCheckResponse] for details of message formats.
  */
 interface UniquenessChecker : Lifecycle {
-    fun processRequests(requests: List<UniquenessCheckRequest>) : List<UniquenessCheckResponse>
+    fun processRequests(requests: List<UniquenessCheckRequest>): List<UniquenessCheckResponse>
 }

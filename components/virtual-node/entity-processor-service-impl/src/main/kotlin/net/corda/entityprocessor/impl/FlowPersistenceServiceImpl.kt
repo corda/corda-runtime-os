@@ -6,6 +6,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.FlowPersistenceProcessor
 import net.corda.entityprocessor.FlowPersistenceService
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,7 +16,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -49,20 +49,19 @@ class FlowPersistenceServiceImpl  @Activate constructor(
         private val logger = contextLogger()
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowPersistenceService>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::sandboxGroupContextComponent,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
     )
+    private val coordinator = coordinatorFactory.createCoordinator<FlowPersistenceService>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.debug { "FlowPersistenceService received: $event" }
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting flow persistence component." }
-                dependentComponents.registerAndStartAll(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -87,7 +86,6 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             is StopEvent -> {
                 flowPersistenceProcessor?.stop()
                 logger.debug { "Stopping FlowPersistenceProcessor." }
-                dependentComponents.stopAll()
             }
         }
     }

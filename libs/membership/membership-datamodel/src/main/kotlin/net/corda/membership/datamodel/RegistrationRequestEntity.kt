@@ -25,13 +25,13 @@ class RegistrationRequestEntity(
      * The holding identity ID of the registering member.
      */
     @Column(name = "holding_identity_id", nullable = false, updatable = false)
-    val holdingIdentityId: String,
+    val holdingIdentityShortHash: String,
 
     /**
      * The last status of the registration request.
      */
     @Column(nullable = false)
-    val status: String,
+    var status: String,
 
     /**
      * The instant representing when this registration request was received or created.
@@ -44,13 +44,13 @@ class RegistrationRequestEntity(
      * Managed by the DB and is not explicitly set during INSERT or UPDATE
      */
     @Column(name = "last_modified", nullable = false)
-    val lastModified: Instant,
+    var lastModified: Instant,
 
     /**
      * The serialized member context provided during registration. Serialized as [KeyValuePairList].
      */
-    @Column(nullable = false, updatable = false, columnDefinition="BLOB")
-    val context: ByteArray
+    @Column(nullable = false, updatable = false, columnDefinition = "BLOB")
+    val context: ByteArray,
 ) {
 
     override fun equals(other: Any?): Boolean {

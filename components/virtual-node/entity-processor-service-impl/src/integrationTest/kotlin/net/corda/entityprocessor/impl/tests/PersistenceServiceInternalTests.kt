@@ -1,13 +1,5 @@
 package net.corda.entityprocessor.impl.tests
 
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
-import java.util.Calendar
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntity
@@ -21,6 +13,7 @@ import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
@@ -69,7 +62,19 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.nio.file.Path
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
+import java.util.UUID
 
+sealed class QuerySetup {
+    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon"): QuerySetup()
+    data class All(val className: String): QuerySetup()
+}
 
 /**
  * To use Postgres rather than in-memory (HSQL):
@@ -120,7 +125,7 @@ class PersistenceServiceInternalTests {
     }
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         ctx = createDbTestContext()
         // Each test is likely to leave junk lying around in the tables before the next test.
         // We can't trust deleting the tables because tests can run concurrently.
@@ -209,7 +214,10 @@ class PersistenceServiceInternalTests {
 
         val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
         val calcDbConnection = Pair(virtualNodeInfoTwo.vaultDmlConnectionId, "calc-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection, calcDbConnection))
+
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection, calcDbConnection),
+            "PSIT2")
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -221,6 +229,18 @@ class PersistenceServiceInternalTests {
             )
 
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
+
+        // migrate DB schema
+        val dogClass = sandboxOne.sandboxGroup.getDogClass()
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    dogClass.packageName, listOf("migration/db.changelog-master.xml"),
+                    classLoader = dogClass.classLoader
+                ),
+            )
+        )
+        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
@@ -441,7 +461,7 @@ class PersistenceServiceInternalTests {
     fun `find all`() {
         val expected = persistDogs(ctx, 1)
 
-        val results = assertFindAll(DOG_CLASS_NAME)
+        val results = assertQuery(QuerySetup.All(DOG_CLASS_NAME))
 
         assertThat(results.size).isGreaterThanOrEqualTo(expected)
 
@@ -452,9 +472,58 @@ class PersistenceServiceInternalTests {
         }
     }
 
+
+    @Test
+    fun `find all with pagination`() {
+        val expected = persistDogs(ctx, 1)
+
+        val results1 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, 2)
+        val results2 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 2, 2)
+        val resultsBalance = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 4, Int.MAX_VALUE)
+
+        assertThat(results1.size).isEqualTo(2)
+        assertThat(results2.size).isEqualTo(2)
+        assertThat(resultsBalance.size).isEqualTo(expected - 4)
+
+        // And check the types we've returned
+        val dogClass = ctx.entitySandboxService.getClass(ctx.virtualNodeInfo.holdingIdentity, DOG_CLASS_NAME)
+        results1.forEach {
+            assertThat(it).isInstanceOf(dogClass)
+        }
+        results2.forEach {
+            assertThat(it).isInstanceOf(dogClass)
+        }
+        resultsBalance.forEach {
+            assertThat(it).isInstanceOf(dogClass)
+        }
+
+        results1.forEach {
+            assertThat(results2.map { x -> x.toString()}).doesNotContain(it.toString())
+            assertThat(resultsBalance.map { x -> x.toString()}).doesNotContain(it.toString())
+        }
+        results2.forEach {
+            assertThat(results1.map { x -> x.toString()}).doesNotContain(it.toString())
+            assertThat(resultsBalance.map { x -> x.toString()}).doesNotContain(it.toString())
+        }
+        resultsBalance.forEach {
+            assertThat(results1.map { x -> x.toString()}).doesNotContain(it.toString())
+            assertThat(results2.map { x -> x.toString()}).doesNotContain(it.toString())
+        }
+    }
+
+
+    @Test
+    fun `find all with negative pagination produces error`() {
+        persistDogs(ctx, 1)
+        assertQuery(QuerySetup.All(DOG_CLASS_NAME), -12, 2, expectFailure = "Invalid negative offset -12")
+        assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, -42, expectFailure = "Invalid negative limit -42")
+    }
+
     /**
      * AT THE TIME OF WRITING - if 'find all' returns a set of results and the size
      * of that set of results exceeds a kafka packet size, then we return an error response.
+     * The caller may use pagination to workaround this, provided individual result rows fit in
+     * Kafka message.
      */
     @Test
     fun `find all exceeds kakfa packet size`() {
@@ -464,7 +533,7 @@ class PersistenceServiceInternalTests {
             if (it.array().size > 50) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME))
+        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity,FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
@@ -473,6 +542,7 @@ class PersistenceServiceInternalTests {
         val failure = response.responseType as EntityResponseFailure
         assertThat(failure.exception.errorType).contains("KafkaMessageSizeException")
     }
+
     @Test
     fun `find exceeds kakfa packet size`() {
         val dogId = UUID.randomUUID()
@@ -525,7 +595,7 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find all with composite key`() {
         val expected = persistCats(ctx, 1)
-        val results = assertFindAll(CAT_CLASS_NAME)
+        val results = assertQuery(QuerySetup.All(CAT_CLASS_NAME))
 
         // Of the expected size - if it fails here - check we're cleaning up elsewhere.
         assertThat(results.size).isGreaterThanOrEqualTo(expected)
@@ -566,11 +636,117 @@ class PersistenceServiceInternalTests {
         assertThat(newBytes).isNull()
     }
 
+    @Test
+    fun `find with named query with many results`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "%o%"), query="Dog.summonLike"))
+        assertThat(r.size).isEqualTo(4)
+    }
+
+    @Test
+    fun `find with named query with 1 result`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query="Dog.summon"))
+        assertThat(r.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `find with named query and missing owner`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.independent"))
+        assertThat(r.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `update produces error`() {
+        persistDogs(ctx, 1)
+        assertQuery(
+            QuerySetup.NamedQuery(mapOf(), query = "Dog.release"),
+            expectFailure = "Not supported for DML operations"
+        )
+    }
+
+    @Test
+    fun `find with named query and incorrectly named parameter`() {
+        persistDogs(ctx, 1)
+        assertQuery(
+            QuerySetup.NamedQuery(mapOf("handle" to "Rover 1"), query = "Dog.summon"),
+            expectFailure = "Could not locate named parameter [handle], expecting one of [name]"
+        )
+    }
+
+    @Test
+    fun `find with incorrectly named parameter`() {
+        persistDogs(ctx, 1)
+        assertQuery(
+            QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.findByOwner"),
+            expectFailure = "No query defined for that name [Dog.findByOwner]"
+        )
+    }
+
+    @Test
+    fun `find with named query with all results`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"))
+        assertThat(r.size).isEqualTo(8)
+    }
+
+    @Test
+    fun `find with named query and zero limit returns no results`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), limit=0)
+        assertThat(r.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `find with named query and negative pagination produces error`() {
+        persistDogs(ctx, 1)
+        assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), -12, 2, expectFailure = "Invalid negative offset -12")
+        assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 0, -42, expectFailure = "Invalid negative limit -42")
+    }
+
+    @Test
+    fun `find with named query with pagination`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 0, 2)
+        assertThat(r.size).isEqualTo(2)
+        assertThat(r[0].toString()).contains("Butch 1")
+        assertThat(r[1].toString()).contains("Eddie 1")
+        val r2 = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 2, 2)
+        assertThat(r.size).isEqualTo(2)
+        assertThat(r2[0].toString()).contains("Gromit 1")
+        assertThat(r2[1].toString()).contains("Lassie 1")
+    }
+
+    @Test
+    fun `find with named query with excessive pagination`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 0, 1000)
+        assertThat(r.size).isEqualTo(8)
+    }
+
+    @Test
+    fun `find with named query with 0 results`() {
+        persistDogs(ctx, 1)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query="Dog.summon"))
+        assertThat(r.size).isEqualTo(0)
+    }
+
+
+    @Test
+    fun `find with named query result which hits Kafka message size limit`() {
+        assertQuery(QuerySetup.NamedQuery(mapOf(), "Dog.all"), expectFailure="Too large", sizeLimit = 10)
+    }
+
+
     private fun createDbTestContext(): DbTestContext {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
 
-        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection))
+        val testId = (0..1000000).random() // keeping this shorter than UUID.
+        val schemaName = "PSIT$testId"
+        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
+        val dbConnectionManager = FakeDbConnectionManager(
+            listOf(animalDbConnection), schemaName)
 
         // set up sandbox
         val entitySandboxService =
@@ -613,7 +789,8 @@ class PersistenceServiceInternalTests {
                     setOf(dogClass, catClass, sandbox.sandboxGroup.getOwnerClass())
                 )
             ),
-            dogClass, catClass
+            dogClass, catClass,
+            schemaName
         )
     }
 
@@ -657,23 +834,43 @@ class PersistenceServiceInternalTests {
         return EntityRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
     }
 
-    /** Find all for class name and assert
-     * @return the list of results (NOT the list of record/responses)
-     * */
-    private fun assertFindAll(className: String): List<*> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindAll(className))
+    private fun assertQuery(
+        querySetup: QuerySetup,
+        offset: Int = 0, limit: Int = Int.MAX_VALUE,
+        expectFailure: String? = null, sizeLimit: Int = Int.MAX_VALUE
+    ): List<*> {
+        val rec = when(querySetup) {
+            is QuerySetup.NamedQuery -> {
+                val paramsSerialized = querySetup.params.mapValues { ctx.serialize(it.value) }
+                FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit)
+            }
+            is QuerySetup.All -> {
+                FindAll(querySetup.className, offset, limit)
+            }
+        }
+        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
+            if (sizeLimit != Int.MAX_VALUE && it.array().size > sizeLimit) throw KafkaMessageSizeException("Too large")
+            it
+        }
+        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, rec)
+        val records = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request)))
+        assertThat(records.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
+        val record = records.first()
+        val flowEvent = record.value as FlowEvent
+        if (expectFailure != null) {
+            val response = flowEvent.payload as EntityResponse
+            if (response.responseType is EntityResponseFailure) {
+                logger.error("$response.responseType (expected failure)")
+                assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
 
-        val responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
-
-        assertThat(responses.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-
-        return assertThatResponseIsAList(entityResponse)
+            }
+            assertThat(response.responseType.toString()).contains(expectFailure)
+            return listOf<String>()
+        } else {
+            val entityResponse = flowEvent.payload as EntityResponse
+            return assertThatResponseIsAList(entityResponse)
+        }
     }
-
     /** Delete entity and assert
      * @return the list of successful responses
      * */

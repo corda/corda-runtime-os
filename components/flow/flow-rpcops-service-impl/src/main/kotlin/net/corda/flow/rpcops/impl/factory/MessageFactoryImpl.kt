@@ -9,8 +9,9 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStateErrorResponse
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.FlowStateErrorResponse
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
@@ -22,7 +23,8 @@ class MessageFactoryImpl : MessageFactory {
         clientRequestId: String,
         virtualNode: VirtualNodeInfo,
         flowClassName: String,
-        flowStartArgs: String
+        flowStartArgs: String,
+        flowContextPlatformProperties: Map<String, String>
     ): FlowMapperEvent {
         val context = FlowStartContext(
             FlowKey(clientRequestId, virtualNode.holdingIdentity),
@@ -33,6 +35,7 @@ class MessageFactoryImpl : MessageFactory {
             virtualNode.holdingIdentity,
             flowClassName,
             flowStartArgs,
+            keyValuePairListOf(flowContextPlatformProperties),
             Instant.now()
         )
 
@@ -40,15 +43,15 @@ class MessageFactoryImpl : MessageFactory {
         return FlowMapperEvent(startFlowEvent)
     }
 
-    override fun createFlowStatusResponse(flowStatus: FlowStatus): HTTPFlowStatusResponse {
+    override fun createFlowStatusResponse(flowStatus: FlowStatus): FlowStatusResponse {
 
-        return HTTPFlowStatusResponse(
-            flowStatus.key.identity.toCorda().id,
+        return FlowStatusResponse(
+            flowStatus.key.identity.toCorda().shortHash.value,
             flowStatus.key.id,
             flowStatus.flowId,
             flowStatus.flowStatus.toString(),
             flowStatus.result,
-            if (flowStatus.error != null) HTTPFlowStateErrorResponse(
+            if (flowStatus.error != null) FlowStateErrorResponse(
                 flowStatus.error.errorType,
                 flowStatus.error.errorMessage
             ) else null,

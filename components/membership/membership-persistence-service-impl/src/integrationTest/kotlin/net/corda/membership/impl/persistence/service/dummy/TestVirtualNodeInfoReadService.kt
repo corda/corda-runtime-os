@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -52,8 +53,8 @@ class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity) = vnodes[holdingIdentity]
 
-    override fun getById(id: String) = vnodes.entries.firstOrNull {
-        it.key.id == id
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash) = vnodes.entries.firstOrNull {
+        it.key.shortHash == holdingIdentityShortHash
     }?.value
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {

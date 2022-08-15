@@ -39,6 +39,13 @@ class StreamResourceAccessorTest {
     }
 
     @Test
+    fun `when openStreams with master changelog path and relativeTo throws`() {
+        assertThrows<UnsupportedOperationException> {
+            sra.openStreams("flintstone", "master.xml")
+        }
+    }
+
+    @Test
     fun `when openStreams with liquibase schema URL delegate`() {
         sra.openStreams(null, "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd")
 
@@ -53,6 +60,13 @@ class StreamResourceAccessorTest {
     }
 
     @Test
+    fun `when openStreams with known changelog and relative path throws`() {
+        assertThrows<UnsupportedOperationException> {
+            sra.openStreams("flintstone", "fred.xml")
+        }
+}
+
+    @Test
     fun `when openStreams with null streamPath throw`() {
         assertThrows<UnsupportedOperationException> {
             sra.openStreams(null, null)
@@ -60,9 +74,16 @@ class StreamResourceAccessorTest {
     }
 
     @Test
-    fun `when openStreams with non-null relativeTo throw`() {
+    fun `when openStreams with null streamPath and non-null relativeTo throw`() {
         assertThrows<UnsupportedOperationException> {
             sra.openStreams("hello", null)
+        }
+    }
+
+    @Test
+    fun `when openStreams with  non-null relativeTo throw`() {
+        assertThrows<UnsupportedOperationException> {
+            sra.openStreams("hello", "bar.txt")
         }
     }
 

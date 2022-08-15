@@ -26,6 +26,7 @@ import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
@@ -92,8 +93,10 @@ internal class OutboundMessageHandler(
             val peerMessage = event.value
             return@withLifecycleLock if (peerMessage != null) {
                 try {
-                    val trustStore = trustStoresMap.getTrustStore(peerMessage.header.sourceIdentity.x500Name,
-                                                                  peerMessage.header.destinationIdentity.groupId)
+                    val trustStore = trustStoresMap.getTrustStore(
+                        MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),
+                        peerMessage.header.destinationIdentity.groupId
+                    )
 
                     val sni = SniCalculator.calculateSni(
                         peerMessage.header.destinationIdentity.x500Name,

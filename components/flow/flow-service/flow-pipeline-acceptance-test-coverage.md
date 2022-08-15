@@ -127,6 +127,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - A flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup ✅
 - An initiated flow finishing removes the flow's checkpoint publishes a completed flow status and schedules flow cleanup ✅
 - Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then finishing the flow schedules flow and session cleanup ✅
+- A flow finishing when previously in a retry state publishes a completed flow status and schedules flow cleanup ✅
 
 ## Flow failing
 
@@ -156,6 +157,12 @@ This document should be maintained so that we can ensure that we have quick visi
 - Calling 'find' on a flow sends an EntityRequest with payload FindEntity ✅
 - Receiving a null response from a Find request resumes the flow ✅
 - Receiving bytes response from a Find request resumes the flow ✅
+
+### FindAll Requests
+
+- Calling 'findAll' on a flow sends an EntityRequest with payload FindAll ✅
+- Receiving a null response from a FindAll request resumes the flow ✅
+- Receiving bytes response from a FindAll request resumes the flow ✅
 
 ### Merge Requests
 - Calling 'merge' on a flow sends an EntityRequest with payload MergeEntity ✅

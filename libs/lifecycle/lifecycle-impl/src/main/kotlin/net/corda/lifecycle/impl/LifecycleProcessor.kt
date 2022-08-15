@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,6 +15,7 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
 
 /**
@@ -31,6 +33,7 @@ internal class LifecycleProcessor(
     private val name: LifecycleCoordinatorName,
     private val state: LifecycleStateManager,
     private val registry: LifecycleRegistryCoordinatorAccess,
+    private val dependentComponents: DependentComponents?,
     private val userEventHandler: LifecycleEventHandler
 ) {
 
@@ -41,6 +44,11 @@ internal class LifecycleProcessor(
         internal const val STOPPED_REASON = "Component has been stopped"
         internal const val ERRORED_REASON = "An unhandled error was encountered by the component"
     }
+
+    /**
+     * A map of the current resources managed by this coordinator.
+     */
+    private val managedResources = ConcurrentHashMap<String, AutoCloseable>()
 
     /**
      * Process a batch of events.
@@ -58,6 +66,7 @@ internal class LifecycleProcessor(
     /**
      * Process an individual event.
      */
+    @Suppress("ComplexMethod")
     private fun processEvent(
         event: LifecycleEvent,
         coordinator: LifecycleCoordinatorInternal,
@@ -141,6 +150,7 @@ internal class LifecycleProcessor(
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.
             updateStatus(coordinator, LifecycleStatus.DOWN, STARTED_REASON)
+            dependentComponents?.registerAndStartAll(coordinator)
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to start an already running coordinator" }
@@ -164,7 +174,11 @@ internal class LifecycleProcessor(
                 // the registry.
                 logger.debug { "Could not update status as coordinator is closing" }
             }
+            if (!event.errored) {
+                dependentComponents?.stopAll()
+            }
             runUserEventHandler(event, coordinator)
+            closeManagedResources(emptySet())
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
         }
@@ -200,6 +214,8 @@ internal class LifecycleProcessor(
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
+        closeManagedResources(emptySet())
+        managedResources.clear()
         return true
     }
 
@@ -237,6 +253,25 @@ internal class LifecycleProcessor(
                 )
             }
             errorEvent.isHandled
+        }
+    }
+
+    fun addManagedResource(name: String, generator: () -> AutoCloseable) {
+        managedResources[name]?.close()
+        managedResources[name] = generator.invoke()
+    }
+
+    fun getManagedResource(name: String): AutoCloseable? {
+        return managedResources[name]
+    }
+
+    internal fun closeManagedResources(resources: Set<String>?) {
+        if (resources != null) {
+            managedResources.filter { it.key in resources }.values
+        } else {
+            managedResources.values
+        }.forEach {
+            it.close()
         }
     }
 }

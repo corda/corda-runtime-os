@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl.security.provider.credentials
 
 import io.javalin.core.util.Header.AUTHORIZATION
 import io.javalin.http.Context
+import net.corda.httprpc.server.impl.context.ClientHttpRequestContext
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import org.junit.jupiter.api.Assertions
@@ -20,7 +21,7 @@ class DefaultCredentialResolverTest {
     //https://github.com/mockito/mockito/issues/1943
     private val req: HttpServletRequest = mock()
     private val res: HttpServletResponse = mock()
-    private val context = Context(req, res, emptyMap())
+    private val context = ClientHttpRequestContext(Context(req, res, emptyMap()))
     private val resolver = DefaultCredentialResolver()
 
     @Test

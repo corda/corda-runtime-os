@@ -24,6 +24,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.temporal.ChronoUnit
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -75,14 +76,14 @@ class VirtualNodeRpcTest {
                 condition {
                     it.code == 200 && it.toJson()["status"].textValue() == "OK" }
                 immediateFailCondition {
-                    it.code == 500
-                            && null != it.toJson()["title"].textValue()
-                            && ObjectMapper().readTree(it.toJson()["title"].textValue())["errorMessage"].textValue()
+                    it.code == 400
+                            && null != it.toJson()["details"]
+                            && it.toJson()["details"]["errorMessage"].textValue()
                         .startsWith("CPI already uploaded")
                 }
             }.toJson()
 
-            val cpiHash = json["checksum"].textValue()
+            val cpiHash = json["cpiFileChecksum"].textValue()
             assertThat(cpiHash).isNotNull.isNotEmpty
 
             // Capture the cpiHash from the cpi status upload
@@ -117,8 +118,8 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 500) {
-                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
+                        if(it.code == 400) {
+                            val json = it.toJson()["details"]
                             json.has("errorMessage")
                                     && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
                         } else {
@@ -144,20 +145,7 @@ class VirtualNodeRpcTest {
 
             assertWithRetry {
                 command { cpiStatus(requestId) }
-                condition {
-                    try {
-                        if(it.code == 500) {
-                            val json = ObjectMapper().readTree(it.toJson()["title"].textValue())
-                            json["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)
-                        } else {
-                            false
-                        }
-                    }
-                    catch (e: Exception) {
-                        println("Failed, repsonse: $it")
-                        false
-                    }
-                }
+                condition { it.code == 409 }
             }
         }
     }
@@ -204,7 +192,7 @@ class VirtualNodeRpcTest {
                 failMessage(ERROR_HOLDING_ID)
             }.toJson()
 
-            assertThat(vNodeJson["holdingIdHash"].textValue()).isNotNull.isNotEmpty
+            assertThat(vNodeJson["holdingIdentity"]["shortHash"].textValue()).isNotNull.isNotEmpty
         }
     }
 
@@ -232,6 +220,59 @@ class VirtualNodeRpcTest {
             }
 
             assertThat(nodes).contains(X500_ALICE)
+        }
+    }
+
+    @Test
+    @Order(61)
+    fun `set virtual node state`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val states = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["shortHash"].textValue() to it["state"].textValue()
+            }
+
+            val vnode = states.last()
+            val oldState = vnode.second
+            val newState = "IN_MAINTENANCE"
+
+            updateVirtualNodeState(vnode.first, newState)
+
+            assertWithRetry {
+                timeout(Duration.of(10, ChronoUnit.SECONDS))
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                        it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                        }["state"].textValue() == newState
+                }
+            }
+
+            updateVirtualNodeState(vnode.first, oldState)
+
+            assertWithRetry {
+                timeout(Duration.of(10, ChronoUnit.SECONDS))
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                        it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                        }["state"].textValue() == oldState
+                }
+            }
+        }
+    }
+
+    @Test
+    @Order(65)
+    fun `cpi status returns 400 for unknown request id`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertWithRetry {
+                command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
+                condition { it.code == 400 }
+            }
         }
     }
 
@@ -353,7 +394,7 @@ class VirtualNodeRpcTest {
     fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
         val cpis = cpiList().toJson()["cpis"]
         val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        return truncateLongHash(cpiJson["fileChecksum"].textValue())
+        return truncateLongHash(cpiJson["cpiFileChecksum"].textValue())
     }
 
     private fun String.toJson(): JsonNode = ObjectMapper().readTree(this)

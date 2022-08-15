@@ -13,6 +13,7 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.SQLIntegrityConstraintViolationException
+import java.sql.SQLTransientException
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -27,8 +28,9 @@ import javax.persistence.PersistenceException
 class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
-
-    private val defaultNumPartitions = 1
+    // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
+    // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
+    private val defaultNumPartitions = 3
     private val autoCreate = true
 
     companion object {
@@ -260,9 +262,8 @@ class DBAccess(
         }
     }
 
-    private fun findOffsetToReadUntil(topicPartition: CordaTopicPartition): Long {
-        return executeWithErrorHandling("read latest offsets") { entityManager ->
-            entityManager.createQuery(
+    private fun findOffsetToReadUntil(entityManager: EntityManager, topicPartition: CordaTopicPartition): Long {
+        return entityManager.createQuery(
                 """
                      select t from topic_record t 
                      join transaction_record tr on t.${TopicRecordEntry::transactionId.name} 
@@ -272,9 +273,8 @@ class DBAccess(
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.PENDING.ordinal}
                      order by t.${TopicRecordEntry::recordOffset.name}
                     """.trimIndent(),
-                TopicRecordEntry::class.java
-            ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: Long.MAX_VALUE
-        }
+            TopicRecordEntry::class.java
+        ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: Long.MAX_VALUE
     }
 
     fun getLatestRecordOffset(topicPartitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long> {
@@ -288,7 +288,7 @@ class DBAccess(
                      where t.${TopicRecordEntry::topic.name} = '${it.topic}'
                      and t.${TopicRecordEntry::partition.name} = '${it.partition}'
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.COMMITTED.ordinal}
-                     and t.${TopicRecordEntry::recordOffset.name} < ${findOffsetToReadUntil(it)}
+                     and t.${TopicRecordEntry::recordOffset.name} < ${findOffsetToReadUntil(entityManager, it)}
                      order by t.${TopicRecordEntry::recordOffset.name} desc
                 """.trimIndent(),
                     TopicRecordEntry::class.java
@@ -324,6 +324,7 @@ class DBAccess(
     private fun <T> executeWithErrorHandling(
         operationName: String,
         allowDuplicate: Boolean = false,
+        alreadyTriedOnce: Boolean = false,
         operation: (emf: EntityManager) -> T,
     ): T {
         var result: T? = null
@@ -337,6 +338,12 @@ class DBAccess(
                 // Someone got here first, not a problem
                 log.info("Attempt at duplicate record is allowed in this instance.")
                 result
+            } else if (!alreadyTriedOnce && e.isTransientDbException()) {
+                // Transient exception may occur when we were stopped on a breakpoint whilst trying to obtain
+                // DB connection from a Hikari pool. If we were paused for long enough Hikari will report a condition
+                // where connection is not available.
+                log.info("Transient DB error, let's try one more time: ${e.message}")
+                executeWithErrorHandling(operationName, allowDuplicate, true, operation)
             } else {
                 log.error("Error while trying to $operationName. Transaction has been rolled back.", e)
                 throw e
@@ -347,7 +354,7 @@ class DBAccess(
     private fun <T : Exception> Exception.isCausedBy(exceptionType: Class<T>): Boolean {
         var currentCause = this.cause
         while (currentCause != null) {
-            if (currentCause::class.java.isAssignableFrom(exceptionType)) {
+            if (exceptionType.isAssignableFrom(currentCause::class.java)) {
                 return true
             }
             currentCause = currentCause.cause
@@ -357,4 +364,7 @@ class DBAccess(
 
     private fun Exception.isDuplicate() =
         isCausedBy(SQLIntegrityConstraintViolationException::class.java) || isCausedBy(PersistenceException::class.java)
+
+    private fun Exception.isTransientDbException() =
+        this is SQLTransientException || isCausedBy(SQLTransientException::class.java)
 }

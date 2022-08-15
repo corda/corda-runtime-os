@@ -7,7 +7,8 @@ pipeline {
             label 'docker'
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
-            // Used to mount storage from the host as a volume to persist the cache between builds
+            // Volume used to mount storage from the host as a volume to persist the cache between builds
+            // Additional hosts used to facilitate access to Kafka
             args '-v /tmp:/host_tmp'
             // make sure build image is always fresh
             alwaysPull true
@@ -45,16 +46,6 @@ pipeline {
     }
 
     stages {
-        stage('Install CLI') {
-            steps {
-                sh 'mkdir -p "${GRADLE_USER_HOME}"'
-                //download and set up CLI
-                sh "curl -u '${CORDA_ARTIFACTORY_USERNAME}:${CORDA_ARTIFACTORY_PASSWORD}' https://software.r3.com/artifactory/engineering-tools-maven-unstable/net/corda/cli/corda-cli-developer/[RELEASE]/corda-cli-developer-[RELEASE].tar\\;source.branch+=main --output ./corda-cli.tar"
-                sh "rm -rf ./corda-cli && mkdir ./corda-cli"
-                sh "tar -C ./corda-cli --strip 1 -xf ./corda-cli.tar"
-                sh "./corda-cli/bin/corda-cli -v"
-            }
-        }
         stage ('Create namespace') {
             steps {
                 sh """
@@ -114,8 +105,9 @@ pipeline {
 
 
                 sh '''
-                    # Forward RPC worker port
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 > forward.txt 2>&1 &
+                    # Forward ports for testing
+                    nohup kubectl port-forward -n ${NAMESPACE} prereqs-kafka-0 9092 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-flow-worker 7003:7000 >> forward.txt 2>&1 &

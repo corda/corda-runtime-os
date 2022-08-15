@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.cache
 
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.ConcurrentHashMap
 
@@ -42,12 +43,12 @@ interface MemberDataCache<T> {
             val logger = contextLogger()
         }
 
-        private val cache = ConcurrentHashMap<String, T>()
+        private val cache = ConcurrentHashMap<ShortHash, T>()
 
-        override fun get(holdingIdentity: HoldingIdentity): T? = cache[holdingIdentity.id]
+        override fun get(holdingIdentity: HoldingIdentity): T? = cache[holdingIdentity.shortHash]
 
         override fun put(holdingIdentity: HoldingIdentity, data: T) {
-            cache[holdingIdentity.id] = data
+            cache[holdingIdentity.shortHash] = data
         }
 
         override fun clear() {

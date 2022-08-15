@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
 import net.corda.v5.base.util.contextLogger
 
 class FlowEventProcessorImpl(
@@ -29,7 +30,7 @@ class FlowEventProcessorImpl(
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 
-    init{
+    init {
         // This works for now, but we should consider introducing a provider we could then inject it into
         // the classes that need it rather than passing it through all the layers.
         flowEventExceptionProcessor.configure(config)
@@ -46,31 +47,35 @@ class FlowEventProcessorImpl(
             return StateAndEventProcessor.Response(state, listOf())
         }
 
-        log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+        val pipeline = try {
+            log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
+            flowEventPipelineFactory.create(state, flowEvent, config)
+        } catch (t: Throwable) {
+            // Without a pipeline there's a limit to what can be processed.
+            return flowEventExceptionProcessor.process(t)
+        }
 
         return try {
-            val pipeline = flowEventPipelineFactory.create(state, flowEvent, config)
-
-            flowEventContextConverter.convert(pipeline
-                .eventPreProcessing()
-                .runOrContinue()
-                .setCheckpointSuspendedOn()
-                .setWaitingFor()
-                .requestPostProcessing()
-                .globalPostProcessing()
-                .context
+            flowEventContextConverter.convert(
+                pipeline
+                    .eventPreProcessing()
+                    .runOrContinue(config.getInt(PROCESSING_MAX_FLOW_EXECUTION_DURATION).toLong())
+                    .setCheckpointSuspendedOn()
+                    .setWaitingFor()
+                    .requestPostProcessing()
+                    .globalPostProcessing()
+                    .context
             )
-
         } catch (e: FlowTransientException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowEventException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowPlatformException) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowFatalException) {
-            flowEventExceptionProcessor.process(e)
-        } catch (e: Exception) {
-            flowEventExceptionProcessor.process(e)
+            flowEventExceptionProcessor.process(e, pipeline.context)
+        } catch (t: Throwable) {
+            flowEventExceptionProcessor.process(t)
         }
     }
 }

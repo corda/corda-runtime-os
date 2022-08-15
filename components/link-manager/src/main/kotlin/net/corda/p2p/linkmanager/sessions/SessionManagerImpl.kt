@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -55,10 +54,13 @@ import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
@@ -103,7 +105,7 @@ internal class SessionManagerImpl(
         fun getSessionCounterpartiesFromMessage(message: AuthenticatedMessage): SessionCounterparties {
             val peer = message.header.destination
             val us = message.header.source
-            return SessionCounterparties(us, peer)
+            return SessionCounterparties(us.toCorda(), peer.toCorda())
         }
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
@@ -160,7 +162,7 @@ internal class SessionManagerImpl(
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
         configurationReaderService,
-        LinkManagerConfiguration.CONFIG_KEY,
+        ConfigKeys.P2P_LINK_MANAGER_CONFIG,
         ::fromConfig
     ) {
         override fun applyNewConfiguration(
@@ -373,12 +375,10 @@ internal class SessionManagerImpl(
             )
         }
 
-        val responderMemberInfo = members.getMemberInfo(counterparties.counterpartyId)
+        val responderMemberInfo = members.getMemberInfo(counterparties.ourId, counterparties.counterpartyId)
         if (responderMemberInfo == null) {
-            logger.warn(
-                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the members map. " +
-                    "The sessionInit message was not sent."
-            )
+            logger.warn("Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in " +
+                "${counterparties.ourId}'s members map. The sessionInit message was not sent.")
             return null
         }
 
@@ -436,7 +436,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val responderMemberInfo = members.getMemberInfo(sessionInfo.counterpartyId)
+        val responderMemberInfo = members.getMemberInfo(sessionInfo.ourId, sessionInfo.counterpartyId)
         if (responderMemberInfo == null) {
             logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
@@ -510,7 +510,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        val memberInfo = members.getMemberInfo(sessionCounterparties.counterpartyId)
+        val memberInfo = members.getMemberInfo(sessionCounterparties.ourId, sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
             logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
@@ -552,23 +552,22 @@ internal class SessionManagerImpl(
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
+        //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
+        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .find { it.groupId == message.source.groupId }
+        if (hostedIdentityInSameGroup == null) {
+            logger.warn("There is no locally hosted identity in group ${message.source.groupId}. The initiator message was discarded.")
+            return null
+        }
+
         val sessionManagerConfig = config.get()
-        val peer = members.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
+        val peer = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 message.source.initiatorPublicKeyHash.array().toBase64()
             )
-            return null
-        }
-
-        //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == peer.holdingIdentity.groupId }
-        if (hostedIdentityInSameGroup == null) {
-            logger.warn("There is no locally hosted identity in the same group with the initiator ${peer.holdingIdentity}. " +
-                    "The initiator message was discarded.")
             return null
         }
 
@@ -590,20 +589,27 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, HoldingIdentity(hostedIdentityInSameGroup.x500Name, hostedIdentityInSameGroup.groupId),
-                                    peer, groupInfo.networkType)
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peer, groupInfo.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val session = pendingInboundSessions[message.header.sessionId]
         if (session == null) {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
 
         val initiatorIdentityData = session.getInitiatorIdentity()
-        val peer = members.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
+        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .find { it.groupId == initiatorIdentityData.groupId }
+        if (hostedIdentityInSameGroup == null) {
+            logger.warn("There is no locally hosted identity in group ${initiatorIdentityData.groupId}. The initiator handshake message" +
+                    " was discarded.")
+            return null
+        }
+
+        val peer = members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
@@ -709,7 +715,7 @@ internal class SessionManagerImpl(
         @VisibleForTesting
         internal inner class HeartbeatManagerConfigChangeHandler : ConfigurationChangeHandler<HeartbeatManagerConfig>(
             configurationReaderService,
-            LinkManagerConfiguration.CONFIG_KEY,
+            ConfigKeys.P2P_LINK_MANAGER_CONFIG,
             ::fromConfig
         ) {
             override fun applyNewConfiguration(

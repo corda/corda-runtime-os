@@ -3,8 +3,8 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
@@ -24,6 +24,8 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.calculateHash
@@ -34,7 +36,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -85,7 +86,7 @@ class MemberProcessorTestUtils {
                     """
             ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=passphrase
             ${SmartConfigFactory.SECRET_SALT_KEY}=salt
-        """.trimIndent()
+                    """.trimIndent()
                 )
             ).create(
                 ConfigFactory
@@ -94,8 +95,7 @@ class MemberProcessorTestUtils {
                         ConfigFactory.parseString(BOOT_CONFIGURATION)
                     )
             ).addDefaultBootCryptoConfig(
-                fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
-                fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+                fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
             )
             extra.forEach {
                 cfg = cfg.withFallback(cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped())))
@@ -103,16 +103,16 @@ class MemberProcessorTestUtils {
             return cfg
         }
 
-        val aliceName = "C=GB, L=London, O=Alice"
-        val bobName = "C=GB, L=London, O=Bob"
-        val charlieName = "C=GB, L=London, O=Charlie"
+        const val aliceName = "C=GB, L=London, O=Alice"
+        const val bobName = "C=GB, L=London, O=Bob"
+        const val charlieName = "C=GB, L=London, O=Charlie"
 
         val aliceX500Name = MemberX500Name.parse(aliceName)
         val bobX500Name = MemberX500Name.parse(bobName)
         val charlieX500Name = MemberX500Name.parse(charlieName)
-        val groupId = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
-        val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
-        val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
+        const val groupId = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
+        val aliceHoldingIdentity = HoldingIdentity(aliceX500Name, groupId)
+        val bobHoldingIdentity = HoldingIdentity(bobX500Name, groupId)
 
         fun Publisher.publishRawGroupPolicyData(
             virtualNodeInfoReader: VirtualNodeInfoReadService,
@@ -140,7 +140,10 @@ class MemberProcessorTestUtils {
             // Publish test data
             publishCpiMetadata(cpiMetadata)
 
-            eventually {
+            eventually(
+                duration = 20.seconds,
+                waitBetween = 400.millis,
+            ) {
                 val newCpiInfo = getCpiInfo(cpiInfoReadService, cpiMetadata.cpiId)
                 assertNotNull(newCpiInfo)
                 assertNotEquals(previousCpiInfo, newCpiInfo)
@@ -150,7 +153,10 @@ class MemberProcessorTestUtils {
             publishVirtualNodeInfo(virtualNodeInfo)
 
             // wait for virtual node info reader to pick up changes
-            eventually {
+            eventually(
+                duration = 20.seconds,
+                waitBetween = 400.millis,
+            ) {
                 val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
                 assertNotNull(newVNodeInfo)
                 assertNotEquals(previous, newVNodeInfo)
@@ -158,17 +164,10 @@ class MemberProcessorTestUtils {
             }
         }
 
-        fun Lifecycle.stopAndWait() {
-            stop()
-            isStopped()
-        }
-
         fun Lifecycle.startAndWait() {
             start()
             isStarted()
         }
-
-        fun Lifecycle.isStopped() = eventually { assertFalse(isRunning) }
 
         fun Lifecycle.isStarted() = eventually { assertTrue(isRunning) }
 
@@ -307,7 +306,7 @@ class MemberProcessorTestUtils {
 
         private val schemaVersion = ConfigurationSchemaVersion(1, 0)
         private fun Publisher.publishConf(configKey: String, conf: String) =
-            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, 0, schemaVersion))
+            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, conf, 0, schemaVersion))
 
         private fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())

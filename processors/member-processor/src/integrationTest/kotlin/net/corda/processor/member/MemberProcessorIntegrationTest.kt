@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
@@ -41,7 +42,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPol
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySessionKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
@@ -52,15 +52,13 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawG
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -126,13 +124,13 @@ class MemberProcessorIntegrationTest {
 
         lateinit var publisher: Publisher
 
-        private val invalidHoldingIdentity = HoldingIdentity("", groupId)
+        private val invalidHoldingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
 
-        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName).toString(), groupId).id
+        private val aliceVNodeId = createTestHoldingIdentity(aliceName, groupId).shortHash
 
-        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName).toString(), groupId).id
+        private val bobVNodeId = createTestHoldingIdentity(bobName, groupId).shortHash
 
-        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName).toString(), groupId).id
+        private val charlieVNodeId = createTestHoldingIdentity(charlieName, groupId).shortHash
 
         private lateinit var testDependencies: TestDependenciesTracker
 
@@ -144,17 +142,17 @@ class MemberProcessorIntegrationTest {
         )
 
         private val aliceVNodeDb = TestDbInfo(
-            name = "vnode_crypto_$aliceVNodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(aliceVNodeId),
             schemaName = "vnode_crypto_alice"
         )
 
         private val bobVNodeDb = TestDbInfo(
-            name = "vnode_crypto_$bobVNodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(bobVNodeId),
             schemaName = "vnode_crypto_bob"
         )
 
         private val charlieVNodeDb = TestDbInfo(
-            name = "vnode_crypto_$charlieVNodeId",
+            name = VirtualNodeDbType.CRYPTO.getConnectionName(charlieVNodeId),
             schemaName = "vnode_crypto_charlie"
         )
 
@@ -171,6 +169,11 @@ class MemberProcessorIntegrationTest {
         @JvmStatic
         @BeforeAll
         fun setUp() {
+            // Creating this publisher first (using the messagingConfig) will ensure we're forcing
+            // the in-memory message bus. Otherwise we may attempt to use a real database for the test
+            // and that can cause message bus conflicts when the tests are run in parallel.
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+
             setupDatabases()
 
             // Set basic bootstrap config
@@ -190,7 +193,6 @@ class MemberProcessorIntegrationTest {
                 )
             ).also { it.startAndWait() }
 
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,

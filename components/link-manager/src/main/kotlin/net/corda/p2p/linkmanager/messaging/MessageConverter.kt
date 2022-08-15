@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.messaging
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.HeartbeatMessage
@@ -21,6 +20,9 @@ import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.apache.avro.AvroRuntimeException
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -52,8 +54,8 @@ class MessageConverter {
             networkType: NetworkType
         ): LinkOutHeader {
             return LinkOutHeader(
-                peer.holdingIdentity,
-                source,
+                peer.holdingIdentity.toAvro(),
+                source.toAvro(),
                 networkType,
                 peer.endPoint,
             )
@@ -110,8 +112,8 @@ class MessageConverter {
             }
             return createLinkOutMessageFromPayload(
                 serializedMessage,
-                message.message.header.source,
-                message.message.header.destination,
+                message.message.header.source.toCorda(),
+                message.message.header.destination.toCorda(),
                 session,
                 groups,
                 members,
@@ -148,23 +150,24 @@ class MessageConverter {
             groups: LinkManagerGroupPolicyProvider,
             members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
-            val destination = message.header.destination
-            val destMemberInfo = members.getMemberInfo(destination)
+            val destination = message.header.destination.toCorda()
+            val source = message.header.source.toCorda()
+            val destMemberInfo = members.getMemberInfo(source, destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
 
-            val groupInfo = groups.getGroupInfo(message.header.source)
+            val groupInfo = groups.getGroupInfo(source)
             if (groupInfo == null) {
                 logger.warn(
                     "Could not find the group information in the" +
-                        " GroupPolicyProvider for ${message.header.source}. The message was discarded."
+                        " GroupPolicyProvider for $source. The message was discarded."
                 )
                 return null
             }
 
-            return createLinkOutMessage(message, message.header.source, destMemberInfo, groupInfo.networkType)
+            return createLinkOutMessage(message, source, destMemberInfo, groupInfo.networkType)
         }
 
         @Suppress("LongParameterList")
@@ -199,7 +202,7 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = members.getMemberInfo(destination)
+            val destMemberInfo = members.getMemberInfo(source, destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null

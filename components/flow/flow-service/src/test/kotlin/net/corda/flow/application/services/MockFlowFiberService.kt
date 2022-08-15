@@ -21,7 +21,7 @@ class MockFlowFiberService : FlowFiberService {
     val flowStack: FlowStack = mock()
     private val checkpointSerializer = mock<CheckpointSerializer>()
     val sandboxGroupContext: FlowSandboxGroupContext = mock()
-    val holdingIdentity: HoldingIdentity =  HoldingIdentity(BOB_X500_NAME.toString(),"group1")
+    val holdingIdentity: HoldingIdentity =  HoldingIdentity(BOB_X500_NAME,"group1")
     private val membershipGroupReader: MembershipGroupReader = mock()
     val flowFiberExecutionContext: FlowFiberExecutionContext
 

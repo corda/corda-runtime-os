@@ -4,24 +4,24 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.impl.EndpointInfoImpl
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.records.Record
@@ -94,15 +94,15 @@ class MemberListProcessorTest {
         ): Map<String, PersistentMemberInfo> {
             val topicData = mutableMapOf<String, PersistentMemberInfo>()
             memberInfoList.forEach { member ->
-                val holdingIdentity = HoldingIdentity(member.name.toString(), member.groupId)
+                val holdingIdentity = HoldingIdentity(member.name, member.groupId)
                 if (!selfOwned && holdingIdentity != aliceIdentity) {
-                    topicData[aliceIdentity.id + holdingIdentity.id] = PersistentMemberInfo(
+                    topicData[aliceIdentity.shortHash.value + holdingIdentity.shortHash.value] = PersistentMemberInfo(
                         aliceIdentity.toAvro(),
                         member.memberProvidedContext.toAvro(),
                         member.mgmProvidedContext.toAvro()
                     )
                 }
-                topicData[holdingIdentity.id] = PersistentMemberInfo(
+                topicData[holdingIdentity.shortHash.value] = PersistentMemberInfo(
                     holdingIdentity.toAvro(),
                     member.memberProvidedContext.toAvro(),
                     member.mgmProvidedContext.toAvro()
@@ -147,11 +147,11 @@ class MemberListProcessorTest {
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
             alice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING)
-            aliceIdentity = HoldingIdentity(alice.name.toString(), alice.groupId)
+            aliceIdentity = HoldingIdentity(alice.name, alice.groupId)
             bob = createTestMemberInfo("O=Bob,L=London,C=GB", MEMBER_STATUS_ACTIVE)
-            bobIdentity = HoldingIdentity(bob.name.toString(), bob.groupId)
+            bobIdentity = HoldingIdentity(bob.name, bob.groupId)
             charlie = createTestMemberInfo("O=Charlie,L=London,C=GB", MEMBER_STATUS_SUSPENDED)
-            charlieIdentity = HoldingIdentity(charlie.name.toString(), charlie.groupId)
+            charlieIdentity = HoldingIdentity(charlie.name, charlie.groupId)
             memberListFromTopic = convertToTestTopicData(listOf(alice, bob, charlie))
         }
     }
@@ -178,7 +178,7 @@ class MemberListProcessorTest {
     fun `Member list cache is successfully updated with new record`() {
         memberListProcessor.onSnapshot(memberListFromTopic)
         val newMember = createTestMemberInfo("O=NewMember,L=London,C=GB", MEMBER_STATUS_ACTIVE)
-        val newMemberIdentity = HoldingIdentity(newMember.name.toString(), newMember.groupId)
+        val newMemberIdentity = HoldingIdentity(newMember.name, newMember.groupId)
         val topicData = convertToTestTopicData(listOf(newMember), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         memberListProcessor.onNext(newRecord, null, memberListFromTopic)

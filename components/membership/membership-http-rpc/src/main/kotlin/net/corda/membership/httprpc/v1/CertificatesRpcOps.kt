@@ -9,8 +9,8 @@ import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
 @HttpRpcResource(
-    name = "CertificatesRpcOps",
-    description = "Certificates API",
+    name = "Certificates API",
+    description = "Certificates management endpoints.",
     path = "certificates"
 )
 interface CertificatesRpcOps : RpcOps {
@@ -30,7 +30,7 @@ interface CertificatesRpcOps : RpcOps {
         description = "Import certificate."
     )
     fun importCertificateChain(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
         @HttpRpcRequestBodyParameter(
             description = "The certificate alias.",
@@ -63,7 +63,7 @@ interface CertificatesRpcOps : RpcOps {
         description = "Generate certificate signing request (CSR)."
     )
     fun generateCsr(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
         @HttpRpcPathParameter(description = "The Key ID.")
         keyId: String,

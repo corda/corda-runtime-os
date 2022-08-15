@@ -2,7 +2,6 @@ import aQute.bnd.version.MavenVersion
 
 plugins {
     id 'corda.common-library'
-    id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
 }
 
@@ -16,10 +15,6 @@ allprojects {
 }
 
 configurations {
-    flowsCPK {
-        canBeConsumed = false
-        transitive = false
-    }
     contractCPK {
         canBeConsumed = false
     }
@@ -36,24 +31,26 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.core"
     compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     api platform("net.corda:corda-api:$cordaApiVersion")
 
-    api "net.corda:corda-base"
-    api "net.corda:corda-crypto"
-    api "net.corda:corda-cipher-suite"
+    api 'net.corda:corda-base'
+    api 'net.corda:corda-crypto'
+    api 'net.corda:corda-cipher-suite'
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
+    implementation project(':libs:utilities')
     implementation project(":libs:packaging:packaging-core")
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-    testImplementation "org.osgi:osgi.core"
+    testImplementation 'org.osgi:osgi.core'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:packaging-test-utilities")
 
     // TODO:  We're pulling in some code (flows) from corda5 dev preview to build test cpks for our tests.
     // TODO:  This should be re-visited when more of the cordapp APIs are imported into this repo.
@@ -64,8 +61,12 @@ dependencies {
 }
 
 tasks.named('test', Test) {
-    inputs.files(configurations.flowsCPK, configurations.contractCPK, configurations.workflowCPK)
-    .withPropertyName("CPK_CONFIG").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(
+        configurations.contractCPK,
+        configurations.workflowCPK,
+        configurations.workflowLibs,
+        configurations.workflow
+    ).withPropertyName("CPK_CONFIG").withPathSensitivity(PathSensitivity.RELATIVE)
 
     doFirst {
         systemProperties([
@@ -73,7 +74,7 @@ tasks.named('test', Test) {
             'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
             'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
             'net.corda.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
-            'net.corda.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion.toString(),
+            'net.corda.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion,
             'net.corda.packaging.test.workflow.cordapp' : configurations.workflow.singleFile.toURI()
         ])
     }

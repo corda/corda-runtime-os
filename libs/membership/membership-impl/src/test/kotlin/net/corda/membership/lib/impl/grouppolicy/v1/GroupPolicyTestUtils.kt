@@ -2,6 +2,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_TRUST_ROOTS
@@ -27,16 +28,19 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Pr
 
 val R3_COM_CERT = ClassLoader.getSystemResource("r3Com.pem")
     .readText()
-    .replace(System.getProperty("line.separator"), "\n")
+    .replace("\r", "")
+    .replace("\n", System.lineSeparator())
 
 val UNPARSEABLE_CERT = ClassLoader.getSystemResource("invalidCert.pem")
     .readText()
-    .replace(System.getProperty("line.separator"), "\n")
+    .replace("\r", "")
+    .replace("\n", System.lineSeparator())
 
 const val TEST_FILE_FORMAT_VERSION = 1
 const val TEST_GROUP_ID = "13822f7f-0d2c-450b-8f6f-93c3b8ce9602"
 const val TEST_REG_PROTOCOL = "com.foo.bar.RegistrationProtocol"
 const val TEST_SYNC_PROTOCOL = "com.foo.bar.SyncProtocol"
+const val TEST_CERT = "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
 
 const val TEST_STATIC_MEMBER_KEY = "foo"
 const val TEST_STATIC_MEMBER_VALUE = "bar"
@@ -109,6 +113,21 @@ fun buildGroupPolicyNode(
                 mgmInfoOverride?.let { put(MGM_INFO, it) }
                 cipherSuiteOverride?.let { put(CIPHER_SUITE, it) }
             }
-        ).also { println(it) }
+        )
     )
 }
+
+fun buildEmptyProperties(layeredPropertyMapFactory: LayeredPropertyMapFactory) = layeredPropertyMapFactory.createMap(emptyMap())
+
+fun buildPersistedProperties(layeredPropertyMapFactory: LayeredPropertyMapFactory) =
+    layeredPropertyMapFactory.createMap(
+        mapOf(
+            "protocol.p2p.mode" to "Authentication",
+            "key.session.policy" to "Distinct",
+            "pki.session" to "StandardEV3",
+            "pki.tls" to "StandardEV3",
+            "truststore.session.0" to TEST_CERT,
+            "truststore.tls.0" to TEST_CERT,
+            "tls.version" to "1.2",
+        )
+    )

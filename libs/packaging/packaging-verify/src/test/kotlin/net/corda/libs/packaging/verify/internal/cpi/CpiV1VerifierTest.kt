@@ -1,18 +1,17 @@
 package net.corda.libs.packaging.verify.internal.cpi
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.ALICE
-import net.corda.libs.packaging.verify.TestUtils.BOB
-import net.corda.libs.packaging.verify.TestUtils.ROOT_CA
-import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.internal.cpb.TestCpbV1Builder
-import net.corda.libs.packaging.verify.internal.cpb.TestCpbV1Builder.Companion.POLICY_FILE
-import net.corda.libs.packaging.verify.internal.cpk.TestCpkV1Builder
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.ALICE
+import net.corda.libs.packaging.testutils.TestUtils.BOB
+import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.cpb.TestCpbV1Builder
+import net.corda.libs.packaging.testutils.cpk.TestCpkV1Builder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -21,6 +20,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.io.BufferedReader
+import net.corda.libs.packaging.testutils.cpi.TestCpiV1Builder
+import net.corda.libs.packaging.testutils.cpi.TestCpiV1Builder.Companion.POLICY_FILE
 
 class CpiV1VerifierTest {
     private fun verify(cpi: InMemoryZipFile) {
@@ -31,7 +32,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `successfully verifies valid CPI`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -42,7 +43,13 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if CPI not signed`() {
-        val cpi = TestCpbV1Builder().build()
+        val cpi =
+            TestCpiV1Builder()
+                .cpb(
+                    TestCpbV1Builder()
+                        .signers(ALICE)
+                )
+                .build()
 
         val exception = assertThrows<InvalidSignatureException> {
             verify(cpi)
@@ -52,7 +59,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if CPI has no manifest`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -66,7 +73,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if entry deleted from Manifest`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -83,7 +90,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if entry deleted from signature file`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -105,7 +112,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if entry deleted from one of multiple signature files`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE, BOB)
             .build()
 
@@ -127,7 +134,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if file modified in CPI`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -141,7 +148,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if unsigned file added to CPI`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -155,7 +162,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if signed file added to CPI`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -170,7 +177,7 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if file deleted in CPI`() {
-        val cpi = TestCpbV1Builder()
+        val cpi = TestCpiV1Builder()
             .signers(ALICE)
             .build()
 
@@ -184,8 +191,11 @@ class CpiV1VerifierTest {
 
     @Test
     fun `throws if CPK dependencies not satisfied`() {
-        val cpi = TestCpbV1Builder()
-            .cpks(TestCpkV1Builder().dependencies(TestUtils.Dependency("notExisting.cpk", "1.0.0.0")))
+        val cpi = TestCpiV1Builder()
+            .cpb(
+                TestCpbV1Builder()
+                    .cpks(TestCpkV1Builder().dependencies(TestUtils.Dependency("notExisting.cpk", "1.0.0.0")))
+            )
             .signers(ALICE)
             .build()
 

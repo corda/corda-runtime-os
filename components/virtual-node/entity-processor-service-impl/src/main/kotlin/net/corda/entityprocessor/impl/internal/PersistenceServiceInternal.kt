@@ -6,14 +6,19 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseSuccess
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.entityprocessor.impl.internal.exceptions.InvalidPaginationException
+import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 import javax.persistence.EntityManager
+import javax.persistence.Query
 import javax.persistence.criteria.Selection
 
 
@@ -143,12 +148,66 @@ class PersistenceServiceInternal(
         val cq = cb.createQuery(clazz)
         val rootEntity = cq.from(clazz)
 
-        // https://kotlinlang.org/docs/generics.html#variance
+        // https://kotlinlang.org/docs/generics.html#variancecv
         @Suppress("Unchecked_cast")
         val all = cq.select(rootEntity as Selection<out Nothing>?)
 
         val typedQuery = entityManager.createQuery(all)
-        val innerMsg = when (val results = typedQuery.resultList) {
+        return findWithQuery(serializationService, typedQuery, payload.offset, payload.limit)
+    }
+
+    /*
+     * Find all entities that match a named query
+     */
+    fun findWithNamedQuery(
+        serializationService: SerializationService,
+        entityManager: EntityManager,
+        payload: FindWithNamedQuery
+    ): EntityResponse {
+        val query = entityManager.createNamedQuery(payload.queryName)
+        // We do not support null values for parameters. This is because:
+        // 1. SQL equality to a null parameter to the query mostly doesn't do what the user might expect, in that
+        //    it won't match since you typically have to use "IS NULL" rather than "foo=:param" where param is null.
+        // 2. Hibernate does not translate = NULL to IS NULL.
+        // 3. Nulls introduce complexity into the serialization - you have to have a way of saying "null of type X".
+        //    Our Kotlin serialization code uses type Any which is non-nullable for serialization, so
+        //    our code should never put null into the value.
+        //
+        //    We do not want to assume the Avro generated code and/or some caller producing messages by some other
+        //    means couldn't somehow get a null in a parameter value, so we'll throw an error, which we expect to get
+        //    caught and send back an error response message in the calling code.
+        val nullParamNames = payload.parameters.filter { it.value == null }.map { it.key }
+        if (nullParamNames.isNotEmpty()) {
+            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
+            logger.error(msg)
+            throw NullParameterException(msg)
+        }
+        payload.parameters.filter { it.value != null}.forEach { rec ->
+            val bytes = rec.value.array()
+            query.setParameter(rec.key, serializationService.deserialize<Any>(bytes))
+        }
+        return findWithQuery(serializationService, query, payload.offset, payload.limit)
+    }
+
+
+    /*
+    * Find all entities that match a query, with pagination
+    */
+    private fun findWithQuery(
+        serializationService: SerializationService,
+        query: Query,
+        offset: Int = 0,
+        limit: Int = Int.MAX_VALUE,
+    ): EntityResponse {
+        if (offset < 0) throw InvalidPaginationException("Invalid negative offset $offset")
+        if (offset != 0) {
+            query.firstResult = offset
+        }
+        if (limit < 0) throw InvalidPaginationException("Invalid negative limit $limit")
+        if (limit != Int.MAX_VALUE) {
+            query.maxResults = limit
+        }
+        val innerMsg = when (val results = query.resultList) {
             null -> EntityResponseSuccess()
             else -> EntityResponseSuccess(payloadCheck(serializationService.toBytes(results)))
         }

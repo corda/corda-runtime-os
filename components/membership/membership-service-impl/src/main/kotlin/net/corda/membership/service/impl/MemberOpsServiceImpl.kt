@@ -17,6 +17,8 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,6 +32,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [MemberOpsService::class])
+@Suppress("LongParameterList")
 class MemberOpsServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -41,6 +44,10 @@ class MemberOpsServiceImpl @Activate constructor(
     private val registrationProxy: RegistrationProxy,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ): MemberOpsService {
     private companion object {
         private val logger = contextLogger()
@@ -82,7 +89,9 @@ class MemberOpsServiceImpl @Activate constructor(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<RegistrationProxy>(),
-                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()
+                        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     )
                 )
             }
@@ -128,7 +137,12 @@ class MemberOpsServiceImpl @Activate constructor(
     private fun createResources(event: ConfigChangedEvent) {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
+        val processor = MemberOpsServiceProcessor(
+            registrationProxy,
+            virtualNodeInfoReadService,
+            membershipGroupReaderProvider,
+            membershipQueryClient
+        )
         subscription?.close()
         subscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(

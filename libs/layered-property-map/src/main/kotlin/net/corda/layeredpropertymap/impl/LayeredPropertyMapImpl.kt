@@ -1,9 +1,9 @@
 package net.corda.layeredpropertymap.impl
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.LayeredPropertyMap
-import java.util.concurrent.ConcurrentHashMap
 
 class LayeredPropertyMapImpl(
     private val properties: Map<String, String?>,
@@ -20,7 +20,8 @@ class LayeredPropertyMapImpl(
 
     override operator fun get(key: String): String? = properties[key]
 
-    override val entries: Set<Map.Entry<String, String?>> = properties.entries
+    override val entries: Set<Map.Entry<String, String?>>
+        get() = properties.entries
 
     /**
      * Function for reading and parsing the String values to actual objects.
@@ -124,7 +125,7 @@ class LayeredPropertyMapImpl(
         // then convert it to a map one by one and pass it to the converter
         // 1 -> [corda.endpoints.1.url=localhost, corda.endpoints.1.protocolVersion=1]
         // 2 -> [corda.endpoints.2.url=localhost, corda.endpoints.2.protocolVersion=1]
-        // 1 -> [corda.ledgerKeys.1=ABC]
+        // 1 -> [corda.ledger.keys.1=ABC]
         val result = entryList.groupBy {
             getIndexedPrefix(it.key, normalisedPrefix)
         }.toSortedMap(indexedPrefixComparator).map { groupedEntry ->

@@ -6,7 +6,6 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.client.hsm.HSMConfigurationClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
@@ -20,15 +19,16 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,8 +47,6 @@ class RPCProcessorImpl @Activate constructor(
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = VirtualNodeRPCOpsService::class)
-    private val virtualNodeRPCOpsService: VirtualNodeRPCOpsService,
     @Reference(service = FlowRPCOpsService::class)
     private val flowRPCOpsService: FlowRPCOpsService,
     @Reference(service = CpiUploadRPCOpsService::class)
@@ -57,6 +55,8 @@ class RPCProcessorImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = MemberOpsClient::class)
     private val memberOpsClient: MemberOpsClient,
+    @Reference(service = MGMOpsClient::class)
+    private val mgmOpsClient: MGMOpsClient,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -65,14 +65,14 @@ class RPCProcessorImpl @Activate constructor(
     private val configMerger: ConfigMerger,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = HSMConfigurationClient::class)
-    private val hsmConfigurationClient: HSMConfigurationClient,
     @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
 ) : RPCProcessor {
 
     private companion object {
@@ -81,24 +81,24 @@ class RPCProcessorImpl @Activate constructor(
         const val CLIENT_ID_RPC_PROCESSOR = "rpc.processor"
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
         ::httpRpcGateway,
         ::flowRPCOpsService,
         ::configRPCOpsService,
-        ::virtualNodeRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberOpsClient,
+        ::mgmOpsClient,
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,
-        ::hsmConfigurationClient,
         ::hsmRegistrationClient,
         ::certificatesClient,
         ::groupPolicyProvider,
+        ::membershipQueryClient,
     )
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
         log.info("RPC processor starting.")
@@ -115,7 +115,7 @@ class RPCProcessorImpl @Activate constructor(
         log.debug { "RPC processor received event $event." }
         when (event) {
             is StartEvent -> {
-                dependentComponents.registerAndStartAll(coordinator)
+                // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("RPC processor is ${event.status}")
@@ -125,7 +125,7 @@ class RPCProcessorImpl @Activate constructor(
                 configReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                dependentComponents.stopAll()
+                // Nothing to do
             }
             else -> {
                 log.error("Unexpected event $event!")

@@ -29,13 +29,13 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.anyString
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -57,6 +57,7 @@ import java.util.concurrent.ScheduledExecutorService
 class OutboundMessageHandlerTest {
     companion object {
         private const val GROUP_ID = "My group ID"
+        private const val VALID_X500_NAME = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
     }
 
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
@@ -92,7 +93,7 @@ class OutboundMessageHandlerTest {
     }
     private val truststore = mock<KeyStore>()
     private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
-        whenever(mock.getTrustStore(anyString(), eq(GROUP_ID))).doReturn(truststore)
+        whenever(mock.getTrustStore(any(), eq(GROUP_ID))).doReturn(truststore)
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
@@ -173,7 +174,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("b", GROUP_ID),
-            HoldingIdentity("a", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
         )
@@ -231,7 +232,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("b", GROUP_ID),
-            HoldingIdentity("a", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
         )
@@ -329,7 +330,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("bbb", GROUP_ID),
-            HoldingIdentity("aaa", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_4,
             "https://r3.com/",
         )
@@ -341,7 +342,8 @@ class OutboundMessageHandlerTest {
 
         handler.onNext(Record("", "", message))
 
-        verify(trustStores.constructed().first()).getTrustStore("aaa", GROUP_ID)
+        verify(trustStores.constructed().first())
+            .getTrustStore(MemberX500Name.parse(VALID_X500_NAME), GROUP_ID)
     }
 
     @Test
@@ -365,7 +367,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("b", GROUP_ID),
-            HoldingIdentity("a", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
         )
@@ -405,7 +407,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("b", GROUP_ID),
-            HoldingIdentity("a", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
         )
@@ -450,7 +452,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("b", GROUP_ID),
-            HoldingIdentity("a", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
         )
@@ -493,7 +495,7 @@ class OutboundMessageHandlerTest {
         }.build()
         val headers = LinkOutHeader(
             HoldingIdentity("b", GROUP_ID),
-            HoldingIdentity("a", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
             NetworkType.CORDA_5,
             "https://r3.com/",
         )

@@ -1,16 +1,21 @@
 package net.corda.flow.rpcops.impl.v1
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
+import net.corda.flow.rpcops.impl.flowstatus.websocket.registerFlowStatusFeedHooks
 import net.corda.flow.rpcops.v1.FlowRpcOps
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponses
-import net.corda.flow.rpcops.v1.types.request.HTTPStartFlowRequest
-import net.corda.flow.rpcops.v1.types.response.HTTPFlowStatusResponse
+import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
+import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.ws.DuplexChannel
+import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
@@ -20,14 +25,14 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.ShortHashException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
 class FlowRPCOpsImpl @Activate constructor(
@@ -60,23 +65,33 @@ class FlowRPCOpsImpl @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startFlow(
-        holderShortId: String,
-        httpStartFlow: HTTPStartFlowRequest
-    ): HTTPFlowStatusResponse {
+        holdingIdentityShortHash: String,
+        startFlow: StartFlowParameters
+    ): FlowStatusResponse {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(holderShortId)
-        val clientRequestId = httpStartFlow.clientRequestId
+        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
+        val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
         if (flowStatus != null) {
             throw ResourceAlreadyExistsException("A flow has already been started with for the requested holdingId and clientRequestId")
         }
 
-        val flowClassName = httpStartFlow.flowClassName
-        val startEvent = messageFactory.createStartFlowEvent(clientRequestId, vNode, flowClassName, httpStartFlow.requestData)
+        val flowClassName = startFlow.flowClassName
+        // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
+        // This is a placeholder which indicates access to everything, see CORE-6076
+        val flowContextPlatformProperties = mapOf("net.corda.account" to "account-zero")
+        val startEvent =
+            messageFactory.createStartFlowEvent(
+                clientRequestId,
+                vNode,
+                flowClassName,
+                startFlow.requestData,
+                flowContextPlatformProperties
+            )
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(
@@ -95,22 +110,39 @@ class FlowRPCOpsImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(status)
     }
 
-    override fun getFlowStatus(holderShortId: String, clientRequestId: String): HTTPFlowStatusResponse {
-        val vNode = getVirtualNode(holderShortId)
+    override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
+        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
 
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
-                "Failed to find the flow status for Holder ID='${holderShortId} " +
+                "Failed to find the flow status for holding identity='${holdingIdentityShortHash} " +
                         "and Client Request ID='${clientRequestId}"
             )
 
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    override fun getMultipleFlowStatus(holderShortId: String): HTTPFlowStatusResponses {
-        val vNode = getVirtualNode(holderShortId)
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
+        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-        return HTTPFlowStatusResponses(httpFlowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun registerFlowStatusUpdatesFeed(
+        channel: DuplexChannel,
+        holdingIdentityShortHash: String,
+        clientRequestId: String
+    ) {
+        val holdingIdentity = try {
+            getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
+        } catch (e: ShortHashException) {
+            channel.error(WebSocketValidationException("Invalid holding identifier", e))
+            return
+        } catch (e: FlowRPCOpsServiceException) {
+            channel.error(WebSocketValidationException("Invalid virtual node", e))
+            return
+        }
+        channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
     }
 
     override fun start() = Unit
@@ -119,8 +151,8 @@ class FlowRPCOpsImpl @Activate constructor(
         publisher?.close()
     }
 
-    private fun getVirtualNode(shortId: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getById(shortId)?.toAvro()
+    private fun getVirtualNode(shortId: ShortHash): VirtualNodeInfo {
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortId)?.toAvro()
             ?: throw FlowRPCOpsServiceException("Failed to find a Virtual Node for ID='${shortId}'")
     }
 }

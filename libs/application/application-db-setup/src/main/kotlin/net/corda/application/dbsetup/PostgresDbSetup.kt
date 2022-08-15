@@ -9,6 +9,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
+import net.corda.v5.base.util.contextLogger
 import java.sql.DriverManager
 import java.time.Instant
 import java.util.UUID
@@ -18,22 +19,20 @@ import java.util.UUID
 // refactoring, but first we need an input from the DevX team, whether this is the right approach or developers should
 // use CLI instead
 
-class PostgresDbSetup: DbSetup {
+@Suppress("LongParameterList")
+class PostgresDbSetup(
+    private val dbUrl: String,
+    private val superUser: String,
+    private val superUserPassword: String,
+    private val dbAdmin: String,
+    private val dbAdminPassword: String,
+    private val dbName: String,
+    private val secretsSalt: String,
+    private val secretsPassphrase: String,
+): DbSetup {
     
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
-        private const val DB_HOST = "localhost"
-        private const val DB_PORT = "5432"
-        private const val DB_NAME = "cordacluster"
-        private const val DB_URL = "jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME"
-        private const val DB_SUPERUSER = "postgres"
-        private const val DB_SUPERUSER_PASSWORD = "password"
-        private const val DB_SUPERUSER_URL = "$DB_URL?user=$DB_SUPERUSER&password=$DB_SUPERUSER_PASSWORD"
-        private const val DB_ADMIN = "user"
-        private const val DB_ADMIN_PASSWORD = "password"
-        private const val DB_ADMIN_URL = "$DB_URL?user=$DB_ADMIN&password=$DB_ADMIN_PASSWORD"
-        private const val SECRETS_SALT = "salt"
-        private const val SECRETS_PASSWORD = "password"
 
         private val changelogFiles = mapOf(
             "net/corda/db/schema/config/db.changelog-master.xml" to null,
@@ -42,24 +41,38 @@ class PostgresDbSetup: DbSetup {
             "net/corda/db/schema/cluster-certificates/db.changelog-master.xml" to null,
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
+
+        private val log = contextLogger()
+    }
+
+    private val dbAdminUrl by lazy {
+        "$dbUrl?user=$dbAdmin&password=$dbAdminPassword"
+    }
+
+    private val dbSuperUserUrl by lazy {
+        "$dbUrl?user=$superUser&password=$superUserPassword"
     }
 
     override fun run() {
+        log.info("Bootstrap Postgres DB.")
         Class.forName(DB_DRIVER)
 
         if (!dbInitialised()) {
+            log.info("Initialising DB.")
             initDb()
             runDbMigration()
-            initConfiguration("corda-rbac", "rbac_user", "rbac_password", DB_URL)
-            initConfiguration("corda-crypto", "crypto_user", "crypto_password", "$DB_URL?currentSchema=CRYPTO")
+            initConfiguration("corda-rbac", "rbac_user_$dbName", "rbac_password", dbUrl)
+            initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
+        } else {
+            log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
     }
 
     private fun dbInitialised(): Boolean {
         DriverManager
-            .getConnection(DB_SUPERUSER_URL)
+            .getConnection(dbSuperUserUrl)
             .use { connection ->
                 connection.createStatement().executeQuery(
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
@@ -73,17 +86,26 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun initDb() {
+        log.info("Create user $dbAdmin in $dbName in $dbSuperUserUrl.")
         DriverManager
-            .getConnection(DB_SUPERUSER_URL)
+            .getConnection(dbSuperUserUrl)
             .use { connection ->
                 connection.createStatement().execute(
-                    "ALTER ROLE \"$DB_ADMIN\" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;")
+                    // NOTE: this is different to the cli as this is set up to be using the official postgres image
+                    //   instead of the Bitnami. The official image doesn't already have the "user" user.
+                    """
+                        CREATE USER "$dbAdmin" WITH ENCRYPTED PASSWORD '$dbAdminPassword';
+                        ALTER ROLE "$dbAdmin" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
+                        ALTER DATABASE "$dbName" OWNER TO "$dbAdmin";
+                        ALTER SCHEMA public OWNER TO "$dbAdmin";
+                    """.trimIndent())
             }
     }
 
     private fun runDbMigration() {
+        log.info("Run DB migrations in $dbAdminUrl.")
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 changelogFiles.forEach { (file, schema) ->
                     val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
@@ -97,6 +119,7 @@ class PostgresDbSetup: DbSetup {
                     val schemaMigrator = LiquibaseSchemaMigratorImpl()
                     if (schema != null) {
                         createDbSchema(schema)
+                        connection.prepareStatement("SET search_path TO $schema;").execute()
                         schemaMigrator.updateDb(connection, dbChange, schema)
                     } else {
                         schemaMigrator.updateDb(connection, dbChange)
@@ -106,15 +129,17 @@ class PostgresDbSetup: DbSetup {
     }
 
     private fun createDbSchema(schema: String) {
+        log.info("Create SCHEMA $schema.")
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute("CREATE SCHEMA IF NOT EXISTS $schema;")
             }
     }
 
     private fun initConfiguration(connectionName: String, username: String, password :String, jdbcUrl:String) {
-        val secretsService = EncryptionSecretsServiceImpl(SECRETS_PASSWORD, SECRETS_SALT)
+        log.info("Initialise configuration for $connectionName ($jdbcUrl).")
+        val secretsService = EncryptionSecretsServiceImpl(secretsPassphrase, secretsSalt)
 
         val dbConnectionConfig = DbConnectionConfig(
             id = UUID.randomUUID(),
@@ -127,15 +152,16 @@ class PostgresDbSetup: DbSetup {
         ).also { it.version = 0 }
 
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute(dbConnectionConfig.toInsertStatement())
             }
     }
 
     private fun createUserConfig(user: String, password: String) {
+        log.info("Create user config for $user")
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute(buildRbacConfigSql(user, password, "Setup Script"))
             }
@@ -145,16 +171,16 @@ class PostgresDbSetup: DbSetup {
         val sql = """
             CREATE SCHEMA IF NOT EXISTS CRYPTO;
             
-            CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password';
-            GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;
-            CREATE USER crypto_user WITH ENCRYPTED PASSWORD 'crypto_password';
-            GRANT USAGE ON SCHEMA CRYPTO to crypto_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user;
+            CREATE USER rbac_user_$dbName WITH ENCRYPTED PASSWORD 'rbac_password';
+            GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user_$dbName;
+            CREATE USER crypto_user_$dbName WITH ENCRYPTED PASSWORD 'crypto_password';
+            GRANT USAGE ON SCHEMA CRYPTO to crypto_user_$dbName;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user_$dbName;
         """.trimIndent()
 
         DriverManager
-            .getConnection(DB_ADMIN_URL)
+            .getConnection(dbAdminUrl)
             .use { connection ->
                 connection.createStatement().execute(sql)
             }

@@ -29,6 +29,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
 
     api project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:messaging:messaging")
@@ -51,6 +52,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(':testing:test-utilities')
 
     testCompileOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
@@ -62,6 +64,7 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':testing:security-manager-utilities')
+    integrationTestImplementation project(':testing:test-utilities')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

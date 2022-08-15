@@ -21,13 +21,13 @@ class CreateConnectTest {
     @Test
     fun `validate new topic with no config`() {
         assertThat(command().getTopics(listOf(Create.TopicConfig("topic", emptyList(), emptyList(), emptyMap()))))
-            .containsExactly(NewTopic("topic", 1, 1).configs(emptyMap()))
+            .containsEntry("topic", NewTopic("topic", 1, 1).configs(emptyMap()))
     }
 
     @Test
     fun `validate new topic with config`() {
         assertThat(command().getTopics(listOf(Create.TopicConfig("topic", emptyList(), emptyList(), mapOf("key" to "value")))))
-            .containsExactly(NewTopic("topic", 1, 1).configs(mapOf("key" to "value")))
+            .containsEntry("topic", NewTopic("topic", 1, 1).configs(mapOf("key" to "value")))
     }
 
     @Test

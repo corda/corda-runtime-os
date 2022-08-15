@@ -35,6 +35,16 @@ class AuthenticationProtocolTest {
     }
 
     @Test
+    fun `authentication protocol works successfully with ECDSA key algorithm`() {
+        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+        val keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", provider)
+        val partyASessionKey = keyPairGenerator.generateKeyPair()
+        val partyBSessionKey = keyPairGenerator.generateKeyPair()
+
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256)
+    }
+
+    @Test
     fun `authentication protocol works successfully with RSA signatures`() {
         val signature = Signature.getInstance(SignatureSpec.RSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider)

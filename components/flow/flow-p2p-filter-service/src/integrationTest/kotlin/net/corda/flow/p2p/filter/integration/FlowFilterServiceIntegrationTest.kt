@@ -1,10 +1,6 @@
 package net.corda.flow.p2p.filter.integration
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
@@ -17,6 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -41,6 +38,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -67,12 +68,11 @@ class FlowFilterServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowSessionFilterService: FlowP2PFilterService
 
-    private val bootConfig = SmartConfigImpl.empty()
-        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+    private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
 
-    private val schemaVersion = ConfigurationSchemaVersion(1,0)
+    private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
     @BeforeEach
     fun setup() {
@@ -93,43 +93,38 @@ class FlowFilterServiceIntegrationTest {
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
+        // Test config updates don't break Flow Session Filter Service
+        republishConfig(publisher)
+
         val identity = HoldingIdentity(testId, testId)
-        val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
+        val flowHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession")
         val version = listOf(1)
         val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND,
-            Instant.now(),
-            testId,
-            1,
-            identity,
-            identity,
-            0,
-            listOf(),
-            SessionInit(
-                testId, version, testId, null, ByteBuffer.wrap("".toByteArray())
+            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
+                testId,
+                version,
+                testId,
+                null,
+                emptyKeyValuePairList(),
+                emptyKeyValuePairList(),
+                ByteBuffer.wrap("".toByteArray())
             )
         )
 
         val sessionRecord = Record(
-            P2P_IN_TOPIC,
-            testId,
-            AppMessage(
+            P2P_IN_TOPIC, testId, AppMessage(
                 AuthenticatedMessage(
-                    flowHeader,
-                    ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
+                    flowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
                 )
             )
         )
 
-        val invalidHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "other")
+        val invalidHeader = AuthenticatedMessageHeader(identity, identity, Instant.ofEpochMilli(1), "", "", "other")
         val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
-            P2P_IN_TOPIC,
-            testId,
-            AppMessage(
+            P2P_IN_TOPIC, testId, AppMessage(
                 AuthenticatedMessage(
-                    invalidHeader,
-                    ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))
+                    invalidHeader, ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))
                 )
             )
         )
@@ -140,7 +135,9 @@ class FlowFilterServiceIntegrationTest {
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
-            TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2), bootConfig, null
+            TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2),
+            bootConfig,
+            null
         )
         p2pOutSub.start()
         assertTrue(mapperLatch.await(30, TimeUnit.SECONDS))
@@ -150,10 +147,32 @@ class FlowFilterServiceIntegrationTest {
     }
 
     private fun setupConfig(publisher: Publisher) {
-        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))))
+        publishConfig(publisher)
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }
+
+    private fun publishConfig(publisher: Publisher) {
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                )
+            )
+        )
+    }
+
+    private fun republishConfig(publisher: Publisher) {
+        // Wait for the initial config to be available
+        val configLatch = CountDownLatch(1)
+        configService.registerForUpdates { _, _ ->
+            configLatch.countDown()
+        }
+        configLatch.await()
+
+        publishConfig(publisher)
+    }
+
 
     private val messagingConf = """
             componentVersion="5.1"

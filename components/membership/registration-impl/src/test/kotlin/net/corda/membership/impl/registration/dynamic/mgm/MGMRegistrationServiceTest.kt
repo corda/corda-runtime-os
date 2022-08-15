@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -18,11 +20,27 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
-import net.corda.membership.lib.impl.converter.PublicKeyHashConverter
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
@@ -32,14 +50,17 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
@@ -56,27 +77,28 @@ import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
     companion object {
-        private const val SESSION_KEY = "1234"
+        private const val SESSION_KEY_STRING = "1234"
         private const val SESSION_KEY_ID = "1"
-        private const val ECDH_KEY = "5678"
+        private const val ECDH_KEY_STRING = "5678"
         private const val ECDH_KEY_ID = "2"
         private const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
     }
 
+    private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
-    private val mgm = HoldingIdentity(mgmName.toString(), "dummy_group")
-    private val mgmId = mgm.id
+    private val mgm = HoldingIdentity(mgmName, groupId)
+    private val mgmId = mgm.shortHash
     private val sessionKey: PublicKey = mock {
-        on { encoded } doReturn SESSION_KEY.toByteArray()
+        on { encoded } doReturn SESSION_KEY_STRING.toByteArray()
     }
     private val sessionCryptoSigningKey: CryptoSigningKey = mock {
-        on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY.toByteArray())
+        on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY_STRING.toByteArray())
     }
     private val ecdhKey: PublicKey = mock {
-        on { encoded } doReturn ECDH_KEY.toByteArray()
+        on { encoded } doReturn ECDH_KEY_STRING.toByteArray()
     }
     private val ecdhCryptoSigningKey: CryptoSigningKey = mock {
-        on { publicKey } doReturn ByteBuffer.wrap(ECDH_KEY.toByteArray())
+        on { publicKey } doReturn ByteBuffer.wrap(ECDH_KEY_STRING.toByteArray())
     }
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
@@ -86,15 +108,15 @@ class MGMRegistrationServiceTest {
         on { createPublisher(any(), any()) } doReturn mockPublisher
     }
     private val keyEncodingService: KeyEncodingService = mock {
-        on { decodePublicKey(SESSION_KEY.toByteArray()) } doReturn sessionKey
-        on { decodePublicKey(ECDH_KEY.toByteArray()) } doReturn ecdhKey
+        on { decodePublicKey(SESSION_KEY_STRING.toByteArray()) } doReturn sessionKey
+        on { decodePublicKey(ECDH_KEY_STRING.toByteArray()) } doReturn ecdhKey
 
-        on { encodeAsString(any()) } doReturn SESSION_KEY
-        on { encodeAsString(ecdhKey) } doReturn ECDH_KEY
+        on { encodeAsString(any()) } doReturn SESSION_KEY_STRING
+        on { encodeAsString(ecdhKey) } doReturn ECDH_KEY_STRING
     }
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { lookup(mgmId, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
-        on { lookup(mgmId, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
+        on { lookup(mgmId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
+        on { lookup(mgmId.value, listOf(ECDH_KEY_ID)) } doReturn listOf(ecdhCryptoSigningKey)
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -134,13 +156,19 @@ class MGMRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
+        on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
+    }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
         lifecycleCoordinatorFactory,
         cryptoOpsClient,
         keyEncodingService,
-        memberInfoFactory
+        memberInfoFactory,
+        membershipPersistenceClient,
+        layeredPropertyMapFactory,
     )
 
     private val properties = mapOf(
@@ -187,7 +215,8 @@ class MGMRegistrationServiceTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 
@@ -211,21 +240,126 @@ class MGMRegistrationServiceTest {
         postConfigChangedEvent()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+
         val result = registrationService.register(mgm, properties)
+
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMgmInfoList = capturedPublishedList.firstValue
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
-            it.assertThat(publishedMgmInfoList.size).isEqualTo(1)
+            it.assertThat(publishedMgmInfoList).hasSize(1)
+
             val publishedMgmInfo = publishedMgmInfoList.first()
             it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
-            val expectedRecordKey = "${mgmId}-${mgmId}"
+
+            val expectedRecordKey = "$mgmId-$mgmId"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
-            val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
-            val mgmPublished = memberInfoFactory.create(persistentMemberPublished)
-            it.assertThat(mgmPublished.name.toString()).isEqualTo(mgmName.toString())
+
+            val persistedMgm = publishedMgmInfo.value as PersistentMemberInfo
+
+            it.assertThat(persistedMgm.memberContext.items.map { item -> item.key })
+                .containsExactlyInAnyOrderElementsOf(
+                    listOf(
+                        GROUP_ID,
+                        PARTY_NAME,
+                        PARTY_SESSION_KEY,
+                        SESSION_KEY_HASH,
+                        ECDH_KEY,
+                        PLATFORM_VERSION,
+                        SOFTWARE_VERSION,
+                        SERIAL,
+                        String.format(URL_KEY, 0),
+                        String.format(PROTOCOL_VERSION, 0),
+                    )
+                )
+            it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
+                .containsExactlyInAnyOrderElementsOf(
+                    listOf(
+                        CREATED_TIME,
+                        MODIFIED_TIME,
+                        STATUS,
+                        IS_MGM
+                    )
+                )
+
+            fun getProperty(prop: String): String {
+                return persistedMgm
+                    .memberContext.items.firstOrNull { item ->
+                        item.key == prop
+                    }?.value ?: persistedMgm.mgmContext.items.firstOrNull { item ->
+                    item.key == prop
+                }?.value ?: fail("Could not find property within published member for test")
+            }
+
+            it.assertThat(getProperty(PARTY_NAME)).isEqualTo(mgmName.toString())
+            it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
+            it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
+            it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
         }
         registrationService.stop()
+    }
+
+    @Test
+    fun `registration persist the group properties`() {
+        postConfigChangedEvent()
+        registrationService.start()
+        val groupProperties = argumentCaptor<LayeredPropertyMap>()
+        whenever(
+            membershipPersistenceClient
+                .persistGroupPolicy(
+                    eq(mgm),
+                    groupProperties.capture(),
+                )
+        ).thenReturn(MembershipPersistenceResult.Success(3))
+
+        registrationService.register(mgm, properties)
+
+        assertThat(groupProperties.firstValue.entries)
+            .containsExactlyInAnyOrderElementsOf(
+                mapOf(
+                    "protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                    "protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+                    "protocol.p2p.mode" to "AUTHENTICATED_ENCRYPTION",
+                    "key.session.policy" to "Combined",
+                    "pki.session" to "Standard",
+                    "pki.tls" to "C5",
+                    "truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    "truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                ).entries
+            )
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration persist the MGM member info`() {
+        postConfigChangedEvent()
+        registrationService.start()
+
+        registrationService.register(mgm, properties)
+
+        verify(membershipPersistenceClient).persistMemberInfo(
+            eq(mgm),
+            argThat {
+                this.size == 1 &&
+                    this.first().isMgm &&
+                    this.first().name == mgmName
+            }
+        )
+    }
+
+    @Test
+    fun `registration failure to persist return an error`() {
+        postConfigChangedEvent()
+        registrationService.start()
+        whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
+            .doReturn(MembershipPersistenceResult.Failure("Nop"))
+
+        val result = registrationService.register(mgm, properties)
+
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).isEqualTo("Registration failed, persistence error. Reason: Nop")
+        }
     }
 
     @Test
@@ -262,13 +396,28 @@ class MGMRegistrationServiceTest {
         val testProperties =
             properties + mapOf(
                 "corda.group.truststore.tls.100" to
-                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                    "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
         val result = registrationService.register(mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
-            it.assertThat(result.message).isEqualTo("Registration failed. Reason: Provided TLS trust stores are incorrectly numbered.")
+            it.assertThat(result.message)
+                .isEqualTo("Registration failed. Reason: Provided TLS trust stores are incorrectly numbered.")
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `if session PKI mode is NoPKI, session trust root is optional`() {
+        postConfigChangedEvent()
+        val testProperties = properties.toMutableMap()
+        testProperties["corda.group.pki.session"] = "NoPKI"
+        testProperties.remove("corda.group.truststore.session.0")
+        registrationService.start()
+        val result = registrationService.register(mgm, testProperties)
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
         registrationService.stop()
     }

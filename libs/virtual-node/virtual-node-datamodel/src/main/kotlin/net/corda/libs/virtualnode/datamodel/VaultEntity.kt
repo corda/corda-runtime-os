@@ -9,12 +9,12 @@ import javax.persistence.Table
 /**
  * The entity for a virtual node vault.
  *
- * @param holdingIdentityId The short 12-character hash of the holding identity.
+ * @param holdingIdentityShortHash The short 12-character hash of the holding identity.
  */
 @Entity
 @Table(name = VNODE_VAULT_DB_TABLE)
 data class VaultEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false)
-    val holdingIdentityId: String,
+    val holdingIdentityShortHash: String,
 )

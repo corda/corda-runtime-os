@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -20,6 +19,8 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
@@ -127,7 +128,7 @@ internal class TrustStoresPublisher(
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, holdingIdentity.toKafkaKey(),
-                    GatewayTruststore(HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId), certificates))
+                    GatewayTruststore(holdingIdentity.toAvro(), certificates))
                 publisher.publish(
                     listOf(record)
                 ).forEach {

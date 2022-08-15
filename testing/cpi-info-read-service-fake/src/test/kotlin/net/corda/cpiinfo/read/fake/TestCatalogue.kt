@@ -1,6 +1,7 @@
 package net.corda.cpiinfo.read.fake
 
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkFormatVersion
@@ -8,7 +9,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 
@@ -31,8 +31,11 @@ object TestCatalogue {
                             "",
                             0,
                             0,
-                            ManifestCorDappInfo(null, null, null, null),
-                            ManifestCorDappInfo(null, null, null, null),
+                            CordappType.WORKFLOW,
+                            "",
+                            "",
+                            0,
+                            "",
                             mapOf()
                         ),
                         CpkType.UNKNOWN,

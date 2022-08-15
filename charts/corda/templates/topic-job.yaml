@@ -1,3 +1,4 @@
+{{- if .Values.bootstrap.kafka.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -8,6 +9,9 @@ metadata:
     "helm.sh/hook": pre-install
 spec:
   template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
@@ -20,12 +24,12 @@ spec:
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
             '-k', '/tmp/working_dir/config.properties',
             {{- if .Values.kafka.topicPrefix }}
-            '-n', '"{{ .Values.kafka.topicPrefix }}"',
+            '-n', '{{ .Values.kafka.topicPrefix }}',
             {{- end }}
             'create',
-            '-r', '{{ .Values.kafka.replicas }}',
-            '-p', '{{ .Values.kafka.partitions }}',
-            'connect'{{- if .Values.kafka.cleanup }},
+            '-r', '{{ .Values.bootstrap.kafka.replicas }}',
+            '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
             '-d'
             {{- end }}
           ]
@@ -52,7 +56,11 @@ spec:
                 {{- if .Values.kafka.sasl.enabled }}
                 echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
                 echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+                echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- else }}
                 echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
                 {{- else }}
                 echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
                 {{- end }}
@@ -87,3 +95,4 @@ spec:
         {{- end }}
       restartPolicy: Never
   backoffLimit: 0
+{{- end }}

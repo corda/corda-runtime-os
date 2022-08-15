@@ -8,6 +8,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -54,7 +55,8 @@ class VirtualNodeLoaderImpl @Activate constructor(
             null,
             UUID.randomUUID(),
             null,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            state = VirtualNodeInfo.DEFAULT_INITIAL_STATE // Leaving as a constant value as this is just for testing
         ).also(::put)
     }
 
@@ -74,7 +76,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
         return virtualNodeInfoMap[holdingIdentity]
     }
 
-    override fun getById(id: String): VirtualNodeInfo? {
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
         TODO("Not yet implemented - getById")
     }
 

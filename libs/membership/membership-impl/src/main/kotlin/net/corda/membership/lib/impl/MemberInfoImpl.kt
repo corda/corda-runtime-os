@@ -1,14 +1,14 @@
 package net.corda.membership.lib.impl
 
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEYS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -19,7 +19,7 @@ import java.security.PublicKey
 
 class MemberInfoImpl(
     override val memberProvidedContext: MemberContext,
-    override val mgmProvidedContext: MGMContext
+    override val mgmProvidedContext: MGMContext,
 ) : MemberInfo {
 
     init {

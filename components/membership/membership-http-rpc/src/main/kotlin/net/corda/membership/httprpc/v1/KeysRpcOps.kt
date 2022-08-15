@@ -5,13 +5,12 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 
 @HttpRpcResource(
-    name = "KeysRpcOps",
-    description = "Keys API",
+    name = "Keys Management API",
+    description = "Endpoints for public/private keys management.",
     path = "keys"
 )
 interface KeysRpcOps : RpcOps {
@@ -24,17 +23,18 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/schemes/{hsmCategory}",
-        description = "Get list of schemes for the cluster."
+        description = "Get list of schemes for the cluster.",
+        responseDescription = "The list of schemes codes which are supported by the associated HSM integration."
     )
     fun listSchemes(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
         @HttpRpcPathParameter(description = "The HSM Category")
         hsmCategory: String,
     ): Collection<String>
 
     /**
-     * GET endpoint which returns the list of a tenant keys.
+     * GET endpoint which returns the list of a tenant's keys.
      *
      * @param tenantId The tenant ID.
      * @param skip How many keys to skip.
@@ -52,11 +52,12 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}",
-        description = "Get list of keys for members."
+        description = "Get list of keys for members.",
+        responseDescription = "A map from a tenant key ID to its metadata."
     )
     @Suppress("LongParameterList")
     fun listKeys(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
         @HttpRpcQueryParameter(
             description = "Index of the first key",
@@ -128,27 +129,25 @@ interface KeysRpcOps : RpcOps {
      * @return The ID of the newly generated key pair.
      */
     @HttpRpcPOST(
-        path = "{tenantId}",
-        description = "Generate key pair."
+        path = "{tenantId}/alias/{alias}/category/{hsmCategory}/scheme/{scheme}",
+        description = "Generate key pair.",
+        responseDescription = "The ID of the newly generated key pair."
     )
     fun generateKeyPair(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
-        @HttpRpcRequestBodyParameter(
-            description = "The key alias",
-            required = true,
+        @HttpRpcPathParameter(
+            description = "The key alias"
         )
         alias: String,
-        @HttpRpcRequestBodyParameter(
-            description = "The HSM Category",
-            required = true,
+        @HttpRpcPathParameter(
+            description = "The HSM Category"
         )
         hsmCategory: String,
-        @HttpRpcRequestBodyParameter(
-            description = "The scheme",
-            required = true,
+        @HttpRpcPathParameter(
+            description = "The scheme"
         )
-        scheme: String,
+        scheme: String
     ): String
 
     /**
@@ -161,12 +160,13 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/{keyId}",
-        description = "GET key in PEM format."
+        description = "GET key in PEM format.",
+        responseDescription = "The public key in PEM format."
     )
     fun generateKeyPem(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The Key ID.")
+        @HttpRpcPathParameter(description = "The Key ID. Or an error code if not found.")
         keyId: String,
     ): String
 }

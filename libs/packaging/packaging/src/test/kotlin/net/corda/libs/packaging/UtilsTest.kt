@@ -1,5 +1,6 @@
 package net.corda.libs.packaging
 
+import net.corda.v5.base.types.MemberX500Name
 import java.security.MessageDigest
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
@@ -34,7 +35,7 @@ class UtilsTest {
         val algoName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name
         val md = MessageDigest.getInstance(algoName)
         certs
-            .map { it.subjectX500Principal.name.toByteArray().hash() }
+            .map { MemberX500Name.parse(it.subjectX500Principal.name).toString().toByteArray().hash() }
             .sortedWith(secureHashComparator)
             .map(SecureHash::toString)
             .map(String::toByteArray)
@@ -46,6 +47,14 @@ class UtilsTest {
         // Check X500 names hashes getting sorted before they get hashed
         val outOfOrderCerts = sequenceOf(bobCert, aliceCert)
 
-        assertEquals(expectedCertSummaryHash, outOfOrderCerts.certSummaryHash())
+        assertEquals(expectedCertSummaryHash, outOfOrderCerts.signerSummaryHash())
+    }
+
+    @Test
+    fun `MemberX500Name_parse works as expected`() {
+        assertEquals(
+            "CN=Alice, OU=R3, O=Corda, L=Dublin, C=IE",
+            MemberX500Name.parse(aliceX500Name).toString()
+        )
     }
 }

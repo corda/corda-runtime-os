@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.events
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -16,15 +14,14 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.impl.FlowProtocol
 import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.schema.configuration.FlowConfig
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -36,7 +33,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -67,9 +63,6 @@ class SessionEventHandlerTest {
         }
     }
 
-    private val flowConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
-    private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
     private val checkpointSessionState = SessionState()
     private val updatedSessionState = SessionState()
     private val checkpoint = mock<FlowCheckpoint>()
@@ -127,8 +120,7 @@ class SessionEventHandlerTest {
             true
         }
 
-        verify(checkpoint).initFromNew(
-            eq(FLOW_ID),
+        verify(checkpoint).initFlowState(
             argThat { fsc -> expectedStartFlowContext(fsc) }
         )
     }
@@ -144,7 +136,7 @@ class SessionEventHandlerTest {
             sessionEventHandler.preProcess(inputContext)
         }
 
-        verify(checkpoint, never()).initFromNew(any(), any())
+        verify(checkpoint, never()).initFlowState(any())
     }
 
     @Test
@@ -156,7 +148,7 @@ class SessionEventHandlerTest {
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
-        assertThrows<FlowProcessingException> { sessionEventHandler.preProcess(inputContext) }
+        assertThrows<FlowFatalException> { sessionEventHandler.preProcess(inputContext) }
     }
 
     @ParameterizedTest(name = "Receiving a {0} payload when a checkpoint does not exist throws an exception")
@@ -179,6 +171,8 @@ class SessionEventHandlerTest {
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
             .build()
 
         return createSessionEvent(payload)

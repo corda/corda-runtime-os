@@ -22,7 +22,7 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -34,8 +34,10 @@ import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkFormatVersion
@@ -43,7 +45,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
@@ -94,7 +95,8 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
-        FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000
+        FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
+        FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION to 60000
     )
 
     private val testRuns = mutableListOf<TestRun>()
@@ -131,15 +133,16 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun cpkMetadata(cpiId: String, cpkId: String, cpkChecksum: SecureHash) {
-        val manifestCordAppInfo = ManifestCorDappInfo(null, null, null, null)
-
         val cordAppManifest = CordappManifest(
             "",
             "",
             0,
             0,
-            manifestCordAppInfo,
-            manifestCordAppInfo,
+            CordappType.WORKFLOW,
+            "",
+            "",
+            0,
+            "",
             mapOf()
         )
 
@@ -189,8 +192,16 @@ class FlowServiceTestContext @Activate constructor(
         testConfig[key] = value
     }
 
-    override fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
-        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(protocol, initiatingFlowClassName, initiatedFlowClassName)
+    override fun initiatingToInitiatedFlow(
+        protocol: String,
+        initiatingFlowClassName: String,
+        initiatedFlowClassName: String
+    ) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(
+            protocol,
+            initiatingFlowClassName,
+            initiatedFlowClassName
+        )
     }
 
     override fun startFlowEventReceived(
@@ -208,6 +219,7 @@ class FlowServiceTestContext @Activate constructor(
             this.cpiId = cpiId
             this.initiatorType = FlowInitiatorType.RPC
             this.flowClassName = FLOW_NAME
+            this.contextPlatformProperties = emptyKeyValuePairList()
             this.createdTimestamp = Instant.now()
         }.build()
 
@@ -233,6 +245,8 @@ class FlowServiceTestContext @Activate constructor(
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))
+                .setContextPlatformProperties(emptyKeyValuePairList())
+                .setContextUserProperties(emptyKeyValuePairList())
                 .build(),
             sequenceNum = 0,
             receivedSequenceNum = 1,
@@ -340,7 +354,12 @@ class FlowServiceTestContext @Activate constructor(
             .setOther(otherContext)
             .build()
 
-        context.other.items.add(KeyValuePair(CryptoFlowOpsTransformer.REQUEST_OP_KEY, SignFlowCommand::class.java.simpleName))
+        context.other.items.add(
+            KeyValuePair(
+                CryptoFlowOpsTransformer.REQUEST_OP_KEY,
+                SignFlowCommand::class.java.simpleName
+            )
+        )
 
         return addTestRun(
             createFlowEventRecord(
@@ -354,7 +373,11 @@ class FlowServiceTestContext @Activate constructor(
                         .setTenantId(tenantId)
                         .setOther(otherContext)
                         .build(),
-                    CryptoSignatureWithKey(ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(bytes), KeyValuePairList(mutableListOf())),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(publicKey.encoded),
+                        ByteBuffer.wrap(bytes),
+                        KeyValuePairList(mutableListOf())
+                    ),
                     exceptionEnvelope
                 )
             )

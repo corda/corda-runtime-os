@@ -13,6 +13,7 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkFormatVersion
@@ -20,7 +21,6 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -79,12 +79,12 @@ class UpsertCpiTests {
     lateinit var fs: FileSystem
 
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         fs = Jimfs.newFileSystem()
     }
 
     @AfterEach
-    private fun afterEach() = fs.close()
+    fun afterEach() = fs.close()
 
     private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
 
@@ -117,8 +117,7 @@ class UpsertCpiTests {
 
         val cordappManifest = CordappManifest(
             "", "", -1, -1,
-            ManifestCorDappInfo(null, null, null, null),
-            ManifestCorDappInfo(null, null, null, null),
+            CordappType.WORKFLOW, "", "", -1, "",
             emptyMap()
         )
 

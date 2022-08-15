@@ -98,7 +98,7 @@ class CertificatesRpcOpsImplTest {
     }
     @Nested
     inner class GenerateCsrTests {
-        private val holdingIdentityId = "id"
+        private val holdingIdentityShortHash = "id"
         private val keyId = "keyId"
         private val x500Name = "CN=Alice"
         private val role = "TLS"
@@ -106,7 +106,7 @@ class CertificatesRpcOpsImplTest {
         private val key = mock<CryptoSigningKey> {
             on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
             on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
-            on { tenantId } doReturn holdingIdentityId
+            on { tenantId } doReturn holdingIdentityShortHash
         }
         private val publicKey = KeyPairGenerator.getInstance("EC").let { keyPairGenerator ->
             val rnd = mock<SecureRandom> {
@@ -121,10 +121,10 @@ class CertificatesRpcOpsImplTest {
 
         @BeforeEach
         fun setUp() {
-            whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(listOf(key))
+            whenever(cryptoOpsClient.lookup(holdingIdentityShortHash, listOf(keyId))).doReturn(listOf(key))
             whenever(
                 cryptoOpsClient.sign(
-                    eq(holdingIdentityId),
+                    eq(holdingIdentityShortHash),
                     eq(publicKey),
                     argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                     any(),
@@ -146,7 +146,7 @@ class CertificatesRpcOpsImplTest {
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
-                    holdingIdentityId,
+                    holdingIdentityShortHash,
                     keyId,
                     x500Name,
                     role,
@@ -159,7 +159,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it sign the request`() {
             certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -168,7 +168,7 @@ class CertificatesRpcOpsImplTest {
             )
 
             verify(cryptoOpsClient).sign(
-                eq(holdingIdentityId),
+                eq(holdingIdentityShortHash),
                 eq(publicKey),
                 argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                 any(),
@@ -179,7 +179,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it returns the correct signature`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -193,7 +193,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it adds alternative subject names when some are provided`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -224,7 +224,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it will not adds alternative subject names when none are provided`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -242,7 +242,7 @@ class CertificatesRpcOpsImplTest {
         @Test
         fun `it will use the correct x500 name`() {
             val pem = certificatesOps.generateCsr(
-                holdingIdentityId,
+                holdingIdentityShortHash,
                 keyId,
                 x500Name,
                 role,
@@ -260,7 +260,7 @@ class CertificatesRpcOpsImplTest {
         fun `it throws exception if Signature OID can not be inferred`() {
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
-                    holdingIdentityId,
+                    holdingIdentityShortHash,
                     keyId,
                     x500Name,
                     role,
@@ -276,7 +276,7 @@ class CertificatesRpcOpsImplTest {
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
-                    holdingIdentityId,
+                    holdingIdentityShortHash,
                     keyId,
                     x500Name,
                     role,

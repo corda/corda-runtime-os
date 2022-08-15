@@ -3,8 +3,8 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -37,12 +37,13 @@ class VirtualNodeDbReconcilerReaderTest {
             whenever(it.holdingIdentity).then { mockHoldingIdentity }
             whenever(it.insertTimestamp).then { timestamp }
             whenever(it.entityVersion).then { entityVersion }
+            whenever(it.virtualNodeState).then { VirtualNodeInfo.DEFAULT_INITIAL_STATE.name }
         }
     }
 
     private fun mockHoldingIdentity(): HoldingIdentityEntity {
         return mock {
-            whenever(it.holdingIdentityId).then { holdingId }
+            whenever(it.holdingIdentityShortHash).then { holdingId }
             whenever(it.x500Name).then { x500name }
             whenever(it.mgmGroupId).then { groupId }
             whenever(it.vaultDMLConnectionId).then { vaultDmlConnectionId }
@@ -60,7 +61,7 @@ class VirtualNodeDbReconcilerReaderTest {
         val versionedRecords = virtualNodeEntitiesToVersionedRecords(entities.stream())
         val record = versionedRecords.toList().single()
 
-        val expectedKey = HoldingIdentity(x500name, groupId)
+        val expectedKey = createTestHoldingIdentity(x500name, groupId)
 
         Assertions.assertThat(record.key).isEqualTo(expectedKey)
 

@@ -9,28 +9,28 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 import net.corda.membership.lib.impl.EndpointInfoImpl
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.membership.lib.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,6 +43,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
 import net.corda.test.util.time.TestClock
+import net.corda.virtualnode.ShortHash
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -50,7 +51,8 @@ import kotlin.test.assertFailsWith
 class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
-        private const val HOLDING_IDENTITY_STRING = "test"
+        private val HOLDING_IDENTITY_STRING = "1234567890ab"
+        private val BAD_HOLDING_IDENTITY = ShortHash.of("deaddeaddead")
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
@@ -73,7 +75,7 @@ class MemberLookupRpcOpsTest {
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
-    private val holdingIdentity = HoldingIdentity("test", "0")
+    private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
 
     private val keyEncodingService: CipherSchemeMetadata = mock {
         on { decodePublicKey(KNOWN_KEY) } doReturn knownKey
@@ -162,7 +164,7 @@ class MemberLookupRpcOpsTest {
     }
 
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
-        on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),
@@ -309,7 +311,7 @@ class MemberLookupRpcOpsTest {
     fun `lookup should fail when non-existent holding identity is used`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRpcOps.lookup("failingTest") }
+        val ex = assertFailsWith<ResourceNotFoundException> { memberLookupRpcOps.lookup(BAD_HOLDING_IDENTITY.value) }
         assertTrue(ex.message.contains("holding identity"))
         memberLookupRpcOps.deactivate("")
         memberLookupRpcOps.stop()
@@ -317,7 +319,7 @@ class MemberLookupRpcOpsTest {
 
     @Test
     fun `exception should be thrown when service is not running`() {
-        val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRpcOps.lookup("failingTest") }
+        val ex = assertFailsWith<ServiceUnavailableException> { memberLookupRpcOps.lookup(BAD_HOLDING_IDENTITY.value) }
         assertTrue(ex.message.contains("MemberLookupRpcOpsImpl"))
     }
 }

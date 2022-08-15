@@ -1,9 +1,5 @@
 package net.corda.chunking.db.impl.validation
 
-import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import javax.persistence.PersistenceException
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
@@ -12,13 +8,18 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import javax.persistence.PersistenceException
 
 /**
  * Assembles the CPI from chunks in the database, and returns the temporary path
@@ -28,14 +29,19 @@ import org.slf4j.Logger
  *
  * @throws ValidationException
  */
-fun getCpiFileInfo(cpiCacheDir: Path, chunkPersistence: ChunkPersistence, requestId: RequestId): FileInfo {
+fun assembleFileFromChunks(
+    cacheDir: Path,
+    chunkPersistence: ChunkPersistence,
+    requestId: RequestId,
+    chunkReaderFactory: ChunkReaderFactory
+): FileInfo {
     var fileName: String? = null
     lateinit var tempPath: Path
     lateinit var checksum: SecureHash
     var localProperties: Map<String, String?>? = null
 
     // Set up chunk reader.  If onComplete is never called, we've failed.
-    val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
+    val reader = chunkReaderFactory.create(cacheDir).apply {
         onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
             fileName = originalFileName
             tempPath = tempPathOfBinary
@@ -70,6 +76,7 @@ fun FileInfo.validateAndGetCpi(cpiPartsDir: Path): Cpi {
                 is PackagingException -> {
                     throw ValidationException("Invalid CPI.  ${ex.message}", ex)
                 }
+
                 else -> {
                     throw ValidationException("Unexpected exception when unpacking CPI.  ${ex.message}", ex)
                 }
@@ -83,9 +90,10 @@ fun FileInfo.validateAndGetCpi(cpiPartsDir: Path): Cpi {
  *
  * @throws ValidationException if there is an error
  */
-@Suppress("ThrowsCount", "ComplexMethod")
+@Suppress("ThrowsCount", "ComplexMethod", "LongParameterList")
 fun CpiPersistence.persistCpiToDatabase(
     cpi: Cpi,
+    groupId: String,
     fileInfo: FileInfo,
     requestId: RequestId,
     cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
@@ -96,8 +104,6 @@ fun CpiPersistence.persistCpiToDatabase(
     // We'll publish to the database using the de-chunking checksum.
 
     try {
-        val groupId = cpi.validateAndGetGroupId()
-
         val cpiExists = this.cpiExists(
             cpi.metadata.cpiId.name,
             cpi.metadata.cpiId.version,
@@ -106,10 +112,24 @@ fun CpiPersistence.persistCpiToDatabase(
 
         return if (cpiExists && fileInfo.forceUpload) {
             log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-            this.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
+            this.updateMetadataAndCpks(
+                cpi,
+                fileInfo.name,
+                fileInfo.checksum,
+                requestId,
+                groupId,
+                cpkDbChangeLogEntities
+            )
         } else if (!cpiExists) {
             log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-            this.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, cpkDbChangeLogEntities)
+            this.persistMetadataAndCpks(
+                cpi,
+                fileInfo.name,
+                fileInfo.checksum,
+                requestId,
+                groupId,
+                cpkDbChangeLogEntities
+            )
         } else {
             throw ValidationException(
                 "CPI has already been inserted with cpks for " +
@@ -129,13 +149,22 @@ fun CpiPersistence.persistCpiToDatabase(
 /**
  * Get groupId from group policy JSON on the [Cpi] object.
  *
+ * @param getGroupIdFromJson lambda that takes a json string and returns the `groupId`
+ *
  * @throws ValidationException if there is no group policy json.
  * @throws CordaRuntimeException if there is an error parsing the group policy json.
  * @return `groupId`
  */
-fun Cpi.validateAndGetGroupId(): String {
+@Suppress("ThrowsCount")
+fun Cpi.validateAndGetGroupId(getGroupIdFromJson: (String) -> String): String {
     if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
-    return GroupPolicyParser.getOrCreateGroupId(this.metadata.groupPolicy!!)
+    val groupId = try {
+        getGroupIdFromJson(this.metadata.groupPolicy!!)
+    } catch (e: CordaRuntimeException) {
+        throw ValidationException("CPI group policy file needs a groupId", e)
+    }
+    if (groupId.isBlank()) throw ValidationException("CPI group policy file needs a groupId")
+    return groupId
 }
 
 /**
@@ -158,9 +187,10 @@ private fun isSigned(cpiInputStream: InputStream): Boolean {
 }
 
 /**
- * @throws ValidationException if the CPI is already uploaded with this group
+ * Checks the group id for cpi of a specific (name, version)
+ * @throws ValidationException if the CPI (name, version) is already uploaded with this group
  */
-fun CpiPersistence.checkGroupIdDoesNotExistForCpi(cpi: Cpi) {
+fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
     val groupIdInDatabase = this.getGroupId(
         cpi.metadata.cpiId.name,
         cpi.metadata.cpiId.version,
@@ -168,7 +198,11 @@ fun CpiPersistence.checkGroupIdDoesNotExistForCpi(cpi: Cpi) {
     )
 
     if (groupIdInDatabase != null) {
-        throw ValidationException("CPI already uploaded with groupId = $groupIdInDatabase")
+        // Carefully constructed message because the "409/conflict" exception:
+        // ResourceAlreadyExistsException
+        // just wants "the resource".
+        val resource = "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} (groupId=$groupIdInDatabase)"
+        throw DuplicateCpiUploadException(resource)
     }
 }
 

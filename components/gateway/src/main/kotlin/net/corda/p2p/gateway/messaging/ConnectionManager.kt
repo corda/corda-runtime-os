@@ -1,8 +1,9 @@
 package net.corda.p2p.gateway.messaging
 
+import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.RemovalListener
 import io.netty.channel.nio.NioEventLoopGroup
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import java.util.concurrent.TimeUnit
@@ -27,11 +28,11 @@ class ConnectionManager(
         private const val NUM_CLIENT_NETTY_THREADS = 2
     }
 
-    private val clientPool = Caffeine.newBuilder()
-        .maximumSize(connectionConfiguration.maxClientConnections)
-        .removalListener(RemovalListener<DestinationInfo, HttpClient> { _, value, _ -> value?.stop() })
-        .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
-        .build<DestinationInfo, HttpClient>()
+    private val clientPool: Cache<DestinationInfo, HttpClient> = CacheFactoryImpl().build(
+        Caffeine.newBuilder()
+            .maximumSize(connectionConfiguration.maxClientConnections)
+            .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
+            .removalListener { _, value, _ -> value?.stop() })
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 

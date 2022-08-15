@@ -39,13 +39,12 @@ class InitiateFlowRequestHandler @Activate constructor(
         } catch (e: Exception) {
             throw FlowTransientException(
                 "Failed to create the flow sandbox for identity ${context.checkpoint.holdingIdentity}: ${e.message}",
-                context,
                 e
             )
         }
 
         val initiator = checkpoint.flowStack.nearestFirst { it.isInitiatingFlow }?.flowName
-            ?: throw FlowFatalException("Flow stack is empty or did not contain an initiating flow in the stack", context)
+            ?: throw FlowFatalException("Flow stack is empty or did not contain an initiating flow in the stack")
 
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
 

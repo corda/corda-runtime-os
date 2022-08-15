@@ -21,6 +21,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -52,7 +53,8 @@ class CryptoOpsClientComponent @Activate constructor(
         setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
         )
-    )
+    ),
+    configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc.client"
@@ -161,11 +163,18 @@ class CryptoOpsClientComponent @Activate constructor(
     ): CryptoSignatureWithKey = impl.ops.signProxy(tenantId, publicKey, signatureSpec, data, context)
 
     override fun createWrappingKey(
-        configId: String,
+        hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
         context: Map<String, String>
-    ) = impl.ops.createWrappingKey(configId, failIfExists, masterKeyAlias, context)
+    ) = impl.ops.createWrappingKey(hsmId, failIfExists, masterKeyAlias, context)
+
+    override fun deriveSharedSecret(
+        tenantId: String,
+        publicKey: PublicKey,
+        otherPublicKey: PublicKey,
+        context: Map<String, String>
+    ): ByteArray = impl.ops.deriveSharedSecret(tenantId, publicKey, otherPublicKey, context)
 
     class Impl(
         publisherFactory: PublisherFactory,

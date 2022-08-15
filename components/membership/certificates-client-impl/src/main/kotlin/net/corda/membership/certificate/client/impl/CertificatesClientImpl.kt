@@ -85,14 +85,15 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     override fun setupLocallyHostedIdentity(
-        holdingIdentityId: String,
-        certificateChainAlias: String,
-        tlsTenantId: String?,
+        holdingIdentityShortHash: String,
+        p2pTlsCertificateChainAlias: String,
+        p2pTlsTenantId: String?,
+        sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ) {
 
         val record = hostedIdentityEntryFactory.createIdentityRecord(
-            holdingIdentityId, certificateChainAlias, tlsTenantId, sessionKeyId
+            holdingIdentityShortHash, p2pTlsCertificateChainAlias, p2pTlsTenantId, sessionKeyTenantId, sessionKeyId
         )
 
         val futures = publisher?.publish(

@@ -10,5 +10,5 @@ That said, any time `PluggableRpcOps` interfaces are updated and/or parameters o
 file need to be updated or else `OpenApiCompatibilityTest` will fail.
 
 To update the `swaggerBaseline.json`, please run OSGi integration test:
-`gradlew :corda-runtime-os:processors:rpc-processor:integrationTest` - if it fails it will report the differences detected
+`gradlew :processors:rpc-processor:integrationTest` - if it fails it will report the differences detected
 as well full snapshot of current Open API produced.

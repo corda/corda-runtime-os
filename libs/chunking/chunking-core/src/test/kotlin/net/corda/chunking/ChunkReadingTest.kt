@@ -19,13 +19,15 @@ import java.util.UUID
 class ChunkReadingTest {
     private lateinit var fs: FileSystem
 
+    private val chunkReaderFactory = ChunkReaderFactoryImpl
+    
     @BeforeEach
-    private fun beforeEach() {
+    fun beforeEach() {
         fs = Jimfs.newFileSystem()
     }
 
     @AfterEach
-    private fun afterEach() {
+    fun afterEach() {
         fs.close()
     }
 
@@ -46,7 +48,7 @@ class ChunkReadingTest {
     fun `can read in order chunks`() {
         var actualFileName: String? = null
         var actualPath: Path? = null
-        val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
+        val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
             onComplete { originalFileName, tempBinaryPath, _, _ ->
                 actualFileName = originalFileName
                 actualPath = tempBinaryPath
@@ -70,7 +72,7 @@ class ChunkReadingTest {
         val chunks = mutableListOf<Chunk>()
 
         var readCompleted = false
-        val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
+        val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
             onComplete { _, _, _, _ -> readCompleted = true }
         }
 
@@ -105,7 +107,7 @@ class ChunkReadingTest {
         var actualFileName: String? = null
         var actualPath: Path? = null
         var readCompleted = false
-        val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
+        val reader = chunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
             onComplete { originalFileName, tempBinaryPath, _, _ ->
                 actualFileName = originalFileName
                 actualPath = tempBinaryPath

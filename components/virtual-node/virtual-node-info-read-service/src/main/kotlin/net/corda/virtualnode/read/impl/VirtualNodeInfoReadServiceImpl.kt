@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -88,7 +89,8 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoProcessor.get(holdingIdentity)
 
-    override fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoProcessor.getById(id)
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
+        = virtualNodeInfoProcessor.getById(holdingIdentityShortHash)
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
         virtualNodeInfoProcessor.registerCallback(listener)

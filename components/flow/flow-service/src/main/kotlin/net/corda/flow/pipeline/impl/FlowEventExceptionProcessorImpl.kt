@@ -1,22 +1,23 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.output.FlowStatus
+import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.exceptions.FlowTransientException
-import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -44,8 +45,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         maxRetryAttempts = config.getInt(PROCESSING_MAX_RETRY_ATTEMPTS)
     }
 
-    override fun process(exception: Exception): StateAndEventProcessor.Response<Checkpoint> {
-        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", exception)
+    override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
+        log.error("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
         return StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = listOf(),
@@ -53,85 +54,110 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    override fun process(exception: FlowTransientException): StateAndEventProcessor.Response<Checkpoint> {
-        val context = exception.getFlowContext()
-        val flowCheckpoint = context.checkpoint
+    override fun process(
+        exception: FlowTransientException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> {
+        return withEscalation {
+            val flowCheckpoint = context.checkpoint
 
-        /** If we have reached the maximum number of retries then we escalate this to a fatal
-         * exception and DLQ the flow
-         */
-        if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
-            return process(
-                FlowFatalException(
-                    "Max retry attempts '${maxRetryAttempts}' has been reached.",
-                    context,
-                    exception
+            /** If we have reached the maximum number of retries then we escalate this to a fatal
+             * exception and DLQ the flow
+             */
+            if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
+                return@withEscalation process(
+                    FlowFatalException(
+                        "Max retry attempts '${maxRetryAttempts}' has been reached.",
+                        exception
+                    ), context
                 )
+            }
+
+            log.info(
+                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}'",
+                exception
+            )
+
+            val records = createStatusRecord(context.checkpoint.flowId) {
+                flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
+            }
+
+            // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
+            // but before the first checkpoint has been recorded.
+            flowCheckpoint.rollback()
+            flowCheckpoint.markForRetry(context.inputEvent, exception)
+
+            flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
+        }
+    }
+
+    override fun process(
+        exception: FlowFatalException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+        val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+        log.error(msg, exception)
+        val records = createStatusRecord(context.checkpoint.flowId) {
+            flowMessageFactory.createFlowFailedStatusMessage(
+                context.checkpoint,
+                FLOW_FAILED,
+                exception.message
             )
         }
 
-        log.info(
-            "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}'",
-            exception
-        )
-
-        flowCheckpoint.rollback()
-        flowCheckpoint.markForRetry(context.inputEvent, exception)
-
-        val status = flowMessageFactory.createFlowRetryingStatusMessage(exception.getFlowContext().checkpoint)
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status)
-        )
-
-        return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
-    }
-
-    override fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint> {
-        val msg = "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
-        log.error(msg, exception)
-        val status = flowMessageFactory.createFlowFailedStatusMessage(
-            exception.getFlowContext().checkpoint,
-            FLOW_FAILED,
-            msg
-        )
-
-        val records = listOf(
-            flowRecordFactory.createFlowStatusRecord(status)
-        )
-
-        return StateAndEventProcessor.Response(
+        StateAndEventProcessor.Response(
             updatedState = null,
             responseEvents = records,
             markForDLQ = true
         )
     }
 
-    override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> {
+    private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus): List<Record<*, *>> {
+        return try {
+            val status = statusGenerator()
+            listOf(flowRecordFactory.createFlowStatusRecord(status))
+        } catch (e: IllegalStateException) {
+            // Most errors should happen after a flow has been initialised. However, it is possible for
+            // initialisation to have not yet happened at the point the failure is hit if it's a session init message
+            // and something goes wrong in trying to retrieve the sandbox. In this case we cannot update the status
+            // correctly. This shouldn't matter however - in this case we're treating the issue as the flow never
+            // starting at all. We'll still log that the error was seen.
+            log.warn(
+                "Could not create a flow status message for a failed flow with ID $id as " +
+                        "the flow start context was missing."
+            )
+            listOf()
+        }
+    }
+
+    override fun process(
+        exception: FlowEventException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
         log.warn("A non critical error was reported while processing the event.", exception)
-        return flowEventContextConverter.convert(exception.getFlowContext())
+        flowEventContextConverter.convert(context)
     }
 
-    override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> {
-        val context = exception.getFlowContext()
-        val checkpoint = context.checkpoint
+    override fun process(
+        exception: FlowPlatformException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> {
+        return withEscalation {
+            val checkpoint = context.checkpoint
+            checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message)
+            checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
 
-        /**
-         * the exception message can't be null, we can remove the !! as
-         * part of this ticket:
-         * https://r3-cev.atlassian.net/browse/CORE-5170
-         */
-        checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message!!)
-        checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
-
-        val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-        return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+            flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+        }
     }
 
-    private fun FlowProcessingException.getFlowContext(): FlowEventContext<*> {
-        /** Hack: the !! is temporary , for now we are leaving the FlowProcessingException with an optional flow event
-         *  context this can be changed once all the exception handling is implemented.
-         *  https://r3-cev.atlassian.net/browse/CORE-5170
-         */
-        return flowEventContext!!
+    private fun withEscalation(handler: () -> StateAndEventProcessor.Response<Checkpoint>): StateAndEventProcessor.Response<Checkpoint> {
+        return try {
+            handler()
+        } catch (t: Throwable) {
+            // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
+            process(t)
+        }
     }
 }

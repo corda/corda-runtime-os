@@ -1,6 +1,8 @@
 package net.corda.utilities
 
 import org.slf4j.Logger
+import java.io.OutputStream
+import java.io.PrintStream
 import java.time.Duration
 import java.util.Collections
 
@@ -30,5 +32,18 @@ private val warnings = Collections.newSetFromMap(createSimpleCache<String, Boole
 fun Logger.warnOnce(warning: String) {
     if (warnings.add(warning)) {
         this.warn(warning)
+    }
+}
+
+/**
+ * Run a code block temporary suppressing any StdErr output that might be produced
+ */
+fun <T : Any?> executeWithStdErrSuppressed(block: () -> T) : T {
+    val initial = System.err
+    return try {
+        System.setErr(PrintStream(OutputStream.nullOutputStream()))
+        block()
+    } finally {
+        System.setErr(initial)
     }
 }

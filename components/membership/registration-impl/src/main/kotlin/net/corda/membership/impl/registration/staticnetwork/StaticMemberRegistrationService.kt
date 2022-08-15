@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
@@ -12,19 +11,19 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SERIAL
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SESSION_KEY_HASH
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.impl.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -154,12 +153,12 @@ class StaticMemberRegistrationService @Activate constructor(
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.id
+        val memberId = registeringMember.shortHash.value
 
         assignSoftHsm(memberId)
 
         val staticMemberInfo = staticMemberList.firstOrNull {
-            MemberX500Name.parse(it.name!!) == MemberX500Name.parse(memberName)
+            MemberX500Name.parse(it.name!!) == memberName
         } ?: throw IllegalArgumentException("Our membership $memberName is not listed in the static member list.")
 
         validateStaticMemberDeclaration(staticMemberInfo)
@@ -170,7 +169,7 @@ class StaticMemberRegistrationService @Activate constructor(
         @Suppress("SpreadOperator")
         val memberInfo = memberInfoFactory.create(
             sortedMapOf(
-                PARTY_NAME to memberName,
+                PARTY_NAME to memberName.toString(),
                 PARTY_SESSION_KEY to encodedMemberKey,
                 GROUP_ID to groupId,
                 *generateLedgerKeys(encodedMemberKey).toTypedArray(),
@@ -189,11 +188,11 @@ class StaticMemberRegistrationService @Activate constructor(
 
         staticMemberList.forEach {
             val owningMemberName = MemberX500Name.parse(it.name!!).toString()
-            val owningMemberHoldingIdentity = HoldingIdentity(owningMemberName, groupId)
+            val owningMemberHoldingIdentity = HoldingIdentity(MemberX500Name.parse(owningMemberName), groupId)
             records.add(
                 Record(
                     MEMBER_LIST_TOPIC,
-                    "${owningMemberHoldingIdentity.id}-$memberId",
+                    "${owningMemberHoldingIdentity.shortHash}-$memberId",
                     PersistentMemberInfo(
                         owningMemberHoldingIdentity.toAvro(),
                         memberInfo.memberProvidedContext.toAvro(),
@@ -214,7 +213,7 @@ class StaticMemberRegistrationService @Activate constructor(
         groupPolicy: GroupPolicy
     ): Record<String, HostedIdentityEntry> {
         val memberName = registeringMember.x500Name
-        val memberId = registeringMember.id
+        val memberId = registeringMember.shortHash
         val groupId = groupPolicy.groupId
 
         /**
@@ -222,18 +221,17 @@ class StaticMemberRegistrationService @Activate constructor(
          * internal within the cluster. For this reason, we pass through a set of "dummy" certificates/keys.
          */
         val hostedIdentity = HostedIdentityEntry(
-            net.corda.data.identity.HoldingIdentity(memberName, groupId),
-            memberId,
-            memberId,
+            net.corda.data.identity.HoldingIdentity(memberName.toString(), groupId),
+            memberId.value,
+            memberId.value,
             listOf(DUMMY_CERTIFICATE),
             DUMMY_PUBLIC_SESSION_KEY
         )
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.id,
+            registeringMember.shortHash.value,
             hostedIdentity
-
         )
     }
 
@@ -259,7 +257,7 @@ class StaticMemberRegistrationService @Activate constructor(
     private fun assignSoftHsm(memberId: String) {
         CryptoConsts.Categories.all.forEach {
             if(hsmRegistrationClient.findHSM(memberId, it) == null) {
-                hsmRegistrationClient.assignSoftHSM(memberId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+                hsmRegistrationClient.assignSoftHSM(memberId, it)
             }
         }
     }

@@ -1,13 +1,16 @@
 package net.corda.chunking.db.impl.validation
 
+import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -37,7 +40,7 @@ class CpiValidatorImpl constructor(
 
         // Assemble the CPI locally and return information about it
         publisher.update(requestId, "Validating upload")
-        val fileInfo = getCpiFileInfo(cpiCacheDir, chunkPersistence, requestId)
+        val fileInfo = assembleFileFromChunks(cpiCacheDir, chunkPersistence, requestId, ChunkReaderFactoryImpl)
 
         publisher.update(requestId, "Checking signatures")
         fileInfo.checkSignature()
@@ -61,11 +64,11 @@ class CpiValidatorImpl constructor(
         val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir)
 
         publisher.update(requestId, "Checking group id in CPI")
-        val groupId = cpi.validateAndGetGroupId()
+        val groupId = cpi.validateAndGetGroupId(GroupPolicyParser::groupIdFromJson)
 
         if (!fileInfo.forceUpload) {
             publisher.update(requestId, "Validating group id against DB")
-            cpiPersistence.checkGroupIdDoesNotExistForCpi(cpi)
+            cpiPersistence.verifyGroupIdIsUniqueForCpi(cpi)
         }
 
         publisher.update(
@@ -77,7 +80,8 @@ class CpiValidatorImpl constructor(
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Persisting CPI")
-        val cpiMetadataEntity = cpiPersistence.persistCpiToDatabase(cpi, fileInfo, requestId, cpkDbChangeLogEntities, log)
+        val cpiMetadataEntity =
+            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities, log)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(

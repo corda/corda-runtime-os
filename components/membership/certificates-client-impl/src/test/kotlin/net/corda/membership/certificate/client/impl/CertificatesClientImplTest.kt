@@ -141,10 +141,22 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.setupLocallyHostedIdentity("holdingIdentityId", "Alias", "tlsTenantId", "sessionAlias")
+            client.setupLocallyHostedIdentity(
+                "holdingIdentityShortHash",
+                "Alias",
+                "tlsTenantId",
+                "sessionKeyTenantId",
+                "sessionAlias"
+            )
 
-            verify(mockHostedIdentityEntryFactory.constructed().first()).createIdentityRecord(
-                "holdingIdentityId", "Alias", "tlsTenantId", "sessionAlias"
+            verify(
+                mockHostedIdentityEntryFactory.constructed().first()
+            ).createIdentityRecord(
+                "holdingIdentityShortHash",
+                "Alias",
+                "tlsTenantId",
+                "sessionKeyTenantId",
+                "sessionAlias"
             )
         }
 
@@ -174,9 +186,10 @@ class CertificatesClientImplTest {
         fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
             assertThrows<IllegalStateException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityId",
+                    "holdingIdentityShortHash",
                     "Alias",
                     "tlsTenantId",
+                    "sessionKeyTenantId",
                     "sessionAlias"
                 )
             }
@@ -193,9 +206,10 @@ class CertificatesClientImplTest {
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityId",
+                    "holdingIdentityShortHash",
                     "Alias",
                     "tlsTenantId",
+                    "sessionKeyTenantId",
                     "sessionAlias"
                 )
             }
@@ -204,7 +218,10 @@ class CertificatesClientImplTest {
         @Test
         fun `publishToLocallyHostedIdentities publish the correct record`() {
             val record = mock<Record<String, HostedIdentityEntry>>()
-            whenever(mockHostedIdentityEntryFactory.constructed().first().createIdentityRecord(any(), any(), any(), any())).doReturn(record)
+            whenever(
+                mockHostedIdentityEntryFactory.constructed().first()
+                    .createIdentityRecord(any(), any(), any(), any(), any())
+            ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
@@ -212,9 +229,10 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityId",
+                "holdingIdentityShortHash",
                 "Alias",
                 "tlsTenantId",
+                "sessionKeyTenantId",
                 "sessionAlias"
             )
 

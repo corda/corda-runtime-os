@@ -1,14 +1,15 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,7 +55,14 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 ),
                 Arguments.of(
                     SessionClose::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2) }
+                    { dsl: StepSetup ->
+                        dsl.sessionCloseEventReceived(
+                            FLOW_ID1,
+                            SESSION_ID_2,
+                            sequenceNum = 1,
+                            receivedSequenceNum = 2
+                        )
+                    }
                 )
             )
         }
@@ -692,7 +700,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFinished(nonInitiatingFlowStackItem())
+                )
         }
 
         then {
@@ -715,7 +725,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFinished(FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFinished(nonInitiatingFlowStackItem())
+                )
         }
 
         then {
@@ -738,7 +750,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.SubFlowFinished(FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFinished(nonInitiatingFlowStackItem())
+                )
         }
 
         then {
@@ -749,7 +763,11 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    private fun initiatingFlowStackItem(vararg sessionIds: String): FlowStackItem {
-        return FlowStackItem(FLOW_NAME, true, sessionIds.toList())
-    }
+    private fun initiatingFlowStackItem(vararg sessionIds: String): FlowStackItem =
+        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList())
+
+    private fun nonInitiatingFlowStackItem(): FlowStackItem =
+        FlowStackItem(
+            FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1), mutableKeyValuePairList(), mutableKeyValuePairList()
+        )
 }

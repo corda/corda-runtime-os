@@ -1,10 +1,10 @@
 package net.corda.httprpc.server.impl.security.provider.credentials
 
-import io.javalin.http.Context
+import net.corda.httprpc.server.impl.context.ClientRequestContext
 
 /**
  * Resolves credentials from a Javalin Context
  */
 internal interface CredentialResolver {
-    fun resolve(context: Context): AuthenticationCredentials?
+    fun resolve(context: ClientRequestContext): AuthenticationCredentials?
 }

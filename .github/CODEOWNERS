@@ -1,11 +1,15 @@
 
 # Build scripts should be audited by BLT
+
+Jenkinsfile        @corda/blt
+.ci/**             @corda/blt
+
 *.gradle           @corda/blt
 gradle.properties  @corda/corda5-team-leads
-Jenkinsfile        @corda/blt
-.ci/*              @corda/blt
 gradle/*           @corda/blt
-.github/*          @corda/blt
+
+.github/**          @corda/blt
+CODEOWNERS         @corda/blt @corda/corda5-team-leads
 
 # Modules to be audited by HTTP RPC team
 /applications/workers/release/rpc-worker/     @corda/http-rpc

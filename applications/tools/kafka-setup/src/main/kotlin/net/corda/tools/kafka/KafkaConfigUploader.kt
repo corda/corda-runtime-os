@@ -118,8 +118,10 @@ class KafkaConfigUploader @Activate constructor(
             val recordKey = "$packageKey.$componentKey"
             // TODO - the following version should be revised. `Configuration.version` is meant for DB optimistic locking.
             //val version = packageConfig.getString("$componentKey.componentVersion")
+            val conf = packageConfig.getConfig(componentKey).root().render(ConfigRenderOptions.concise())
             val content = Configuration(
-                packageConfig.getConfig(componentKey).root().render(ConfigRenderOptions.concise()),
+                conf,
+                conf,
                 0,
                 ConfigurationSchemaVersion(1, 0)
             )

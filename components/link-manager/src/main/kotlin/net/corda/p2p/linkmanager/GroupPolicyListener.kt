@@ -1,8 +1,8 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.virtualnode.HoldingIdentity
 
 interface GroupPolicyListener {
     data class GroupInfo(

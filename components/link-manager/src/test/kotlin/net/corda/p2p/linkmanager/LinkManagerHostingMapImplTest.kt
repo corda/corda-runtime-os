@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -11,6 +10,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.HostedIdentityEntry
+import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -49,8 +51,9 @@ class LinkManagerHostingMapImplTest {
     private val publicKeyOne = mock<PublicKey> {
         on { encoded } doReturn byteArrayOf(0, 1, 2)
     }
+    private val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
     private val entryOne = HostedIdentityEntry(
-        HoldingIdentity("x500", "group"),
+        createTestHoldingIdentity(bobX500Name, "group").toAvro(),
         "id1",
         "id2",
         listOf("cert1", "cert2"),
@@ -87,7 +90,7 @@ class LinkManagerHostingMapImplTest {
         )
 
         assertThat(
-            testObject.isHostedLocally(entryOne.holdingIdentity)
+            testObject.isHostedLocally(entryOne.holdingIdentity.toCorda())
         ).isTrue
     }
 
@@ -100,7 +103,7 @@ class LinkManagerHostingMapImplTest {
         )
 
         assertThat(testObject.allLocallyHostedIdentities()).containsExactlyInAnyOrder(
-            entryOne.holdingIdentity
+            entryOne.holdingIdentity.toCorda()
         )
     }
 
@@ -114,9 +117,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                HoldingIdentity(
-                    "x500", "another group"
-                )
+                createTestHoldingIdentity(bobX500Name, "another group")
             )
         ).isFalse
     }
@@ -153,9 +154,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                HoldingIdentity(
-                    "x500", "group"
-                )
+                createTestHoldingIdentity(bobX500Name, "group")
             )
         ).isFalse
     }
@@ -170,9 +169,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                HoldingIdentity(
-                    "x500", "group"
-                )
+                createTestHoldingIdentity(bobX500Name, "group")
             )
         ).isTrue
     }
@@ -193,7 +190,7 @@ class LinkManagerHostingMapImplTest {
                 )
             ).isEqualTo(
                 HostingMapListener.IdentityInfo(
-                    holdingIdentity = entryOne.holdingIdentity,
+                    holdingIdentity = entryOne.holdingIdentity.toCorda(),
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
@@ -213,16 +210,16 @@ class LinkManagerHostingMapImplTest {
         )
 
         assertSoftly {
-            it.assertThat(testObject.getInfo(entryOne.holdingIdentity)).isEqualTo(
+            it.assertThat(testObject.getInfo(entryOne.holdingIdentity.toCorda())).isEqualTo(
                 HostingMapListener.IdentityInfo(
-                    holdingIdentity = entryOne.holdingIdentity,
+                    holdingIdentity = entryOne.holdingIdentity.toCorda(),
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
                     sessionPublicKey = publicKeyOne
                 )
             )
-            it.assertThat(testObject.getInfo(HoldingIdentity("", ""))).isNull()
+            it.assertThat(testObject.getInfo(createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"))).isNull()
         }
     }
 
@@ -243,7 +240,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(entries).containsExactly(
             HostingMapListener.IdentityInfo(
-                entryOne.holdingIdentity,
+                entryOne.holdingIdentity.toCorda(),
                 entryOne.tlsCertificates,
                 entryOne.tlsTenantId,
                 entryOne.sessionKeyTenantId,

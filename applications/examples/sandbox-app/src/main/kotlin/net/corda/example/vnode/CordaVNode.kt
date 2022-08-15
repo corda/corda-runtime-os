@@ -1,4 +1,5 @@
 @file:JvmName("Constants")
+
 package net.corda.example.vnode
 
 import co.paralleluniverse.fibers.instrument.Retransform
@@ -12,6 +13,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpkMetadata
@@ -20,10 +22,12 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -48,14 +52,16 @@ const val VNODE_SERVICE = "vnode"
 const val SHUTDOWN_GRACE = 30L
 
 @Suppress("unused", "LongParameterList")
-@Component(reference = [
-    Reference(
-        name = VNODE_SERVICE,
-        service = VNodeService::class,
-        cardinality = OPTIONAL,
-        policy = DYNAMIC
-    )
-])
+@Component(
+    reference = [
+        Reference(
+            name = VNODE_SERVICE,
+            service = VNodeService::class,
+            cardinality = OPTIONAL,
+            policy = DYNAMIC
+        )
+    ]
+)
 class CordaVNode @Activate constructor(
     @Reference
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
@@ -80,6 +86,7 @@ class CordaVNode @Activate constructor(
             val config = ConfigFactory.empty()
                 .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5))
                 .withValue(PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(5000L))
+                .withValue(PROCESSING_MAX_FLOW_EXECUTION_DURATION, ConfigValueFactory.fromAnyRef(60000L))
                 .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
                 .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             smartConfig = configFactory.create(config)
@@ -139,14 +146,15 @@ class CordaVNode @Activate constructor(
                 virtualNodeInfo.holdingIdentity,
                 "com.example.cpk.ExampleFlow",
                 "{\"message\":\"Bongo!\"}",
+                emptyKeyValuePairList(),
                 Instant.now(),
-            ),  "{\"message\":\"Bongo!\"}"
+            ), "{\"message\":\"Bongo!\"}"
         )
     }
 
     @Suppress("SameParameterValue")
     private fun executeSandbox(clientId: String, resourceName: String) {
-        val holdingIdentity = HoldingIdentity(X500_NAME, generateRandomId())
+        val holdingIdentity = HoldingIdentity(MemberX500Name.parse(X500_NAME), generateRandomId())
         val vnodeInfo = vnode.loadVirtualNode(resourceName, holdingIdentity)
         try {
             // Checkpoint: We have loaded the CPI into the framework.
@@ -232,6 +240,7 @@ class CordaVNode @Activate constructor(
             val dbField = instrumentor::class.java.getDeclaredField("dbForClassloader").apply {
                 isAccessible = true
             }
+
             @Suppress("unchecked_cast")
             val classLoaders = (dbField.get(instrumentor) as Map<ClassLoader, *>).keys
             for (classLoader in classLoaders) {
@@ -240,8 +249,10 @@ class CordaVNode @Activate constructor(
                     if (bundle == null) {
                         logger.info("CLASSLOADER>> {} is DEAD", classLoader)
                     } else if (bundle.location.startsWith("FLOW/")) {
-                        logger.info("BUNDLE>> {} is-in-use={} (classloader={})",
-                            bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java)
+                        logger.info(
+                            "BUNDLE>> {} is-in-use={} (classloader={})",
+                            bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java
+                        )
                     }
                 }
             }

@@ -9,6 +9,7 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponseFailure
 import net.corda.data.persistence.EntityResponseSuccess
 import net.corda.data.persistence.Error
+import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
@@ -38,8 +39,10 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
         val config = context.config
         val persistenceState = checkpoint.persistenceState
         if (persistenceState?.request?.request != null) {
-            log.debug { "Checking to see if response received for request type ${persistenceState.request.request::class}" +
-                    " and id ${persistenceState.requestId}" }
+            log.debug {
+                "Checking to see if response received for request type ${persistenceState.request.request::class}" +
+                        " and id ${persistenceState.requestId}"
+            }
         }
         val response = persistenceState?.response
         return if (response != null) {
@@ -53,11 +56,16 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
                     entityResponse
                 }
                 is EntityResponseFailure -> {
-                    handleErrorResponse(response.responseType as EntityResponseFailure, config, persistenceState, checkpoint)
+                    handleErrorResponse(
+                        response.responseType as EntityResponseFailure,
+                        config,
+                        persistenceState,
+                        checkpoint
+                    )
                 }
                 else -> {
                     log.error("Received unexpected response from the db worker")
-                    throw FlowFatalException("Received unexpected response from the db worker", context)
+                    throw FlowFatalException("Received unexpected response from the db worker")
                 }
             }
         } else {
@@ -76,7 +84,8 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
         val errorException = errorResponse.exception
         val retries = persistenceState.retries
         val errorMessage = "$errorType exception returned from the persistence store for query"
-        val retryErrorMessage = "$errorMessage. Retrying exception after delay. Current retry count $retries. Exception: $errorException"
+        val retryErrorMessage =
+            "$errorMessage. Retrying exception after delay. Current retry count $retries. Exception: $errorException"
         val maxRetryErrorMessage = "$errorMessage. Exceeded max retries. Exception: $errorException"
         return when (errorType) {
             Error.FATAL -> {
@@ -85,7 +94,14 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
                 FlowContinuation.Error(CordaPersistenceException(errorException.errorMessage))
             }
             Error.VIRTUAL_NODE, Error.DATABASE, Error.NOT_READY -> {
-                handleRetriableError(config, errorException, maxRetryErrorMessage, retryErrorMessage, persistenceState, checkpoint)
+                handleRetriableError(
+                    config,
+                    errorException,
+                    maxRetryErrorMessage,
+                    retryErrorMessage,
+                    persistenceState,
+                    checkpoint
+                )
             }
             else -> {
                 log.error("Unexpected error type returned from the DB worker: $errorType")
@@ -105,7 +121,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
         retryErrorMessage: String,
         persistenceState: PersistenceState,
         checkpoint: FlowCheckpoint
-    ) : FlowContinuation {
+    ): FlowContinuation {
         val retries = persistenceState.retries
         return if (retries >= config.getLong(PERSISTENCE_MAX_RETRIES)) {
             log.error(maxRetryErrorMessage)
@@ -120,7 +136,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
 
     private fun getPayloadFromResponse(request: EntityRequest, response: EntityResponseSuccess): FlowContinuation {
         return when (request.request) {
-            is FindEntity, is MergeEntity -> {
+            is FindEntity, is MergeEntity, is FindAll -> {
                 FlowContinuation.Run(response.result)
             }
             is DeleteEntity, is PersistEntity -> {

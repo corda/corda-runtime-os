@@ -2,7 +2,6 @@ package net.corda.processors.flow.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.flow.dummy.link.DummyLinkManagerService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
@@ -37,8 +36,6 @@ class FlowProcessorImpl @Activate constructor(
     private val flowService: FlowService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
-    @Reference(service = DummyLinkManagerService::class)
-    private val dummyLinkManagerService: DummyLinkManagerService,
     @Reference(service = FlowP2PFilterService::class)
     private val flowP2PFilterService: FlowP2PFilterService,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -55,18 +52,17 @@ class FlowProcessorImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::flowService,
         ::flowMapperService,
-        ::dummyLinkManagerService,
         ::flowP2PFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent,
         ::membershipGroupReaderProvider
     )
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Flow processor starting.")
@@ -79,13 +75,12 @@ class FlowProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "Flow processor received event $event." }
 
         when (event) {
             is StartEvent -> {
-                dependentComponents.registerAndStartAll(coordinator)
+                // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Flow processor is ${event.status}")
@@ -95,7 +90,7 @@ class FlowProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
-                dependentComponents.stopAll()
+                // Nothing to do
             }
             else -> {
                 log.error("Unexpected event $event!")

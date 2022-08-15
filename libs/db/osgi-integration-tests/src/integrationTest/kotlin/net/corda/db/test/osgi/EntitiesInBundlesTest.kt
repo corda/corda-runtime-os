@@ -99,13 +99,15 @@ class EntitiesInBundlesTest {
         private val catName = "Stray"
         private val cat = catCtor.newInstance(catId, catName, "Tabby", owner)
 
-        private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration("pets")
+        private val schemaName = "ebt${(1..1000000).random()}"
+        private val dbConfig: EntityManagerConfiguration =
+            getEntityManagerConfiguration("pets", schemaName = schemaName, createSchema = true)
 
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
         fun setupEntities() {
-            logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
+            logger.info("Create DB Schema for ${dbConfig.dataSource.connection.metaData.url} in $schemaName".emphasise())
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
@@ -124,7 +126,8 @@ class EntitiesInBundlesTest {
                 lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
                 logger.info("Schema creation SQL: $it")
             }
-            lbm.updateDb(dbConfig.dataSource.connection, cl)
+            logger.info("Executing DB migration in $schemaName".emphasise())
+            lbm.updateDb(dbConfig.dataSource.connection, cl, schemaName)
 
             logger.info("Create Entities".emphasise())
 

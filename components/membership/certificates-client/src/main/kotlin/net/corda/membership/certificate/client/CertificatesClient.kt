@@ -3,7 +3,7 @@ package net.corda.membership.certificate.client
 import net.corda.lifecycle.Lifecycle
 
 /**
- * A client that handle certificates requests
+ * A client that handles certificates requests.
  */
 interface CertificatesClient : Lifecycle {
 
@@ -18,19 +18,21 @@ interface CertificatesClient : Lifecycle {
     fun importCertificates(tenantId: String, alias: String, certificates: String)
 
     /**
-     * Setup locally hosted identity.
+     * Set up locally hosted identity.
      *
      *
-     * @param holdingIdentityId ID of the holding identity to be published.
-     * @param certificateChainAlias The certificates chain alias.
-     * @param tlsTenantId The TLS tenant ID (either p2p ot the holdingIdentityId, default to the holdingIdentityId).
+     * @param holdingIdentityShortHash ID of the holding identity to be published.
+     * @param p2pTlsCertificateChainAlias The certificates chain alias.
+     * @param p2pTlsTenantId The TLS tenant ID (either p2p or the holdingIdentityShortHash, defaults to [holdingIdentityShortHash]).
+     * @param sessionKeyTenantId The tenant ID under which the session initiation key is stored (defaults to [holdingIdentityShortHash]).
      * @param sessionKeyId The session key ID (will use the first one if null).
-     * @throws CertificatesResourceNotFoundException if a resource was not found
+     * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
     fun setupLocallyHostedIdentity(
-        holdingIdentityId: String,
-        certificateChainAlias: String,
-        tlsTenantId: String?,
+        holdingIdentityShortHash: String,
+        p2pTlsCertificateChainAlias: String,
+        p2pTlsTenantId: String?,
+        sessionKeyTenantId: String?,
         sessionKeyId: String?
     )
 }

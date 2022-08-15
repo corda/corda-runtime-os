@@ -3,6 +3,7 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.JavalinRouteProviderImpl
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
@@ -23,6 +24,7 @@ import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.Path
 import java.nio.file.Paths
+import org.mockito.kotlin.mock
 
 class HttpRpcServerTest {
 
@@ -50,7 +52,8 @@ class HttpRpcServerTest {
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
                     OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
-                    multiPartDir
+                    multiPartDir,
+                    mock()
                 )
             },
             SSL_PASSWORD_MISSING
@@ -77,7 +80,8 @@ class HttpRpcServerTest {
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
                     OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
-                    multiPartDir
+                    multiPartDir,
+                    mock()
                 )
             },
             INSECURE_SERVER_DEV_MODE_WARNING
@@ -96,7 +100,8 @@ class HttpRpcServerTest {
         doReturn(true).whenever(configProvider).isDevModeEnabled()
 
         val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
-        val endpointsCount = resources.sumOf { it.endpoints.count() }
+        val endpointsCount =
+            resources.sumOf { resource -> resource.endpoints.filterNot { it.method == EndpointMethod.WS }.count() }
         val openApiJson = OpenApiInfoProvider(resources, configProvider).openApiString
         val openApi = Json.mapper().readValue(openApiJson, OpenAPI::class.java)
         val totalPathsCount = openApi.paths.count { it.value.get != null } + openApi.paths.count { it.value.post != null }
@@ -125,7 +130,8 @@ class HttpRpcServerTest {
                 SecurityManagerRPCImpl(emptySet()),
                 configProvider,
                 OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
-                multiPartDir
+                multiPartDir,
+                mock()
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage(

@@ -26,7 +26,7 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
         val sandbox = try {
             flowSandboxService.get(checkpoint.flowStartContext.identity.toCorda())
         } catch (e: Exception) {
-            throw FlowTransientException("Failed to create the sandbox: ${e.message}", context, e)
+            throw FlowTransientException("Failed to create the sandbox: ${e.message}", e)
         }
         return FlowFiberExecutionContext(
             checkpoint,

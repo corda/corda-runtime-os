@@ -1,0 +1,42 @@
+
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.quasar-utils'
+    id 'org.jetbrains.kotlin.plugin.jpa'
+    id 'org.jetbrains.kotlin.plugin.allopen'
+}
+
+group = "net.cordacon"
+version = "$cordaApiVersion"
+
+dependencies {
+
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-base'
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.slf4j:slf4j-api'
+
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    runtimeOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    testImplementation project(':cordapp-test-utils:test-utils')
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+}
+tasks.named('jar', Jar) {
+    archiveBaseName = 'cordapp-example-rollcall'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow
+    {
+        name jar.baseName
+        versionId 1
+        vendor "LizR3"
+    }
+}

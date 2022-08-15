@@ -58,12 +58,23 @@ class PermissionValidationCacheService @Activate constructor(
      */
     val permissionValidationCacheRef = AtomicReference<PermissionValidationCache?>(null)
 
+    @Volatile
     private var permissionSummarySubscription: CompactedSubscription<String, UserPermissionSummary>? = null
+
+    @Volatile
     private var configHandle: AutoCloseable? = null
 
+    @Volatile
     private var configRegistration: RegistrationHandle? = null
 
+    @Volatile
     private var permissionSummarySnapshotReceived: Boolean = false
+
+    /**
+     * Cache need to be retained even between cycles of configuration change when underlying
+     * subscription restarts.
+     */
+    private val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
 
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
@@ -125,14 +136,12 @@ class PermissionValidationCacheService @Activate constructor(
     }
 
     private fun createAndStartSubscriptionsAndCache(config: SmartConfig) {
-        val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
-
-        permissionSummarySubscription?.close()
-        createPermissionSummarySubscription(permissionSummaryData, config)
-            .also {
-                it.start()
-                permissionSummarySubscription = it
-            }
+        permissionSummarySubscription?.let {
+            log.info("Closing permissionSummarySubscription: ${it.subscriptionName}")
+            it.close()
+        }
+        permissionSummarySubscription =
+            createPermissionSummarySubscription(permissionSummaryData, config).also { it.start() }
 
         permissionValidationCacheRef.get()?.close()
         permissionValidationCacheRef.set(permissionValidationCacheFactory.createPermissionValidationCache(

@@ -28,16 +28,16 @@ class MemberInfoEntity(
     val memberX500Name: String,
 
     @Column(nullable = false)
-    val status: String,
+    var status: String,
 
     @Column(name = "modified_time", nullable = false)
-    val modifiedTime: Instant,
+    var modifiedTime: Instant,
 
     @Column(name = "member_context", nullable = false)
     val memberContext: ByteArray,
 
     @Column(name = "mgm_context", nullable = false)
-    val mgmContext: ByteArray,
+    var mgmContext: ByteArray,
 
     @Column(name = "serial_number", nullable = false)
     val serialNumber: Long,

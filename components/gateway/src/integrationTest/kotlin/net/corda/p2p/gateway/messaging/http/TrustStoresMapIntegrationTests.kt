@@ -12,6 +12,7 @@ import net.corda.p2p.GatewayTruststore
 import net.corda.p2p.gateway.TestBase
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
@@ -21,6 +22,7 @@ import java.io.StringWriter
 class TrustStoresMapIntegrationTests : TestBase() {
     companion object {
         private const val GROUP_ID = "Group-A"
+        private const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
     }
     private val topicService = TopicServiceImpl()
     private val rpcTopicService = RPCTopicServiceImpl()
@@ -41,8 +43,8 @@ class TrustStoresMapIntegrationTests : TestBase() {
                 listOf(
                     Record(
                         Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
-                        "alice-$GROUP_ID",
-                        GatewayTruststore(HoldingIdentity("alice", GROUP_ID), listOf(expectedCertificatePem))
+                        "$ALICE_NAME-$GROUP_ID",
+                        GatewayTruststore(HoldingIdentity(ALICE_NAME, GROUP_ID), listOf(expectedCertificatePem))
                     )
                 )
             ).forEach {
@@ -56,7 +58,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             assertThat(map.isRunning).isTrue
 
             val store = assertDoesNotThrow {
-                map.getTrustStore("alice", GROUP_ID)
+                map.getTrustStore(MemberX500Name.parse(ALICE_NAME), GROUP_ID)
             }
 
             val certificate = store.aliases().toList().map {

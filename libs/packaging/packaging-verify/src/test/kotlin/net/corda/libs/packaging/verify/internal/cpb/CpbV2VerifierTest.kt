@@ -1,18 +1,19 @@
 package net.corda.libs.packaging.verify.internal.cpb
 
-import net.corda.libs.packaging.JarReader
+import net.corda.libs.packaging.verify.JarReader
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.test.util.InMemoryZipFile
-import net.corda.libs.packaging.verify.TestUtils
-import net.corda.libs.packaging.verify.TestUtils.ALICE
-import net.corda.libs.packaging.verify.TestUtils.BOB
-import net.corda.libs.packaging.verify.TestUtils.ROOT_CA
-import net.corda.libs.packaging.verify.TestUtils.addFile
-import net.corda.libs.packaging.verify.TestUtils.base64ToBytes
-import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.internal.cpk.TestCpkV2Builder
+import net.corda.libs.packaging.testutils.TestUtils
+import net.corda.libs.packaging.testutils.TestUtils.ALICE
+import net.corda.libs.packaging.testutils.TestUtils.BOB
+import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA
+import net.corda.libs.packaging.testutils.TestUtils.addFile
+import net.corda.libs.packaging.testutils.TestUtils.base64ToBytes
+import net.corda.libs.packaging.testutils.TestUtils.signedBy
+import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
+import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -51,7 +52,7 @@ class CpbV2VerifierTest {
         val exception = assertThrows<InvalidSignatureException> {
             verify(cpb)
         }
-        assertEquals("File testCpk1-1.0.0.0.cpk is not signed in package \"test.cpb\"", exception.message)
+        assertEquals("File testCpk1-1.0.0.0.jar is not signed in package \"test.cpb\"", exception.message)
     }
 
     @Test
@@ -75,14 +76,14 @@ class CpbV2VerifierTest {
             .build()
 
         val manifest = cpb.getManifest()
-        val removedEntry = manifest.entries.remove("testCpk1-1.0.0.0.cpk")
+        val removedEntry = manifest.entries.remove("testCpk1-1.0.0.0.jar")
         cpb.setManifest(manifest)
 
         assertNotNull(removedEntry)
         val exception = assertThrows<SecurityException> {
             verify(cpb)
         }
-        assertEquals("no manifest section for signature file entry testCpk1-1.0.0.0.cpk", exception.message)
+        assertEquals("no manifest section for signature file entry testCpk1-1.0.0.0.jar", exception.message)
     }
 
     @Test
@@ -135,12 +136,12 @@ class CpbV2VerifierTest {
             .signers(ALICE)
             .build()
 
-        cpb.updateEntry("testCpk1-1.0.0.0.cpk", "modified".toByteArray())
+        cpb.updateEntry("testCpk1-1.0.0.0.jar", "modified".toByteArray())
 
         val exception = assertThrows<SecurityException> {
             verify(cpb)
         }
-        assertEquals("SHA-256 digest error for testCpk1-1.0.0.0.cpk", exception.message)
+        assertEquals("SHA-256 digest error for testCpk1-1.0.0.0.jar", exception.message)
     }
 
     @Test
@@ -178,18 +179,18 @@ class CpbV2VerifierTest {
             .signers(ALICE)
             .build()
 
-        cpb.deleteEntry("testCpk1-1.0.0.0.cpk")
+        cpb.deleteEntry("testCpk1-1.0.0.0.jar")
 
         val exception = assertThrows<SecurityException> {
             verify(cpb)
         }
-        assertEquals("Manifest entry found for missing file testCpk1-1.0.0.0.cpk in package \"test.cpb\"", exception.message)
+        assertEquals("Manifest entry found for missing file testCpk1-1.0.0.0.jar in package \"test.cpb\"", exception.message)
     }
 
     @Test
     fun `throws if CPK signer dependency not satisfied (missing CPK)`() {
         val cpb = TestCpbV2Builder()
-            .cpks(TestCpkV2Builder().dependencies(TestUtils.Dependency("notExisting.cpk", "1.0.0.0")))
+            .cpks(TestCpkV2Builder().dependencies(TestUtils.Dependency("notExisting.jar", "1.0.0.0")))
             .signers(ALICE)
             .build()
 
@@ -203,12 +204,12 @@ class CpbV2VerifierTest {
         val cpb = TestCpbV2Builder()
             .cpks(
                 TestCpkV2Builder()
-                    .name("test-1.0.0.0.cpk")
+                    .name("test-1.0.0.0.jar")
                     .bundleName("test.cpk")
                     .bundleVersion("2.0.0.0")
                     .dependencies(TestUtils.Dependency("dependency.cpk", "1.0.0.0")),
                 TestCpkV2Builder()
-                    .name("dependency-1.1.0.0.cpk")
+                    .name("dependency-1.1.0.0.jar")
                     .bundleName("dependency.cpk")
                     .bundleVersion("1.1.0.0"))
             .signers(ALICE)
@@ -224,13 +225,13 @@ class CpbV2VerifierTest {
         val cpb = TestCpbV2Builder()
             .cpks(
                 TestCpkV2Builder()
-                    .name("test-1.0.0.0.cpk")
+                    .name("test-1.0.0.0.jar")
                     .bundleName("test.cpk")
                     .bundleVersion("2.0.0.0")
                     .dependencies(TestUtils.Dependency("dependency.cpk", "1.0.0.0"))
                     .signers(ALICE),
                 TestCpkV2Builder()
-                    .name("dependency-1.0.0.0.cpk")
+                    .name("dependency-1.0.0.0.jar")
                     .bundleName("dependency.cpk")
                     .bundleVersion("1.0.0.0")
                     .signers(BOB))
@@ -247,7 +248,7 @@ class CpbV2VerifierTest {
         val cpb = TestCpbV2Builder()
             .cpks(
                 TestCpkV2Builder()
-                    .name("test-1.0.0.0.cpk")
+                    .name("test-1.0.0.0.jar")
                     .bundleName("test.cpk")
                     .bundleVersion("2.0.0.0")
                     .dependencies(
@@ -257,7 +258,7 @@ class CpbV2VerifierTest {
                             SecureHash("SHA-256", base64ToBytes("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="))
                         )),
                 TestCpkV2Builder()
-                    .name("dependency-1.0.0.0.cpk")
+                    .name("dependency-1.0.0.0.jar")
                     .bundleName("dependency.cpk")
                     .bundleVersion("1.0.0.0"))
             .signers(ALICE)
@@ -271,7 +272,7 @@ class CpbV2VerifierTest {
     @Test
     fun `successfully verifies valid CPK hash dependency`() {
         val dependencyCpk = TestCpkV2Builder()
-            .name("dependency-1.0.0.0.cpk")
+            .name("dependency-1.0.0.0.jar")
             .bundleName("dependency.cpk")
             .bundleVersion("1.0.0.0")
             .signers(BOB)
@@ -289,14 +290,14 @@ class CpbV2VerifierTest {
         val cpb = TestCpbV2Builder()
             .cpks(
                 TestCpkV2Builder()
-                    .name("test-1.0.0.0.cpk")
+                    .name("test-1.0.0.0.jar")
                     .bundleName("test.cpk")
                     .bundleVersion("2.0.0.0")
                     .dependencies(
                         TestUtils.Dependency("dependency.cpk", "1.0.0.0", dependencyCpkHash))
                     .signers(ALICE))
             .build()
-            .apply { addFile("dependency-1.0.0.0.cpk", dependencyCpk) }
+            .apply { addFile("dependency-1.0.0.0.jar", dependencyCpk) }
             .signedBy(ALICE)
 
         assertDoesNotThrow {

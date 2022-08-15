@@ -2,12 +2,12 @@ package net.corda.sandboxgroupcontext.impl
 
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.CpkFormatVersion
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash
@@ -32,9 +32,8 @@ object Helpers {
 
     private fun mockCpkMetadata(mainBundle: String, dependencies: List<CpkIdentifier>, name:String, version:String,
                                 fileChecksum: SecureHash): CpkMetadata {
-        val contractInfo = ManifestCorDappInfo("", "", 1, "")
-        val workflowInfo = ManifestCorDappInfo("", "", 1, "")
-        val cordappManifest = CordappManifest(name, version, 1, 1, contractInfo, workflowInfo, mock())
+        val cordappManifest = CordappManifest(name, version, 1, 1,
+            CordappType.WORKFLOW, "", "", 0, "", mock())
         return CpkMetadata(
             CpkIdentifier(mainBundle, version, SecureHash.create("SHA-256:0000000000000000")),
             CpkManifest(CpkFormatVersion(1, 0)),

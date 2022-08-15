@@ -1,5 +1,15 @@
 package net.corda.cipher.suite.impl
 
+import java.io.StringReader
+import java.io.StringWriter
+import java.security.KeyFactory
+import java.security.MessageDigest
+import java.security.Provider
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.security.spec.X509EncodedKeySpec
 import net.corda.crypto.impl.PSSParameterSpecSerializer
 import net.corda.crypto.impl.ProviderMap
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
@@ -13,6 +23,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -21,26 +32,17 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.util.io.pem.PemReader
 import org.osgi.service.component.annotations.Component
-import java.io.StringReader
-import java.io.StringWriter
-import java.security.KeyFactory
-import java.security.MessageDigest
-import java.security.Provider
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.security.spec.X509EncodedKeySpec
 
 @Component(
     service = [
         CipherSchemeMetadata::class,
         KeyEncodingService::class,
-        AlgorithmParameterSpecEncodingService::class
+        AlgorithmParameterSpecEncodingService::class,
+        SingletonSerializeAsToken::class
     ]
 )
 @Suppress("TooManyFunctions")
-class CipherSchemeMetadataImpl : CipherSchemeMetadata {
+class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken {
     companion object {
         val MESSAGE_DIGEST_TYPE: String = MessageDigest::class.java.simpleName
 
@@ -95,6 +97,7 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         providerMap.ECDSA_SECP256K1.scheme,
         providerMap.ECDSA_SECP256R1.scheme,
         providerMap.EDDSA_ED25519.scheme,
+        providerMap.X25519.scheme,
         providerMap.SPHINCS256.scheme,
         providerMap.SM2.scheme,
         providerMap.GOST3410_GOST3411.scheme,

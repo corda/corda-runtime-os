@@ -4,6 +4,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -66,7 +67,7 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         log.trace { "Virtual Node Info Processor received snapshot" }
 
         try {
-            virtualNodeInfoMap.putAll(currentData.mapKeys { VirtualNodeInfoMap.Key(it.key, it.key.toCorda().id) })
+            virtualNodeInfoMap.putAll(currentData.mapKeys { VirtualNodeInfoMap.Key(it.key, it.key.toCorda().shortHash) })
         } catch (exception: IllegalArgumentException) {
             // We only expect this code path if someone has posted to Kafka,
             // a VirtualNodeInfo with a different HoldingIdentity to the key.
@@ -93,7 +94,7 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         currentData: Map<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>
     ) {
         log.trace { "Virtual Node Info Processor received onNext" }
-        val key = VirtualNodeInfoMap.Key(newRecord.key, newRecord.key.toCorda().id)
+        val key = VirtualNodeInfoMap.Key(newRecord.key, newRecord.key.toCorda().shortHash)
         if (newRecord.value != null) {
             try {
                 virtualNodeInfoMap.put(key, newRecord.value!!)
@@ -121,7 +122,8 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
         virtualNodeInfoMap.get(holdingIdentity.toAvro())?.toCorda()
 
-    fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoMap.getById(id)?.toCorda()
+    fun getById(holdingIdShortHash: ShortHash): VirtualNodeInfo? =
+        virtualNodeInfoMap.getById(holdingIdShortHash)?.toCorda()
 
     fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {
         lock.withLock {

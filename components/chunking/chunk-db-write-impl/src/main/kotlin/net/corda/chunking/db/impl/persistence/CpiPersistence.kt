@@ -59,7 +59,11 @@ interface CpiPersistence {
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity
 
-    /** Get the group id for a given CPI */
+    /**
+     *  Get the group id for a given CPI
+     *
+     *  @return null if not found
+     */
     fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String?
 
     /**

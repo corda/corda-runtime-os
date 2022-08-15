@@ -1,12 +1,12 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -14,6 +14,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -54,7 +56,7 @@ class FlowSessionManagerImplTest {
             locality = "LDN",
             country = "GB"
         )
-        val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
+        val HOLDING_IDENTITY = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group id")
         val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "group id")
 
         @JvmStatic
@@ -117,7 +119,10 @@ class FlowSessionManagerImplTest {
 
         whenever(flowStack.peek()).thenReturn(
             FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
-                .setSessionIds(emptyList()).build()
+                .setSessionIds(emptyList()).setContextPlatformProperties(mutableKeyValuePairList())
+                .setContextUserProperties(
+                    mutableKeyValuePairList()
+                ).build()
         )
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply {
             cpiId = CPI_ID
@@ -132,6 +137,8 @@ class FlowSessionManagerImplTest {
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
             .build()
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,

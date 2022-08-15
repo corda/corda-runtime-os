@@ -1,20 +1,14 @@
 package net.corda.crypto.impl.decorators
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutorWithTimeout
 import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
-import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
@@ -29,25 +23,12 @@ class CryptoServiceDecorator(
     companion object {
         private val logger = contextLogger()
 
-        private val jsonMapper = JsonMapper
-            .builder()
-            .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
-            .build()
-        val objectMapper: ObjectMapper = jsonMapper
-            .registerModule(JavaTimeModule())
-            .registerModule(KotlinModule.Builder().build())
-            .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-
         fun create(
-            provider: CryptoServiceProvider<Any>,
-            serviceConfig: ByteArray,
+            cryptoService: CryptoService,
             maxAttempts: Int,
             attemptTimeout: Duration
         ): CryptoService = CryptoServiceDecorator(
-            cryptoService = CryptoServiceThrottlingDecorator(
-                provider.getInstance(objectMapper.readValue(serviceConfig, provider.configType))
-            ),
+            cryptoService = CryptoServiceThrottlingDecorator(cryptoService),
             attemptTimeout = attemptTimeout,
             maxAttempts = maxAttempts
         )
@@ -156,5 +137,19 @@ class CryptoServiceDecorator(
         }
     } catch (e: Throwable) {
         throw CryptoException("Calling delete failed (alias=$alias)", e)
+    }
+
+    override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray = try {
+        withTimeout.executeWithRetry {
+            cryptoService.deriveSharedSecret(spec, context)
+        }
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling deriveSharedSecret failed (spec=$spec)", e)
+        } else {
+            throw e
+        }
+    } catch (e: Throwable) {
+        throw CryptoException("Calling deriveSharedSecret failed (spec=$spec)", e)
     }
 }

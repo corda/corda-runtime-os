@@ -23,6 +23,7 @@ dependencies {
     implementation project(":libs:flows:crypto-manager")
     implementation project(':libs:flows:persistence-manager')
     implementation project(':libs:flows:session-manager')
+    implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
@@ -58,6 +59,7 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":testing:flow:flow-utilities")
+    testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 

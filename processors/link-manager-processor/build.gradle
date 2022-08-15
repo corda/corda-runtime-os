@@ -16,6 +16,7 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:domino-logic')
@@ -28,6 +29,8 @@ dependencies {
     implementation project(':osgi-framework-api')
     implementation project(":components:membership:group-policy")
     implementation project(":components:crypto:crypto-client")
+    implementation project(":components:membership:membership-group-read")
+    implementation project(":components:membership:membership-persistence-client")
 
     runtimeOnly 'net.corda:corda-avro-schema'
     runtimeOnly project(":components:crypto:crypto-client-impl")
@@ -36,10 +39,12 @@ dependencies {
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly project(":components:membership:group-policy-impl")
+    runtimeOnly project(":components:membership:membership-persistence-client-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:crypto:crypto-impl")
+    runtimeOnly project(":components:membership:membership-group-read-impl")
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
 }
