@@ -9,7 +9,6 @@ import net.corda.testutils.tools.FlowChecker
 import net.corda.testutils.tools.RPCRequestDataMock
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
@@ -22,7 +21,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FakeCordaTest {
-    private val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+    private val holdingId = HoldingIdentity.create("IRunCordapps")
 
     @Test
     fun `should pass on any errors from the flow checker`() {
@@ -35,7 +34,7 @@ class FakeCordaTest {
 
         // When we upload the flow
         // Then it should error
-        assertThrows<NoDefaultConstructorException> { corda.upload(member, HelloFlow::class.java) }
+        assertThrows<NoDefaultConstructorException> { corda.createVirtualNode(holdingId, HelloFlow::class.java) }
     }
 
     @Test
@@ -44,11 +43,11 @@ class FakeCordaTest {
         val corda = FakeCorda()
 
         // When I upload two flows
-        corda.upload(member, HelloFlow::class.java)
-        corda.upload(member, ValidStartingFlow::class.java)
+        corda.createVirtualNode(holdingId, HelloFlow::class.java)
+        corda.createVirtualNode(holdingId, ValidStartingFlow::class.java)
 
         // And I invoke the first one (let's use the constructor for RPC requests for fun)
-        val response = corda.invoke(member,
+        val response = corda.invoke(holdingId,
             RPCRequestDataMock("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
         )
 
@@ -69,11 +68,11 @@ class FakeCordaTest {
         }
 
         // When I upload the relevant flow and concrete responder
-        corda.upload(member, PingAckFlow::class.java)
-        corda.upload(member, "ping-ack", responder)
+        corda.createVirtualNode(holdingId, PingAckFlow::class.java)
+        corda.createVirtualNode(holdingId, "ping-ack", responder)
 
         // Then it should have registered the responder with the fiber
-        verify(fiber, times(1)).registerResponderInstance(member,"ping-ack", responder)
+        verify(fiber, times(1)).registerResponderInstance(holdingId.member,"ping-ack", responder)
     }
 
     @Test

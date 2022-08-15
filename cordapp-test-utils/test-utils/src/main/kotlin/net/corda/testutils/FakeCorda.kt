@@ -49,9 +49,11 @@ class FakeCorda(
      * @member The member for whom this flow will be registered.
      * @flowClass The flow to register. Must be an `RPCStartableFlow` or a `ResponderFlow`.
      */
-    fun upload(member: MemberX500Name, flowClass: Class<out Flow>) {
-        flowChecker.check(flowClass)
-        registerAnyResponderWithFiber(member, flowClass)
+    fun createVirtualNode(holdingIdentity: HoldingIdentity, vararg flowClasses: Class<out Flow>) {
+        flowClasses.forEach {
+            flowChecker.check(it)
+            registerAnyResponderWithFiber(holdingIdentity.member, it)
+        }
     }
 
     private fun registerAnyResponderWithFiber(
@@ -60,12 +62,12 @@ class FakeCorda(
     ) {
         val protocolIfResponder = flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
         if (protocolIfResponder != null) {
-            val responderFlowClass = castInitiatingFlowToResponder(flowClass)
+            val responderFlowClass = castInitiatedFlowToResponder(flowClass)
             fakeFiber.registerResponderClass(member, protocolIfResponder, responderFlowClass)
         }
     }
 
-    private fun castInitiatingFlowToResponder(flowClass: Class<out Flow>) =
+    private fun castInitiatedFlowToResponder(flowClass: Class<out Flow>) =
         cast<Class<out ResponderFlow>>(flowClass) ?: throw IllegalArgumentException(
             "${flowClass.simpleName} has an @${InitiatedBy::class.java} annotation, but " +
                     "it is not a ${ResponderFlow::class.java}"
@@ -81,21 +83,23 @@ class FakeCorda(
      *
      * @return the response from the flow
      */
-    fun invoke(initiator: MemberX500Name, input: RPCRequestDataMock): String {
+    fun invoke(initiator: HoldingIdentity, input: RPCRequestDataMock): String {
         val flowClassName = input.flowClassName
-        val flow = flowFactory.createInitiatingFlow(initiator, flowClassName)
-        injector.injectServices(flow, initiator, fakeFiber, flowFactory)
+        val flow = flowFactory.createInitiatingFlow(initiator.member, flowClassName)
+        injector.injectServices(flow, initiator.member, fakeFiber, flowFactory)
         return flow.call(input.toRPCRequestData())
     }
 
     /**
      * Uploads a concrete instance of a responder flow.
      */
-    fun upload(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow) {
-        fakeFiber.registerResponderInstance(responder, protocol, responderFlow)
+    fun createVirtualNode(responder: HoldingIdentity, protocol: String, responderFlow: ResponderFlow) {
+        fakeFiber.registerResponderInstance(responder.member, protocol, responderFlow)
     }
 
-    fun getPersistenceServiceFor(member: MemberX500Name): PersistenceService = fakeFiber.getOrCreatePersistenceService(member)
+    fun getPersistenceServiceFor(holdingIdentity: HoldingIdentity): PersistenceService =
+        fakeFiber.getOrCreatePersistenceService(holdingIdentity.member)
+
     override fun close() {
         fakeFiber.close()
     }
