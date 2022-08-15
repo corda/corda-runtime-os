@@ -39,13 +39,8 @@ class FlowEngineImpl @Activate constructor(
     override val virtualNodeName: MemberX500Name
         get() = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
 
-    override val flowContextProperties = object : FlowContextProperties {
-        // TODO CORE-5991 placeholder for FlowContextProperties
-        override fun put(key: String, value: String) {}
-        override operator fun get(key: String): String? {
-            return null
-        }
-    }
+    override val flowContextProperties =
+        flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext
 
     @Suspendable
     override fun sleep(duration: Duration) {
