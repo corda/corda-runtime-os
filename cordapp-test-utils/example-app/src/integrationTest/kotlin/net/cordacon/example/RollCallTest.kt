@@ -2,7 +2,7 @@ package net.cordacon.example
 
 import net.corda.testutils.FakeCorda
 import net.corda.testutils.HoldingIdentity
-import net.corda.testutils.tools.RPCRequestDataMock
+import net.corda.testutils.tools.RPCRequestDataWrapper
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -35,7 +35,7 @@ class RollCallTest {
             AbsenceCallResponderFlow::class.java) }
 
         // When we invoke it in Corda
-        val response = corda.invoke(teacherId, RPCRequestDataMock.fromData(
+        val response = corda.invoke(teacherId, RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students)
@@ -82,7 +82,7 @@ class RollCallTest {
         }
 
         // When we invoke it in Corda
-        val response = corda.invoke(teacherId, RPCRequestDataMock.fromData(
+        val response = corda.invoke(teacherId, RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students)

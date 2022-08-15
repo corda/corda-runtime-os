@@ -3,7 +3,7 @@ package net.cordacon.example
 import net.corda.testutils.FakeCorda
 import net.corda.testutils.HoldingIdentity
 import net.corda.testutils.services.SimpleJsonMarshallingService
-import net.corda.testutils.tools.RPCRequestDataMock
+import net.corda.testutils.tools.RPCRequestDataWrapper
 import net.corda.testutils.tools.ResponderMock
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -45,7 +45,7 @@ class RollCallFlowTest {
         }
 
         // When we contact the students
-        val result = corda.invoke(teacherId, RPCRequestDataMock.fromData(
+        val result = corda.invoke(teacherId, RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students.values.toList())))
@@ -79,7 +79,7 @@ class RollCallFlowTest {
         corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "absence-call", responder)
 
         // When we contact the student
-        val result = corda.invoke(teacherId, RPCRequestDataMock.fromData(
+        val result = corda.invoke(teacherId, RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(listOf(studentId))))
@@ -118,7 +118,7 @@ class RollCallFlowTest {
         whenever(flow.flowEngine.subFlow(any<AbsenceSubFlow>())).thenReturn("")
 
         // When we call the flow for a student who is absent
-        flow.call(RPCRequestDataMock.fromData(
+        flow.call(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(listOf(studentId.member.toString()))).toRPCRequestData())

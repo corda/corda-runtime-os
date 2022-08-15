@@ -9,7 +9,7 @@ import net.corda.testutils.internal.FlowServicesInjector
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.CordaFlowChecker
 import net.corda.testutils.tools.FlowChecker
-import net.corda.testutils.tools.RPCRequestDataMock
+import net.corda.testutils.tools.RPCRequestDataWrapper
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
@@ -83,7 +83,7 @@ class FakeCorda(
      *
      * @return the response from the flow
      */
-    fun invoke(initiator: HoldingIdentity, input: RPCRequestDataMock): String {
+    fun invoke(initiator: HoldingIdentity, input: RPCRequestDataWrapper): String {
         val flowClassName = input.flowClassName
         val flow = flowFactory.createInitiatingFlow(initiator.member, flowClassName)
         injector.injectServices(flow, initiator.member, fakeFiber, flowFactory)

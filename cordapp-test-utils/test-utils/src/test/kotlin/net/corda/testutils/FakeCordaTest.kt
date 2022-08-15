@@ -6,7 +6,7 @@ import net.corda.testutils.flows.PingAckFlow
 import net.corda.testutils.flows.ValidStartingFlow
 import net.corda.testutils.internal.FakeFiber
 import net.corda.testutils.tools.FlowChecker
-import net.corda.testutils.tools.RPCRequestDataMock
+import net.corda.testutils.tools.RPCRequestDataWrapper
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import org.hamcrest.MatcherAssert.assertThat
@@ -48,7 +48,7 @@ class FakeCordaTest {
 
         // And I invoke the first one (let's use the constructor for RPC requests for fun)
         val response = corda.invoke(holdingId,
-            RPCRequestDataMock("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
+            RPCRequestDataWrapper("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
         )
 
         // Then it should appear to properly invoke the flow
