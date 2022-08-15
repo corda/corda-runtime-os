@@ -18,6 +18,7 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
@@ -179,10 +180,9 @@ class ConsensualLedgerDAOTests {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
 
         val testId = (0..1000000).random() // keeping this shorter than UUID.
-        val schemaName = "PSIT$testId"
+        val schemaName = "consensual_ledger_test_$testId"
         val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
-        val dbConnectionManager = FakeDbConnectionManager(
-            listOf(animalDbConnection), schemaName)
+        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
 
         // set up sandbox
         val entitySandboxService =
@@ -197,9 +197,20 @@ class ConsensualLedgerDAOTests {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
         // migrate DB schema
+        val vaultSchema = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+                    DbSchema::class.java.classLoader
+                )
+            )
+        )
+
+        // custom schema...
         val dogClass = sandbox.sandboxGroup.getDogClass()
         val catClass = sandbox.sandboxGroup.getCatClass()
-        val cl = ClassloaderChangeLog(
+        val customSchema = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
                     dogClass.packageName, listOf("migration/db.changelog-master.xml"),
@@ -212,7 +223,8 @@ class ConsensualLedgerDAOTests {
             )
         )
 
-        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
+        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, vaultSchema)
+        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, customSchema)
 
         return DbTestContext(
             virtualNodeInfo,
