@@ -25,7 +25,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.persistence.CordaPersistenceException
+import net.corda.v5.application.persistence.CordaPersistenceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

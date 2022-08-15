@@ -3,10 +3,10 @@ package net.corda.testutils.services
 import net.corda.testutils.internal.JpaPersistenceUnitInfo
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.sandboxName
+import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.persistence.CordaPersistenceException
 import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER
