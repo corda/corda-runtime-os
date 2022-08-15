@@ -1,7 +1,7 @@
-package net.corda.flow.external.events.impl.handler
+package net.corda.flow.external.events.impl.factory
 
-import net.corda.flow.external.events.handler.ExternalEventFactory
-import net.corda.flow.external.events.impl.handler.ExternalEventFactoryMap.Companion.EXTERNAL_EVENT_HANDLERS
+import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.flow.external.events.impl.factory.ExternalEventFactoryMap.Companion.EXTERNAL_EVENT_HANDLERS
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate

@@ -1,6 +1,6 @@
 package net.corda.flow.external.events.executor
 
-import net.corda.flow.external.events.handler.ExternalEventFactory
+import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.base.annotations.Suspendable
 
 /**

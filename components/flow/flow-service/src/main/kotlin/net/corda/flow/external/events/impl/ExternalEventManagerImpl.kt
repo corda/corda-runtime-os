@@ -11,7 +11,7 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
-import net.corda.flow.external.events.handler.ExternalEventRecord
+import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record

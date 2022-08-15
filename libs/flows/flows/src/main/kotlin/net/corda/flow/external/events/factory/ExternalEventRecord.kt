@@ -1,4 +1,4 @@
-package net.corda.flow.external.events.handler
+package net.corda.flow.external.events.factory
 
 /**
  * [ExternalEventRecord] contains the [topic], [key] and [payload] to send to an external processor.

@@ -3,7 +3,7 @@ package net.corda.flow.external.events.impl
 import java.time.Instant
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.state.external.ExternalEventState
-import net.corda.flow.external.events.handler.ExternalEventRecord
+import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 

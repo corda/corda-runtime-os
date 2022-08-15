@@ -1,4 +1,4 @@
-package net.corda.flow.external.events.handler
+package net.corda.flow.external.events.factory
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.executor.ExternalEventExecutor
@@ -14,7 +14,7 @@ import net.corda.flow.state.FlowCheckpoint
  * a processor. Do not pass an Avro object in via [PARAMETERS].
  * - [resumeWith] receives an Avro object and should return a non-Avro object that can be serialized.
  *
- * @param PARAMETERS The type that is received by the handler just after suspending/creating the event.
+ * @param PARAMETERS The type that is received by the factory just after suspending/creating the event.
  * @param RESPONSE The type that is received as a response from the external processor.
  * @param RESUME The type that the flow will resume with after being called by [ExternalEventExecutor]. [RESUME]
  * __cannot be an Avro object__.
@@ -30,7 +30,7 @@ interface ExternalEventFactory<PARAMETERS : Any, RESPONSE, RESUME> {
      * @param checkpoint The [FlowCheckpoint] which can be modified if required.
      * @param flowExternalEventContext The [ExternalEventContext] that should be embedded into the event sent to the
      * external processor.
-     * @param parameters The [PARAMETERS] passed to the handler after suspending.
+     * @param parameters The [PARAMETERS] passed to the factory after suspending.
      *
      * @return A [ExternalEventRecord] representing the event to send to an external processor.
      */

@@ -6,6 +6,8 @@ import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.flow.application.persistence.external.events.PersistenceParameters
+import net.corda.flow.application.persistence.external.events.PersistenceServiceExternalEventFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext

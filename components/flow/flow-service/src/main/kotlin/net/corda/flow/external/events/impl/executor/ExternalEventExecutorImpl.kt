@@ -3,7 +3,7 @@ package net.corda.flow.external.events.impl.executor
 import co.paralleluniverse.fibers.Suspendable
 import java.util.*
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.external.events.handler.ExternalEventFactory
+import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.base.util.uncheckedCast

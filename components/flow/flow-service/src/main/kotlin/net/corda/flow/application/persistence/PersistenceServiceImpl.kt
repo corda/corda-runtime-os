@@ -2,21 +2,17 @@ package net.corda.flow.application.persistence
 
 import java.io.NotSerializableException
 import java.nio.ByteBuffer
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
+import net.corda.flow.application.persistence.external.events.PersistenceParameters
+import net.corda.flow.application.persistence.external.events.PersistenceServiceExternalEventFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.external.events.handler.ExternalEventFactory
-import net.corda.flow.external.events.handler.ExternalEventRecord
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
+import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.v5.application.persistence.PersistenceService
@@ -25,10 +21,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import net.corda.v5.persistence.CordaPersistenceException
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -179,36 +172,5 @@ class PersistenceServiceImpl @Activate constructor(
         return fiber.getExecutionContext().run {
             sandboxGroupContext.amqpSerializer
         }
-    }
-}
-
-data class PersistenceParameters(val request: Any, val debugLog: (requestId: String) -> String)
-
-@Component(service = [ExternalEventFactory::class])
-class PersistenceServiceExternalEventFactory :
-    ExternalEventFactory<PersistenceParameters, EntityResponse, ByteArray?> {
-
-    private companion object {
-        val log = contextLogger()
-    }
-
-    override fun createExternalEvent(
-        checkpoint: FlowCheckpoint,
-        flowExternalEventContext: ExternalEventContext,
-        parameters: PersistenceParameters
-    ): ExternalEventRecord {
-        log.debug { parameters.debugLog(flowExternalEventContext.requestId) }
-        return ExternalEventRecord(
-            topic = Schemas.VirtualNode.ENTITY_PROCESSOR,
-            payload = EntityRequest.newBuilder()
-                .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
-                .setRequest(parameters.request)
-                .setFlowExternalEventContext(flowExternalEventContext)
-                .build()
-        )
-    }
-
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ByteArray? {
-        return response.result?.array()
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.flow.application.crypto
 
+import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature

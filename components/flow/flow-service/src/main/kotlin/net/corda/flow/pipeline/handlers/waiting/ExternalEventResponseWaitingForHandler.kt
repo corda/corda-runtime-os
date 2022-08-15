@@ -4,7 +4,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.external.events.impl.handler.ExternalEventFactoryMap
+import net.corda.flow.external.events.impl.factory.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
