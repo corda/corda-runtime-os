@@ -14,6 +14,7 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 
 class FlowOpsResponses(
@@ -30,7 +31,7 @@ class FlowOpsResponses(
         subscriptionFactory.createDurableSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = "TEST",
-                eventTopic = RESPONSE_TOPIC
+                eventTopic = Schemas.Flow.FLOW_EVENT_TOPIC
             ),
             processor = this,
             messagingConfig = messagingConfig,
