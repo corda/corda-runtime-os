@@ -100,7 +100,6 @@ include 'ledger-obsolete'
 include 'ledger:ledger-common'
 include 'ledger:ledger-consensual'
 include 'membership'
-include 'persistence'
 include 'serialization'
 
 

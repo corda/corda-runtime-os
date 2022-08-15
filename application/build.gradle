@@ -8,12 +8,12 @@ description 'Corda Application'
 
 dependencies {
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'javax.persistence:javax.persistence-api'
 
     api platform(project(':corda-api'))
     api project(":base")
     api project(":crypto")
     api project(":membership")
-    api project(":persistence")
     api project(":serialization")
 
     compileOnly 'org.osgi:osgi.core'

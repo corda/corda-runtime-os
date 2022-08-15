@@ -20,7 +20,6 @@ dependencies {
         api project(':ledger:ledger-consensual')
         api project(':ledger-obsolete')
         api project(':membership')
-        api project(':persistence')
         api project(':serialization')
 
         api('javax.persistence:javax.persistence-api') {

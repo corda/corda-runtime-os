@@ -8,6 +8,7 @@ import net.corda.v5.ledger.obsolete.contracts.CPKConstraint
 import net.corda.v5.ledger.obsolete.contracts.SignatureCPKConstraint
 import net.corda.v5.ledger.obsolete.identity.AbstractParty
 import net.corda.v5.ledger.obsolete.identity.Party
+import net.corda.v5.ledger.obsolete.persistence.MappedSchema
 import net.corda.v5.ledger.obsolete.schemas.DirectStatePersistable
 import net.corda.v5.ledger.obsolete.schemas.IndirectStatePersistable
 import net.corda.v5.ledger.obsolete.schemas.PersistentState
@@ -15,7 +16,6 @@ import net.corda.v5.ledger.obsolete.schemas.PersistentStateRef
 import net.corda.v5.ledger.obsolete.services.vault.RelevancyStatus
 import net.corda.v5.ledger.obsolete.services.vault.StateStatus
 import net.corda.v5.ledger.obsolete.transactions.MAX_NUMBER_OF_KEYS_IN_SIGNATURE_CONSTRAINT
-import net.corda.v5.persistence.MappedSchema
 import java.io.Serializable
 import java.time.Instant
 import java.util.UUID

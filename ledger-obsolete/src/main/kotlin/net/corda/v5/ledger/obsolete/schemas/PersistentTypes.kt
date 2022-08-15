@@ -3,7 +3,7 @@ package net.corda.v5.ledger.obsolete.schemas
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.obsolete.contracts.ContractState
 import net.corda.v5.ledger.obsolete.contracts.StateRef
-import net.corda.v5.persistence.MappedSchema
+import net.corda.v5.ledger.obsolete.persistence.MappedSchema
 import org.hibernate.annotations.Immutable
 import java.io.Serializable
 import javax.persistence.Column

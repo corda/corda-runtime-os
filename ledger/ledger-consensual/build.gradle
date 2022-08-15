@@ -19,7 +19,6 @@ dependencies {
     api project(":crypto")
     implementation project(":membership")
     implementation project(":serialization")
-    implementation project(":persistence")
     implementation project(":ledger:ledger-common")
 
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"

@@ -19,7 +19,6 @@ dependencies {
     api project(":crypto")
     implementation project(":membership")
     implementation project(":serialization")
-    implementation project(":persistence")
 
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

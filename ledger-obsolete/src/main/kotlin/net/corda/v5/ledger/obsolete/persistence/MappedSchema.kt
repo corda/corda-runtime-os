@@ -1,6 +1,9 @@
-package net.corda.v5.persistence
+package net.corda.v5.ledger.obsolete.persistence
 
 /**
+ * NOTE: MOVED THIS HERE AS THIS CLASS IS NOW REDUNDANT IN THE API. (CORE-6192)
+ *
+ *
  * A database schema that might be configured for this node.  As well as a name and version for identifying the schema,
  * also list the classes that may be used in the generated object graph in order to configure the ORM tool.
  *

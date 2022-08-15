@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.obsolete.schemas;
 
 import net.corda.v5.ledger.obsolete.identity.AbstractParty;
-import net.corda.v5.persistence.MappedSchema;
+import net.corda.v5.ledger.obsolete.persistence.MappedSchema;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
