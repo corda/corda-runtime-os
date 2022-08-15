@@ -122,6 +122,7 @@ pipeline {
                 timeout(time: 3, unit: 'MINUTES')
             }  
             steps {
+	       script{
 		    try {
 		       timeout(time: 1, unit: 'SECONDS') {
 				checkConnection()
@@ -129,6 +130,7 @@ pipeline {
 		    } catch(err) {
 			// timeout reached
 			error 'Could not connect to the Combined Worker in a 3 minute window'
+		    }
 		    }
             }
         } 
