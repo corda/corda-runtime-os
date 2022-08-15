@@ -80,6 +80,10 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if .Values.workers.rpc.profiling.enabled }}
+          - name: profiling
+            containerPort: 10045
+        {{- end }}
         {{- if not .Values.workers.rpc.debug.enabled }}
         readinessProbe:
           httpGet:
