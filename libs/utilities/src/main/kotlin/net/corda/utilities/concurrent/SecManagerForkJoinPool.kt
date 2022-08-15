@@ -25,7 +25,9 @@ class SecManagerForkJoinPool {
     private class ForkJoinWorkerThreadFactoryImpl : ForkJoinWorkerThreadFactory {
 
         override fun newThread(pool: ForkJoinPool?): ForkJoinWorkerThread {
-            return ForkJoinWorkerThreadImpl(pool)
+            return ForkJoinWorkerThreadImpl(pool).apply {
+                this.name = "SecManagerForkJoinPool-worker-" + this.poolIndex
+            }
         }
 
         private class ForkJoinWorkerThreadImpl(pool: ForkJoinPool?) : ForkJoinWorkerThread(pool)
