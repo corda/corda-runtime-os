@@ -104,11 +104,19 @@ internal class OutboundMessageProcessor(
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
-        return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
-            listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
-        } else if (members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda()) != null) {
-            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, groups, members)
-            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
+        val destMemberInfo = members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda())
+        if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
+            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
+        } else if (destMemberInfo != null) {
+            val source = message.header.source.toCorda()
+            val groupInfo = groups.getGroupInfo(source)
+            if (groupInfo == null) {
+                logger.warn("Could not find the group information in the GroupPolicyProvider for $source. The message was discarded.")
+                return emptyList()
+            }
+
+            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupInfo)
+            return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         } else {
             logger.warn("Trying to send unauthenticated message from ${message.header.source.toCorda()} " +
                     "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")

@@ -210,6 +210,48 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
+    fun `unauthenticated messages are dropped if group info is not available`() {
+        val groupPolicyProvider = mock<LinkManagerGroupPolicyProvider> {
+            whenever(it.getGroupInfo(localIdentity)).thenReturn(null)
+        }
+
+        val processor = OutboundMessageProcessor(
+            sessionManager,
+            hostingMap,
+            groupPolicyProvider,
+            membersAndGroups.first,
+            assignedListener,
+            messagesPendingSession,
+            mockTimeFacilitiesProvider.clock,
+        )
+
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                myIdentity.toAvro(),
+                "subsystem"
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
     fun `onNext produces only a LinkManagerProcessed marker (per flowMessage) if SessionAlreadyPending`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val numberOfMessages = 3
