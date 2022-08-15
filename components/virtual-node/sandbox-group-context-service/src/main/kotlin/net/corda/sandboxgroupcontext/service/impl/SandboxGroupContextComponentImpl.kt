@@ -58,6 +58,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
         private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(
             listOf(
+                "co.paralleluniverse.quasar-core.framework.extension",
+                "com.esotericsoftware.reflectasm",
                 "javax.persistence-api",
                 "jcl.over.slf4j",
                 "net.corda.application",
