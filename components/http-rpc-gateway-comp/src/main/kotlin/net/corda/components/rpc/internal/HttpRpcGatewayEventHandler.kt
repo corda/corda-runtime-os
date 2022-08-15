@@ -110,15 +110,11 @@ internal class HttpRpcGatewayEventHandler(
             is ConfigChangedEvent -> {
                 log.info("Gateway component received configuration update event, changedKeys: ${event.keys}")
 
-                if (RPC_CONFIG in event.keys) {
-                    log.info("RPC config received. Recreating HTTP RPC Server.")
+                val config = event.config[RPC_CONFIG]!!.withFallback(
+                    event.config[BOOT_CONFIG]
+                )
 
-                    val config = event.config[RPC_CONFIG]!!.withFallback(
-                        event.config[BOOT_CONFIG]
-                    )
-
-                    createAndStartHttpRpcServer(config)
-                }
+                createAndStartHttpRpcServer(config)
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")

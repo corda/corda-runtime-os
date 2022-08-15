@@ -103,15 +103,13 @@ internal class PermissionManagementServiceEventHandler(
                 }
             }
             is ConfigChangedEvent -> {
-                if(event.keys.intersect(setOf(MESSAGING_CONFIG, RPC_CONFIG)).isNotEmpty()) {
-                    log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
-                    val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
-                    createAndStartRpcSender(messagingConfig)
-                    val rpcConfig = event.config[RPC_CONFIG]!!
-                    createPermissionManager(rpcConfig)
-                    coordinator.updateStatus(LifecycleStatus.UP)
-                }
+                log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                createAndStartRpcSender(messagingConfig)
+                val rpcConfig = event.config[RPC_CONFIG]!!
+                createPermissionManager(rpcConfig)
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
