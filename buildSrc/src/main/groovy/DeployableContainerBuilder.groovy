@@ -236,8 +236,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "${tagPrefix}preTest-"+version)
-            tagContainer(builder, "${tagPrefix}preTest-"+gitRevision)
+            tagContainer(builder, "preTest-${tagPrefix}"+version)
+            tagContainer(builder, "preTest-${tagPrefix}"+gitRevision)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "${tagPrefix}latest")
