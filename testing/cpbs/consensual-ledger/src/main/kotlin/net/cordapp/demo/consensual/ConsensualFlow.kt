@@ -13,6 +13,7 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.serialization.SerializationCustomSerializer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.time.Instant
@@ -22,6 +23,14 @@ import java.time.Instant
  * we can inject the ledger service. Eventually it should do a two-party IOUState
  * agreement.
  */
+
+@CordaSerializable
+class TestPartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party
+
+class PartyCustomSerializer : SerializationCustomSerializer<Party, TestPartyImpl> {
+    override fun toProxy(obj: Party): TestPartyImpl = TestPartyImpl(obj.name, obj.owningKey)
+    override fun fromProxy(proxy: TestPartyImpl): Party = proxy
+}
 
 class ConsensualFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
@@ -34,8 +43,6 @@ class ConsensualFlow : RPCStartableFlow {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
     }
 
-    @CordaSerializable
-    class TestPartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party
 
     private companion object {
         val log = contextLogger()
