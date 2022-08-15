@@ -17,10 +17,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -86,7 +86,10 @@ internal class HttpRpcGatewayEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(registration, LifecycleStatus.UP), coordinator)
 
-        verify(configurationReadService).registerForUpdates(any())
+        verify(configurationReadService).registerComponentForUpdates(coordinator, setOf(
+            ConfigKeys.BOOT_CONFIG,
+            ConfigKeys.RPC_CONFIG
+        ))
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
