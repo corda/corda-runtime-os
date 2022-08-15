@@ -26,7 +26,7 @@ dependencies {
     implementation project(':components:flow:flow-service') // For FlowFiberService
     implementation project(':libs:serialization:serialization-checkpoint-api') // Dependency of FlowFiberService
     implementation project(":libs:virtual-node:sandbox-group-context") // Dependency of FlowFiberService
-
+    implementation project(":libs:serialization:serialization-internal") // For internal custom serializer mapping Party to PartyImpl
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"  // MERGE ???
     testImplementation "org.mockito:mockito-core:$mockitoVersion"  // MERGE ???
