@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/CORE-6191/combied-worker-smoke-tests-pr-gate') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
