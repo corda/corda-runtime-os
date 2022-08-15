@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.GROUP_ID
@@ -24,7 +25,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.temporal.ChronoUnit
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -214,12 +214,16 @@ class VirtualNodeRpcTest {
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val nodes = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["x500Name"].textValue()
+            assertWithRetry {
+                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                command { vNodeList() }
+                condition {
+                    it.code == 200 &&
+                            it.toJson()["virtualNodes"].any { virtualNode ->
+                                virtualNode["holdingIdentity"]["x500Name"].textValue() == X500_ALICE
+                            }
+                }
             }
-
-            assertThat(nodes).contains(X500_ALICE)
         }
     }
 
