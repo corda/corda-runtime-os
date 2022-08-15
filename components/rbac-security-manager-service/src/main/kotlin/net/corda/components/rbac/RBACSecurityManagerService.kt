@@ -108,6 +108,6 @@ class RBACSecurityManagerService @Activate constructor(
     }
 
     override fun stop() {
-        coordinator.stop()
+        coordinator.close()
     }
 }

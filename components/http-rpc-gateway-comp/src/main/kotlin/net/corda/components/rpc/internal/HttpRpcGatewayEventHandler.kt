@@ -1,6 +1,7 @@
 package net.corda.components.rpc.internal
 
 import net.corda.components.rbac.RBACSecurityManagerService
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
@@ -93,8 +94,7 @@ internal class HttpRpcGatewayEventHandler(
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         log.info("Registration received UP status. Registering for configuration updates.")
-                        // Http RPC Server can only be created when security manager and permission service are ready.
-                        sub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
+                        sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
@@ -107,34 +107,33 @@ internal class HttpRpcGatewayEventHandler(
                     }
                 }
             }
+            is ConfigChangedEvent -> {
+                log.info("Gateway component received configuration update event, changedKeys: ${event.keys}")
+
+                if (RPC_CONFIG in event.keys) {
+                    log.info("RPC config received. Recreating HTTP RPC Server.")
+
+                    val config = event.config[RPC_CONFIG]!!.withFallback(
+                        event.config[BOOT_CONFIG]
+                    )
+
+                    createAndStartHttpRpcServer(config)
+                }
+            }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
                 registration?.close()
                 registration = null
                 sub?.close()
                 sub = null
-                permissionManagementService.stop()
-                rbacSecurityManagerService.stop()
+                permissionManagementService.close()
+                rbacSecurityManagerService.close()
                 server?.close()
                 server = null
-                sslCertReadService?.stop()
+                sslCertReadService?.close()
                 sslCertReadService = null
-                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
+                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.close() }
             }
-        }
-    }
-
-    private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
-        log.info("Gateway component received configuration update event, changedKeys: $changedKeys")
-
-        if (RPC_CONFIG in changedKeys) {
-            log.info("RPC config received. Recreating HTTP RPC Server.")
-
-            val config = currentConfigurationSnapshot[RPC_CONFIG]!!.withFallback(
-                currentConfigurationSnapshot[BOOT_CONFIG]
-            )
-
-            createAndStartHttpRpcServer(config)
         }
     }
 
