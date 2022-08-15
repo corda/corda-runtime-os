@@ -29,7 +29,7 @@ internal class MerkleTreeGenerator(
     }
 
     fun generateTree(members: Collection<MemberInfo>): MerkleTree {
-        val leavers = members
+        val leaves = members
             .sortedBy { member ->
                 member.name
             }.flatMap { member ->
@@ -38,6 +38,6 @@ internal class MerkleTreeGenerator(
                     serializer.serialize(member.mgmProvidedContext.toAvro()),
                 )
             }.filterNotNull()
-        return merkleTreeFactory.createTree(leavers, hashDigestProvider)
+        return merkleTreeFactory.createTree(leaves, hashDigestProvider)
     }
 }
