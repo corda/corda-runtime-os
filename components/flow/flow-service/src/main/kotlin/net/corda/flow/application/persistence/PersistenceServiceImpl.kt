@@ -67,7 +67,7 @@ class PersistenceServiceImpl @Activate constructor(
         return object : PagedQuery<R> {
             @Suspendable
             override fun execute(): List<R> {
-                val deserialized = execute(FindAll(entityClass.canonicalName)) {
+                val deserialized = execute(FindAll(entityClass.canonicalName, 0, Int.MAX_VALUE)) {
                     "Preparing to send FindAll query for class of type ${entityClass.canonicalName} with id $it"
                 }?.let { deserializeReceivedPayload(it, List::class.java) }
 

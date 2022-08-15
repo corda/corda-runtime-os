@@ -50,7 +50,6 @@ class CryptoFlowOpsBusProcessor(
     override fun onNext(events: List<Record<String, FlowOpsRequest>>): List<Record<*, *>> =
         events.mapNotNull { onNext(it) }
 
-    // need to convert the error responses into the external event error handling
     private fun onNext(event: Record<String, FlowOpsRequest>): Record<*, *>? {
         val request = event.value
         if (request == null) {
