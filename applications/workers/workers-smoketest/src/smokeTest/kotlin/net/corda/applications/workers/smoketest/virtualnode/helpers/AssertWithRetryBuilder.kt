@@ -1,13 +1,13 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import java.time.Duration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
-import java.time.Duration
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(10)
-    var interval: Duration = Duration.ofMillis(250)
+    var interval: Duration = Duration.ofMillis(500)
     var command: (() -> SimpleResponse)? = null
     var condition: ((SimpleResponse) -> Boolean)? = null
     var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
