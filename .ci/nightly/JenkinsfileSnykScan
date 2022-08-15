@@ -2,4 +2,5 @@
 
 cordaSnykScanPipeline (
     snykTokenId: 'r3-snyk-corda5'
+    snykAdditionalCommands: "--configuration-matching='^runtimeClasspath\$'"
 )
