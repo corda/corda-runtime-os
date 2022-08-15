@@ -122,7 +122,14 @@ pipeline {
                 timeout(time: 3, unit: 'MINUTES')
             }  
             steps {
-                checkConnection()
+		    try {
+		       timeout(time: 1, unit: 'SECONDS') {
+				checkConnection()
+			}
+		    } catch(err) {
+			// timeout reached
+			error 'Could not connect to the Combined Worker in a 3 minute window'
+		    }
             }
         } 
         stage('smoketests') {
