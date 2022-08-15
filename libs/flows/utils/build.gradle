@@ -13,3 +13,13 @@ dependencies {
 }
 
 description 'Flow related utilities'
+
+def jar = tasks.named('jar', Jar) {
+    bundle {
+        bnd """\
+Import-Package:\
+    org.apache.avro.specific,\
+    *
+"""
+    }
+}

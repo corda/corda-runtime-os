@@ -43,6 +43,8 @@ class SandboxSetupImpl @Activate constructor(
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
         private val PLATFORM_PUBLIC_BUNDLE_NAMES: Set<String> = unmodifiableSet(setOf(
+            "co.paralleluniverse.quasar-core.framework.extension",
+            "com.esotericsoftware.reflectasm",
             "javax.persistence-api",
             "jcl.over.slf4j",
             "net.corda.application",

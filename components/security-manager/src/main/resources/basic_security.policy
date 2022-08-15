@@ -6,6 +6,12 @@
 # For more info about OSGi permissions see http://docs.osgi.org/specification/osgi.core/7.0.0/framework.module.html#d0e6606
 #
 
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "*"]
+
+(org.osgi.framework.ServicePermission "org.osgi.service.permissionadmin.PermissionAdmin" "register")
+} "The OSGi framework reserves certain privileges for itself."
+
 #
 # Permissions for FLOW Sandbox
 #
@@ -17,6 +23,8 @@ ALLOW {
 (org.osgi.framework.PackagePermission "net.corda.v5.*" "import")
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=FLOW/*)" "get")
+
+(org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.suspend" "import")
 
 # TODO This is required for CalculatorFlow (E2E tests) but will be removed (JIRA CORE-4813)
 (java.lang.RuntimePermission "accessClassInPackage.net.corda.testing.*" "")
@@ -32,7 +40,14 @@ DENY {
 (org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
 (org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
 (org.osgi.framework.PackagePermission "net.corda.*" "exportonly,import")
+(org.osgi.framework.ServicePermission "org.osgi.framework.hooks.*" "register")
 (org.osgi.framework.ServicePermission "*" "get")
+
+(org.osgi.framework.PackagePermission "co.paralleluniverse.asm" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.asm.*" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.common.*" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.*" "import")
+(co.paralleluniverse.fibers.instrument.QuasarPermission "configuration" "")
 
 (java.io.SerializablePermission "enableSubclassImplementation" "")
 (java.io.SerializablePermission "enableSubstitution" "")
@@ -146,7 +161,14 @@ DENY {
 (org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
 (org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
 (org.osgi.framework.PackagePermission "net.corda.*" "exportonly,import")
+(org.osgi.framework.ServicePermission "org.osgi.framework.hooks.*" "register")
 (org.osgi.framework.ServicePermission "*" "get")
+
+(org.osgi.framework.PackagePermission "co.paralleluniverse.asm" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.asm.*" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.common.*" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.*" "import")
+(co.paralleluniverse.fibers.instrument.QuasarPermission "configuration" "")
 
 (java.io.SerializablePermission "enableSubclassImplementation" "")
 (java.io.SerializablePermission "enableSubstitution" "")
@@ -266,7 +288,14 @@ DENY {
 (org.osgi.framework.PackagePermission "org.osgi.service.component" "import")
 (org.osgi.framework.PackagePermission "net.corda" "exportonly,import")
 (org.osgi.framework.PackagePermission "net.corda.*" "exportonly,import")
+(org.osgi.framework.ServicePermission "org.osgi.framework.hooks.*" "register")
 (org.osgi.framework.ServicePermission "*" "get")
+
+(org.osgi.framework.PackagePermission "co.paralleluniverse.asm" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.asm.*" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.common.*" "import")
+(org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.*" "import")
+(co.paralleluniverse.fibers.instrument.QuasarPermission "configuration" "")
 
 (java.io.SerializablePermission "enableSubclassImplementation" "")
 (java.io.SerializablePermission "enableSubstitution" "")

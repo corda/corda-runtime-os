@@ -33,7 +33,7 @@ dependencies {
     quasarBundles("co.paralleluniverse:quasar-core-osgi:$quasarVersion") {
         exclude group: 'org.slf4j'
     }
-    integrationTestRuntimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent") {
+    integrationTestRuntimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension") {
         transitive = false
     }
     integrationTestRuntimeOnly files(configurations.quasarBundles)
