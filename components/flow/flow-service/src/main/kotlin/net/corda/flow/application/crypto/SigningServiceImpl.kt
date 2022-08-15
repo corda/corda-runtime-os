@@ -68,7 +68,7 @@ class CreateSignatureExternalEventFactory @Activate constructor(
         return ExternalEventRecord(topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, payload = flowOpsRequest)
     }
 
-    override fun createResumeFlow(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignature.WithKey {
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignature.WithKey {
         return cryptoFlowOpsTransformer.transform(response) as DigitalSignature.WithKey
     }
 }

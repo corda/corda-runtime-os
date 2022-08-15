@@ -208,7 +208,7 @@ class PersistenceServiceExternalEventFactory :
         )
     }
 
-    override fun createResumeFlow(checkpoint: FlowCheckpoint, response: EntityResponse): ByteArray? {
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ByteArray? {
         return response.result?.array()
     }
 }

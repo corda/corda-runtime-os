@@ -72,7 +72,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
             null -> FlowContinuation.Continue
             else -> {
                 val handler = externalEventFactoryMap.get(externalEventState.handlerClassName)
-                FlowContinuation.Run(handler.createResumeFlow(checkpoint, externalEventResponse))
+                FlowContinuation.Run(handler.resumeWith(checkpoint, externalEventResponse))
             }
         }
     }
