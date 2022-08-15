@@ -47,7 +47,7 @@ class ExternalEventManagerImpl(
     override fun processEventToSend(
         flowId: String,
         requestId: String,
-        handlerClassName: String,
+        factoryClassName: String,
         eventRecord: ExternalEventRecord,
         instant: Instant
     ): ExternalEventState {
@@ -65,7 +65,7 @@ class ExternalEventManagerImpl(
             .setRequestId(requestId)
             .setStatus(ExternalEventStateStatus(ExternalEventStateType.OK, null))
             .setEventToSend(event)
-            .setHandlerClassName(handlerClassName)
+            .setFactoryClassName(factoryClassName)
             .setSendTimestamp(instant)
             .setResponse(null)
             .build()

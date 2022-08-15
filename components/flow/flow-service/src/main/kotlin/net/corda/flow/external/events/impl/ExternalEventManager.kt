@@ -12,7 +12,7 @@ interface ExternalEventManager {
     fun processEventToSend(
         flowId: String,
         requestId: String,
-        handlerClassName: String,
+        factoryClassName: String,
         eventRecord: ExternalEventRecord,
         instant: Instant
     ): ExternalEventState
