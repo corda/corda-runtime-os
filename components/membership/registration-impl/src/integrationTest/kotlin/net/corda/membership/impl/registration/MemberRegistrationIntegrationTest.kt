@@ -57,6 +57,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -206,7 +207,7 @@ class MemberRegistrationIntegrationTest {
         ).also { it.start() }
 
         registrationProxy.use {
-            it.register(member, context)
+            it.register(UUID.randomUUID(), member, context)
         }
 
         // Wait for latch to countdown, so we know when processing has completed and results have been collected
@@ -230,7 +231,7 @@ class MemberRegistrationIntegrationTest {
                 it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
                 it.assertThat(this.header.source.groupId).isEqualTo(groupId)
                 val deserializedContext = requestDeserializer.deserialize(payload.array())!!.run {
-                    keyValuePairListDeserializer.deserialize(memberContext.array())!!
+                    memberContext
                 }
                 with(deserializedContext.items) {
                     it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)

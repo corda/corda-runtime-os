@@ -11,6 +11,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
@@ -187,6 +188,10 @@ class StaticNetworkTest {
                     )
                 )
                 assertThat(registrationRequestProgress.registrationStatus).isEqualTo("SUBMITTED")
+                val registrationStatus = proxy.checkSpecificRegistrationProgress(id, registrationRequestProgress.registrationId)
+                assertThat(registrationStatus?.registrationStatus)
+                    .isNotNull
+                    .isEqualTo(RegistrationStatus.APPROVED)
             }
         }
 
@@ -247,6 +252,10 @@ class StaticNetworkTest {
                     )
                 )
                 assertThat(registrationRequestProgress.registrationStatus).isEqualTo("SUBMITTED")
+                val registrationStatus = proxy.checkSpecificRegistrationProgress(id, registrationRequestProgress.registrationId)
+                assertThat(registrationStatus?.registrationStatus)
+                    .isNotNull
+                    .isEqualTo(RegistrationStatus.APPROVED)
             }
         }
 

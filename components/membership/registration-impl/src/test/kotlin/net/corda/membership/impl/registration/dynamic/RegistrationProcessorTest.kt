@@ -12,15 +12,18 @@ import net.corda.data.membership.command.registration.member.ProcessMemberVerifi
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -31,6 +34,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -43,6 +47,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -52,9 +57,9 @@ class RegistrationProcessorTest {
 
     private companion object {
         val clock = TestClock(Instant.now())
-        val registrationId = UUID.randomUUID().toString()
+        val registrationId = UUID(1, 2).toString()
         val x500Name = MemberX500Name.parse("O=Tester,L=London,C=GB")
-        val groupId = UUID.randomUUID().toString()
+        val groupId = UUID(5, 6).toString()
         val holdingIdentity = HoldingIdentity(x500Name.toString(), groupId)
 
         val mgmX500Name = MemberX500Name.parse("O=TestMGM,L=London,C=GB")
@@ -69,7 +74,7 @@ class RegistrationProcessorTest {
             ByteBuffer.wrap("789".toByteArray()),
             KeyValuePairList(emptyList())
         )
-        val registrationRequest = MembershipRegistrationRequest(registrationId, memberContext.toByteBuffer(), signature)
+        val registrationRequest = MembershipRegistrationRequest(registrationId, memberContext, signature)
 
         val startRegistrationCommand = RegistrationCommand(
             StartRegistration(
@@ -136,6 +141,13 @@ class RegistrationProcessorTest {
         on { mgmProvidedContext } doReturn mgmContext
     }
 
+    private val layeredPropertyMap = mock<LayeredPropertyMap> {
+        on { entries } doReturn memberContext.toMap().entries
+    }
+    private val layeredPropertyMapFactory = mock<LayeredPropertyMapFactory> {
+        on {createMap(any())} doReturn layeredPropertyMap
+    }
+
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
@@ -153,6 +165,7 @@ class RegistrationProcessorTest {
         verificationRequestResponseSerializer = mock {
             on { serialize(eq(verificationRequest)) } doReturn "REQUEST".toByteArray()
             on { serialize(eq(verificationResponse)) } doReturn "RESPONSE".toByteArray()
+            on { serialize(isA<SetOwnRegistrationStatus>()) } doReturn "setStatus".toByteArray()
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -181,6 +194,7 @@ class RegistrationProcessorTest {
             mock(),
             mock(),
             mock(),
+            layeredPropertyMapFactory,
         )
     }
 
@@ -220,9 +234,10 @@ class RegistrationProcessorTest {
     fun `verify member command - onNext can be called for command`() {
         val result = processor.onNext(state, Record(testTopic, testTopicKey, verifyMemberCommand))
         assertThat(result.updatedState).isNotNull
-        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
-        assertThat((result.responseEvents.first().value as? AppMessage)?.message as AuthenticatedMessage)
-            .isNotNull
+        assertThat(result.responseEvents).isNotEmpty.hasSize(2)
+            .allMatch {
+                (result.responseEvents.first().value as? AppMessage)?.message as? AuthenticatedMessage != null
+            }
     }
 
     @Test

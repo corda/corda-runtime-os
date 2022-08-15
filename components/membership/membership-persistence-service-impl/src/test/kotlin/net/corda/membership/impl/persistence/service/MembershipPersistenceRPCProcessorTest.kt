@@ -9,7 +9,6 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -18,6 +17,7 @@ import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -176,7 +176,7 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap(context),
+                    KeyValuePairList(emptyList()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),
@@ -273,7 +273,7 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap(context),
+                    KeyValuePairList(emptyList()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),

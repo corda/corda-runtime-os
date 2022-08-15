@@ -6,8 +6,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
@@ -117,7 +117,7 @@ class PersistRegistrationRequestHandlerTest {
         ourHoldingIdentity.toAvro(),
         MembershipRegistrationRequest(
             ourRegistrationId,
-            ByteBuffer.wrap("membercontext".toByteArray()),
+            KeyValuePairList(emptyList()),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("123".toByteArray()),
                 ByteBuffer.wrap("456".toByteArray()),

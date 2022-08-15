@@ -51,7 +51,7 @@ class MembershipP2PProcessorTest {
     private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
-        memberContext.toByteBuffer(),
+        memberContext,
         testSig
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()

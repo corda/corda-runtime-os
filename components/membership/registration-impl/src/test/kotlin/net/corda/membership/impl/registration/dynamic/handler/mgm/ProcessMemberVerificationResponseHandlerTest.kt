@@ -4,13 +4,16 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
+import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.AppMessage
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -22,7 +25,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
-class VerificationResponseHandlerTest {
+class ProcessMemberVerificationResponseHandlerTest {
     private companion object {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
@@ -52,12 +55,31 @@ class VerificationResponseHandlerTest {
             )
         } doReturn MembershipPersistenceResult.success()
     }
+    private val record = mock<Record<String, AppMessage>>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(
+                mgm,
+                member,
+                SetOwnRegistrationStatus(
+                    REGISTRATION_ID,
+                    RegistrationStatus.PENDING_AUTO_APPROVAL
+                ),
+                null
+            )
+        } doReturn record
+    }
 
-    private val verificationResponseHandler = VerificationResponseHandler(membershipPersistenceClient)
+    private val processMemberVerificationResponseHandler = ProcessMemberVerificationResponseHandler(
+        membershipPersistenceClient,
+        mock(),
+        mock(),
+        p2pRecordsFactory,
+    )
 
     @Test
     fun `handler returns approve member command`() {
-        val result = verificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        val result = processMemberVerificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
             mgm.toCorda(),
@@ -65,10 +87,15 @@ class VerificationResponseHandlerTest {
             RegistrationStatus.PENDING_AUTO_APPROVAL
         )
 
-        assertThat(result.outputStates).hasSize(1)
-        assertThat(result.outputStates.first().key).isEqualTo("$REGISTRATION_ID-${mgm.toCorda().shortHash}")
-        val registrationCommand = result.outputStates.first().value as RegistrationCommand
-        assertThat(registrationCommand.command).isInstanceOf(ApproveRegistration::class.java)
+        assertThat(result.outputStates).hasSize(2)
+            .contains(record)
+            .anyMatch {
+                val key = it.key
+                val value = it.value
+                key == "$REGISTRATION_ID-${mgm.toCorda().shortHash}" &&
+                        value is RegistrationCommand &&
+                        value.command is ApproveRegistration
+            }
         with(result.updatedState) {
             assertThat(this?.registeringMember).isEqualTo(member)
             assertThat(this?.mgm).isEqualTo(mgm)
@@ -79,7 +106,7 @@ class VerificationResponseHandlerTest {
     @Test
     fun `exception is thrown when RegistrationState is null`() {
         assertThrows<MissingRegistrationStateException> {
-            verificationResponseHandler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+            processMemberVerificationResponseHandler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         }
     }
 }

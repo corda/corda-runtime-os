@@ -4,8 +4,9 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.mgm.VerifyMember
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
+import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -39,6 +40,14 @@ class VerifyMemberHandler(
         return RegistrationHandlerResult(
             RegistrationState(registrationId, member, mgm),
             listOf(
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = mgm,
+                    destination = member,
+                    content = SetOwnRegistrationStatus(
+                        registrationId,
+                        RegistrationStatus.PENDING_MEMBER_VERIFICATION
+                    )
+                ),
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
                     mgm,
                     member,

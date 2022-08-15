@@ -8,8 +8,13 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcAction
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.rpc.response.RegistrationStatusDetails
+import net.corda.data.membership.rpc.response.RegistrationStatusResponse
+import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -24,6 +29,8 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.membership.client.dto.RegistrationRequestStatusDto
+import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -62,7 +69,12 @@ class MemberOpsClientImpl @Activate constructor(
     private interface InnerMemberOpsClient : AutoCloseable {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
-        fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatusDto>
+
+        fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String
+        ): RegistrationRequestStatusDto?
     }
 
     private var impl: InnerMemberOpsClient = InactiveImpl
@@ -92,6 +104,13 @@ class MemberOpsClientImpl @Activate constructor(
 
     override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
         impl.startRegistration(memberRegistrationRequest)
+
+    override fun checkSpecificRegistrationProgress(
+        holdingIdentityShortHash: String,
+        registrationRequestId: String
+    ) = impl.checkSpecificRegistrationProgress(
+        holdingIdentityShortHash, registrationRequestId
+    )
 
     override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
         impl.checkRegistrationProgress(holdingIdentityShortHash)
@@ -161,8 +180,13 @@ class MemberOpsClientImpl @Activate constructor(
         override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
             throw IllegalStateException(ERROR_MSG)
 
-        override fun close() = Unit
+        override fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String,
+        ) =
+            throw IllegalStateException(ERROR_MSG)
 
+        override fun close() = Unit
     }
 
     private inner class ActiveImpl(
@@ -181,10 +205,12 @@ class MemberOpsClientImpl @Activate constructor(
                 )
             )
 
-            return registrationResponse(request.sendRequest())
+            val response: RegistrationRpcResponse = request.sendRequest()
+
+            return response.toDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgressDto {
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatusDto> {
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
@@ -193,26 +219,67 @@ class MemberOpsClientImpl @Activate constructor(
                 RegistrationStatusRpcRequest(holdingIdentityShortHash)
             )
 
-            return registrationResponse(request.sendRequest())
+            return registrationsResponse(request.sendRequest())
+        }
+
+        override fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String,
+        ): RegistrationRequestStatusDto? {
+            val request = MembershipRpcRequest(
+                MembershipRpcRequestContext(
+                    UUID.randomUUID().toString(),
+                    clock.instant()
+                ),
+                RegistrationStatusSpecificRpcRequest(
+                    holdingIdentityShortHash,
+                    registrationRequestId,
+                )
+            )
+
+            val response: RegistrationStatusResponse = request.sendRequest()
+
+            return response.status?.toDto()
         }
 
         override fun close() = rpcSender.close()
 
+        private fun registrationsResponse(response: RegistrationsStatusResponse): List<RegistrationRequestStatusDto> {
+            return response.requests.map {
+                it.toDto()
+            }
+        }
+
         @Suppress("SpreadOperator")
-        private fun registrationResponse(response: RegistrationRpcResponse): RegistrationRequestProgressDto =
-            RegistrationRequestProgressDto(
-                response.registrationSent,
-                response.registrationStatus.toString(),
+        private fun RegistrationStatusDetails.toDto(): RegistrationRequestStatusDto =
+            RegistrationRequestStatusDto(
+                this.registrationId,
+                this.registrationSent,
+                this.registrationLastModified,
+                this.registrationStatus.toDto(),
                 MemberInfoSubmittedDto(
                     mapOf(
-                        "registrationProtocolVersion" to response.registrationProtocolVersion.toString(),
-                        *response.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                        *response.additionalInfo.items.map { it.key to it.value }.toTypedArray()
+                        "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
+                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
                     )
                 )
             )
 
-        @Suppress("UNCHECKED_CAST")
+        @Suppress("SpreadOperator")
+        private fun RegistrationRpcResponse.toDto(): RegistrationRequestProgressDto =
+            RegistrationRequestProgressDto(
+                this.registrationId,
+                this.registrationSent,
+                this.registrationStatus.toString(),
+                MemberInfoSubmittedDto(
+                    mapOf(
+                        "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
+                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
+                        *this.additionalInfo.items.map { it.key to it.value }.toTypedArray()
+                    )
+                )
+            )
+
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
                 logger.info("Sending request: $this")
@@ -236,6 +303,17 @@ class MemberOpsClientImpl @Activate constructor(
                     "Failed to send request and receive response for membership RPC operation. " + e.message, e
                 )
             }
+        }
+    }
+    private fun RegistrationStatus.toDto(): RegistrationStatusDto {
+        return when(this) {
+            RegistrationStatus.NEW -> RegistrationStatusDto.NEW
+            RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
+            RegistrationStatus.PENDING_APPROVAL_FLOW -> RegistrationStatusDto.PENDING_APPROVAL_FLOW
+            RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
+            RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL
+            RegistrationStatus.DECLINED -> RegistrationStatusDto.DECLINED
+            RegistrationStatus.APPROVED -> RegistrationStatusDto.APPROVED
         }
     }
 }

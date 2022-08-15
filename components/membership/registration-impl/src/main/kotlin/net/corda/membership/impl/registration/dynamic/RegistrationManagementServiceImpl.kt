@@ -6,6 +6,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -62,6 +63,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val hashingService: DigestService,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : RegistrationManagementService {
 
     companion object {
@@ -158,6 +161,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         cryptoOpsClient,
                         hashingService,
                         cipherSchemeMetadata,
+                        layeredPropertyMapFactory,
                     ),
                     messagingConfig
                 ).also {
