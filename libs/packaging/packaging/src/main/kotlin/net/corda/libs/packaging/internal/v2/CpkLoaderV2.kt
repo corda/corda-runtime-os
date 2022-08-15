@@ -1,14 +1,17 @@
 package net.corda.libs.packaging.internal.v2
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY
-import net.corda.libs.packaging.certSummaryHash
+import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
+import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
@@ -77,15 +80,25 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
         // Get code signers
         val cordappCertificates = readCodeSigners(cpkEntries)
-        val signerSummaryHash = cordappCertificates.asSequence().certSummaryHash()
+        val signerSummaryHash = cordappCertificates.asSequence().signerSummaryHash()
 
         // List all libraries
         val libNames = readLibNames(cpkEntries)
 
         // Read CPK dependencies
         val cpkDependenciesBytes: ByteArray = readCpkDependencies(cpkEntries)
-        val cpkDependencies = jacksonObjectMapper()
-            .readValue(cpkDependenciesBytes, Array<CPKDependency>::class.java)
+        val jacksonObjectMapper = jacksonObjectMapper()
+        val cpkDependenciesFormatVersion = jacksonObjectMapper.readValue(
+            cpkDependenciesBytes,
+            CPKDependencyFormatVersion::class.java)
+        val cpkDependencies = when (cpkDependenciesFormatVersion.formatVersion) {
+            CPK_DEPENDENCIES_FORMAT_VERSION2 -> jacksonObjectMapper.readValue(
+                cpkDependenciesBytes,
+                CPKDependencyFileV2::class.java
+            )
+            else -> throw UnknownFormatVersionException("$CPK_DEPENDENCIES_FILE_ENTRY_V2 has an unknown " +
+                    "format version \"${cpkDependenciesFormatVersion.formatVersion}\"")
+        }
 
         return CpkMetadata(
             cpkId = CpkIdentifier(
@@ -100,7 +113,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             cordappManifest = cordappManifest,
             cordappCertificates = cordappCertificates,
             libraries = Collections.unmodifiableList(libNames),
-            dependencies = cpkDependencies.map { CpkIdentifier(
+            dependencies = cpkDependencies.dependencies.map { CpkIdentifier(
                 it.name,
                 it.version,
                 if (it.verifySameSignerAsMe) signerSummaryHash else null
@@ -113,7 +126,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
     private fun calculateFileHash(bytes: ByteArray) = bytes.hash(DigestAlgorithmName.SHA2_256)
 
     private fun readCpkDependencies(bytes: List<JarEntryAndBytes>): ByteArray =
-        bytes.single {it.entry.name == CPK_DEPENDENCIES_FILE_ENTRY}
+        bytes.single {it.entry.name == CPK_DEPENDENCIES_FILE_ENTRY_V2}
             .bytes
 
     private fun readLibNames(jarEntryAndBytes: List<JarEntryAndBytes>) =
@@ -134,14 +147,19 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             ?.toSet()
             ?: emptySet()
 
-    private data class CPKDependency(
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private class CPKDependencyFormatVersion(val formatVersion: String)
+    @JsonIgnoreProperties("formatVersion")
+    private class CPKDependencyFileV2(val dependencies: Array<CPKDependencyV2>)
+
+    private data class CPKDependencyV2(
         val name: String,
         val version: String,
         val type: String?,
         val verifySameSignerAsMe: Boolean = false,
-        val verifyFileHash: VerifyFileHash?,
+        val verifyFileHash: VerifyFileHashV2?,
     )
-    private data class VerifyFileHash(
+    private data class VerifyFileHashV2(
         val algorithm: String,
         val fileHash: String)
 

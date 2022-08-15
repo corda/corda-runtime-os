@@ -39,12 +39,13 @@ internal class ConfigProcessor(
         get() = Configuration::class.java
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
-        if (currentData.isNotEmpty()) {
+        val config = mergeConfigs(currentData)
+
+        if (config.values.any { !it.isEmpty }) {
             currentData.forEach { (configSection, configuration) ->
                 addToCache(configSection, configuration)
             }
 
-            val config = mergeConfigs(currentData)
             coordinator.postEvent(NewConfigReceived(config))
         }
     }
@@ -76,29 +77,29 @@ internal class ConfigProcessor(
     }
 
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
-        return if (currentData.isNotEmpty()) {
-            val config = currentData.mapValues { config ->
-                config.value.toSmartConfig().also { smartConfig ->
-                    logger.info("Received configuration for key ${config.key}")
-                    logger.debug(
-                        "Received configuration for key ${config.key}: " +
-                                smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-                    )
-                }
-            }.toMutableMap()
+        val config = currentData.mapValues { config ->
+            config.value.toSmartConfig().also { smartConfig ->
+                logger.info("Received configuration for key ${config.key}")
+                logger.debug(
+                    "Received configuration for key ${config.key}: " +
+                            smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+                )
+            }
+        }.toMutableMap()
 
-            if (currentData.containsKey(MESSAGING_CONFIG)) {
-                config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
-            }
-            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
-            //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
-            if (currentData.containsKey(CRYPTO_CONFIG)) {
-                config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
-            }
-            config
-        } else {
-            mutableMapOf()
+        if (currentData.containsKey(MESSAGING_CONFIG)) {
+            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
         }
+        val dbConfig = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+        if (!dbConfig.isEmpty) {
+            config[DB_CONFIG] = dbConfig
+        }
+
+        //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
+        if (currentData.containsKey(CRYPTO_CONFIG)) {
+            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+        }
+        return config
     }
 
     private fun Configuration.toSmartConfig(): SmartConfig {

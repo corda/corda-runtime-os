@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -21,6 +22,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.state.impl.FlowCheckpointImpl
+import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
@@ -58,7 +61,7 @@ class FlowCheckpointImplTest {
         suspendCount: Int = 0,
         retryState: RetryState? = null,
         externalEventState: ExternalEventState? = null
-    ) : Checkpoint {
+    ): Checkpoint {
         val startContext = FlowStartContext().apply {
             statusKey = key
             identity = holdingIdentity
@@ -352,17 +355,51 @@ class FlowCheckpointImplTest {
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
         assertThat(flowStackItem1.sessionIds).isEmpty()
+        assertThat(flowStackItem1.contextUserProperties.items).isEmpty()
+        assertThat(flowStackItem1.contextPlatformProperties.items).isEmpty()
 
         assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem2.isInitiatingFlow).isFalse
         assertThat(flowStackItem2.sessionIds).isEmpty()
+        assertThat(flowStackItem2.contextUserProperties.items).isEmpty()
+        assertThat(flowStackItem2.contextPlatformProperties.items).isEmpty()
+    }
+
+    @Test
+    fun `flow stack - pushWithContext creates and initializes stack item`() {
+        val flow1 = InitiatingFlowExample()
+        val flow2 = NonInitiatingFlowExample()
+        val checkpoint = setupAvroCheckpoint()
+
+        val context = Array(4) { KeyValueStore() }.onEachIndexed { index, keyValueStore ->
+            keyValueStore["key${index + 1}"] = "value${index + 1}"
+        }
+
+        val service = createFlowCheckpoint(checkpoint).flowStack
+        val flowStackItem1 = service.pushWithContext(flow1, context[0].avro, context[1].avro)
+        val flowStackItem2 = service.pushWithContext(flow2, context[2].avro, context[3].avro)
+
+        assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
+        assertThat(flowStackItem1.isInitiatingFlow).isTrue
+        assertThat(flowStackItem1.sessionIds).isEmpty()
+        assertThat(flowStackItem1.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key1", "value1"))
+        assertThat(flowStackItem1.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key2", "value2"))
+
+        assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
+        assertThat(flowStackItem2.isInitiatingFlow).isFalse
+        assertThat(flowStackItem2.sessionIds).isEmpty()
+        assertThat(flowStackItem2.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key3", "value3"))
+        assertThat(flowStackItem2.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key4", "value4"))
     }
 
     @Test
     fun `flow stack - nearest first returns first match closest to the top`() {
-        val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
-        val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
-        val flowStackItem2 = FlowStackItem("3", false, mutableListOf())
+        val flowStackItem0 =
+            FlowStackItem("1", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem1 =
+            FlowStackItem("2", true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem2 =
+            FlowStackItem("3", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1, flowStackItem2))
 
@@ -372,8 +409,10 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `flow stack - nearest first returns null when no match found`() {
-        val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
-        val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
+        val flowStackItem0 =
+            FlowStackItem("1", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem1 =
+            FlowStackItem("2", true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1))
 
@@ -383,8 +422,10 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `rollback - original state restored when checkpoint rolled back`() {
-        val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
-        val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
+        val flowStackItem0 =
+            FlowStackItem("1", false, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        val flowStackItem1 =
+            FlowStackItem("2", true, mutableListOf(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
         val session1 = SessionState().apply { sessionId = "sid1" }
         val session2 = SessionState().apply { sessionId = "sid2" }

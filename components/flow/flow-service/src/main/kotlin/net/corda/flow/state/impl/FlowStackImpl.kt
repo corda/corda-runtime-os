@@ -1,7 +1,10 @@
 package net.corda.flow.state.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.state.FlowStack
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.mutableKeyValuePairListOf
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 
@@ -9,11 +12,26 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
 
     override val size: Int get() = flowStackItems.size
 
-    override fun push(flow: Flow): FlowStackItem {
+    override fun pushWithContext(
+        flow: Flow,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList,
+    ): FlowStackItem {
         val stackItem =
-            FlowStackItem(flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf())
+            FlowStackItem(
+                flow::class.java.name,
+                flow::class.java.getIsInitiatingFlow(),
+                mutableListOf(),
+                mutableKeyValuePairListOf(contextUserProperties),
+                mutableKeyValuePairListOf(contextPlatformProperties)
+            )
+
         flowStackItems.add(stackItem)
         return stackItem
+    }
+
+    override fun push(flow: Flow): FlowStackItem {
+        return pushWithContext(flow, emptyKeyValuePairList(), emptyKeyValuePairList())
     }
 
     override fun nearestFirst(predicate: (FlowStackItem) -> Boolean): FlowStackItem? {

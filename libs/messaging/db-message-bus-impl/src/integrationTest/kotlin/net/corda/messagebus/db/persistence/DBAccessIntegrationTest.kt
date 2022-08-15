@@ -20,7 +20,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 
@@ -393,6 +393,8 @@ class DBAccessIntegrationTest {
         val topic = randomId()
         val expectedResult = setOf(
             CordaTopicPartition(topic, 0),
+            CordaTopicPartition(topic, 1),
+            CordaTopicPartition(topic, 2),
         )
 
         assertThat(dbAccess.getTopicPartitionMapFor(topic)).isEqualTo(expectedResult)

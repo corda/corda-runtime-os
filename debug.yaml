@@ -16,24 +16,34 @@ workers:
 #    debug:
 #      enabled: true
 #      suspend: true
+#    logging:
+#      level: "debug"
   db:
     replicaCount: 1
 #    debug:
 #      enabled: true
 #      suspend: true
+#    logging:
+#      level: "debug"
   flow:
     replicaCount: 1
 #    debug:
 #      enabled: true
 #      suspend: true
+#    logging:
+#      level: "debug"
     verifyInstrumentation: true
   membership:
     replicaCount: 1
 #    debug:
 #      enabled: true
 #      suspend: true
+#    logging:
+#      level: "debug"
   rpc:
     replicaCount: 1
 #    debug:
 #      enabled: true
 #      suspend: true
+#    logging:
+#      level: "debug"

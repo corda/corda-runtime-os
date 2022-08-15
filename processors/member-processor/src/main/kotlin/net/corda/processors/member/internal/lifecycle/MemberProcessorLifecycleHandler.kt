@@ -1,7 +1,6 @@
 package net.corda.processors.member.internal.lifecycle
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -13,8 +12,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 class MemberProcessorLifecycleHandler(
-    private val configurationReadService: ConfigurationReadService,
-    private val dependentComponents: DependentComponents
+    private val configurationReadService: ConfigurationReadService
 ) : LifecycleEventHandler {
     companion object {
         val logger = contextLogger()
@@ -25,7 +23,6 @@ class MemberProcessorLifecycleHandler(
         when (event) {
             is StartEvent -> {
                 logger.info("Starting Member processor.")
-                dependentComponents.registerAndStartAll(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
                 logger.info("Member processor is ${event.status}")
@@ -37,7 +34,6 @@ class MemberProcessorLifecycleHandler(
             }
             is StopEvent -> {
                 logger.info("Member processor stopping.")
-                dependentComponents.stopAll()
             }
         }
     }

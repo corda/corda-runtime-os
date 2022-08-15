@@ -8,6 +8,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import java.time.Instant
@@ -27,19 +28,19 @@ class StartFlow(private val context: TaskContext) : Task {
             ),
 
             "start_session_smoke_test" to getSmokeTestStartRecord(
-            "{\"command\":\"start_sessions\",\"data\":{\"sessions\":\"CN=user1, O=user1 Corp, L=LDN, C=GB;CN=user2," +
-                    " O=user2 Corp, L=LDN, C=GB\",\"messages\":\"m1;m2\"}}"
+                "{\"command\":\"start_sessions\",\"data\":{\"sessions\":\"CN=user1, O=user1 Corp, L=LDN, C=GB;CN=user2," +
+                        " O=user2 Corp, L=LDN, C=GB\",\"messages\":\"m1;m2\"}}"
             ),
 
             "throw_platform_error_smoke_test" to getSmokeTestStartRecord(
-            "{\"command\":\"throw_platform_error\",\"data\":{\"x500\":\"CN=user1, O=user1 Corp, L=LDN, C=GB\"}}"
+                "{\"command\":\"throw_platform_error\",\"data\":{\"x500\":\"CN=user1, O=user1 Corp, L=LDN, C=GB\"}}"
             )
         )
 
         context.publish(
             checkNotNull(
                 namedFlows[context.startArgs.flowName]
-            ) {"Could not find named flow '${context.startArgs.flowName}'"}
+            ) { "Could not find named flow '${context.startArgs.flowName}'" }
         )
     }
 
@@ -72,6 +73,7 @@ class StartFlow(private val context: TaskContext) : Task {
             identity,
             flowName,
             jsonArgs,
+            emptyKeyValuePairList(),
             Instant.now()
         )
 

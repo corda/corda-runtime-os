@@ -1,0 +1,173 @@
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
+import groovy.transform.Field
+
+@Field
+String postgresHost = 'localhost'
+@Field
+String postgresPort = '5432'
+@Field
+String postgresCredentialsId = 'e2e-postgresql-credentials'
+@Field
+String postgresDb = "test_${UUID.randomUUID().toString().replace("-", "")}"
+
+def checkConnection(){
+    def status = null
+    sleep(time: 30, unit: "SECONDS") 
+
+    while (status != "200"){
+        sleep(time: 3, unit: "SECONDS")
+        try{
+            status = sh(script: 'curl -s -o /dev/null -I -w "%{http_code}" http://localhost:7000/status', returnStdout: true)
+        }catch(error){
+            echo "can't connect, retrying..."
+        }
+    }
+}
+
+pipeline {
+    agent {
+        docker {
+            image 'build-zulu-openjdk:11'
+            label 'docker'
+            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryCredentialsId 'artifactory-credentials'
+            args '-v /tmp:/host_tmp '
+            alwaysPull true
+        }
+    }
+
+    environment {
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
+        POSTGRES_CREDENTIALS = credentials('e2e-postgresql-credentials')
+        BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
+        BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_DEV_POSTGRES_USER="${env.POSTGRES_CREDENTIALS_USR}"
+        CORDA_DEV_POSTGRES_PASSWORD="${env.POSTGRES_CREDENTIALS_PSW}"
+        CORDA_DEV_CLUSTER_DB_NAME="${postgresDb}"
+        CORDA_USE_CACHE = "corda-remotes"
+        KUBECONFIG = credentials("e2e-tests-credentials")
+        CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
+        CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
+        GRADLE_USER_HOME = "/host_tmp/gradle"
+        CORDA_REVISION = "${env.GIT_COMMIT}"
+        GRADLE_PERFORMANCE_TUNING = "--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si"
+    }
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+    stages {
+		  //stage create DB - see shared pipline
+        stage('create DBs') {
+            environment {
+                KUBECONFIG = credentials('e2e-tests-credentials')
+            }
+            steps {
+                // port forwarding from K8s
+                withEnv(["PGPORT=${postgresPort}"]) {
+                    sh 'nohup kubectl port-forward --namespace postgres svc/postgres-postgresql "${PGPORT}":"${PGPORT}" > forward.txt 2>&1 &'
+                }
+                // create new DB
+                withEnv([
+                        "PGHOST=${postgresHost}",
+                        "PGPORT=${postgresPort}",
+                        "DATABASE=${postgresDb}"
+                ]) {
+                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                            passwordVariable: 'PGPASSWORD',
+                            usernameVariable: 'PGUSER')]) {
+                        script {
+                            try {
+                                sh 'psql --quiet --tuples-only -c \'select \''
+                            } catch (error) {
+                                echo "${error.getMessage()}\nPort forwarding Postgres has not been set up yet, retrying"
+                                retry(5) {
+                                    sleep(time: 5, unit: "SECONDS")
+                                    sh 'psql --quiet --tuples-only -c \'select \''
+                                }
+                            }
+                            sh 'createdb -w "${DATABASE}"'
+                        }
+                    }
+                }
+            }
+        }
+        stage('build') {
+            steps {
+                gradlew (':applications:workers:release:combined-worker:assemble')
+            }
+        } 			
+        stage('start combined worker') {       
+            environment {
+                JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
+                VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
+                LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
+                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb}"
+                WORKING_DIRECTORY = "${env.WORKSPACE}"
+            }
+            steps {
+                sh '''
+                    nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
+                    export PROCNO=$!
+                '''        
+            }            
+        }
+        stage('connect to worker') {
+            options {
+                timeout(time: 3, unit: 'MINUTES')
+            }  
+            steps {
+                checkConnection()
+            }
+        } 
+        stage('smoketests') {
+            options {
+                timeout(time: 15, unit: 'MINUTES')
+            }  
+            steps {
+               gradlew('smoketest -PisCombinedWorker=true')
+            }
+        } 	        
+    }
+    post {
+        always {
+            
+            script {      
+                    findBuildScans()
+                    splunkLogGenerator()
+                    sh '''
+                        for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> podLogs.txt; done
+                    '''     
+                    withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
+                            passwordVariable: 'PGPASSWORD',
+                            usernameVariable: 'PGUSER')]) {
+
+                        sh 'dropdb -w "${postgresDb}" || true'
+                        
+                    }
+            }
+            
+            junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+            archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
+            sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
+        }
+        failure {
+            sendSlackNotifications("danger", "BUILD FAILURE - Combined Worker E2E Tests", true, "#corda-corda5-build-notifications")
+        }
+    }
+}
+
+
+def gradleCmd() {
+    return isUnix() ? './gradlew' : './gradlew.bat'
+}
+
+def gradlew(String... args) {
+    def allArgs = args.join(' ')
+    sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
+}

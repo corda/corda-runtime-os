@@ -16,7 +16,7 @@ import net.corda.schema.configuration.MessagingConfig.Subscription.THREAD_STOP_T
 /**
  * Class to resolve subscription configuration for the messaging layer.
  */
-internal data class ResolvedSubscriptionConfig(
+data class ResolvedSubscriptionConfig(
     val subscriptionType: SubscriptionType,
     val topic: String,
     val group: String,

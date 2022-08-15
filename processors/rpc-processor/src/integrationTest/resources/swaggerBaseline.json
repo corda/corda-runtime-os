@@ -2923,10 +2923,10 @@
         }
       },
       "HostedIdentitySetupRequest" : {
-        "required" : [ "certificateChainAlias" ],
+        "required" : [ "p2pTlsCertificateChainAlias" ],
         "type" : "object",
         "properties" : {
-          "certificateChainAlias" : {
+          "p2pTlsCertificateChainAlias" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -2936,7 +2936,12 @@
             "nullable" : true,
             "example" : "string"
           },
-          "tlsTenantId" : {
+          "p2pTlsTenantId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "sessionKeyTenantId" : {
             "type" : "string",
             "nullable" : true,
             "example" : "string"

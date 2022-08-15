@@ -4,6 +4,7 @@ import net.corda.chunking.toCorda
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.chunking.UploadStatus
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
@@ -19,6 +20,8 @@ import org.osgi.service.component.annotations.Reference
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 
 @Component(service = [PluggableRPCOps::class])
@@ -65,23 +68,31 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
         // HTTP response status values are passed back via exceptions.
         if (uploadStatus.exception != null) {
-            val excp = uploadStatus.exception!!
-            // These keys *are* returned to the client, and are visible in JSON
-            val details = mapOf(
-                "errorType" to excp.errorType,
-                "errorMessage" to excp.errorMessage,
-                "message" to uploadStatus.message
-            )
-
-            if (excp.errorType == ValidationException::class.java.name) {
-                throw BadRequestException(excp.errorMessage, details)
-            } else {
-                throw InternalServerException(excp.toString(), details)
-            }
+            translateExceptionAndRethrow(uploadStatus)
         }
 
         val checksum = if (uploadStatus.checksum != null) toShortHash(uploadStatus.checksum.toCorda()) else ""
         return CpiUploadRPCOps.CpiUploadStatus(uploadStatus.message, checksum)
+    }
+
+    @Suppress("ThrowsCount")
+    private fun translateExceptionAndRethrow(uploadStatus: UploadStatus) {
+        val ex = uploadStatus.exception!!
+
+        // These keys *are* returned to the client, and are visible in JSON for some exceptions
+        val details = mapOf(
+            "errorType" to ex.errorType,
+            "errorMessage" to ex.errorMessage,
+            "message" to uploadStatus.message
+        )
+
+        // DuplicateCpiUploadException only contains the "resource" in the error message,
+        // i.e. "name version (groupId)"
+        when (ex.errorType) {
+            ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
+            DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
+            else -> throw InternalServerException(ex.toString(), details)
+        }
     }
 
     override fun getAllCpis(): GetCPIsResponse {

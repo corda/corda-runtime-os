@@ -22,6 +22,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-flow")
     implementation project(':libs:flows:flows')
     implementation project(':libs:flows:session-manager')
+    implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")

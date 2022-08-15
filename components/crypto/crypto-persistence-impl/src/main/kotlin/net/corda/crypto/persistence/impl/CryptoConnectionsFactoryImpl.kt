@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -19,6 +20,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -106,7 +108,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
             }
 
         private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
-            connectionId = vnodeInfo.getByHoldingIdentityShortHash(tenantId)?.cryptoDmlConnectionId
+            connectionId = vnodeInfo.getByHoldingIdentityShortHash(ShortHash.of(tenantId))?.cryptoDmlConnectionId
                 ?: throw throw IllegalStateException(
                     "virtual node for $tenantId is not registered."
                 ),
@@ -122,11 +124,11 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 config.maximumSize,
                 config.expireAfterAccessMins
             )
-            return Caffeine.newBuilder()
-                .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.maximumSize)
-                .evictionListener<String, EntityManagerFactory> { _, value, _ -> value?.close() }
-                .build()
+            return CacheFactoryImpl().build(
+                Caffeine.newBuilder()
+                    .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(config.maximumSize)
+                    .evictionListener { _, value, _ -> value?.close() })
         }
     }
 }

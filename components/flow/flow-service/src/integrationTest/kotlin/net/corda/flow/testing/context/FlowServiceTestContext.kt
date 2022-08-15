@@ -26,6 +26,7 @@ import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
@@ -204,6 +205,7 @@ class FlowServiceTestContext @Activate constructor(
             this.cpiId = cpiId
             this.initiatorType = FlowInitiatorType.RPC
             this.flowClassName = FLOW_NAME
+            this.contextPlatformProperties = emptyKeyValuePairList()
             this.createdTimestamp = Instant.now()
         }.build()
 
@@ -229,6 +231,8 @@ class FlowServiceTestContext @Activate constructor(
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))
+                .setContextPlatformProperties(emptyKeyValuePairList())
+                .setContextUserProperties(emptyKeyValuePairList())
                 .build(),
             sequenceNum = 0,
             receivedSequenceNum = 1,

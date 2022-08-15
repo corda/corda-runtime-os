@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.MemberSignatureEntity
@@ -17,6 +18,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -69,7 +71,7 @@ class PersistRegistrationRequestHandlerTest {
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
             getOrCreateEntityManagerFactory(
-                eq("vnode_vault_${ourHoldingIdentity.shortHash.lowercase()}"),
+                eq(VirtualNodeDbType.VAULT.getConnectionName(ourHoldingIdentity.shortHash)),
                 any(),
                 any()
             )
@@ -135,7 +137,7 @@ class PersistRegistrationRequestHandlerTest {
         )
 
         assertThat(result).isInstanceOf(Unit::class.java)
-        with(argumentCaptor<String>()) {
+        with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
@@ -148,7 +150,7 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(this).isInstanceOf(RegistrationRequestEntity::class.java)
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
-            assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash)
+            assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash.value)
             assertThat(entity.status).isEqualTo(RegistrationStatus.NEW.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())

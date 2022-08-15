@@ -11,6 +11,7 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
@@ -93,6 +94,7 @@ class SessionEventHandler @Activate constructor(
             .setCpiId(sessionInit.cpiId)
             .setInitiatedBy(initiatingIdentity)
             .setFlowClassName(initiatedFlow)
+            .setContextPlatformProperties(emptyKeyValuePairList())
             .setCreatedTimestamp(Instant.now())
             .build()
 

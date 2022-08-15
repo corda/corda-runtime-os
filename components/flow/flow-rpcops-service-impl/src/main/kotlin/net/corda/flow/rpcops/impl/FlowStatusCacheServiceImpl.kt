@@ -1,11 +1,15 @@
 package net.corda.flow.rpcops.impl
 
-import java.util.Collections
+import com.google.common.collect.Multimap
+import com.google.common.collect.Multimaps
+import java.util.LinkedList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
+import net.corda.flow.rpcops.flowstatus.FlowStatusListenerValidationException
+import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,9 +25,15 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.withLock
 
 @Component(immediate = true, service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
@@ -33,8 +43,18 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : FlowStatusCacheService, CompactedProcessor<FlowKey, FlowStatus> {
 
+    private companion object {
+        val log = contextLogger()
+        const val MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY = 10
+    }
+
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
-    private val cache = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatus>())
+    private val cache = ConcurrentHashMap<FlowKey, FlowStatus>()
+
+    private val lock: ReadWriteLock = ReentrantReadWriteLock()
+    private val statusListenersPerFlowKey: Multimap<FlowKey, FlowStatusUpdateListener> =
+        Multimaps.newSetMultimap(ConcurrentHashMap()) { ConcurrentHashMap.newKeySet() }
+
     private var subReg: RegistrationHandle? = null
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
 
@@ -70,9 +90,9 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     override fun getStatusesPerIdentity(holdingIdentity: HoldingIdentity): List<FlowStatus> {
-         return cache.entries.filter { it.key.identity == holdingIdentity }.map {
-             it.value
-         }
+        return cache.entries.filter { it.key.identity == holdingIdentity }.map {
+            it.value
+        }
     }
 
     override fun onSnapshot(currentData: Map<FlowKey, FlowStatus>) {
@@ -90,10 +110,79 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         oldValue: FlowStatus?,
         currentData: Map<FlowKey, FlowStatus>
     ) {
-        if (newRecord.value == null) {
-            cache.remove(newRecord.key)
-        } else {
-            cache[newRecord.key] = newRecord.value
+        try {
+            val flowKey = newRecord.key
+            val flowStatus = newRecord.value
+            if (flowStatus == null) {
+                cache.remove(flowKey)
+                lock.writeLock().withLock { statusListenersPerFlowKey.removeAll(flowKey) }.map {
+                    it.close("Flow status removed from cache when null flow status received.")
+                }
+            } else {
+                cache[flowKey] = flowStatus
+                updateAllStatusListenersForFlowKey(flowKey, flowStatus)
+            }
+        } catch (ex: Exception) {
+            log.error("Unhandled error when processing onNext for FlowStatus", ex)
+        }
+    }
+
+    override fun registerFlowStatusListener(
+        clientRequestId: String,
+        holdingIdentity: HoldingIdentity,
+        listener: FlowStatusUpdateListener
+    ) {
+        val flowKey = FlowKey(clientRequestId, holdingIdentity)
+
+        validateMaxConnectionsPerFlowKey(flowKey)
+
+        lock.writeLock().withLock {
+            statusListenersPerFlowKey.put(flowKey, listener)
+        }
+
+        log.info(
+            "Registered flow status listener ${listener.id} " +
+                    "(clientRequestId: $clientRequestId, holdingIdentity: ${holdingIdentity.toCorda().shortHash}). " +
+                    "Total number of open listeners: ${statusListenersPerFlowKey.size()}."
+        )
+
+        // If the status is already known for a particular flow - deliver it to the listener
+        // This can be the case when flow is already completed.
+        cache[flowKey]?.let { listener.updateReceived(it) }
+    }
+
+    override fun unregisterFlowStatusListener(
+        clientRequestId: String,
+        holdingIdentity: HoldingIdentity,
+        listener: FlowStatusUpdateListener
+    ) {
+        val removed = lock.writeLock()
+            .withLock { statusListenersPerFlowKey[FlowKey(clientRequestId, holdingIdentity)].remove(listener) }
+        if (removed) {
+            log.info(
+                "Unregistered flow status listener: ${listener.id} for clientId: $clientRequestId." +
+                        " Total number of open listeners: ${statusListenersPerFlowKey.size()}."
+            )
+        }
+    }
+
+    private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey) {
+        val existingHandlers = lock.readLock().withLock { statusListenersPerFlowKey[flowKey] }
+        val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
+        if (handlersForRequestAndHoldingIdAlreadyExist) {
+            if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
+                throw FlowStatusListenerValidationException(
+                    "Max WebSocket connections ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) reached for req: ${flowKey.id}, " +
+                            "identity ${flowKey.identity.toCorda().shortHash}."
+                )
+            }
+        }
+    }
+
+    private fun updateAllStatusListenersForFlowKey(flowKey: FlowKey, flowStatus: FlowStatus) {
+        val flowStatusUpdateListeners = lock.readLock().withLock { LinkedList(statusListenersPerFlowKey[flowKey]) }
+        flowStatusUpdateListeners.map { listener ->
+            listener.updateReceived(flowStatus)
         }
     }
 

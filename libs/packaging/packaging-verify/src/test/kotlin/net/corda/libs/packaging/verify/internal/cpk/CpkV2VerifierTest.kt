@@ -43,7 +43,7 @@ class CpkV2VerifierTest {
         val exception = assertThrows<InvalidSignatureException> {
             verify(cpk)
         }
-        assertEquals("File META-INF/CPKDependencies is not signed in package \"test.cpk\"", exception.message)
+        assertEquals("File META-INF/CPKDependencies.json is not signed in package \"test.cpk\"", exception.message)
     }
 
     @Test
