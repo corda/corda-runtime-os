@@ -35,7 +35,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -57,10 +56,10 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.SoftAssertions
@@ -105,7 +104,7 @@ class MemberSynchronisationIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var membershipP2PReadService: MembershipP2PReadService
 
-        @InjectService
+        @InjectService(timeout = 5000)
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
         @InjectService(timeout = 5000)
@@ -113,8 +112,7 @@ class MemberSynchronisationIntegrationTest {
 
         lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
         lateinit var membershipPackageSerializer: CordaAvroSerializer<MembershipPackage>
-        val clock: TestClock = TestClock(Instant.ofEpochSecond(100))
-        val time = clock.instant()
+        val clock: Clock = TestClock(Instant.ofEpochSecond(100))
         val logger = contextLogger()
         val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
             .create(
@@ -148,10 +146,6 @@ class MemberSynchronisationIntegrationTest {
         val source = HoldingIdentity(MemberX500Name.parse("O=MGM,C=GB,L=London").toString(), groupId)
         val destination = HoldingIdentity(MemberX500Name.parse("O=Alice,C=GB,L=London").toString(), groupId)
         val participant = HoldingIdentity(MemberX500Name.parse("O=Bob,C=GB,L=London").toString(), groupId)
-        val endpoints = listOf(
-            EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
-            EndpointInfoImpl("https://corda5.r3.com:10001", 10)
-        )
 
         @JvmStatic
         @BeforeAll
@@ -183,7 +177,6 @@ class MemberSynchronisationIntegrationTest {
             membershipGroupReaderProvider.start()
             membershipP2PReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
-            clock.setTime(time)
 
             eventually {
                 logger.info("Waiting for required services to start...")
@@ -260,11 +253,11 @@ class MemberSynchronisationIntegrationTest {
             .build()
 
         // Start subscription to gather results of processing synchronisation command
-        val completableResult = CompletableFuture<Pair<String, PersistentMemberInfo>>()
+        val completableResult = CompletableFuture<PersistentMemberInfo>()
         val registrationRequestSubscription = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("membership_updates_test_receiver", MEMBER_LIST_TOPIC),
-            getTestProcessor { s, e ->
-                completableResult.complete(Pair(s, e))
+            getTestProcessor { v ->
+                completableResult.complete(v)
             },
             messagingConfig = bootConfig
         ).also { it.start() }
@@ -306,10 +299,10 @@ class MemberSynchronisationIntegrationTest {
 
         SoftAssertions.assertSoftly {
             it.assertThat(result).isNotNull
-            it.assertThat(result?.second)
+            it.assertThat(result)
                 .isNotNull
                 .isInstanceOf(PersistentMemberInfo::class.java)
-            with(result!!.second) {
+            with(result) {
                 it.assertThat(viewOwningMember).isEqualTo(destination)
                 val memberPublished = memberInfoFactory.create(
                     memberContext.toSortedMap(),
@@ -319,7 +312,7 @@ class MemberSynchronisationIntegrationTest {
                 it.assertThat(memberPublished.name.toString()).isEqualTo(participant.x500Name)
                 it.assertThat(memberPublished.ledgerKeys.size).isEqualTo(0)
                 it.assertThat(memberPublished.status).isEqualTo(MEMBER_STATUS_ACTIVE)
-                it.assertThat(memberPublished.modifiedTime).isEqualTo(time)
+                it.assertThat(memberPublished.modifiedTime).isEqualTo(clock.instant().toString())
             }
         }
     }
@@ -330,7 +323,8 @@ class MemberSynchronisationIntegrationTest {
             MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
             MemberInfoExtension.PARTY_SESSION_KEY to "dummy-session-key",
             MemberInfoExtension.GROUP_ID to groupId,
-            *convertEndpoints().toTypedArray(),
+            String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
+            String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
             MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
             MemberInfoExtension.PLATFORM_VERSION to "10",
             MemberInfoExtension.SERIAL to "1",
@@ -342,31 +336,12 @@ class MemberSynchronisationIntegrationTest {
 
     )
 
-    private fun convertEndpoints(): List<Pair<String, String>> {
-        val result = mutableListOf<Pair<String, String>>()
-        for (index in endpoints.indices) {
-            result.add(
-                Pair(
-                    String.format(MemberInfoExtension.URL_KEY, index),
-                    endpoints[index].url
-                )
-            )
-            result.add(
-                Pair(
-                    String.format(MemberInfoExtension.PROTOCOL_VERSION, index),
-                    endpoints[index].protocolVersion.toString()
-                )
-            )
-        }
-        return result
-    }
-
-    private fun getTestProcessor(resultCollector: (String, PersistentMemberInfo) -> Unit): PubSubProcessor<String, PersistentMemberInfo> {
+    private fun getTestProcessor(resultCollector: (PersistentMemberInfo) -> Unit): PubSubProcessor<String, PersistentMemberInfo> {
         class TestProcessor : PubSubProcessor<String, PersistentMemberInfo> {
             override fun onNext(
                 event: Record<String, PersistentMemberInfo>
             ): CompletableFuture<Unit> {
-                resultCollector(event.key, event.value!!)
+                resultCollector(event.value!!)
                 return CompletableFuture.completedFuture(Unit)
             }
 
