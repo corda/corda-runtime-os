@@ -115,8 +115,8 @@ internal class PermissionManagementServiceEventHandler(
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
-                permissionValidationService.close()
-                permissionManagementCacheService.close()
+                permissionValidationService.stop()
+                permissionManagementCacheService.stop()
                 configSubscription?.close()
                 configSubscription = null
                 rpcSender?.close()

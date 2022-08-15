@@ -126,13 +126,13 @@ internal class HttpRpcGatewayEventHandler(
                 registration = null
                 sub?.close()
                 sub = null
-                permissionManagementService.close()
-                rbacSecurityManagerService.close()
+                permissionManagementService.stop()
+                rbacSecurityManagerService.stop()
                 server?.close()
                 server = null
-                sslCertReadService?.close()
+                sslCertReadService?.stop()
                 sslCertReadService = null
-                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.close() }
+                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
             }
         }
     }
