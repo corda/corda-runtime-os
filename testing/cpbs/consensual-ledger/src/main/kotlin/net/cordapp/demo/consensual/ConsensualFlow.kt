@@ -6,13 +6,14 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.KeyPairGenerator
+import java.security.PublicKey
 import java.time.Instant
 
 /**
@@ -31,6 +32,8 @@ class ConsensualFlow : RPCStartableFlow {
     ) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
     }
+
+    class TestPartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party
 
     private companion object {
         val log = contextLogger()
@@ -53,11 +56,13 @@ class ConsensualFlow : RPCStartableFlow {
             kpg.initialize(512) // Shortest possible to not slow down tests.
             val testPublicKey = kpg.genKeyPair().public
 
+            val testMemberX500Name = MemberX500Name("R3", "London", "GB")
+
             val testConsensualState =
                 TestConsensualState(
                     "test",
                     listOf(
-                        PartyImpl(
+                        TestPartyImpl(
                             testMemberX500Name,
                             testPublicKey
                         )
