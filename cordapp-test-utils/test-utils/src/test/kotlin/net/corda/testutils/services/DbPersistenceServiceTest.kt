@@ -1,9 +1,9 @@
 package net.corda.testutils.services
 
+import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.find
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.persistence.CordaPersistenceException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test

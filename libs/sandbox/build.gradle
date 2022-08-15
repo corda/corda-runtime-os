@@ -9,6 +9,7 @@ description 'Corda Sandbox'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     api platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     api project(":libs:packaging:packaging")
