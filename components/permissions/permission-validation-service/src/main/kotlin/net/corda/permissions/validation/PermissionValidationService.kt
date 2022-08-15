@@ -78,7 +78,7 @@ class PermissionValidationService @Activate constructor(
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
-                permissionValidationCacheService.stop()
+                permissionValidationCacheService.close()
                 _permissionValidator?.close()
                 _permissionValidator = null
                 registration?.close()

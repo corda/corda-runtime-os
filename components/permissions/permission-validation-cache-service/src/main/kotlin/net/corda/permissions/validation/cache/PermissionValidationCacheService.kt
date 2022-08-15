@@ -101,7 +101,9 @@ class PermissionValidationCacheService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                createAndStartSubscriptionsAndCache(event.config.getConfig(MESSAGING_CONFIG))
+                if (MESSAGING_CONFIG in event.config.keys) {
+                    createAndStartSubscriptionsAndCache(event.config.getConfig(MESSAGING_CONFIG))
+                }
             }
             // Let's set the component as UP when it has received all the snapshots it needs
             is PermissionSummaryTopicSnapshotReceived -> {
@@ -171,6 +173,6 @@ class PermissionValidationCacheService @Activate constructor(
     }
 
     override fun stop() {
-        coordinator.stop()
+        coordinator.close()
     }
 }
