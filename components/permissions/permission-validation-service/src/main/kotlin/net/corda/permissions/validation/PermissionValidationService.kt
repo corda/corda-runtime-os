@@ -103,6 +103,6 @@ class PermissionValidationService @Activate constructor(
     }
 
     override fun stop() {
-        coordinator.stop()
+        coordinator.close()
     }
 }
