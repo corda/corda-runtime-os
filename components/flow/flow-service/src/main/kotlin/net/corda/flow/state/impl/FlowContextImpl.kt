@@ -56,16 +56,16 @@ class FlowContextImpl(
         return null
     }
 
-    override fun flattenPlatformProperties(): KeyValuePairList {
+    override fun flattenPlatformProperties(): Map<String, String> {
         return flowStack.flowStackItems.flatMapLaterKeysOverwrite { stackItem -> stackItem.contextPlatformProperties }
     }
 
-    override fun flattenUserProperties(): KeyValuePairList {
+    override fun flattenUserProperties(): Map<String, String> {
         return flowStack.flowStackItems.flatMapLaterKeysOverwrite { stackItem -> stackItem.contextUserProperties }
     }
 
-    private fun List<FlowStackItem>.flatMapLaterKeysOverwrite(block: (FlowStackItem) -> KeyValuePairList): KeyValuePairList {
-        val flattenedKeyValueStore = KeyValueStore()
+    private fun List<FlowStackItem>.flatMapLaterKeysOverwrite(block: (FlowStackItem) -> KeyValuePairList): Map<String, String> {
+        val flattenedKeyValueStore = mutableMapOf<String, String>()
         this.forEach { stackItem ->
             val stackItemKeyValueStore = KeyValueStore(block(stackItem))
             // We iterate from the beginning of the stack to the end, so later values (those closer to the current stack
@@ -73,6 +73,12 @@ class FlowContextImpl(
             flattenedKeyValueStore += stackItemKeyValueStore
         }
 
-        return flattenedKeyValueStore.avro
+        return flattenedKeyValueStore
+    }
+
+    private operator fun MutableMap<String, String>.plusAssign(toAdd: KeyValueStore) {
+        toAdd.avro.items.forEach { keyValuePair ->
+            this[keyValuePair.key] = keyValuePair.value
+        }
     }
 }

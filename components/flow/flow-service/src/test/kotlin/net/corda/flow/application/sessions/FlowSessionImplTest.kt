@@ -167,8 +167,8 @@ class FlowSessionImplTest {
 
     private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {
         with(request) {
-            assertThat(contextUserProperties).isEqualTo(mockFlowFiberService.userContext.avro)
-            assertThat(contextPlatformProperties).isEqualTo(mockFlowFiberService.platformContext.avro)
+            assertThat(contextUserProperties).isEqualTo(mockFlowFiberService.userContext)
+            assertThat(contextPlatformProperties).isEqualTo(mockFlowFiberService.platformContext)
             assertThat(sessionId).isEqualTo(SESSION_ID)
             assertThat(x500Name).isEqualTo(ALICE_X500_NAME)
         }

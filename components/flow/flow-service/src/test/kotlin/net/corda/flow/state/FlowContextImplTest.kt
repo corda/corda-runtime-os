@@ -184,27 +184,23 @@ class FlowContextImplTest {
         )
 
         flowContext["key2"] = "value2"
-        flowContext["u-key1"] = "u-value1-overwritten"
+        flowContext["u-key1"] = "u-value1-overwritten-by-context-api"
 
-        val platformKeyValuePairList = flowContext.flattenPlatformProperties()
-        val userKeyValuePairList = flowContext.flattenUserProperties()
+        val platformMap = flowContext.flattenPlatformProperties()
+        val userMap = flowContext.flattenUserProperties()
 
-        // Create KeyValueStores around the flattened lists for convenience of validating contents
-        val platformFlattened = KeyValueStore(platformKeyValuePairList)
-        val userFlattened = KeyValueStore(userKeyValuePairList)
+        assertThat(userMap.size).isEqualTo(5)
 
-        assertThat(userKeyValuePairList.items.size).isEqualTo(5)
+        assertThat(userMap["key1"]).isEqualTo("value1")
+        assertThat(userMap["key2"]).isEqualTo("value2")
+        assertThat(userMap["u-key1"]).isEqualTo("u-value1-overwritten-by-context-api")
+        assertThat(userMap["u-key2"]).isEqualTo("u-value2-overwritten")
+        assertThat(userMap["u-key3"]).isEqualTo("u-value3")
 
-        assertThat(userFlattened["key1"]).isEqualTo("value1")
-        assertThat(userFlattened["key2"]).isEqualTo("value2")
-        assertThat(userFlattened["u-key1"]).isEqualTo("u-value1-overwritten")
-        assertThat(userFlattened["u-key2"]).isEqualTo("u-value2-overwritten")
-        assertThat(userFlattened["u-key3"]).isEqualTo("u-value3")
+        assertThat(platformMap.size).isEqualTo(3)
 
-        assertThat(platformKeyValuePairList.items.size).isEqualTo(3)
-
-        assertThat(platformFlattened["p-key1"]).isEqualTo("p-value1")
-        assertThat(platformFlattened["p-key2"]).isEqualTo("p-value2-overwritten")
-        assertThat(platformFlattened["p-key3"]).isEqualTo("p-value3")
+        assertThat(platformMap["p-key1"]).isEqualTo("p-value1")
+        assertThat(platformMap["p-key2"]).isEqualTo("p-value2-overwritten")
+        assertThat(platformMap["p-key3"]).isEqualTo("p-value3")
     }
 }

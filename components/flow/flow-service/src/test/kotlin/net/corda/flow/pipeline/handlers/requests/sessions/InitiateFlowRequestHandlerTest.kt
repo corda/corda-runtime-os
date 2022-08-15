@@ -10,7 +10,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
-import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -28,15 +28,11 @@ class InitiateFlowRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val testContext = RequestHandlerTestContext(Any())
 
-    private val userContext = KeyValueStore().apply {
-        this["user"] = "user"
-    }
-    private val platformContext = KeyValueStore().apply {
-        this["platform"] = "platform"
-    }
+    private val userContext = mapOf("user" to "user")
+    private val platformContext = mapOf("platform" to "platform")
 
     private val ioRequest =
-        FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1, userContext.avro, platformContext.avro)
+        FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1, userContext, platformContext)
     private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager, testContext.flowSandboxService)
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val protocolStore = mock<FlowProtocolStore>()
@@ -51,8 +47,8 @@ class InitiateFlowRequestHandlerTest {
                 eq(ALICE_X500_NAME),
                 eq("protocol"),
                 eq(listOf(1)),
-                eq(userContext.avro),
-                eq(platformContext.avro),
+                eq(keyValuePairListOf(userContext)),
+                eq(keyValuePairListOf(platformContext)),
                 any()
             )
         ).thenReturn(sessionState1)

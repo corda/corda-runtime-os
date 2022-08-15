@@ -1,6 +1,5 @@
 package net.corda.flow.fiber
 
-import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
@@ -45,8 +44,8 @@ interface FlowIORequest<out R> {
     data class InitiateFlow(
         val x500Name: MemberX500Name,
         val sessionId: String,
-        val contextUserProperties: KeyValuePairList,
-        val contextPlatformProperties: KeyValuePairList
+        val contextUserProperties: Map<String, String>,
+        val contextPlatformProperties: Map<String, String>
     ) : FlowIORequest<Unit>
 
     /**

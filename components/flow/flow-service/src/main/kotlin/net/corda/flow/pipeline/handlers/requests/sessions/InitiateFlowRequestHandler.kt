@@ -10,6 +10,7 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.utils.keyValuePairListOf
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -58,8 +59,8 @@ class InitiateFlowRequestHandler @Activate constructor(
                 request.x500Name,
                 protocolName,
                 protocolVersions,
-                contextUserProperties = request.contextUserProperties,
-                contextPlatformProperties = request.contextPlatformProperties,
+                contextUserProperties = keyValuePairListOf(request.contextUserProperties),
+                contextPlatformProperties = keyValuePairListOf(request.contextPlatformProperties),
                 Instant.now()
             )
         )

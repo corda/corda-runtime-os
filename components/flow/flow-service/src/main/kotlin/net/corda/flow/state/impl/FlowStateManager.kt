@@ -80,6 +80,7 @@ class FlowStateManager(private val initialState: FlowState) {
         state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
         stack = FlowStackImpl(initialState.flowStackItems)
+        flowContext = FlowContextImpl(stack)
     }
 
     fun toAvro(): FlowState {

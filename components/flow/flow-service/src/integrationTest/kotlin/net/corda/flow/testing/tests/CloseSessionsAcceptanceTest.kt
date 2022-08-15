@@ -74,8 +74,8 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                     FlowIORequest.InitiateFlow::class.simpleName,
                     FlowIORequest.InitiateFlow(
                         BOB_X500_NAME, SESSION_ID_2,
-                        emptyKeyValuePairList(),
-                        emptyKeyValuePairList()
+                        emptyMap(),
+                        emptyMap()
                     )
                 )
             )
