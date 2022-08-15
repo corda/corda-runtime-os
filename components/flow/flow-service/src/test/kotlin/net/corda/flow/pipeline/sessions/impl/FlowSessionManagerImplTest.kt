@@ -14,7 +14,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
-import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
@@ -131,14 +131,21 @@ class FlowSessionManagerImplTest {
 
         val instant = Instant.now()
 
+        val userContext = KeyValueStore().apply {
+            this["user"] = "user"
+        }
+        val platformContext = KeyValueStore().apply {
+            this["platform"] = "platform"
+        }
+
         val expectedSessionInit = SessionInit.newBuilder()
             .setProtocol(PROTOCOL)
             .setVersions(listOf(1))
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
-            .setContextPlatformProperties(emptyKeyValuePairList())
-            .setContextUserProperties(emptyKeyValuePairList())
+            .setContextPlatformProperties(platformContext.avro)
+            .setContextUserProperties(userContext.avro)
             .build()
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -156,6 +163,8 @@ class FlowSessionManagerImplTest {
             X500_NAME,
             PROTOCOL,
             listOf(1),
+            userContext.avro,
+            platformContext.avro,
             instant
         )
 
