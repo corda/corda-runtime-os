@@ -91,4 +91,17 @@ tasks.named('e2eTest') {
     if(System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG") != null) {
         jvmArgs "-Djava.security.auth.login.config=${System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG")}"
     }
+    systemProperty "e2eClusterARpcHost", project.getProperties().getOrDefault("e2eClusterARpcHost","localhost")
+    systemProperty "e2eClusterARpcPort", project.getProperties().getOrDefault("e2eClusterARpcPort","8888")
+    systemProperty "e2eClusterBRpcHost", project.getProperties().getOrDefault("e2eClusterBRpcHost","localhost")
+    systemProperty "e2eClusterBRpcPort", project.getProperties().getOrDefault("e2eClusterBRpcPort","8888")
+    systemProperty "e2eClusterCRpcHost", project.getProperties().getOrDefault("e2eClusterCRpcHost","localhost")
+    systemProperty "e2eClusterCRpcPort", project.getProperties().getOrDefault("e2eClusterCRpcPort","8888")
+
+    systemProperty "e2eClusterAP2pHost", project.getProperties().getOrDefault("e2eClusterAP2pHost","localhost")
+    systemProperty "e2eClusterAP2pPort", project.getProperties().getOrDefault("e2eClusterAP2pPort","8080")
+    systemProperty "e2eClusterBP2pHost", project.getProperties().getOrDefault("e2eClusterBP2pHost","localhost")
+    systemProperty "e2eClusterBP2pPort", project.getProperties().getOrDefault("e2eClusterBP2pPort","8080")
+    systemProperty "e2eClusterCP2pHost", project.getProperties().getOrDefault("e2eClusterCP2pHost","localhost")
+    systemProperty "e2eClusterCP2pPort", project.getProperties().getOrDefault("e2eClusterCP2pPort","8080")
 }

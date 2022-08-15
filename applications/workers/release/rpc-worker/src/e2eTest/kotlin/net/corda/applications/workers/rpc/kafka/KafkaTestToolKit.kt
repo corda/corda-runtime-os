@@ -98,6 +98,11 @@ class KafkaTestToolKit(
         )
     }
 
+    /**
+     * Creates easily attributable to a testcase unique name
+     */
+    val uniqueName: String get() = toolkit.uniqueName
+
     fun publishRecordsToKafka(records: Collection<Record<*, *>>) {
         if (records.isNotEmpty()) {
             publisherFactory.createPublisher(

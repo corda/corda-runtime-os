@@ -6,52 +6,44 @@ import net.corda.applications.workers.rpc.utils.HSM_CAT_LEDGER
 import net.corda.applications.workers.rpc.utils.HSM_CAT_SESSION
 import net.corda.applications.workers.rpc.utils.HSM_CAT_TLS
 import net.corda.applications.workers.rpc.utils.MemberTestData
-import net.corda.applications.workers.rpc.utils.P2P_GATEWAY
 import net.corda.applications.workers.rpc.utils.P2P_TENANT_ID
-import net.corda.applications.workers.rpc.utils.RPC_PORT
-import net.corda.applications.workers.rpc.utils.RPC_WORKER
-import net.corda.applications.workers.rpc.utils.SINGLE_CLUSTER_NS
 import net.corda.applications.workers.rpc.utils.assertMemberInMemberList
 import net.corda.applications.workers.rpc.utils.assertOnlyMgmIsInMemberList
+import net.corda.applications.workers.rpc.utils.assertP2pConnectivity
 import net.corda.applications.workers.rpc.utils.assignSoftHsm
 import net.corda.applications.workers.rpc.utils.createMGMGroupPolicyJson
+import net.corda.applications.workers.rpc.utils.createMemberRegistrationContext
+import net.corda.applications.workers.rpc.utils.createMgmRegistrationContext
 import net.corda.applications.workers.rpc.utils.createVirtualNode
-import net.corda.applications.workers.rpc.utils.genGroupPolicy
-import net.corda.applications.workers.rpc.utils.genKeyPair
+import net.corda.applications.workers.rpc.utils.generateGroupPolicy
+import net.corda.applications.workers.rpc.utils.generateKeyPair
 import net.corda.applications.workers.rpc.utils.generateCert
 import net.corda.applications.workers.rpc.utils.generateCsr
 import net.corda.applications.workers.rpc.utils.getCa
-import net.corda.applications.workers.rpc.utils.getMemberRegistrationContext
-import net.corda.applications.workers.rpc.utils.getMgmRegistrationContext
+import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.keyExists
 import net.corda.applications.workers.rpc.utils.lookupMembers
 import net.corda.applications.workers.rpc.utils.name
 import net.corda.applications.workers.rpc.utils.register
 import net.corda.applications.workers.rpc.utils.setUpNetworkIdentity
 import net.corda.applications.workers.rpc.utils.status
-import net.corda.applications.workers.rpc.utils.toByteArray
 import net.corda.applications.workers.rpc.utils.uploadCpi
 import net.corda.applications.workers.rpc.utils.uploadTlsCertificate
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.data.identity.HoldingIdentity
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class SingleClusterDynamicNetworkTest {
-    companion object {
-        // If running deployment in eks, ensure this is set to true to use correct endpoint information.
-        // This should be false by default for automated builds.
-        private const val IS_REMOTE_CLUSTER = false
-    }
+    private val rpcHost = System.getProperty("e2eClusterARpcHost")
+    private val rpcPort = System.getProperty("e2eClusterARpcPort").toInt()
+    private val testToolkit by TestToolkitProperty(rpcHost, rpcPort)
 
-    private val remoteRpcHost = "$RPC_WORKER.$SINGLE_CLUSTER_NS"
-    private val remoteP2pHost = "$P2P_GATEWAY.$SINGLE_CLUSTER_NS"
-    private val remoteTestToolkit by TestToolkitProperty(remoteRpcHost, RPC_PORT)
-    private val localTestToolkit by TestToolkitProperty()
-
-    private val p2pHost = if (IS_REMOTE_CLUSTER) remoteP2pHost else "https://localhost:8080"
-    private val testToolkit = if (IS_REMOTE_CLUSTER) remoteTestToolkit else localTestToolkit
+    private val p2pHost = System.getProperty("e2eClusterAP2pHost")
+    private val p2pPort = System.getProperty("e2eClusterAP2pPort").toInt()
 
     private val mgm = MemberTestData(
         "O=Mgm, L=London, C=GB, OU=${testToolkit.uniqueName}"
@@ -60,6 +52,7 @@ class SingleClusterDynamicNetworkTest {
     private val cordaCluster = ClusterTestData(
         testToolkit,
         p2pHost,
+        p2pPort,
         listOf(
             MemberTestData("O=Alice, L=London, C=GB, OU=${testToolkit.uniqueName}"),
             MemberTestData("O=Bob, L=London, C=GB, OU=${testToolkit.uniqueName}"),
@@ -71,19 +64,44 @@ class SingleClusterDynamicNetworkTest {
 
     @Test
     fun `Create mgm and allow members to join the group`() {
+        onboardSingleClusterGroup()
+    }
+
+    @Disabled("Is disabled and can be run manually until CORE-6079 is complete. At that point this can be " +
+        "merged into the above test.")
+    @Test
+    fun `Onboard group and check p2p connectivity`() {
+        val groupId = onboardSingleClusterGroup()
+
+        assertP2pConnectivity(
+            HoldingIdentity(
+                cordaCluster.members[0].name,
+                groupId
+            ),
+            HoldingIdentity(
+                cordaCluster.members[1].name,
+                groupId
+            ),
+            cordaCluster.kafkaTestToolkit
+        )
+    }
+
+    /**
+     * Onboard group and return group ID
+     */
+    private fun onboardSingleClusterGroup(): String {
         val holdingIds = mutableMapOf<String, String>()
         val cpiChecksum = cordaCluster.uploadCpi(createMGMGroupPolicyJson(), true)
         val mgmHoldingId = cordaCluster.createVirtualNode(mgm, cpiChecksum)
         holdingIds[mgm.name] = mgmHoldingId
-        println("MGM HoldingIdentity: $mgmHoldingId")
 
         cordaCluster.assignSoftHsm(mgmHoldingId, HSM_CAT_SESSION)
 
-        val mgmSessionKeyId = cordaCluster.genKeyPair(mgmHoldingId, HSM_CAT_SESSION)
+        val mgmSessionKeyId = cordaCluster.generateKeyPair(mgmHoldingId, HSM_CAT_SESSION)
 
         cordaCluster.register(
             mgmHoldingId,
-            getMgmRegistrationContext(
+            createMgmRegistrationContext(
                 tlsTrustRoot = ca.caCertificate.toPem(),
                 sessionKeyId = mgmSessionKeyId,
                 p2pUrl = cordaCluster.p2pUrl
@@ -92,7 +110,7 @@ class SingleClusterDynamicNetworkTest {
         cordaCluster.assertOnlyMgmIsInMemberList(mgmHoldingId, mgm.name)
 
         if (!cordaCluster.keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
-            val mgmTlsKeyId = cordaCluster.genKeyPair(P2P_TENANT_ID, HSM_CAT_TLS)
+            val mgmTlsKeyId = cordaCluster.generateKeyPair(P2P_TENANT_ID, HSM_CAT_TLS)
             val mgmTlsCsr = cordaCluster.generateCsr(mgm, mgmTlsKeyId)
             val mgmTlsCert = ca.generateCert(mgmTlsCsr)
             cordaCluster.uploadTlsCertificate(mgmTlsCert)
@@ -103,22 +121,21 @@ class SingleClusterDynamicNetworkTest {
             mgmSessionKeyId
         )
 
-        val memberGroupPolicy = cordaCluster.genGroupPolicy(mgmHoldingId)
+        val memberGroupPolicy = cordaCluster.generateGroupPolicy(mgmHoldingId)
 
-        val memberCpiChecksum = cordaCluster.uploadCpi(toByteArray(memberGroupPolicy))
+        val memberCpiChecksum = cordaCluster.uploadCpi(memberGroupPolicy.toByteArray())
         cordaCluster.members.forEach { member ->
             val memberHoldingId = cordaCluster.createVirtualNode(member, memberCpiChecksum)
             holdingIds[member.name] = memberHoldingId
-            println("${member.name} holding ID: $memberHoldingId")
 
             cordaCluster.assignSoftHsm(memberHoldingId, HSM_CAT_SESSION)
             cordaCluster.assignSoftHsm(memberHoldingId, HSM_CAT_LEDGER)
 
-            val memberSessionKeyId = cordaCluster.genKeyPair(memberHoldingId, HSM_CAT_SESSION)
-            val memberLedgerKeyId = cordaCluster.genKeyPair(memberHoldingId, HSM_CAT_LEDGER)
+            val memberSessionKeyId = cordaCluster.generateKeyPair(memberHoldingId, HSM_CAT_SESSION)
+            val memberLedgerKeyId = cordaCluster.generateKeyPair(memberHoldingId, HSM_CAT_LEDGER)
 
             if (!cordaCluster.keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
-                val memberTlsKeyId = cordaCluster.genKeyPair(P2P_TENANT_ID, HSM_CAT_TLS)
+                val memberTlsKeyId = cordaCluster.generateKeyPair(P2P_TENANT_ID, HSM_CAT_TLS)
                 val memberTlsCsr = cordaCluster.generateCsr(member, memberTlsKeyId)
                 val memberTlsCert = ca.generateCert(memberTlsCsr)
                 cordaCluster.uploadTlsCertificate(memberTlsCert)
@@ -132,7 +149,7 @@ class SingleClusterDynamicNetworkTest {
 
             cordaCluster.register(
                 memberHoldingId,
-                getMemberRegistrationContext(
+                createMemberRegistrationContext(
                     cordaCluster,
                     memberSessionKeyId,
                     memberLedgerKeyId
@@ -167,5 +184,6 @@ class SingleClusterDynamicNetworkTest {
                 }
             }
         }
+        return cordaCluster.getGroupId(mgmHoldingId)
     }
 }
