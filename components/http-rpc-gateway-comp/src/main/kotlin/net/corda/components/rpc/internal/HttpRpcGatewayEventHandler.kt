@@ -73,10 +73,12 @@ internal class HttpRpcGatewayEventHandler(
     internal var sub: AutoCloseable? = null
 
     @Volatile
-    private var rpcConfig: SmartConfig? = null
+    @VisibleForTesting
+    internal var rpcConfig: SmartConfig? = null
 
     @Volatile
-    private var dependenciesUp = false
+    @VisibleForTesting
+    internal var dependenciesUp = false
 
     @Suppress("NestedBlockDepth")
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
