@@ -92,6 +92,9 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
     }
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
     environment = Map.of(
             "CORDA_CLI_HOME_DIR", "/opt/override/home"
     )
