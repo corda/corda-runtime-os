@@ -449,7 +449,8 @@ TaskProvider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile",
 }
 
 def appJar = tasks.register('appJar', Jar) {
-    inputs.files(configurations.bootstrapClasspath)
+    inputs.files(configurations.bootstrapClasspath).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property('addOpensAttribute', osgiRun.addOpensAttribute)
     finalizedBy verifyApp
 
     archiveBaseName = appJarBaseName

@@ -65,7 +65,7 @@ class FlowStatusFeedSmokeTest {
         useWebsocketConnection(flowStatusFeedPath) { wsHandler ->
             startFlow(clientRequestId)
 
-            eventually(Duration.ofSeconds(10)) {
+            eventually(Duration.ofSeconds(300)) {
                 assertThat(wsHandler.messageQueue).hasSize(3)
                 assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
                 assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.RUNNING.name)
@@ -84,7 +84,7 @@ class FlowStatusFeedSmokeTest {
             useWebsocketConnection(flowStatusFeedPath) { wsHandler2 ->
                 startFlow(clientRequestId)
 
-                eventually(Duration.ofSeconds(10)) {
+                eventually(Duration.ofSeconds(300)) {
                     assertThat(wsHandler1.messageQueue).hasSize(3)
                     assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
                     assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.RUNNING.name)

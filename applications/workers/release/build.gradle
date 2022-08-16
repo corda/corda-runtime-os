@@ -1,0 +1,9 @@
+// Common configuration for all workers.
+
+subprojects {
+    pluginManager.withPlugin('corda.quasar-app') {
+        quasar {
+            excludePackages.addAll 'io.javalin.**'
+        }
+    }
+}

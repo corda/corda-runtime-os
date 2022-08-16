@@ -2,28 +2,22 @@ package net.corda.sandboxgroupcontext.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.util.loggerFor
-import java.util.concurrent.ForkJoinPool
 
 internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): SandboxGroupContextCache {
     private companion object {
         private val logger = loggerFor<SandboxGroupContextCache>()
     }
-    private val contexts: Cache<VirtualNodeContext, CloseableSandboxGroupContext> = Caffeine.newBuilder()
-        .maximumSize(cacheSize)
-        .executor(ForkJoinPool(
-            Runtime.getRuntime().availableProcessors(),
-            SandboxForkJoinWorkerThreadFactory(),
-            null,
-            false
-        ))
-        .removalListener<VirtualNodeContext, CloseableSandboxGroupContext> { key, value, cause ->
-            logger.info("Evicting ${key!!.sandboxGroupType} sandbox for: ${key.holdingIdentity.x500Name} [${cause.name}]")
-            value?.close()
-        }
-        .build()
+    private val contexts: Cache<VirtualNodeContext, CloseableSandboxGroupContext> = CacheFactoryImpl().build(
+        Caffeine.newBuilder()
+            .maximumSize(cacheSize)
+            .removalListener { key, value, cause ->
+                logger.info("Evicting {} sandbox for: {} [{}]", key!!.sandboxGroupType, key.holdingIdentity.x500Name, cause.name)
+                value?.close()
+            })
 
     override fun remove(virtualNodeContext: VirtualNodeContext) {
         contexts.invalidate(virtualNodeContext)
@@ -34,8 +28,8 @@ internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): Sandb
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext {
         return contexts.get(virtualNodeContext) {
-            logger.info("Caching ${virtualNodeContext.sandboxGroupType} sandbox for: " +
-                    "${virtualNodeContext.holdingIdentity.x500Name} (cache size: ${contexts.estimatedSize()}")
+            logger.info("Caching {} sandbox for: {} (cache size: {})",
+                virtualNodeContext.sandboxGroupType, virtualNodeContext.holdingIdentity.x500Name, contexts.estimatedSize())
             createFunction(virtualNodeContext)
         }
     }

@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -274,9 +275,9 @@ class SigningKeyStoreImpl @Activate constructor(
 
         private fun entityManagerFactory(tenantId: String) = connectionsFactory.getEntityManagerFactory(tenantId)
 
-        private fun createCache(): Cache<CacheKey, SigningCachedKey> = Caffeine.newBuilder()
-            .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-            .maximumSize(config.cache.maximumSize)
-            .build()
+        private fun createCache(): Cache<CacheKey, SigningCachedKey> = CacheFactoryImpl().build(
+            Caffeine.newBuilder()
+                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(config.cache.maximumSize))
     }
 }

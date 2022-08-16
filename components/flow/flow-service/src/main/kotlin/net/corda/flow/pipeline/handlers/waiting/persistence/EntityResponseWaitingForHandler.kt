@@ -20,9 +20,9 @@ import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig.PERSISTENCE_MAX_RETRIES
+import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.persistence.CordaPersistenceException
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowWaitingForHandler::class])
