@@ -154,7 +154,10 @@ internal class HttpRpcGatewayEventHandler(
         server = null
         sslCertReadService?.stop()
         sslCertReadService = null
-        dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
+        dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach {
+            log.info("Stopping: ${it.javaClass.simpleName}")
+            it.stop()
+        }
     }
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
@@ -193,7 +196,10 @@ internal class HttpRpcGatewayEventHandler(
         ).also { it.start() }
 
         val numberOfRpcOps = rpcOps.filterIsInstance<Lifecycle>()
-            .map { it.start() }
+            .map {
+                log.info("Starting: ${it.javaClass.simpleName}")
+                it.start()
+            }
             .count()
         log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
     }
