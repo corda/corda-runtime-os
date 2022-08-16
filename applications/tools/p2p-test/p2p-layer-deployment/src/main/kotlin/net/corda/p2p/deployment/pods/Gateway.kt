@@ -36,7 +36,7 @@ class Gateway(
             return gateways + balancer
         }
     }
-    override val imageName = "p2p-gateway"
+    override val imageName = "p2p-gateway-worker"
 
     override val readyLog = ".*Gateway-1.* - Starting child.*".toRegex()
 
