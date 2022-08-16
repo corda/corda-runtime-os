@@ -50,6 +50,7 @@ class RBACSecurityManagerService @Activate constructor(
         }
     }
 
+    @Volatile
     private var _securityManager: RPCSecurityManager? = null
 
     @VisibleForTesting

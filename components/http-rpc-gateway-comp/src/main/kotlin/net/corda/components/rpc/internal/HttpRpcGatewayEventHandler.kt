@@ -75,6 +75,9 @@ internal class HttpRpcGatewayEventHandler(
     @Volatile
     private var rpcConfig: SmartConfig? = null
 
+    @Volatile
+    private var dependenciesUp = false
+
     @Suppress("NestedBlockDepth")
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -101,6 +104,7 @@ internal class HttpRpcGatewayEventHandler(
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         log.info("Registration received UP status. Registering for configuration updates.")
+                        dependenciesUp = true
                         rpcConfig.let {
                             if (it == null) {
                                 log.info("Configuration has not been received yet")
@@ -128,8 +132,11 @@ internal class HttpRpcGatewayEventHandler(
                     event.config[BOOT_CONFIG]
                 )
                 rpcConfig = config
-
-                upTransition(coordinator, config)
+                if (dependenciesUp) {
+                    upTransition(coordinator, config)
+                } else {
+                    log.info("Dependencies has not been satisfied yet")
+                }
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
