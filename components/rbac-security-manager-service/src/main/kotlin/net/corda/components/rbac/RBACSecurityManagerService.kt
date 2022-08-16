@@ -83,7 +83,7 @@ class RBACSecurityManagerService @Activate constructor(
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
-                        coordinator.postEvent(StopEvent())
+                        downTransition()
                     }
                     LifecycleStatus.ERROR -> {
                         coordinator.postEvent(StopEvent(true))
@@ -94,10 +94,14 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
-                _securityManager?.close()
-                _securityManager = null
+                downTransition()
             }
         }
+    }
+
+    private fun downTransition() {
+        _securityManager?.close()
+        _securityManager = null
     }
 
     override val isRunning: Boolean
