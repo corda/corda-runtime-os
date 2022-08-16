@@ -73,7 +73,7 @@ class ConsensualFlow : RPCStartableFlow {
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withTimestamp(Instant.now())
-                .withState(testConsensualState)
+                .withStates(testConsensualState)
                 .signInitial(testPublicKey)
 
             val resultMessage = ResultMessage(text = signedTransaction.toString())

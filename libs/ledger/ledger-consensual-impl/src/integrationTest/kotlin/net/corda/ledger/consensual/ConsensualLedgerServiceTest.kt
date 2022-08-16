@@ -185,7 +185,7 @@ java.lang.ClassNotFoundException: net.corda.ledger.common.impl.transaction.Trans
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withTimestamp(Instant.now())
-            .withState(testConsensualState)
+            .withStates(testConsensualState)
             .signInitial(testPublicKey)
         assertThat(signedTransaction).isInstanceOf(ConsensualSignedTransaction::class.java)
     }

@@ -42,8 +42,8 @@ class ConsensualTransactionBuilderImpl(
     override fun withTimestamp(timestamp: Instant): ConsensualTransactionBuilder =
         this.copy(timeStamp = timestamp)
 
-    override fun withState(state: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(states = states + state)
+    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
+        this.copy(states = this.states + states)
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaData(mapOf(

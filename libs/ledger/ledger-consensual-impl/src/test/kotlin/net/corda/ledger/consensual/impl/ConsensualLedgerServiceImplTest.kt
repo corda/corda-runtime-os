@@ -123,7 +123,7 @@ class ConsensualLedgerServiceImplTest {
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withTimestamp(Instant.now())
-            .withState(testConsensualState)
+            .withStates(testConsensualState)
             .signInitial(testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
     }

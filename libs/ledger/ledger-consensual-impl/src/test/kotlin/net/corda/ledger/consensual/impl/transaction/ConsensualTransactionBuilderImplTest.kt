@@ -71,7 +71,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `can build a simple Transaction`() {
         ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
             .withTimestamp(Instant.now())
-            .withState(testConsensualState)
+            .withStates(testConsensualState)
             .signInitial(testPublicKey)
     }
 
@@ -79,7 +79,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction without TimeStamp`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withState(testConsensualState)
+                .withStates(testConsensualState)
                 .signInitial(testPublicKey)
         }
         assertEquals("Null timeStamp is not allowed", exception.message)
@@ -100,8 +100,8 @@ internal class ConsensualTransactionBuilderImplTest{
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
                 .withTimestamp(Instant.now())
-                .withState(testConsensualState)
-                .withState(TestConsensualState("test", emptyList()))
+                .withStates(testConsensualState)
+                .withStates(TestConsensualState("test", emptyList()))
                 .signInitial(testPublicKey)
         }
         assertEquals("All consensual states needs to have participants", exception.message)
