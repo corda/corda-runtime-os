@@ -135,7 +135,7 @@ internal class HttpRpcGatewayEventHandler(
                 if (dependenciesUp) {
                     upTransition(coordinator, config)
                 } else {
-                    log.info("Dependencies has not been satisfied yet")
+                    log.info("Dependencies have not been satisfied yet")
                 }
             }
             is StopEvent -> {
@@ -201,7 +201,7 @@ internal class HttpRpcGatewayEventHandler(
         val rpcOps = dynamicRpcOpsProvider.get()
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = rpcOps,
-            rpcSecurityManager = rbacSecurityManagerService.securityManager,
+            rpcSecurityManagerSupplier = rbacSecurityManagerService::securityManager,
             httpRpcSettings = httpRpcSettings,
             multiPartDir = multiPartDir
         ).also { it.start() }
