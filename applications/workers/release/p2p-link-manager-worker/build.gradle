@@ -4,33 +4,24 @@ plugins {
     id 'corda.docker-app'
 }
 
-description 'P2P Link Manager Application'
+description 'P2P Link Manager Worker'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(':applications:workers:worker-common')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:link-manager-processor')
-    implementation project(':osgi-framework-api')
-    implementation project(":libs:utilities")
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:configuration:configuration-merger")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:messaging:message-bus")
-    implementation project(":components:configuration:configuration-read-service")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation 'org.slf4j:slf4j-api'
 
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -38,6 +29,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
 
     dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
