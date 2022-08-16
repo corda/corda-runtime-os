@@ -33,7 +33,7 @@ class LinkManagerWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("P2P Link Manager worker starting.")
 
-        val params = WorkerHelpers.getParams(args, MemberWorkerParams())
+        val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setUpHealthMonitor(healthMonitor, params.defaultParams)
 
@@ -46,14 +46,17 @@ class LinkManagerWorker @Activate constructor(
     }
 
     override fun shutdown() {
+        logger.info("P2P Link Manager worker stopping.")
         linkManagerProcessor.stop()
+        healthMonitor.stop()
     }
 }
 /** Additional parameters for the member worker are added here. */
-private class MemberWorkerParams {
+private class LinkManagerWorkerParams {
     @CommandLine.Mixin
     var defaultParams = DefaultWorkerParams()
 
+    //This is used to test the Link Manager without MGM/Crypto components. It will be removed in CORE-5782.
     @CommandLine.Option(names = ["--without-stubs"])
     var withoutStubs = false
 }
