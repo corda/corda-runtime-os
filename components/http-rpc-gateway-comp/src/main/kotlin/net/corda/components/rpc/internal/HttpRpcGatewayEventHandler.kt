@@ -72,6 +72,9 @@ internal class HttpRpcGatewayEventHandler(
     @VisibleForTesting
     internal var sub: AutoCloseable? = null
 
+    @Volatile
+    private var rpcConfig: SmartConfig? = null
+
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
@@ -93,8 +96,14 @@ internal class HttpRpcGatewayEventHandler(
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         log.info("Registration received UP status. Registering for configuration updates.")
-                        sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
-                        coordinator.updateStatus(LifecycleStatus.UP)
+                        rpcConfig.let {
+                            if (it == null) {
+                                log.info("Configuration has not been received yet")
+                            } else {
+                                upTransition(coordinator, it)
+                            }
+                        }
+
                     }
                     LifecycleStatus.DOWN -> {
                         log.info("Registration received DOWN status. Stopping the Http RPC Gateway.")
@@ -113,9 +122,9 @@ internal class HttpRpcGatewayEventHandler(
                 val config = event.config[RPC_CONFIG]!!.withFallback(
                     event.config[BOOT_CONFIG]
                 )
+                rpcConfig = config
 
-                createAndStartHttpRpcServer(config)
-                coordinator.updateStatus(LifecycleStatus.UP)
+                upTransition(coordinator, config)
             }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
@@ -128,6 +137,13 @@ internal class HttpRpcGatewayEventHandler(
                 downTransition()
             }
         }
+    }
+
+    private fun upTransition(coordinator: LifecycleCoordinator, config: SmartConfig) {
+        sub?.close()
+        sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
+        createAndStartHttpRpcServer(config)
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun downTransition() {
