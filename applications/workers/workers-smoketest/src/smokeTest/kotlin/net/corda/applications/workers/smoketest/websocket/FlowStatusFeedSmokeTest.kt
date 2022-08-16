@@ -1,10 +1,7 @@
 package net.corda.applications.workers.smoketest.websocket
 
 import java.time.Duration
-import java.util.LinkedList
-import java.util.Queue
 import java.util.UUID
-import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.SMOKE_TEST_CLASS_NAME
@@ -36,12 +33,16 @@ class FlowStatusFeedSmokeTest {
 
     private enum class FlowStates { START_REQUESTED, RUNNING, RETRYING, COMPLETED, FAILED }
 
+    private fun generateRequestId(identifyingTest: String): String {
+        return "$identifyingTest-${UUID.randomUUID()}"
+    }
+
     @Order(10)
     @Test
     fun `websocket connection can be opened to listen for updates for flow clientRequestid`() {
         val flowStatusFeedPath = "/flow/$bobHoldingId/${generateRequestId("test10")}"
 
-        val wsHandler = MessageQueueWebsocketHandler(LinkedList())
+        val wsHandler = MessageQueueWebsocketHandler()
 
         val client = SmokeTestWebsocketClient()
         client.start()
@@ -67,9 +68,9 @@ class FlowStatusFeedSmokeTest {
 
             eventually(Duration.ofSeconds(300)) {
                 assertThat(wsHandler.messageQueue).hasSize(3)
-                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
-                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.RUNNING.name)
-                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+                assertThat(wsHandler.messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
+                assertThat(wsHandler.messageQueue[1]).contains(FlowStates.RUNNING.name)
+                assertThat(wsHandler.messageQueue[2]).contains(FlowStates.COMPLETED.name)
             }
         }
     }
@@ -86,20 +87,16 @@ class FlowStatusFeedSmokeTest {
 
                 eventually(Duration.ofSeconds(300)) {
                     assertThat(wsHandler1.messageQueue).hasSize(3)
-                    assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
-                    assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.RUNNING.name)
-                    assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+                    assertThat(wsHandler1.messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
+                    assertThat(wsHandler1.messageQueue[1]).contains(FlowStates.RUNNING.name)
+                    assertThat(wsHandler1.messageQueue[2]).contains(FlowStates.COMPLETED.name)
                     assertThat(wsHandler2.messageQueue).hasSize(3)
-                    assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.START_REQUESTED.name)
-                    assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.RUNNING.name)
-                    assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+                    assertThat(wsHandler2.messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
+                    assertThat(wsHandler2.messageQueue[1]).contains(FlowStates.RUNNING.name)
+                    assertThat(wsHandler2.messageQueue[2]).contains(FlowStates.COMPLETED.name)
                 }
             }
         }
-    }
-
-    private fun generateRequestId(identifyingTest: String): String {
-        return "$identifyingTest-${UUID.randomUUID()}"
     }
 
     @Order(31)
@@ -110,13 +107,13 @@ class FlowStatusFeedSmokeTest {
         val flowStatusFeedPath1 = "/flow/$bobHoldingId/$clientRequestId1"
         val flowStatusFeedPath2 = "/flow/$bobHoldingId/$clientRequestId2"
 
-        fun assertNormalFlowStatusesForRequest(messageQueue: Queue<String>, clientRequestId1: String) {
+        fun assertNormalFlowStatusesForRequest(messageQueue: List<String>, clientRequestId1: String) {
             assertThat(messageQueue).hasSize(3)
-            val flowStatus1 = messageQueue.poll()
+            val flowStatus1 = messageQueue[0]
             assertThat(flowStatus1).contains(FlowStates.START_REQUESTED.name)
             assertThat(flowStatus1).contains(clientRequestId1)
-            assertThat(messageQueue.poll()).contains(FlowStates.RUNNING.name)
-            assertThat(messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+            assertThat(messageQueue[1]).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue[2]).contains(FlowStates.COMPLETED.name)
         }
 
         useWebsocketConnection(flowStatusFeedPath1) { wsHandler1 ->
@@ -125,6 +122,11 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId2)
 
                 eventually(Duration.ofSeconds(300)) {
+                    assertThat(wsHandler1.messageQueue).hasSize(3)
+                    assertThat(wsHandler2.messageQueue).hasSize(3)
+                }
+
+                eventually {
                     assertNormalFlowStatusesForRequest(wsHandler1.messageQueue, clientRequestId1)
                     assertNormalFlowStatusesForRequest(wsHandler2.messageQueue, clientRequestId2)
                 }
@@ -141,8 +143,7 @@ class FlowStatusFeedSmokeTest {
         startFlow(clientRequestId)
         awaitRpcFlowFinished(bobHoldingId, clientRequestId)
 
-        val messageQueue = ConcurrentLinkedQueue<String>()
-        val wsHandler = MessageQueueWebsocketHandler(messageQueue)
+        val wsHandler = MessageQueueWebsocketHandler()
         val client = SmokeTestWebsocketClient()
 
         client.start()
@@ -152,7 +153,7 @@ class FlowStatusFeedSmokeTest {
         client.use {
             eventually {
                 assertThat(wsHandler.messageQueue).hasSize(1)
-                assertThat(wsHandler.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+                assertThat(wsHandler.messageQueue[0]).contains(FlowStates.COMPLETED.name)
             }
 
             eventually {
@@ -173,8 +174,7 @@ class FlowStatusFeedSmokeTest {
         startFlow(clientRequestId)
         awaitRpcFlowFinished(bobHoldingId, clientRequestId)
 
-        val messageQueue1 = ConcurrentLinkedQueue<String>()
-        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
+        val wsHandler1 = MessageQueueWebsocketHandler()
         val client1 = SmokeTestWebsocketClient()
 
         client1.start()
@@ -183,7 +183,7 @@ class FlowStatusFeedSmokeTest {
 
         eventually {
             assertThat(wsHandler1.messageQueue).hasSize(1)
-            assertThat(wsHandler1.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+            assertThat(wsHandler1.messageQueue[0]).contains(FlowStates.COMPLETED.name)
         }
 
         eventually {
@@ -193,8 +193,7 @@ class FlowStatusFeedSmokeTest {
         session1.close(1000, "Smoke test closing session 1.")
         client1.close()
 
-        val messageQueue2 = ConcurrentLinkedQueue<String>()
-        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
+        val wsHandler2 = MessageQueueWebsocketHandler()
         val client2 = SmokeTestWebsocketClient()
 
         client2.start()
@@ -203,7 +202,7 @@ class FlowStatusFeedSmokeTest {
 
         eventually {
             assertThat(wsHandler2.messageQueue).hasSize(1)
-            assertThat(wsHandler2.messageQueue.poll()).contains(FlowStates.COMPLETED.name)
+            assertThat(wsHandler2.messageQueue[0]).contains(FlowStates.COMPLETED.name)
         }
 
         eventually {
@@ -236,14 +235,12 @@ class FlowStatusFeedSmokeTest {
         val flowStatusFeedPath1 = "/flow/$bobHoldingId/$clientRequestId1"
         val flowStatusFeedPath2 = "/flow/$bobHoldingId/$clientRequestId2"
 
-        val messageQueue1 = ConcurrentLinkedQueue<String>()
-        val wsHandler1 = MessageQueueWebsocketHandler(messageQueue1)
+        val wsHandler1 = MessageQueueWebsocketHandler()
         val client1 = SmokeTestWebsocketClient()
         client1.start()
         val session1 = client1.connect(flowStatusFeedPath1, wsHandler1)
 
-        val messageQueue2 = ConcurrentLinkedQueue<String>()
-        val wsHandler2 = MessageQueueWebsocketHandler(messageQueue2)
+        val wsHandler2 = MessageQueueWebsocketHandler()
         val client2 = SmokeTestWebsocketClient()
         client2.start()
         val session2 = client2.connect(flowStatusFeedPath2, wsHandler2)
@@ -266,7 +263,7 @@ class FlowStatusFeedSmokeTest {
         val clientRequestId = generateRequestId("test60")
         val flowStatusFeedPath = "/flow/THIS_HOLDING_ID_IS_NOT_HEX/$clientRequestId"
 
-        val wsHandler = MessageQueueWebsocketHandler(ConcurrentLinkedQueue())
+        val wsHandler = MessageQueueWebsocketHandler()
         val client = SmokeTestWebsocketClient()
         client.start()
         client.connect(flowStatusFeedPath, wsHandler)
@@ -281,7 +278,7 @@ class FlowStatusFeedSmokeTest {
         val clientRequestId = generateRequestId("test61")
         val flowStatusFeedPath = "/flow/544849535f484f4c44494e475f49445f49535f4e4f545f484558/$clientRequestId"
 
-        val wsHandler = MessageQueueWebsocketHandler(ConcurrentLinkedQueue())
+        val wsHandler = MessageQueueWebsocketHandler()
         val client = SmokeTestWebsocketClient()
         client.start()
         client.connect(flowStatusFeedPath, wsHandler)
