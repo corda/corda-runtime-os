@@ -9,6 +9,11 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.security.PublicKey
 
+/**
+ * We need the PartySerializer instead of simple CordaSerializable since ConsensualStates will be implemented by
+ * end-users, so they'll depend on the interface. Also, the PartyImpl class won't be visible them. So the automatic
+ * serializer needs a clear path from Party to PartyImpl to work with their classes
+ */
 @Component(service = [InternalCustomSerializer::class])
 class PartySerializer @Activate constructor() : BaseProxySerializer<Party, PartySerializer.PartyProxy>() {
     override fun toProxy(obj: Party): PartyProxy = PartyProxy(obj.name.toString(), obj.owningKey)
