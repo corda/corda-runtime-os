@@ -13,7 +13,6 @@
     bnd.identity;id='net.corda.member-processor',\
     bnd.identity;id='net.corda.group-policy',\
     bnd.identity;id='net.corda.group-policy-impl',\
-    bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='net.corda.registration-impl',\
     bnd.identity;id='net.corda.synchronisation-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
