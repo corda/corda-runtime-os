@@ -81,6 +81,7 @@ class HttpRpcGateway @Activate constructor(
     }
 
     override fun stop() {
+        log.info("Stopping lifecycle coordinator")
         coordinator.stop()
     }
 }

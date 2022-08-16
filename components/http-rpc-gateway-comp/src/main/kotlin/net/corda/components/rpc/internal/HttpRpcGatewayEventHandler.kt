@@ -85,15 +85,16 @@ internal class HttpRpcGatewayEventHandler(
                         LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>()
                     )
                 )
-
-                log.info("Starting permission service and RBAC security manager.")
-                permissionManagementService.start()
-                rbacSecurityManagerService.start()
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        log.info("Registration received UP status. Registering for configuration updates.")
+                        log.info("Registration received UP status.")
+                        log.info("Starting permission service and RBAC security manager.")
+                        permissionManagementService.start()
+                        rbacSecurityManagerService.start()
+
+                        log.info("Registering for configuration updates.")
                         sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
