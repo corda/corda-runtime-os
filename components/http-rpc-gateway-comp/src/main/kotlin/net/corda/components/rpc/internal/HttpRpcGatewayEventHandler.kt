@@ -75,6 +75,7 @@ internal class HttpRpcGatewayEventHandler(
     @Volatile
     private var rpcConfig: SmartConfig? = null
 
+    @Suppress("NestedBlockDepth")
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
