@@ -109,8 +109,7 @@ internal class WebsocketRouteAdaptor(
     // The handler is called when a WebSocket client closes the connection.
     override fun handleClose(ctx: WsCloseContext) {
         try {
-            requireNotNull(channels[ctx.sessionId]).onClose?.invoke(ctx.status(), ctx.reason())
-            channels.remove(ctx.sessionId)
+            channels.remove(ctx.sessionId)?.onClose?.invoke(ctx.status(), ctx.reason())
         } catch (th: Throwable) {
             log.error("Unexpected exception in handleClose", th)
         }
