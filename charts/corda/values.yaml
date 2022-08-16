@@ -49,6 +49,8 @@ nodeSelector: {}
 
 # Database configuration
 db:
+  # Choosing whether the db should be created or not
+  create: false
   # Cluster database configuration
   cluster:
     # -- the cluster database host (required)
