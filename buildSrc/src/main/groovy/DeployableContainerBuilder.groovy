@@ -215,7 +215,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 
-         logger.quiet("releaseType : ${releaseType}  nightlyBuild ${nightlyBuild.get()}")
+         logger.info("***releaseType : ${releaseType}  nightlyBuild ${nightlyBuild.get()}")
 
         if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${containerName}"
