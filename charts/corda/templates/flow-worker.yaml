@@ -52,6 +52,10 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if .Values.workers.flow.profiling.enabled }}
+          - name: profiling
+            containerPort: 10045
+        {{- end }}
         {{- if not .Values.workers.flow.debug.enabled }}
         livenessProbe:
           httpGet:

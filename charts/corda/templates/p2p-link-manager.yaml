@@ -54,6 +54,10 @@ spec:
           - name: debug
             containerPort: 5005
         {{- end }}
+        {{- if .Values.workers.p2pLinkManager.profiling.enabled }}
+          - name: profiling
+            containerPort: 10045
+        {{- end }}
       volumes:
       {{- include "corda.workerVolumes" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
