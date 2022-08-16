@@ -8,7 +8,8 @@ import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTree
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
@@ -18,6 +19,7 @@ import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -30,8 +32,12 @@ class MerkleTreeGeneratorTest {
     private val merkleTreeFactory = mock<MerkleTreeFactory> {
         on {
             createHashDigestProvider(
-                HASH_DIGEST_PROVIDER_DEFAULT_NAME,
-                DigestAlgorithmName.DEFAULT_ALGORITHM_NAME,
+                eq(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME),
+                eq(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME),
+                argThat {
+                    this[HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION] is ByteArray &&
+                        this[HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION] is ByteArray
+                }
             )
         } doReturn digestProvider
         on { createTree(leaves.capture(), eq(digestProvider)) } doReturn tree
