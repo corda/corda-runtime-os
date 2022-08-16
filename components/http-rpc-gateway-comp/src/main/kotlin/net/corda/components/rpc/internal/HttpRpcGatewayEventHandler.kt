@@ -76,7 +76,6 @@ internal class HttpRpcGatewayEventHandler(
         when (event) {
             is StartEvent -> {
                 log.info("Received start event, following dependencies for status updates.")
-
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
@@ -85,22 +84,21 @@ internal class HttpRpcGatewayEventHandler(
                         LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>()
                     )
                 )
+
+                log.info("Starting permission service and RBAC security manager.")
+                permissionManagementService.start()
+                rbacSecurityManagerService.start()
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        log.info("Registration received UP status.")
-                        log.info("Starting permission service and RBAC security manager.")
-                        permissionManagementService.start()
-                        rbacSecurityManagerService.start()
-
-                        log.info("Registering for configuration updates.")
+                        log.info("Registration received UP status. Registering for configuration updates.")
                         sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
                         log.info("Registration received DOWN status. Stopping the Http RPC Gateway.")
-                        coordinator.postEvent(StopEvent())
+                        downTransition()
                     }
                     LifecycleStatus.ERROR -> {
                         log.info("Registration received ERROR status. Stopping the Http RPC Gateway.")
@@ -123,17 +121,24 @@ internal class HttpRpcGatewayEventHandler(
                 log.info("Stop event received, stopping dependencies.")
                 registration?.close()
                 registration = null
-                sub?.close()
-                sub = null
+
                 permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
-                server?.close()
-                server = null
-                sslCertReadService?.stop()
-                sslCertReadService = null
-                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
+
+                downTransition()
             }
         }
+    }
+
+    private fun downTransition() {
+        log.info("Performing down transition.")
+        sub?.close()
+        sub = null
+        server?.close()
+        server = null
+        sslCertReadService?.stop()
+        sslCertReadService = null
+        dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
     }
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
