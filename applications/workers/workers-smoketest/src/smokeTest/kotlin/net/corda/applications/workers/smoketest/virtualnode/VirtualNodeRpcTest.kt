@@ -70,7 +70,7 @@ class VirtualNodeRpcTest {
             // BUG:  returning "OK" feels 'weakly' typed
             val json = assertWithRetry {
                 // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(60))
+                timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
                 condition {
@@ -214,16 +214,12 @@ class VirtualNodeRpcTest {
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
-            assertWithRetry {
-                timeout(Duration.of(30, ChronoUnit.SECONDS))
-                command { vNodeList() }
-                condition {
-                    it.code == 200 &&
-                            it.toJson()["virtualNodes"].any { virtualNode ->
-                                virtualNode["holdingIdentity"]["x500Name"].textValue() == X500_ALICE
-                            }
-                }
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val nodes = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["x500Name"].textValue()
             }
+
+            assertThat(nodes).contains(X500_ALICE)
         }
     }
 
@@ -247,9 +243,9 @@ class VirtualNodeRpcTest {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
-                        }["state"].textValue() == newState
+                            it.toJson()["virtualNodes"].single { virtualNode ->
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                            }["state"].textValue() == newState
                 }
             }
 
@@ -260,9 +256,9 @@ class VirtualNodeRpcTest {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
-                        }["state"].textValue() == oldState
+                            it.toJson()["virtualNodes"].single { virtualNode ->
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                            }["state"].textValue() == oldState
                 }
             }
         }
@@ -302,7 +298,7 @@ class VirtualNodeRpcTest {
             // Check that timestamp for CPK been updated
             // Cannot use `assertWithRetry` as there is a strict type `Instant`
             // Allow ample time for CPI upload to be propagated through the system
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -334,7 +330,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -366,7 +362,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
 
