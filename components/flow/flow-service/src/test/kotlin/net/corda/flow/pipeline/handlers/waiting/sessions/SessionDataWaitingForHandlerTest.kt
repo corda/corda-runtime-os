@@ -121,7 +121,7 @@ class SessionDataWaitingForHandlerTest {
 
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.ERROR))
             .thenReturn(listOf(sessionStateTwo))
-        whenever(flowSessionManager.nextOrderedMessageIsClose(checkpoint))
+        whenever(flowSessionManager.getSessionsWithNextMessageClose(checkpoint))
             .thenReturn(listOf(sessionStateThree))
 
         val inputContext = buildFlowEventContext(
@@ -211,7 +211,7 @@ class SessionDataWaitingForHandlerTest {
 
         assertEquals(FlowContinuation.Run(mapOf(SESSION_ID to DATA)), continuation)
         verify(flowSessionManager).getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.ERROR)
-        verify(flowSessionManager).nextOrderedMessageIsClose(checkpoint)
+        verify(flowSessionManager).getSessionsWithNextMessageClose(checkpoint)
     }
 
     @Test
@@ -259,7 +259,7 @@ class SessionDataWaitingForHandlerTest {
         whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions)).thenReturn(receivedEvents)
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.ERROR))
             .thenReturn(listOf(sessionStateTwo))
-        whenever(flowSessionManager.nextOrderedMessageIsClose(checkpoint))
+        whenever(flowSessionManager.getSessionsWithNextMessageClose(checkpoint))
             .thenReturn(listOf(sessionStateThree))
 
         val inputContext = buildFlowEventContext(

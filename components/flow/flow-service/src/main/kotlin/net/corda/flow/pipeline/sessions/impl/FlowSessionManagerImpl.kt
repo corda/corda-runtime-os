@@ -125,16 +125,17 @@ class FlowSessionManagerImpl @Activate constructor(
         }
     }
 
-    override fun nextOrderedMessageIsClose(
+    override fun getSessionsWithNextMessageClose(
         checkpoint: FlowCheckpoint
     ): List<SessionState> {
         return checkpoint.sessions.mapNotNull { sessionState ->
             val receivedEventsState = sessionState.receivedEventsState
-            val undeliveredMessages = receivedEventsState.undeliveredMessages
             val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
-            undeliveredMessages.find { message ->
-                message == undeliveredMessages.first() && message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose
-            }?.let { sessionState }
+            receivedEventsState.undeliveredMessages.firstOrNull()?.let { message ->
+                if (message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose) {
+                    sessionState
+                } else null
+            }
         }
     }
 

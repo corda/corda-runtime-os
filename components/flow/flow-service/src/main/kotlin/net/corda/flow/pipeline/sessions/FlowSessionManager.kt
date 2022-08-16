@@ -175,7 +175,7 @@ interface FlowSessionManager {
      * @param checkpoint The checkpoint to check states within
      * @return The list of states whose next received ordered message is a SessionClose
      */
-    fun nextOrderedMessageIsClose(
+    fun getSessionsWithNextMessageClose(
         checkpoint: FlowCheckpoint
     ): List<SessionState>
 }

@@ -610,7 +610,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
 
-        val closingList = flowSessionManager.nextOrderedMessageIsClose(checkpoint)
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
         assertThat(closingList).isNotEmpty
         assertThat(closingList.first().sessionId).isEqualTo(SESSION_ID)
     }
@@ -632,7 +632,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
 
-        val closingList = flowSessionManager.nextOrderedMessageIsClose(checkpoint)
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
         assertThat(closingList).isEmpty()
     }
 
@@ -652,7 +652,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
 
-        val closingList = flowSessionManager.nextOrderedMessageIsClose(checkpoint)
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
         assertThat(closingList).isEmpty()
     }
 
