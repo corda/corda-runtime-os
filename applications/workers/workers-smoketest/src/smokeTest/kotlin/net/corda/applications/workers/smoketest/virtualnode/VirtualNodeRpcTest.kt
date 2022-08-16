@@ -31,6 +31,7 @@ const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/flow-worker-dev.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
+
 /**
  * Any 'unordered' tests are run *last*
  */
@@ -74,7 +75,8 @@ class VirtualNodeRpcTest {
                 interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
                 condition {
-                    it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
+                }
                 immediateFailCondition {
                     it.code == 400
                             && null != it.toJson()["details"]
@@ -118,15 +120,14 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 400) {
+                        if (it.code == 400) {
                             val json = it.toJson()["details"]
                             json.has("errorMessage")
                                     && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
                         } else {
                             false
                         }
-                    }
-                    catch (e: Exception) {
+                    } catch (e: Exception) {
                         println("Failed, repsonse: $it")
                         false
                     }
