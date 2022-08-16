@@ -18,7 +18,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationTargetException
-import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
 
 /**
  * [RouteProvider] implementations are responsible for returning route mapping information to the requesting server implementation.
@@ -154,13 +153,12 @@ internal class RouteInfo(
 
     internal fun setupWsCall(
         securityManager: HttpRpcSecurityManager,
-        credentialResolver: DefaultCredentialResolver,
-        webSocketCloserService: WebSocketCloserService
+        credentialResolver: DefaultCredentialResolver
     ): (WsConfig) -> Unit {
         return { wsConfig ->
             log.info("Setting-up WS call for '$fullPath'")
             try {
-                val adaptor = WebsocketRouteAdaptor(this, securityManager, credentialResolver, webSocketCloserService)
+                val adaptor = WebsocketRouteAdaptor(this, securityManager, credentialResolver)
                 wsConfig.onMessage(adaptor)
                 wsConfig.onClose(adaptor)
                 wsConfig.onConnect(adaptor)

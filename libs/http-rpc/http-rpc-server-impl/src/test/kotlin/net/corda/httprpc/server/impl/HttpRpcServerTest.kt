@@ -24,7 +24,6 @@ import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.Path
 import java.nio.file.Paths
-import org.mockito.kotlin.mock
 
 class HttpRpcServerTest {
 
@@ -52,8 +51,7 @@ class HttpRpcServerTest {
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
                     OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
-                    multiPartDir,
-                    mock()
+                    multiPartDir
                 )
             },
             SSL_PASSWORD_MISSING
@@ -80,8 +78,7 @@ class HttpRpcServerTest {
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
                     OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
-                    multiPartDir,
-                    mock()
+                    multiPartDir
                 )
             },
             INSECURE_SERVER_DEV_MODE_WARNING
@@ -130,8 +127,7 @@ class HttpRpcServerTest {
                 SecurityManagerRPCImpl(emptySet()),
                 configProvider,
                 OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
-                multiPartDir,
-                mock()
+                multiPartDir
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage(

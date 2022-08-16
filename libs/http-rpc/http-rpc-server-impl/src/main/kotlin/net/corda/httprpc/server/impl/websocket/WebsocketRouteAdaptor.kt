@@ -35,7 +35,6 @@ internal class WebsocketRouteAdaptor(
     private val routeInfo: RouteInfo,
     private val securityManager: HttpRpcSecurityManager,
     private val credentialResolver: DefaultCredentialResolver,
-    private val webSocketCloserService: WebSocketCloserService
 ) : WsMessageHandler, WsCloseHandler,
     WsConnectHandler, WsErrorHandler {
 
@@ -56,7 +55,7 @@ internal class WebsocketRouteAdaptor(
             }
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
-            ServerDuplexChannel(ctx, webSocketCloserService, ctx.sessionId).let { newChannel ->
+            ServerDuplexChannel(ctx, ctx.sessionId).let { newChannel ->
                 channels[ctx.sessionId] = newChannel
 
                 ctx.session.idleTimeout = WEBSOCKET_IDLE_TIMEOUT

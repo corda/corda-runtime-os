@@ -22,7 +22,6 @@ import net.corda.httprpc.RpcOps
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
-import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
 
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
@@ -57,7 +56,6 @@ class HttpRpcServerImpl(
         httpRpcObjectConfigProvider,
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider),
         multiPartDir,
-        DeferredWebSocketCloserService()
     )
 
 

@@ -75,8 +75,8 @@ private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldi
                 }
 
                 log.info(
-                    "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for " +
-                            "clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash}"
+                    "Flow ${avroStatus.flowStatus}. Closing WebSocket connection(s) for duplex channel ${this.id}" +
+                            " (clientRequestId: $clientRequestId, holdingId: ${holdingIdentity.toCorda().shortHash})"
                 )
                 close("Flow ${avroStatus.flowStatus.name} since it is a terminal state")
             }
