@@ -222,8 +222,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
         builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
-        
-
         if (System.properties['os.arch'] == "aarch64") {
             logger.quiet("Detected arm64 host, switching Jib to produce arm64 images")
             Set<Platform> platformSet = new HashSet<Platform>()
