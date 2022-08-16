@@ -46,15 +46,14 @@ fun createStaticMemberGroupPolicyJson(
         "protocolParameters" to mapOf(
             "sessionKeyPolicy" to "Combined",
             "staticNetwork" to mapOf(
-                "members" to
-                        e2eCluster.members.map {
-                            mapOf(
-                                "name" to it.name,
-                                "memberStatus" to "ACTIVE",
-                                "endpointUrl-1" to e2eCluster.p2pUrl,
-                                "endpointProtocol-1" to 1
-                            )
-                        }
+                "members" to e2eCluster.members.map {
+                    mapOf(
+                        "name" to it.name,
+                        "memberStatus" to "ACTIVE",
+                        "endpointUrl-1" to e2eCluster.p2pUrl,
+                        "endpointProtocol-1" to 1
+                    )
+                }
             )
         ),
         "p2pParameters" to mapOf(
@@ -138,12 +137,12 @@ fun E2eCluster.getGroupId(
 }
 
 /**
- * Assert that a member represented by a holding ID can find the member represented by [MemberTestData] in it's
+ * Assert that a member represented by a holding ID can find the member represented by [E2eClusterMember] in it's
  * member list.
  */
 fun E2eCluster.assertMemberInMemberList(
     holdingId: String,
-    member: MemberTestData
+    member: E2eClusterMember
 ) {
     eventually(
         duration = 60.seconds,

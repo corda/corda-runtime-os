@@ -19,21 +19,21 @@ abstract class E2eClusterConfig {
     val p2pPort: Int get() = System.getProperty(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT
 }
 
-object E2eClusterAConfig : E2eClusterConfig() {
+internal object E2eClusterAConfig : E2eClusterConfig() {
     override val rpcHostPropertyName = "E2E_CLUSTER_A_RPC_HOST"
     override val rpcPortPropertyName = "E2E_CLUSTER_A_RPC_PORT"
     override val p2pHostPropertyName = "E2E_CLUSTER_A_P2P_HOST"
     override val p2pPortPropertyName = "E2E_CLUSTER_A_P2P_PORT"
 }
 
-object E2eClusterBConfig : E2eClusterConfig() {
+internal object E2eClusterBConfig : E2eClusterConfig() {
     override val rpcHostPropertyName = "E2E_CLUSTER_B_RPC_HOST"
     override val rpcPortPropertyName = "E2E_CLUSTER_B_RPC_PORT"
     override val p2pHostPropertyName = "E2E_CLUSTER_B_P2P_HOST"
     override val p2pPortPropertyName = "E2E_CLUSTER_B_P2P_PORT"
 }
 
-object E2eClusterCConfig : E2eClusterConfig() {
+internal object E2eClusterCConfig : E2eClusterConfig() {
     override val rpcHostPropertyName = "E2E_CLUSTER_C_RPC_HOST"
     override val rpcPortPropertyName = "E2E_CLUSTER_C_RPC_PORT"
     override val p2pHostPropertyName = "E2E_CLUSTER_C_P2P_HOST"

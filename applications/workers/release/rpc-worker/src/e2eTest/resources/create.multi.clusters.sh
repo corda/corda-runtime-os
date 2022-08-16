@@ -11,7 +11,7 @@ create_cluster() {
   kubectl delete ns $NAMESPACE || echo "Name space $NAMESPACE not exists"
   kubectl create ns $NAMESPACE
   kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
-  kubectl label ns $NAMESPACE branch=yift-registration-e2e --overwrite=true
+  kubectl label ns $NAMESPACE branch=$USER-registration-e2e --overwrite=true
 
   cd ~/corda-dev-helm/
 

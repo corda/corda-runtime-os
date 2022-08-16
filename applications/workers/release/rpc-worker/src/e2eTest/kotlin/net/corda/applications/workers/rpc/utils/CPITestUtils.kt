@@ -18,7 +18,7 @@ private val cordaVersion by lazy {
     manifest?.mainAttributes?.getValue("Bundle-Version") ?: "5.0.0.0-SNAPSHOT"
 }
 
-fun TestToolkit.createEmptyJarWithManifest(groupPolicy: ByteArray): ByteArray {
+internal fun TestToolkit.createEmptyJarWithManifest(groupPolicy: ByteArray): ByteArray {
     return ByteArrayOutputStream().use { outputStream ->
         val manifest = Manifest()
         manifest.mainAttributes[Attributes.Name.MANIFEST_VERSION] = "1.0"

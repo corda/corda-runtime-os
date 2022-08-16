@@ -1,6 +1,7 @@
 package net.corda.applications.workers.rpc.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
@@ -16,6 +17,7 @@ import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
@@ -59,7 +61,7 @@ fun E2eCluster.uploadCpi(
 }
 
 fun E2eCluster.createVirtualNode(
-    member: MemberTestData,
+    member: E2eClusterMember,
     cpiCheckSum: String
 ) = with(testToolkit) {
     httpClientFor(VirtualNodeRPCOps::class.java)
@@ -73,7 +75,9 @@ fun E2eCluster.createVirtualNode(
                     cryptoDdlConnection = null,
                     cryptoDmlConnection = null,
                 )
-            ).holdingIdentity.shortHash
+            ).holdingIdentity.shortHash.also {
+                member.holdingId = it
+            }
         }
 }
 
@@ -102,7 +106,7 @@ fun E2eCluster.keyExists(
         }
 }
 
-fun E2eCluster.generateKeyPair(
+fun E2eCluster.generateKeyPairIfNotExists(
     tenantId: String,
     cat: String
 ) = with(testToolkit) {
@@ -209,6 +213,132 @@ fun E2eCluster.disableCLRChecks() = with(testToolkit) {
                     ConfigSchemaVersion(1, 0)
                 )
             )
+        }
+    }
+}
+
+/**
+ * Onboard all members in a cluster definition using a given CPI checksum.
+ * Returns a map from member X500 name to holding ID.
+ */
+fun E2eCluster.onboardMembers(
+    mgm: E2eClusterMember,
+    memberGroupPolicy: String
+): List<E2eClusterMember> {
+    val holdingIds = mutableListOf<E2eClusterMember>()
+    val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray())
+    members.forEach { member ->
+        createVirtualNode(member, memberCpiChecksum)
+
+        assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
+        assignSoftHsm(member.holdingId, HSM_CAT_LEDGER)
+
+        if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
+            val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
+            val memberTlsCsr = generateCsr(member, memberTlsKeyId)
+            val memberTlsCert = getCa().generateCert(memberTlsCsr)
+            uploadTlsCertificate(memberTlsCert)
+        }
+
+        val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
+        val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
+
+        setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+
+        assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
+        register(
+            member.holdingId,
+            createMemberRegistrationContext(
+                this,
+                memberSessionKeyId,
+                memberLedgerKeyId
+            )
+        )
+
+        // Check registration complete.
+        // Eventually we can use the registration status endpoint.
+        // For now just assert we have received our own member data.
+        assertMemberInMemberList(
+            member.holdingId,
+            member
+        )
+    }
+    return holdingIds
+}
+
+fun E2eCluster.onboardMgm(
+    mgm: E2eClusterMember
+) {
+    val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), true)
+    createVirtualNode(mgm, cpiChecksum)
+    assignSoftHsm(mgm.holdingId, HSM_CAT_SESSION)
+
+    val mgmSessionKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_SESSION)
+
+    register(
+        mgm.holdingId,
+        createMgmRegistrationContext(
+            tlsTrustRoot = getCa().caCertificate.toPem(),
+            sessionKeyId = mgmSessionKeyId,
+            p2pUrl = p2pUrl
+        )
+    )
+
+    assertOnlyMgmIsInMemberList(mgm.holdingId, mgm.name)
+
+    if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
+        val mgmTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
+        val mgmTlsCsr = generateCsr(mgm, mgmTlsKeyId)
+        val mgmTlsCert = getCa().generateCert(mgmTlsCsr)
+        uploadTlsCertificate(mgmTlsCert)
+    }
+
+    setUpNetworkIdentity(mgm.holdingId, mgmSessionKeyId)
+}
+
+fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray) {
+    val cpiCheckSum = uploadCpi(groupPolicy)
+
+    members.forEach { member ->
+        createVirtualNode(member, cpiCheckSum)
+
+        register(
+            member.holdingId,
+            mapOf(
+                "corda.key.scheme" to KEY_SCHEME
+            )
+        )
+
+        // Check registration complete.
+        // Eventually we can use the registration status endpoint.
+        // For now just assert we have received our own member data.
+        assertMemberInMemberList(
+            member.holdingId,
+            member
+        )
+    }
+}
+
+fun E2eCluster.assertAllMembersAreInMemberList(
+    member: E2eClusterMember,
+    allMembers: List<E2eClusterMember>
+) {
+    eventually(
+        waitBetween = 2.seconds,
+        duration = 60.seconds
+    ) {
+        val groupId = getGroupId(member.holdingId)
+        lookupMembers(member.holdingId).also { result ->
+            val expectedList = allMembers.map { member -> member.name }
+            assertThat(result)
+                .hasSize(allMembers.size)
+                .allSatisfy { memberInfo ->
+                    assertThat(memberInfo.status).isEqualTo("ACTIVE")
+                    assertThat(memberInfo.groupId).isEqualTo(groupId)
+                }
+            assertThat(result.map { memberInfo -> memberInfo.name })
+                .hasSize(allMembers.size)
+                .containsExactlyInAnyOrderElementsOf(expectedList)
         }
     }
 }

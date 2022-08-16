@@ -35,7 +35,7 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
 }
 
 fun E2eCluster.generateCsr(
-    member: MemberTestData,
+    member: E2eClusterMember,
     tlsKeyId: String
 ) = with(testToolkit) {
     httpClientFor(CertificatesRpcOps::class.java)

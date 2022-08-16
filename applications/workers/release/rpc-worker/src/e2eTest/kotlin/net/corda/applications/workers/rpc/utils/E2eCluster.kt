@@ -5,7 +5,7 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.kafka.KafkaTestToolKit
 
 interface E2eCluster {
-    val members: List<MemberTestData>
+    val members: List<E2eClusterMember>
 
     val clusterConfig: E2eClusterConfig
 
@@ -15,10 +15,10 @@ interface E2eCluster {
 
     val p2pUrl: String
 
-    fun addMembers(membersToAdd: List<MemberTestData>)
+    fun addMembers(membersToAdd: List<E2eClusterMember>)
 }
 
-object E2eClusterFactory {
+internal object E2eClusterFactory {
     fun getE2eCluster(clusterConfig: E2eClusterConfig = E2eClusterAConfig): E2eCluster {
         return E2eClusterImpl(clusterConfig)
     }
@@ -27,7 +27,7 @@ object E2eClusterFactory {
 private class E2eClusterImpl(
     override val clusterConfig: E2eClusterConfig
 ) : E2eCluster {
-    override val members = mutableListOf<MemberTestData>()
+    override val members = mutableListOf<E2eClusterMember>()
 
     override val testToolkit by TestToolkitProperty(
         clusterConfig.rpcHost,
@@ -40,7 +40,7 @@ private class E2eClusterImpl(
         KafkaTestToolKit(testToolkit)
     }
 
-    override fun addMembers(membersToAdd: List<MemberTestData>) {
+    override fun addMembers(membersToAdd: List<E2eClusterMember>) {
         members.addAll(membersToAdd)
     }
 }

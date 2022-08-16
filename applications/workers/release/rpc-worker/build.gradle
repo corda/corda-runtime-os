@@ -100,8 +100,8 @@ tasks.named('e2eTest') {
     if(System.getenv("E2E_CLUSTER_B_RPC_HOST") == null) {
         systemProperty "E2E_CLUSTER_B_RPC_HOST", project.getProperties().getOrDefault("e2eClusterBRpcHost","localhost")
     }
-    if(System.getenv("E2E_CLUSTER_C_RPC_PORT") == null) {
-        systemProperty "E2E_CLUSTER_C_RPC_PORT", project.getProperties().getOrDefault("e2eClusterBRpcPort","8888")
+    if(System.getenv("E2E_CLUSTER_B_RPC_PORT") == null) {
+        systemProperty "E2E_CLUSTER_B_RPC_PORT", project.getProperties().getOrDefault("e2eClusterBRpcPort","8888")
     }
     if(System.getenv("E2E_CLUSTER_C_RPC_HOST") == null) {
         systemProperty "E2E_CLUSTER_C_RPC_HOST", project.getProperties().getOrDefault("e2eClusterCRpcHost","localhost")
