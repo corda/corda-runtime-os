@@ -2,8 +2,8 @@ package net.corda.configuration.write.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.write.impl.writer.CLIENT_NAME_RPC
-import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
 import net.corda.configuration.write.impl.writer.GROUP_NAME
+import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -12,7 +12,6 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
