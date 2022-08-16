@@ -49,8 +49,8 @@ spec:
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         # Add health port when porting Link Manager to common worker framework CORE-4424
-        {{- if .Values.workers.p2pLinkManager.debug.enabled }}
         ports:
+        {{- if .Values.workers.p2pLinkManager.debug.enabled }}
           - name: debug
             containerPort: 5005
         {{- end }}
