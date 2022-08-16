@@ -1,10 +1,6 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -21,6 +17,10 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(ServiceExtension::class)
 class EventLogSubscriptionIntegrationTest {
@@ -126,7 +126,7 @@ class EventLogSubscriptionIntegrationTest {
         assertThat(assigned).contains(9, 10, 1)
 
         // Stop the subscription
-        subscription.stop()
+        subscription.close()
         assertThat(subscription.isRunning).isFalse
 
         // Publish an event
@@ -162,7 +162,7 @@ class EventLogSubscriptionIntegrationTest {
             )
 
         // Stop the subscriber
-        subscription.stop()
+        subscription.close()
         assertThat(subscription.isRunning).isFalse
     }
 

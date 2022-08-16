@@ -141,7 +141,7 @@ class FlowFilterServiceIntegrationTest {
         )
         p2pOutSub.start()
         assertTrue(mapperLatch.await(30, TimeUnit.SECONDS))
-        p2pOutSub.stop()
+        p2pOutSub.close()
 
         flowSessionFilterService.stop()
     }

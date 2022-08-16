@@ -121,7 +121,7 @@ class FlowMapperServiceIntegrationTest {
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
-        p2pOutSub.stop()
+        p2pOutSub.close()
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
@@ -143,7 +143,7 @@ class FlowMapperServiceIntegrationTest {
 
         flowEventSub.start()
         assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
-        flowEventSub.stop()
+        flowEventSub.close()
     }
 
     @Test
@@ -211,7 +211,7 @@ class FlowMapperServiceIntegrationTest {
             )
         ).withFailMessage("latch was ${flowEventLatch.count}").isTrue
 
-        flowEventSub.stop()
+        flowEventSub.close()
     }
 
     @Test
@@ -235,7 +235,7 @@ class FlowMapperServiceIntegrationTest {
         )
         p2pOutSub.start()
         assertFalse(p2pLatch.await(3, TimeUnit.SECONDS))
-        p2pOutSub.stop()
+        p2pOutSub.close()
     }
 
     @Test
@@ -265,7 +265,7 @@ class FlowMapperServiceIntegrationTest {
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
-        p2pOutSub.stop()
+        p2pOutSub.close()
 
         // Publish the config again to trigger the update logic
         publishConfig(publisher)
@@ -290,7 +290,7 @@ class FlowMapperServiceIntegrationTest {
 
         flowEventSub.start()
         assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
-        flowEventSub.stop()
+        flowEventSub.close()
     }
 
 
