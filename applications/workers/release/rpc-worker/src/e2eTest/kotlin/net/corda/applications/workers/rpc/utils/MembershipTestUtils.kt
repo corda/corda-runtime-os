@@ -34,7 +34,7 @@ fun createMGMGroupPolicyJson(
 fun createStaticMemberGroupPolicyJson(
     ca: CertificateAuthority,
     groupId: String,
-    cluster: ClusterTestData,
+    e2eCluster: E2eCluster,
 ): ByteArray {
     val groupPolicy = mapOf(
         "fileFormatVersion" to 1,
@@ -47,11 +47,11 @@ fun createStaticMemberGroupPolicyJson(
             "sessionKeyPolicy" to "Combined",
             "staticNetwork" to mapOf(
                 "members" to
-                        cluster.members.map {
+                        e2eCluster.members.map {
                             mapOf(
                                 "name" to it.name,
                                 "memberStatus" to "ACTIVE",
-                                "endpointUrl-1" to cluster.p2pUrl,
+                                "endpointUrl-1" to e2eCluster.p2pUrl,
                                 "endpointProtocol-1" to 1
                             )
                         }
@@ -96,7 +96,7 @@ fun createMgmRegistrationContext(
 )
 
 fun createMemberRegistrationContext(
-    memberCluster: ClusterTestData,
+    memberE2eCluster: E2eCluster,
     sessionKeyId: String,
     ledgerKeyId: String
 ) = mapOf(
@@ -104,7 +104,7 @@ fun createMemberRegistrationContext(
     "corda.session.key.signature.spec" to SIGNATURE_SPEC,
     "corda.ledger.keys.0.id" to ledgerKeyId,
     "corda.ledger.keys.0.signature.spec" to SIGNATURE_SPEC,
-    "corda.endpoints.0.connectionURL" to memberCluster.p2pUrl,
+    "corda.endpoints.0.connectionURL" to memberE2eCluster.p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1"
 )
 
@@ -112,7 +112,7 @@ val RpcMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not f
 val RpcMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
 val RpcMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not find member name")
 
-fun ClusterTestData.assertOnlyMgmIsInMemberList(
+fun E2eCluster.assertOnlyMgmIsInMemberList(
     holdingId: String,
     mgmName: String
 ) = lookupMembers(holdingId).also { result ->
@@ -124,7 +124,7 @@ fun ClusterTestData.assertOnlyMgmIsInMemberList(
         }
 }
 
-fun ClusterTestData.getGroupId(
+fun E2eCluster.getGroupId(
     holdingId: String
 ): String = eventually {
     lookupMembers(holdingId).let { result ->
@@ -141,7 +141,7 @@ fun ClusterTestData.getGroupId(
  * Assert that a member represented by a holding ID can find the member represented by [MemberTestData] in it's
  * member list.
  */
-fun ClusterTestData.assertMemberInMemberList(
+fun E2eCluster.assertMemberInMemberList(
     holdingId: String,
     member: MemberTestData
 ) {
@@ -157,7 +157,7 @@ fun ClusterTestData.assertMemberInMemberList(
     }
 }
 
-fun ClusterTestData.lookupMembers(
+fun E2eCluster.lookupMembers(
     holdingId: String
 ) = with(testToolkit) {
     httpClientFor(MemberLookupRpcOps::class.java)

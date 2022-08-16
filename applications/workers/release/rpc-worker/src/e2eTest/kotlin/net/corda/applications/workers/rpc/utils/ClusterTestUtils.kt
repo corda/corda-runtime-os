@@ -25,7 +25,7 @@ const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
 
-fun ClusterTestData.uploadCpi(
+fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
     isMgm: Boolean = false
 ) = with(testToolkit) {
@@ -58,7 +58,7 @@ fun ClusterTestData.uploadCpi(
     }
 }
 
-fun ClusterTestData.createVirtualNode(
+fun E2eCluster.createVirtualNode(
     member: MemberTestData,
     cpiCheckSum: String
 ) = with(testToolkit) {
@@ -77,7 +77,7 @@ fun ClusterTestData.createVirtualNode(
         }
 }
 
-fun ClusterTestData.keyExists(
+fun E2eCluster.keyExists(
     tenantId: String,
     cat: String
 ) = with(testToolkit) {
@@ -102,7 +102,7 @@ fun ClusterTestData.keyExists(
         }
 }
 
-fun ClusterTestData.generateKeyPair(
+fun E2eCluster.generateKeyPair(
     tenantId: String,
     cat: String
 ) = with(testToolkit) {
@@ -136,7 +136,7 @@ fun ClusterTestData.generateKeyPair(
         }
 }
 
-fun ClusterTestData.assignSoftHsm(
+fun E2eCluster.assignSoftHsm(
     holdingId: String,
     cat: String
 ) = with(testToolkit) {
@@ -146,7 +146,7 @@ fun ClusterTestData.assignSoftHsm(
         }
 }
 
-fun ClusterTestData.register(
+fun E2eCluster.register(
     holdingId: String,
     context: Map<String, String>
 ) = with(testToolkit) {
@@ -164,7 +164,7 @@ fun ClusterTestData.register(
         }
 }
 
-fun ClusterTestData.generateGroupPolicy(
+fun E2eCluster.generateGroupPolicy(
     holdingId: String
 ) = with(testToolkit) {
     httpClientFor(MGMRpcOps::class.java).use { client ->
@@ -172,7 +172,7 @@ fun ClusterTestData.generateGroupPolicy(
     }
 }
 
-fun ClusterTestData.setUpNetworkIdentity(
+fun E2eCluster.setUpNetworkIdentity(
     holdingId: String,
     sessionKeyId: String
 ) = with(testToolkit) {
@@ -189,7 +189,7 @@ fun ClusterTestData.setUpNetworkIdentity(
     }
 }
 
-fun ClusterTestData.disableCLRChecks() = with(testToolkit) {
+fun E2eCluster.disableCLRChecks() = with(testToolkit) {
     val sslConfig = "sslConfig"
     val revocationCheck = "revocationCheck"
     val mode = "mode"

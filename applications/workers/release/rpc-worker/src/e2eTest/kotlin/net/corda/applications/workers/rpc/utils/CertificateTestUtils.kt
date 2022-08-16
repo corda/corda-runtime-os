@@ -13,8 +13,7 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.File
 
 
-private val tmpPath = "build${File.separator}tmp"
-private val caPath = "$tmpPath${File.separator}e2eTestCa"
+private val caPath = "build${File.separator}tmp${File.separator}e2eTestCa"
 const val TLS_CERT_ALIAS = "p2p-tls-cert"
 
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
@@ -35,7 +34,7 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
     return signCsr(request as PKCS10CertificationRequest).toPem()
 }
 
-fun ClusterTestData.generateCsr(
+fun E2eCluster.generateCsr(
     member: MemberTestData,
     tlsKeyId: String
 ) = with(testToolkit) {
@@ -46,13 +45,13 @@ fun ClusterTestData.generateCsr(
                 tlsKeyId,
                 member.name,
                 HSM_CAT_TLS,
-                listOf(p2pHost),
+                listOf(clusterConfig.p2pHost),
                 null
             )
         }
 }
 
-fun ClusterTestData.uploadTlsCertificate(
+fun E2eCluster.uploadTlsCertificate(
     certificatePem: String
 ) = with(testToolkit) {
     httpClientFor(CertificatesRpcOps::class.java).use { client ->

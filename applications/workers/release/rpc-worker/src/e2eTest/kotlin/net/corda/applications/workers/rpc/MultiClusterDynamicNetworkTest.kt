@@ -1,7 +1,10 @@
 package net.corda.applications.workers.rpc
 
-import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.applications.workers.rpc.utils.ClusterTestData
+import net.corda.applications.workers.rpc.utils.E2eCluster
+import net.corda.applications.workers.rpc.utils.E2eClusterAConfig
+import net.corda.applications.workers.rpc.utils.E2eClusterBConfig
+import net.corda.applications.workers.rpc.utils.E2eClusterCConfig
+import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.HSM_CAT_LEDGER
 import net.corda.applications.workers.rpc.utils.HSM_CAT_SESSION
 import net.corda.applications.workers.rpc.utils.HSM_CAT_TLS
@@ -9,17 +12,16 @@ import net.corda.applications.workers.rpc.utils.MemberTestData
 import net.corda.applications.workers.rpc.utils.P2P_TENANT_ID
 import net.corda.applications.workers.rpc.utils.assertMemberInMemberList
 import net.corda.applications.workers.rpc.utils.assertOnlyMgmIsInMemberList
-import net.corda.applications.workers.rpc.utils.assertP2pConnectivity
 import net.corda.applications.workers.rpc.utils.assignSoftHsm
 import net.corda.applications.workers.rpc.utils.createMGMGroupPolicyJson
 import net.corda.applications.workers.rpc.utils.createMemberRegistrationContext
 import net.corda.applications.workers.rpc.utils.createMgmRegistrationContext
 import net.corda.applications.workers.rpc.utils.createVirtualNode
 import net.corda.applications.workers.rpc.utils.disableCLRChecks
-import net.corda.applications.workers.rpc.utils.generateGroupPolicy
-import net.corda.applications.workers.rpc.utils.generateKeyPair
 import net.corda.applications.workers.rpc.utils.generateCert
 import net.corda.applications.workers.rpc.utils.generateCsr
+import net.corda.applications.workers.rpc.utils.generateGroupPolicy
+import net.corda.applications.workers.rpc.utils.generateKeyPair
 import net.corda.applications.workers.rpc.utils.getCa
 import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.keyExists
@@ -31,7 +33,6 @@ import net.corda.applications.workers.rpc.utils.status
 import net.corda.applications.workers.rpc.utils.uploadCpi
 import net.corda.applications.workers.rpc.utils.uploadTlsCertificate
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.data.identity.HoldingIdentity
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
@@ -41,32 +42,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 /**
- * When running this test locally, three clusters will most likely be too much for your laptop.
- * It is preferable to test this using a deployment on EKS.
- *
- * One script to assist with deploying this is:
- * https://gist.github.com/yift-r3/8993f48af8e576ef102c92465dc99e17
- *
- * Or alternatively:
- *
- * declare -a namespaces=("$USER-cluster-a" "$USER-cluster-b" "$USER-cluster-mgm")
- * for namespace in ${namespaces[@]}; do
- *   kubectl delete ns $namespace
- *   kubectl create ns $namespace
- *
- *   helm upgrade --install prereqs -n $namespace \
- *    oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
- *    --set kafka.replicaCount=1,kafka.zookeeper.replicaCount=1 \
- *    --render-subchart-notes \
- *    --timeout 10m \
- *    --wait
- *
- *   helm upgrade --install corda -n $namespace \
- *    oci://corda-os-docker.software.r3.com/helm-charts/corda \
- *    --version "^0.1.0-beta" \
- *    --values values.yaml --values debug.yaml \
- *    --wait
- * done
+ * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
 @Disabled(
     "CORE-6036. " +
@@ -74,76 +50,31 @@ import org.junit.jupiter.api.Test
             "Remove this to run locally or when CORE-6036 is resolved."
 )
 class MultiClusterDynamicNetworkTest {
-
-    private val mgmRpcHost = System.getProperty("e2eClusterCRpcHost")
-    private val mgmRpcPort = System.getProperty("e2eClusterCRpcPort").toInt()
-    private val mgmP2pHost = System.getProperty("e2eClusterCP2pHost")
-    private val mgmP2pPort = System.getProperty("e2eClusterCP2pPort").toInt()
-    private val mgmTestToolkit by TestToolkitProperty(mgmRpcHost, mgmRpcPort)
-
-    private val aliceRpcHost = System.getProperty("e2eClusterARpcHost")
-    private val aliceRpcPort = System.getProperty("e2eClusterARpcPort").toInt()
-    private val aliceP2pHost = System.getProperty("e2eClusterAP2pHost")
-    private val aliceP2pPort = System.getProperty("e2eClusterAP2pPort").toInt()
-    private val aliceTestToolkit by TestToolkitProperty(aliceRpcHost, aliceRpcPort)
-
-    private val bobRpcHost = System.getProperty("e2eClusterBRpcHost")
-    private val bobRpcPort = System.getProperty("e2eClusterBRpcPort").toInt()
-    private val bobP2pHost = System.getProperty("e2eClusterBP2pHost")
-    private val bobP2pPort = System.getProperty("e2eClusterBP2pPort").toInt()
-    private val bobTestToolkit by TestToolkitProperty(bobRpcHost, bobRpcPort)
-
-    private val mgmCluster = ClusterTestData(
-        mgmTestToolkit,
-        mgmP2pHost,
-        mgmP2pPort,
-        listOf(MemberTestData("O=Mgm, L=London, C=GB, OU=${mgmTestToolkit.uniqueName}"))
-    )
-
-    private val aliceCluster = ClusterTestData(
-        aliceTestToolkit,
-        aliceP2pHost,
-        aliceP2pPort,
-        listOf(
-            MemberTestData("O=Alice, L=London, C=GB, OU=${aliceTestToolkit.uniqueName}"),
+    private val aliceCluster = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
+        cluster.addMembers(
+            listOf(MemberTestData("O=Alice, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
         )
-    )
-    private val bobCluster = ClusterTestData(
-        bobTestToolkit,
-        bobP2pHost,
-        bobP2pPort,
-        listOf(
-            MemberTestData("O=Bob, L=London, C=GB, OU=${bobTestToolkit.uniqueName}"),
-        )
-    )
+    }
 
-    private val clusters = listOf(aliceCluster, bobCluster)
+    private val bobCluster = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
+        cluster.addMembers(
+            listOf(MemberTestData("O=Bob, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
+        )
+    }
+
+    private val mgmCluster = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
+        cluster.addMembers(
+            listOf(MemberTestData("O=Mgm, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
+        )
+    }
+
+    private val memberClusters = listOf(aliceCluster, bobCluster)
 
     private val ca = getCa()
 
     @Test
     fun `Create mgm and allow members to join the group`() {
         onboardMultiClusterGroup()
-    }
-
-    @Disabled("Is disabled and can be run manually until CORE-6079 is complete. At that point this can be " +
-        "merged into the above test.")
-    @Test
-    fun `Onboard group across clusters and check p2p connectivity`() {
-        val groupId = onboardMultiClusterGroup()
-
-        assertP2pConnectivity(
-            HoldingIdentity(
-                aliceCluster.members.first().name,
-                groupId
-            ),
-            HoldingIdentity(
-                bobCluster.members.first().name,
-                groupId
-            ),
-            aliceCluster.kafkaTestToolkit,
-            bobCluster.kafkaTestToolkit
-        )
     }
 
     /**
@@ -190,7 +121,7 @@ class MultiClusterDynamicNetworkTest {
 
         val memberGroupPolicy = mgmCluster.generateGroupPolicy(mgmHoldingId)
 
-        clusters.forEach { cordaCluster ->
+        memberClusters.forEach { cordaCluster ->
             cordaCluster.disableCLRChecks()
             val memberCpiChecksum = cordaCluster.uploadCpi(memberGroupPolicy.toByteArray())
 
@@ -236,9 +167,9 @@ class MultiClusterDynamicNetworkTest {
             }
         }
 
-        val allMembers = clusters.flatMap { it.members } + mgm
-        val clusterMembers = mutableMapOf<ClusterTestData, MutableList<RpcMemberInfo>>()
-        (clusters + mgmCluster).forEach { cordaCluster ->
+        val allMembers = memberClusters.flatMap { it.members } + mgm
+        val clusterMembers = mutableMapOf<E2eCluster, MutableList<RpcMemberInfo>>()
+        (memberClusters + mgmCluster).forEach { cordaCluster ->
             cordaCluster.members.forEach {
                 val holdingId = holdingIds[it.name]
                 assertNotNull(holdingId)

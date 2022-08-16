@@ -1,7 +1,6 @@
 package net.corda.applications.workers.rpc
 
-import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.applications.workers.rpc.utils.ClusterTestData
+import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.HSM_CAT_LEDGER
 import net.corda.applications.workers.rpc.utils.HSM_CAT_SESSION
 import net.corda.applications.workers.rpc.utils.HSM_CAT_TLS
@@ -15,10 +14,10 @@ import net.corda.applications.workers.rpc.utils.createMGMGroupPolicyJson
 import net.corda.applications.workers.rpc.utils.createMemberRegistrationContext
 import net.corda.applications.workers.rpc.utils.createMgmRegistrationContext
 import net.corda.applications.workers.rpc.utils.createVirtualNode
-import net.corda.applications.workers.rpc.utils.generateGroupPolicy
-import net.corda.applications.workers.rpc.utils.generateKeyPair
 import net.corda.applications.workers.rpc.utils.generateCert
 import net.corda.applications.workers.rpc.utils.generateCsr
+import net.corda.applications.workers.rpc.utils.generateGroupPolicy
+import net.corda.applications.workers.rpc.utils.generateKeyPair
 import net.corda.applications.workers.rpc.utils.getCa
 import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.keyExists
@@ -38,26 +37,16 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class SingleClusterDynamicNetworkTest {
-    private val rpcHost = System.getProperty("e2eClusterARpcHost")
-    private val rpcPort = System.getProperty("e2eClusterARpcPort").toInt()
-    private val testToolkit by TestToolkitProperty(rpcHost, rpcPort)
-
-    private val p2pHost = System.getProperty("e2eClusterAP2pHost")
-    private val p2pPort = System.getProperty("e2eClusterAP2pPort").toInt()
+    private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
+        cluster.addMembers(
+            (1..5).map {
+                MemberTestData("C=GB, L=London, O=Member-${cluster.testToolkit.uniqueName}")
+            }
+        )
+    }
 
     private val mgm = MemberTestData(
-        "O=Mgm, L=London, C=GB, OU=${testToolkit.uniqueName}"
-    )
-
-    private val cordaCluster = ClusterTestData(
-        testToolkit,
-        p2pHost,
-        p2pPort,
-        listOf(
-            MemberTestData("O=Alice, L=London, C=GB, OU=${testToolkit.uniqueName}"),
-            MemberTestData("O=Bob, L=London, C=GB, OU=${testToolkit.uniqueName}"),
-            MemberTestData("O=Charlie, L=London, C=GB, OU=${testToolkit.uniqueName}")
-        )
+        "O=Mgm, L=London, C=GB, OU=${cordaCluster.testToolkit.uniqueName}"
     )
 
     private val ca = getCa()
@@ -67,21 +56,20 @@ class SingleClusterDynamicNetworkTest {
         onboardSingleClusterGroup()
     }
 
-    @Disabled("Is disabled and can be run manually until CORE-6079 is complete. At that point this can be " +
-        "merged into the above test.")
+    /*
+    This test is disabled until CORE-6079 is ready.
+    When CORE-6079 is ready, please delete the `Create mgm and allow members to join the group` test
+    (as this one will cover that use case as well)
+    To run it locally while disabled follow the instruction in resources/RunP2PTest.md:
+     */
+    @Disabled("Is disabled and can be run manually until CORE-6079 is complete.")
     @Test
     fun `Onboard group and check p2p connectivity`() {
         val groupId = onboardSingleClusterGroup()
 
         assertP2pConnectivity(
-            HoldingIdentity(
-                cordaCluster.members[0].name,
-                groupId
-            ),
-            HoldingIdentity(
-                cordaCluster.members[1].name,
-                groupId
-            ),
+            HoldingIdentity(cordaCluster.members[0].name, groupId),
+            HoldingIdentity(cordaCluster.members[1].name, groupId),
             cordaCluster.kafkaTestToolkit
         )
     }
@@ -141,10 +129,7 @@ class SingleClusterDynamicNetworkTest {
                 cordaCluster.uploadTlsCertificate(memberTlsCert)
             }
 
-            cordaCluster.setUpNetworkIdentity(
-                memberHoldingId,
-                memberSessionKeyId
-            )
+            cordaCluster.setUpNetworkIdentity(memberHoldingId, memberSessionKeyId)
             cordaCluster.assertOnlyMgmIsInMemberList(memberHoldingId, mgm.name)
 
             cordaCluster.register(
