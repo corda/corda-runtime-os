@@ -133,14 +133,8 @@ class FlowSessionManagerImpl @Activate constructor(
             val undeliveredMessages = receivedEventsState.undeliveredMessages
             val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
             undeliveredMessages.find { message ->
-                message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose
-            }?.let { sessionClose ->
-                if (undeliveredMessages.first() == sessionClose) {
-                    sessionState
-                } else {
-                    null
-                }
-            }
+                message == undeliveredMessages.first() && message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose
+            }?.let { sessionState }
         }
     }
 
