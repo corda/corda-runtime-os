@@ -89,7 +89,7 @@ class CombinedWorker @Activate constructor(
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
         val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.JDBC_URL))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
+            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL) else "jdbc:postgresql://localhost:5432/alice"
         val dbName = dbUrl.split("/").last().split("?").first()
         val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_USER))
             config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER) else "user"
