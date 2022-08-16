@@ -91,6 +91,10 @@ internal class HttpRpcGatewayEventHandler(
                 log.info("Starting permission service and RBAC security manager.")
                 permissionManagementService.start()
                 rbacSecurityManagerService.start()
+
+                log.info("Subscribe to configuration updates.")
+                sub?.close()
+                sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
@@ -134,22 +138,21 @@ internal class HttpRpcGatewayEventHandler(
                 permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
 
+                sub?.close()
+                sub = null
+
                 downTransition()
             }
         }
     }
 
     private fun upTransition(coordinator: LifecycleCoordinator, config: SmartConfig) {
-        sub?.close()
-        sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
         createAndStartHttpRpcServer(config)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun downTransition() {
         log.info("Performing down transition.")
-        sub?.close()
-        sub = null
         server?.close()
         server = null
         sslCertReadService?.stop()
