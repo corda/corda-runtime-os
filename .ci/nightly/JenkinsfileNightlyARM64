@@ -7,7 +7,7 @@ cordaNightlyPipeline(
     publishRepoPrefix: '', // change this to 'corda-ent-maven', when JARs don't overwrite AMD64 ones
     createPostgresDb: true,
     publishOSGiImage: false, // change this to true when images don't overwrite AMD64 ones
-    publishPreTestImage: false, // change this to true when images don't overwrite AMD64 ones
+    publishPreTestImage: true, // change this to true when images don't overwrite AMD64 ones
     publishHelmChart: false, // change this to true when images don't overwrite AMD64 ones
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false, // change this to true when E2E infrastructure is in place
