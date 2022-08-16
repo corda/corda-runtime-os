@@ -214,16 +214,12 @@ class VirtualNodeRpcTest {
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
-            assertWithRetry {
-                timeout(Duration.of(30, ChronoUnit.SECONDS))
-                command { vNodeList() }
-                condition {
-                    it.code == 200 &&
-                            it.toJson()["virtualNodes"].any { virtualNode ->
-                                virtualNode["holdingIdentity"]["x500Name"].textValue() == X500_ALICE
-                            }
-                }
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val nodes = vNodeList().toJson()["virtualNodes"].map {
+                it["holdingIdentity"]["x500Name"].textValue()
             }
+
+            assertThat(nodes).contains(X500_ALICE)
         }
     }
 
@@ -247,9 +243,9 @@ class VirtualNodeRpcTest {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
-                        }["state"].textValue() == newState
+                            it.toJson()["virtualNodes"].single { virtualNode ->
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                            }["state"].textValue() == newState
                 }
             }
 
@@ -260,9 +256,9 @@ class VirtualNodeRpcTest {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
-                        }["state"].textValue() == oldState
+                            it.toJson()["virtualNodes"].single { virtualNode ->
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                            }["state"].textValue() == oldState
                 }
             }
         }
