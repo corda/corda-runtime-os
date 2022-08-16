@@ -1,13 +1,13 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
 import java.io.IOException
-import java.util.Queue
+import java.util.LinkedList
 import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 
 class MessageQueueWebsocketHandler(
-    override val messageQueue: Queue<String>,
+    override val messageQueue: MutableList<String> = LinkedList(),
 ) : NoOpEndpoint(), InternalWebsocketHandler {
 
     private companion object {
