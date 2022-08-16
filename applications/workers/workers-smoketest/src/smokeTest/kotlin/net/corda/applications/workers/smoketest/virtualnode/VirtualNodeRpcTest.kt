@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.GROUP_ID
@@ -24,7 +25,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.temporal.ChronoUnit
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
@@ -70,7 +70,7 @@ class VirtualNodeRpcTest {
             // BUG:  returning "OK" feels 'weakly' typed
             val json = assertWithRetry {
                 // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(60))
+                timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
                 condition {
@@ -298,7 +298,7 @@ class VirtualNodeRpcTest {
             // Check that timestamp for CPK been updated
             // Cannot use `assertWithRetry` as there is a strict type `Instant`
             // Allow ample time for CPI upload to be propagated through the system
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -330,7 +330,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -362,7 +362,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
 

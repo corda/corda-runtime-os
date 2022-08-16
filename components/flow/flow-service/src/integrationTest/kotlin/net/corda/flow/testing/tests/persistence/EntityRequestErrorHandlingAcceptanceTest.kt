@@ -13,7 +13,7 @@ import net.corda.flow.testing.tests.CPK1_CHECKSUM
 import net.corda.flow.testing.tests.FLOW_ID1
 import net.corda.flow.testing.tests.REQUEST_ID1
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.persistence.CordaPersistenceException
+import net.corda.v5.application.persistence.CordaPersistenceException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
