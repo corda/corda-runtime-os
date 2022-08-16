@@ -1,6 +1,5 @@
-package net.corda.ledger.consensual.impl.transaction
+package net.corda.ledger.consensual.impl
 
-import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.types.MemberX500Name
