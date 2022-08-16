@@ -46,7 +46,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "crypto_sign_and_verify" to this::signAndVerify,
-        "crypto_verify_invalid_signature" to this::verifyInvalidSignature
+        "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
+        "context_propagation" to this::contextPropagation
     )
 
     @CordaInject
@@ -209,6 +210,11 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         }
 
         return outputs.joinToString("; ")
+    }
+
+    @Suspendable
+    private fun contextPropagation(@Suppress("UNUSED_PARAMETER") input: RpcSmokeTestInput): String {
+        return launchContextPropagationFlows(flowEngine, jsonMarshallingService)
     }
 
     @Suspendable

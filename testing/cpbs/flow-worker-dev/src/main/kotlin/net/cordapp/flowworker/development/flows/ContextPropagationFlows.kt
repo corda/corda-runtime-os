@@ -4,8 +4,6 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.set
@@ -14,10 +12,8 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
-import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.util.contextLogger
 
 @CordaSerializable
 data class FlowOutput(
@@ -27,11 +23,18 @@ data class FlowOutput(
 )
 
 @CordaSerializable
+data class MainSubFlowOutput(
+    val thisFlow: FlowOutput,
+    val initiatedFlow: InitiatedFlowOutput
+)
+
+@CordaSerializable
 data class InitiatedFlowOutput(
-    val initiatedFlow: FlowOutput,
+    val thisFlow: FlowOutput,
     val initiatedSubFlow: FlowOutput,
 )
 
+@CordaSerializable
 data class ContextPropagationOutput(
     val rpcFlow: FlowOutput,
     val rpcSubFlow: FlowOutput,
@@ -40,12 +43,91 @@ data class ContextPropagationOutput(
     val rpcFlowAtComplete: FlowOutput,
 )
 
-@InitiatingFlow(protocol = "contextPropagationProtocol")
-class ContextPropagationFlow : RPCStartableFlow {
+private const val CORDA_ACCOUNT = "corda.account"
+private const val ERROR_VALUE = "error"
+private const val NULL_VALUE = "null"
 
-    private companion object {
-        val log = contextLogger()
+/**
+ * Launches multiple flows and extracts and collates configuration from each:
+ *
+ * main test flow (function launch point)
+ *  -> ContextPropagationMainSubFlow sub flow
+ *    -> ContextPropagationInitiatedFlow initiated flow
+ *      -> ContextPropagationInitiatedSubFlow sub flow
+ *
+ * Because this test is not able to control the protocol for the main test flow, it cannot launch an initiated flow
+ * itself, instead the protocols are local to the first sub flow launched.
+ */
+@Suspendable
+fun launchContextPropagationFlows(
+    flowEngine: FlowEngine,
+    jsonMarshallingService: JsonMarshallingService
+): String {
+    val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+
+    flowEngine.flowContextProperties.set("user1", "user1-set")
+    val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
+    val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
+
+    // Sub flow will send its context back
+    val mainSubFlowOutput = flowEngine.subFlow(ContextPropagationMainSubFlow())
+
+    val rpcFlowOutput = FlowOutput(
+        platform = account,
+        user1 = user1,
+        user2 = user2
+    )
+
+    // Refetch the original properties again to ensure nothing in the Flow execution path has corrupted them
+    val rpcFlowOutputReFetchAtComplete = FlowOutput(
+        platform = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE,
+        user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE,
+        user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
+    )
+
+    /* This is the expected output
+       Values that are missing incorrectly will be marked as 'error'
+    {
+      "rpcFlow": {
+        "platform": "account-zero",
+        "user1": "user1-set",
+        "user2": "null"
+      },
+      "rpcSubFlow": {
+        "platform": "account-zero",
+        "user1": "user1-set",
+        "user2": "user2-set"
+      },
+      "initiatedFlow": {
+        "platform": "account-zero",
+        "user1": "user1-set",
+        "user2": "user2-set"
+      },
+      "initiatedSubFlow": {
+        "platform": "account-zero",
+        "user1": "user1-set",
+        "user2": "user2-set-ContextPropagationInitiatedFlow"
+      },
+      "rpcFlowAtComplete": {
+        "platform": "account-zero",
+        "user1": "user1-set",
+        "user2": "null"
+      }
     }
+    */
+    return jsonMarshallingService.format(
+        ContextPropagationOutput(
+            rpcFlow = rpcFlowOutput,
+            rpcSubFlow = mainSubFlowOutput.thisFlow,
+            initiatedFlow = mainSubFlowOutput.initiatedFlow.thisFlow,
+            initiatedSubFlow = mainSubFlowOutput.initiatedFlow.initiatedSubFlow,
+            rpcFlowAtComplete = rpcFlowOutputReFetchAtComplete
+        )
+    )
+}
+
+@InitiatingFlow(protocol = "contextPropagationProtocol")
+class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
@@ -53,121 +135,87 @@ class ContextPropagationFlow : RPCStartableFlow {
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
 
-    @CordaInject
-    lateinit var jsonMarshallingService: JsonMarshallingService
-
     @Suspendable
-    override fun call(requestBody: RPCRequestData): String {
-        val account = flowEngine.flowContextProperties.get("account") ?: "error"
-        log.info("@@@ rpc flow: account from context:${account}")
+    override fun call(): MainSubFlowOutput {
+        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
 
-        flowEngine.flowContextProperties.set("user1", "user1-set")
-        val user1 = flowEngine.flowContextProperties.get("user1") ?: "error"
-        log.info("@@@ rpc flow: user from context:${user1}")
-
-        log.info("@@@ initiating session")
-        val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName)
-        log.info("@@@ initiated")
-        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>().unwrap { it }
-        log.info("@@@ received message")
-
-        val subFlowOutput = flowEngine.subFlow(ChatSubFlow("1"))
-
-        val user2 = flowEngine.flowContextProperties.get("user2") ?: "null"
-        log.info("@@@ rpc flow: user2 from context:${user2}")
-
-        val rpcFlowOutput = FlowOutput(
-            platform = account,
-            user1 = user1,
-            user2 = user2
-        )
-
-        // Refetch the original properties again to ensure nothing in the Flow execution path has corrupted them
-        val rpcFlowOutputReFetchAtComplete = FlowOutput(
-            platform = flowEngine.flowContextProperties.get("account") ?: "error",
-            user1 = flowEngine.flowContextProperties.get("user1") ?: "error",
-            user2 = flowEngine.flowContextProperties.get("user2") ?: "null"
-        )
-
-        // All values should be set except user2 in non-sub flows which should be 'null'
-        return jsonMarshallingService.format(
-            ContextPropagationOutput(
-                rpcFlow = rpcFlowOutput,
-                rpcSubFlow = subFlowOutput,
-                initiatedFlow = initiatedFlowOutput.initiatedFlow,
-                initiatedSubFlow = initiatedFlowOutput.initiatedSubFlow,
-                rpcFlowAtComplete = rpcFlowOutputReFetchAtComplete
-            )
-        )
-    }
-}
-
-class ChatSubFlow(
-    val tag: String
-) : SubFlow<FlowOutput> {
-
-    private companion object {
-        val log = contextLogger()
-    }
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
-
-    @Suspendable
-    override fun call(): FlowOutput {
-        val account = flowEngine.flowContextProperties.get("account") ?: "error"
-        log.info("@@@ sub flow {$tag}: account from context:${account}")
-
+        // Set context here so we can check this never makes it back to the parent flow, but does make it to the
+        // initiated flow
         flowEngine.flowContextProperties.set("user2", "user2-set")
 
-        val user1 = flowEngine.flowContextProperties.get("user1") ?: "error"
-        log.info("@@@ sub flow {$tag}: user from context:${user1}")
-        val user2 = flowEngine.flowContextProperties.get("user2") ?: "error"
-        log.info("@@@ sub flow {$tag}: user2 from context:${user2}")
+        val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
 
-        return FlowOutput(
-            platform = account,
-            user1 = user1,
-            user2 = user2
+        val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName)
+        // Initiated flow will send its context back via a message
+        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>().unwrap { it }
+
+        // Check user 2 is preserved here, even though it is overwritten in the initiated sub flow
+        val user2 = flowEngine.flowContextProperties.get("user2") ?: ERROR_VALUE
+        // This should never make it out of this flow
+        flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationMainSubFlow")
+
+        return MainSubFlowOutput(
+            thisFlow = FlowOutput(
+                platform = account,
+                user1 = user1,
+                user2 = user2
+            ),
+            initiatedFlow = initiatedFlowOutput
         )
     }
 }
 
 @InitiatedBy(protocol = "contextPropagationProtocol")
-class ChatIncomingFlow : ResponderFlow {
-
-    private companion object {
-        val log = contextLogger()
-    }
+class ContextPropagationInitiatedFlow : ResponderFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
-    @CordaInject
-    lateinit var persistenceService: PersistenceService
-
     @Suspendable
     override fun call(session: FlowSession) {
-        val account = flowEngine.flowContextProperties.get("account") ?: "error"
-        log.info("@@@ initiated flow: account from context:${account}")
+        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+        val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
+        // Get the user2 on flow entry
+        val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
 
-        val user1 = flowEngine.flowContextProperties.get("user1") ?: "error"
-        log.info("@@@ initiated flow: user from context:${user1}")
+        // This should never make it out of this flow, but should make it into the sub flow
+        flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationInitiatedFlow")
 
-        val subFlowOutput = flowEngine.subFlow(ChatSubFlow("2"))
-
-        val user2 = flowEngine.flowContextProperties.get("user2") ?: "null"
-        log.info("@@@ initiated flow: user2 from context:${user2}")
+        val subFlowOutput = flowEngine.subFlow(ContextPropagationInitiatedSubFlow())
 
         session.send(
             InitiatedFlowOutput(
-                initiatedFlow = FlowOutput(
+                thisFlow = FlowOutput(
                     platform = account,
                     user1 = user1,
                     user2 = user2
                 ),
                 initiatedSubFlow = subFlowOutput
             )
+        )
+    }
+}
+
+class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
+    
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
+
+    @Suspendable
+    override fun call(): FlowOutput {
+        val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
+
+        val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
+        // Get the user2 on flow entry
+        val user2 = flowEngine.flowContextProperties.get("user2") ?: ERROR_VALUE
+
+        // This should never make it out of this flow
+        flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationInitiatedSubFlow")
+
+        return FlowOutput(
+            platform = account,
+            user1 = user1,
+            user2 = user2
         )
     }
 }
