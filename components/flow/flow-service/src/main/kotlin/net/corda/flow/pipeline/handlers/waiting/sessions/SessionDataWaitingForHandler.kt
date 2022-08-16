@@ -27,8 +27,8 @@ class SessionDataWaitingForHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         return try {
-            val receivedSessionDataEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
-            val receivedSessions = receivedSessionDataEvents.map { (session, _) -> session.sessionId }
+            val receivedSessionEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
+            val receivedSessions = receivedSessionEvents.map { (session, _) -> session.sessionId }
 
             val erroredSessions = flowSessionManager.getSessionsWithStatus(
                 checkpoint,
@@ -36,20 +36,15 @@ class SessionDataWaitingForHandler @Activate constructor(
                 SessionStateType.ERROR
             )
 
-            val closingSessions = flowSessionManager.getSessionsWithStatus(
-                checkpoint,
-                waitingFor.sessionIds - receivedSessions,
-                SessionStateType.CLOSING
-            )
-
-            val terminatedSessions = erroredSessions + closingSessions
+            val closingSessionEvents = flowSessionManager.nextOrderedMessageIsClose(checkpoint)
+            val terminatedSessions = erroredSessions + closingSessionEvents
 
             when {
-                receivedSessionDataEvents.size == waitingFor.sessionIds.size -> {
-                    resumeWithIncomingPayloads(receivedSessionDataEvents)
+                receivedSessionEvents.size == waitingFor.sessionIds.size -> {
+                    resumeWithIncomingPayloads(receivedSessionEvents)
                 }
                 terminatedSessions.isNotEmpty() -> {
-                    resumeWithErrorIfAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionDataEvents)
+                    resumeWithErrorIfAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionEvents)
                 }
                 else -> FlowContinuation.Continue
             }
