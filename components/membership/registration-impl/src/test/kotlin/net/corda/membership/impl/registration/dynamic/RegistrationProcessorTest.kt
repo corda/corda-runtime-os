@@ -193,8 +193,8 @@ class RegistrationProcessorTest {
             membershipQueryClient,
             mock(),
             mock(),
-            mock(),
             layeredPropertyMapFactory,
+            mock(),
         )
     }
 
