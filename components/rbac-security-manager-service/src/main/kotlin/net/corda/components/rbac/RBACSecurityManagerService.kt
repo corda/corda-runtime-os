@@ -51,7 +51,8 @@ class RBACSecurityManagerService @Activate constructor(
     }
 
     @Volatile
-    private var _securityManager: RPCSecurityManager? = null
+    @VisibleForTesting
+    internal var _securityManager: RPCSecurityManager? = null
 
     @VisibleForTesting
     internal var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<RBACSecurityManagerService>(::processEvent)
