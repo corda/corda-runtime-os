@@ -132,6 +132,8 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
+    private val fiveDaysInMilliseconds = 432000000L
+
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
@@ -139,10 +141,13 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
+    private val executorService = executorServiceFactory()
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
+        onClose = { executorService.shutdownNow() },
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
@@ -202,8 +207,6 @@ internal class SessionManagerImpl(
             config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
         )
     }
-
-
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
@@ -547,7 +550,21 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
+        //TODO
+        refreshSessionAndLog(sessionCounterparties, authenticatedSession.sessionId)
         return null
+    }
+
+    private fun refreshSessionAndLog(sessionCounterparties: SessionCounterparties, sessionId: String) {
+        logger.info(
+            "Outbound session $sessionId (local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId}) timed " +
+                    "out to refresh ephemeral keys and it will be cleaned up."
+        )
+        executorService.schedule(
+            { refreshOutboundSession(sessionCounterparties, sessionId) },
+            fiveDaysInMilliseconds,
+            TimeUnit.MILLISECONDS
+        )
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
@@ -708,8 +725,7 @@ internal class SessionManagerImpl(
         @VisibleForTesting
         internal data class HeartbeatManagerConfig(
             val heartbeatPeriod: Duration,
-            val sessionTimeout: Duration,
-            val sessionRefresh: Duration
+            val sessionTimeout: Duration
         )
 
         @VisibleForTesting
@@ -783,8 +799,7 @@ internal class SessionManagerImpl(
             @Volatile
             var lastAckTimestamp: Long,
             @Volatile
-            var sendingHeartbeats: Boolean = false,
-            val sessionCreatedTimestamp: Long
+            var sendingHeartbeats: Boolean = false
         )
 
         fun stopTrackingAllSessions() {
@@ -809,25 +824,6 @@ internal class SessionManagerImpl(
                         TrackedSession(counterparties, timeStamp(), timeStamp())
                     }
                 }
-            }
-        }
-
-        fun sessionRefresh(counterparties: SessionCounterparties, sessionId: String) {
-            val sessionInfo = trackedSessions[sessionId] ?: return
-            val sessionAge = timeStamp() - sessionInfo.sessionCreatedTimestamp
-            if (sessionAge >= config.get().sessionRefresh.toMillis()) {
-                logger.info(
-                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=${counterparties.counterpartyId}) has " +
-                            "been refreshed so that session keys are rotated."
-                )
-                destroySession(counterparties, sessionId)
-                trackedSessions.remove(sessionId)
-            } else {
-                executorService.schedule(
-                    { sessionRefresh(counterparties, sessionId) },
-                    config.get().sessionRefresh.toMillis() - timeSinceLastAck,
-                    TimeUnit.MILLISECONDS
-                )
             }
         }
 
@@ -950,4 +946,7 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
     }
+
+
+
 }
