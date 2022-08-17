@@ -27,13 +27,10 @@ class ConsensualSignedTransactionImpl(
     override fun toLedgerTransaction(serializer: SerializationService): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
 
-    /** Returns the same transaction but with an additional (unchecked) signature. */
-    override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(wireTransaction, signatures + signature)
-
-    /** Returns the same transaction but with an additional (unchecked) signatures. */
-    override fun addSignatures(signatures: Iterable<DigitalSignatureAndMetadata>): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(wireTransaction, this.signatures + signatures)
+    /** CORE-5091 it does not do anything at the moment. */
+    override fun addSignature(publicKey: PublicKey): ConsensualSignedTransaction {
+        return ConsensualSignedTransactionImpl(wireTransaction, signatures)
+    }
 
     override fun getMissingSigningKeys(serializer: SerializationService): Set<PublicKey> {
         val alreadySigned = signatures.map{it.by}.toSet()
