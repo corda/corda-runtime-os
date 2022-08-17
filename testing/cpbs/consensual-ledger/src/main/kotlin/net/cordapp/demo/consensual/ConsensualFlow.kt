@@ -30,11 +30,10 @@ class ConsensualFlow : RPCStartableFlow {
 
     class TestConsensualState(
         val testField: String,
-        override val participants: List<TestPartyImpl>
+        override val participants: List<Party> /// todo check serialization error
     ) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
     }
-
 
     private companion object {
         val log = contextLogger()
