@@ -1,7 +1,7 @@
 package net.corda.flow.testing.tests.persistence
 
 import java.nio.ByteBuffer
-import net.corda.data.persistence.MergeEntity
+import net.corda.data.persistence.MergeEntities
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.tests.ALICE_HOLDING_IDENTITY
@@ -50,7 +50,7 @@ class MergeEntityAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                entityRequestSent(MergeEntity(byteBuffer))
+                entityRequestSent(MergeEntities(listOf(byteBuffer)))
             }
         }
     }
@@ -66,7 +66,7 @@ class MergeEntityAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, null)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf())
         }
 
         then {
@@ -87,7 +87,7 @@ class MergeEntityAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf(byteBuffer))
         }
 
         then {

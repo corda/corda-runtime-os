@@ -4,15 +4,15 @@ package net.corda.flow.pipeline.handlers.waiting.persistence
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.waiting.EntityResponse
-import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponseFailure
 import net.corda.data.persistence.EntityResponseSuccess
 import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.MergeEntities
+import net.corda.data.persistence.PersistEntities
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -136,10 +136,13 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
 
     private fun getPayloadFromResponse(request: EntityRequest, response: EntityResponseSuccess): FlowContinuation {
         return when (request.request) {
-            is FindEntity, is MergeEntity, is FindAll -> {
-                FlowContinuation.Run(response.result)
+            is FindEntity, is MergeEntities -> {
+                FlowContinuation.Run(response.results.firstOrNull())
             }
-            is DeleteEntity, is PersistEntity -> {
+            is FindAll -> {
+                FlowContinuation.Run(response.results)
+            }
+            is DeleteEntities, is PersistEntities -> {
                 FlowContinuation.Run(Unit)
             }
             else -> {

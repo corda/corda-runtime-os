@@ -55,15 +55,7 @@ class PersistenceServiceImpl @Activate constructor(
                 val request = FlowIORequest.FindAll(UUID.randomUUID().toString(), entityClass.canonicalName)
                 log.debug { "Preparing to send FindAll query for class of type ${request.className} with id ${request.requestId} " }
                 val received = fiber.suspend(request)
-
-                val deserialized = received?.let {
-                    deserializeReceivedPayload(it.array(), List::class.java)
-                }
-                if (deserialized != null) {
-                    @Suppress("Unchecked_cast")
-                    return deserialized as List<R>
-                }
-                return emptyList()
+                return received.map { rec -> deserializeReceivedPayload(rec.array(), entityClass) }
             }
 
             override fun setLimit(limit: Int): PagedQuery<R> {
@@ -78,11 +70,13 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
-        val entityClass = entity::class.java
         val request = FlowIORequest.Merge(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Merge query for class of type $entityClass with id ${request.requestId} " }
+        log.debug { "Preparing to send Merge query for class of with id ${request.requestId} " }
         val received = fiber.suspend(request)
-        return if (received != null) deserializeReceivedPayload(received.array(), entityClass) else null
+
+        return received?.let {
+            deserializeReceivedPayload(it.array(), entity::class.java)
+        }
     }
 
     @Suspendable

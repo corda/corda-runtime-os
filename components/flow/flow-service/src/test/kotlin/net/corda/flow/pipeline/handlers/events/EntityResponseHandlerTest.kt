@@ -17,7 +17,7 @@ class EntityResponseHandlerTest {
     @Test
     fun `PersistenceState was null`() {
         val instant = Instant.now()
-        val response = EntityResponse(instant, "request1", EntityResponseSuccess())
+        val response = EntityResponse(instant, "request1", EntityResponseSuccess(emptyList()))
         val (mockPersistenceManager, mockContext) = mockPersistenceManagerAndStubContext(response)
 
         val entityResponseHandler = EntityResponseHandler(mockPersistenceManager)
@@ -30,7 +30,7 @@ class EntityResponseHandlerTest {
     fun `Process entity response`() {
         val instant = Instant.now()
         val persistenceState = PersistenceState("request1", instant, EntityRequest(), 0, null)
-        val response = EntityResponse(instant, "request1", EntityResponseSuccess())
+        val response = EntityResponse(instant, "request1", EntityResponseSuccess(emptyList()))
         val (mockDbManager, stubContext) = mockPersistenceManagerAndStubContext(response, persistenceState)
 
         stubContext.inputEventPayload = response

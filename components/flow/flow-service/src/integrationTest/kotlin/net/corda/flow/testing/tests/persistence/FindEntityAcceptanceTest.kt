@@ -53,14 +53,14 @@ class FindEntityAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a null response from a Find request resumes the flow`() {
+    fun `Receiving an empty response from a Find request resumes the flow`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Find(requestId, className, bytes))
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, null)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf())
         }
 
         then {
@@ -78,7 +78,7 @@ class FindEntityAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf(byteBuffer))
         }
 
         then {

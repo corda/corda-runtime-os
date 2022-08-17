@@ -60,12 +60,12 @@ class FindAllAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, null)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf())
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(null)
+                flowResumedWith(emptyList<ByteBuffer>())
             }
         }
     }
@@ -78,12 +78,12 @@ class FindAllAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf(byteBuffer))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(byteBuffer)
+                flowResumedWith(listOf(byteBuffer))
             }
         }
     }

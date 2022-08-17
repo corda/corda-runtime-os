@@ -20,6 +20,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+// Test the flow-worker side of the persistence service, mocking out Kafka and the database
+// worker.
 class PersistenceServiceImplTest {
 
     private lateinit var flowFiberService: FlowFiberService
@@ -122,20 +124,22 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `Test find all executes successfully`() {
-        val expectedList = listOf(TestObject(),TestObject())
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<List<TestObject>>(any<ByteArray>(), any())).thenReturn(expectedList)
+        val singleItem = TestObject()
+        val expectedList = listOf(singleItem, singleItem)
+        whenever(flowFiber.suspend<List<ByteBuffer>>(any())).thenReturn(listOf(byteBuffer, byteBuffer))
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(singleItem)
 
-        assertThat(persistenceService.findAll(TestObject::class.java).execute()).isEqualTo(expectedList)
+        val r = persistenceService.findAll(TestObject::class.java).execute()
+        assertThat(r).isEqualTo(expectedList)
 
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, times(2)).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, times(0)).serialize<String>(any())
         verify(flowFiber, times(1)).suspend(any<FlowIORequest.FindAll>())
     }
 
     @Test
     fun `Test find all fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
+        whenever(flowFiber.suspend<List<ByteBuffer>>(any())).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<FailTestObject>(any<ByteArray>(), any())).thenReturn(FailTestObject())
 
         assertThrows<CordaRuntimeException> { persistenceService.findAll(TestObject::class.java).execute() }

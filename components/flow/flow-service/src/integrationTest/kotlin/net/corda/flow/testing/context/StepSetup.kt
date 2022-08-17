@@ -88,7 +88,7 @@ interface StepSetup {
     fun entityResponseSuccessReceived(
         flowId: String,
         requestId: String,
-        byteBuffer: ByteBuffer?,
+        byteBuffers: List<ByteBuffer>,
     ): FlowIoRequestSetup
 
     fun entityResponseErrorReceived(
