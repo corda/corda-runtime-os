@@ -12,8 +12,8 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeGenerator
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
 import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
@@ -33,9 +33,9 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -110,7 +110,6 @@ class ApproveRegistrationHandlerTest {
         )
     }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
-    private val hashingService = mock<DigestService>()
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
@@ -130,11 +129,12 @@ class ApproveRegistrationHandlerTest {
         } doReturn record
     }
     private val checkHash = mock<SecureHash>()
-    private val merkleTree = mock<MerkleTree>() {
+    private val merkleTree = mock<MerkleTree> {
         on { root } doReturn checkHash
     }
-    private val merkleTreeFactory = mock<MerkleTreeFactory> {
-        on { buildTree(activeMembersWithoutMgm) } doReturn merkleTree
+    private val merkleTreeFactory = mock<MerkleTreeFactory>()
+    private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
+        on { generateTree(any()) } doReturn merkleTree
     }
     private val membershipPackage = mock<MembershipPackage>()
     private val membershipPackageFactory = mock<MembershipPackageFactory> {
@@ -152,19 +152,18 @@ class ApproveRegistrationHandlerTest {
         membershipPersistenceClient,
         membershipQueryClient,
         cipherSchemeMetadata,
-        hashingService,
         clock,
         cryptoOpsClient,
         cordaAvroSerializationFactory,
-        signerFactory,
-        p2pRecordsFactory,
         merkleTreeFactory,
+        signerFactory,
+        merkleTreeGenerator,
+        p2pRecordsFactory,
         membershipPackageFactory,
     )
 
     @Test
     fun `invoke return member record`() {
-
         val reply = handler.invoke(state, key, command)
 
         val memberRecords = reply.outputStates.filter {
@@ -178,12 +177,14 @@ class ApproveRegistrationHandlerTest {
                 assertThat(value?.viewOwningMember).isEqualTo(owner.toAvro())
                 assertThat(value?.memberContext?.items).contains(
                     KeyValuePair(
-                        "member", member.x500Name.toString()
+                        "member",
+                        member.x500Name.toString(),
                     )
                 )
                 assertThat(value?.mgmContext?.items).contains(
                     KeyValuePair(
-                        "mgm", member.x500Name.toString()
+                        "mgm",
+                        member.x500Name.toString(),
                     )
                 )
             }

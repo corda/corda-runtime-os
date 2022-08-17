@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.smoketests.flow
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -14,7 +14,7 @@ import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.cordapp.flowworker.development.messages.InitiatedSmokeTestMessage
+import net.cordapp.flowworker.development.smoketests.flow.messages.InitiatedSmokeTestMessage
 
 @InitiatingFlow("subflow-protocol")
 class InitiatingSubFlowSmokeTestFlow(
@@ -61,7 +61,8 @@ class InlineSubFlowSmokeTestFlow(
             log.info("SubFlow - Creating session '${session}' now sending and waiting for response ...")
             session.send(InitiatedSmokeTestMessage("Initiate"))
         }
-        val initiatedSmokeTestMessage = session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message)).unwrap { it }
+        val initiatedSmokeTestMessage =
+            session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message)).unwrap { it }
         log.info("SubFlow - Received response from session '$session'.")
         return initiatedSmokeTestMessage
     }

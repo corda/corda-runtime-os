@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.messages
+package net.cordapp.flowworker.development.smoketests.flow.messages
 
 import net.corda.v5.base.annotations.CordaSerializable
 

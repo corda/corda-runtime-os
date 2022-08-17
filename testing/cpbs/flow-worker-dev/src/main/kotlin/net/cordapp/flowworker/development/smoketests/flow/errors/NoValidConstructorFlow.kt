@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.errors
+package net.cordapp.flowworker.development.smoketests.flow.errors
 
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow

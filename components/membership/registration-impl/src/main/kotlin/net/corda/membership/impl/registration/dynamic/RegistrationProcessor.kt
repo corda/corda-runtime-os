@@ -17,10 +17,10 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.handler.member.PersistMemberRegistrationStateHandler
 import net.corda.membership.impl.registration.dynamic.handler.member.ProcessMemberVerificationRequestHandler
-import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -32,7 +32,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(
@@ -43,9 +43,9 @@ class RegistrationProcessor(
     membershipPersistenceClient: MembershipPersistenceClient,
     membershipQueryClient: MembershipQueryClient,
     cryptoOpsClient: CryptoOpsClient,
-    hashingService: DigestService,
     cipherSchemeMetadata: CipherSchemeMetadata,
     layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    merkleTreeFactory: MerkleTreeFactory,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -70,10 +70,10 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             cipherSchemeMetadata,
-            hashingService,
             clock,
             cryptoOpsClient,
             cordaAvroSerializationFactory,
+            merkleTreeFactory
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient, clock, cordaAvroSerializationFactory),
 
@@ -129,7 +129,7 @@ class RegistrationProcessor(
                     createEmptyResult(state)
                 }
             }
-        } catch(e: MissingRegistrationStateException) {
+        } catch (e: MissingRegistrationStateException) {
             logger.error("RegistrationState was null during dynamic registration.", e)
             createEmptyResult()
         } catch (e: CordaRuntimeException) {
