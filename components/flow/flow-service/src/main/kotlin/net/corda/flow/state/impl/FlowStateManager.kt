@@ -37,7 +37,7 @@ class FlowStateManager(private val initialState: FlowState) {
     val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
-    var flowContext = FlowContextImpl(stack)
+    var flowContext = FlowStackBasedContext(stack)
 
     fun updateSuspendedFiber(fiber: ByteBuffer) {
         state.fiber = fiber
@@ -80,7 +80,7 @@ class FlowStateManager(private val initialState: FlowState) {
         state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
         stack = FlowStackImpl(initialState.flowStackItems)
-        flowContext = FlowContextImpl(stack)
+        flowContext = FlowStackBasedContext(stack)
     }
 
     fun toAvro(): FlowState {

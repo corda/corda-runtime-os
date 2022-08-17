@@ -415,27 +415,32 @@ class FlowTests {
               "rpcFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "null"
+                "user2": "null",
+                "user3": "null"
               },
               "rpcSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "user2-set"
+                "user2": "user2-set",
+                "user3": "null"
               },
               "initiatedFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "user2-set"
+                "user2": "user2-set",
+                "user3": "user3-set"
               },
               "initiatedSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "user2-set-ContextPropagationInitiatedFlow"
+                "user2": "user2-set-ContextPropagationInitiatedFlow",
+                "user3": "user3-set"
               },
               "rpcFlowAtComplete": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "null"
+                "user2": "null",
+                "user3": "null"
               }
             }
             """.filter { !it.isWhitespace() }

@@ -2,7 +2,7 @@ package net.corda.flow.state
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.flow.state.impl.FlowContextImpl
+import net.corda.flow.state.impl.FlowStackBasedContext
 import net.corda.flow.state.impl.FlowStackImpl
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
-class FlowContextImplTest {
+class FlowStackBasedContextTest {
     val flow = mock<Flow>()
 
     val platformPropertiesLevel1 = KeyValueStore().apply {
@@ -38,12 +38,12 @@ class FlowContextImplTest {
     }
 
     lateinit var flowStack: FlowStackImpl
-    lateinit var flowContext: FlowContextImpl
+    lateinit var flowContext: FlowStackBasedContext
 
     @BeforeEach
     fun setup() {
         flowStack = FlowStackImpl(mutableListOf())
-        flowContext = FlowContextImpl(flowStack)
+        flowContext = FlowStackBasedContext(flowStack)
     }
 
     @Test

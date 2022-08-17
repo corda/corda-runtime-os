@@ -12,7 +12,7 @@ import net.corda.v5.application.flows.FlowContextProperties
  * Flattening is done into standard Kotlin Map, so we don't expose Avro generated types to suspendable methods called
  * from CorDapp flows. These types are not serializable and can never end up in the stack of an executing flow.
  */
-interface FlowContext : FlowContextProperties, NonSerializable {
+interface FlowContext : FlowContextProperties {
     /**
      * Returns all platform properties in a single container
      * @return A map of platform properties

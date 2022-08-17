@@ -3,6 +3,7 @@ package net.corda.flow.application.sessions
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.state.impl.FlatSerializableContext
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -26,6 +27,25 @@ class FlowSessionImpl(
     }
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
+
+    /**
+     * Both sessionLocalFlowContext and contextProperties must be lazily initialised, they can only be obtained from
+     * an executing flow fiber by user code.
+     */
+    private val sessionLocalFlowContext by lazy {
+        if (initiated) {
+            throw IllegalStateException(
+                "FlowSessions of initiated flows do not have local context, obtain FlowContext from the FlowEngine"
+            )
+        }
+
+        val flowContext = fiber.getExecutionContext().flowCheckpoint.flowContext
+        FlatSerializableContext(
+            contextUserProperties = flowContext.flattenUserProperties(),
+            contextPlatformProperties = flowContext.flattenPlatformProperties()
+        )
+    }
+    override val contextProperties by lazy { sessionLocalFlowContext }
 
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
@@ -71,21 +91,15 @@ class FlowSessionImpl(
 
     @Suspendable
     private fun ensureSessionIsOpen() {
-        fun createInitiateFlowRequest(): FlowIORequest.InitiateFlow {
-            // The creation of this message is pushed out to this nested builder method in order to ensure that when the
-            // suspend method which receives it as an argument does a suspend that there is nothing on the stack to
-            // accidentally serialize
-            val flowContext = fiber.getExecutionContext().flowCheckpoint.flowContext
-            return FlowIORequest.InitiateFlow(
-                counterparty,
-                sourceSessionId,
-                contextUserProperties = flowContext.flattenUserProperties(),
-                contextPlatformProperties = flowContext.flattenPlatformProperties()
-            )
-        }
-
         if (!initiated) {
-            fiber.suspend(createInitiateFlowRequest())
+            fiber.suspend(
+                FlowIORequest.InitiateFlow(
+                    counterparty,
+                    sourceSessionId,
+                    contextUserProperties = sessionLocalFlowContext.flattenUserProperties(),
+                    contextPlatformProperties = sessionLocalFlowContext.flattenPlatformProperties()
+                )
+            )
             initiated = true
         }
     }
