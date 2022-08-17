@@ -49,7 +49,8 @@ nodeSelector: {}
 
 # Enable dump logging directory to be created
 dumplogging:
-  enabled: false
+  heap:
+    enabled: false
 
 # Database configuration
 db:

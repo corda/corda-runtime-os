@@ -25,7 +25,7 @@ spec:
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy:  {{ .Values.imagePullPolicy }}
         securityContext:
-          allowPrivilegeEscalation: false
+          privileged: true
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
         {{- include "corda.workerEnv" . | nindent 10 }}
