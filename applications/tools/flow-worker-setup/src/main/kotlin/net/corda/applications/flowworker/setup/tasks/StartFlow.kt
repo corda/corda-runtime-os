@@ -21,7 +21,7 @@ class StartFlow(private val context: TaskContext) : Task {
         val namedFlows = mapOf(
             "default" to getStartRPCEventRecord(
                 clientId = UUID.randomUUID().toString(),
-                flowName = "net.cordapp.flowworker.development.flows.MessagingFlow",
+                flowName = "net.cordapp.flowworker.development.testflows.MessagingFlow",
                 x500Name = context.startArgs.x500NName,
                 groupId = "flow-worker-dev",
                 jsonArgs = "{ \"who\":\"${context.startArgs.x500NName}\"}"

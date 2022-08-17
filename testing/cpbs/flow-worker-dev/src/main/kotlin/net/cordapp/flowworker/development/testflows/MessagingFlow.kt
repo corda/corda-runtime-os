@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.testflows
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -20,7 +20,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.cordapp.flowworker.development.messages.MessageFlowInput
+import net.cordapp.flowworker.development.testflows.messages.MessageFlowInput
 
 @InitiatingFlow(protocol = "flowDevProtocol")
 class MessagingFlow : RPCStartableFlow {

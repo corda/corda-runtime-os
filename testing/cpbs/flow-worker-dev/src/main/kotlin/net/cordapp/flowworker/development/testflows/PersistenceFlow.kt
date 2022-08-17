@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.testflows
 
 import java.time.Instant
 import java.util.UUID
@@ -12,7 +12,7 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
-import net.cordapp.flowworker.development.messages.TestFlowInput
+import net.cordapp.flowworker.development.testflows.messages.TestFlowInput
 
 /**
  * The PersistenceFlow exercises various basic db interactions in a flow.
@@ -72,7 +72,7 @@ class PersistenceFlow : RPCStartableFlow {
             return jsonMarshallingService.format("Dog operations are complete")
 
         } catch (e: Exception) {
-            log.error("Unexpected error while processing the flow",e )
+            log.error("Unexpected error while processing the flow", e)
             throw e
         }
     }

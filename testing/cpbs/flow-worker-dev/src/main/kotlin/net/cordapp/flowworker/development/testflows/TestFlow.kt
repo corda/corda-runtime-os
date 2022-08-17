@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.testflows
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -10,8 +10,8 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.cordapp.flowworker.development.messages.TestFlowInput
-import net.cordapp.flowworker.development.messages.TestFlowOutput
+import net.cordapp.flowworker.development.testflows.messages.TestFlowInput
+import net.cordapp.flowworker.development.testflows.messages.TestFlowOutput
 
 /**
  * The Test Flow exercises various basic features of a flow, this flow
@@ -38,13 +38,13 @@ class TestFlow : RPCStartableFlow {
         log.info("Starting Test Flow...")
         try {
             val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
-            if(inputs.throwException){
+            if (inputs.throwException) {
                 throw IllegalStateException("Caller requested exception to be raised")
             }
 
-            val foundMemberInfo = if(inputs.memberInfoLookup==null){
+            val foundMemberInfo = if (inputs.memberInfoLookup == null) {
                 "No member lookup requested."
-            }else{
+            } else {
                 val lookupResult = memberLookupService.lookup(MemberX500Name.parse(inputs.memberInfoLookup!!))
                 lookupResult?.name?.toString() ?: "Failed to find MemberInfo for ${inputs.memberInfoLookup!!}"
             }
@@ -54,10 +54,10 @@ class TestFlow : RPCStartableFlow {
              * from working is investigated
             val subFlow = TestGetNodeNameSubFlow()
             val myIdentity = flowEngine.subFlow(subFlow)
-            */
+             */
 
             val response = TestFlowOutput(
-                inputs.inputValue?:"No input value",
+                inputs.inputValue ?: "No input value",
                 "dummy",
                 foundMemberInfo
             )
@@ -65,7 +65,7 @@ class TestFlow : RPCStartableFlow {
             return jsonMarshallingService.format(response)
 
         } catch (e: Exception) {
-            log.error("Unexpected error while processing the flow",e )
+            log.error("Unexpected error while processing the flow", e)
             throw e
         }
     }
