@@ -234,9 +234,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
-        val reqBytes: ByteArray?
-        try {
-            reqBytes = serializer.serialize(req)
+
+        val reqBytes = try {
+            serializer.serialize(req)
         } catch (ex: Exception) {
             future.completeExceptionally(
                 CordaRPCAPISenderException(
@@ -249,7 +249,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                         "Verify that the fields of the request are populated correctly. " +
                         "Request was: $req", ex
             )
-
             return future
         }
 
