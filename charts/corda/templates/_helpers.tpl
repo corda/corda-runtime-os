@@ -100,6 +100,18 @@ Worker image
 {{- end }}
 
 {{/*
+Worker security context
+*/}}
+{{- define "corda.workerSecurityContext" -}}
+{{- if not ( get .Values.workers .worker ).profiling.enabled }}
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
 CLI image
 */}}
 {{- define "corda.bootstrapImage" -}}
@@ -164,7 +176,7 @@ Worker environment variables
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
     {{- if ( get .Values.workers .worker ).profiling.enabled }}
-      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,,dir=/logging/profile/snapshots,logdir=/logging/profile/logs
     {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
@@ -283,6 +295,10 @@ Volume mounts for corda workers
   name: "jaas-conf"
   readOnly: true
 {{- end }}
+{{- if ( get .Values.workers .worker ).profiling.enabled }}
+- mountPath: /logging/profile/
+  name: logging
+{{- end }}
 {{- end }}
 
 {{/*
@@ -301,6 +317,12 @@ Volumes for corda workers
 - name: jaas-conf
   secret:
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
+{{- end }}
+{{- if ( get .Values.workers .worker ).profiling.enabled }}
+- name: logging
+  hostPath:
+    path: /logging/profile/{{ include "corda.workerName" . }}/
+    type: DirectoryOrCreate
 {{- end }}
 {{- end }}
 
