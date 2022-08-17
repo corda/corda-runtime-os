@@ -47,6 +47,12 @@ openTelemetry:
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
+# Enable dump logging directory to be created
+dumplogging:
+  thread:
+    # -- enables dump log threadding 
+    enabled: false
+
 # Database configuration
 db:
   # Cluster database configuration
