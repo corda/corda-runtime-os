@@ -5,6 +5,6 @@ cordaNightlyPipeline(
     runIntegrationTests: false,
     dailyBuildCron: 'H 01 * * *',
     publishOSGiImage: true,
-    publishRepoPrefix: '', // add valid value once work aroun not overrite jars is in place
+    publishRepoPrefix: '', // add valid value once the workaround not to overrite non ARM64 jars is in place 
     linuxArch: 'arm64'
     )
