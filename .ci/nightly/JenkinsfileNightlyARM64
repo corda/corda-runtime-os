@@ -1,10 +1,10 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/check-os') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaNightlyPipeline(
     nexusAppId: 'net.corda-api-5.0',
     runIntegrationTests: false,
-    dailyBuildCron: 'H 02 * * *',
+    dailyBuildCron: 'H 01 * * *',
     publishOSGiImage: true,
-    publishRepoPrefix: 'engineering-tools-maven',
+    publishRepoPrefix: '', // add valid value once work aroun not overrite jars is in place
     linuxArch: 'arm64'
     )
