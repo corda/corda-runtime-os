@@ -215,11 +215,17 @@ class VirtualNodeRpcTest {
     fun `list virtual nodes`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val nodes = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["x500Name"].textValue()
-            }
 
-            assertThat(nodes).contains(X500_ALICE)
+            assertWithRetry {
+                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                command { vNodeList() }
+                condition { response ->
+                    val nodes = vNodeList().toJson()["virtualNodes"].map {
+                        it["holdingIdentity"]["x500Name"].textValue()
+                    }
+                    response.code == 200 && nodes.contains(X500_ALICE)
+                }
+            }
         }
     }
 
