@@ -2,6 +2,7 @@ package net.corda.flow.state.impl
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 
@@ -14,7 +15,7 @@ class FlowContextImpl(
     private val flowStack: FlowStackImpl
 ) : FlowContext {
 
-    override val platformProperties = object : FlowContext.PlatformProperties {
+    override val platformProperties = object : ContextPlatformProperties {
         override fun put(key: String, value: String) {
             val platformContextKeyValueStore = KeyValueStore(
                 checkNotNull(flowStack.peek())
