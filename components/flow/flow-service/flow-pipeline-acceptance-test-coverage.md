@@ -135,6 +135,15 @@ This document should be maintained so that we can ensure that we have quick visi
 - An initiated flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup ✅
 - Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then failing the flow schedules flow and session cleanup ✅
 
+## External events
+
+- Sending an external event sends a payload created by an external event factory ✅
+- Receiving an external event response with the correct request id resumes the flow ✅
+- Receiving an external event response with the wrong request id does not resume the flow and ignores the response ✅
+- Receiving a 'retriable' error response resends the external event if the retry window has been surpassed
+
+- Can return a plain string or byte array? error on returning string
+
 ## Crypto
 
 ### Signing

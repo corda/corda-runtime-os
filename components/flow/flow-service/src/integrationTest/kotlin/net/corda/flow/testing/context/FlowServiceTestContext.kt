@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -13,6 +14,9 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.event.external.ExternalEventResponseError
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -56,18 +60,20 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
-    @Reference(service = VirtualNodeInfoReadServiceFake::class)
-    val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = CpiInfoReadServiceFake::class)
     val cpiInfoReadService: CpiInfoReadServiceFake,
-    @Reference(service = FakeSandboxGroupContextComponent::class)
-    val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
-    @Reference(service = FakeMembershipGroupReaderProvider::class)
-    val membershipGroupReaderProvider: FakeMembershipGroupReaderProvider,
     @Reference(service = FlowEventProcessorFactory::class)
     val eventProcessorFactory: FlowEventProcessorFactory,
     @Reference(service = FakeFlowFiberFactory::class)
     val flowFiberFactory: FakeFlowFiberFactory,
+    @Reference(service = FakeMembershipGroupReaderProvider::class)
+    val membershipGroupReaderProvider: FakeMembershipGroupReaderProvider,
+    @Reference(service = FakeSandboxGroupContextComponent::class)
+    val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
+    @Reference(service = VirtualNodeInfoReadServiceFake::class)
+    val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
 ) : StepSetup, ThenSetup {
 
     private companion object {
@@ -84,6 +90,9 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
         FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION to 60000
     )
+
+    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     private val testRuns = mutableListOf<TestRun>()
     private val assertions = mutableListOf<OutputAssertionsImpl>()
@@ -319,8 +328,46 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(createFlowEventRecord(flowId, Wakeup()))
     }
 
+    override fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup {
+        return addTestRun(
+            createFlowEventRecord(
+                flowId,
+                ExternalEventResponse.newBuilder()
+                    .setRequestId(requestId)
+                    .setPayload(ByteBuffer.wrap(avroSerializer.serialize(payload)))
+                    .setError(null)
+                    .setTimestamp(Instant.now())
+                    .build()
+            )
+        )
+    }
+
+    override fun externalEventErrorReceived(
+        flowId: String,
+        requestId: String,
+        errorType: ExternalEventResponseErrorType
+    ): FlowIoRequestSetup {
+        return addTestRun(
+            createFlowEventRecord(
+                flowId,
+                ExternalEventResponse.newBuilder()
+                    .setRequestId(requestId)
+                    .setPayload(null)
+                    .setError(ExternalEventResponseError(errorType, ExceptionEnvelope()))
+                    .setTimestamp(Instant.now())
+                    .build()
+            )
+        )
+    }
+
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {
-        val assertionsCapture = OutputAssertionsImpl(flowId, sessionInitiatingIdentity, sessionInitiatedIdentity)
+        val assertionsCapture = OutputAssertionsImpl(
+            avroSerializer,
+            avroDeserializer,
+            flowId,
+            sessionInitiatingIdentity,
+            sessionInitiatedIdentity
+        )
         assertions.add(assertionsCapture)
         outputAssertions(assertionsCapture)
     }

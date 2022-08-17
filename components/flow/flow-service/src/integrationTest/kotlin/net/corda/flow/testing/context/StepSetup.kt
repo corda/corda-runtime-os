@@ -1,5 +1,6 @@
 package net.corda.flow.testing.context
 
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -78,4 +79,10 @@ interface StepSetup {
     ): FlowIoRequestSetup
 
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
+
+    // test receiving a payload that cannot be avro deserialized, have an overload that takes a byte array for that test
+
+    fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup
+
+    fun externalEventErrorReceived(flowId: String, requestId: String, errorType: ExternalEventResponseErrorType): FlowIoRequestSetup
 }
