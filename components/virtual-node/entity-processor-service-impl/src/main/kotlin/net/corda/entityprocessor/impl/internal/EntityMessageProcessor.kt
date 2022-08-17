@@ -4,8 +4,8 @@ import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.DeleteEntityById
+import net.corda.data.persistence.DeleteEntities
+import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -13,8 +13,8 @@ import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.FindWithNamedQuery
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.MergeEntities
+import net.corda.data.persistence.PersistEntities
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
@@ -43,6 +43,8 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  *
  * The [EntityResponse] contains the response or an exception-like payload whose presence indicates
  * an error has occurred.
+ *
+ * [payloadCheck] is called against each AMQP payload in the result (not the entire Avro array of results)
  */
 class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
@@ -129,26 +131,26 @@ class EntityMessageProcessor(
         val response = try {
             entityManagerFactory.createEntityManager().transaction {
                 when (request.request) {
-                    is PersistEntity -> persistenceServiceInternal.persist(
+                    is PersistEntities -> persistenceServiceInternal.persist(
                         serializationService,
                         it,
-                        request.request as PersistEntity
+                        request.request as PersistEntities
                     )
-                    is DeleteEntity -> persistenceServiceInternal.remove(
+                    is DeleteEntities -> persistenceServiceInternal.deleteEntities(
                         serializationService,
                         it,
-                        request.request as DeleteEntity
+                        request.request as DeleteEntities
                     )
-                    is DeleteEntityById -> persistenceServiceInternal.removeById(
+                    is DeleteEntitiesById -> persistenceServiceInternal.deleteEntitiesByIds(
                         serializationService,
                         it,
-                        request.request as DeleteEntityById,
+                        request.request as DeleteEntitiesById,
                         holdingIdentity
                     )
-                    is MergeEntity -> persistenceServiceInternal.merge(
+                    is MergeEntities -> persistenceServiceInternal.merge(
                         serializationService,
                         it,
-                        request.request as MergeEntity
+                        request.request as MergeEntities
                     )
                     is FindEntity -> persistenceServiceInternal.find(
                         serializationService,
