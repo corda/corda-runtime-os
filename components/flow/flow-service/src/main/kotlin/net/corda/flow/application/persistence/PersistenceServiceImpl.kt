@@ -2,13 +2,16 @@ package net.corda.flow.application.persistence
 
 import java.io.NotSerializableException
 import java.nio.ByteBuffer
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
-import net.corda.flow.application.persistence.external.events.PersistenceParameters
-import net.corda.flow.application.persistence.external.events.PersistenceServiceExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindAllParameters
+import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindParameters
+import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
+import net.corda.flow.application.persistence.external.events.MergeParameters
+import net.corda.flow.application.persistence.external.events.PersistExternalEventFactory
+import net.corda.flow.application.persistence.external.events.PersistParameters
+import net.corda.flow.application.persistence.external.events.RemoveExternalEventFactory
+import net.corda.flow.application.persistence.external.events.RemoveParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
@@ -44,8 +47,11 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
-        return execute(FindEntity(entityClass.canonicalName, serialize(primaryKey))) {
-            "Preparing to send Find query for class of type ${entityClass.canonicalName} with id $it"
+        return wrapResumedException {
+            externalEventExecutor.execute(
+                FindExternalEventFactory::class.java,
+                FindParameters(entityClass, serialize(primaryKey))
+            )
         }?.let { deserializeReceivedPayload(it, entityClass) }
     }
 
@@ -60,8 +66,11 @@ class PersistenceServiceImpl @Activate constructor(
         return object : PagedQuery<R> {
             @Suspendable
             override fun execute(): List<R> {
-                val deserialized = execute(FindAll(entityClass.canonicalName, 0, Int.MAX_VALUE)) {
-                    "Preparing to send FindAll query for class of type ${entityClass.canonicalName} with id $it"
+                val deserialized = wrapResumedException {
+                    externalEventExecutor.execute(
+                        FindAllExternalEventFactory::class.java,
+                        FindAllParameters(entityClass, 0, Int.MAX_VALUE)
+                    )
                 }?.let { deserializeReceivedPayload(it, List::class.java) }
 
                 if (deserialized != null) {
@@ -83,8 +92,11 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
-        return execute(MergeEntity(serialize(entity))) {
-            "Preparing to send Merge query for class of type ${entity::class.java} with id $it"
+        return wrapResumedException {
+            externalEventExecutor.execute(
+                MergeExternalEventFactory::class.java,
+                MergeParameters(serialize(entity))
+            )
         }?.let { deserializeReceivedPayload(it, entity::class.java) }
     }
 
@@ -95,8 +107,11 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persist(entity: Any) {
-        execute(PersistEntity(serialize(entity))) {
-            "Preparing to send Persist query for class of type ${entity::class.java} with id $it"
+        wrapResumedException {
+            externalEventExecutor.execute(
+                PersistExternalEventFactory::class.java,
+                PersistParameters(serialize(entity))
+            )
         }
     }
 
@@ -107,7 +122,12 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun remove(entity: Any) {
         enforceNotPrimitive(entity::class.java)
-        execute(DeleteEntity(serialize(entity))) { "Preparing to send Delete query for class of type ${entity::class.java} with id $it" }
+        wrapResumedException {
+            externalEventExecutor.execute(
+                RemoveExternalEventFactory::class.java,
+                RemoveParameters(serialize(entity))
+            )
+        }
     }
 
     @Suspendable
@@ -124,12 +144,9 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun execute(request: Any, debugLog: (requestId: String) -> String): ByteArray? {
+    private fun <T> wrapResumedException(function: () -> T): T {
         return try {
-            externalEventExecutor.execute(
-                PersistenceServiceExternalEventFactory::class.java,
-                PersistenceParameters(request, debugLog)
-            )
+            function()
         } catch (e: CordaRuntimeException) {
             throw CordaPersistenceException(e.message ?: "Exception occurred when executing persistence operation")
         }

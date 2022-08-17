@@ -1,13 +1,12 @@
 package net.corda.flow.application.persistence
 
 import java.nio.ByteBuffer
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
-import net.corda.flow.application.persistence.external.events.PersistenceParameters
-import net.corda.flow.application.persistence.external.events.PersistenceServiceExternalEventFactory
+import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
+import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
+import net.corda.flow.application.persistence.external.events.PersistExternalEventFactory
+import net.corda.flow.application.persistence.external.events.RemoveExternalEventFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
@@ -18,13 +17,11 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -44,7 +41,7 @@ class PersistenceServiceImplTest {
 
     private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
 
-    private val argumentCaptor = argumentCaptor<PersistenceParameters>()
+    private val argumentCaptor = argumentCaptor<Class<out AbstractPersistenceExternalEventFactory<Any>>>()
 
     @BeforeEach
     fun setup() {
@@ -58,8 +55,8 @@ class PersistenceServiceImplTest {
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
         whenever(
             externalEventExecutor.execute(
-                eq(PersistenceServiceExternalEventFactory::class.java),
-                argumentCaptor.capture()
+                argumentCaptor.capture(),
+                any()
             )
         ).thenReturn(byteBuffer.array())
     }
@@ -69,8 +66,7 @@ class PersistenceServiceImplTest {
         persistenceService.persist(TestObject())
 
         verify(serializationService).serialize(any())
-        assertThat(argumentCaptor.firstValue.request).isInstanceOf(PersistEntity::class.java)
-        assertInstanceOf(PersistEntity::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
@@ -82,8 +78,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<TestObject>(any())
-        assertThat(argumentCaptor.firstValue.request).isInstanceOf(MergeEntity::class.java)
-        assertInstanceOf(MergeEntity::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
     }
 
     @Test
@@ -95,7 +90,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<TestObject>(any())
-        assertInstanceOf(MergeEntity::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
     }
 
     @Test
@@ -107,7 +102,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<TestObject>(any())
-        assertInstanceOf(DeleteEntity::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
     }
 
     @Test
@@ -120,7 +115,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<String>(any())
-        assertInstanceOf(FindEntity::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }
 
     @Test
@@ -132,7 +127,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService).serialize<String>(any())
-        assertInstanceOf(FindEntity::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }
 
     @Test
@@ -145,7 +140,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, times(0)).serialize<String>(any())
-        assertInstanceOf(FindAll::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindAllExternalEventFactory::class.java)
     }
 
     @Test
@@ -157,7 +152,7 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, times(0)).serialize<String>(any())
-        assertInstanceOf(FindAll::class.java, argumentCaptor.firstValue.request)
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindAllExternalEventFactory::class.java)
     }
 
     class TestObject
