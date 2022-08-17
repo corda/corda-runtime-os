@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.messages
+package net.cordapp.flowworker.development.testflows.messages
 
 data class TestFlowOutput(
     val inputValue: String,

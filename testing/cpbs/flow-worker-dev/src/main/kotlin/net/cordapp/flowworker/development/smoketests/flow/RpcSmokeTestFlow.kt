@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.smoketests.flow
 
 import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -19,9 +19,10 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.failures.CryptoSignatureException
-import net.cordapp.flowworker.development.messages.InitiatedSmokeTestMessage
-import net.cordapp.flowworker.development.messages.RpcSmokeTestInput
-import net.cordapp.flowworker.development.messages.RpcSmokeTestOutput
+import net.cordapp.flowworker.development.smoketests.flow.messages.InitiatedSmokeTestMessage
+import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestInput
+import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestOutput
+import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
 import java.time.Instant
 import java.util.UUID
 
@@ -46,7 +47,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "crypto_sign_and_verify" to this::signAndVerify,
-        "crypto_verify_invalid_signature" to this::verifyInvalidSignature
+        "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
+        "context_propagation" to this::contextPropagation
     )
 
     @CordaInject
@@ -209,6 +211,11 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         }
 
         return outputs.joinToString("; ")
+    }
+
+    @Suspendable
+    private fun contextPropagation(@Suppress("UNUSED_PARAMETER") input: RpcSmokeTestInput): String {
+        return launchContextPropagationFlows(flowEngine, jsonMarshallingService)
     }
 
     @Suspendable
