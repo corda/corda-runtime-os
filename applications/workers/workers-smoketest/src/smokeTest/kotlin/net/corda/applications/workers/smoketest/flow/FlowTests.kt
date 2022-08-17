@@ -41,13 +41,13 @@ class FlowTests {
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
         val expectedFlows = listOf(
-            "net.cordapp.flowworker.development.flows.MessagingFlow",
-            "net.cordapp.flowworker.development.flows.PersistenceFlow",
-            "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
-            "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.flows.TestFlow",
-            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
-            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
+            "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow",
+            "net.cordapp.flowworker.development.testflows.TestFlow",
+            "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.testflows.MessagingFlow",
+            "net.cordapp.flowworker.development.testflows.PersistenceFlow"
         )
 
         /*
@@ -184,7 +184,11 @@ class FlowTests {
     @Test
     fun `Pipeline error results in flow marked as failed`() {
         val requestID =
-            startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
+            startRpcFlow(
+                bobHoldingId,
+                mapOf(),
+                "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow"
+            )
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
     }

@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.smoketests.virtualnode
 
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -14,6 +14,6 @@ class ReturnAStringFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("ReturnAStringFlow starting...")
-        return "force-uploaded-cpi"
+        return "original-cpi"
     }
 }

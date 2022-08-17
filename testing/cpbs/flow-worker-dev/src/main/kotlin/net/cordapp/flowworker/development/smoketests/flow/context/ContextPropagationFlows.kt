@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.smoketests.flow.context
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -197,7 +197,7 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
 }
 
 class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
-    
+
     @CordaInject
     lateinit var flowEngine: FlowEngine
 

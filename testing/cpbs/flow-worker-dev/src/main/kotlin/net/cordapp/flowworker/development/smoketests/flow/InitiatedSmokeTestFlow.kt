@@ -1,4 +1,4 @@
-package net.cordapp.flowworker.development.flows
+package net.cordapp.flowworker.development.smoketests.flow
 
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
@@ -6,7 +6,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.annotations.Suspendable
-import net.cordapp.flowworker.development.messages.InitiatedSmokeTestMessage
+import net.cordapp.flowworker.development.smoketests.flow.messages.InitiatedSmokeTestMessage
 
 @InitiatedBy(protocol = "smoke-test-protocol")
 class InitiatedSmokeTestFlow : ResponderFlow {
