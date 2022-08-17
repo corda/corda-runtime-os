@@ -4,5 +4,6 @@ cordaNightlyPipeline(
     nexusAppId: 'net.corda-api-5.0',
     runIntegrationTests: false,
     dailyBuildCron: 'H 02 * * *',
-    publishRepoPrefix: '', // remove this when JARs don't overwrite AMD64 ones
+    publishRepoPrefix: '', // remove this when JARs don't overwrite AMD64 ones,
+    linuxArch: 'arm64'
     )
