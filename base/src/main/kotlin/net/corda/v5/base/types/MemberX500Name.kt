@@ -2,6 +2,7 @@ package net.corda.v5.base.types
 
 import net.corda.v5.base.annotations.CordaSerializable
 import java.util.Locale
+import java.util.Objects
 import javax.naming.directory.BasicAttributes
 import javax.naming.ldap.LdapName
 import javax.naming.ldap.Rdn
@@ -35,7 +36,7 @@ class MemberX500Name(
     val locality: String,
     val state: String?,
     val country: String
-) {
+) : Comparable<MemberX500Name> {
     companion object {
         const val MAX_LENGTH_ORGANISATION = 128
         const val MAX_LENGTH_LOCALITY = 64
@@ -62,6 +63,17 @@ class MemberX500Name(
         )
 
         private val countryCodes: Set<String> = Locale.getISOCountries().toSet() + UNSPECIFIED_COUNTRY
+
+        private val comparator by lazy {
+            compareBy<MemberX500Name>(
+                { it.commonName },
+                { it.organisationUnit },
+                { it.organisation },
+                { it.locality },
+                { it.state },
+                { it.country },
+            )
+        }
 
         /**
          * Creates an instance of [MemberX500Name] from specified [X500Principal]
@@ -236,6 +248,9 @@ class MemberX500Name(
      * Returns the string equivalent of this name where the order of RDNs is CN, OU, O, L, ST, C
      */
     override fun toString(): String = x500Principal.toString()
+    override fun compareTo(other: MemberX500Name): Int {
+        return comparator.compare(this, other)
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -254,12 +269,13 @@ class MemberX500Name(
     }
 
     override fun hashCode(): Int {
-        var result = commonName?.hashCode() ?: 0
-        result = 31 * result + (organisationUnit?.hashCode() ?: 0)
-        result = 31 * result + organisation.hashCode()
-        result = 31 * result + locality.hashCode()
-        result = 31 * result + (state?.hashCode() ?: 0)
-        result = 31 * result + country.hashCode()
-        return result
+        return Objects.hash(
+            commonName,
+            organisationUnit,
+            organisation,
+            locality,
+            state,
+            country
+        )
     }
 }

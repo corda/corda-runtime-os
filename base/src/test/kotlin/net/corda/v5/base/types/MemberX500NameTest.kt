@@ -5,6 +5,7 @@ import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_LOCALITY
 import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANISATION
 import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANISATION_UNIT
 import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_STATE
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -394,5 +395,36 @@ class MemberX500NameTest {
                 "L=Seattle, CN=Service Name, O=Bank A, C=US, ST=Washington, GIVENNAME=me, OU=Org Unit"
             )
         }
+    }
+
+    @Test
+    fun `should give the correct order`() {
+        val names = listOf(
+            MemberX500Name.parse("CN=AAA, OU=CCC, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("OU=CCC, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=DDD, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, O=AA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=AAA, OU=CCC, O=ABA, L=P, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, ST=B, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, ST=A, C=GB"),
+        )
+
+        val sortedNames = names.sorted()
+
+        assertThat(sortedNames).containsExactly(
+            MemberX500Name.parse("OU=CCC, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=AAA, OU=CCC, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=AAA, OU=CCC, O=ABA, L=P, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, O=AA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, ST=A, C=GB"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, ST=A, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=CCC, O=ABA, L=ERR, ST=B, C=US"),
+            MemberX500Name.parse("CN=BBB, OU=DDD, O=ABA, L=ERR, ST=A, C=US"),
+        )
     }
 }
