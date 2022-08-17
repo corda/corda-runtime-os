@@ -14,7 +14,7 @@ import net.corda.data.persistence.EntityResponseFailure
 import net.corda.data.persistence.EntityResponseSuccess
 import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.PersistEntities
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowContinuation
@@ -61,7 +61,7 @@ class EntityResponseWaitingForHandlerTest {
     @BeforeEach
     fun setup() {
         persistRequest = EntityRequest.newBuilder()
-            .setRequest(PersistEntity(bytes))
+            .setRequest(PersistEntities(listOf(bytes)))
             .setTimestamp(Instant.ofEpochMilli(persistTimeStampMilli))
             .setFlowId(flowId)
             .setHoldingIdentity(HoldingIdentity("Alice", "Group1"))
@@ -84,13 +84,13 @@ class EntityResponseWaitingForHandlerTest {
         successResponseBytes = EntityResponse.newBuilder()
             .setRequestId(requestId)
             .setTimestamp(Instant.now())
-            .setResponseType(EntityResponseSuccess(bytes))
+            .setResponseType(EntityResponseSuccess(listOf(bytes)))
             .build()
 
         successResponseNull = EntityResponse.newBuilder()
             .setRequestId(requestId)
             .setTimestamp(Instant.now())
-            .setResponseType(EntityResponseSuccess(null))
+            .setResponseType(EntityResponseSuccess(emptyList()))
             .build()
 
         errorResponseFatal = EntityResponse.newBuilder()

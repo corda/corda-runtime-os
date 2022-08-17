@@ -106,7 +106,7 @@ interface FlowIORequest<out R> {
     data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) :
         FlowIORequest<ByteBuffer?>
 
-    data class FindAll(val requestId: String, val className: String) : FlowIORequest<ByteBuffer?>
+    data class FindAll(val requestId: String, val className: String) : FlowIORequest<List<ByteBuffer>>
 
     data class Merge(val requestId: String, val obj: ByteArray) : FlowIORequest<ByteBuffer?>
 
