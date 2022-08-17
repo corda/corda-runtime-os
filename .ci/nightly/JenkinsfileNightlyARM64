@@ -4,7 +4,7 @@ cordaNightlyPipeline(
     nexusAppId: 'net.corda-api-5.0',
     runIntegrationTests: false,
     dailyBuildCron: 'H 02 * * *',
-    publishOSGiImage: true
-    publishRepoPrefix: 'engineering-tools-maven'
+    publishOSGiImage: true,
+    publishRepoPrefix: 'engineering-tools-maven',
     linuxArch: 'arm64'
     )
