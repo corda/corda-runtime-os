@@ -11,7 +11,7 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
 import net.corda.data.persistence.Error
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.PersistEntities
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
@@ -228,7 +228,7 @@ class PersistenceExceptionTests {
         val serialisedDog = sandboxOne.getSerializer().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
-        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro(), PersistEntity(ByteBuffer.wrap(serialisedDog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro(), PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))))
         return Pair(dbConnectionManager, request)
     }
 }

@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.flow.state.waiting.EntityResponse
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.persistence.manager.PersistenceManager
@@ -28,7 +28,7 @@ class DeleteRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Delete): FlowEventContext<Any> {
-        val deleteRequest = DeleteEntity(ByteBuffer.wrap(request.obj))
+        val deleteRequest = DeleteEntities(listOf(ByteBuffer.wrap(request.obj)))
         val checkpoint = context.checkpoint
         val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity.toAvro(), deleteRequest)
         context.checkpoint.persistenceState  = persistenceManager.processMessageToSend(request.requestId, entityRequest)
