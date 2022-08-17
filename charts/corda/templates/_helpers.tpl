@@ -307,7 +307,7 @@ Volumes for corda workers
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
 {{- if .Values.dumplogging.thread.enabled }}
-- name: dumps
+- name: logging
   hostPath:
     path: /logging/thread/{{ include "corda.workerName" . }}/
     type: DirectoryOrCreate
