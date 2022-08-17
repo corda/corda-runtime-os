@@ -12,4 +12,5 @@ cordaNightlyPipeline(
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false, // change this to true when E2E infrastructure is in place
     linuxArch: 'arm64',
+    gradleAdditionalArgs: '-PcliBasebaseTag=arm64-latest'
     )
