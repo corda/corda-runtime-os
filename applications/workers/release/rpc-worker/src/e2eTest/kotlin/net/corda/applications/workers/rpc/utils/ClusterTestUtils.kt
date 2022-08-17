@@ -16,6 +16,7 @@ import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -47,7 +48,7 @@ fun E2eCluster.uploadCpi(
                 content = jar.inputStream(),
                 contentType = "application/java-archive",
                 extension = "cpb",
-                fileName = "${uniqueName}.cpb",
+                fileName = "$uniqueName.cpb",
                 size = jar.size.toLong(),
             )
             val id = cpi(upload).id
@@ -156,7 +157,8 @@ fun E2eCluster.register(
 ) = with(testToolkit) {
     httpClientFor(MemberRegistrationRpcOps::class.java)
         .use { client ->
-            client.start().proxy.startRegistration(
+            val proxy = client.start().proxy
+            proxy.startRegistration(
                 holdingId,
                 MemberRegistrationRequest(
                     action = "requestJoin",
@@ -164,6 +166,13 @@ fun E2eCluster.register(
                 )
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
+
+                eventually {
+                    val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
+                    assertThat(registrationStatus?.registrationStatus)
+                        .isNotNull
+                        .isEqualTo(RegistrationStatus.APPROVED)
+                }
             }
         }
 }
