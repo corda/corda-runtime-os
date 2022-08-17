@@ -21,6 +21,8 @@ import net.corda.flow.state.FlowCheckpoint
  */
 interface ExternalEventFactory<PARAMETERS : Any, RESPONSE, RESUME> {
 
+    val responseType: Class<RESPONSE>
+
     /**
      * [createExternalEvent] is called to create an [ExternalEventRecord] by [ExternalEventExecutor] after the calling
      * flow suspends.

@@ -25,7 +25,9 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [ExternalEventManager::class])
 class ExternalEventManagerImpl(
     private val serializer: CordaAvroSerializer<Any>,
-    private val deserializer: CordaAvroDeserializer<Any>
+    private val stringDeserializer: CordaAvroDeserializer<String>,
+    private val byteArrayDeserializer: CordaAvroDeserializer<ByteArray>,
+    private val anyDeserializer: CordaAvroDeserializer<Any>
 ) : ExternalEventManager {
 
     @Activate
@@ -34,6 +36,8 @@ class ExternalEventManagerImpl(
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     ) : this(
         cordaAvroSerializationFactory.createAvroSerializer<Any> {},
+        cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java),
+        cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java),
         cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
     )
 
@@ -110,11 +114,16 @@ class ExternalEventManagerImpl(
         return externalEventState
     }
 
-    override fun getReceivedResponse(externalEventState: ExternalEventState): Any? {
-        return if (!isWaitingForResponse(externalEventState)) {
-            deserializer.deserialize(externalEventState.response.payload.array())
-        } else {
-            null
+    override fun hasReceivedResponse(externalEventState: ExternalEventState): Boolean {
+        return externalEventState.response != null
+    }
+
+    override fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any? {
+        val bytes = externalEventState.response.payload.array()
+        return when(responseType) {
+            String::class.java -> stringDeserializer.deserialize(bytes)
+            ByteArray::class.java -> byteArrayDeserializer.deserialize(bytes)
+            else -> anyDeserializer.deserialize(bytes)
         }
     }
 
@@ -124,8 +133,7 @@ class ExternalEventManagerImpl(
         instant: Instant,
         config: SmartConfig
     ): Pair<ExternalEventState, Record<*, *>?> {
-        return if (isWaitingForResponse(externalEventState)) {
-            when {
+            return when {
                 hasNotSentOriginalEvent(externalEventState) -> {
                     log.debug {
                         "Sending external event request ${externalEventState.requestId} " +
@@ -142,13 +150,6 @@ class ExternalEventManagerImpl(
                 }
                 else -> externalEventState to null
             }
-        } else {
-            externalEventState to null
-        }
-    }
-
-    private fun isWaitingForResponse(externalEventState: ExternalEventState): Boolean {
-        return externalEventState.response == null
     }
 
     private fun hasNotSentOriginalEvent(externalEventState: ExternalEventState): Boolean {

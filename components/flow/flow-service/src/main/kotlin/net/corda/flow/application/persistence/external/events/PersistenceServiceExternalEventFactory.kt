@@ -16,6 +16,8 @@ import org.osgi.service.component.annotations.Component
 class PersistenceServiceExternalEventFactory :
     ExternalEventFactory<PersistenceParameters, EntityResponse, ByteArray?> {
 
+    override val responseType = EntityResponse::class.java
+
     private companion object {
         val log = contextLogger()
     }

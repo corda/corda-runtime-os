@@ -36,8 +36,10 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 
 class OutputAssertionsImpl(
-    private val avroSerializer: CordaAvroSerializer<Any>,
-    private val avroDeserializer: CordaAvroDeserializer<Any>,
+    private val serializer: CordaAvroSerializer<Any>,
+    private val stringDeserializer: CordaAvroDeserializer<String>,
+    private val byteArrayDeserializer: CordaAvroDeserializer<ByteArray>,
+    private val anyDeserializer: CordaAvroDeserializer<Any>,
     private val flowId: String,
     private val sessionInitiatingIdentity: HoldingIdentity? = null,
     private val sessionInitiatedIdentity: HoldingIdentity? = null,
@@ -99,8 +101,8 @@ class OutputAssertionsImpl(
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response value")
 
-            val serializedKey = avroSerializer.serialize(key)
-            val serializedPayload = avroSerializer.serialize(payload)
+            val serializedKey = serializer.serialize(key)
+            val serializedPayload = serializer.serialize(payload)
 
             val externalEventsToTopic = testRun.response!!.responseEvents.filter { it.topic == topic }
 
@@ -112,23 +114,27 @@ class OutputAssertionsImpl(
 
             assertArrayEquals(
                 serializedKey!!,
-                externalEventsToTopic.single().key as ByteArray,
+                externalEventsToTopic.single().key as ByteArray) {
                 "Expected the external event to have a key of $key but was ${
-                    avroDeserializer.deserialize(
-                        externalEventsToTopic.single().key as ByteArray
-                    )
+                    avroDeserializeTo(externalEventsToTopic.single().key as ByteArray, key)
                 }"
-            )
+            }
 
             assertArrayEquals(
                 serializedPayload,
-                externalEventsToTopic.single().value as ByteArray,
+                externalEventsToTopic.single().value as ByteArray) {
                 "Expected the external event to have a payload of $payload but was ${
-                    avroDeserializer.deserialize(
-                        externalEventsToTopic.single().value as ByteArray
-                    )
+                    avroDeserializeTo(externalEventsToTopic.single().value as ByteArray, payload)
                 }"
-            )
+            }
+        }
+    }
+
+    private fun avroDeserializeTo(bytes: ByteArray, serializeToMatchingType: Any): Any? {
+        return when (serializeToMatchingType) {
+            is String -> stringDeserializer.deserialize(bytes)
+            is ByteArray -> byteArrayDeserializer.deserialize(bytes)
+            else -> anyDeserializer.deserialize(bytes)
         }
     }
 

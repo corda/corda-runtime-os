@@ -68,12 +68,12 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         checkpoint: FlowCheckpoint,
         externalEventState: ExternalEventState
     ): FlowContinuation {
-        return when (val externalEventResponse = externalEventManager.getReceivedResponse(externalEventState)) {
-            null -> FlowContinuation.Continue
-            else -> {
-                val handler = externalEventFactoryMap.get(externalEventState.factoryClassName)
-                FlowContinuation.Run(handler.resumeWith(checkpoint, externalEventResponse))
-            }
+        return if (externalEventManager.hasReceivedResponse(externalEventState)) {
+            val handler = externalEventFactoryMap.get(externalEventState.factoryClassName)
+            val response = externalEventManager.getReceivedResponse(externalEventState, handler.responseType)
+            FlowContinuation.Run(handler.resumeWith(checkpoint, response))
+        } else {
+            FlowContinuation.Continue
         }
     }
 

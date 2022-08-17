@@ -3,7 +3,9 @@ package net.corda.flow.testing.tests
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
+import net.corda.data.persistence.FindEntity
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.fiber.FlowIORequest
@@ -26,16 +28,29 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         const val requestId = "requestId"
         val bytes = "bytes".toByteArray()
         val byteBuffer = ByteBuffer.wrap(bytes)
+
+        val entityRequest = EntityRequest(
+            ALICE_HOLDING_IDENTITY,
+            FindEntity("entity class name", byteBuffer),
+            ExternalEventContext(requestId, FLOW_ID1)
+        )
     }
 
     @Component(service = [ExternalEventFactory::class])
     class MyFactory : ExternalEventFactory<Any, Any, Any> {
+
+        override val responseType = Any::class.java
+
         override fun createExternalEvent(
             checkpoint: FlowCheckpoint,
             flowExternalEventContext: ExternalEventContext,
             parameters: Any
         ): ExternalEventRecord {
-            return ExternalEventRecord("topic", "key", "payload")
+            return ExternalEventRecord(
+                "topic",
+                "key",
+                entityRequest
+            )
         }
 
         override fun resumeWith(checkpoint: FlowCheckpoint, response: Any): Any {
@@ -69,7 +84,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                externalEvent("topic", "key", "payload")
+                externalEvent("topic", "key", entityRequest)
             }
         }
     }
@@ -124,7 +139,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-               flowDidNotResume()
+                flowDidNotResume()
             }
         }
     }
@@ -149,7 +164,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                externalEvent("topic", "key", "payload")
+                externalEvent("topic", "key", entityRequest)
             }
         }
     }

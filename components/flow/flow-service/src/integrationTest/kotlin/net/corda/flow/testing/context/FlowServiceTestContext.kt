@@ -91,8 +91,10 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION to 60000
     )
 
-    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+    private val stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java)
+    private val byteArrayDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java)
+    private val anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     private val testRuns = mutableListOf<TestRun>()
     private val assertions = mutableListOf<OutputAssertionsImpl>()
@@ -334,7 +336,7 @@ class FlowServiceTestContext @Activate constructor(
                 flowId,
                 ExternalEventResponse.newBuilder()
                     .setRequestId(requestId)
-                    .setPayload(ByteBuffer.wrap(avroSerializer.serialize(payload)))
+                    .setPayload(ByteBuffer.wrap(serializer.serialize(payload)))
                     .setError(null)
                     .setTimestamp(Instant.now())
                     .build()
@@ -362,8 +364,10 @@ class FlowServiceTestContext @Activate constructor(
 
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {
         val assertionsCapture = OutputAssertionsImpl(
-            avroSerializer,
-            avroDeserializer,
+            serializer,
+            stringDeserializer,
+            byteArrayDeserializer,
+            anyDeserializer,
             flowId,
             sessionInitiatingIdentity,
             sessionInitiatedIdentity

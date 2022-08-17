@@ -18,6 +18,8 @@ class CreateSignatureExternalEventFactory @Activate constructor(
     private val cryptoFlowOpsTransformer: CryptoFlowOpsTransformer
 ) : ExternalEventFactory<SignParameters, FlowOpsResponse, DigitalSignature.WithKey> {
 
+    override val responseType = FlowOpsResponse::class.java
+
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
