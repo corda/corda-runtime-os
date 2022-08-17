@@ -25,7 +25,7 @@ class ConsensualSignedTransactionImpl(
     override val id: SecureHash
         get() = wireTransaction.id
 
-    override fun toLedgerTransaction(serializer: SerializationService): ConsensualLedgerTransaction =
+    override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
 
     /** CORE-5091 it does not do anything at the moment. */
@@ -35,7 +35,7 @@ class ConsensualSignedTransactionImpl(
 
     override fun getMissingSigningKeys(): Set<PublicKey> {
         val alreadySigned = signatures.map{it.by}.toSet()
-        val requiredSigningKeys = this.toLedgerTransaction(serializer).requiredSigningKeys
+        val requiredSigningKeys = this.toLedgerTransaction().requiredSigningKeys
         return requiredSigningKeys.filter { !it.isFulfilledBy(alreadySigned) }.toSet()
     }
 }
