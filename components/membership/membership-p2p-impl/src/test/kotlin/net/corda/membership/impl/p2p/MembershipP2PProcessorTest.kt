@@ -45,7 +45,7 @@ class MembershipP2PProcessorTest {
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
 
-    private val memberContext = KeyValuePairList(listOf(KeyValuePair("foo", "bar")))
+    private val memberContext = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
     private val testSig =
         CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer(), KeyValuePairList(emptyList()))
     private val registrationId = UUID.randomUUID().toString()

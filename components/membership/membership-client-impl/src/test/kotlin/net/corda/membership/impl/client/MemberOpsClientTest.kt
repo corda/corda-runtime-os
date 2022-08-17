@@ -4,6 +4,8 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
@@ -12,8 +14,6 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
-import net.corda.data.membership.rpc.response.RegistrationStatusDetails
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig

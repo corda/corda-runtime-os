@@ -2,8 +2,8 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory

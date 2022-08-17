@@ -231,7 +231,7 @@ class MemberRegistrationIntegrationTest {
                 it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
                 it.assertThat(this.header.source.groupId).isEqualTo(groupId)
                 val deserializedContext = requestDeserializer.deserialize(payload.array())!!.run {
-                    memberContext
+                    keyValuePairListDeserializer.deserialize(memberContext.array())!!
                 }
                 with(deserializedContext.items) {
                     it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)

@@ -7,7 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator

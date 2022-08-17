@@ -9,8 +9,8 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -236,7 +236,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 )
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
-                    memberContext,
+                    ByteBuffer.wrap(serializedMemberContext),
                     memberSignature
                 )
                 val record = buildUnauthenticatedP2PRequest(

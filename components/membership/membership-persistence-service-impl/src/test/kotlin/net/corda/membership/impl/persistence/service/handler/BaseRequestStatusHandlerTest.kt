@@ -4,8 +4,8 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import org.assertj.core.api.Assertions.assertThat

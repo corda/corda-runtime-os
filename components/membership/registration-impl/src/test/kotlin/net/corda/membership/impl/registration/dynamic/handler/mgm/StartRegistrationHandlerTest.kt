@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -81,7 +83,7 @@ class StartRegistrationHandlerTest {
                     holdingIdentity,
                     MembershipRegistrationRequest(
                         registrationId,
-                        memberContext,
+                        memberContext.toByteBuffer(),
                         CryptoSignatureWithKey(
                             ByteBuffer.wrap("456".toByteArray()),
                             ByteBuffer.wrap("789".toByteArray()),
@@ -137,6 +139,12 @@ class StartRegistrationHandlerTest {
 
     @BeforeEach
     fun setUp() {
+        val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+            on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
+        }
+        val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+            on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+        }
         memberInfoFactory = mock {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
         }
@@ -156,7 +164,7 @@ class StartRegistrationHandlerTest {
                     eq(mgmHoldingIdentity.toCorda()),
                     any()
                 )
-            } doReturn MembershipQueryResult.Success<Collection<MemberInfo>>(emptyList())
+            } doReturn MembershipQueryResult.Success(emptyList())
         }
 
         handler = StartRegistrationHandler(
@@ -165,6 +173,7 @@ class StartRegistrationHandlerTest {
             membershipGroupReaderProvider,
             membershipPersistenceClient,
             membershipQueryClient,
+            cordaAvroSerializationFactory,
             layeredPropertyMapFactor,
         )
     }

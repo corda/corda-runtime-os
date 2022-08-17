@@ -1,11 +1,13 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
@@ -45,12 +47,18 @@ class StartRegistrationHandler(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
         val logger = contextLogger()
     }
+
+    private val keyValuePairListDeserializer =
+        cordaAvroSerializationFactory.createAvroDeserializer({
+            logger.error("Deserialization of registration request KeyValuePairList failed.")
+        }, KeyValuePairList::class.java)
 
     override val commandType = StartRegistration::class.java
 
@@ -185,12 +193,17 @@ class StartRegistrationHandler(
         }!!
     }
 
-    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest = RegistrationRequest(
-        RegistrationStatus.NEW,
-        memberRegistrationRequest.registrationId,
-        source.toCorda(),
-        layeredPropertyMapFactory.createMap(memberRegistrationRequest.memberContext.toMap()),
-        memberRegistrationRequest.memberSignature.publicKey,
-        memberRegistrationRequest.memberSignature.bytes
-    )
+    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
+        val context = keyValuePairListDeserializer.deserialize(
+            memberRegistrationRequest.memberContext.array()
+        ) ?: KeyValuePairList(emptyList())
+        return RegistrationRequest(
+            RegistrationStatus.NEW,
+            memberRegistrationRequest.registrationId,
+            source.toCorda(),
+            layeredPropertyMapFactory.createMap(context.toMap()),
+            memberRegistrationRequest.memberSignature.publicKey,
+            memberRegistrationRequest.memberSignature.bytes
+        )
+    }
 }

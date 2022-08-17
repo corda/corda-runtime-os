@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -14,7 +15,6 @@ import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
-import net.corda.data.membership.rpc.response.RegistrationStatusDetails
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

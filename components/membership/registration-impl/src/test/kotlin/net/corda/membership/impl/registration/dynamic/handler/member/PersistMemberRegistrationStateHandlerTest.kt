@@ -2,8 +2,8 @@ package net.corda.membership.impl.registration.dynamic.handler.member
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat

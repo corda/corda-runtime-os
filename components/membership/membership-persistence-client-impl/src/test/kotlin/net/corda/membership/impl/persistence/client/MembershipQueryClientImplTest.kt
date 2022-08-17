@@ -7,6 +7,8 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
@@ -18,8 +20,6 @@ import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
-import net.corda.data.membership.rpc.response.RegistrationStatus
-import net.corda.data.membership.rpc.response.RegistrationStatusDetails
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory

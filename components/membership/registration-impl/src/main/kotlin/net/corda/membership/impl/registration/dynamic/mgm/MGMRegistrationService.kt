@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig

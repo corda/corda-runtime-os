@@ -7,7 +7,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -277,7 +277,7 @@ class StaticMemberRegistrationService @Activate constructor(
      */
     private fun assignSoftHsm(memberId: String) {
         CryptoConsts.Categories.all.forEach {
-            if(hsmRegistrationClient.findHSM(memberId, it) == null) {
+            if (hsmRegistrationClient.findHSM(memberId, it) == null) {
                 hsmRegistrationClient.assignSoftHSM(memberId, it)
             }
         }

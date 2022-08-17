@@ -2,8 +2,8 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -27,7 +27,7 @@ class DeclineRegistrationHandler(
         key: String,
         command: DeclineRegistration
     ): RegistrationHandlerResult {
-        if(state == null) throw MissingRegistrationStateException
+        if (state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
         val declinedBy = state.mgm
         val declinedMember = state.registeringMember

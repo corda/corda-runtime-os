@@ -4,10 +4,10 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -64,7 +64,7 @@ internal class ApproveRegistrationHandler(
 
     override val commandType = ApproveRegistration::class.java
     override fun invoke(state: RegistrationState?, key: String, command: ApproveRegistration): RegistrationHandlerResult {
-        if(state == null) throw MissingRegistrationStateException
+        if (state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
         val approvedBy = state.mgm
         val approvedMember = state.registeringMember

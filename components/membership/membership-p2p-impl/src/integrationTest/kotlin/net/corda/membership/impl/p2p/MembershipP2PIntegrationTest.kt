@@ -226,7 +226,7 @@ class MembershipP2PIntegrationTest {
         )
         val message = MembershipRegistrationRequest(
             registrationId,
-            memberContext,
+            ByteBuffer.wrap(keyValuePairListSerializer.serialize(memberContext)),
             fakeSigWithKey
         )
 
@@ -273,7 +273,7 @@ class MembershipP2PIntegrationTest {
                 assertThat(memberRegistrationRequest).isNotNull
                 with(memberRegistrationRequest) {
                     assertThat(this.registrationId).isEqualTo(registrationId)
-                    val deserializedContext = this.memberContext
+                    val deserializedContext = keyValuePairListDeserializer.deserialize(this.memberContext.array())
                     assertThat(deserializedContext)
                         .isNotNull
                         .isEqualTo(memberContext)

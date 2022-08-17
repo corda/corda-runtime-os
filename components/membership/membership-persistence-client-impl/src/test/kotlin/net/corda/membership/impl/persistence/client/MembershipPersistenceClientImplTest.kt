@@ -3,9 +3,12 @@ package net.corda.membership.impl.persistence.client
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -16,7 +19,6 @@ import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -103,11 +105,33 @@ class MembershipPersistenceClientImplTest {
         on { mgmProvidedContext } doReturn mgmProvidedContext
     }
     private val registrationId = "Group ID 1"
+    private val memberContextValues = mapOf("key" to "value")
+    private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
+        on {
+            serialize(
+                eq(
+                    KeyValuePairList(
+                        memberContextValues.entries.map {
+                            KeyValuePair(it.key, it.value)
+                        }
+                    )
+                )
+            )
+        } doReturn "10".toByteArray()
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn serializer
+    }
+    private val memberContext = mock<LayeredPropertyMap> {
+        on { entries } doReturn memberContextValues.entries
+    }
     private val ourRegistrationRequest = RegistrationRequest(
         RegistrationStatus.NEW,
         registrationId,
         ourHoldingIdentity,
-        mock(),
+        memberContext,
         ByteBuffer.wrap("456".toByteArray()),
         ByteBuffer.wrap("789".toByteArray()),
     )
@@ -148,7 +172,12 @@ class MembershipPersistenceClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipPersistenceClient = MembershipPersistenceClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock
+            coordinatorFactory,
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            cordaAvroSerializationFactory,
+            clock
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())

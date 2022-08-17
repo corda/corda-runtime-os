@@ -63,7 +63,8 @@ class RegistrationProcessor(
             membershipGroupReaderProvider,
             membershipPersistenceClient,
             membershipQueryClient,
-            layeredPropertyMapFactory
+            cordaAvroSerializationFactory,
+            layeredPropertyMapFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,

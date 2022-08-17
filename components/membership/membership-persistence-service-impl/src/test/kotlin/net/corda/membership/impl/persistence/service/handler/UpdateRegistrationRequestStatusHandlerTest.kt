@@ -3,9 +3,9 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb

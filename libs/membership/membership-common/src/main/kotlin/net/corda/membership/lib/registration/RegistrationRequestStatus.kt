@@ -1,7 +1,7 @@
 package net.corda.membership.lib.registration
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import java.time.Instant
 
 /**

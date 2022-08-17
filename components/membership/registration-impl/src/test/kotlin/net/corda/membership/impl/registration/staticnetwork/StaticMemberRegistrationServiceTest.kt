@@ -35,7 +35,7 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient

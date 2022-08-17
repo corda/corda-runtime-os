@@ -27,7 +27,7 @@ internal class PersistRegistrationRequestHandler(
                     status = request.status.toString(),
                     created = now,
                     lastModified = now,
-                    context = keyValuePairListSerializer.serialize(request.registrationRequest.memberContext) ?: byteArrayOf(),
+                    context = request.registrationRequest.memberContext.array(),
                 )
             )
             em.merge(

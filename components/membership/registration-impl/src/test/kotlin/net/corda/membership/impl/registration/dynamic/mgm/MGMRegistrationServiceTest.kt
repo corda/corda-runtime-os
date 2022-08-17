@@ -8,7 +8,7 @@ import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.rpc.response.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
