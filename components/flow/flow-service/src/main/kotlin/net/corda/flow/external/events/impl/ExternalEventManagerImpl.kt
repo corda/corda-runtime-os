@@ -38,7 +38,8 @@ class ExternalEventManagerImpl(
     )
 
     private companion object {
-        val logger = contextLogger()
+        val log = contextLogger()
+
         //Comparing two instants which are the same can yield inconsistent comparison results.
         //A small buffer is added to make sure we pick up new messages to be sent
         const val INSTANT_COMPARE_BUFFER_MILLIS = 10L
@@ -51,7 +52,7 @@ class ExternalEventManagerImpl(
         eventRecord: ExternalEventRecord,
         instant: Instant
     ): ExternalEventState {
-        logger.debug {
+        log.debug {
             "Processing external event response of type ${eventRecord.payload.javaClass.name} with id $requestId"
         }
 
@@ -66,7 +67,7 @@ class ExternalEventManagerImpl(
             .setStatus(ExternalEventStateStatus(ExternalEventStateType.OK, null))
             .setEventToSend(event)
             .setFactoryClassName(factoryClassName)
-            .setSendTimestamp(instant)
+            .setSendTimestamp(null) // set to null for first send?
             .setResponse(null)
             .build()
     }
@@ -76,12 +77,12 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        logger.debug {
+        log.debug {
             "Processing received external event response of type ${externalEventResponse.payload.javaClass.name} " +
                     "with id $requestId"
         }
         if (requestId == externalEventState.requestId) {
-            logger.debug { "External event response with id $requestId matched last sent request" }
+            log.debug { "External event response with id $requestId matched last sent request" }
             externalEventState.response = externalEventResponse
             externalEventResponse.error?.let { error ->
                 externalEventState.status = when (error.errorType) {
@@ -99,6 +100,12 @@ class ExternalEventManagerImpl(
                     )
                 }
             }
+        } else {
+            log.warn(
+                "Received an external event response with id $requestId when waiting for a response with id " +
+                        "${externalEventState.requestId}. This response will be discarded. Content of the response: " +
+                        externalEventResponse
+            )
         }
         return externalEventState
     }
@@ -117,12 +124,24 @@ class ExternalEventManagerImpl(
         instant: Instant,
         config: SmartConfig
     ): Pair<ExternalEventState, Record<*, *>?> {
-        return if (isWaitingForResponse(externalEventState) && isSendWindowValid(externalEventState, instant)) {
-            val eventToSend = externalEventState.eventToSend
-            logger.debug { "Resending external event request which was last sent at ${eventToSend.timestamp}" }
-            eventToSend.timestamp = instant
-            externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
-            externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
+        return if (isWaitingForResponse(externalEventState)) {
+            when {
+                hasNotSentOriginalEvent(externalEventState) -> {
+                    log.debug {
+                        "Sending external event request ${externalEventState.requestId} " +
+                                externalEventState.eventToSend
+                    }
+                    getAndUpdateEventToSend(externalEventState, instant, config)
+                }
+                canRetryEvent(externalEventState, instant) -> {
+                    log.debug {
+                        "Resending external event request ${externalEventState.requestId} which was last sent at " +
+                                externalEventState.eventToSend.timestamp
+                    }
+                    getAndUpdateEventToSend(externalEventState, instant, config)
+                }
+                else -> externalEventState to null
+            }
         } else {
             externalEventState to null
         }
@@ -132,7 +151,23 @@ class ExternalEventManagerImpl(
         return externalEventState.response == null
     }
 
-    private fun isSendWindowValid(externalEventState: ExternalEventState, instant: Instant): Boolean {
-        return externalEventState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER_MILLIS)
+    private fun hasNotSentOriginalEvent(externalEventState: ExternalEventState): Boolean {
+        return externalEventState.sendTimestamp == null
+    }
+
+    private fun canRetryEvent(externalEventState: ExternalEventState, instant: Instant): Boolean {
+        return externalEventState.status.type == ExternalEventStateType.RETRY
+                && externalEventState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER_MILLIS)
+    }
+
+    private fun getAndUpdateEventToSend(
+        externalEventState: ExternalEventState,
+        instant: Instant,
+        config: SmartConfig
+    ): Pair<ExternalEventState, Record<*, *>?> {
+        val eventToSend = externalEventState.eventToSend
+        eventToSend.timestamp = instant
+        externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
+        return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }
