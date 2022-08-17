@@ -1,8 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
-import net.corda.data.membership.rpc.response.RegistrationStatus
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
