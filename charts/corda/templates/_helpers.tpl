@@ -283,9 +283,9 @@ Volume mounts for corda workers
   name: "jaas-conf"
   readOnly: true
 {{- end }}
-{{- if .Values.dumplogging.enabled }}
-- mountPath: /dumps
-  name: dumps
+{{- if .Values.dumplogging.heap.enabled }}
+- mountPath: /logging/heap/
+  name: logging
 {{- end }}
 {{- end }}
 
@@ -306,10 +306,10 @@ Volumes for corda workers
   secret:
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
-{{- if .Values.dumplogging.enabled }}
+{{- if .Values.dumplogging.heap.enabled }}
 - name: dumps
   hostPath:
-    path: /dumps/{{ include "corda.workerName" . }}/
+    path: /logging/heap/{{ include "corda.workerName" . }}/
     type: DirectoryOrCreate
 {{- end }}
 {{- end }}
