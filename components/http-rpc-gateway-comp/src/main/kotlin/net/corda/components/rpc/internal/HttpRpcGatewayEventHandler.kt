@@ -101,6 +101,14 @@ internal class HttpRpcGatewayEventHandler(
                 log.info("Subscribe to configuration updates.")
                 sub?.close()
                 sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
+
+                val numberOfRpcOps = dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>()
+                    .map {
+                        log.info("Starting: ${it.javaClass.simpleName}")
+                        it.start()
+                    }
+                    .count()
+                log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
@@ -151,6 +159,11 @@ internal class HttpRpcGatewayEventHandler(
                 sub?.close()
                 sub = null
 
+                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach {
+                    log.info("Stopping: ${it.javaClass.simpleName}")
+                    it.stop()
+                }
+
                 downTransition()
             }
         }
@@ -167,10 +180,6 @@ internal class HttpRpcGatewayEventHandler(
         server = null
         sslCertReadService?.stop()
         sslCertReadService = null
-        dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach {
-            log.info("Stopping: ${it.javaClass.simpleName}")
-            it.stop()
-        }
     }
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
@@ -207,14 +216,6 @@ internal class HttpRpcGatewayEventHandler(
             httpRpcSettings = httpRpcSettings,
             multiPartDir = multiPartDir
         ).also { it.start() }
-
-        val numberOfRpcOps = rpcOps.filterIsInstance<Lifecycle>()
-            .map {
-                log.info("Starting: ${it.javaClass.simpleName}")
-                it.start()
-            }
-            .count()
-        log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
     }
 
     private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {
