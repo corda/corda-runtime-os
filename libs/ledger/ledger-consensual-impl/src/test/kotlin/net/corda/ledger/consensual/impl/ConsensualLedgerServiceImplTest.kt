@@ -122,7 +122,6 @@ class ConsensualLedgerServiceImplTest {
         val service = ConsensualLedgerServiceImpl(merkleTreeFactory, digestService, signingService, flowFiberService, schemeMetadata)
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
-            .withTimestamp(Instant.now())
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)

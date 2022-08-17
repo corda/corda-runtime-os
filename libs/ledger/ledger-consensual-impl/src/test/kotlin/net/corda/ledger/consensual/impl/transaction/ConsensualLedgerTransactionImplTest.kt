@@ -16,6 +16,7 @@ import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -23,6 +24,7 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
+import kotlin.math.abs
 import kotlin.test.assertIs
 
 // TODO(deduplicate boilerplate with ConsensualTransactionBuilderImplTest)
@@ -74,11 +76,10 @@ internal class ConsensualLedgerTransactionImplTest{
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
         val signedTransaction = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-            .withTimestamp(testTimestamp)
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
         val ledgerTransaction = signedTransaction.toLedgerTransaction(serializer)
-        assertEquals(testTimestamp, ledgerTransaction.timestamp)
+        assertTrue(abs(ledgerTransaction.timestamp.toEpochMilli()/1000 - testTimestamp.toEpochMilli()/1000) < 5 )
         assertIs<List<ConsensualState>>(ledgerTransaction.states)
         assertEquals(1, ledgerTransaction.states.size)
         assertEquals(testConsensualState, ledgerTransaction.states.first())

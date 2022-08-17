@@ -14,7 +14,6 @@ import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.KeyPairGenerator
 import java.security.PublicKey
-import java.time.Instant
 
 /**
  * Example consensual flow. Currently, does almost nothing other than verify that
@@ -71,7 +70,6 @@ class ConsensualFlow : RPCStartableFlow {
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
-                .withTimestamp(Instant.now())
                 .withStates(testConsensualState)
                 .signInitial(testPublicKey)
 

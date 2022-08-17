@@ -47,7 +47,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.KeyPairGenerator
 import java.security.PublicKey
-import java.time.Instant
 
 //TODO(Deduplicate with net.corda.internal.serialization.amqp.testutils and with net.corda.ledger.consensual.MockFlowFiberService)
 
@@ -184,7 +183,6 @@ java.lang.ClassNotFoundException: net.corda.ledger.common.impl.transaction.Trans
 
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         val signedTransaction = transactionBuilder
-            .withTimestamp(Instant.now())
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
         assertThat(signedTransaction).isInstanceOf(ConsensualSignedTransaction::class.java)

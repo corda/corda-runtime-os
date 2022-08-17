@@ -25,22 +25,17 @@ class ConsensualTransactionBuilderImpl(
     private val secureRandom: SecureRandom,
     private val serializer: SerializationService,
     private val signingService: SigningService,
-    override val timestamp: Instant? = null,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
     private fun copy(
-        timeStamp: Instant? = this.timestamp,
         states: List<ConsensualState> = this.states
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
             merkleTreeFactory, digestService, secureRandom, serializer, signingService,
-            timeStamp, states,
+            states,
         )
     }
-
-    override fun withTimestamp(timestamp: Instant): ConsensualTransactionBuilder =
-        this.copy(timeStamp = timestamp)
 
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
         this.copy(states = this.states + states)
@@ -55,8 +50,6 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
-        require(timestamp != null){"Null timeStamp is not allowed"}
-
         val requiredSigningKeys = states //TODO: unique? ordering
             .map{it.participants}
             .flatten()
@@ -68,7 +61,7 @@ class ConsensualTransactionBuilderImpl(
                 ConsensualComponentGroupEnum.METADATA ->
                     listOf(serializer.serialize(calculateMetaData()).bytes)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
-                    listOf(serializer.serialize(timestamp).bytes)
+                    listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
                     requiredSigningKeys.map{serializer.serialize(it).bytes}
                 ConsensualComponentGroupEnum.OUTPUT_STATES ->

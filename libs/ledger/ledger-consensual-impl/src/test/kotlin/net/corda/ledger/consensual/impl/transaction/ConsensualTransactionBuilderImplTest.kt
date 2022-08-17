@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
-import java.time.Instant
 
 internal class ConsensualTransactionBuilderImplTest{
     companion object {
@@ -70,26 +69,14 @@ internal class ConsensualTransactionBuilderImplTest{
     @Test
     fun `can build a simple Transaction`() {
         ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-            .withTimestamp(Instant.now())
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
-    }
-
-    @Test
-    fun `cannot build Transaction without TimeStamp`() {
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withStates(testConsensualState)
-                .signInitial(testPublicKey)
-        }
-        assertEquals("Null timeStamp is not allowed", exception.message)
     }
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withTimestamp(Instant.now())
                 .signInitial(testPublicKey)
         }
         assertEquals("At least one Consensual State is required", exception.message)
@@ -99,7 +86,6 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction with Consensual States without participants`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
-                .withTimestamp(Instant.now())
                 .withStates(testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
                 .signInitial(testPublicKey)
