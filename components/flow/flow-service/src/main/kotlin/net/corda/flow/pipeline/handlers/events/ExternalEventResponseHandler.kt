@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowEventHandler::class])
-class FlowExternalEventHandler @Activate constructor(
+class ExternalEventResponseHandler @Activate constructor(
     @Reference(service = ExternalEventManager::class)
     private val externalEventManager: ExternalEventManager
 ) : FlowEventHandler<ExternalEventResponse> {
