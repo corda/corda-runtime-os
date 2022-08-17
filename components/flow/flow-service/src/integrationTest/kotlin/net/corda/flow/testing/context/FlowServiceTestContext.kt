@@ -355,7 +355,7 @@ class FlowServiceTestContext @Activate constructor(
                 ExternalEventResponse.newBuilder()
                     .setRequestId(requestId)
                     .setPayload(null)
-                    .setError(ExternalEventResponseError(errorType, ExceptionEnvelope()))
+                    .setError(ExternalEventResponseError(errorType, ExceptionEnvelope("type", "message")))
                     .setTimestamp(Instant.now())
                     .build()
             )

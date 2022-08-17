@@ -109,7 +109,7 @@ class OutputAssertionsImpl(
             assertEquals(
                 1,
                 externalEventsToTopic.size,
-                "Expected to find a single external event to topic: $topic but found $externalEventsToTopic"
+                "Expected to find a single external event sent to topic: $topic but found $externalEventsToTopic"
             )
 
             assertArrayEquals(
@@ -135,6 +135,20 @@ class OutputAssertionsImpl(
             is String -> stringDeserializer.deserialize(bytes)
             is ByteArray -> byteArrayDeserializer.deserialize(bytes)
             else -> anyDeserializer.deserialize(bytes)
+        }
+    }
+
+    override fun noExternalEvent(topic: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response, "Test run response value")
+
+            val externalEventsToTopic = testRun.response!!.responseEvents.filter { it.topic == topic }
+
+            assertEquals(
+                0,
+                externalEventsToTopic.size,
+                "Expected to find no external event sent to topic: $topic but found $externalEventsToTopic"
+            )
         }
     }
 

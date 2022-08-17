@@ -140,7 +140,11 @@ This document should be maintained so that we can ensure that we have quick visi
 - Sending an external event sends a payload created by an external event factory ✅
 - Receiving an external event response with the correct request id resumes the flow ✅
 - Receiving an external event response with the wrong request id does not resume the flow and ignores the response ✅
-- Receiving a 'retriable' error response resends the external event if the retry window has been surpassed
+- Receiving a wakeup event does not resend the external event ✅
+- Receiving a 'retriable' error response resends the external event if the retry window has been surpassed ✅
+- Receiving a 'retriable' error response does not resend the external event if the retry window has not been surpassed ✅
+- Receiving a 'platform' error response resumes the flow with an error ✅
+- Receiving a 'fatal' error response DLQs the flow and does not resume ✅
 
 - Can return a plain string or byte array? error on returning string
 

@@ -37,6 +37,8 @@ interface OutputAssertions {
 
     fun externalEvent(topic: String, key: Any, payload: Any)
 
+    fun noExternalEvent(topic: String)
+
     fun scheduleFlowMapperCleanupEvents(vararg key: String)
 
     fun flowDidNotResume()

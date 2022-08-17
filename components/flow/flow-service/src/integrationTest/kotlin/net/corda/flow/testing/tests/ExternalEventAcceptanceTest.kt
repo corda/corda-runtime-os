@@ -11,7 +11,9 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.testing.context.FlowServiceTestBase
+import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.schema.configuration.FlowConfig
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -145,6 +147,32 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `Receiving an event does not resend the external event unless a 'retriable' error is received`() {
+
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        requestId,
+                        MyFactory::class.java,
+                        "parameters"
+                    )
+                )
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                noExternalEvent("topic")
+            }
+        }
+    }
+
+    @Test
     fun `Receiving a 'retriable' error response resends the external event if the retry window has been surpassed`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
@@ -168,6 +196,83 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
+    @Test
+    fun `Receiving a 'retriable' error response does not resend the external event if the retry window has not been surpassed`() {
+        given {
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 50000L)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        requestId,
+                        MyFactory::class.java,
+                        "parameters"
+                    )
+                )
+        }
+
+        `when` {
+            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.RETRY)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                noExternalEvent("topic")
+            }
+        }
+    }
+
+    @Test
+    fun `Receiving a 'platform' error response resumes the flow with an error`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        requestId,
+                        MyFactory::class.java,
+                        "parameters"
+                    )
+                )
+        }
+
+        `when` {
+            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.PLATFORM_ERROR)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
+            }
+        }
+    }
+
+    @Test
+    fun `Receiving a 'fatal' error response DLQs the flow and does not resume`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        requestId,
+                        MyFactory::class.java,
+                        "parameters"
+                    )
+                )
+        }
+
+        `when` {
+            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.FATAL_ERROR)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                markedForDlq()
+                flowDidNotResume()
+            }
+        }
+    }
+
 //    @Test
 //    fun `Receive a 'retriable' error response, retry the request max times, error response received always, flow errors`() {
 //        given {
