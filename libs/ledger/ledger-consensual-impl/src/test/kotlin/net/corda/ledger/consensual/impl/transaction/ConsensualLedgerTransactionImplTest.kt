@@ -78,7 +78,7 @@ internal class ConsensualLedgerTransactionImplTest{
         val signedTransaction = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
-        val ledgerTransaction = signedTransaction.toLedgerTransaction(serializer)
+        val ledgerTransaction = signedTransaction.toLedgerTransaction()
         assertTrue(abs(ledgerTransaction.timestamp.toEpochMilli()/1000 - testTimestamp.toEpochMilli()/1000) < 5 )
         assertIs<List<ConsensualState>>(ledgerTransaction.states)
         assertEquals(1, ledgerTransaction.states.size)
