@@ -5,12 +5,10 @@ import net.corda.v5.crypto.toStringShort
 import net.corda.v5.ledger.consensual.Party
 import java.security.PublicKey
 
+/**
+ * CORE-5936
+ */
 class PartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party {
-    /* // todo: looks useful.
-    constructor(certificate: X509Certificate)
-            : this(MemberX500Name.build(certificate.subjectX500Principal), certificate.publicKey)
-    */
-    // todo: review these. Name is not really used. Is this OK?
     override fun toString() = "$name (owningKey = ${owningKey.toStringShort()})"
     override fun equals(other: Any?): Boolean =
         other === this ||

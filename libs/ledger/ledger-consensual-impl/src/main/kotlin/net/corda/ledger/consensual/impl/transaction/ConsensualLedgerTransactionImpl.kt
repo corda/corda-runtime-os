@@ -49,7 +49,7 @@ class ConsensualLedgerTransactionImpl(
             .flatten()
             .map{it.owningKey}
         require(requiredSigningKeys == requiredSigningKeysFromStates) {
-            "Deserialized required signing keys from WireTx does not match with the ones derived from the states!"
+            "Deserialized required signing keys from WireTx do not match with the ones derived from the states!"
         }
     }
 }

@@ -14,5 +14,5 @@ dependencies {
     implementation "net.corda:corda-ledger-common"
     testImplementation project(":libs:crypto:merkle-impl")
 
-    implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
+    implementation project(":libs:crypto:crypto-core")
 }

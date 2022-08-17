@@ -49,7 +49,7 @@ class ConsensualTransactionBuilderImpl(
         return TransactionMetaData(mapOf(
             LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
             LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
-            // TODO(CORE-5940 CPK identifier/etc)
+            // CORE-5940 set CPK identifier/etc
         ))
     }
 
@@ -82,17 +82,17 @@ class ConsensualTransactionBuilderImpl(
 
     override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        // TODO(we just fake the signature for now...)
+        // CORE-5091 we just fake the signature for now...
 //        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
         val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
-        val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //TODO(populate this properly...)
+        val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
         val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
         return ConsensualSignedTransactionImpl(wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun buildWireTransaction() : WireTransaction{
-        // TODO(more verifications)
-        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
+        // CORE-5982 more verifications
+        // CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
         require(states.isNotEmpty()){"At least one Consensual State is required"}
         require(states.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
         val componentGroupLists = calculateComponentGroupLists(serializer)
