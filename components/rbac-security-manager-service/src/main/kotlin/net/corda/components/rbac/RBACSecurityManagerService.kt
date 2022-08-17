@@ -35,7 +35,7 @@ class RBACSecurityManagerService @Activate constructor(
     val securityManager: RPCSecurityManager
         get() {
             validateRpcSecurityManagerRunning()
-            return _securityManager!!
+            return innerSecurityManager!!
         }
 
     /**
@@ -45,14 +45,14 @@ class RBACSecurityManagerService @Activate constructor(
         require(isRunning) {
             "Security Manager is not running."
         }
-        requireNotNull(_securityManager) {
+        requireNotNull(innerSecurityManager) {
             "Security Manager has not been initialized."
         }
     }
 
     @Volatile
     @VisibleForTesting
-    internal var _securityManager: RPCSecurityManager? = null
+    internal var innerSecurityManager: RPCSecurityManager? = null
 
     @VisibleForTesting
     internal var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<RBACSecurityManagerService>(::processEvent)
@@ -76,8 +76,8 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Received registration status update ${event.status}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        _securityManager?.close()
-                        _securityManager = RBACSecurityManager(
+                        innerSecurityManager?.close()
+                        innerSecurityManager = RBACSecurityManager(
                             permissionManagementService.permissionValidator,
                             permissionManagementService.basicAuthenticationService
                         )
@@ -101,8 +101,8 @@ class RBACSecurityManagerService @Activate constructor(
     }
 
     private fun downTransition() {
-        _securityManager?.close()
-        _securityManager = null
+        innerSecurityManager?.close()
+        innerSecurityManager = null
     }
 
     override val isRunning: Boolean

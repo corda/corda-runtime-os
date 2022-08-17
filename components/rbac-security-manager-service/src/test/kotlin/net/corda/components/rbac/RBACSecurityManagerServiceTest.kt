@@ -76,7 +76,7 @@ class RBACSecurityManagerServiceTest {
     @Test
     fun `process registration DOWN event posts stop event to the coordinator`() {
         val rpcSecurityManager = mock<RPCSecurityManager>()
-        service._securityManager = rpcSecurityManager
+        service.innerSecurityManager = rpcSecurityManager
         service.processEvent(RegistrationStatusChangeEvent(permissionServiceRegistration, LifecycleStatus.DOWN), coordinator)
         verify(rpcSecurityManager).close()
     }
