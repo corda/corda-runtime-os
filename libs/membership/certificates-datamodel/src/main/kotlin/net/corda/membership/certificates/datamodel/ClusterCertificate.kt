@@ -7,11 +7,16 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
+import javax.persistence.NamedQuery
 import javax.persistence.Table
 
 /**
  * An entity representing a single certificate.
  */
+@NamedQuery(
+    name = "ClusterCertificate.findByTenantId",
+    query = "from ClusterCertificate where tenantId = :tenantId"
+)
 @Entity
 @IdClass(ClusterCertificatePrimaryKey::class)
 @Table(name = DbSchema.CLUSTER_CERTIFICATES_DB_TABLE, schema = DbSchema.CERTIFICATES_SCHEME)
