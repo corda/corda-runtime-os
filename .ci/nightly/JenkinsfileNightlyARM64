@@ -1,0 +1,10 @@
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
+cordaNightlyPipeline(
+    nexusAppId: 'net.corda-api-5.0',
+    runIntegrationTests: false,
+    dailyBuildCron: 'H 01 * * *',
+    publishOSGiImage: true,
+    publishRepoPrefix: '', // add valid value once the workaround not to overwrite non ARM64 jars is in place 
+    linuxArch: 'arm64'
+    )
