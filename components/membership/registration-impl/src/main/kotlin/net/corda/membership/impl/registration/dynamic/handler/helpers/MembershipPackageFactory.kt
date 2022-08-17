@@ -29,7 +29,7 @@ internal class MembershipPackageFactory(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cipherSchemeMetadata: CipherSchemeMetadata,
     private val type: DistributionType,
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeGenerator: MerkleTreeGenerator,
     private val idFactory: () -> String,
 ) {
     private companion object {
@@ -59,7 +59,7 @@ internal class MembershipPackageFactory(
         hashCheck: SecureHash,
     ): MembershipPackage {
         val signedMembers = membersToSend.map {
-            val memberTree = merkleTreeFactory.buildTree(listOf(it))
+            val memberTree = merkleTreeGenerator.generateTree(listOf(it))
             val mgmSignature = mgmSigner.sign(memberTree.root.bytes).toAvro()
             val memberSignature = membersSignatures[it.holdingIdentity]
                 ?: throw CordaRuntimeException("Could not find member signature for ${it.name}")

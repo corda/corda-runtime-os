@@ -10,7 +10,7 @@ import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeGenerator
 import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
@@ -50,7 +50,7 @@ class MembershipPackageFactoryTest {
             pk.encoded
         }
     }
-    private val merkleTreeFactory = mock<MerkleTreeFactory>()
+    private val merkleTreeGenerator = mock<MerkleTreeGenerator>()
     private val mgmSigner = mock<Signer>()
     private val membersCount = 4
     private val members = (1..membersCount).map {
@@ -67,7 +67,7 @@ class MembershipPackageFactoryTest {
                 on { root } doReturn treeRoot
             }
         }.onEach {
-            whenever(merkleTreeFactory.buildTree(listOf(it.key))).doReturn(it.value)
+            whenever(merkleTreeGenerator.generateTree(listOf(it.key))).doReturn(it.value)
         }.onEach { entry ->
             val hash = entry.value.root.bytes
             val bytes = "bytes-${entry.key.name}".toByteArray()
@@ -105,7 +105,7 @@ class MembershipPackageFactoryTest {
         cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
-        merkleTreeFactory
+        merkleTreeGenerator
     ) { "id" }
 
     @Test
