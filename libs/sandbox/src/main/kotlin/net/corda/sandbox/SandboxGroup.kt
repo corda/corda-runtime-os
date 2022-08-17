@@ -19,7 +19,7 @@ interface SandboxGroup: SingletonSerializeAsToken {
      * @throws [SandboxException] if no sandbox contains the named class, multiple sandboxes contain the named class,
      * or if any of the sandboxes' main bundles are uninstalled.
      */
-    fun loadClassFromMainBundles(className: String): Class<*>
+    fun loadClassFromMainBundles(className: String): Class<*>?
 
     /**
      * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the sandbox group in
@@ -55,4 +55,5 @@ interface SandboxGroup: SingletonSerializeAsToken {
      * [net.corda.sandbox.internal.classtag.EvolvableTag] from a CPK private bundle.
      */
     fun getClass(className: String, serialisedClassTag: String): Class<*>
+    fun loadClassFromPublicBundles(className: String): Class<*>?
 }

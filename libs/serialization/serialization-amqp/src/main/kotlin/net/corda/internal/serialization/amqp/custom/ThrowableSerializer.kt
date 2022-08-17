@@ -70,6 +70,7 @@ class ThrowableSerializer(
     override fun fromProxy(proxy: ThrowableProxy, context: SerializationContext): Throwable {
         try {
             val clazz = context.currentSandboxGroup().loadClassFromMainBundles(proxy.exceptionClass)
+                ?: throw ClassNotFoundException("Class \"${proxy.exceptionClass}\" not found")
 
             // If it is a CordaRuntimeException, we can seek any constructor and then set the properties
             // Otherwise we just make a CordaRuntimeException

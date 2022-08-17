@@ -35,6 +35,7 @@ import net.corda.virtualnode.toCorda
 
 fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
     this.get(holdingIdentity).sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
+        ?: throw ClassNotFoundException("$fullyQualifiedClassName not found")
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.

@@ -90,25 +90,25 @@ class AMQPwithOSGiSerializationTests {
 
             // Serialise our object
             val cashClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle1.Cash")
-            val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
+            val cashInstance = cashClass!!.getConstructor(Int::class.java).newInstance(100)
 
             val obligationClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle3.Obligation")
 
-            val obligationInstance = obligationClass.getConstructor(
+            val obligationInstance = obligationClass!!.getConstructor(
                 cashInstance.javaClass
             ).newInstance(cashInstance)
 
             val documentClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle2.Document")
             val content = "This is a transfer document"
-            val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
+            val documentInstance = documentClass!!.getConstructor(String::class.java).newInstance(content)
 
             // Container is used to test amqp serialization works for OSGi bundled generic types.
             val containerClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle5.Container")
-            val containerInstance = containerClass.getConstructor(Object::class.java).newInstance(5)
+            val containerInstance = containerClass!!.getConstructor(Object::class.java).newInstance(5)
 
             val transferClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle4.Transfer")
 
-            val transferInstance = transferClass.getConstructor(
+            val transferInstance = transferClass!!.getConstructor(
                 obligationInstance.javaClass, documentInstance.javaClass, containerInstance.javaClass
             ).newInstance(obligationInstance, documentInstance, containerInstance)
 
@@ -148,7 +148,7 @@ class AMQPwithOSGiSerializationTests {
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
             val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem")
-            val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
+            val mainBundleItemInstance = mainBundleItemClass!!.getMethod("newInstance").invoke(null)
 
             assertThrows<SandboxException>(
                 "Attempted to create evolvable class tag for cpk private bundle com.example.serialization.serialization-cpk-library."
@@ -251,7 +251,7 @@ class AMQPwithOSGiSerializationTests {
             val originalStateClass =
                 originalSandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.different.SerializableStateForDifferentCpk")
             val originalStateInstance =
-                originalStateClass.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
+                originalStateClass!!.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
             SerializationOutput(originalFactory).serialize(originalStateInstance, originalContext)
         } finally {
             sandboxFactory.unloadSandboxGroup(originalSandboxGroup)

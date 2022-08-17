@@ -168,7 +168,10 @@ sealed class TypeIdentifier {
         val isPrimitive get() = name in primitives
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type =
-            primitives[name] ?: sandboxGroup.loadClassFromMainBundles(name)
+            primitives[name]
+                ?: sandboxGroup.loadClassFromMainBundles(name)
+                ?: sandboxGroup.loadClassFromPublicBundles(name)
+                ?: throw NotSerializableException("Class \"$name\" not found in any bundle")
         override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
             return primitives[name] ?: loadTypeFromMetadata(sandboxGroup, metadata)
         }
@@ -183,6 +186,9 @@ sealed class TypeIdentifier {
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type =
             sandboxGroup.loadClassFromMainBundles(name)
+                ?: sandboxGroup.loadClassFromPublicBundles(name)
+                ?: throw NotSerializableException("Class \"$name\" not found in any bundle")
+
         override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type =
             loadTypeFromMetadata(sandboxGroup, metadata)
 
@@ -243,6 +249,9 @@ sealed class TypeIdentifier {
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type {
             val rawType = sandboxGroup.loadClassFromMainBundles(name)
+                ?: sandboxGroup.loadClassFromPublicBundles(name)
+                ?: throw NotSerializableException("Class \"$name\" not found in any bundle")
+
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
                         "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
@@ -281,6 +290,8 @@ sealed class TypeIdentifier {
         } else {
             // Must be a Platform type as these are not attached to the metadata
             sandboxGroup.loadClassFromMainBundles(name)
+                ?: sandboxGroup.loadClassFromPublicBundles(name)
+                ?: throw NotSerializableException("Class \"$name\" not found in any bundle")
         }
     }
 }
