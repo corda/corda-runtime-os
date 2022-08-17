@@ -4,17 +4,15 @@ import net.corda.applications.workers.rpc.utils.E2eClusterFactory
 import net.corda.applications.workers.rpc.utils.E2eClusterMember
 import net.corda.applications.workers.rpc.utils.assertAllMembersAreInMemberList
 import net.corda.applications.workers.rpc.utils.assertP2pConnectivity
-import net.corda.applications.workers.rpc.utils.createStaticMemberGroupPolicyJson
-import net.corda.applications.workers.rpc.utils.getCa
-import net.corda.applications.workers.rpc.utils.onboardStaticMembers
+import net.corda.applications.workers.rpc.utils.generateGroupPolicy
+import net.corda.applications.workers.rpc.utils.getGroupId
+import net.corda.applications.workers.rpc.utils.onboardMembers
+import net.corda.applications.workers.rpc.utils.onboardMgm
 import net.corda.data.identity.HoldingIdentity
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
-import java.util.*
-import java.util.concurrent.TimeUnit
 
-class StaticNetworkTest {
+class SingleClusterDynamicNetworkTest {
     private val cordaCluster = E2eClusterFactory.getE2eCluster().also { cluster ->
         cluster.addMembers(
             (1..5).map {
@@ -23,22 +21,25 @@ class StaticNetworkTest {
         )
     }
 
+    private val mgm = E2eClusterMember(
+        "O=Mgm, L=London, C=GB, OU=${cordaCluster.testToolkit.uniqueName}"
+    )
 
     @Test
-    fun `register members`() {
-        onboardStaticGroup()
+    fun `Create mgm and allow members to join the group`() {
+        onboardSingleClusterGroup()
     }
 
     /*
     This test is disabled until CORE-6079 is ready.
-    When CORE-6079 is ready, please delete the `register members` test (as this one will cover that use case as well)
+    When CORE-6079 is ready, please delete the `Create mgm and allow members to join the group` test
+    (as this one will cover that use case as well)
     To run it locally while disabled follow the instruction in resources/RunP2PTest.md:
      */
+    @Disabled("Is disabled and can be run manually until CORE-6079 is complete.")
     @Test
-    @Disabled("This test is disabled until CORE-6079 is ready")
-    @Timeout(value = 10, unit = TimeUnit.MINUTES)
-    fun `create a static network, register members and exchange messages between them via p2p`() {
-        val groupId = onboardStaticGroup()
+    fun `Onboard group and check p2p connectivity`() {
+        val groupId = onboardSingleClusterGroup()
 
         assertP2pConnectivity(
             HoldingIdentity(cordaCluster.members[0].name, groupId),
@@ -47,21 +48,21 @@ class StaticNetworkTest {
         )
     }
 
-    private fun onboardStaticGroup(): String {
-        val groupId = UUID.randomUUID().toString()
-        val groupPolicy = createStaticMemberGroupPolicyJson(
-            getCa(),
-            groupId,
-            cordaCluster
-        )
+    /**
+     * Onboard group and return group ID
+     */
+    private fun onboardSingleClusterGroup(): String {
+        cordaCluster.onboardMgm(mgm)
 
-        cordaCluster.onboardStaticMembers(groupPolicy)
+        val memberGroupPolicy = cordaCluster.generateGroupPolicy(mgm.holdingId)
+
+        cordaCluster.onboardMembers(mgm, memberGroupPolicy)
 
         // Assert all members can see each other in their member lists
-        val allMembers = cordaCluster.members
+        val allMembers = cordaCluster.members + mgm
         allMembers.forEach {
             cordaCluster.assertAllMembersAreInMemberList(it, allMembers)
         }
-        return groupId
+        return cordaCluster.getGroupId(mgm.holdingId)
     }
 }
