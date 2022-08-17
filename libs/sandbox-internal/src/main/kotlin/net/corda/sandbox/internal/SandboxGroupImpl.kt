@@ -13,6 +13,7 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import java.util.Collections.unmodifiableMap
+import kotlin.math.log
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -64,11 +65,15 @@ internal class SandboxGroupImpl(
                 null
             }
         }.singleOrNull()
-            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+        if (clazz == null) {
+            logger.warn("Class $className was not found in any sandbox in the sandbox group.")
+        }
+        return clazz
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = loadClassFromMainBundles(className)
+            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
         return try {
             klass.asSubclass(type)
         } catch (e: ClassCastException) {

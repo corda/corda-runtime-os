@@ -64,7 +64,7 @@ class SandboxServiceIsolationTest {
         )
 
         expectedServices.forEach { serviceClass ->
-            assertTrue(serviceClasses.any { service -> serviceClass.isAssignableFrom(service) })
+            assertTrue(serviceClasses.any { service -> serviceClass!!.isAssignableFrom(service) })
         }
     }
 
@@ -75,7 +75,7 @@ class SandboxServiceIsolationTest {
 
         val expectedService = sandboxFactory.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_2)
 
-        assertTrue(serviceClasses.any { service -> expectedService.isAssignableFrom(service) })
+        assertTrue(serviceClasses.any { service -> expectedService!!.isAssignableFrom(service) })
     }
 
     @Test
@@ -106,7 +106,7 @@ class SandboxServiceIsolationTest {
             sandboxFactory.group2.loadClassFromMainBundles(SERVICES_FLOW_CPK_3)
 
         assertFalse(serviceClasses.any { service ->
-            mainBundleInOtherSandboxGroupService.isAssignableFrom(service)
+            mainBundleInOtherSandboxGroupService!!.isAssignableFrom(service)
         })
     }
 

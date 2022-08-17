@@ -59,6 +59,9 @@ private class MockSandboxGroup(private val classLoader: ClassLoader = ClassLoade
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> =
         Class.forName(className, false, classLoader).asSubclass(type)
     override fun getClass(className: String, serialisedClassTag: String): Class<*> = Class.forName(className)
+    override fun loadClassFromPublicBundles(className: String): Class<*>? =
+        Class.forName(className, false, classLoader)
+
     override fun getStaticTag(klass: Class<*>): String = "S;bundle;sandbox"
     override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
 }

@@ -21,18 +21,22 @@ object SandboxHelper {
 
     fun SandboxGroup.getDogClass(): Class<*> {
         return this.loadClassFromMainBundles(DOG_CLASS_NAME)
+            ?: throw ClassNotFoundException("$DOG_CLASS_NAME not found")
     }
 
     fun SandboxGroup.getCatKeyClass(): Class<*> {
         return this.loadClassFromMainBundles(CAT_KEY_CLASS_NAME)
+            ?: throw ClassNotFoundException("$CAT_KEY_CLASS_NAME not found")
     }
 
     fun SandboxGroup.getCatClass(): Class<*> {
         return this.loadClassFromMainBundles(CAT_CLASS_NAME)
+            ?: throw ClassNotFoundException("$CAT_CLASS_NAME not found")
     }
 
     fun SandboxGroup.getOwnerClass(): Class<*> {
         return this.loadClassFromMainBundles("net.corda.testing.bundles.cats.Owner")
+            ?: throw ClassNotFoundException("net.corda.testing.bundles.cats.Owner not found")
     }
 
     fun SandboxGroupContext.createDogInstance(id: UUID, name: String, date: Instant, owner: String?): Any {
