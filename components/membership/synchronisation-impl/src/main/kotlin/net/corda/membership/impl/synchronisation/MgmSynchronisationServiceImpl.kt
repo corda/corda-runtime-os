@@ -1,0 +1,299 @@
+package net.corda.membership.impl.synchronisation
+
+import net.corda.chunking.toCorda
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
+import net.corda.data.membership.p2p.DistributionType
+import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.p2p.helpers.MembershipPackageFactory
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.SignerFactory
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.synchronisation.MgmSynchronisationService
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.toCorda
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
+import java.util.*
+
+@Component(service = [MgmSynchronisationService::class])
+class MgmSynchronisationServiceImpl(
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = MemberLookup::class)
+    private val memberLookup: MemberLookup,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = DigestService::class)
+    private val hashingService: DigestService,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
+    private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
+    private val merkleTreeFactory: net.corda.membership.p2p.helpers.MerkleTreeFactory = net.corda.membership.p2p.helpers.MerkleTreeFactory(
+        cordaAvroSerializationFactory,
+        hashingService,
+    ),
+    private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
+        clock,
+        cordaAvroSerializationFactory,
+        cipherSchemeMetadata,
+        DistributionType.SYNC,
+        merkleTreeFactory,
+    ) { UUID.randomUUID().toString() },
+    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    ),
+) : MgmSynchronisationService {
+    private companion object {
+        val logger = contextLogger()
+        const val SERVICE = "MgmSynchronisationService"
+        private val clock: Clock = UTCClock()
+    }
+
+    // Component lifecycle coordinator
+    private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
+
+    // for watching the config changes
+    private var configHandle: AutoCloseable? = null
+
+    // for checking the components' health
+    private var componentHandle: RegistrationHandle? = null
+
+    private var _publisher: Publisher? = null
+
+    /**
+     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
+     */
+    private val publisher: Publisher
+        get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
+
+    private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
+            logger.warn("Serialization failed")
+        }
+    }
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    /**
+     * Private interface used for implementation swapping in response to lifecycle events.
+     */
+    private interface InnerSynchronisationService : AutoCloseable {
+        fun processSyncRequest(request: ProcessSyncRequest)
+    }
+
+    private var impl: InnerSynchronisationService = InactiveImpl
+
+    override fun start() {
+        logger.info("$SERVICE started.")
+        coordinator.start()
+    }
+
+    override fun stop() {
+        logger.info("$SERVICE stopped.")
+        coordinator.stop()
+    }
+
+    private fun activate(coordinator: LifecycleCoordinator) {
+        impl = ActiveImpl()
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
+
+    private fun deactivate(coordinator: LifecycleCoordinator) {
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        impl.close()
+        impl = InactiveImpl
+    }
+
+    override fun processSyncRequest(request: ProcessSyncRequest) =
+        impl.processSyncRequest(request)
+
+    private object InactiveImpl : InnerSynchronisationService {
+        override fun processSyncRequest(request: ProcessSyncRequest) =
+            throw IllegalStateException("$SERVICE is currently inactive.")
+
+        override fun close() = Unit
+    }
+
+    private inner class ActiveImpl : InnerSynchronisationService {
+        override fun processSyncRequest(request: ProcessSyncRequest) {
+            val memberHashFromTheReq = request.syncRequest.membersHash
+            val requester = request.requester.toCorda()
+            val allMembers = memberLookup.lookup()
+            val mgm = allMembers.single { it.holdingIdentity == request.mgm.toCorda() }
+            val member = allMembers.singleOrNull { it.holdingIdentity == requester }
+                ?: throw CordaRuntimeException("Requester ${requester.x500Name} is not part of the membership group!")
+            if (compareHashes(memberHashFromTheReq.toCorda(), member)) {
+                sendPackage(request.mgm, request.requester, createMembershipPackage(mgm, allMembers))
+            } else {
+                // member has not received the latest updates regarding its own membership, will send its missing updates about themselves only
+                sendPackage(request.mgm, request.requester, createMembershipPackage(mgm, listOf(member)))
+            }
+        }
+
+        override fun close() {
+            publisher.close()
+        }
+
+        private fun sendPackage(
+            source: net.corda.data.identity.HoldingIdentity,
+            dest: net.corda.data.identity.HoldingIdentity,
+            data: MembershipPackage
+        ) {
+            publisher.publish(
+                listOf(
+                    p2pRecordsFactory.createAuthenticatedMessageRecord(
+                        source = source,
+                        destination = dest,
+                        content = data
+                    )
+                )
+            )
+        }
+
+        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: MemberInfo):  Boolean {
+            val memberHashSeenByMgm = calculateHash(requester)
+            if (memberHashSeenByMember != memberHashSeenByMgm) {
+                return false
+            }
+            return true
+        }
+
+        private fun calculateHash(memberInfo: MemberInfo): SecureHash {
+            /*val leaves = listOf(
+                serializer.serialize(memberInfo.memberProvidedContext.toAvro())
+                    ?: throw CordaRuntimeException("ByteArray for member provided context cannot be null."),
+                serializer.serialize(memberInfo.mgmProvidedContext.toAvro())
+                    ?: throw CordaRuntimeException("ByteArray for mgm provided context cannot be null.")
+            )*/
+            return merkleTreeFactory.buildTree(listOf(memberInfo)).root
+        }
+
+        private fun createMembershipPackage(
+            mgm: MemberInfo,
+            members: Collection<MemberInfo>
+        ): MembershipPackage {
+            val mgmSigner = signerFactory.createSigner(mgm)
+            val signatures = membershipQueryClient
+                .queryMembersSignatures(
+                    mgm.holdingIdentity,
+                    members.map {
+                        it.holdingIdentity
+                    }
+                ).getOrThrow()
+            val membersTree = merkleTreeFactory.buildTree(members)
+
+            return membershipPackageFactory.createMembershipPackage(
+                mgmSigner,
+                signatures,
+                members,
+                membersTree.root
+            )
+        }
+    }
+
+    private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Received event $event.")
+        when (event) {
+            is StartEvent -> handleStartEvent(coordinator)
+            is StopEvent -> handleStopEvent(coordinator)
+            is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> handleConfigChange(event, coordinator)
+        }
+    }
+
+    private fun handleStartEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Handling start event.")
+        componentHandle?.close()
+        componentHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+            )
+        )
+    }
+
+    private fun handleStopEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Handling stop event.")
+        deactivate(coordinator)
+        componentHandle?.close()
+        componentHandle = null
+        configHandle?.close()
+        configHandle = null
+        _publisher?.close()
+        _publisher = null
+    }
+
+    private fun handleRegistrationChangeEvent(
+        event: RegistrationStatusChangeEvent,
+        coordinator: LifecycleCoordinator,
+    ) {
+        logger.info("Handling registration changed event.")
+        when (event.status) {
+            LifecycleStatus.UP -> {
+                configHandle?.close()
+                configHandle = configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
+                )
+            }
+            else -> {
+                deactivate(coordinator)
+                configHandle?.close()
+            }
+        }
+    }
+
+    // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
+    private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Handling config changed event.")
+        _publisher?.close()
+        _publisher = publisherFactory.createPublisher(
+            PublisherConfig("mgm-synchronisation-service"),
+            event.config.getConfig(MESSAGING_CONFIG)
+        )
+        _publisher?.start()
+        activate(coordinator)
+    }
+}
