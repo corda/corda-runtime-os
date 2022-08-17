@@ -10,6 +10,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 
 class ConsensualSignedTransactionImpl(
+    private val serializer: SerializationService,
     val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
     ): ConsensualSignedTransaction
@@ -29,10 +30,10 @@ class ConsensualSignedTransactionImpl(
 
     /** CORE-5091 it does not do anything at the moment. */
     override fun addSignature(publicKey: PublicKey): ConsensualSignedTransaction {
-        return ConsensualSignedTransactionImpl(wireTransaction, signatures)
+        return ConsensualSignedTransactionImpl(serializer, wireTransaction, signatures)
     }
 
-    override fun getMissingSigningKeys(serializer: SerializationService): Set<PublicKey> {
+    override fun getMissingSigningKeys(): Set<PublicKey> {
         val alreadySigned = signatures.map{it.by}.toSet()
         val requiredSigningKeys = this.toLedgerTransaction(serializer).requiredSigningKeys
         return requiredSigningKeys.filter { !it.isFulfilledBy(alreadySigned) }.toSet()

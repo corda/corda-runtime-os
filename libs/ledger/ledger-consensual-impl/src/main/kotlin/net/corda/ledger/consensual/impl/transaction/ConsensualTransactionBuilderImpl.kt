@@ -80,7 +80,7 @@ class ConsensualTransactionBuilderImpl(
         val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
         val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
         val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
-        return ConsensualSignedTransactionImpl(wireTransaction, listOf(signatureWithMetaData))
+        return ConsensualSignedTransactionImpl(serializer, wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun buildWireTransaction() : WireTransaction{
