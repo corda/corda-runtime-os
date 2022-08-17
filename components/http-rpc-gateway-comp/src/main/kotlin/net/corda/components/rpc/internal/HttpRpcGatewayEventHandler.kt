@@ -58,6 +58,8 @@ internal class HttpRpcGatewayEventHandler(
         val log = contextLogger()
 
         const val MULTI_PART_DIR = "multipart"
+
+        const val CONFIG_SUBSCRIPTION = "CONFIG_SUBSCRIPTION"
     }
 
     @VisibleForTesting
@@ -68,9 +70,6 @@ internal class HttpRpcGatewayEventHandler(
 
     @VisibleForTesting
     internal var registration: RegistrationHandle? = null
-
-    @VisibleForTesting
-    internal var sub: AutoCloseable? = null
 
     @Volatile
     @VisibleForTesting
@@ -99,8 +98,12 @@ internal class HttpRpcGatewayEventHandler(
                 rbacSecurityManagerService.start()
 
                 log.info("Subscribe to configuration updates.")
-                sub?.close()
-                sub = configurationReadService.registerComponentForUpdates(coordinator, setOf(BOOT_CONFIG, RPC_CONFIG))
+                coordinator.createManagedResource(CONFIG_SUBSCRIPTION) {
+                    configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, RPC_CONFIG)
+                    )
+                }
 
                 val numberOfRpcOps = dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>()
                     .map {
@@ -155,9 +158,6 @@ internal class HttpRpcGatewayEventHandler(
 
                 permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
-
-                sub?.close()
-                sub = null
 
                 dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach {
                     log.info("Stopping: ${it.javaClass.simpleName}")

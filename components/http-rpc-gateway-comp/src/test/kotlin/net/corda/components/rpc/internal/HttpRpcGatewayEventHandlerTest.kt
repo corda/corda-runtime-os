@@ -37,7 +37,6 @@ internal class HttpRpcGatewayEventHandlerTest {
 
     private val registration = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>()
-    private val sub = mock<AutoCloseable>()
     private val server = mock<HttpRpcServer>()
     private val sslCertReadService = mock<SslCertReadService>()
     private val rpcConfig = mock<SmartConfig>().also {
@@ -117,7 +116,6 @@ internal class HttpRpcGatewayEventHandlerTest {
 
     @Test
     fun `processing a DOWN status change for configuration triggers a stop event`() {
-        handler.sub = sub
         handler.registration = registration
         handler.sslCertReadService = sslCertReadService
 
@@ -128,7 +126,6 @@ internal class HttpRpcGatewayEventHandlerTest {
 
     @Test
     fun `processing an ERROR status change for configuration triggers a stop event with error flag`() {
-        handler.sub = sub
         handler.registration = registration
 
         handler.processEvent(RegistrationStatusChangeEvent(registration, LifecycleStatus.ERROR), coordinator)
@@ -139,14 +136,12 @@ internal class HttpRpcGatewayEventHandlerTest {
     @Test
     fun `processing a STOP event stops the service's dependencies and sets service's status to DOWN`() {
         handler.registration = registration
-        handler.sub = sub
         handler.server = server
         handler.sslCertReadService = sslCertReadService
 
         handler.processEvent(StopEvent(), coordinator)
 
         verify(registration).close()
-        verify(sub).close()
         verify(permissionManagementService).stop()
         verify(rbacSecurityManagerService).stop()
         verify(server).close()
@@ -154,7 +149,6 @@ internal class HttpRpcGatewayEventHandlerTest {
         verify(endpoint).stop()
 
         assertNull(handler.registration)
-        assertNull(handler.sub)
         assertNull(handler.server)
         assertNull(handler.sslCertReadService)
     }
