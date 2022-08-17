@@ -18,10 +18,8 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.NamedLifecycle
-import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.SubscriptionBase
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -42,25 +40,18 @@ import java.util.concurrent.atomic.AtomicReference
  */
 abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
-    private val subscription: Resource,
-    private val subscriptionName: LifecycleCoordinatorName,
+    // Resource type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
+    private val subscriptionGenerator: () -> SubscriptionBase,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<NamedLifecycle>
 ): DominoTile() {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
+        private const val SUBSCRIPTION = "SUBSCRIPTION"
     }
 
-    init {
-        require(
-            subscription is Subscription<*,*> ||
-            subscription is RPCSubscription<*,*> ||
-            subscription is StateAndEventSubscription<*,*,*> ||
-            subscription is CompactedSubscription<*,*>
-        ) { "Expected subscription type, but got ${subscription.javaClass.simpleName}" }
-    }
+    private lateinit var subscriptionName: LifecycleCoordinatorName
 
     final override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
@@ -75,7 +66,7 @@ abstract class SubscriptionDominoTileBase(
         )
     }
 
-    final override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
     private val currentState = AtomicReference(Created)
 
@@ -86,8 +77,8 @@ abstract class SubscriptionDominoTileBase(
     override val isRunning: Boolean
         get() = internalState == Started
 
-    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it }.toSet())
-    private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
+    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.toSet())
+    private var subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
 
     private val logger = LoggerFactory.getLogger(coordinatorName.toString())
 
@@ -98,7 +89,8 @@ abstract class SubscriptionDominoTileBase(
     private fun startTile() {
         managedChildren.forEach { it.lifecycle.start() }
         if (dependentChildren.isEmpty()) {
-            subscription.start()
+            createSubscription()
+            coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.start()
         }
     }
 
@@ -123,6 +115,13 @@ abstract class SubscriptionDominoTileBase(
             status?.let { coordinator.updateStatus(it) }
             logger.info("State updated from $oldState to $newState")
         }
+    }
+
+    private fun createSubscription() {
+        coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
+        subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
+            ?: throw CordaRuntimeException("Unexpectedly missing subscription")
+        subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
     }
 
     private inner class EventHandler : LifecycleEventHandler {
@@ -158,15 +157,19 @@ abstract class SubscriptionDominoTileBase(
                             when(event.status) {
                                 LifecycleStatus.UP -> {
                                     logger.info("All dependencies are started now, starting subscription.")
+                                    createSubscription()
+                                    val subscription = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)
+                                        ?: throw CordaRuntimeException("Unexpectedly missing subscription")
                                     subscription.start()
+                                    subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscription.subscriptionName))
                                 }
                                 LifecycleStatus.DOWN -> {
                                     logger.info("One of the dependencies went down, stopping subscription.")
-                                    subscription.close()
+                                    coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
                                 }
                                 LifecycleStatus.ERROR -> {
                                     logger.info("One of the dependencies had an error, stopping subscription.")
-                                    subscription.close()
+                                    coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
                                 }
                             }
                         }

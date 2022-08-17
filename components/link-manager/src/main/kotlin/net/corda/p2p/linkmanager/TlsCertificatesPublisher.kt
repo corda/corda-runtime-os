@@ -101,11 +101,13 @@ internal class TlsCertificatesPublisher(
             }
         }
     }
-    private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_CERTIFICATES),
-        Processor(),
-        messagingConfiguration,
-    )
+    private val subscription = {
+        subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_CERTIFICATES),
+            Processor(),
+            messagingConfiguration,
+        )
+    }
     private val subscriptionDominoTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,

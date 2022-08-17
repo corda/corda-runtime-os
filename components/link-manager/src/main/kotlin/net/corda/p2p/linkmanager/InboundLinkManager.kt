@@ -22,18 +22,20 @@ internal class InboundLinkManager(
     companion object {
         private const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
     }
-    private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
-        InboundMessageProcessor(
-            commonComponents.sessionManager,
-            groups,
-            members,
-            commonComponents.inboundAssignmentListener,
-            clock
-        ),
-        messagingConfiguration,
-        partitionAssignmentListener = commonComponents.inboundAssignmentListener
-    )
+    private val inboundMessageSubscription = {
+        subscriptionFactory.createEventLogSubscription(
+            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
+            InboundMessageProcessor(
+                commonComponents.sessionManager,
+                groups,
+                members,
+                commonComponents.inboundAssignmentListener,
+                clock
+            ),
+            messagingConfiguration,
+            partitionAssignmentListener = commonComponents.inboundAssignmentListener
+        )
+    }
 
     override val dominoTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,

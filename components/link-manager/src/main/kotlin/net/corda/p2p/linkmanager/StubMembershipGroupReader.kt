@@ -29,11 +29,13 @@ internal class StubMembershipGroupReader(
     private val publicKeyReader = PublicKeyReader()
     private val keyHasher = KeyHasher()
 
-    private val subscription = subscriptionFactory.createCompactedSubscription(
-        subscriptionConfig,
-        MembersProcessor(),
-        configuration
-    )
+    private val subscription = {
+        subscriptionFactory.createCompactedSubscription(
+            subscriptionConfig,
+            MembersProcessor(),
+            configuration
+        )
+    }
 
     private inner class MembersProcessor : CompactedProcessor<String, MemberInfoEntry> {
         override val keyClass = String::class.java

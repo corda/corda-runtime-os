@@ -33,11 +33,13 @@ internal class StubGroupPolicyProvider(
     }
 
     private val groupsSubscriptionConfig = SubscriptionConfig("group-policies-reader", GROUP_POLICIES_TOPIC)
-    private val groupsSubscription = subscriptionFactory.createCompactedSubscription(
-        groupsSubscriptionConfig,
-        GroupProcessor(),
-        configuration
-    )
+    private val groupsSubscription = {
+        subscriptionFactory.createCompactedSubscription(
+            groupsSubscriptionConfig,
+            GroupProcessor(),
+            configuration
+        )
+    }
 
     private inner class GroupProcessor : CompactedProcessor<String, GroupPolicyEntry> {
         override val keyClass = String::class.java

@@ -1,10 +1,5 @@
 package net.corda.p2p.test.stub.crypto.processor
 
-import java.security.PrivateKey
-import java.security.PublicKey
-import java.security.Signature
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -18,6 +13,11 @@ import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
+import java.security.PrivateKey
+import java.security.PublicKey
+import java.security.Signature
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 class StubCryptoProcessor(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -27,8 +27,13 @@ class StubCryptoProcessor(
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
-    private val subscription =
-        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, messagingConfiguration)
+    private val subscription = {
+        subscriptionFactory.createCompactedSubscription(
+            subscriptionConfig,
+            keyPairEntryProcessor,
+            messagingConfiguration
+        )
+    }
     private class TenantKeyMap {
         val publicKeyToPrivateKey = ConcurrentHashMap<PublicKey, PrivateKey>()
     }

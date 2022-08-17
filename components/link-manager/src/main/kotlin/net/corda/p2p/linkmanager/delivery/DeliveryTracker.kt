@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -32,6 +31,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 internal class DeliveryTracker(
@@ -63,12 +63,14 @@ internal class DeliveryTracker(
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
-    private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
-        messageTracker.processor,
-        messagingConfiguration,
-        messageTracker.listener
-    )
+    private val messageTrackerSubscription = {
+        subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
+            messageTracker.processor,
+            messagingConfiguration,
+            messageTracker.listener
+        )
+    }
     private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
         coordinatorFactory,
         messageTrackerSubscription,

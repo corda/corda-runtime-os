@@ -7,7 +7,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 
 class StateAndEventSubscriptionDominoTile<K, S, E>(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    subscription: StateAndEventSubscription<K, S, E>,
+    subscriptionGenerator: () -> StateAndEventSubscription<K, S, E>,
     dependentChildren: Collection<LifecycleCoordinatorName>,
     managedChildren: Collection<NamedLifecycle>
-): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
+): SubscriptionDominoTileBase(coordinatorFactory, subscriptionGenerator, dependentChildren, managedChildren)

@@ -35,7 +35,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(
@@ -192,7 +192,7 @@ class MGMOpsClientImpl @Activate constructor(
 
         }
 
-        override fun close() = rpcSender.close()
+        override fun close() = rpcSender.stop()
 
         @Suppress("SpreadOperator")
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =
