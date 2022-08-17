@@ -8,6 +8,7 @@ import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -104,12 +105,14 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(2)).createFlowStatusResponse(any())
     }
 
+    data class TestJsonObject(val value: String = "") : JsonObject
+
     @Test
     fun `start flow event triggers successfully`() {
         val flowRPCOps =
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
         flowRPCOps.initialise(SmartConfigImpl.empty())
-        flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
+        flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", TestJsonObject()))
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatus(any(), any())
@@ -126,7 +129,7 @@ class FlowRPCOpsImplTest {
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
 
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(0)).getByHoldingIdentityShortHash(any())
@@ -145,7 +148,7 @@ class FlowRPCOpsImplTest {
 
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(mock())
         assertThrows<ResourceAlreadyExistsException> {
-            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -164,7 +167,7 @@ class FlowRPCOpsImplTest {
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
         assertThrows<FlowRPCOpsServiceException> {
-            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", ""))
+            flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", TestJsonObject()))
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
