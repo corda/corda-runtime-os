@@ -12,7 +12,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.ledger.consensual.impl.transaction.PartySerializer
+import net.corda.ledger.consensual.impl.PartySerializer
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
