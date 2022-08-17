@@ -16,6 +16,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.GroupPolicyListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
@@ -147,25 +148,10 @@ class MessageConverter {
 
         fun linkOutFromUnauthenticatedMessage(
             message: UnauthenticatedMessage,
-            groups: LinkManagerGroupPolicyProvider,
-            members: LinkManagerMembershipGroupReader,
-        ): LinkOutMessage? {
-            val destination = message.header.destination.toCorda()
+            destMemberInfo: LinkManagerMembershipGroupReader.MemberInfo,
+            groupInfo: GroupPolicyListener.GroupInfo
+        ): LinkOutMessage {
             val source = message.header.source.toCorda()
-            val destMemberInfo = members.getMemberInfo(source, destination)
-            if (destMemberInfo == null) {
-                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
-                return null
-            }
-
-            val groupInfo = groups.getGroupInfo(source)
-            if (groupInfo == null) {
-                logger.warn(
-                    "Could not find the group information in the" +
-                        " GroupPolicyProvider for $source. The message was discarded."
-                )
-                return null
-            }
 
             return createLinkOutMessage(message, source, destMemberInfo, groupInfo.networkType)
         }
