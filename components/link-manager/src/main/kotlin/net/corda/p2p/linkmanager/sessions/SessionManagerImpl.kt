@@ -550,8 +550,7 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
-        //TODO
-        refreshSessionAndLog(sessionCounterparties, authenticatedSession.sessionId)
+        refreshSessionAndLog(sessionCounterparties, message.header.sessionId)
         return null
     }
 
