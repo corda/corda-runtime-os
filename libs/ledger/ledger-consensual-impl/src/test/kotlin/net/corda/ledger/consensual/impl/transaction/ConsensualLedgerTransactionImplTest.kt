@@ -42,7 +42,7 @@ internal class ConsensualLedgerTransactionImplTest{
             val testField: String,
             override val participants: List<Party>
         ) : ConsensualState {
-            override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
+            override fun verify(ledgerTransaction: ConsensualLedgerTransaction){}
             override fun equals(other: Any?): Boolean =
                 other === this ||
                         other is TestConsensualState &&

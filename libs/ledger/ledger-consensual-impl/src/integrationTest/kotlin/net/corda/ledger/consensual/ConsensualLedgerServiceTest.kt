@@ -143,7 +143,7 @@ class ConsensualLedgerServiceTest {
         val testField: String,
         override val participants: List<Party>
     ) : ConsensualState {
-        override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
+        override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
 
     @InjectService(timeout = 1000)

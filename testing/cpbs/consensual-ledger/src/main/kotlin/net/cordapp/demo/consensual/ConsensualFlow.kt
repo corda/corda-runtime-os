@@ -32,7 +32,7 @@ class ConsensualFlow : RPCStartableFlow {
         val testField: String,
         override val participants: List<Party> /// todo check serialization error
     ) : ConsensualState {
-        override fun verify(ledgerTransaction: ConsensualLedgerTransaction): Boolean = true
+        override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
 
     private companion object {
