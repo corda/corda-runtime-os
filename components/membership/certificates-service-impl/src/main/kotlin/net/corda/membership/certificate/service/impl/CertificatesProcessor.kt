@@ -8,8 +8,6 @@ import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
@@ -31,21 +29,22 @@ internal class CertificatesProcessor(
 
     override fun onNext(request: CertificateRpcRequest, respFuture: CompletableFuture<CertificateRpcResponse>) {
         try {
-            val processor = getCertificateProcessor(request.tenantId)
-            val payload = when (val requestPayload = request.request) {
-                is ImportCertificateRpcRequest -> {
-                    processor.saveCertificates(requestPayload.alias, requestPayload.certificates)
-                    CertificateImportedRpcResponse()
+            useCertificateProcessor(request.tenantId) { processor->
+                val payload = when (val requestPayload = request.request) {
+                    is ImportCertificateRpcRequest -> {
+                        processor.saveCertificates(requestPayload.alias, requestPayload.certificates)
+                        CertificateImportedRpcResponse()
+                    }
+                    is RetrieveCertificateRpcRequest -> {
+                        val certificates = processor.readCertificates(requestPayload.alias)
+                        CertificateRetrievalRpcResponse(certificates)
+                    }
+                    else -> {
+                        throw CertificatesServiceException("Unknwon request: $request")
+                    }
                 }
-                is RetrieveCertificateRpcRequest -> {
-                    val certificates = processor.readCertificates(requestPayload.alias)
-                    CertificateRetrievalRpcResponse(certificates)
-                }
-                else -> {
-                    throw CertificatesServiceException("Unknwon request: $request")
-                }
+                respFuture.complete(CertificateRpcResponse(payload))
             }
-            respFuture.complete(CertificateRpcResponse(payload))
         } catch (e: Throwable) {
             respFuture.completeExceptionally(e)
         }
@@ -86,20 +85,26 @@ internal class CertificatesProcessor(
         }
     }
 
-    private fun getCertificateProcessor(tenantId: String): CertificateProcessor {
-        return if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
-            ClusterCertificateProcessor(tenantId)
+    private fun <T> useCertificateProcessor(tenantId: String, block: (CertificateProcessor)->T) {
+        if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
+            val processor = ClusterCertificateProcessor(tenantId)
+            block.invoke(processor)
         } else {
-            virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId)) ?: throw NoSuchNode(tenantId)
-            val factory = dbConnectionManager.getOrCreateEntityManagerFactory(
-                name = VirtualNodeDbType.VAULT.getConnectionName(ShortHash.of(tenantId)),
-                privilege = DbPrivilege.DML,
+            val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId))
+                ?: throw NoSuchNode(tenantId)
+            val factory = dbConnectionManager.createEntityManagerFactory(
+                connectionId = node.vaultDmlConnectionId,
                 entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                     ?: throw java.lang.IllegalStateException(
                         "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                     )
             )
-            NodeCertificateProcessor((factory))
+            try {
+                val processor = NodeCertificateProcessor(factory)
+                block.invoke(processor)
+            } finally {
+                factory.close()
+            }
         }
     }
 }

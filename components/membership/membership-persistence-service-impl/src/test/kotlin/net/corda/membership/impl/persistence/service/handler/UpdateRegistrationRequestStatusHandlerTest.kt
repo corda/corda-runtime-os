@@ -7,7 +7,6 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -46,10 +45,11 @@ class UpdateRegistrationRequestStatusHandlerTest {
         ourGroupId
     )
 
+    private val vaultDmlConnectionId = UUID(0, 11)
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
@@ -64,9 +64,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            getOrCreateEntityManagerFactory(
-                eq(VirtualNodeDbType.VAULT.getConnectionName(ourHoldingIdentity.shortHash)),
-                any(),
+            createEntityManagerFactory(
+                eq(vaultDmlConnectionId),
                 any()
             )
         } doReturn entityManagerFactory
