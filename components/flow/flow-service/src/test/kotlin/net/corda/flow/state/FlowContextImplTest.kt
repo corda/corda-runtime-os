@@ -65,7 +65,7 @@ class FlowContextImplTest {
     }
 
     @Test
-    fun `put and get with initial properties`() {
+    fun `user context put and get with initial properties`() {
         val copyOfPropertiesList = mutableListOf<KeyValuePair>().apply {
             addAll(userPropertiesLevel1.avro.items)
         }
@@ -110,14 +110,27 @@ class FlowContextImplTest {
     }
 
     @Test
-    fun `unwind flow stack`() {
+    fun `simple platform context put and get`() {
+        flowStack.push(flow)
+
+        assertThat(flowContext["key1"]).isNull()
+
+        flowContext.platformProperties["key1"] = "value1"
+        flowContext.platformProperties["key2"] = "value2"
+
+        assertThat(flowContext["key1"]).isEqualTo("value1")
+        assertThat(flowContext["key2"]).isEqualTo("value2")
+    }
+
+    @Test
+    fun `put platform properties with initial properties`() {
         flowStack.pushWithContext(
             flow,
             contextUserProperties = userPropertiesLevel1.avro,
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        flowContext["key1"] = "value1"
+        flowContext.platformProperties["key1"] = "value1"
 
         flowStack.pushWithContext(
             flow,
@@ -125,22 +138,16 @@ class FlowContextImplTest {
             contextPlatformProperties = platformPropertiesLevel2.avro
         )
 
-        flowContext["key2"] = "value2"
-
-        flowStack.pop()
-
-        assertThat(flowContext["p-key1"]).isEqualTo("p-value1")
-        assertThat(flowContext["u-key1"]).isEqualTo("u-value1")
-        // Non overwritten values
-        assertThat(flowContext["p-key2"]).isEqualTo("p-value2")
-        assertThat(flowContext["u-key2"]).isEqualTo("u-value2")
-        // Popped entirely
-        assertThat(flowContext["u-key3"]).isNull()
-        assertThat(flowContext["p-key3"]).isNull()
+        flowContext.platformProperties["key2"] = "value2"
 
         assertThat(flowContext["key1"]).isEqualTo("value1")
-        // Popped
-        assertThat(flowContext["key2"]).isNull()
+        assertThat(flowContext["key2"]).isEqualTo("value2")
+        assertThat(flowContext["p-key1"]).isEqualTo("p-value1")
+        assertThat(flowContext["p-key2"]).isEqualTo("p-value2-overwritten")
+        assertThat(flowContext["p-key3"]).isEqualTo("p-value3")
+        assertThat(flowContext["u-key1"]).isEqualTo("u-value1")
+        assertThat(flowContext["u-key2"]).isEqualTo("u-value2-overwritten")
+        assertThat(flowContext["u-key3"]).isEqualTo("u-value3")
     }
 
     @Test
@@ -166,6 +173,16 @@ class FlowContextImplTest {
         assertThrows<IllegalArgumentException> { flowContext["CORDA.property"] = "value" }
     }
 
+    @Test
+    fun `platform writing over platform property throws`() {
+        flowStack.pushWithContext(
+            flow,
+            contextUserProperties = emptyKeyValuePairList(),
+            contextPlatformProperties = platformPropertiesLevel1.avro
+        )
+
+        assertThrows<IllegalArgumentException> { flowContext.platformProperties["p-key1"] = "value" }
+    }
 
     @Test
     fun `flatten properties`() {
@@ -175,7 +192,8 @@ class FlowContextImplTest {
             contextPlatformProperties = platformPropertiesLevel1.avro
         )
 
-        flowContext["key1"] = "value1"
+        flowContext["userkey1"] = "uservalue1"
+        flowContext.platformProperties["platformkey1"] = "platformvalue1"
 
         flowStack.pushWithContext(
             flow,
@@ -183,7 +201,8 @@ class FlowContextImplTest {
             contextPlatformProperties = platformPropertiesLevel2.avro
         )
 
-        flowContext["key2"] = "value2"
+        flowContext["userkey2"] = "uservalue2"
+        flowContext.platformProperties["platformkey2"] = "platformvalue2"
         flowContext["u-key1"] = "u-value1-overwritten-by-context-api"
 
         val platformMap = flowContext.flattenPlatformProperties()
@@ -191,16 +210,56 @@ class FlowContextImplTest {
 
         assertThat(userMap.size).isEqualTo(5)
 
-        assertThat(userMap["key1"]).isEqualTo("value1")
-        assertThat(userMap["key2"]).isEqualTo("value2")
+        assertThat(userMap["userkey1"]).isEqualTo("uservalue1")
+        assertThat(userMap["userkey2"]).isEqualTo("uservalue2")
         assertThat(userMap["u-key1"]).isEqualTo("u-value1-overwritten-by-context-api")
         assertThat(userMap["u-key2"]).isEqualTo("u-value2-overwritten")
         assertThat(userMap["u-key3"]).isEqualTo("u-value3")
 
-        assertThat(platformMap.size).isEqualTo(3)
+        assertThat(platformMap.size).isEqualTo(5)
 
+        assertThat(platformMap["platformkey1"]).isEqualTo("platformvalue1")
+        assertThat(platformMap["platformkey2"]).isEqualTo("platformvalue2")
         assertThat(platformMap["p-key1"]).isEqualTo("p-value1")
         assertThat(platformMap["p-key2"]).isEqualTo("p-value2-overwritten")
         assertThat(platformMap["p-key3"]).isEqualTo("p-value3")
+    }
+
+    @Test
+    fun `unwind flow stack`() {
+        flowStack.pushWithContext(
+            flow,
+            contextUserProperties = userPropertiesLevel1.avro,
+            contextPlatformProperties = platformPropertiesLevel1.avro
+        )
+
+        flowContext["userkey1"] = "uservalue1"
+        flowContext.platformProperties["platformkey1"] = "platformvalue1"
+
+        flowStack.pushWithContext(
+            flow,
+            contextUserProperties = userPropertiesLevel2.avro,
+            contextPlatformProperties = platformPropertiesLevel2.avro
+        )
+
+        flowContext["userkey2"] = "uservalue2"
+        flowContext.platformProperties["platformkey2"] = "platformvalue2"
+
+        flowStack.pop()
+
+        assertThat(flowContext["p-key1"]).isEqualTo("p-value1")
+        assertThat(flowContext["u-key1"]).isEqualTo("u-value1")
+        // Non overwritten values
+        assertThat(flowContext["p-key2"]).isEqualTo("p-value2")
+        assertThat(flowContext["u-key2"]).isEqualTo("u-value2")
+        // Popped entirely
+        assertThat(flowContext["u-key3"]).isNull()
+        assertThat(flowContext["p-key3"]).isNull()
+
+        assertThat(flowContext["userkey1"]).isEqualTo("uservalue1")
+        assertThat(flowContext["platformkey1"]).isEqualTo("platformvalue1")
+        // Popped
+        assertThat(flowContext["userkey2"]).isNull()
+        assertThat(flowContext["platformkey2"]).isNull()
     }
 }

@@ -11,11 +11,16 @@ import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.osgi.framework.wiring.FrameworkWiring
 import org.slf4j.LoggerFactory
+import java.io.FileInputStream
 import java.io.IOException
+import java.net.URI
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import kotlin.io.path.isRegularFile
+import kotlin.streams.toList
 
 /**
  * `OSGiFrameworkWrap` provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -325,13 +330,16 @@ class OSGiFrameworkWrap(
         IOException::class,
         SecurityException::class
     )
+
+    /** Install a bundle that's a resource  */
     fun install(resource: String): OSGiFrameworkWrap {
         val contextClassLoader = Thread.currentThread().contextClassLoader
-        if (resource.endsWith(JAR_EXTENSION)) {
-            installBundleJar(resource, contextClassLoader)
-        } else {
-            installBundleList(resource, contextClassLoader)
+
+        when {
+            resource.endsWith(JAR_EXTENSION) -> installBundleJar(resource, contextClassLoader)
+            else -> installBundleList(resource, contextClassLoader)
         }
+
         return this
     }
 
@@ -356,6 +364,7 @@ class OSGiFrameworkWrap(
         IOException::class,
         SecurityException::class,
     )
+
     private fun installBundleJar(resource: String, classLoader: ClassLoader) {
         logger.debug("OSGi bundle $resource installing...")
         val resourceUrl = classLoader.getResource(resource)
@@ -366,6 +375,43 @@ class OSGiFrameworkWrap(
             val bundle = bundleContext.installBundle(resource, inputStream)
             bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
             logger.debug("OSGi bundle $resource installed.")
+        }
+    }
+
+    fun installFromDirectory(directory: Path?): OSGiFrameworkWrap {
+        if (directory == null) {
+            logger.info("No custom bundle folder specified, not loading bundles from *disk*")
+        } else {
+            if (Files.isDirectory(directory)) {
+                val paths = Files.walk(directory, 1).use { it.toList() }
+                    .filter { it.isRegularFile() && it.toString().endsWith(JAR_EXTENSION) }
+                // We want to install all files from this directory.
+                // In the case of jdbc drivers we need the jdbc `Bundle` and
+                // a companion pax-jdbc `Bundle` to register it for us.
+                paths.forEach { installBundleFile(it.toUri()) }
+            }
+        }
+        return this
+    }
+
+    /**
+     * Install a bundle from the file system.
+     *
+     * @param fileUri URI to the file, i.e. `file:///tmp/some.jar`
+     */
+    private fun installBundleFile(fileUri: URI) {
+        logger.debug("OSGi bundle $fileUri installing...")
+
+        FileInputStream(fileUri.path).use { inputStream ->
+            val bundleContext = framework.bundleContext
+                ?: throw IllegalStateException("OSGi framework not active yet.")
+            val bundle = bundleContext.installBundle(fileUri.path, inputStream)
+
+            bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
+
+            // This is the mechanism by which we will allow customers to load their own JDBC drivers,
+            // so we must report that visibly in the logs.
+            logger.info("OSGi bundle $fileUri installed - ${bundle.symbolicName} ${bundle.version}")
         }
     }
 

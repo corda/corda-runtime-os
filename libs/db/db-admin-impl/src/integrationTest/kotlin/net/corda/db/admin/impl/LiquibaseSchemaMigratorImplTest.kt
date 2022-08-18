@@ -13,15 +13,18 @@ class LiquibaseSchemaMigratorImplTest {
     val cl1 = ClassloaderChangeLog(
         linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master.xml")),
+                this.javaClass.packageName, listOf("migration/db.changelog-master.xml")
+            ),
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master2.xml"), this.javaClass.classLoader)
+                this.javaClass.packageName, listOf("migration/db.changelog-master2.xml"), this.javaClass.classLoader
+            )
         )
     )
     val cl2 = ClassloaderChangeLog(
         linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master3.xml")),
+                this.javaClass.packageName, listOf("migration/db.changelog-master3.xml")
+            ),
         )
     )
 
@@ -87,8 +90,8 @@ class LiquibaseSchemaMigratorImplTest {
                     it.isNotBlank() && !it.startsWith("--")
                 }
                 .forEach {
-                db.createStatement().execute(it)
-            }
+                    db.createStatement().execute(it)
+                }
         }
 
         // Create another script
@@ -120,9 +123,12 @@ class LiquibaseSchemaMigratorImplTest {
         val lbm = LiquibaseSchemaMigratorImpl()
         val cl = ClassloaderChangeLog(
             linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-classpath.xml"))
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    "mypackage",
+                    listOf("migration/db.changelog-master-classpath.xml")
                 )
             )
+        )
         lbm.updateDb(ds.connection, cl)
     }
 
@@ -130,9 +136,12 @@ class LiquibaseSchemaMigratorImplTest {
     fun `update DB with unknown classloader path`() {
         val lbm = LiquibaseSchemaMigratorImpl()
         val cl = ClassloaderChangeLog(
-                linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-classpath-unknown.xml"))
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    "mypackage",
+                    listOf("migration/db.changelog-master-classpath-unknown.xml")
                 )
+            )
         )
         val e = assertThrows<ChangeLogParseException> {
             lbm.updateDb(ds.connection, cl)
@@ -145,9 +154,12 @@ class LiquibaseSchemaMigratorImplTest {
     fun `update DB with normalized classloader reference`() {
         val lbm = LiquibaseSchemaMigratorImpl()
         val cl = ClassloaderChangeLog(
-                linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles("mypackage", listOf("migration/db.changelog-master-classpath-malformed.xml"))
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    "mypackage",
+                    listOf("migration/db.changelog-master-classpath-malformed.xml")
                 )
+            )
         )
         lbm.updateDb(ds.connection, cl)
     }

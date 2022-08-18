@@ -4,7 +4,7 @@
 cordaNightlyPipeline(
     nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
-    publishRepoPrefix: '', // change this to 'corda-ent-maven', when JARs don't overwrite AMD64 ones
+    publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
     publishOSGiImage: false, // change this to true when images don't overwrite AMD64 ones
     publishPreTestImage: true,

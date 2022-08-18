@@ -110,7 +110,7 @@ class OpenApiCompatibilityTest {
 
         val server = httpServerFactory.createHttpRpcServer(
             dynamicRpcOps.map { it as PluggableRPCOps<out RpcOps> }.sortedBy { it.targetInterface.name },
-            FakeSecurityManager(), httpRpcSettings, multipartDir, devMode = true
+            { FakeSecurityManager() }, httpRpcSettings, multipartDir, devMode = true
         ).apply { start() }
 
         val url = "http://${serverAddress.host}:${serverAddress.port}/${context.basePath}/v${context.version}/swagger.json"

@@ -1,3 +1,5 @@
+package net.corda.db.connection.manager.impl.tests
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.connection.manager.DbConnectionOps

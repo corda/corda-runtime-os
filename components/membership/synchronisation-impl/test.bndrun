@@ -25,6 +25,8 @@
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
+    bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
+    bnd.identity;id='org.osgi.service.jdbc',\
     bnd.identity;id='org.hsqldb.hsqldb',\
 
 -runstartlevel: \
