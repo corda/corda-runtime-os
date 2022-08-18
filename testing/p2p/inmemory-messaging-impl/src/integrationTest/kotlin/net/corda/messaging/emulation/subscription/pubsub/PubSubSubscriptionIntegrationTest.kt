@@ -120,46 +120,6 @@ class PubSubSubscriptionIntegrationTest {
             Record(topic, "key3", Event("three", 3)),
         ).hasSize(3)
 
-        // Stop the subscription
-        subscription.close()
-        assertThat(subscription.isRunning).isFalse
-
-        // Publish an event
-        processed.clear()
-        publish(Record(topic, "key4", Event("four", 4)))
-
-        // Verify it was not processed
-        Thread.sleep(1000)
-        assertThat(processed).isEmpty()
-
-        // Restart the subscription
-        subscription.start()
-        assertThat(subscription.isRunning).isTrue
-        assertThat(processed).isEmpty()
-
-        // Publish a few events
-        waitForProcessed.set(CountDownLatch(6))
-        publish(
-            Record("another $topic", "keya", Event("five", 5)),
-            Record(topic, "key5", Event("five", 5)),
-            Record(topic, 12, Event("five", 5)),
-            Record(topic, "keyb", 31),
-            Record(topic, "key6", Event("six", 6)),
-        )
-
-        // Wait for the events
-        waitForProcessed.get().await(1, TimeUnit.SECONDS)
-        assertThat(processed.map { it.key })
-            .hasSize(6)
-            .contains(
-                "key1",
-                "key2",
-                "key3",
-                "key4",
-                "key5",
-                "key6"
-            )
-
         // Stop the subscriber
         subscription.close()
         assertThat(subscription.isRunning).isFalse

@@ -258,8 +258,10 @@ internal class LifecycleProcessor(
     }
 
     fun addManagedResource(name: String, generator: () -> Resource) {
-        managedResources[name]?.close()
-        managedResources[name] = generator.invoke()
+        managedResources.compute(name) { _, old ->
+            old?.close()
+            generator.invoke()
+        }
     }
 
     fun getManagedResource(name: String): Resource? {
