@@ -1,22 +1,14 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
-import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
-import net.corda.applications.workers.smoketest.RpcSmokeTestInput
-import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.X500_CHARLIE
-import net.corda.applications.workers.smoketest.X500_DAVID
-import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.createVirtualNodeFor
-import net.corda.applications.workers.smoketest.getFlowClasses
-import net.corda.applications.workers.smoketest.getHoldingIdShortHash
-import net.corda.applications.workers.smoketest.getRpcFlowResult
-import net.corda.applications.workers.smoketest.registerMember
-import net.corda.applications.workers.smoketest.startRpcFlow
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.util.*
+import net.corda.applications.workers.smoketest.*
+import net.corda.craft5.common.*
+import net.corda.craft5.corda.client.*
+import net.corda.craft5.http.Http
+import net.corda.craft5.terminal.Terminal
+import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -28,10 +20,12 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 
+
 @Suppress("Unused")
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
+@TestSuite
 class FlowTests {
 
     companion object {
@@ -50,17 +44,21 @@ class FlowTests {
             "net.cordapp.flowworker.development.testflows.PersistenceFlow"
         )
 
+        private lateinit var cordaClient: CordaClient
+
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
          */
         @BeforeAll
         @JvmStatic
-        internal fun beforeAll() {
+        internal fun beforeAll(clientTerminal: Terminal, httpClient: Http) {
+            cordaClient = CordaClientImpl(clientTerminal, httpClient)
+            cordaClient.setParams(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
-            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
-            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
+            val bobActualHoldingId = createVirtualNodeFor(cordaClient, X500_BOB)
+            val charlieActualHoldingId = createVirtualNodeFor(cordaClient, X500_CHARLIE)
+            val davidActualHoldingId = createVirtualNodeFor(cordaClient, X500_DAVID)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
@@ -68,8 +66,8 @@ class FlowTests {
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
-            registerMember(bobHoldingId)
-            registerMember(charlieHoldingId)
+            cordaClient.registerMember(bobHoldingId, "CORDA.ECDSA.SECP256R1")
+            cordaClient.registerMember(charlieHoldingId, "CORDA.ECDSA.SECP256R1")
         }
     }
 
@@ -80,13 +78,12 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId)
+        CraftLogger.info("result: ${result.getResponseObject().body()}")
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("echo")
         assertThat(flowResult.result).isEqualTo("hello")
     }

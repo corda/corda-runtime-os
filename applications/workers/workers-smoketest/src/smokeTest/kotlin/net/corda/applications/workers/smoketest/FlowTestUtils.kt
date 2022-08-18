@@ -1,13 +1,16 @@
 package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.applications.workers.smoketest.flow.FlowTests
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
+import net.corda.craft5.corda.client.*
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 
@@ -17,6 +20,9 @@ const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
 fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
     ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
+
+fun GetFlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
+    ObjectMapper().readValue(this.flowResult, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(
     holdingId: String,
@@ -64,6 +70,15 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
 
         requestId
     }
+}
+
+/**
+ * An overload for the cordaClient startFlow
+ * Where you can pass the [RpcSmokeTestInput] type
+ */
+fun CordaClient.startFlow(holdingIdHash: String, flowClassName: String, args: RpcSmokeTestInput) : StartFlow {
+    val inputAsMap = ObjectMapper().convertValue(args, object: TypeReference<Map<String, Any>>() {})
+    return startFlow(holdingIdHash, flowClassName, inputAsMap)
 }
 
 fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
@@ -137,6 +152,13 @@ fun createVirtualNodeFor(x500: String): String {
         holdingId
     }
 }
+fun createVirtualNodeFor(cordaClient: CordaClient, x500: String): String {
+    val cpiList = cordaClient.cpiList().cpis
+    val shortHash = cpiList.first{it.id.cpiName == CPI_NAME }.cpiFileChecksum.substring(0,12)
+    val holdingId = cordaClient.vNodeCreate(shortHash, x500).holdingIdentity.shortHash
+    Assertions.assertThat(holdingId).isNotNull.isNotEmpty
+    return holdingId
+}
 
 fun registerMember(holdingIdentityId: String) {
     return cluster {
@@ -195,7 +217,7 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
 
 class RpcSmokeTestInput {
     var command: String? = null
-    var data: Map<String, String>? = null
+    var data: Map<String, Any>? = null
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

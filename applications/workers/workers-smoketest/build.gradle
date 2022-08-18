@@ -69,6 +69,8 @@ dependencies {
     smokeTestImplementation project(':components:flow:flow-rpcops-service')
     smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+    smokeTestImplementation "r3.pqa.craft5:craft5-corda-client:$craft5Version"
+    smokeTestImplementation "r3.pqa.craft5:craft5-common:$craft5Version"
 
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     smokeTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

@@ -134,3 +134,6 @@ node_modules/
 
 values.yaml
 debug.yaml
+# craft5
+**/debug/
+**/logs/
