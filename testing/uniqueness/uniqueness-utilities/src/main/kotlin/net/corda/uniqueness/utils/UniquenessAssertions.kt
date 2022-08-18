@@ -1,14 +1,7 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness.utils
 
-import net.corda.data.uniqueness.UniquenessCheckResponse
-import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict
-import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
-import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict
-import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckResultSuccess
-import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds
+import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -26,10 +19,10 @@ object UniquenessAssertions {
      * check the commit timestamp is valid with respect to the provider.
      */
     fun assertStandardSuccessResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         clock: AutoTickTestClock? = null
     ) =
-        getResultOfType<UniquenessCheckResultSuccess>(response).run {
+        getResultOfType<UniquenessCheckExternalResultSuccess>(response).run {
             assertThat(commitTimestamp).isAfter(Instant.MIN)
             if (clock != null) {
                 assertThat(commitTimestamp)
@@ -41,10 +34,10 @@ object UniquenessAssertions {
      * Checks for a malformed request response with the specified error text
      */
     fun assertMalformedRequestResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         expectedErrorText: String
     ) {
-        getResultOfType<UniquenessCheckResultMalformedRequest>(response).run {
+        getResultOfType<UniquenessCheckExternalResultMalformedRequest>(response).run {
             assertThat(errorText).isEqualTo(expectedErrorText)
         }
     }
@@ -54,10 +47,10 @@ object UniquenessAssertions {
      *  are captured.
      */
     fun assertUnknownInputStateResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultInputStateUnknown>(response).run {
+        getResultOfType<UniquenessCheckExternalResultInputStateUnknown>(response).run {
             assertThat(unknownStates)
                 .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
@@ -68,10 +61,10 @@ object UniquenessAssertions {
      * states are captured.
      */
     fun assertInputStateConflictResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultInputStateConflict>(response).run {
+        getResultOfType<UniquenessCheckExternalResultInputStateConflict>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
         }
@@ -82,10 +75,10 @@ object UniquenessAssertions {
      *  are captured.
      */
     fun assertUnknownReferenceStateResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultReferenceStateUnknown>(response).run {
+        getResultOfType<UniquenessCheckExternalResultReferenceStateUnknown>(response).run {
             assertThat(unknownStates)
                 .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
@@ -96,10 +89,10 @@ object UniquenessAssertions {
      * states are captured.
      */
     fun assertReferenceStateConflictResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultReferenceStateConflict>(response).run {
+        getResultOfType<UniquenessCheckExternalResultReferenceStateConflict>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
         }
@@ -110,11 +103,11 @@ object UniquenessAssertions {
      * the expected (optional) lower and (mandatory) upper bound.
      */
     fun assertTimeWindowOutOfBoundsResponse(
-        response: UniquenessCheckResponse,
+        response: UniquenessCheckExternalResponse,
         expectedLowerBound: Instant? = null,
         expectedUpperBound: Instant
     ) {
-        getResultOfType<UniquenessCheckResultTimeWindowOutOfBounds>(response).run {
+        getResultOfType<UniquenessCheckExternalResultTimeWindowOutOfBounds>(response).run {
             assertAll(
                 { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
                 { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
@@ -125,16 +118,16 @@ object UniquenessAssertions {
     /**
      * Checks that all commit timestamps within a list of responses are unique
      */
-    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponse>) {
+    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckExternalResponse>) {
         assertEquals(
             responses.size,
             responses.distinctBy {
-                (it.result as UniquenessCheckResultSuccess).commitTimestamp
+                (it.result as UniquenessCheckExternalResultSuccess).commitTimestamp
             }.size
         )
     }
 
-    private inline fun<reified T> getResultOfType(response: UniquenessCheckResponse): T {
+    private inline fun<reified T> getResultOfType(response: UniquenessCheckExternalResponse): T {
         assertInstanceOf(T::class.java, response.result)
         @Suppress("UNCHECKED_CAST")
         return response.result as T

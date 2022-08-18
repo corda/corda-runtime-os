@@ -2,11 +2,7 @@ package net.corda.uniqueness.backingstore
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
+import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.crypto.SecureHash
 
 /**
@@ -82,8 +78,8 @@ interface BackingStore : Lifecycle {
          * have been previously committed, keyed by their state reference.
          */
         fun getStateDetails(
-            states: Collection<UniquenessCheckInternalStateRef>
-        ): Map<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>
+            states: Collection<UniquenessCheckStateRef>
+        ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
 
         /**
          * For the given list of transaction id's, returns a map of transaction details for
@@ -91,7 +87,7 @@ interface BackingStore : Lifecycle {
          */
         fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckInternalTransactionDetails>
+        ): Map<SecureHash, UniquenessCheckTransactionDetails>
 
         /**
          * Provides the set of operations that may be performed within the context of a transaction.
@@ -103,7 +99,7 @@ interface BackingStore : Lifecycle {
              * Instructs the backing store to record new state records which are marked as
              * unconsumed.
              */
-            fun createUnconsumedStates(stateRefs: Collection<UniquenessCheckInternalStateRef>)
+            fun createUnconsumedStates(stateRefs: Collection<UniquenessCheckStateRef>)
 
             /**
              * Instructs the backing store to mark previously unconsumed states as consumed by
@@ -111,7 +107,7 @@ interface BackingStore : Lifecycle {
              */
             fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckInternalStateRef>
+                stateRefs: Collection<UniquenessCheckStateRef>
             )
 
             /**
@@ -119,7 +115,7 @@ interface BackingStore : Lifecycle {
              */
             fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
+                        UniquenessCheckRequest, UniquenessCheckResult>>
             )
         }
     }

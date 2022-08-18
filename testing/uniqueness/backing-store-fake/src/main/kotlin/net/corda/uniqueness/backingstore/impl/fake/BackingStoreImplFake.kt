@@ -15,11 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
+import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -48,15 +44,15 @@ open class BackingStoreImplFake @Activate constructor(
 
     // Data persisted across different transactions
     private val persistedStateData =
-        HashMap<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
+        HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
     private val persistedTxnData =
-        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckTransactionDetails>()
 
     // Temporary cache of data created / updated during the current session
     private val sessionStateData =
-        HashMap<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
+        HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
     private val sessionTxnData =
-        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckTransactionDetails>()
 
     @Synchronized
     override fun session(block: (BackingStore.Session) -> Unit) = block(SessionImpl())
@@ -93,7 +89,7 @@ open class BackingStoreImplFake @Activate constructor(
             sessionTxnData.clear()
         }
 
-        override fun getStateDetails(states: Collection<UniquenessCheckInternalStateRef>) =
+        override fun getStateDetails(states: Collection<UniquenessCheckStateRef>) =
             persistedStateData.filterKeys { states.contains(it) }
 
         override fun getTransactionDetails(txIds: Collection<SecureHash>) =
@@ -103,11 +99,11 @@ open class BackingStoreImplFake @Activate constructor(
 
             @Synchronized
             override fun createUnconsumedStates(
-                stateRefs: Collection<UniquenessCheckInternalStateRef>
+                stateRefs: Collection<UniquenessCheckStateRef>
             ) {
                 sessionStateData.putAll(
                     stateRefs.map {
-                        Pair(it, UniquenessCheckInternalStateDetails(it, null))
+                        Pair(it, UniquenessCheckStateDetails(it, null))
                     }
                 )
             }
@@ -115,7 +111,7 @@ open class BackingStoreImplFake @Activate constructor(
             @Synchronized
             override fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckInternalStateRef>
+                stateRefs: Collection<UniquenessCheckStateRef>
             ) {
 
                 sessionStateData.putAll(
@@ -139,7 +135,7 @@ open class BackingStoreImplFake @Activate constructor(
 
                         Pair(
                             existingState.stateRef,
-                            UniquenessCheckInternalStateDetails(existingState.stateRef, consumingTxId)
+                            UniquenessCheckStateDetails(existingState.stateRef, consumingTxId)
                         )
                     }
                 )
@@ -148,13 +144,13 @@ open class BackingStoreImplFake @Activate constructor(
             @Synchronized
             override fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
+                        UniquenessCheckRequest, UniquenessCheckResult>>
             ) {
                 sessionTxnData.putAll(
                     transactionDetails.map {
                         Pair(
                             it.first.txId,
-                            UniquenessCheckInternalTransactionDetails(it.first.txId, it.second)
+                            UniquenessCheckTransactionDetails(it.first.txId, it.second)
                         )
                     }
                 )

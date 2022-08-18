@@ -1,9 +1,6 @@
 package net.corda.uniqueness.checker.impl
 
-import net.corda.data.uniqueness.UniquenessCheckRequest
-import net.corda.data.uniqueness.UniquenessCheckResponse
-import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
-import net.corda.data.uniqueness.UniquenessCheckResultSuccess
+import net.corda.data.uniqueness.*
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,14 +11,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalError
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -68,9 +60,9 @@ class BatchedUniquenessCheckerImpl(
     // In-memory caches of transaction and state details. When processing a batch, these are
     // initially seeded from the backing store, but are updated as we iterate through a batch
     private val transactionDetailsCache =
-        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckTransactionDetails>()
     private val stateDetailsCache =
-        HashMap<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
+        HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
     override fun start() {
         log.info("Uniqueness checker starting.")
@@ -84,10 +76,10 @@ class BatchedUniquenessCheckerImpl(
 
     @Synchronized
     override fun processRequests(
-        requests: List<UniquenessCheckRequest>
-    ): List<UniquenessCheckResponse> {
+        requests: List<UniquenessCheckExternalRequest>
+    ): List<UniquenessCheckExternalResponse> {
 
-        val results = LinkedList<UniquenessCheckResponse>()
+        val results = LinkedList<UniquenessCheckExternalResponse>()
 
         // Convert the supplied batch of external requests to internal requests. Doing this can
         // throw an exception if the request is malformed. These are filtered out immediately with
@@ -96,12 +88,12 @@ class BatchedUniquenessCheckerImpl(
         // the tx id)
         val requestsToProcess = requests.mapNotNull {
             try {
-                UniquenessCheckInternalRequest.create(it)
+                UniquenessCheckRequest.create(it)
             } catch (e: IllegalArgumentException) {
                 results.add(
-                    UniquenessCheckResponse(
+                    UniquenessCheckExternalResponse(
                         it.txId,
-                        UniquenessCheckResultMalformedRequest(e.message)
+                        UniquenessCheckExternalResultMalformedRequest(e.message)
                     )
                 )
                 null
@@ -111,13 +103,13 @@ class BatchedUniquenessCheckerImpl(
         // TODO - Re-instate batch processing logic if needed - need to establish what batching
         // there is in the message bus layer first
         results += processBatch(requestsToProcess).map { (request, result) ->
-            UniquenessCheckResponse(
+            UniquenessCheckExternalResponse(
                 request.rawTxId,
                 when (result) {
-                    is UniquenessCheckInternalResult.Success -> {
-                        UniquenessCheckResultSuccess(result.commitTimestamp)
+                    is UniquenessCheckResult.Success -> {
+                        UniquenessCheckExternalResultSuccess(result.commitTimestamp)
                     }
-                    is UniquenessCheckInternalResult.Failure -> {
+                    is UniquenessCheckResult.Failure -> {
                         result.toExternalError()
                     }
                 }
@@ -129,11 +121,11 @@ class BatchedUniquenessCheckerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processBatch(
-        batch: List<UniquenessCheckInternalRequest>
-    ): List<Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult>> {
+        batch: List<UniquenessCheckRequest>
+    ): List<Pair<UniquenessCheckRequest, UniquenessCheckResult>> {
 
         val resultsToRespondWith =
-            mutableListOf<Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>()
+            mutableListOf<Pair<UniquenessCheckRequest, UniquenessCheckResult>>()
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession { session, transactionOps ->
@@ -156,7 +148,7 @@ class BatchedUniquenessCheckerImpl(
             //    subset of resultsToRespondWith and reflects only those results that need to be
             //    written to the backing store
             val resultsToCommit = LinkedList<Pair<
-                    UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>()
+                    UniquenessCheckRequest, UniquenessCheckResult>>()
 
             batch.forEach { request ->
                 // Already processed -> Return same result as in DB (idempotency) but no need to
@@ -187,21 +179,21 @@ class BatchedUniquenessCheckerImpl(
                         unknownInputStates.isNotEmpty() ->
                             handleRejectedRequest(
                                 request,
-                                UniquenessCheckInternalError
+                                UniquenessCheckError
                                     .InputStateUnknown(unknownInputStates)
                             )
                         // Unknown reference state -> Immediate failure
                         unknownReferenceStates.isNotEmpty() ->
                             handleRejectedRequest(
                                 request,
-                                UniquenessCheckInternalError
+                                UniquenessCheckError
                                     .ReferenceStateUnknown(unknownReferenceStates)
                             )
                         // Input state conflict check
                         inputStateConflicts.isNotEmpty() ->
                             handleRejectedRequest(
                                 request,
-                                UniquenessCheckInternalError.InputStateConflict(
+                                UniquenessCheckError.InputStateConflict(
                                     inputStateConflicts.map { stateDetailsCache[it]!! }
                                 )
                             )
@@ -209,7 +201,7 @@ class BatchedUniquenessCheckerImpl(
                         referenceStateConflicts.isNotEmpty() ->
                             handleRejectedRequest(
                                 request,
-                                UniquenessCheckInternalError.ReferenceStateConflict(
+                                UniquenessCheckError.ReferenceStateConflict(
                                     referenceStateConflicts.map { stateDetailsCache[it]!! }
                                 )
                             )
@@ -221,7 +213,7 @@ class BatchedUniquenessCheckerImpl(
                         ) ->
                             handleRejectedRequest(
                                 request,
-                                UniquenessCheckInternalError.TimeWindowOutOfBounds(
+                                UniquenessCheckError.TimeWindowOutOfBounds(
                                     timeWindowEvaluationTime,
                                     request.timeWindowLowerBound,
                                     request.timeWindowUpperBound
@@ -245,13 +237,13 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun handleRejectedRequest(
-        request: UniquenessCheckInternalRequest,
-        error: UniquenessCheckInternalError
-    ): Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult> {
+        request: UniquenessCheckRequest,
+        error: UniquenessCheckError
+    ): Pair<UniquenessCheckRequest, UniquenessCheckResult> {
 
-        val rejectedResult = UniquenessCheckInternalResult.Failure(clock.instant(), error)
+        val rejectedResult = UniquenessCheckResult.Failure(clock.instant(), error)
 
-        transactionDetailsCache[request.txId] = UniquenessCheckInternalTransactionDetails(
+        transactionDetailsCache[request.txId] = UniquenessCheckTransactionDetails(
             request.txId,
             rejectedResult
         )
@@ -260,25 +252,25 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun handleSuccessfulRequest(
-        request: UniquenessCheckInternalRequest
-    ): Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult> {
+        request: UniquenessCheckRequest
+    ): Pair<UniquenessCheckRequest, UniquenessCheckResult> {
 
-        val txDetails = UniquenessCheckInternalTransactionDetails(
+        val txDetails = UniquenessCheckTransactionDetails(
             request.txId,
-            UniquenessCheckInternalResult.Success(clock.instant())
+            UniquenessCheckResult.Success(clock.instant())
         )
 
         transactionDetailsCache[request.txId] = txDetails
 
         request.inputStates.forEach {
-            stateDetailsCache[it] = UniquenessCheckInternalStateDetails(it, request.txId)
+            stateDetailsCache[it] = UniquenessCheckStateDetails(it, request.txId)
         }
 
         repeat(request.numOutputStates) {
-            val outputStateRef = UniquenessCheckInternalStateRef(request.txId, it)
+            val outputStateRef = UniquenessCheckStateRef(request.txId, it)
 
             stateDetailsCache[outputStateRef] =
-                UniquenessCheckInternalStateDetails(outputStateRef, null)
+                UniquenessCheckStateDetails(outputStateRef, null)
         }
 
         return Pair(request, txDetails.result)
@@ -294,16 +286,16 @@ class BatchedUniquenessCheckerImpl(
      */
     private fun commitResults(
         txOps: BackingStore.Session.TransactionOps,
-        results: List<Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
+        results: List<Pair<UniquenessCheckRequest, UniquenessCheckResult>>
     ) {
         txOps.commitTransactions(results)
 
-        results.filter { it.second is UniquenessCheckInternalResult.Success }.forEach { (request, _) ->
+        results.filter { it.second is UniquenessCheckResult.Success }.forEach { (request, _) ->
 
             // Insert the output states
             txOps.createUnconsumedStates(
                 List(request.numOutputStates) {
-                    UniquenessCheckInternalStateRef(request.txId, it)
+                    UniquenessCheckStateRef(request.txId, it)
                 }
             )
 

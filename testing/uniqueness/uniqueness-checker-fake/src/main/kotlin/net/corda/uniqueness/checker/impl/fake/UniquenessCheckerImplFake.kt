@@ -1,14 +1,6 @@
 package net.corda.uniqueness.checker.impl.fake
 
-import net.corda.data.uniqueness.UniquenessCheckRequest
-import net.corda.data.uniqueness.UniquenessCheckResponse
-import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict
-import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
-import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict
-import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckResultSuccess
-import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds
+import net.corda.data.uniqueness.*
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -21,6 +13,7 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,7 +32,7 @@ import java.time.Instant
 class UniquenessCheckerImplFake(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val clock: Clock
-) : UniquenessChecker {
+) : UniquenessChecker, SingletonSerializeAsToken {
 
     @Activate
     constructor(
@@ -51,7 +44,7 @@ class UniquenessCheckerImplFake(
         private val log: Logger = contextLogger()
     }
 
-    private val responseCache = HashMap<String, UniquenessCheckResponse>()
+    private val responseCache = HashMap<String, UniquenessCheckExternalResponse>()
 
     // Value of state cache is populated with the consuming tx id when spent, null if unspent
     private val stateCache = HashMap<String, String?>()
@@ -75,8 +68,8 @@ class UniquenessCheckerImplFake(
     @Synchronized
     @Suppress("ComplexMethod", "LongMethod")
     override fun processRequests(
-        requests: List<UniquenessCheckRequest>
-    ): List<UniquenessCheckResponse> {
+        requests: List<UniquenessCheckExternalRequest>
+    ): List<UniquenessCheckExternalResponse> {
         return requests.map { request ->
             responseCache[request.txId] ?: run {
                 val (knownInputStates, unknownInputStates) =
@@ -91,39 +84,39 @@ class UniquenessCheckerImplFake(
 
                 val response = when {
                     request.numOutputStates < 0 -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultMalformedRequest(
+                            UniquenessCheckExternalResultMalformedRequest(
                                 "Number of output states cannot be less than 0."
                             )
                         )
                     }
 
                     unknownInputStates.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultInputStateUnknown(unknownInputStates)
+                            UniquenessCheckExternalResultInputStateUnknown(unknownInputStates)
                         )
                     }
 
                     unknownReferenceStates.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultReferenceStateUnknown(unknownReferenceStates)
+                            UniquenessCheckExternalResultReferenceStateUnknown(unknownReferenceStates)
                         )
                     }
 
                     inputStateConflicts.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultInputStateConflict(inputStateConflicts)
+                            UniquenessCheckExternalResultInputStateConflict(inputStateConflicts)
                         )
                     }
 
                     referenceStateConflicts.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultReferenceStateConflict(referenceStateConflicts)
+                            UniquenessCheckExternalResultReferenceStateConflict(referenceStateConflicts)
                         )
                     }
 
@@ -132,9 +125,9 @@ class UniquenessCheckerImplFake(
                         request.timeWindowLowerBound,
                         request.timeWindowUpperBound
                     ) -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultTimeWindowOutOfBounds(
+                            UniquenessCheckExternalResultTimeWindowOutOfBounds(
                                 timeWindowEvaluationTime,
                                 request.timeWindowLowerBound,
                                 request.timeWindowUpperBound
@@ -149,9 +142,9 @@ class UniquenessCheckerImplFake(
                         }
                         // Write spent states - overwrites any earlier entries for unspent states
                         stateCache.putAll(request.inputStates.associateWith { request.txId })
-                        UniquenessCheckResponse(
+                        UniquenessCheckExternalResponse(
                             request.txId,
-                            UniquenessCheckResultSuccess(clock.instant())
+                            UniquenessCheckExternalResultSuccess(clock.instant())
                         )
                     }
                 }
