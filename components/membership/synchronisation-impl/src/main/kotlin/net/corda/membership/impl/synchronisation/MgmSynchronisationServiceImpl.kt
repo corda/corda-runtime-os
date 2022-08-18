@@ -93,7 +93,7 @@ class MgmSynchronisationServiceImpl @Activate constructor(
         clock,
     )
 
-    fun overrideWithTestServices(signerFactory: SignerFactory,
+    internal fun overrideWithTestServices(signerFactory: SignerFactory,
                    merkleTreeGenerator: MerkleTreeGenerator,
                    membershipPackageFactory: MembershipPackageFactory,
                    p2pRecordsFactory: P2pRecordsFactory
