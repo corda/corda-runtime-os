@@ -38,6 +38,7 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
+import java.util.LinkedList
 import javax.servlet.MultipartConfigElement
 import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
 import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
@@ -65,6 +66,7 @@ internal class HttpRpcServerInternal(
         internal const val CONTENT_LENGTH_EXCEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
     }
 
+    private val wsRouteAdaptors = LinkedList<AutoCloseable>()
     private val credentialResolver = DefaultCredentialResolver()
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
@@ -267,6 +269,7 @@ internal class HttpRpcServerInternal(
         log.trace { "Stop the Javalin server." }
         server.stop()
         log.trace { "Stop the Javalin server completed." }
+        wsRouteAdaptors.forEach { it.close() }
     }
 
     @SuppressWarnings("ComplexMethod")
@@ -368,7 +371,7 @@ internal class HttpRpcServerInternal(
         try {
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
-            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver, webSocketCloserService))
+            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver, webSocketCloserService, wsRouteAdaptors))
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {

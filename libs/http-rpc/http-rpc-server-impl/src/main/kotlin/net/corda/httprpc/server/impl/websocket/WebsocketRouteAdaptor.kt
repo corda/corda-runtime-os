@@ -36,8 +36,7 @@ internal class WebsocketRouteAdaptor(
     private val securityManager: HttpRpcSecurityManager,
     private val credentialResolver: DefaultCredentialResolver,
     private val webSocketCloserService: WebSocketCloserService
-) : WsMessageHandler, WsCloseHandler,
-    WsConnectHandler, WsErrorHandler {
+) : WsMessageHandler, WsCloseHandler, WsConnectHandler, WsErrorHandler, AutoCloseable {
 
     private companion object {
         val log = contextLogger()
@@ -112,6 +111,12 @@ internal class WebsocketRouteAdaptor(
             channels.remove(ctx.sessionId)?.onClose?.invoke(ctx.status(), ctx.reason())
         } catch (th: Throwable) {
             log.error("Unexpected exception in handleClose", th)
+        }
+    }
+
+    override fun close() {
+        channels.forEach {
+            it.value.close("Server closed all duplex connections.")
         }
     }
 }

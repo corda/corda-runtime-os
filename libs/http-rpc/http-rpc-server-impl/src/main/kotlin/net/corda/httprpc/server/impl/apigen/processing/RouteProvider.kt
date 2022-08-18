@@ -155,7 +155,8 @@ internal class RouteInfo(
     internal fun setupWsCall(
         securityManager: HttpRpcSecurityManager,
         credentialResolver: DefaultCredentialResolver,
-        webSocketCloserService: WebSocketCloserService
+        webSocketCloserService: WebSocketCloserService,
+        adaptors: MutableList<AutoCloseable>
     ): (WsConfig) -> Unit {
         return { wsConfig ->
             log.info("Setting-up WS call for '$fullPath'")
@@ -166,6 +167,7 @@ internal class RouteInfo(
                 wsConfig.onConnect(adaptor)
                 wsConfig.onError(adaptor)
 
+                adaptors.add(adaptor)
                 log.debug { "Setting-up WS call for '$fullPath' completed." }
             } catch (e: Exception) {
                 log.warn("Error Setting-up WS call for '$fullPath'", e)

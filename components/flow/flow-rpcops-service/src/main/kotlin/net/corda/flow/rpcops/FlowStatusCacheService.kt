@@ -22,11 +22,7 @@ interface FlowStatusCacheService: Lifecycle {
      * Register the provided flow status update handler to handle the receiving of updates for a flow identified by the [clientRequestId]
      * and [holdingIdentity].
      */
-    fun registerFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener)
-
-    /**
-     * Unregisters the flow status feed for the given [clientRequestId], [holdingIdentity] and [listener].
-     */
-    fun unregisterFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener)
+    fun registerFlowStatusListener(clientRequestId: String, holdingIdentity: HoldingIdentity, listener: FlowStatusUpdateListener):
+            AutoCloseable
 
 }
