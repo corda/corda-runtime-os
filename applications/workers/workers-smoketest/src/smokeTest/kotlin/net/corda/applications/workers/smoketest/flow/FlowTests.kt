@@ -1,37 +1,25 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
-import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
-import net.corda.applications.workers.smoketest.RpcSmokeTestInput
-import net.corda.applications.workers.smoketest.X500_BOB
-import net.corda.applications.workers.smoketest.X500_CHARLIE
-import net.corda.applications.workers.smoketest.X500_DAVID
-import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
-import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.createVirtualNodeFor
-import net.corda.applications.workers.smoketest.getFlowClasses
-import net.corda.applications.workers.smoketest.getHoldingIdShortHash
-import net.corda.applications.workers.smoketest.getRpcFlowResult
-import net.corda.applications.workers.smoketest.registerMember
-import net.corda.applications.workers.smoketest.startRpcFlow
+import java.util.*
+import net.corda.applications.workers.smoketest.*
+import net.corda.craft5.annotations.TestSuite
+import net.corda.craft5.common.millis
+import net.corda.craft5.corda.client.*
+import net.corda.craft5.http.Http
+import net.corda.craft5.terminal.Terminal
+import net.corda.craft5.util.retry
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.junit.jupiter.api.TestMethodOrder
+
 
 @Suppress("Unused")
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
+@TestSuite
 class FlowTests {
 
     companion object {
@@ -50,17 +38,21 @@ class FlowTests {
             "net.cordapp.flowworker.development.testflows.PersistenceFlow"
         )
 
+        private lateinit var cordaClient: CordaClient
+
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
          * attribute to disable the vnode creation after the first run.
          */
         @BeforeAll
         @JvmStatic
-        internal fun beforeAll() {
+        internal fun beforeAll(clientTerminal: Terminal, httpClient: Http) {
+            cordaClient = CordaClientImpl(clientTerminal, httpClient)
+            cordaClient.setParams(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
-            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
-            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
+            val bobActualHoldingId = createVirtualNodeFor(cordaClient, X500_BOB)
+            val charlieActualHoldingId = createVirtualNodeFor(cordaClient, X500_CHARLIE)
+            val davidActualHoldingId = createVirtualNodeFor(cordaClient, X500_DAVID)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
@@ -68,8 +60,8 @@ class FlowTests {
             assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
             assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
 
-            registerMember(bobHoldingId)
-            registerMember(charlieHoldingId)
+            cordaClient.registerMember(bobHoldingId, "CORDA.ECDSA.SECP256R1")
+            cordaClient.registerMember(charlieHoldingId, "CORDA.ECDSA.SECP256R1")
         }
     }
 
@@ -80,13 +72,11 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("echo")
         assertThat(flowResult.result).isEqualTo("hello")
     }
@@ -97,11 +87,9 @@ class FlowTests {
             command = "echo"
             data = mapOf("echo_value" to "hello")
         }
-
-        startRpcFlow(davidHoldingId, requestBody)
-        startRpcFlow(davidHoldingId, requestBody)
-
-        awaitMultipleRpcFlowFinished(davidHoldingId, 2)
+        cordaClient.startFlow(davidHoldingId, SMOKE_TEST_CLASS_NAME, requestBody)
+        cordaClient.startFlow(davidHoldingId, SMOKE_TEST_CLASS_NAME, requestBody)
+        cordaClient.awaitMultipleFlowFinished(davidHoldingId, 2, cooldown = 500.millis)
     }
 
     @Test
@@ -110,9 +98,16 @@ class FlowTests {
             command = "echo"
             data = mapOf("echo_value" to "hello")
         }
+        val requestId = "123"
+        val firstFlow = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody, requestId)
+        assertEquals(200, firstFlow.getResponseObject().status(), "Expected the first flow to start successfully")
 
-        startRpcFlow(bobHoldingId, requestBody, 200)
-        startRpcFlow(bobHoldingId, requestBody, 409)
+        // Send second request with same clientRequestId and expect an error
+        // need to retry as we may get a "START_REQUESTED" or "RUNNING" status before it figures out it should error
+        retry(attempts = 5) {
+            val secondFlow = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody, requestId)
+            assertEquals(409, secondFlow.getResponseObject().status(), "Expected second flow to return 409 error")
+        }
     }
 
     @Test
@@ -123,16 +118,16 @@ class FlowTests {
             data = mapOf("error_message" to "oh no!")
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
         // 3) check the flow completes as expected
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
         assertThat(result.flowResult).isNull()
         assertThat(result.flowError).isNotNull
-        assertThat(result.flowError?.type).isEqualTo("FLOW_FAILED")
-        assertThat(result.flowError?.message).isEqualTo("oh no!")
+        val flowError = result.flowError.toString()
+        assertTrue("type=FLOW_FAILED" in flowError)
+        assertTrue("oh no!" in flowError)
     }
 
     @Test
@@ -146,14 +141,13 @@ class FlowTests {
             )
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("start_sessions")
         assertThat(flowResult.result)
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
@@ -171,25 +165,23 @@ class FlowTests {
             data = mapOf("x500" to X500_BOB)
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
         assertThat(flowResult.result).isEqualTo("type")
     }
 
     @Test
     fun `Pipeline error results in flow marked as failed`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(),
-                "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        val requestId = cordaClient.startFlow(bobHoldingId,
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow",
+                mapOf()
+            ).clientRequestId
+
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
     }
 
@@ -201,9 +193,9 @@ class FlowTests {
             data = mapOf("id" to id.toString())
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         val flowResult = result.getRpcFlowResult()
@@ -221,9 +213,9 @@ class FlowTests {
             data = mapOf("id" to id.toString())
         }
 
-        var requestId = startRpcFlow(bobHoldingId, requestBody)
+        var requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        var result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        var result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         var flowResult = result.getRpcFlowResult()
@@ -239,9 +231,9 @@ class FlowTests {
             )
         }
 
-        requestId = startRpcFlow(bobHoldingId, requestBody)
+        requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
@@ -255,9 +247,9 @@ class FlowTests {
             )
         }
 
-        requestId = startRpcFlow(bobHoldingId, requestBody)
+        requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
@@ -268,9 +260,9 @@ class FlowTests {
             command = "persist_findall"
         }
 
-        requestId = startRpcFlow(bobHoldingId, requestBody)
+        requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
@@ -284,9 +276,9 @@ class FlowTests {
             )
         }
 
-        requestId = startRpcFlow(bobHoldingId, requestBody)
+        requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         flowResult = result.getRpcFlowResult()
@@ -295,7 +287,7 @@ class FlowTests {
 
     @Test
     fun `Get runnable flows for a holdingId`() {
-        val flows = getFlowClasses(bobHoldingId)
+        val flows = cordaClient.listStartableFlows(bobHoldingId).flowClassNames
 
         assertThat(flows.size).isEqualTo(expectedFlows.size)
         assertTrue(flows.containsAll(expectedFlows))
@@ -312,14 +304,13 @@ class FlowTests {
             )
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
         assertThat(flowResult.result)
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
@@ -336,14 +327,13 @@ class FlowTests {
             )
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
         assertThat(flowResult.result)
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
@@ -352,21 +342,20 @@ class FlowTests {
     @Test
     fun `Crypto - Sign and verify bytes`() {
 
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
+        val publicKey = createKeyFor(cordaClient, bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
             data = mapOf("publicKey" to publicKey)
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("crypto_sign_and_verify")
         assertThat(flowResult.result).isEqualTo(true.toString())
     }
@@ -374,21 +363,21 @@ class FlowTests {
     @Test
     fun `Crypto - Verify invalid signature`() {
 
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
+        val publicKey = createKeyFor(cordaClient, bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
             data = mapOf("publicKey" to publicKey)
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
-        val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isNotNull
         assertThat(result.flowError).isNull()
+        val flowResult = result.getRpcFlowResult()
         assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
         assertThat(flowResult.result).isEqualTo(true.toString())
     }
@@ -399,9 +388,9 @@ class FlowTests {
             command = "context_propagation"
         }
 
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = cordaClient.startFlow(bobHoldingId, SMOKE_TEST_CLASS_NAME, requestBody).clientRequestId
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = cordaClient.awaitFlowFinish(bobHoldingId, requestId, cooldown = 500.millis)
 
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)

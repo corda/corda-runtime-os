@@ -138,6 +138,20 @@ allprojects {
                 password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
+        //needed for CRAFT5 for smoketests
+        maven {
+            url "${artifactoryContextUrl}/corda-qa-dev"
+            content {
+                includeGroupByRegex 'r3\\.pqa\\.craft5(\\..*)?'
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+        }
 
         maven {
             url = "$artifactoryContextUrl/engineering-tools-maven"

@@ -59,9 +59,6 @@ class ClusterBuilder {
     private fun vNodeBody(cpiHash: String, x500Name: String) =
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
-    private fun registerMemberBody() =
-        """{ "action": "requestJoin", "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
-
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -69,28 +66,9 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/v1/virtualnode")
 
-    /**
-     * Register a member to the network
-     */
-    fun registerMember(holdingId: String) =
-        post("/api/v1/membership/$holdingId", registerMemberBody())
-
-    fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
-        post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
-
-    fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/v1/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
-
-    fun getKey(holdingIdentityShortHash: String, keyId: String) =
-        get("/api/v1/keys/$holdingIdentityShortHash/$keyId")
-
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
         get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId")
-
-    /** Get status of multiple flows */
-    fun multipleFlowStatus(holdingIdentityShortHash: String) =
-        get("/api/v1/flow/$holdingIdentityShortHash")
 
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =

@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.security.MessageDigest
 import java.time.Duration
@@ -8,6 +9,9 @@ import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.applications.workers.smoketest.virtualnode.toJson
+import net.corda.craft5.common.millis
+import net.corda.craft5.corda.client.*
+import net.corda.craft5.util.retry
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 
@@ -15,8 +19,8 @@ const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.smoketests
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
-fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
-    ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
+fun GetFlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
+    ObjectMapper().readValue(this.flowResult, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(
     holdingId: String,
@@ -66,6 +70,15 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
     }
 }
 
+/**
+ * An overload for the cordaClient startFlow
+ * Where you can pass the [RpcSmokeTestInput] type
+ */
+fun CordaClient.startFlow(holdingIdHash: String, flowClassName: String, args: RpcSmokeTestInput, requestId: String = UUID.randomUUID().toString()) : StartFlow {
+    val inputAsMap = ObjectMapper().convertValue(args, object: TypeReference<Map<String, Any>>() {})
+    return startFlow(holdingIdHash, flowClassName, inputAsMap, requestId)
+}
+
 fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -85,26 +98,6 @@ fun awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     }
 }
 
-fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
-    return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-        assertWithRetry {
-            command { multipleFlowStatus(holdingId) }
-            timeout(Duration.ofSeconds(20))
-            condition {
-                val json = it.toJson()
-                val flowStatuses = json["flowStatusResponses"]
-                val allStatusComplete = flowStatuses.map { flowStatus ->
-                    flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                            flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
-                }.all { true }
-                it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
-            }
-        }
-    }
-}
-
 fun getFlowClasses(holdingId: String): List<String> {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -119,66 +112,36 @@ fun getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-fun createVirtualNodeFor(x500: String): String {
-    return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
-        val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
-
-        val vNodeJson = assertWithRetry {
-            command { vNodeCreate(hash, x500) }
-            condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$x500'")
-        }.toJson()
-
-        val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
-        Assertions.assertThat(holdingId).isNotNull.isNotEmpty
-        holdingId
-    }
+/**
+ * Wrapper method to perform the multiple requests necessary to create a virtual node
+ * @param [CordaClient] pass in the instantiated corda client
+ * @param [x500] The x500 name string
+ * @return the holdingId string
+ */
+fun createVirtualNodeFor(cordaClient: CordaClient, x500: String): String {
+    val cpiList = cordaClient.cpiList().cpis
+    val shortHash = cpiList.first{it.id.cpiName == CPI_NAME }.cpiFileChecksum.substring(0,12)
+    val holdingId = cordaClient.vNodeCreate(shortHash, x500).holdingIdentity.shortHash
+    Assertions.assertThat(holdingId).isNotNull.isNotEmpty
+    return holdingId
 }
 
-fun registerMember(holdingIdentityId: String) {
-    return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-        val membershipJson = assertWithRetry {
-            command { registerMember(holdingIdentityId) }
-            condition { it.code == 200 }
-            failMessage("Failed to register the member to the network '$holdingIdentityId'")
-        }.toJson()
-
-        val registrationStatus = membershipJson["registrationStatus"].textValue()
-        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
+/**
+ * Wrapper method to first create a key, then get the key's public key
+ * @param [CordaClient] pass in the instantiated corda client
+ * @param [holdingId] the holdingIdHash of the virtual node / tennantId
+ * @param [category] the HSM category
+ * @param [scheme] the scheme to use
+ * @return the contents of the public key as a String
+ */
+fun createKeyFor(cordaClient: CordaClient, holdingId: String, alias: String, category: String, scheme: String) : String {
+    val keyId = cordaClient.createKey(holdingId, alias, category, scheme).keyId
+    val keyValue = retry (attempts = 5, cooldown = 200.millis ) {
+        val res = cordaClient.getKey(holdingId, keyId)
+        failFalse(res.getResponseObject().status() == 200, "Failed to get key for holding id '$holdingId' and key id '$keyId'")
+        res.content
     }
-}
-
-fun addSoftHsmFor(holdingId: String, category: String) {
-    return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        assertWithRetry {
-            timeout(Duration.ofSeconds(5))
-            command { addSoftHsmToVNode(holdingId, category) }
-            condition { it.code == 200 }
-            failMessage("Failed to add SoftHSM for holding id '$holdingId'")
-        }
-    }
-}
-
-fun createKeyFor(holdingId: String, alias: String, category: String, scheme: String): String {
-    return cluster {
-        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-        val keyId = assertWithRetry {
-            command { createKey(holdingId, alias, category, scheme) }
-            condition { it.code == 200 }
-            failMessage("Failed to create key for holding id '$holdingId'")
-        }.body
-        assertWithRetry {
-            command { getKey(holdingId, keyId) }
-            condition { it.code == 200 }
-            failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
-        }.body
-    }
+    return keyValue
 }
 
 /**
@@ -195,7 +158,7 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
 
 class RpcSmokeTestInput {
     var command: String? = null
-    var data: Map<String, String>? = null
+    var data: Map<String, Any>? = null
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
