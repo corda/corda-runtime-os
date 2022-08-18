@@ -45,15 +45,30 @@ spec:
         {{- end }}
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
-        # Add health port when porting Link Manager to common worker framework CORE-4424
-        ports:
+      ports:
         {{- if .Values.workers.p2pLinkManager.debug.enabled }}
           - name: debug
             containerPort: 5005
         {{- end }}
+          - name: health
+            containerPort: 7000
         {{- if .Values.workers.p2pLinkManager.profiling.enabled }}
           - name: profiling
             containerPort: 10045
+        {{- end }}
+        {{- if not .Values.workers.p2pLinkManager.debug.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: health
+          periodSeconds: 10
+          failureThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: health
+          periodSeconds: 5
+          failureThreshold: 20
         {{- end }}
       volumes:
       {{- include "corda.workerVolumes" . | nindent 8 }}

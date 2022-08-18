@@ -118,13 +118,20 @@ pipeline {
             }            
         }
         stage('connect to worker') {
-            options {
-                timeout(time: 3, unit: 'MINUTES')
-            }  
             steps {
-                checkConnection()
+                script{
+                    try {
+                       timeout(time: 3, unit: 'MINUTES') {
+                            checkConnection()
+                       }
+                    } catch(err) {
+                        // If a timeout is reached fail the build as we want the calling job to result in a failure
+                        // without this the calling job will result in a aborted status
+                        error 'Could not connect to the Combined Worker in a 3 minute window'
+                    }
+                }
             }
-        } 
+        }
         stage('smoketests') {
             options {
                 timeout(time: 15, unit: 'MINUTES')

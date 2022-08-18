@@ -11,7 +11,7 @@ import net.corda.applications.workers.smoketest.virtualnode.toJson
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -105,7 +105,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
-fun getFlowClasses(holdingId: String) : List<String> {
+fun getFlowClasses(holdingId: String): List<String> {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -190,7 +190,7 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
     val digest: MessageDigest = MessageDigest.getInstance("SHA-256")
     return digest.digest(s.toByteArray())
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
-        .substring(0,12)
+        .substring(0, 12)
 }
 
 class RpcSmokeTestInput {

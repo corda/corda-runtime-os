@@ -11,6 +11,11 @@ import java.util.concurrent.Future
 interface DuplexChannel : AutoCloseable {
 
     /**
+     * Identifier for a duplex channel connection.
+     */
+    val id: String
+
+    /**
      * Allows to asynchronously send a message to the remote side
      */
     fun send(message: String): Future<Void>

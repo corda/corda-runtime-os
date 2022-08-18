@@ -14,9 +14,9 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
-import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
@@ -29,7 +29,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(
@@ -40,8 +40,8 @@ class RegistrationProcessor(
     membershipPersistenceClient: MembershipPersistenceClient,
     membershipQueryClient: MembershipQueryClient,
     cryptoOpsClient: CryptoOpsClient,
-    hashingService: DigestService,
     cipherSchemeMetadata: CipherSchemeMetadata,
+    merkleTreeFactory: MerkleTreeFactory,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -65,10 +65,10 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             cipherSchemeMetadata,
-            hashingService,
             clock,
             cryptoOpsClient,
             cordaAvroSerializationFactory,
+            merkleTreeFactory
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient),
 
@@ -116,7 +116,7 @@ class RegistrationProcessor(
                 }
             }
         } catch(e: MissingRegistrationStateException) {
-            logger.error("RegistrationState was null during dynamic registration.")
+            logger.error("RegistrationState was null during dynamic registration.", e)
             createEmptyResult()
         } catch (e: CordaRuntimeException) {
             logger.error("Unexpected error in handling registration.", e)
