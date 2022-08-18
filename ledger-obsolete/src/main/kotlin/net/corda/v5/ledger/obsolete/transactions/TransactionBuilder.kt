@@ -15,6 +15,7 @@ import net.corda.v5.ledger.obsolete.contracts.TimeWindow
 import net.corda.v5.ledger.obsolete.contracts.TransactionState
 import net.corda.v5.ledger.obsolete.contracts.TransactionVerificationException
 import net.corda.v5.ledger.obsolete.identity.Party
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.ledger.obsolete.services.TransactionService
 import java.security.PrivateKey
 import java.security.PublicKey

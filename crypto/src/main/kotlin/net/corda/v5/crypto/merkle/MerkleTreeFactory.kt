@@ -55,7 +55,7 @@ const val HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION = "nodePrefix"
 const val HASH_DIGEST_PROVIDER_ENTROPY_OPTION = "entropy"
 
 /**
- * [MerkleTreeFactory] creates [MerkleTree]s, [MerkleProof]s and [MerkleTreeHashDigestProvider].
+ * [MerkleTreeFactory] creates [MerkleTree]s and [MerkleTreeHashDigestProvider]s.
  */
 @DoNotImplement
 interface MerkleTreeFactory {

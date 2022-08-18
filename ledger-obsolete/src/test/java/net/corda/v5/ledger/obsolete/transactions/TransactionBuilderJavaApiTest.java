@@ -1,6 +1,7 @@
 package net.corda.v5.ledger.obsolete.transactions;
 
 import net.corda.v5.crypto.SecureHash;
+import net.corda.v5.ledger.common.transaction.PrivacySalt;
 import net.corda.v5.ledger.obsolete.contracts.BelongsToContract;
 import net.corda.v5.ledger.obsolete.contracts.CPKConstraint;
 import net.corda.v5.ledger.obsolete.contracts.Command;
@@ -378,8 +379,7 @@ public class TransactionBuilderJavaApiTest {
 
     @Test
     public void setPrivacySalt() {
-        byte[] bytes = "6D1687C143DF792A011A1E80670A4E4E".getBytes();
-        final PrivacySalt privacySaltA = new PrivacySalt(bytes);
+        final PrivacySalt privacySaltA = mock(PrivacySalt.class);
         when(builderA.setPrivacySalt(privacySaltA)).thenReturn(builderB);
 
         TransactionBuilder result = builderA.setPrivacySalt(privacySaltA);
