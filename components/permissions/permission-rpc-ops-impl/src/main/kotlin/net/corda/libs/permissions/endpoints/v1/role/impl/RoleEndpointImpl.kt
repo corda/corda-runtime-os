@@ -102,6 +102,6 @@ class RoleEndpointImpl @Activate constructor(
     }
 
     override fun stop() {
-        coordinator.close()
+        coordinator.stop()
     }
 }

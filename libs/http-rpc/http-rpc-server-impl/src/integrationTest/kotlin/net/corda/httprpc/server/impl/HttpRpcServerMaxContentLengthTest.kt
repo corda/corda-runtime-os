@@ -26,7 +26,7 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), context, null, null, MAX_CONTENT_LENGTH)
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true
