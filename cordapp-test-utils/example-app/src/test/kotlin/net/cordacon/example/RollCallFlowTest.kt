@@ -24,7 +24,7 @@ class RollCallFlowTest {
         // Given a teacher with an initiating flow
         val teacherId = HoldingIdentity.create("Teach")
         val corda = FakeCorda()
-        val teacherVNodeinfo = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
+        val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a list of students who will respond predictably
         val students = listOf("Alpha", "Beta", "Gamma").map {
@@ -45,7 +45,7 @@ class RollCallFlowTest {
         }
 
         // When we contact the students
-        val result = corda.callFlow(teacherVNodeinfo, RPCRequestDataWrapper.fromData(
+        val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students.values.toList())))
@@ -67,7 +67,7 @@ class RollCallFlowTest {
         // Given a teacher with an initiating flow
         val teacherId = HoldingIdentity.create("Teach")
         val corda = FakeCorda()
-        val teacherVNodeinfo = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
+        val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a student who will respond with empty string repeatedly
         val studentId = "CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB"
@@ -79,7 +79,7 @@ class RollCallFlowTest {
         corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "absence-call", responder)
 
         // When we contact the student
-        val result = corda.callFlow(teacherVNodeinfo, RPCRequestDataWrapper.fromData(
+        val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(listOf(studentId))))

@@ -17,7 +17,7 @@ class RollCallTest {
         val teacher = MemberX500Name.parse(
             "CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US")
         val teacherId = HoldingIdentity(teacher)
-        val teacherVNodeInfo = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
+        val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // and recipients with the responder flow
         //
@@ -35,7 +35,7 @@ class RollCallTest {
             AbsenceCallResponderFlow::class.java) }
 
         // When we invoke it in Corda
-        val response = corda.callFlow(teacherVNodeInfo, RPCRequestDataWrapper.fromData(
+        val response = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students)
@@ -58,7 +58,7 @@ class RollCallTest {
         """.trimIndent().replace("\n", System.lineSeparator())))
 
         // And Ferris Bueller's absence should have been persisted
-        val persistence = corda.getPersistenceServiceFor(teacherVNodeInfo)
+        val persistence = teacherVNode.getPersistenceService()
         val absenceResponses = persistence.findAll(AbsenceRecordEntity::class.java)
         assertThat(absenceResponses.execute().map { it.name }, `is`(listOf("Bueller")))
 
@@ -70,7 +70,7 @@ class RollCallTest {
         // Given a RollCallFlow that's been uploaded to Corda
         val corda = FakeCorda()
         val teacherId = HoldingIdentity(MemberX500Name.parse("O=BEN STEIN, L=Chicago, C=US"))
-        val teacherVNodeinfo = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
+        val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // and recipients with the responder and absence flow
         val students = listOf("Albers", "Anderson", "Anheiser", "Busch", "Bueller"). map {
@@ -84,7 +84,7 @@ class RollCallTest {
         }
 
         // When we invoke it in Corda
-        val response = corda.callFlow(teacherVNodeinfo, RPCRequestDataWrapper.fromData(
+        val response = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students)
