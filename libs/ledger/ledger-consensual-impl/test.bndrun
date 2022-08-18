@@ -10,8 +10,3 @@
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.corda.application'
-
--runproperties: \
-    co.paralleluniverse.quasar.suspendableAnnotation=net.corda.v5.base.annotations.Suspendable,\
-    co.paralleluniverse.quasar.excludePackages='aQute.**,kotlin**,org.osgi.**,org.apache.felix.**,org.slf4j**,org.junit.**,org.assertj.**,org.opentest4j**',\
-    org.osgi.framework.bundle.parent=framework
