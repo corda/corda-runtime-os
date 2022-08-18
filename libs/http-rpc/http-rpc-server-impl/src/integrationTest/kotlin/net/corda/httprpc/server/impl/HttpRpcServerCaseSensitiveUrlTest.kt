@@ -25,7 +25,7 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

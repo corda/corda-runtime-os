@@ -1,8 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>NoWildcardImports:net.corda.uniqueness.backingstore.impl.InMemoryBackingStore.kt:10</ID>
-    <ID>WildcardImport:InMemoryBackingStore.kt$import net.corda.uniqueness.datamodel.*</ID>
-  </CurrentIssues>
-</SmellBaseline>

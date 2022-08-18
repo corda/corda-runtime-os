@@ -3,7 +3,6 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
@@ -25,19 +24,13 @@ import java.nio.file.StandardCopyOption
 
 // More info available here https://r3-cev.atlassian.net/wiki/spaces/CB/pages/4063035406/BuildKit
 
-abstract class BuildkitBuild extends Exec {
+abstract class BuildkitBuild extends DefaultTask {
 
-    private static final String CONTAINER_LOCATION = "/opt/override/"
-    private final String projectName = project.name
     private def copyTask
 
 
     @Inject
     protected abstract ObjectFactory getObjects()
-
-    @Input
-    final Property<Boolean> setEntry =
-            getObjects().property(Boolean).convention(true)
 
     @Input
     final Property<Boolean> useShortName =
@@ -66,41 +59,13 @@ abstract class BuildkitBuild extends Exec {
             getObjects().fileCollection()
 
     @Input
-    final Property<String> overrideEntryName =
-            getObjects().property(String).convention('')
-
-    @Input
-    final Property<String> overrideContainerName =
-            getObjects().property(String).convention('')
-
-    @Input
     final Property<String> subDir =
             getObjects().property(String).convention('')
 
     BuildkitBuild(){
 
-        workingDir("${project.rootDir}")
-
-        def containerizationDir = temporaryDir.toPath()
-
         copyTask = project.tasks.register('copyFiles', CopyFiles, sourceFiles, extraSourceFiles, useShortName, temporaryDir.toPath())
         super.dependsOn(copyTask)
-
-//        extraSourceFiles.forEach{
-//            logger.quiet("${it.toString()}")
-//            Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}"), StandardCopyOption.REPLACE_EXISTING)
-//        }
-
-        List<String> javaArgs = new ArrayList<String>(arguments.get())
-        javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
-        javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
-
-        def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
-
-        String containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
-
-            logger.quiet("\n\nRunning Command \n buildctl --addr tcp://localhost:3476 build --frontend=dockerfile.v0 --local context=/ --local dockerfile=${project.rootDir.toString() +  "/docker"}  --opt build-arg:BASE_IMAGE=${imageName} --opt build-arg:BUILD_PATH=${containerizationDir} --opt build-arg:JAR_LOCATION=${CONTAINER_LOCATION + subDir.get()} --opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${CONTAINER_LOCATION}${containerName}.jar\" --output type=image,name=docker-js-temp.software.r3.com/corda-os-${containerName},push=true --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache\n\n")
-
 
             // Task executes the buildctl build command below
 
@@ -118,7 +83,8 @@ abstract class BuildkitBuild extends Exec {
             //         --output type=image,name=docker-js-temp.software.r3.com/IMAGE_NAME:IMAGE_TAG,push=true \
             //         --export-cache type=registry,ref=docker-js-temp.software.r3.com/IMAGE_NAME:IMAGE_TAG-cache \
             //         --import-cache type=registry,ref=docker-js-temp.software.r3.com/IMAGE_NAME:IMAGE_TAG-cache
-            commandLine 'bash', '-c', "buildctl --addr tcp://localhost:3476 build --frontend=dockerfile.v0 --local context=/ --local dockerfile=${project.rootDir.toString() + "/docker"} --opt build-arg:BASE_IMAGE=${imageName} --opt build-arg:BUILD_PATH=${containerizationDir} --opt build-arg:JAR_LOCATION=${CONTAINER_LOCATION + subDir.get()} --opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${CONTAINER_LOCATION}${containerName}.jar\" --output type=docker,name=docker-js-temp.software.r3.com/corda-os-${containerName},push=true  | docker load"
+
+
 
 
     }
@@ -156,7 +122,11 @@ abstract class BuildkitBuild extends Exec {
                         ? it.name.replace("corda-", "").replace("-${project.version}", "")
                         : it.name
                 logger.quiet("\nCopying file ${it.name} to containerization directory\n")
-                Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}/$jarName"), StandardCopyOption.REPLACE_EXISTING)
+                if(Files.exists(Paths.get(it.path))){
+                    Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}/$jarName"), StandardCopyOption.REPLACE_EXISTING)
+                } else {
+                    logger.quiet("SOURCEFILES: File ${Paths.get(it.path)} does not exist")
+                }
             }
 
             //for os-plugins, requires config jars
@@ -165,13 +135,11 @@ abstract class BuildkitBuild extends Exec {
                 def jarName = useShortName
                         ? it.name.replace("corda-", "").replace("-${project.version}", "")
                         : it.name
-                Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}/$jarName"), StandardCopyOption.REPLACE_EXISTING)
-            }
+                if(Files.exists(Paths.get(it.path))){
+                    Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}/$jarName"), StandardCopyOption.REPLACE_EXISTING)
+                } else {
+                    logger.quiet("EXTRASOURCEFILES: File ${Paths.get(it.path)} does not exist")
+                }            }
         }
     }
-
-
-
-
-
 }

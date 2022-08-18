@@ -22,11 +22,13 @@ import net.corda.httprpc.RpcOps
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
+import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
+import java.util.function.Supplier
 
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
     rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
-    rpcSecurityManager: RPCSecurityManager,
+    rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>,
     httpRpcSettings: HttpRpcSettings,
     multiPartDir: Path,
     devMode: Boolean
@@ -45,16 +47,18 @@ class HttpRpcServerImpl(
 
     private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
+
     private val httpRpcServerInternal = HttpRpcServerInternal(
         JavalinRouteProviderImpl(
             httpRpcSettings.context.basePath,
             httpRpcSettings.context.version,
             resources
         ),
-        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
+        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManagerSupplier)),
         httpRpcObjectConfigProvider,
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider),
-        multiPartDir
+        multiPartDir,
+        DeferredWebSocketCloserService()
     )
 
 
@@ -96,12 +100,12 @@ class HttpRpcServerImpl(
 
     private fun createAuthenticationProviders(
         settings: HttpRpcSettingsProvider,
-        rpcSecurityManager: RPCSecurityManager
+        rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
     ): Set<AuthenticationProvider> {
-        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManager))
+        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManagerSupplier))
         val azureAdSettings = settings.getSsoSettings()?.azureAd()
         if (azureAdSettings != null) {
-            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, rpcSecurityManager))
+            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, rpcSecurityManagerSupplier))
         }
         return result
     }

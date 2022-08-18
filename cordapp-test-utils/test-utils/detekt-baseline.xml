@@ -1,7 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>ForbiddenComment:UtilitiesTest.kt$UtilitiesTest$* TODO: Watch https://r3-cev.atlassian.net/browse/CORE-5987 - * if fixed in Corda, this should also do inherited fields.</ID>
-  </CurrentIssues>
-</SmellBaseline>

@@ -78,7 +78,9 @@ object DbUtils {
         val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
         var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+
         val factory = PostgresDataSourceFactory()
+
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
         if(!schemaName.isNullOrBlank()) {

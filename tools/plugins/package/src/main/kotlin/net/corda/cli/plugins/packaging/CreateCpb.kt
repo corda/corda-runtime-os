@@ -12,7 +12,7 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.CpxSigner
+import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import picocli.CommandLine
 
@@ -60,7 +60,7 @@ class CreateCpb : Runnable {
             buildUnsignedCpb(unsignedCpb, cpks)
             val cpbPath = requireFileDoesNotExist(outputCpbFileName)
 
-            CpxSigner.sign(
+            SigningHelpers.sign(
                 unsignedCpb,
                 cpbPath,
                 signingOptions.keyStoreFileName,

@@ -7,7 +7,7 @@ description 'Application DB Setup'
 
 dependencies {
     compileOnly 'org.osgi:osgi.core'
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -22,5 +22,24 @@ dependencies {
     implementation project(':libs:db:db-core')
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-password')
+}
 
+// NOTE:  supported jdbc drivers / database drivers are listed here.
+// Add more packages here.
+//
+// We want to use resolution=optional rather than DynamicImport-Package
+//
+// resolution=optional means that runtime resolution doesn't "fail" when
+// the framework cannot initially find any drivers.
+//
+// We also have to disable Class.forName scanning that bnd does otherwise
+// it finds (postgres) db usage and declares it as Import-Package
+// without `resolution=optional` which then fails to resolve at runtime.
+// https://bnd.bndtools.org/instructions/noclassforname.html
+tasks.named('jar', Jar) {
+    bnd '''\
+-noclassforname: true
+Import-Package: org.postgresql;resolution:=optional,\
+    *
+'''
 }

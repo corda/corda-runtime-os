@@ -9,6 +9,7 @@ import net.corda.libs.packaging.internal.ZipTweaker
 import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.v1.UncloseableInputStream
 import net.corda.utilities.readAll
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -68,7 +69,7 @@ class CPKTests {
             sha256Name,
             run {
                 val md = MessageDigest.getInstance(sha256Name)
-                md.update(cordaDevCert.subjectX500Principal.name.toByteArray())
+                md.update(MemberX500Name.parse(cordaDevCert.subjectX500Principal.name).toString().toByteArray())
                 md.digest()
             }
         )

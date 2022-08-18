@@ -1,5 +1,8 @@
+
 plugins {
     id 'net.corda.plugins.cordapp-cpb'
+    id 'org.jetbrains.kotlin.plugin.jpa'
+    id 'org.jetbrains.kotlin.plugin.allopen'
 }
 
 group = "net.cordacon"
@@ -22,16 +25,19 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }
+
+def cordappName = 'cordapp-example-rollcall'
+
 tasks.named('jar', Jar) {
-    archiveBaseName = 'cordapp-example-rollcall'
+    archiveBaseName = cordappName
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow
     {
-        name jar.baseName
+        name cordappName
         versionId 1
         vendor "LizR3"
     }

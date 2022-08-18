@@ -26,6 +26,8 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -58,6 +60,13 @@ class FlowRunnerImplTest {
 
     private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
 
+    private val userContext = KeyValueStore().apply {
+        this["user"] = "user"
+    }
+    private val platformContext = KeyValueStore().apply {
+        this["platform"] = "platform"
+    }
+
     init {
         whenever(flowCheckpoint.flowId).thenReturn(FLOW_ID_1)
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
@@ -81,7 +90,9 @@ class FlowRunnerImplTest {
     fun `start flow event should create a new flow and execute it in a new fiber`() {
         val startArgs = "args"
         val flowContinuation = FlowContinuation.Run()
-        val flowStartContext = FlowStartContext()
+        val flowStartContext = FlowStartContext().apply {
+            contextPlatformProperties = platformContext.avro
+        }
         val flowStartEvent = StartFlow().apply {
             startContext = flowStartContext
             flowStartArgs = startArgs
@@ -99,7 +110,10 @@ class FlowRunnerImplTest {
                 eq(logicAndArgs)
             )
         ).thenReturn(fiberFuture)
-        whenever(flowStack.push(rpcFlow)).thenReturn(flowStackItem)
+
+        whenever(flowStack.pushWithContext(rpcFlow, emptyKeyValuePairList(), platformContext.avro)).thenReturn(
+            flowStackItem
+        )
 
         val result = flowRunner.runFlow(context, flowContinuation)
 
@@ -111,7 +125,11 @@ class FlowRunnerImplTest {
     @Test
     fun `initiate flow session event should create a new flow and execute it in a new fiber`() {
         val flowContinuation = FlowContinuation.Run()
-        val sessionInit = SessionInit()
+        val sessionInit = SessionInit().apply {
+            contextPlatformProperties = platformContext.avro
+            contextUserProperties = userContext.avro
+        }
+
         val flowStartContext = FlowStartContext().apply {
             statusKey = FlowKey().apply {
                 id = SESSION_ID_1
@@ -136,7 +154,10 @@ class FlowRunnerImplTest {
                 eq(logicAndArgs)
             )
         ).thenReturn(fiberFuture)
-        whenever(flowStack.push(initiatedFlow)).thenReturn(flowStackItem)
+
+        whenever(flowStack.pushWithContext(initiatedFlow, userContext.avro, platformContext.avro)).thenReturn(
+            flowStackItem
+        )
 
         val result = flowRunner.runFlow(context, flowContinuation)
 

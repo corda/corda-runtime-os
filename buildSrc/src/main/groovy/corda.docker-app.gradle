@@ -8,6 +8,11 @@ configurations {
         transitive = false
     }
 
+    dockerImageJdbc {
+        canBeConsumed = false
+        transitive = false
+    }
+
     profilerAgent {
         canBeConsumed = false
         visible = false
@@ -23,13 +28,9 @@ if (enableProfiling.toBoolean()) {
 }
 
 tasks.register('publishBuildkitImage' , BuildkitBuild) {
+    def containerizationDir = it.temporaryDir.toString()
+    def containerLocation = '/opt/override/'
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
-
-    sourceFiles.forEach{
-        logger.quiet("${it.name.toString()}")
-    }
-
-
     it.extraSourceFiles.setFrom(configurations.dockerImage)
     it.useShortName = true
 
@@ -37,11 +38,27 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         baseImageName = baseImage
     }
 
+    List<String> javaArgs = new ArrayList<String>(it.arguments.get())
+    javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
+    javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
+
+    String containerName = project.name
+    def imageName = "${it.baseImageTag.get().empty ? it.baseImageName.get() : "${it.baseImageName.get()}:${it.baseImageTag.get()}"}"
+
+
+    doLast {
+        exec{
+            workingDir("${project.rootDir}")
+            commandLine 'bash', '-c', "buildctl --addr tcp://localhost:3476 build --frontend=dockerfile.v0 --local context=/ --local dockerfile=${project.rootDir.toString() + "/docker"} --opt build-arg:BASE_IMAGE=${imageName} --opt build-arg:BUILD_PATH=${containerizationDir} --opt build-arg:JAR_LOCATION=${containerLocation} --opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}${containerName}.jar\" --output type=image,name=docker-js-temp.software.r3.com/corda-os-${containerName},push=true --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache"
+        }
+    }
+
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
     it.extraSourceFiles.setFrom(configurations.dockerImage)
+    it.jdbcDriverFiles.setFrom(configurations.dockerImageJdbc)
     it.useShortName = true
 
     if (project.hasProperty('jibRemotePublish')) {

@@ -39,14 +39,17 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.nio.file.Path
 import javax.servlet.MultipartConfigElement
+import net.corda.httprpc.server.impl.websocket.WebSocketCloserService
+import net.corda.httprpc.server.impl.websocket.mapToWsStatusCode
 
-@Suppress("TooManyFunctions", "TooGenericExceptionThrown")
+@Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class HttpRpcServerInternal(
     private val resourceProvider: RouteProvider,
     private val securityManager: HttpRpcSecurityManager,
     private val configurationsProvider: HttpRpcSettingsProvider,
     private val openApiInfoProvider: OpenApiInfoProvider,
-    multiPartDir: Path
+    multiPartDir: Path,
+    private val webSocketCloserService: WebSocketCloserService
 ) {
 
     internal companion object {
@@ -347,6 +350,11 @@ internal class HttpRpcServerInternal(
                 registerWsHandlerForRoute(routeInfo)
             }
 
+            wsException(Exception::class.java) { e, ctx ->
+                log.warn("Exception handled from WebSocket:", e)
+                webSocketCloserService.close(ctx, e.mapToWsStatusCode())
+            }
+
             log.trace { "Add WebSockets routes for some of the GET methods." }
         } catch (e: Exception) {
             "Error during Add WebSockets routes for some of the GET methods".let {
@@ -360,7 +368,7 @@ internal class HttpRpcServerInternal(
         try {
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
-            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver))
+            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver, webSocketCloserService))
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {

@@ -12,7 +12,6 @@ String postgresCredentialsId = 'e2e-postgresql-credentials'
 String postgresDb = "test_${UUID.randomUUID().toString().replace("-", "")}"
 
 def checkConnection(){
-
     def status = null
     sleep(time: 30, unit: "SECONDS") 
 
@@ -37,6 +36,7 @@ pipeline {
             alwaysPull true
         }
     }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
@@ -54,7 +54,7 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
+        GRADLE_PERFORMANCE_TUNING = "--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
@@ -63,7 +63,7 @@ pipeline {
     }
     stages {
 		  //stage create DB - see shared pipline
-        stage('Create DBs') {
+        stage('create DBs') {
             environment {
                 KUBECONFIG = credentials('e2e-tests-credentials')
             }
@@ -97,40 +97,57 @@ pipeline {
                 }
             }
         }
-        stage('Build  Jar') {
+        stage('build') {
             steps {
-                sh './gradlew :applications:workers:release:combined-worker:assemble -Si' // builds the jar build/bin/*/*.jar
+                gradlew (':applications:workers:release:combined-worker:assemble')
             }
-        }
- 			
-        stage('Start jar / run tests') {
-            
+        } 			
+        stage('start combined worker') {       
             environment {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
+                JDBC_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/drivers"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
                 LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb}"
+                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb} -ddatabase.jdbc.directory=${JDBC_PATH}"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {
-                
                 sh '''
                     nohup java ${LOG4J_PARAMETERS} -jar ${VM_PARAMETERS} ${JAR_PATH} ${PROGRAM_PARAMETERS} 2<&1 > workerLogs.txt &
                     export PROCNO=$!
-                '''
-
-                checkConnection()    
-
-                sh './gradlew smoketest -PisCombinedWorker=true'
-    
+                '''        
             }            
         }
+        stage('connect to worker') {
+            steps {
+                script{
+                    try {
+                       timeout(time: 3, unit: 'MINUTES') {
+                            checkConnection()
+                       }
+                    } catch(err) {
+                        // If a timeout is reached fail the build as we want the calling job to result in a failure
+                        // without this the calling job will result in a aborted status
+                        error 'Could not connect to the Combined Worker in a 3 minute window'
+                    }
+                }
+            }
+        }
+        stage('smoketests') {
+            options {
+                timeout(time: 15, unit: 'MINUTES')
+            }  
+            steps {
+               gradlew('smoketest -PisCombinedWorker=true')
+            }
+        } 	        
     }
     post {
         always {
             
             script {      
-
+                    findBuildScans()
+                    splunkLogGenerator()
                     sh '''
                         for pod in $(kubectl -n postgres get pods -o name); do kubectl -n postgres logs --all-containers --prefix $pod 2>&1 >> podLogs.txt; done
                     '''     
@@ -145,6 +162,20 @@ pipeline {
             
             junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
+            sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
+        }
+        failure {
+            sendSlackNotifications("danger", "BUILD FAILURE - Combined Worker E2E Tests", true, "#corda-corda5-build-notifications")
         }
     }
+}
+
+
+def gradleCmd() {
+    return isUnix() ? './gradlew' : './gradlew.bat'
+}
+
+def gradlew(String... args) {
+    def allArgs = args.join(' ')
+    sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
 }

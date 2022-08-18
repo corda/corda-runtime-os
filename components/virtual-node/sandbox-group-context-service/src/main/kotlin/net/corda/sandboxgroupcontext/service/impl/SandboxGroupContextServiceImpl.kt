@@ -303,10 +303,17 @@ class SandboxGroupContextServiceImpl(
         )
     }
 
-    override fun hasCpks(cpkChecksums: Set<SecureHash>) =
-        cpkChecksums.all {
-            cpkReadService.get(it) != null
+    override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean {
+        val missingCpks = cpkChecksums.filter {
+            cpkReadService.get(it) == null
         }
+
+        if(logger.isInfoEnabled && missingCpks.isNotEmpty()) {
+            logger.info("CPK(s) not (yet) found in cache: $missingCpks")
+        }
+
+        return missingCpks.isEmpty()
+    }
 
     override fun close() {
         cache.close()

@@ -13,6 +13,8 @@ import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
@@ -23,9 +25,12 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.security.AccessController.doPrivileged
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.security.PrivilegedAction
 import java.util.UUID
 import kotlin.streams.asSequence
+
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
@@ -158,6 +163,10 @@ internal class SandboxServiceImpl @Activate constructor(
         if (securityDomain.contains('/'))
             throw SandboxException("Security domain cannot contain a '/' character.")
 
+        // Verify that CPK files were not tampered with
+        // TODO there is a small time window between verification and installation during which CPK files might still be modified
+        verifyCpks(cpks)
+
         // We track the bundles that are being created, so that we can start them all at once at the end if needed.
         val bundles = mutableSetOf<Bundle>()
 
@@ -179,6 +188,7 @@ internal class SandboxServiceImpl @Activate constructor(
                     securityDomain
                 )
             }
+
             bundles.addAll(libraryBundles)
             bundles.add(mainBundle)
 
@@ -213,6 +223,37 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         return sandboxGroup
+    }
+
+    /**
+     * Verifies that [cpks] haven't been tampered with by calculating their checksum and validating them against
+     * expected values.
+     */
+    private fun verifyCpks(cpks: Iterable<Cpk>) {
+        cpks.forEach(::verifyCpkChecksum)
+    }
+
+    /**
+     * Calculates [cpk]'s checksum and validates it against expected value
+     */
+    private fun verifyCpkChecksum(cpk: Cpk) {
+        if (checksum(cpk.getInputStream()) != cpk.metadata.fileChecksum) {
+            throw SandboxException("File checksum validation failed for CPK ${cpk.metadata.cpkId.name} during sandbox creation")
+        }
+    }
+
+    /**
+     * Calculates [inputStream]'s checksum
+     */
+    private fun checksum(inputStream: InputStream): SecureHash {
+        val digest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+        DigestInputStream(inputStream, digest).use {
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (it.read(buffer) != -1) {
+                // read all bytes to calculate digest
+            }
+        }
+        return SecureHash(digest.algorithm, digest.digest())
     }
 
     /**
