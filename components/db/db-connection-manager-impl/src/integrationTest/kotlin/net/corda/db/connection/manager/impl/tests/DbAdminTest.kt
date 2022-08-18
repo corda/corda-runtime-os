@@ -1,3 +1,5 @@
+package net.corda.db.connection.manager.impl.tests
+
 import com.typesafe.config.ConfigFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -89,7 +91,11 @@ class DbAdminTest {
     private fun createDbAdmin(adminUser: String? = null, adminPassword: String? = null): DbAdmin {
         val entitiesRegistry = JpaEntitiesRegistryImpl()
         val dbm =
-            DbConnectionManagerImpl(lifecycleCoordinatorFactory, EntityManagerFactoryFactoryImpl(), entitiesRegistry)
+            DbConnectionManagerImpl(
+                lifecycleCoordinatorFactory,
+                EntityManagerFactoryFactoryImpl(),
+                entitiesRegistry
+            )
         val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,

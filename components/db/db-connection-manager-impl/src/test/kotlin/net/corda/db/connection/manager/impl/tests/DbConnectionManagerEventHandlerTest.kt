@@ -1,3 +1,5 @@
+package net.corda.db.connection.manager.impl.tests
+
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.impl.BootstrapConfigProvided
 import net.corda.db.connection.manager.impl.DbConnectionManagerEventHandler
