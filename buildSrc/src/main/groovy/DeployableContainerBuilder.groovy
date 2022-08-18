@@ -35,6 +35,7 @@ import java.time.Instant
 abstract class DeployableContainerBuilder extends DefaultTask {
 
     private static final String CONTAINER_LOCATION = "/opt/override/"
+    private static final String JDBC_DRIVER_LOCATION = "/opt/jdbc-driver/"
     private final String projectName = project.name
     private final String version = project.version
     private String targetRepo
@@ -120,6 +121,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     final ConfigurableFileCollection extraSourceFiles =
             getObjects().fileCollection()
 
+    @PathSensitive(RELATIVE)
+    @InputFiles
+    final ConfigurableFileCollection jdbcDriverFiles =
+            getObjects().fileCollection()
+
     @Input
     final Property<String> overrideEntryName =
             getObjects().property(String).convention('')
@@ -189,10 +195,17 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
             builder = setCredentialsOnBaseImage(builder)
         }
+
+        List<Path> jdbcDrivers = jdbcDriverFiles.collect { it.toPath() }
+        if (!jdbcDrivers.empty) {
+            builder.addLayer(jdbcDrivers, JDBC_DRIVER_LOCATION)
+        }
+
         List<Path> imageFiles = extraSourceFiles.collect { it.toPath() }
         if (!imageFiles.empty) {
             builder.addLayer(imageFiles, CONTAINER_LOCATION)
         }
+
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())
                 .addLayer(
@@ -353,4 +366,3 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
     }
 }
-

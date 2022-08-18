@@ -1,3 +1,5 @@
+package net.corda.db.connection.manager.impl.tests
+
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.impl.DbAdminImpl
 import net.corda.db.core.DbPrivilege
