@@ -51,7 +51,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
                     TestEntityRpcOpsImpl(),
                     TestFileUploadImpl()
                 ),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

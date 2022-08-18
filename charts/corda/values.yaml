@@ -32,6 +32,8 @@ resources:
 logging:
   # -- log format; "json" or "text"
   format: "json"
+  # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
+  level: "warn"
 
 # Open Telemetry configuration
 openTelemetry:
@@ -174,6 +176,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the crypto worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run crypto worker with profiling enabled
       enabled: false
@@ -202,6 +208,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the DB worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
@@ -234,6 +244,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the flow worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run flow worker with profiling enabled
       enabled: false
@@ -264,6 +278,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the membership worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run membership worker with profiling enabled
       enabled: false
@@ -292,6 +310,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the RPC worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run RPC worker with profiling enabled
       enabled: false
@@ -319,7 +341,7 @@ workers:
       # -- p2p-link-manager worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-link-manager worker image repository
-      repository: "corda-os-p2p-link-manager"
+      repository: "corda-os-p2p-link-manager-worker"
       # -- p2p-link-manager worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-link-manager worker replica count
@@ -332,6 +354,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the p2p-link-manager worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run p2p-link-manager worker with profiling enabled
       enabled: false
@@ -362,6 +388,10 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the p2p-gateway worker until the debugger is attached
       suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: ""
     profiling:
       # -- run p2p-gateway worker with profiling enabled
       enabled: false

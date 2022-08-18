@@ -10,6 +10,7 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.utils.keyValuePairListOf
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,7 +30,10 @@ class InitiateFlowRequestHandler @Activate constructor(
         return WaitingFor(SessionConfirmation(listOf(request.sessionId), SessionConfirmationType.INITIATE))
     }
 
-    override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.InitiateFlow): FlowEventContext<Any> {
+    override fun postProcess(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.InitiateFlow
+    ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
@@ -55,6 +59,8 @@ class InitiateFlowRequestHandler @Activate constructor(
                 request.x500Name,
                 protocolName,
                 protocolVersions,
+                contextUserProperties = keyValuePairListOf(request.contextUserProperties),
+                contextPlatformProperties = keyValuePairListOf(request.contextPlatformProperties),
                 Instant.now()
             )
         )

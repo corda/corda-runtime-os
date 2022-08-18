@@ -28,7 +28,7 @@ class HttpRpcServerCaseSensitiveLoginTest: HttpRpcServerTestBase() {
             )
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

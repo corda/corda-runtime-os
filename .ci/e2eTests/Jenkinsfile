@@ -46,16 +46,6 @@ pipeline {
     }
 
     stages {
-        stage('Install CLI') {
-            steps {
-                sh 'mkdir -p "${GRADLE_USER_HOME}"'
-                //download and set up CLI
-                sh "curl -u '${CORDA_ARTIFACTORY_USERNAME}:${CORDA_ARTIFACTORY_PASSWORD}' https://software.r3.com/artifactory/engineering-tools-maven-unstable/net/corda/cli/corda-cli-developer/[RELEASE]/corda-cli-developer-[RELEASE].tar\\;source.branch+=main --output ./corda-cli.tar"
-                sh "rm -rf ./corda-cli && mkdir ./corda-cli"
-                sh "tar -C ./corda-cli --strip 1 -xf ./corda-cli.tar"
-                sh "./corda-cli/bin/corda-cli -v"
-            }
-        }
         stage ('Create namespace') {
             steps {
                 sh """
@@ -145,8 +135,8 @@ pipeline {
         always {
             findBuildScans()
             splunkLogGenerator()
-            rtp(parserName: 'HTML', stableText: "<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/kubernetes_overview?form.period.earliest=0&form.period.latest=&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*'>Splunk K8s E2E Dashboard</a>")
             script{
+                createSummary("yellow.png").appendText("<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/kubernetes_overview?form.period.earliest=0&form.period.latest=&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*'>Splunk K8s E2E Dashboard</a>", false)
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }

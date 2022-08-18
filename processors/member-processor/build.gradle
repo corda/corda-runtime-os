@@ -52,6 +52,7 @@ dependencies {
     runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(':libs:crypto:merkle-impl')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
@@ -93,13 +94,14 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
 }
-

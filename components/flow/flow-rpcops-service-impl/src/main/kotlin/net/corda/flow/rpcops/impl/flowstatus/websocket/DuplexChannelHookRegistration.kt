@@ -1,7 +1,6 @@
 package net.corda.flow.rpcops.impl.flowstatus.websocket
 
 import java.time.Instant
-import java.util.UUID
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
@@ -24,9 +23,8 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     log: Logger,
 ) {
     val holdingIdentityShortHash = holdingIdentity.toCorda().shortHash
-    val id = UUID.randomUUID()
     val listener: FlowStatusUpdateListener = WebSocketFlowStatusUpdateListener(
-        id,
+        this.id,
         clientRequestId,
         holdingIdentity,
         onCloseCallback(),
@@ -34,14 +32,14 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
     )
     onClose = { statusCode, reason ->
         log.info(
-            "Close hook called for id ${listener.id} with status $statusCode, reason: $reason. Closing listener. " +
+            "Close hook called for duplex channel ${listener.id} with status $statusCode, reason: $reason " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
         )
         flowStatusCacheService.unregisterFlowStatusListener(clientRequestId, holdingIdentity, listener)
     }
     onError = { e ->
         log.warn(
-            "Error hook called for id ${listener.id}. Closing listener. " +
+            "Error hook called for duplex channel ${listener.id}. " +
                     "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)",
             e
         )
@@ -67,6 +65,7 @@ fun DuplexChannel.registerFlowStatusFeedHooks(
 private fun DuplexChannel.onStatusUpdate(log: Logger, holdingIdentity: AvroHoldingIdentity, clientRequestId: String) =
     { avroStatus: FlowStatus ->
         try {
+            log.info("Sending flow status update (${avroStatus.flowStatus.name}) to session ${this.id}.")
             val future = send(avroStatus.createFlowStatusResponse())
             if (avroStatus.flowStatus.isFlowFinished()) {
                 try {

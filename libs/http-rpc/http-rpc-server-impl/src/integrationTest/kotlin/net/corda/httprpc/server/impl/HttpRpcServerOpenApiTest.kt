@@ -39,7 +39,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
                 listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl(), NullabilityRPCOpsImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

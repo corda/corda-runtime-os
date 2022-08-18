@@ -10,6 +10,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -28,9 +29,11 @@ import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.FileSystem
@@ -234,5 +237,36 @@ class UpsertCpiTests {
         assertThat(cpiPersistence.canUpsertCpi(name, groupId)).isTrue
         assertThat(cpiPersistence.canUpsertCpi(differentName, groupId)).isFalse
         assertThat(cpiPersistence.canUpsertCpi(differentName, differentGroupId)).isTrue
+    }
+
+    @Test fun `can upsert on force upload if previous cpi of same version`() {
+        val groupId = "originalGroup"
+        val name = "originalCpi"
+        val version = "1.0.0"
+        persistCpi(name, version, groupId)
+        assertTrue(cpiPersistence.canUpsertCpi(name, groupId, true, version))
+    }
+
+    @Test fun `can't upsert on force upload if first instance of cpi`() {
+        val groupId = "nonExistent"
+        val name = "neverBefore"
+        val version = "1.0.0"
+        val ex = assertThrows<ValidationException> {
+            cpiPersistence.canUpsertCpi(name, groupId, true, version)
+        }
+
+        assertThat(ex).hasMessageContaining("No instance of same CPI with previous version found")
+    }
+
+    @Test fun `can't upsert on force upload if new version of cpi`() {
+        val groupId = "newGroup"
+        val name = "newTest"
+        val version = "1.0.0"
+        persistCpi(name, version, groupId)
+        val ex = assertThrows<ValidationException> {
+            cpiPersistence.canUpsertCpi(name, groupId, true, "1.0.1")
+        }
+
+        assertThat(ex).hasMessageContaining("No instance of same CPI with previous version found")
     }
 }

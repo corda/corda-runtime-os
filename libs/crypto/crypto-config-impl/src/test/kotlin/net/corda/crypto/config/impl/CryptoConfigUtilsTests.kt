@@ -41,7 +41,6 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun `Default config should have expected values`() {
         val config = smartConfig
         val connectionFactory = config.cryptoConnectionFactory()
@@ -49,10 +48,8 @@ class CryptoConfigUtilsTests {
         assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
-        assertEquals(1000, signingService.cache.maximumSize)
+        assertEquals(10000, signingService.cache.maximumSize)
         val hsmService = config.hsmService()
-        assertEquals(5, hsmService.cache.expireAfterAccessMins)
-        assertEquals(10, hsmService.cache.maximumSize)
         assertEquals(3, hsmService.downstreamMaxAttempts)
         assertEquals(SOFT_HSM_ID, config.hsmId())
         assertThat(config.hsmMap()).hasSize(1)
@@ -90,7 +87,7 @@ class CryptoConfigUtilsTests {
             )
         )
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(100, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
+        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
@@ -100,10 +97,6 @@ class CryptoConfigUtilsTests {
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmConfigBusProcessor = config.hsmConfigBusProcessor()
-        assertEquals(3, hsmConfigBusProcessor.maxAttempts)
-        assertEquals(1, hsmConfigBusProcessor.waitBetweenMills.size)
-        assertEquals(200L, hsmConfigBusProcessor.waitBetweenMills[0])
         val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
@@ -134,8 +127,6 @@ class CryptoConfigUtilsTests {
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(77, signingService.cache.maximumSize)
         val hsmService = config.hsmService()
-        assertEquals(5, hsmService.cache.expireAfterAccessMins)
-        assertEquals(10, hsmService.cache.maximumSize)
         assertEquals(11, hsmService.downstreamMaxAttempts)
         assertEquals(SOFT_HSM_ID, config.hsmId())
         assertThat(config.hsmMap()).hasSize(1)
@@ -173,7 +164,7 @@ class CryptoConfigUtilsTests {
             )
         )
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(100, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
+        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
@@ -183,10 +174,6 @@ class CryptoConfigUtilsTests {
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmConfigBusProcessor = config.hsmConfigBusProcessor()
-        assertEquals(3, hsmConfigBusProcessor.maxAttempts)
-        assertEquals(1, hsmConfigBusProcessor.waitBetweenMills.size)
-        assertEquals(200L, hsmConfigBusProcessor.waitBetweenMills[0])
         val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)
@@ -217,14 +204,12 @@ class CryptoConfigUtilsTests {
     fun `Should be able to get signing service config`() {
         val config = smartConfig.signingService()
         assertEquals(60, config.cache.expireAfterAccessMins)
-        assertEquals(1000, config.cache.maximumSize)
+        assertEquals(10000, config.cache.maximumSize)
     }
 
     @Test
     fun `Should be able to get CryptoHHSM service config`() {
         val config = smartConfig.hsmService()
-        assertEquals(5, config.cache.expireAfterAccessMins)
-        assertEquals(10, config.cache.maximumSize)
         assertEquals(3, config.downstreamMaxAttempts)
     }
 
@@ -257,14 +242,6 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(ConfigFactory.empty())
         assertThrows<IllegalStateException> {
             config.flowBusProcessor()
-        }
-    }
-
-    @Test
-    fun `Should throw IllegalStateException when hsm config operations are missing`() {
-        val config = configFactory.create(ConfigFactory.empty())
-        assertThrows<IllegalStateException> {
-            config.hsmConfigBusProcessor()
         }
     }
 
@@ -360,9 +337,6 @@ class CryptoConfigUtilsTests {
         val config = CryptoHSMServiceConfig(
             configFactory.create(ConfigFactory.empty())
         )
-        assertThrows<IllegalStateException> {
-            config.cache
-        }
         assertThrows<IllegalStateException> {
             config.downstreamMaxAttempts
         }

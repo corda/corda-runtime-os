@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -123,11 +124,11 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 config.maximumSize,
                 config.expireAfterAccessMins
             )
-            return Caffeine.newBuilder()
-                .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.maximumSize)
-                .evictionListener<String, EntityManagerFactory> { _, value, _ -> value?.close() }
-                .build()
+            return CacheFactoryImpl().build(
+                Caffeine.newBuilder()
+                    .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(config.maximumSize)
+                    .evictionListener { _, value, _ -> value?.close() })
         }
     }
 }

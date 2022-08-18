@@ -32,7 +32,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -58,10 +58,10 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = DigestService::class)
-    private val hashingService: DigestService,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = MerkleTreeFactory::class)
+    private val merkleTreeFactory: MerkleTreeFactory,
 ) : RegistrationManagementService {
 
     companion object {
@@ -156,8 +156,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipPersistenceClient,
                         membershipQueryClient,
                         cryptoOpsClient,
-                        hashingService,
                         cipherSchemeMetadata,
+                        merkleTreeFactory,
                     ),
                     messagingConfig
                 ).also {

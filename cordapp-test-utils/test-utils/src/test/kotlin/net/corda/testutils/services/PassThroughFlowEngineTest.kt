@@ -9,7 +9,7 @@ import org.mockito.kotlin.verify
 
 class PassThroughFlowEngineTest {
 
-    private val x500 = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
+    private val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
 
     @Test
     fun `should call through to any subflows passed to the engine`() {
@@ -17,7 +17,7 @@ class PassThroughFlowEngineTest {
         val subflow = mock<SubFlow<String>>()
 
         // When we pass it to the flow engine
-        PassThroughFlowEngine(x500).subFlow(subflow)
+        PassThroughFlowEngine(member).subFlow(subflow)
 
         // Then the flow engine should call it immediately
         verify(subflow, times(1)).call()

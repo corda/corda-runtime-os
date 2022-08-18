@@ -1,5 +1,46 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'java'
+}
 
 group 'net.corda.cli.deployment'
+
+configurations {
+    cliHostDist
+}
+
+dependencies {
+    cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
+}
+
+tasks.register('copyCliFiles') {
+    copy {
+        from configurations.named('cliHostDist')
+        into "$buildDir/cli"
+        rename ('.*.jar', 'corda-cli.jar')
+    }
+    copy {
+        from subprojects.collect { it.tasks.named('cliPluginTask') }
+        into "$buildDir/cli/plugins"
+    }
+    copy {
+        from "$projectDir/installScripts"
+        into "$buildDir/cli"
+    }
+}
+
+task cliInstallArchive(type: Zip) {
+    dependsOn tasks.named('copyCliFiles')
+    from "$buildDir/cli"
+    include '*'
+    include '*/*'
+    archiveName 'corda-cli-dist.zip'
+    destinationDir(file("$buildDir/zip"))
+}
+
+artifacts {
+    cliInstallArchive
+}
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
@@ -36,13 +77,23 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
-    if (project.hasProperty('baseTag')) {
-        baseImageTag = baseTag
+    if (project.hasProperty('cliBasebaseTag')) {
+        baseImageTag = cliBasebaseTag
     } else {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
 
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "corda-cli-installer"
+            groupId project.group
+            artifact cliInstallArchive
+        }
     }
 }
