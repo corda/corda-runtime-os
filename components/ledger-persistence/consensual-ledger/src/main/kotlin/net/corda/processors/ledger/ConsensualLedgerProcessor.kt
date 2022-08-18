@@ -1,24 +1,15 @@
-package net.corda.entityprocessor.impl.internal
+package net.corda.processors.ledger.consensual
 
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.DeleteEntityById
-import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.EntityResponseFailure
-import net.corda.data.persistence.Error
-import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.FindWithNamedQuery
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
+import net.corda.ledger.consensual.impl.internal.ConsensualLedgerDAO
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -44,11 +35,11 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  * The [EntityResponse] contains the response or an exception-like payload whose presence indicates
  * an error has occurred.
  */
-class EntityMessageProcessor(
+class ConsensualLedgerProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val clock: Clock,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
-) : DurableProcessor<String, EntityRequest> {
+) : DurableProcessor<String, ConsensualLedgerRequest> {
     companion object {
         private val log = contextLogger()
     }
@@ -115,71 +106,23 @@ class EntityMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
+        val consensualLedgerDAO = ConsensualLedgerDAO(requestId, clock::instant, entitySandboxService::getClass) // TODO: find a way to delete / invert this dependency
 
-        val persistenceServiceInternal = PersistenceServiceInternal(
-            entitySandboxService::getClass,
-            requestId,
-            clock,
-            payloadCheck
-        )
-
-        // We match on the type, and pass the cast into the persistence service.
-        // Any exception that occurs next we assume originates in Hibernate and categorise
-        // it accordingly.
+        // We match on the type, and delegate to the appropriate method in the DAO.
         val response = try {
             entityManagerFactory.createEntityManager().transaction {
                 val req = request.request
                 when (req) {
-                    is PersistEntity -> persistenceServiceInternal.persist(
-                        serializationService,
-                        it,
-                        req
-                    )
-                    is DeleteEntity -> persistenceServiceInternal.remove(
-                        serializationService,
-                        it,
-                        req
-                    )
-                    is DeleteEntityById -> persistenceServiceInternal.removeById(
-                        serializationService,
-                        it,
-                        req,
-                        holdingIdentity
-                    )
-                    is MergeEntity -> persistenceServiceInternal.merge(
-                        serializationService,
-                        it,
-                        req
-                    )
-                    is FindEntity -> persistenceServiceInternal.find(
-                        serializationService,
-                        it,
-                        req,
-                        holdingIdentity
-                    )
-                    is FindAll -> persistenceServiceInternal.findAll(
-                        serializationService,
-                        it,
-                        req,
-                        holdingIdentity
-                    )
-                    is FindWithNamedQuery -> persistenceServiceInternal.findWithNamedQuery(
-                        serializationService,
-                        it,
-                        req
-                    )
+                    is PersistTransaction -> consensualLedgerDAO.persistTransaction(req, it)
+
                     else -> {
                         failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
                     }
                 }
             }
         } catch (e: java.io.NotSerializableException) {
-            // Deserialization failure should be deterministic, and therefore retrying won't save you.
-            // We mark this as FATAL so the flow worker knows about it, as per PR discussion.
             failureResponse(requestId, e, Error.FATAL)
         } catch (e: KafkaMessageSizeException) {
-            // Results exceeded max packet size that we support at the moment.
-            // We intend to support chunked results later.
             failureResponse(requestId, e, Error.FATAL)
         } catch (e: NullParameterException) {
             failureResponse(requestId, e, Error.FATAL)
@@ -208,10 +151,4 @@ class EntityMessageProcessor(
             )
         )
     }
-
-    override val keyClass: Class<String>
-        get() = String::class.java
-
-    override val valueClass: Class<EntityRequest>
-        get() = EntityRequest::class.java
 }

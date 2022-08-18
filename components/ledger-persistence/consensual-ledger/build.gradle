@@ -6,7 +6,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Entity Processor Impl"
+description "Consensual ledger persistence impl"
 
 configurations {
     cpis {
@@ -41,6 +41,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
+    implementation project(':libs:ledger:ledger-consensual-impl')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'
