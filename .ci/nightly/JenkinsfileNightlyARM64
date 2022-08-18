@@ -5,6 +5,6 @@ cordaNightlyPipeline(
     runIntegrationTests: false,
     dailyBuildCron: 'H 01 * * *',
     publishOSGiImage: true,
-    publishRepoPrefix: '', // add valid value once the workaround not to overwrite non ARM64 jars is in place 
+    publishRepoPrefix: 'engineering-tools-maven',
     linuxArch: 'arm64'
     )
