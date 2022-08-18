@@ -67,32 +67,61 @@ class MgmSynchronisationServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = MerkleTreeFactory::class)
     private val merkleTreeFactory: MerkleTreeFactory,
-    @Reference
-    private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
-        merkleTreeFactory,
-        cordaAvroSerializationFactory
-    ),
-    @Reference
-    private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
-        clock,
-        cordaAvroSerializationFactory,
-        cipherSchemeMetadata,
-        DistributionType.SYNC,
-        merkleTreeGenerator,
-    ) { UUID.randomUUID().toString() },
-    @Reference
-    private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
-    @Reference
-    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
-        cordaAvroSerializationFactory,
-        clock,
-    ),
 ) : MgmSynchronisationService {
+
+    internal constructor(publisherFactory: PublisherFactory,
+                coordinatorFactory: LifecycleCoordinatorFactory,
+                configurationReadService: ConfigurationReadService,
+                membershipGroupReaderProvider: MembershipGroupReaderProvider,
+                cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+                cipherSchemeMetadata: CipherSchemeMetadata,
+                cryptoOpsClient: CryptoOpsClient,
+                membershipQueryClient: MembershipQueryClient,
+                merkleTreeFactory: MerkleTreeFactory,
+                merkleTreeGenerator: MerkleTreeGenerator,
+                membershipPackageFactory: MembershipPackageFactory,
+                signerFactory: SignerFactory,
+                p2pRecordsFactory: P2pRecordsFactory) :
+            this(publisherFactory,
+                coordinatorFactory,
+                configurationReadService,
+                membershipGroupReaderProvider,
+                cordaAvroSerializationFactory,
+                cipherSchemeMetadata,
+                cryptoOpsClient,
+                membershipQueryClient,
+                merkleTreeFactory
+            ) {
+                this.merkleTreeGenerator = merkleTreeGenerator
+                this.membershipPackageFactory = membershipPackageFactory
+                this.signerFactory = signerFactory
+                this.p2pRecordsFactory = p2pRecordsFactory
+            }
     private companion object {
         val logger = contextLogger()
         const val SERVICE = "MgmSynchronisationService"
         private val clock: Clock = UTCClock()
     }
+
+    private var merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
+        merkleTreeFactory,
+        cordaAvroSerializationFactory
+    )
+
+    private var membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
+        clock,
+        cordaAvroSerializationFactory,
+        cipherSchemeMetadata,
+        DistributionType.SYNC,
+        merkleTreeGenerator,
+    ) { UUID.randomUUID().toString() }
+
+    private var signerFactory: SignerFactory = SignerFactory(cryptoOpsClient)
+
+    private var p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    )
 
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)

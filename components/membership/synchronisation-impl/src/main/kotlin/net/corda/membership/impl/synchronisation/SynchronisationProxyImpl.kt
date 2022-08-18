@@ -117,7 +117,7 @@ class SynchronisationProxyImpl @Activate constructor(
                 logger.info(
                     synchronisationServices
                         .joinToString(
-                            prefix = "Loaded member synchronisation services: [",
+                            prefix = "Loaded synchronisation services: [",
                             postfix = "]",
                             transform = { it.javaClass.name }
                         )
