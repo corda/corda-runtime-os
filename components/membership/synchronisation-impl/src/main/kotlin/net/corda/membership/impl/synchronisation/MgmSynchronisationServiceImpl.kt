@@ -74,27 +74,29 @@ class MgmSynchronisationServiceImpl @Activate constructor(
         private val clock: Clock = UTCClock()
     }
 
-    lateinit var merkleTreeGenerator: MerkleTreeGenerator
-    lateinit var membershipPackageFactory: MembershipPackageFactory
-    lateinit var signerFactory: SignerFactory
-    lateinit var p2pRecordsFactory: P2pRecordsFactory
+    private var merkleTreeGenerator = MerkleTreeGenerator(
+        merkleTreeFactory,
+        cordaAvroSerializationFactory
+    )
 
-    fun initialise(signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
-                   merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
-                       merkleTreeFactory,
-                       cordaAvroSerializationFactory
-                   ),
-                   membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
-                       clock,
-                       cordaAvroSerializationFactory,
-                       cipherSchemeMetadata,
-                       DistributionType.SYNC,
-                       merkleTreeGenerator,
-                   ) { UUID.randomUUID().toString() },
-                   p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
-                       cordaAvroSerializationFactory,
-                       clock,
-                   ),
+    private var membershipPackageFactory = MembershipPackageFactory(
+        clock,
+        cordaAvroSerializationFactory,
+        cipherSchemeMetadata,
+        DistributionType.SYNC,
+        merkleTreeGenerator,
+    ) { UUID.randomUUID().toString() }
+
+    private var signerFactory = SignerFactory(cryptoOpsClient)
+    private var p2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    )
+
+    fun overrideWithTestServices(signerFactory: SignerFactory,
+                   merkleTreeGenerator: MerkleTreeGenerator,
+                   membershipPackageFactory: MembershipPackageFactory,
+                   p2pRecordsFactory: P2pRecordsFactory
 
     ) {
         this.signerFactory = signerFactory
