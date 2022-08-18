@@ -62,7 +62,6 @@ plugins {
 rootProject.name = 'corda-runtime-os'
 include 'applications:examples:sandbox-app'
 include 'applications:examples:sandbox-app:example-cpi'
-include 'applications:p2p-gateway'
 include 'applications:tools:flow-worker-setup'
 include 'applications:tools:kafka-setup'
 include 'applications:tools:p2p-test:app-simulator'
