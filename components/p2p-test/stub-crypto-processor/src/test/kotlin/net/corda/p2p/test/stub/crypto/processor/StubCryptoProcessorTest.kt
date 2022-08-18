@@ -80,7 +80,10 @@ class StubCryptoProcessorTest {
             Signature.getInstance(any(), eq("SunEC"))
         }.doReturn(ecSignature)
     }
-    private val mockSubscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val mockSubscriptionTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedSubscription<String, TenantKeys>)).invoke()
+    }
     private val tenantId = "tenantId"
 
     private val testObject = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration)

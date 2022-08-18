@@ -31,6 +31,7 @@ class SessionPartitionMapperImpl(
     @VisibleForTesting
     internal val future = CompletableFuture<Unit>()
 
+    private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS)
     private val sessionPartitionSubscription = {
         subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
@@ -41,6 +42,7 @@ class SessionPartitionMapperImpl(
     private val sessionPartitionSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         sessionPartitionSubscription,
+        subscriptionConfig,
         emptySet(),
         emptySet()
     )

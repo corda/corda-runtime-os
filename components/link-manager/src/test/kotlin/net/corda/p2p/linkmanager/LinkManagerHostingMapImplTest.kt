@@ -41,7 +41,10 @@ class LinkManagerHostingMapImplTest {
             )
         } doReturn subscription
     }
-    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedSubscription<String, HostedIdentityEntry>)).invoke()
+    }
     private var ready: CompletableFuture<Unit>? = null
     private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")

@@ -52,9 +52,10 @@ internal class DynamicKeyStore(
         KeyStoreFactory(this, this).createDelegatedKeyStore()
     }
 
+    private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES)
     private val subscription = {
         subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES),
+            subscriptionConfig,
             Processor(),
             messagingConfiguration
         )
@@ -63,6 +64,7 @@ internal class DynamicKeyStore(
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptyList(),
         emptyList(),
     )

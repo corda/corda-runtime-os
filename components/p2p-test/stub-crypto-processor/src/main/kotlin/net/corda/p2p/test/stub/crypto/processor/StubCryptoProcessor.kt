@@ -45,6 +45,7 @@ class StubCryptoProcessor(
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptyList(),
         emptyList(),
     )

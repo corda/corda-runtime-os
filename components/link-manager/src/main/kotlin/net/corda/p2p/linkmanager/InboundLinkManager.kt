@@ -24,7 +24,7 @@ internal class InboundLinkManager(
     }
     private val inboundMessageSubscription = {
         subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
+            subscriptionConfig,
             InboundMessageProcessor(
                 commonComponents.sessionManager,
                 groups,
@@ -36,16 +36,18 @@ internal class InboundLinkManager(
             partitionAssignmentListener = commonComponents.inboundAssignmentListener
         )
     }
+    private val subscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC)
 
     override val dominoTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
+        subscriptionConfig,
         dependentChildren = listOf(
             groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             commonComponents.inboundAssignmentListener.dominoTile.toNamedLifecycle(),
-        )
+        ),
     )
 }

@@ -78,6 +78,7 @@ internal class StubGroupPolicyProvider(
     private val groupSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         groupsSubscription,
+        groupsSubscriptionConfig,
         emptySet(),
         emptySet()
     )

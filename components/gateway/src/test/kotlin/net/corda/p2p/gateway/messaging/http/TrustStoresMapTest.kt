@@ -60,8 +60,10 @@ class TrustStoresMapTest {
             KeyStore.getInstance("PKCS12")
         }.doReturn(keyStore)
     }
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, context ->
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedSubscription<String, GatewayTruststore>)).invoke()
     }
 
     @AfterEach

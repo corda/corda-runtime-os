@@ -45,9 +45,10 @@ internal class TrustStoresPublisher(
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
         messagingConfiguration,
     )
+    private val subscriptionConfig = SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES)
     private val subscription = {
         subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES),
+            subscriptionConfig,
             Processor(),
             messagingConfiguration,
         )
@@ -55,6 +56,7 @@ internal class TrustStoresPublisher(
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptyList(),
         emptyList(),
     )

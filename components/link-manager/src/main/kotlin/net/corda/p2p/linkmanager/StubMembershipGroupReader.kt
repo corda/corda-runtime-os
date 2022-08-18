@@ -74,6 +74,7 @@ internal class StubMembershipGroupReader(
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptySet(),
         emptySet()
     )

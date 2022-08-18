@@ -33,9 +33,10 @@ internal class TrustStoresMap(
         private val logger = contextLogger()
     }
     private val ready = CompletableFuture<Unit>()
+    private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES)
     private val subscription = {
         subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES),
+            subscriptionConfig,
             Processor(),
             messagingConfiguration
         )
@@ -47,6 +48,7 @@ internal class TrustStoresMap(
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptyList(),
         emptyList()
     )

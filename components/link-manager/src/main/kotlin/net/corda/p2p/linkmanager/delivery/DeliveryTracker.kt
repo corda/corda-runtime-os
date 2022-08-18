@@ -63,9 +63,10 @@ internal class DeliveryTracker(
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
+    private val subscriptionConfig = SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS)
     private val messageTrackerSubscription = {
         subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
+            subscriptionConfig,
             messageTracker.processor,
             messagingConfiguration,
             messageTracker.listener
@@ -74,6 +75,7 @@ internal class DeliveryTracker(
     private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
         coordinatorFactory,
         messageTrackerSubscription,
+        subscriptionConfig,
         setOf(
             replayScheduler.dominoTile.coordinatorName,
             groups.dominoTile.coordinatorName,

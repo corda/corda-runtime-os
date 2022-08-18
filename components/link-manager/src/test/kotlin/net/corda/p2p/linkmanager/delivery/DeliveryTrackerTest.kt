@@ -81,8 +81,10 @@ class DeliveryTrackerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
-    private val subscriptionTile = Mockito.mockConstruction(StateAndEventSubscriptionDominoTile::class.java) { mock, _ ->
+    private val subscriptionTile = Mockito.mockConstruction(StateAndEventSubscriptionDominoTile::class.java) { mock, context ->
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> StateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>)).invoke()
     }
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { mock, _ ->

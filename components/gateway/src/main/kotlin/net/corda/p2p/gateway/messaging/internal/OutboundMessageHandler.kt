@@ -62,9 +62,10 @@ internal class OutboundMessageHandler(
         messagingConfiguration
     )
 
+    private val subscriptionConfig = SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC)
     private val outboundSubscription = {
         subscriptionFactory.createPubSubSubscription(
-            SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC),
+            subscriptionConfig,
             this,
             messagingConfiguration,
         )
@@ -72,6 +73,7 @@ internal class OutboundMessageHandler(
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundSubscription,
+        subscriptionConfig,
         setOf(connectionManager.dominoTile.coordinatorName, connectionConfigReader.dominoTile.coordinatorName),
         setOf(connectionManager.dominoTile.toNamedLifecycle(), connectionConfigReader.dominoTile.toNamedLifecycle())
     )
