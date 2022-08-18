@@ -18,11 +18,6 @@ import org.junit.jupiter.api.Test
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
-@Disabled(
-    "CORE-6036. " +
-            "No multi cluster environment is available to run this test against. " +
-            "Remove this to run locally or when CORE-6036 is resolved."
-)
 class MultiClusterDynamicNetworkTest {
     private val aliceCluster = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
