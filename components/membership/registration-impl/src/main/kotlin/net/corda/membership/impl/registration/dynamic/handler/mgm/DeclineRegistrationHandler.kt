@@ -22,6 +22,9 @@ class DeclineRegistrationHandler(
         clock,
     ),
 ) : RegistrationHandler<DeclineRegistration> {
+    private companion object {
+        const val MINUTES_TO_WAIT_FOR_P2P_MESSAGE = 8L
+    }
     override fun invoke(
         state: RegistrationState?,
         key: String,
@@ -40,6 +43,9 @@ class DeclineRegistrationHandler(
         val persistDeclineMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = declinedBy,
             destination = declinedMember,
+            // Setting TTL to avoid resending the message in case the decline reason is that the
+            // P2P channel could not be established.
+            minutesToWait = MINUTES_TO_WAIT_FOR_P2P_MESSAGE,
             content = SetOwnRegistrationStatus(
                 registrationId,
                 RegistrationStatus.DECLINED

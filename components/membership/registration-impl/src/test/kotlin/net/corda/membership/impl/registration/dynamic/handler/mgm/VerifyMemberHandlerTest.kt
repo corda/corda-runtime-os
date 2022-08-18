@@ -5,7 +5,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -51,19 +50,8 @@ class VerifyMemberHandlerTest {
             )
         } doReturn MembershipPersistenceResult.success()
     }
-    private val setStateRecord = mock<Record<String, AppMessage>>()
     private val verificationRequestRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
-        on {
-            createAuthenticatedMessageRecord(
-                mgm,
-                member,
-                SetOwnRegistrationStatus(
-                    REGISTRATION_ID,
-                    RegistrationStatus.PENDING_MEMBER_VERIFICATION
-                )
-            )
-        } doReturn setStateRecord
         on {
             createAuthenticatedMessageRecord(
                 mgm,
@@ -87,8 +75,8 @@ class VerifyMemberHandlerTest {
             RegistrationStatus.PENDING_MEMBER_VERIFICATION
         )
 
-        assertThat(result.outputStates).hasSize(2)
-            .contains(setStateRecord, verificationRequestRecord)
+        assertThat(result.outputStates).hasSize(1)
+            .contains(verificationRequestRecord)
     }
 
     @Test

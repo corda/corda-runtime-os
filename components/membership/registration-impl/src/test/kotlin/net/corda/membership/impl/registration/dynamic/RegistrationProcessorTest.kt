@@ -234,7 +234,7 @@ class RegistrationProcessorTest {
     fun `verify member command - onNext can be called for command`() {
         val result = processor.onNext(state, Record(testTopic, testTopicKey, verifyMemberCommand))
         assertThat(result.updatedState).isNotNull
-        assertThat(result.responseEvents).isNotEmpty.hasSize(2)
+        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
             .allMatch {
                 (result.responseEvents.first().value as? AppMessage)?.message as? AuthenticatedMessage != null
             }

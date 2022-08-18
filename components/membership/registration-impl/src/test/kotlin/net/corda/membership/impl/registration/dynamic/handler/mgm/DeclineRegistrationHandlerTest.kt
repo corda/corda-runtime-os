@@ -50,14 +50,16 @@ class DeclineRegistrationHandlerTest {
 
     private val record = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
-        on { createAuthenticatedMessageRecord(
-            mgm,
-            member,
-            SetOwnRegistrationStatus(
-                REGISTRATION_ID,
-                RegistrationStatus.DECLINED,
-            ),
-            null)
+        on {
+            createAuthenticatedMessageRecord(
+                mgm,
+                member,
+                SetOwnRegistrationStatus(
+                    REGISTRATION_ID,
+                    RegistrationStatus.DECLINED,
+                ),
+                8,
+            )
         } doReturn record
     }
 

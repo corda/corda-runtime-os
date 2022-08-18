@@ -6,14 +6,17 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
@@ -21,6 +24,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.time.Instant
 
 class ProcessMemberVerificationRequestHandlerTest {
@@ -46,8 +50,13 @@ class ProcessMemberVerificationRequestHandlerTest {
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<VerificationResponse>(any()) } doReturn responseSerializer
     }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
 
-    private val processMemberVerificationRequestHandler = ProcessMemberVerificationRequestHandler(clock, cordaAvroSerializationFactory)
+    private val processMemberVerificationRequestHandler = ProcessMemberVerificationRequestHandler(
+        clock,
+        cordaAvroSerializationFactory,
+        membershipPersistenceClient
+    )
 
     @Test
     fun `handler returns response message`() {
@@ -75,5 +84,25 @@ class ProcessMemberVerificationRequestHandlerTest {
         with(response.firstValue) {
             assertThat(this.registrationId).isEqualTo(REGISTRATION_ID)
         }
+    }
+
+    @Test
+    fun `handler persist the request status`() {
+        processMemberVerificationRequestHandler.invoke(
+            null,
+            Record(
+                "dummyTopic",
+                member.toString(),
+                RegistrationCommand(
+                    ProcessMemberVerificationRequest(member, mgm, verificationRequest)
+                )
+            )
+        )
+
+        verify(membershipPersistenceClient).setRegistrationRequestStatus(
+            member.toCorda(),
+            REGISTRATION_ID,
+            RegistrationStatus.PENDING_MEMBER_VERIFICATION
+        )
     }
 }

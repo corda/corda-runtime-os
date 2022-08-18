@@ -43,6 +43,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.GroupPolicyGenerationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
+import net.corda.membership.registration.RegistrationStatusQueryException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -61,8 +62,8 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
-    private val clock : Clock = UTCClock(),
-    private val idFactory: ()->UUID = { UUID.randomUUID() }
+    private val clock: Clock = UTCClock(),
+    private val idFactory: () -> UUID = { UUID.randomUUID() }
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
     interface RpcHandler<REQUEST> {
@@ -153,7 +154,7 @@ class MemberOpsServiceProcessor(
         }
     }
 
-    private fun RegistrationRequestStatus.toAvro() : RegistrationStatusDetails {
+    private fun RegistrationRequestStatus.toAvro(): RegistrationStatusDetails {
         return RegistrationStatusDetails.newBuilder()
             .setRegistrationSent(this.registrationSent)
             .setRegistrationLastModified(this.registrationLastModified)
@@ -169,7 +170,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService
                 .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw GroupPolicyGenerationException(
+                ?: throw RegistrationStatusQueryException(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )
             val response = membershipQueryClient.queryRegistrationRequestStatus(
@@ -186,7 +187,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentityShortHash = ShortHash.of(request.holdingIdentityId)
             val holdingIdentity = virtualNodeInfoReadService
                 .getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw GroupPolicyGenerationException(
+                ?: throw RegistrationStatusQueryException(
                     "Could not find holding identity associated with ${request.holdingIdentityId}"
                 )
             val response = membershipQueryClient.queryRegistrationRequestsStatus(

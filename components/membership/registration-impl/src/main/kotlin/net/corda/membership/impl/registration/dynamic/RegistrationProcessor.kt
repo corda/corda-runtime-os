@@ -77,7 +77,11 @@ class RegistrationProcessor(
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient, clock, cordaAvroSerializationFactory),
 
-        ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(clock, cordaAvroSerializationFactory),
+        ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
+            clock,
+            cordaAvroSerializationFactory,
+            membershipPersistenceClient
+        ),
         VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient),
         ProcessMemberVerificationResponse::class.java to ProcessMemberVerificationResponseHandler(
             membershipPersistenceClient,
@@ -121,7 +125,7 @@ class RegistrationProcessor(
                     handlers[ProcessMemberVerificationRequest::class.java]?.invoke(state, event)
                 }
                 is PersistMemberRegistrationState -> {
-                    logger.info("Received process member verification request during registration command.")
+                    logger.info("Received persist member registration state command.")
                     handlers[PersistMemberRegistrationState::class.java]?.invoke(state, event)
                 }
                 else -> {
