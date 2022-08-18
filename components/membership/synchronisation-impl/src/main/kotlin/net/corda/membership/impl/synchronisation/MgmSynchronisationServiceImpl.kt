@@ -67,10 +67,12 @@ class MgmSynchronisationServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = MerkleTreeFactory::class)
     private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference
     private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
         merkleTreeFactory,
         cordaAvroSerializationFactory
     ),
+    @Reference
     private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
         cordaAvroSerializationFactory,
@@ -78,7 +80,9 @@ class MgmSynchronisationServiceImpl @Activate constructor(
         DistributionType.SYNC,
         merkleTreeGenerator,
     ) { UUID.randomUUID().toString() },
+    @Reference
     private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
+    @Reference
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
