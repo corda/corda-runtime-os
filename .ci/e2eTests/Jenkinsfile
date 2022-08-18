@@ -69,6 +69,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
                     sh '''
+                        helm repo add bitnami https://charts.bitnami.com/bitnami
                         echo $PASSWORD | helm registry login corda-os-docker.software.r3.com -u $USER --password-stdin
                         helm install prereqs bitnami/kafka -f ./.ci/e2eTests/kafka.yaml -n $NAMESPACE --wait --timeout 600s
                     '''
