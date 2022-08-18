@@ -31,7 +31,7 @@ class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
                 listOf(
                     ObjectsInJsonEndpointImpl()
                 ),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

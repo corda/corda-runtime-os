@@ -3072,6 +3072,10 @@
           }
         }
       },
+      "JsonObject" : {
+        "type" : "object",
+        "properties" : { }
+      },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
         "type" : "object",
@@ -3425,9 +3429,7 @@
             "example" : "string"
           },
           "requestData" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+            "$ref" : "#/components/schemas/JsonObject"
           }
         },
         "description" : "Information required to start a flow for this holdingId"
