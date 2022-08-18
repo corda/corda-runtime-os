@@ -21,14 +21,9 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalError
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_ACCEPTED_REPRESENTATION
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_REJECTED_REPRESENTATION
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
+import net.corda.v5.application.uniqueness.model.*
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_ACCEPTED_REPRESENTATION
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_REJECTED_REPRESENTATION
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -170,11 +165,11 @@ open class JPABackingStoreImpl @Activate constructor(
         }
 
         override fun getStateDetails(
-            states: Collection<UniquenessCheckInternalStateRef>
-        ): Map<UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails> {
+            states: Collection<UniquenessCheckStateRef>
+        ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
 
             val results = HashMap<
-                UniquenessCheckInternalStateRef, UniquenessCheckInternalStateDetails>()
+                UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
             states.forEach { state ->
                 val txId = state.txHash
@@ -194,7 +189,7 @@ open class JPABackingStoreImpl @Activate constructor(
                             SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
                         } else null
 
-                    results[state] = UniquenessCheckInternalStateDetails(state, consumingTxId)
+                    results[state] = UniquenessCheckStateDetails(state, consumingTxId)
                 }
             }
 
@@ -203,9 +198,9 @@ open class JPABackingStoreImpl @Activate constructor(
 
         override fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckInternalTransactionDetails> {
+        ): Map<SecureHash, UniquenessCheckTransactionDetails> {
 
-            val results = HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
+            val results = HashMap<SecureHash, UniquenessCheckTransactionDetails>()
 
             txIds.forEach { txId ->
                 val existing = entityManager.createNamedQuery(
@@ -219,12 +214,12 @@ open class JPABackingStoreImpl @Activate constructor(
                 existing.firstOrNull()?.let { txEntity ->
                     val result = when (txEntity.result) {
                         RESULT_ACCEPTED_REPRESENTATION -> {
-                            UniquenessCheckInternalResult.Success(txEntity.commitTimestamp)
+                            UniquenessCheckResult.Success(txEntity.commitTimestamp)
                         }
                         RESULT_REJECTED_REPRESENTATION -> {
                             // If the transaction is rejected we need to make sure it is also
                             // stored in the rejected tx table
-                            UniquenessCheckInternalResult.Failure(
+                            UniquenessCheckResult.Failure(
                                 txEntity.commitTimestamp,
                                 getTransactionError(txEntity) ?: throw IllegalStateException(
                                     "Transaction with id $txId was rejected but no records were " +
@@ -238,7 +233,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         )
                     }
 
-                    results[txId] = UniquenessCheckInternalTransactionDetails(txId, result)
+                    results[txId] = UniquenessCheckTransactionDetails(txId, result)
                 }
             }
 
@@ -247,7 +242,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
         private fun getTransactionError(
             txEntity: UniquenessTransactionDetailEntity
-        ): UniquenessCheckInternalError? {
+        ): UniquenessCheckError? {
 
             val existing = entityManager.createNamedQuery(
                 "UniquenessRejectedTransactionEntity.select",
@@ -259,7 +254,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             return existing.firstOrNull()?.let { rejectedTxEntity ->
                 jpaBackingStoreObjectMapper().readValue(
-                    rejectedTxEntity.errorDetails, UniquenessCheckInternalError::class.java
+                    rejectedTxEntity.errorDetails, UniquenessCheckError::class.java
                 )
             }
         }
@@ -267,7 +262,7 @@ open class JPABackingStoreImpl @Activate constructor(
         protected open inner class TransactionOpsImpl : BackingStore.Session.TransactionOps {
 
             override fun createUnconsumedStates(
-                stateRefs: Collection<UniquenessCheckInternalStateRef>
+                stateRefs: Collection<UniquenessCheckStateRef>
             ) {
                 stateRefs.forEach { stateRef ->
                     entityManager.persist(
@@ -284,7 +279,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             override fun consumeStates(
                 consumingTxId: SecureHash,
-                stateRefs: Collection<UniquenessCheckInternalStateRef>
+                stateRefs: Collection<UniquenessCheckStateRef>
             ) {
                 stateRefs.forEach { stateRef ->
                     val safeUpdate = entityManager.createNamedQuery(
@@ -309,7 +304,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             override fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckInternalRequest, UniquenessCheckInternalResult>>
+                        UniquenessCheckRequest, UniquenessCheckResult>>
             ) {
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(
@@ -322,7 +317,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         )
                     )
 
-                    if (result is UniquenessCheckInternalResult.Failure) {
+                    if (result is UniquenessCheckResult.Failure) {
                         entityManager.persist(
                             UniquenessRejectedTransactionEntity(
                                 request.txId.algorithm,

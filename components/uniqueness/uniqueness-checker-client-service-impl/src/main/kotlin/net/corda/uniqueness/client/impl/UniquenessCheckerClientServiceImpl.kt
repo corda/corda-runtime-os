@@ -1,19 +1,20 @@
 package net.corda.uniqueness.client.impl
 
-import net.corda.crypto.merkle.impl.DefaultHashDigestProvider
-import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.data.uniqueness.*
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
-import net.corda.v5.application.crypto.HashingService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.uniqueness.client.UniquenessCheckerClientService
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.*
-import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.crypto.merkle.*
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
@@ -25,7 +26,7 @@ import java.util.concurrent.*
  * TODO Add more specific KDocs once CORE-4730 is finished
  */
 @Component(service = [ UniquenessCheckerClientService::class, SingletonSerializeAsToken::class ], scope = ServiceScope.PROTOTYPE)
-class UniquenessCheckerClientServiceImpl(
+class UniquenessCheckerClientServiceImpl @Activate constructor(
     // TODO for now uniqueness checker is referenced,
     //  but once CORE-4730 is finished it will be invoked
     //  through the message bus. This will refer to the
@@ -37,51 +38,63 @@ class UniquenessCheckerClientServiceImpl(
     private val digestService: DigestService,
     @Reference(service = SigningService::class)
     private val signingService: SigningService,
+    @Reference(service = MerkleTreeFactory::class)
+    private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = MemberLookup::class)
     private val memberLookup: MemberLookup,
 ): UniquenessCheckerClientService, SingletonSerializeAsToken {
 
     private companion object {
-        const val THREAD_POOL_SIZE = 5
-
         val log = contextLogger()
     }
 
-    private val executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE)
-    private val myMemberInfo = memberLookup.myInfo()
-
-    // FIXME CORE-6173 this key should be replaced with the notary key
-    private val signingLedgerKey = myMemberInfo.ledgerKeys.first()
-
-    override fun commitRequest(
+    @Suspendable
+    override fun requestUniquenessCheck(
         txId: String,
-        inputs: List<String>,
-        references: List<String>,
-        numberOfOutputStates: Int,
+        inputStates: List<String>,
+        referenceStates: List<String>,
+        numOutputStates: Int,
         timeWindowLowerBound: Instant?,
-        timeWindowUpperBound: Instant,
+        timeWindowUpperBound: Instant
     ): Future<UniquenessCheckResponse> {
-        log.debug("Received request with id: $txId, sending it to Uniqueness Checker")
-        return executorService.submit(Callable {
-            processRequest(UniquenessCheckRequest(
-                txId,
-                inputs,
-                references,
-                numberOfOutputStates,
-                timeWindowLowerBound,
-                timeWindowUpperBound
-            ))
-        })
+        log.info("Received request with id: $txId, sending it to Uniqueness Checker")
+
+        val request = UniquenessCheckExternalRequest(
+            txId,
+            inputStates,
+            referenceStates,
+            numOutputStates,
+            timeWindowLowerBound,
+            timeWindowUpperBound
+        )
+
+        val txIds = listOf(SecureHash.create(request.txId))
+
+        val response = uniquenessChecker.processRequests(listOf(request)).first()
+
+        val result = if (response.result is UniquenessCheckExternalResultSuccess) {
+            UniquenessCheckResponse(
+                UniquenessCheckResult.Success(
+                    Instant.now()
+                ),
+                signBatch(txIds).rootSignature
+            )
+        } else {
+            UniquenessCheckResponse(
+                UniquenessCheckResult.fromExternalError(response),
+                null
+            )
+        }
+
+        log.info("Returning fjucsor")
+
+        // TODO For now this is not an actual async call, once we start interacting
+        //  with the message bus this will become an actual async call
+        return CompletableFuture.completedFuture(result)
     }
 
-    // TODO CORE-6243 Batch size is limited to 1 for now
-    private fun processRequest(request: UniquenessCheckRequest) =
-        uniquenessChecker.processRequests(listOf(request)).first()
-
-    /** Generates a signature over the bach of [txIds]. */
-    private fun signBatch(
-        txIds: Iterable<SecureHash>
-    ): BatchSignature {
+    @Suspendable
+    private fun signBatch(txIds: List<SecureHash>): BatchSignature {
         val algorithms = txIds.mapTo(HashSet(), SecureHash::algorithm)
         require(algorithms.size > 0) {
             "Cannot sign an empty batch"
@@ -90,25 +103,34 @@ class UniquenessCheckerClientServiceImpl(
             "Cannot sign a batch with multiple hash algorithms: $algorithms"
         }
 
+        val algorithm = algorithms.first()
+
         val allLeaves = txIds.map {
             // we don't have a reHash function anymore
-            digestService.hash(it.bytes, DigestAlgorithmName(it.algorithm))
+            digestService.hash(it.bytes, DigestAlgorithmName(algorithm))
         }
 
-        val merkleTree = MerkleTreeFactoryImpl(digestService).createTree(
+        val hashDigestProvider = merkleTreeFactory.createHashDigestProvider(
+            HASH_DIGEST_PROVIDER_DEFAULT_NAME,
+            DigestAlgorithmName(algorithm)
+        )
+
+        val merkleTree = merkleTreeFactory.createTree(
             allLeaves.map { it.bytes },
-            DefaultHashDigestProvider(
-                DigestAlgorithmName(algorithms.first()), // TODO will this work?
-                digestService
-            )
+            hashDigestProvider
         )
 
         val merkleTreeRoot = merkleTree.root
 
+        val myInfo = memberLookup.myInfo()
+
+        // FIXME CORE-6173 this key should be replaced with the notary key
+        val signingLedgerKey = myInfo.ledgerKeys.first()
+
         val sig = signingService.sign(
             merkleTreeRoot.bytes,
             signingLedgerKey,
-            SignatureSpec(algorithms.first()) // TODO will this work?
+            SignatureSpec.ECDSA_SHA256
         )
 
         return BatchSignature(
@@ -117,7 +139,7 @@ class UniquenessCheckerClientServiceImpl(
                 DigitalSignatureMetadata(
                     Instant.now(),
                     // TODO how to populate this properly?
-                    mapOf("platformVersion" to myMemberInfo.platformVersion.toString())
+                    mapOf("platformVersion" to myInfo.platformVersion.toString())
                 )
             ),
             merkleTree
@@ -128,8 +150,8 @@ class UniquenessCheckerClientServiceImpl(
 data class BatchSignature(
     val rootSignature: DigitalSignatureAndMetadata,
     val fullMerkleTree: MerkleTree) {
+
     /** Extracts a signature with a partial Merkle tree for the specified leaf in the batch signature. */
-    fun forParticipant(txId: SecureHash, hashingService: HashingService) {
-        // TODO CORE-6243 how to do this without partial merkle trees?
-    }
+    // TODO CORE-6243 how to do this without partial merkle trees?
+    /*fun forParticipant(txId: SecureHash, hashingService: HashingService) { }*/
 }
