@@ -4,6 +4,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
+import net.corda.data.virtualnode.VirtualNodeDBResetRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -35,6 +36,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
@@ -140,6 +142,36 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
+    private fun resetVirtualNodeDB(
+        instant: Instant,
+        virtualNodeDBResetRequest: VirtualNodeDBResetRequest,
+        respFuture: CompletableFuture<VirtualNodeManagementResponse>
+    ) {
+//        val holdingId = virtualNodeDBResetRequest.holdingIdentityShortHash
+        val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
+        val shortHash = ShortHash.Companion.of(virtualNodeDBResetRequest.holdingIdentityShortHash)
+        val holdingIdentityEntity = em.use {
+            virtualNodeEntityRepository.getHoldingIdentityEntity(
+        }!!
+        val holdingId = HoldingIdentity(MemberX500Name.parse(holdingIdentityEntity.x500Name), holdingIdentityEntity.mgmGroupId)
+        val fakeCreateRequest = holdingIdentityEntity.run {
+            VirtualNodeCreateRequest(
+                x500Name,
+                "",
+                vaultDDLConnectionId.toString(),
+                vaultDDLConnectionId.toString(),
+                cryptoDDLConnectionId.toString(),
+                cryptoDMLConnectionId.toString(),
+                virtualNodeDBResetRequest.updateActor
+            )
+        }
+
+        val vNodeDbs = vnodeDbFactory.createVNodeDbs(shortHash, fakeCreateRequest)
+        dropCpiMigrations(vNodeDbs.values)
+        createSchemasAndUsers(holdingId, vNodeDbs.values)
+        runDbMigrations(holdingId, vNodeDbs.values)
+    }
+
     // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
     private fun changeVirtualNodeState(
         instant: Instant,
@@ -240,6 +272,7 @@ internal class VirtualNodeWriterProcessor(
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeDBResetRequest -> resetVirtualNodeDB(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -334,6 +367,12 @@ internal class VirtualNodeWriterProcessor(
                     )
                 }
             }
+        }
+    }
+
+    private fun dropCpiMigrations(vNodeDbs: Collection<VirtualNodeDb>) {
+        vNodeDbs.forEach {
+            it.dropCpiMigrations()
         }
     }
 

@@ -97,4 +97,15 @@ class VirtualNodeDb(
         }
     }
 
+    fun dropCpiMigrations() {
+        val dbConnection = dbConnections[DDL]
+            ?: throw VirtualNodeDbException("No DDL database connection when due to reset CPI migrations")
+        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+            dataSource.connection.use { connection ->
+                val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+                connection.createStatement().execute("DROP SCHEMA $dbSchema")
+                connection.commit()
+            }
+        }
+    }
 }

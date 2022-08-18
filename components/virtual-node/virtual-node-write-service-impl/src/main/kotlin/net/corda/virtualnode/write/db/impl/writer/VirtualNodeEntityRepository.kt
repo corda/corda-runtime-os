@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import com.sun.tools.javac.jvm.ByteCodes.ret
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
@@ -83,6 +84,18 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
         val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
+    }
+
+    /**
+     * Reads a holding identity entity from the database.
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
+     * @return Holding identity entity for a given ID (short hash) or null if not found
+     */
+    internal fun getHoldingIdentityEntity(holdingIdentityShortHash: ShortHash): HoldingIdentityEntity? {
+        entityManagerFactory.transaction { entityManager ->
+            return entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash.value)
+                ?: return null
+        }
     }
 
     /**
