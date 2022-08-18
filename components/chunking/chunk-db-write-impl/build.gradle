@@ -34,6 +34,7 @@ dependencies {
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:http-rpc:http-rpc-common')
     implementation project(":libs:virtual-node:cpi-datamodel")
     implementation project(':libs:virtual-node:cpi-upload-manager')
     implementation project(":libs:packaging:packaging")
@@ -42,6 +43,8 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
+    implementation project(':components:virtual-node:virtual-node-rpcops-common')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

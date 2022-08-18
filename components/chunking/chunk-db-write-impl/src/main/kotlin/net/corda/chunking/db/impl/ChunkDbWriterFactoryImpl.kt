@@ -22,6 +22,8 @@ import net.corda.schema.Schemas
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -32,8 +34,9 @@ import javax.persistence.EntityManagerFactory
 class ChunkDbWriterFactoryImpl(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
-    private val tempPathProvider: PathProvider,
-    private val certificatesService: CertificatesService
+    private val certificatesService: CertificatesService,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val tempPathProvider: PathProvider
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -44,7 +47,9 @@ class ChunkDbWriterFactoryImpl(
         publisherFactory: PublisherFactory,
         @Reference(service = CertificatesService::class)
         certificatesService: CertificatesService
-    ) : this(subscriptionFactory, publisherFactory, TempPathProvider(), certificatesService)
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    ) : this(subscriptionFactory, publisherFactory, certificatesService, virtualNodeInfoReadService, TempPathProvider())
 
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
@@ -58,7 +63,8 @@ class ChunkDbWriterFactoryImpl(
         messagingConfig: SmartConfig,
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
-        cpiInfoWriteService: CpiInfoWriteService
+        cpiInfoWriteService: CpiInfoWriteService,
+        virtualNodeSender: VirtualNodeSender
     ): ChunkDbWriter {
         // Could be reused
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
@@ -72,10 +78,11 @@ class ChunkDbWriterFactoryImpl(
             bootConfig,
             entityManagerFactory,
             statusTopic,
-            cpiInfoWriteService
+            cpiInfoWriteService,
+            virtualNodeSender
         )
 
-        return ChunkDbWriterImpl(subscription, publisher)
+        return ChunkDbWriterImpl(subscription, publisher, virtualNodeSender)
     }
 
     private fun createPublisher(config: SmartConfig): Publisher {
@@ -96,7 +103,8 @@ class ChunkDbWriterFactoryImpl(
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
-        cpiInfoWriteService: CpiInfoWriteService
+        cpiInfoWriteService: CpiInfoWriteService,
+        virtualNodeSender: VirtualNodeSender
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
         val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
@@ -109,6 +117,8 @@ class ChunkDbWriterFactoryImpl(
             chunkPersistence,
             cpiPersistence,
             cpiInfoWriteService,
+            virtualNodeInfoReadService,
+            virtualNodeSender,
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,

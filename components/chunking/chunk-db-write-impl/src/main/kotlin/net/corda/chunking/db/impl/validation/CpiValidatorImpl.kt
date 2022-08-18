@@ -6,6 +6,9 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.data.virtualnode.VirtualNodeDBRequest
+import net.corda.data.virtualnode.VirtualNodeManagementRequest
+import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
@@ -15,6 +18,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
+import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.CertificateFactory
@@ -27,6 +33,8 @@ class CpiValidatorImpl constructor(
     private val chunkPersistence: ChunkPersistence,
     private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val virtualNodeSender: VirtualNodeSender,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     private val certificatesService: CertificatesService,
@@ -83,6 +91,28 @@ class CpiValidatorImpl constructor(
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
+        // Put vnodes into maintenance
+        log.info("All nodes for Cpi ${cpi.metadata.cpiId}<${cpi.metadata.cpiId}> has been set to response")
+        publisher.update(requestId, "Putting all virtual nodes into maintenance mode")
+        val nodes = virtualNodeInfoReadService.getAll().filter { it.holdingIdentity.groupId == groupId }
+        println(nodes)
+        nodes.forEach {
+            log.info("NODE > ${it.holdingIdentity.shortHash}")
+            val request = VirtualNodeManagementRequest(
+                clock.instant(),
+                VirtualNodeStateChangeRequest(
+                    it.holdingIdentity.shortHash.value,
+                    "IN_MAINTENANCE",
+                    // TODO: Change
+                    "ForceCpiUpload"
+                    // TODO: It might make a lot of sense to have a "why field" here
+                    //  - IE (endpoint, new cpi, etc.)
+                    //  - ((audit))
+                )
+            )
+            virtualNodeSender.sendAndReceive(request)
+        }
+
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =
             cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities, log)
@@ -97,6 +127,29 @@ class CpiValidatorImpl constructor(
             timestamp = clock.instant()
         )
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
+
+        // TODO: Change
+        val resetDB = true
+        if (resetDB) {
+            // update vnode
+            publisher.update(requestId, "Performing reset of virtual node DBs and Re-running migrations")
+            nodes.forEach {
+                log.info("NODE > ${it.holdingIdentity.shortHash}")
+                val request = VirtualNodeManagementRequest(
+                    clock.instant(),
+                    VirtualNodeDBRequest(
+                        it.holdingIdentity.shortHash.value,
+                        // TODO: Change
+                        "ForceCpiUpload"
+                        // TODO: It might make a lot of sense to have a "why field" here
+                        //  - IE (endpoint, new cpi, etc.)
+                        //  - ((audit))
+                    )
+                )
+                virtualNodeSender.sendAndReceive(request)
+            }
+        }
+        publisher.update(requestId, "Restoring vitual nodes to active state")
 
         return fileInfo.checksum
     }
@@ -116,7 +169,7 @@ class CpiValidatorImpl constructor(
         ) {
             throw ValidationException(
                 "Group id ($groupId) in use with another CPI.  " +
-                        "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
+                    "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
             )
         }
     }
