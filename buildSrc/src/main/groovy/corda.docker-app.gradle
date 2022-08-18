@@ -27,6 +27,23 @@ if (enableProfiling.toBoolean()) {
     }
 }
 
+tasks.register('publishBuildkitImage' , BuildkitBuild) {
+    it.sourceFiles.setFrom(tasks.named('appJar', Jar))
+
+    sourceFiles.forEach{
+        logger.quiet("${it.name.toString()}")
+    }
+
+
+    it.extraSourceFiles.setFrom(configurations.dockerImage)
+    it.useShortName = true
+
+    if (project.hasProperty('baseImage')) {
+        baseImageName = baseImage
+    }
+
+}
+
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
     it.extraSourceFiles.setFrom(configurations.dockerImage)

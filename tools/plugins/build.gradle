@@ -5,6 +5,7 @@ plugins {
 
 group 'net.corda.cli.deployment'
 
+<<<<<<< HEAD
 configurations {
     cliHostDist
 }
@@ -40,6 +41,35 @@ tasks.register("cliInstallArchive", Zip) {
 
 artifacts {
     cliInstallArchive
+}
+
+=======
+>>>>>>> 7db585b96 (Add support for buildkit)
+tasks.register('publishBuildkitImage' , BuildkitBuild) {
+    def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
+    def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
+
+    if (cordaCliIncluded) {
+        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
+        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
+    }
+    it.sourceFiles.setFrom(sourceTasks)
+    it.subDir = "plugins/"
+    it.setEntry = false
+
+    if (project.hasProperty('cliBaseImage')) {
+        baseImageName = cliBaseImage
+    } else {
+        // cater for local composite build
+        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+    }
+
+    if (project.hasProperty('baseTag')) {
+        baseImageTag = baseTag
+    } else {
+        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+    }
+
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
