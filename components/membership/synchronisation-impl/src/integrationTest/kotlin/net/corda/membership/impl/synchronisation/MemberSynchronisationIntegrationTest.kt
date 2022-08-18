@@ -54,6 +54,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
@@ -147,6 +148,9 @@ class MemberSynchronisationIntegrationTest {
                 }
             }
         """
+        const val cryptoConf = """
+            dummy=1
+        """
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
@@ -205,6 +209,15 @@ class MemberSynchronisationIntegrationTest {
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
                         Configuration(messagingConf, messagingConf, 0, schemaVersion)
+                    )
+                )
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        CRYPTO_CONFIG,
+                        Configuration(cryptoConf, cryptoConf, 0, schemaVersion)
                     )
                 )
             )
