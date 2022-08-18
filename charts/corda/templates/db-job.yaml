@@ -32,6 +32,8 @@ spec:
       {{ if .Values.db.create }}
         - name: create-db
           image: {{ include "corda.dbClientImage" . }}
+        - name: create-db
+          image: {{ include "corda.dbClientImage" . }}
           command:
             - 'sh'
             - '-c'
