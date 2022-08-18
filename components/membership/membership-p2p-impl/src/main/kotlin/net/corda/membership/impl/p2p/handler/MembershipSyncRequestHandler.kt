@@ -5,7 +5,7 @@ import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.v5.base.util.contextLogger
@@ -26,9 +26,9 @@ internal class MembershipSyncRequestHandler(
     ): Record<String, SynchronisationCommand> {
         val request = avroSchemaRegistry.deserialize<MembershipSyncRequest>(payload)
         val metadata = request.distributionMetaData
-        logger.info("Registration request from ${header.source.x500Name} is received with synchronization ID ${metadata.syncId}.")
+        logger.info("Synchronisation request from ${header.source.x500Name} is received with synchronization ID ${metadata.syncId}.")
         return Record(
-            Schemas.Membership.SYNCHRONISATION_TOPIC,
+            SYNCHRONISATION_TOPIC,
             "${metadata.syncId}-${header.source.toCorda().shortHash}",
             SynchronisationCommand(header.destination, ProcessSyncRequest(header.destination, header.source, request))
         )

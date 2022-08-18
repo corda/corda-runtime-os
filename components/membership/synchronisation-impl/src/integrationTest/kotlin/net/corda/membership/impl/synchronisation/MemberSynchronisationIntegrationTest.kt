@@ -2,6 +2,7 @@ package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -27,7 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicy
+import net.corda.membership.impl.synchronisation.dummy.MemberTestGroupPolicy
 import net.corda.membership.impl.synchronisation.dummy.TestGroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -37,6 +38,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.p2p.MembershipP2PReadService
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -108,6 +110,12 @@ class MemberSynchronisationIntegrationTest {
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
         @InjectService(timeout = 5000)
+        lateinit var cryptoOpsClient: CryptoOpsClient
+
+        @InjectService(timeout = 5000)
+        lateinit var membershipQueryClient: MembershipQueryClient
+
+        @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
 
         lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
@@ -160,6 +168,8 @@ class MemberSynchronisationIntegrationTest {
                                 LifecycleCoordinatorName.forComponent<SynchronisationProxy>(),
                                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                                 LifecycleCoordinatorName.forComponent<MembershipP2PReadService>(),
+                                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                                LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                             )
                         )
                     } else if (e is RegistrationStatusChangeEvent) {
@@ -176,6 +186,8 @@ class MemberSynchronisationIntegrationTest {
             synchronisationProxy.start()
             membershipGroupReaderProvider.start()
             membershipP2PReadService.start()
+            cryptoOpsClient.start()
+            membershipQueryClient.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
             eventually {
@@ -209,7 +221,7 @@ class MemberSynchronisationIntegrationTest {
 
     @Test
     fun `member updates are are successfully received on sync message from MGM`() {
-        groupPolicyProvider.putGroupPolicy(TestGroupPolicy())
+        groupPolicyProvider.putGroupPolicy(MemberTestGroupPolicy())
 
         // Create membership package to be published
         val members: List<MemberInfo> = mutableListOf(createTestMemberInfo(participant))

@@ -5,9 +5,8 @@ import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.merkle.MerkleTreeImpl
+import net.corda.crypto.merkle.impl.MerkleTreeImpl
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
@@ -29,22 +28,27 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
-import net.corda.membership.p2p.helpers.MerkleTreeFactory
+import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Signer
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.persistence.client.MembershipQueryResult.QueryException
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -52,11 +56,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -99,6 +102,7 @@ class MgmSynchronisationServiceImplTest {
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
     )
     private var coordinatorIsRunning = false
     private var coordinatorStatus: KArgumentCaptor<LifecycleStatus> = argumentCaptor()
@@ -144,17 +148,18 @@ class MgmSynchronisationServiceImplTest {
     private val memberInfoFactory = MemberInfoFactoryImpl(
         LayeredPropertyMapMocks.createFactory(listOf(EndpointInfoConverter()))
     )
-    val endpointUrl = "http://localhost:8080"
 
-    private val mgmInfo = createMemberInfo(createMemberContext(mgmName))
-    private val aliceContext = createMemberContext(aliceName)
-    private val aliceInfo = createMemberInfo(aliceContext)
-    private val bobInfo = createMemberInfo(createMemberContext(bobName))
-    private val daisyInfo = createMemberInfo(createMemberContext(daisyName))
+    private val mgmInfo = createMemberInfo(mgmName)
+    private val aliceInfo = createMemberInfo(aliceName)
+    private val bobInfo = createMemberInfo(bobName)
+    private val daisyInfo = createMemberInfo(daisyName)
 
     private val memberInfos = listOf(mgmInfo, aliceInfo, bobInfo, daisyInfo)
-    private val memberLookup: MemberLookup = mock {
+    private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn memberInfos
+    }
+    private val groupReaderProvider: MembershipGroupReaderProvider = mock {
+        on { getGroupReader(eq(mgm.toCorda())) } doReturn groupReader
     }
 
     private val syncId = UUID.randomUUID().toString()
@@ -166,22 +171,16 @@ class MgmSynchronisationServiceImplTest {
     private val nonMatchingMerkleTree: MerkleTreeImpl = mock {
         on { root } doReturn createSecureHash("algorithm2").toCorda()
     }
-    private val merkleTreeFactory: MerkleTreeFactory = mock {
-        on { buildTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
-        on { buildTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
-        on { buildTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
-        on { buildTree(argThat { containsAll(memberInfos) && size == memberInfos.size }) } doReturn matchingMerkleTree
+    private val merkleTreeFactory: MerkleTreeFactory = mock()
+    private val merkleTreeGenerator: MerkleTreeGenerator = mock {
+        on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
+        on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
+        on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
+        on { generateTree(argThat { containsAll(memberInfos) && size == memberInfos.size }) } doReturn matchingMerkleTree
     }
 
-    private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
-        on { serialize(aliceContext.toKeyValuePairList()) } doReturn "123".toByteArray()
-        on { serialize(sortedMapOf<String, String?>().toKeyValuePairList()) } doReturn "123".toByteArray()
-    }
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
-    }
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
-    private val hashingService = mock<DigestService>()
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val signatures = createSignatures(memberInfos)
     private val signature = createSignatures(listOf(bobInfo))
@@ -248,20 +247,15 @@ class MgmSynchronisationServiceImplTest {
         publisherFactory,
         coordinatorFactory,
         configurationReadService,
-        memberLookup,
+        groupReaderProvider,
         cordaAvroSerializationFactory,
         cipherSchemeMetadata,
-        hashingService,
         cryptoOpsClient,
         membershipQueryClient,
-        signerFactory,
-        merkleTreeFactory,
-        membershipPackageFactory,
-        p2pRecordsFactory,
-    )
+        merkleTreeFactory
+    ).also { it.initialise(signerFactory, merkleTreeGenerator, membershipPackageFactory, p2pRecordsFactory) }
 
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
-    private fun SortedMap<String, String?>.toKeyValuePairList() = KeyValuePairList(this.map { KeyValuePair(it.key, it.value) })
 
     private fun createSecureHash(algorithm: String) = SecureHash(algorithm, byteBuffer)
 
@@ -273,22 +267,22 @@ class MgmSynchronisationServiceImplTest {
                 syncId,
                 clock.instant()
             ),
-            secureHash, 1, BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
+            secureHash, BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
         )
     )
 
-    private fun createMemberContext(name: String) = sortedMapOf<String, String?>(
-        GROUP_ID to GROUP,
-        PARTY_NAME to name,
-        Pair(String.format(MemberInfoExtension.URL_KEY, "0"), endpointUrl),
-        Pair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), "1"),
-        PLATFORM_VERSION to "1",
-        SOFTWARE_VERSION to "5.0.0"
-    )
-
-    private fun createMemberInfo(memberContext: SortedMap<String, String?>) = memberInfoFactory.create(
-        memberContext,
-        sortedMapOf()
+    private fun createMemberInfo(name: String) = memberInfoFactory.create(
+        sortedMapOf(
+            GROUP_ID to GROUP,
+            PARTY_NAME to name,
+            Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
+            Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
+            PLATFORM_VERSION to "1",
+            SOFTWARE_VERSION to "5.0.0"
+        ),
+        sortedMapOf(
+            STATUS to MEMBER_STATUS_ACTIVE
+        )
     )
 
     private fun createSignatures(members: List<MemberInfo>) = members.associate {
@@ -460,7 +454,7 @@ class MgmSynchronisationServiceImplTest {
         verify(membershipPackageFactory, times(1)).createMembershipPackage(any(), any(), capturedList.capture(), any())
         verify(mockPublisher, times(1)).publish(eq(listOf(record1)))
         val membersPublished = capturedList.firstValue
-        assertThat(membersPublished.size).isEqualTo(3)
+        assertThat(membersPublished.size).isEqualTo(4)
         assertThat(membersPublished).isEqualTo(memberInfos)
         synchronisationService.stop()
     }

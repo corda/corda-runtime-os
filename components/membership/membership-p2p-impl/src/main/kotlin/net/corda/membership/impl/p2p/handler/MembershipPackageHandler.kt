@@ -27,6 +27,7 @@ internal class MembershipPackageHandler(
             SYNCHRONISATION_TOPIC,
             header.destination.toCorda().shortHash.value,
             SynchronisationCommand(
+                header.destination,
                 ProcessMembershipUpdates(
                     header.destination,
                     header.source,

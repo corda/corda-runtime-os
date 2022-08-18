@@ -2,15 +2,21 @@ package net.corda.membership.impl.p2p
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
+import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.sync.BloomFilter
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
@@ -19,6 +25,7 @@ import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toCorda
@@ -73,6 +80,18 @@ class MembershipP2PProcessorTest {
     )
 
     private val verificationRespMsgPayload = verificationResponse.toByteBuffer()
+
+    private val byteBuffer = "1234".toByteBuffer()
+    private val secureHash = SecureHash("algorithm", byteBuffer)
+    private val syncId = UUID.randomUUID().toString()
+    private val syncRequest = MembershipSyncRequest(
+        DistributionMetaData(
+            syncId,
+            clock.instant()
+        ),
+        secureHash, BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
+    )
+    private val syncRequestMsgPayload = syncRequest.toByteBuffer()
 
     private lateinit var membershipP2PProcessor: MembershipP2PProcessor
 
@@ -212,6 +231,40 @@ class MembershipP2PProcessorTest {
         }
     }
 
+    @Test
+    fun `Sync request as authenticated message is processed as expected`() {
+        val appMessage = with(syncRequestMsgPayload) {
+            mockPayloadDeserialization()
+            asAuthenticatedAppMessagePayload()
+        }
+        val result = membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
+
+        assertThat(result)
+            .isNotEmpty
+            .hasSize(1)
+        assertThat(result.first().topic).isEqualTo(SYNCHRONISATION_TOPIC)
+        assertThat(result.first().value).isInstanceOf(SynchronisationCommand::class.java)
+        val command = result.first().value as SynchronisationCommand
+        assertThat(command.command).isInstanceOf(ProcessSyncRequest::class.java)
+        assertThat(command.viewOwningMember).isEqualTo(mgm)
+        val request = command.command as ProcessSyncRequest
+        assertThat(request.mgm).isEqualTo(mgm)
+        assertThat(request.requester).isEqualTo(member)
+        assertThat(request.syncRequest).isEqualTo(syncRequest)
+        assertThat(result.first().key).isEqualTo("$syncId-${member.toCorda().shortHash}")
+    }
+
+    @Test
+    fun `Sync request as unauthenticated message throws exception`() {
+        val appMessage = with(syncRequestMsgPayload) {
+            mockPayloadDeserialization()
+            asUnauthenticatedAppMessagePayload()
+        }
+        assertThrows<UnsupportedOperationException> {
+            membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
+        }
+    }
+
     private fun ByteBuffer.asUnauthenticatedAppMessagePayload(
         destination: HoldingIdentity = mgm,
         source: HoldingIdentity = member,
@@ -271,5 +324,13 @@ class MembershipP2PProcessorTest {
                 eq(null)
             )
         ).thenReturn(verificationResponse)
+        whenever(avroSchemaRegistry.getClassType(eq(syncRequestMsgPayload))).thenReturn(MembershipSyncRequest::class.java)
+        whenever(
+            avroSchemaRegistry.deserialize(
+                eq(syncRequestMsgPayload),
+                eq(MembershipSyncRequest::class.java),
+                eq(null)
+            )
+        ).thenReturn(syncRequest)
     }
 }

@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.handler.helpers
+package net.corda.membership.p2p.helpers
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity

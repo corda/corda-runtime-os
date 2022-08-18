@@ -20,6 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.synchronisation.MemberSynchronisationService
+import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -35,7 +36,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.TimeUnit
 
-@Component(service = [MemberSynchronisationService::class])
+@Component(service = [SynchronisationService::class])
 class MemberSynchronisationServiceImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,

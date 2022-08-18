@@ -5,12 +5,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
-import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,10 +20,13 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
+import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.MgmSynchronisationService
+import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -34,59 +34,73 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 import java.util.*
 
-@Component(service = [MgmSynchronisationService::class])
-class MgmSynchronisationServiceImpl(
+@Component(service = [SynchronisationService::class])
+class MgmSynchronisationServiceImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = MemberLookup::class)
-    private val memberLookup: MemberLookup,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = DigestService::class)
-    private val hashingService: DigestService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-    private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
-    private val merkleTreeFactory: net.corda.membership.p2p.helpers.MerkleTreeFactory = net.corda.membership.p2p.helpers.MerkleTreeFactory(
-        cordaAvroSerializationFactory,
-        hashingService,
-    ),
-    private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
-        clock,
-        cordaAvroSerializationFactory,
-        cipherSchemeMetadata,
-        DistributionType.SYNC,
-        merkleTreeFactory,
-    ) { UUID.randomUUID().toString() },
-    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
-        cordaAvroSerializationFactory,
-        clock,
-    ),
+    @Reference(service = MerkleTreeFactory::class)
+    private val merkleTreeFactory: MerkleTreeFactory,
 ) : MgmSynchronisationService {
     private companion object {
         val logger = contextLogger()
         const val SERVICE = "MgmSynchronisationService"
         private val clock: Clock = UTCClock()
+    }
+
+    lateinit var merkleTreeGenerator: MerkleTreeGenerator
+    lateinit var membershipPackageFactory: MembershipPackageFactory
+    lateinit var signerFactory: SignerFactory
+    lateinit var p2pRecordsFactory: P2pRecordsFactory
+
+    fun initialise(signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
+                   merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
+                       merkleTreeFactory,
+                       cordaAvroSerializationFactory
+                   ),
+                   membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
+                       clock,
+                       cordaAvroSerializationFactory,
+                       cipherSchemeMetadata,
+                       DistributionType.SYNC,
+                       merkleTreeGenerator,
+                   ) { UUID.randomUUID().toString() },
+                   p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+                       cordaAvroSerializationFactory,
+                       clock,
+                   ),
+
+    ) {
+        this.signerFactory = signerFactory
+        this.merkleTreeGenerator = merkleTreeGenerator
+        this.membershipPackageFactory = membershipPackageFactory
+        this.p2pRecordsFactory = p2pRecordsFactory
     }
 
     // Component lifecycle coordinator
@@ -105,12 +119,6 @@ class MgmSynchronisationServiceImpl(
      */
     private val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
-
-    private val serializer: CordaAvroSerializer<KeyValuePairList> by lazy {
-        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
-            logger.warn("Serialization failed")
-        }
-    }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -158,16 +166,17 @@ class MgmSynchronisationServiceImpl(
     private inner class ActiveImpl : InnerSynchronisationService {
         override fun processSyncRequest(request: ProcessSyncRequest) {
             val memberHashFromTheReq = request.syncRequest.membersHash
-            val requester = request.requester.toCorda()
-            val allMembers = memberLookup.lookup()
-            val mgm = allMembers.single { it.holdingIdentity == request.mgm.toCorda() }
-            val member = allMembers.singleOrNull { it.holdingIdentity == requester }
-                ?: throw CordaRuntimeException("Requester ${requester.x500Name} is not part of the membership group!")
-            if (compareHashes(memberHashFromTheReq.toCorda(), member)) {
-                sendPackage(request.mgm, request.requester, createMembershipPackage(mgm, allMembers))
+            val mgm = request.mgm
+            val requester = request.requester
+            val allMembers = membershipGroupReaderProvider.getGroupReader(mgm.toCorda()).lookup()
+            val mgmInfo = allMembers.single { it.holdingIdentity == mgm.toCorda() }
+            val requesterInfo = allMembers.singleOrNull { it.holdingIdentity == requester.toCorda() }
+                ?: throw CordaRuntimeException("Requester ${MemberX500Name.parse(requester.x500Name)} is not part of the membership group!")
+            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
+                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembers))
             } else {
                 // member has not received the latest updates regarding its own membership, will send its missing updates about themselves only
-                sendPackage(request.mgm, request.requester, createMembershipPackage(mgm, listOf(member)))
+                sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo)))
             }
         }
 
@@ -200,13 +209,7 @@ class MgmSynchronisationServiceImpl(
         }
 
         private fun calculateHash(memberInfo: MemberInfo): SecureHash {
-            /*val leaves = listOf(
-                serializer.serialize(memberInfo.memberProvidedContext.toAvro())
-                    ?: throw CordaRuntimeException("ByteArray for member provided context cannot be null."),
-                serializer.serialize(memberInfo.mgmProvidedContext.toAvro())
-                    ?: throw CordaRuntimeException("ByteArray for mgm provided context cannot be null.")
-            )*/
-            return merkleTreeFactory.buildTree(listOf(memberInfo)).root
+            return merkleTreeGenerator.generateTree(listOf(memberInfo)).root
         }
 
         private fun createMembershipPackage(
@@ -221,7 +224,7 @@ class MgmSynchronisationServiceImpl(
                         it.holdingIdentity
                     }
                 ).getOrThrow()
-            val membersTree = merkleTreeFactory.buildTree(members)
+            val membersTree = merkleTreeGenerator.generateTree(members)
 
             return membershipPackageFactory.createMembershipPackage(
                 mgmSigner,
@@ -250,6 +253,7 @@ class MgmSynchronisationServiceImpl(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                 LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
             )
         )
     }
