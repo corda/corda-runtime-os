@@ -45,7 +45,7 @@ spec:
         {{- end }}
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
-      ports:
+        ports:
         {{- if .Values.workers.p2pLinkManager.debug.enabled }}
           - name: debug
             containerPort: 5005
