@@ -49,11 +49,12 @@ class FakeCorda(
      * @member The member for whom this flow will be registered.
      * @flowClass The flow to register. Must be an `RPCStartableFlow` or a `ResponderFlow`.
      */
-    fun createVirtualNode(holdingIdentity: HoldingIdentity, vararg flowClasses: Class<out Flow>) {
+    fun createVirtualNode(holdingIdentity: HoldingIdentity, vararg flowClasses: Class<out Flow>) : VirtualNodeInfo {
         flowClasses.forEach {
             flowChecker.check(it)
             registerAnyResponderWithFiber(holdingIdentity.member, it)
         }
+        return VirtualNodeInfo(holdingIdentity)
     }
 
     private fun registerAnyResponderWithFiber(
@@ -83,7 +84,7 @@ class FakeCorda(
      *
      * @return the response from the flow
      */
-    fun invoke(initiator: HoldingIdentity, input: RPCRequestDataWrapper): String {
+    fun callFlow(initiator: VirtualNodeInfo, input: RPCRequestDataWrapper): String {
         val flowClassName = input.flowClassName
         val flow = flowFactory.createInitiatingFlow(initiator.member, flowClassName)
         injector.injectServices(flow, initiator.member, fakeFiber, flowFactory)
@@ -97,8 +98,8 @@ class FakeCorda(
         fakeFiber.registerResponderInstance(responder.member, protocol, responderFlow)
     }
 
-    fun getPersistenceServiceFor(holdingIdentity: HoldingIdentity): PersistenceService =
-        fakeFiber.getOrCreatePersistenceService(holdingIdentity.member)
+    fun getPersistenceServiceFor(virtualNodeInfo: VirtualNodeInfo): PersistenceService =
+        fakeFiber.getOrCreatePersistenceService(virtualNodeInfo.member)
 
     override fun close() {
         fakeFiber.close()

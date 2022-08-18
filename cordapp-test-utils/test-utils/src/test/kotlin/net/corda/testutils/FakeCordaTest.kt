@@ -43,11 +43,10 @@ class FakeCordaTest {
         val corda = FakeCorda()
 
         // When I upload two flows
-        corda.createVirtualNode(holdingId, HelloFlow::class.java)
-        corda.createVirtualNode(holdingId, ValidStartingFlow::class.java)
+        val helloVNInfo = corda.createVirtualNode(holdingId, HelloFlow::class.java, ValidStartingFlow::class.java)
 
         // And I invoke the first one (let's use the constructor for RPC requests for fun)
-        val response = corda.invoke(holdingId,
+        val response = corda.callFlow(helloVNInfo,
             RPCRequestDataWrapper("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
         )
 
