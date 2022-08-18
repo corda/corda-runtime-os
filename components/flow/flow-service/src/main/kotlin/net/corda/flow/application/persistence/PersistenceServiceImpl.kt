@@ -144,7 +144,7 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun <T> wrapResumedException(function: () -> T): T {
+    private inline fun <T> wrapResumedException(function: () -> T): T {
         return try {
             function()
         } catch (e: CordaRuntimeException) {
