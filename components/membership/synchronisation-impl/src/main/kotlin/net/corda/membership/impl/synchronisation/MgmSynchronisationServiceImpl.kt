@@ -67,42 +67,27 @@ class MgmSynchronisationServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = MerkleTreeFactory::class)
     private val merkleTreeFactory: MerkleTreeFactory,
-) : MgmSynchronisationService {
-    private companion object {
-        val logger = contextLogger()
-        const val SERVICE = "MgmSynchronisationService"
-        private val clock: Clock = UTCClock()
-    }
-
-    private var merkleTreeGenerator = MerkleTreeGenerator(
+    private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
         merkleTreeFactory,
         cordaAvroSerializationFactory
-    )
-
-    private var membershipPackageFactory = MembershipPackageFactory(
+    ),
+    private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
         cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.SYNC,
         merkleTreeGenerator,
-    ) { UUID.randomUUID().toString() }
-
-    private var signerFactory = SignerFactory(cryptoOpsClient)
-    private var p2pRecordsFactory = P2pRecordsFactory(
+    ) { UUID.randomUUID().toString() },
+    private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
+    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
-    )
-
-    internal fun overrideWithTestServices(signerFactory: SignerFactory,
-                   merkleTreeGenerator: MerkleTreeGenerator,
-                   membershipPackageFactory: MembershipPackageFactory,
-                   p2pRecordsFactory: P2pRecordsFactory
-
-    ) {
-        this.signerFactory = signerFactory
-        this.merkleTreeGenerator = merkleTreeGenerator
-        this.membershipPackageFactory = membershipPackageFactory
-        this.p2pRecordsFactory = p2pRecordsFactory
+    ),
+) : MgmSynchronisationService {
+    private companion object {
+        val logger = contextLogger()
+        const val SERVICE = "MgmSynchronisationService"
+        private val clock: Clock = UTCClock()
     }
 
     // Component lifecycle coordinator

@@ -252,8 +252,12 @@ class MgmSynchronisationServiceImplTest {
         cipherSchemeMetadata,
         cryptoOpsClient,
         membershipQueryClient,
-        merkleTreeFactory
-    ).also { it.overrideWithTestServices(signerFactory, merkleTreeGenerator, membershipPackageFactory, p2pRecordsFactory) }
+        merkleTreeFactory,
+        merkleTreeGenerator,
+        membershipPackageFactory,
+        signerFactory,
+        p2pRecordsFactory
+    )
 
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
 
