@@ -5,6 +5,406 @@
   "description": "Configuration schema for the crypto library subsection.",
   "type": "object",
   "properties": {
-    "additionalProperties": true
-  }
+    "cryptoConnectionFactory": {
+      "description": "Settings for database connections factory's cache of EntityManagerFactory(s)",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "expireAfterAccessMins": {
+          "description": "Expiration time in minutes for cached EntityManagerFactory",
+          "type": "integer",
+          "default": 5
+        },
+        "maximumSize": {
+          "description": "Maximum number of cached EntityManagerFactory",
+          "type": "integer",
+          "default": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "signingService": {
+      "description": "Settings for SigningService",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "cache": {
+          "description": "Settings for key metadata cache",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "expireAfterAccessMins": {
+              "description": "Expiration time in minutes for cached key metadata",
+              "type": "integer",
+              "default": 10000
+            },
+            "maximumSize": {
+              "description": "Maximum number of cached key metadata",
+              "type": "integer",
+              "default": 60
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "hsmService": {
+      "description": "Settings for HSMService",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "downstreamMaxAttempts": {
+          "description": "Number of attempts to call downstream services to ensure consistency when assigning an HSM",
+          "type": "integer",
+          "default": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "busProcessors": {
+      "description": "Settings for crypto messages processors",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "ops": {
+          "description": "Settings for crypto ops messages processor",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "maxAttempts": {
+              "description": "Maximum attempts to process a message",
+              "type": "integer",
+              "default": 3
+            },
+            "waitBetweenMills": {
+              "description": "Time between attempts in milliseconds, if the number of values is less than attempts then the last item is repeated",
+              "type": "array",
+              "minItems": 1,
+              "default": [
+                200
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "flow": {
+          "description": "Settings for crypto flow ops messages processor",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "maxAttempts": {
+              "description": "Maximum attempts to process a message",
+              "type": "integer",
+              "default": 3
+            },
+            "waitBetweenMills": {
+              "description": "Time between attempts in milliseconds, if the number of values is less than attempts then the last item is repeated",
+              "type": "array",
+              "minItems": 1,
+              "default": [
+                200
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "registration": {
+          "description": "Settings for HSM registration messages processor",
+          "type": "object",
+          "default": {},
+          "properties": {
+            "maxAttempts": {
+              "description": "Maximum attempts to process a message",
+              "type": "integer",
+              "default": 3
+            },
+            "waitBetweenMills": {
+              "description": "Time between attempts in milliseconds, if the number of values is less than attempts then the last item is repeated",
+              "type": "array",
+              "minItems": 1,
+              "default": [
+                200
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "hsmId": {
+      "description": "The HSM's id which is handled by this instance, the value must match one of the keys in the hsmMap",
+      "type": "string",
+      "default": "SOFT"
+    },
+    "hsmMap": {
+      "description": "Settings for all available HSMs",
+      "type": "object",
+      "default": {},
+      "patternProperties": {
+        ".": {
+          "description": "Configuration schema for an HSM.",
+          "type": "object",
+          "properties": {
+            "workerTopicSuffix": {
+              "description": "Topic's suffix where the messages should be sent for the HSM",
+              "type": "string",
+              "default": ""
+            },
+            "retry": {
+              "description": "Retry settings for the HSM",
+              "type": "object",
+              "default": {},
+              "properties": {
+                "maxAttempts": {
+                  "description": "Maximum number of attempts",
+                  "type": "integer",
+                  "default": 3
+                },
+                "attemptTimeoutMills": {
+                  "description": "Wait period in milliseconds between attempts, should be reasonably large as some operations may be long, e.g. RSA key generation by the SOFT HSM may take a few seconds",
+                  "type": "integer",
+                  "default": 20000
+                }
+              },
+              "additionalProperties": false
+            },
+            "hsm": {
+              "description": "HSM settings and capabilities",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "description": "HSM provider name",
+                  "type": "string"
+                },
+                "categories": {
+                  "description": "Categories which the HSM can be used for",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "description": "Category name, could be the wildcard * meaning all which has to be the last item if used",
+                        "type": "string"
+                      },
+                      "policy": {
+                        "description": "Defines how private keys are generated for that category, ALIASED - stored in the HSM, WRAPPED - wrapped by the HSM, BOTH - decision is taken by the HSM at runtime",
+                        "enum": [
+                          "ALIASED",
+                          "WRAPPED",
+                          "BOTH"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "category",
+                      "policy"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "masterKeyPolicy": {
+                  "description": "Wrapping key policy, NONE - no wrapping key is required, SHARED - wrapping key shared by all tenants, UNIQUE - wrapping key unique for each tenant",
+                  "enum": [
+                    "NONE",
+                    "SHARED",
+                    "UNIQUE"
+                  ]
+                },
+                "masterKeyAlias": {
+                  "description": "If the masterKeyPolicy is SHARED then this specifies the alias of the shared key and as such is required",
+                  "type": "string"
+                },
+                "capacity": {
+                  "description": "Number of keys which can be handled by the HSM, -1 means unlimited capacity",
+                  "type": "integer"
+                },
+                "supportedSchemes": {
+                  "description": "Key schemes that are supported by the HSM",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "name": { "const": "SOFT" }
+                }
+              },
+              "then": {
+                "properties": {
+                  "cfg": {
+                    "description": "SOFT HSM specific configuration",
+                    "type": "object",
+                    "properties": {
+                      "keyMap": {
+                        "description": "Settings for the private keys map",
+                        "type": "object",
+                        "default": {},
+                        "properties": {
+                          "name": {
+                            "description": "Map type, CACHING - the key are cached, TRANSIENT - there is no caching",
+                            "enum": [
+                              "CACHING",
+                              "TRANSIENT"
+                            ],
+                            "default": "CACHING"
+                          },
+                          "cache": {
+                            "description": "Settings for the cache if the type is CACHING",
+                            "type": "object",
+                            "default": {},
+                            "properties": {
+                              "expireAfterAccessMins": {
+                                "description": "Expiration time for cached keys",
+                                "type": "integer",
+                                "default": 60
+                              },
+                              "maximumSize": {
+                                "description": "Maximum number of keys in the cache",
+                                "type": "integer",
+                                "default": 1000
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "wrappingKeyMap": {
+                        "description": "Settings for the wrapping keys map",
+                        "type": "object",
+                        "default": {},
+                        "properties": {
+                          "name": {
+                            "description": "Map type, CACHING - the key are cached, TRANSIENT - there is no caching",
+                            "enum": [
+                              "CACHING",
+                              "TRANSIENT"
+                            ],
+                            "default": "CACHING"
+                          },
+                          "salt": {
+                            "description": "Salt for the root master wrapping key",
+                            "type": "string"
+                          },
+                          "passphrase": {
+                            "description": "Passphrase for the root master wrapping key",
+                            "type": "object",
+                            "properties": {
+                              "configSecret": {
+                                "type": "object",
+                                "properties": {
+                                  "encryptedSecret": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "encryptedSecret"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "configSecret"
+                            ]
+                          },
+                          "cache": {
+                            "description": "Settings for the cache if the type is CACHING",
+                            "type": "object",
+                            "default": {},
+                            "properties": {
+                              "expireAfterAccessMins": {
+                                "description": "Expiration time for cached keys",
+                                "type": "integer",
+                                "default": 60
+                              },
+                              "maximumSize": {
+                                "description": "Maximum number of keys in the cache",
+                                "type": "integer",
+                                "default": 1000
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "wrapping": {
+                        "description": "Number of keys which can be handled by the HSM, -1 means unlimited capacity",
+                        "type": "object",
+                        "default": {},
+                        "properties": {
+                          "name": {
+                            "description": "Wrapping type, DEFAULT - the wrapping key are stored in database, HSM - there is additional single master key defined in the HSM",
+                            "enum": [
+                              "DEFAULT",
+                              "HSM"
+                            ],
+                            "default": "DEFAULT"
+                          },
+                          "hsm": {
+                            "description": "Number of keys which can be handled by the HSM, -1 means unlimited capacity",
+                            "type": "object",
+                            "default": {},
+                            "properties": {
+                              "name": {
+                                "description": "HSM provider name",
+                                "type": "string"
+                              },
+                              "cfg": {
+                                "description": "HSM specific configuration",
+                                "type": "object",
+                                "default": {},
+                                "additionalProperties": true
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "cfg": {
+                    "$comment": "Settings for any other HSM are open",
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "masterKeyPolicy",
+                "capacity",
+                "supportedSchemes",
+                "categories",
+                "cfg"
+              ]
+            }
+          },
+          "additionalProperties": false        }
+      }
+    }
+  },
+  "additionalProperties": false
 }
