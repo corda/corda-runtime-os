@@ -9,6 +9,7 @@
 -resolve.effective: resolve,active
 
 -runvm: \
+    -Djava.util.logging.config.file=${.}/logging.properties,\
     -Djava.io.tmpdir=${task.temporaryDir},\
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 -runsystempackages: \
@@ -16,6 +17,9 @@
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
     sun.security.x509
+
+-runproperties: \
+    co.paralleluniverse.quasar.verbose=false
 
 -runrequires: \
     bnd.identity;id='flow-service-tests',\

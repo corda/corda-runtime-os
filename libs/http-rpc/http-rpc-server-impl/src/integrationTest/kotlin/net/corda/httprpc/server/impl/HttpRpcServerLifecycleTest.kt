@@ -32,7 +32,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
             )
             server = HttpRpcServerImpl(
                 listOf(lifecycleRPCOpsImpl),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

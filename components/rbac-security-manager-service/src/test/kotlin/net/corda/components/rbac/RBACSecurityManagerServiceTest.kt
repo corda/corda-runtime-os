@@ -1,5 +1,6 @@
 package net.corda.components.rbac
 
+import net.corda.httprpc.security.read.RPCSecurityManager
 import java.lang.IllegalArgumentException
 import net.corda.httprpc.security.read.rbac.RBACSecurityManager
 import net.corda.libs.permission.PermissionValidator
@@ -74,9 +75,10 @@ class RBACSecurityManagerServiceTest {
 
     @Test
     fun `process registration DOWN event posts stop event to the coordinator`() {
+        val rpcSecurityManager = mock<RPCSecurityManager>()
+        service.innerSecurityManager = rpcSecurityManager
         service.processEvent(RegistrationStatusChangeEvent(permissionServiceRegistration, LifecycleStatus.DOWN), coordinator)
-
-        verify(coordinator).postEvent(StopEvent())
+        verify(rpcSecurityManager).close()
     }
 
     @Test

@@ -63,7 +63,6 @@ rootProject.name = 'corda-runtime-os'
 include 'applications:examples:sandbox-app'
 include 'applications:examples:sandbox-app:example-cpi'
 include 'applications:p2p-gateway'
-include 'applications:p2p-link-manager'
 include 'applications:tools:flow-worker-setup'
 include 'applications:tools:kafka-setup'
 include 'applications:tools:p2p-test:app-simulator'
@@ -76,6 +75,7 @@ include 'applications:workers:release:crypto-worker'
 include 'applications:workers:release:db-worker'
 include 'applications:workers:release:flow-worker'
 include 'applications:workers:release:member-worker'
+include 'applications:workers:release:p2p-link-manager-worker'
 include 'applications:workers:release:rpc-worker'
 include 'applications:workers:worker-common'
 include 'applications:workers:workers-smoketest'
@@ -394,7 +394,6 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
     }

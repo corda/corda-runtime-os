@@ -44,7 +44,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
             )
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

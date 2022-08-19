@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Membership data distribution and synchronisation implementation'
@@ -8,6 +9,7 @@ description 'Membership data distribution and synchronisation implementation'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
@@ -27,4 +29,19 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(':testing:test-utilities')
+
+    integrationTestImplementation project(':components:membership:membership-group-read')
+    integrationTestImplementation project(':components:membership:membership-p2p')
+    integrationTestImplementation project(':testing:db-message-bus-testkit')
+    integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
+    integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+    integrationTestRuntimeOnly project(':components:membership:membership-p2p-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+
 }

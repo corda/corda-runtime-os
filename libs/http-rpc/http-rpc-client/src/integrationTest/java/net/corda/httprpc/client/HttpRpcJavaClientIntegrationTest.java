@@ -33,7 +33,7 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
         HttpRpcIntegrationTestBase.Companion.setServer(
                 new HttpRpcServerImpl(
                         List.of(new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()),
-                        HttpRpcIntegrationTestBase.Companion.getSecurityManager(),
+                        HttpRpcIntegrationTestBase.Companion::getSecurityManager,
                         httpRpcSettings,
                         Path.of(System.getProperty("java.io.tmpdir")),
                         true

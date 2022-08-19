@@ -1,5 +1,3 @@
-import aQute.bnd.gradle.Bundle
-
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
@@ -12,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:osgi.core"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

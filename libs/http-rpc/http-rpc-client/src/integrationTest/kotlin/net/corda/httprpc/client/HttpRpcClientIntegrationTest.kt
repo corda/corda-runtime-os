@@ -65,7 +65,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     TestEntityRpcOpsImpl(),
                     TestFileUploadImpl()
                 ),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

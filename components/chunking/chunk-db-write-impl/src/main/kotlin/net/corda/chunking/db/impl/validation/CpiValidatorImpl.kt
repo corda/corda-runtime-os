@@ -72,9 +72,9 @@ class CpiValidatorImpl constructor(
         }
 
         publisher.update(
-            requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=${groupId}"
+            requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=$groupId"
         )
-        canUpsertCpi(cpi, groupId)
+        canUpsertCpi(cpi, groupId, fileInfo.forceUpload)
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
@@ -102,8 +102,14 @@ class CpiValidatorImpl constructor(
      *  with a different name *and* different group id.  This is enforcing the policy
      *  of one CPI per mgm group id.
      */
-    private fun canUpsertCpi(cpi: Cpi, groupId: String) {
-        if (!cpiPersistence.canUpsertCpi(cpi.metadata.cpiId.name, groupId)) {
+    private fun canUpsertCpi(cpi: Cpi, groupId: String, forceUpload: Boolean) {
+        if (!cpiPersistence.canUpsertCpi(
+                cpi.metadata.cpiId.name,
+                groupId,
+                forceUpload,
+                cpi.metadata.cpiId.version
+            )
+        ) {
             throw ValidationException(
                 "Group id ($groupId) in use with another CPI.  " +
                         "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"

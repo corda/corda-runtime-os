@@ -1,9 +1,9 @@
 package net.corda.testutils.services
 
+import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.find
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.persistence.CordaPersistenceException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
@@ -31,6 +31,8 @@ class DBPersistenceServiceTest {
         // Then we should be able to retrieve them again
         val greetings = persistence.findAll(GreetingEntity::class.java).execute()
         assertThat(greetings.map{ it.greeting }.toSet(), `is`(setOf("Hello!", "Bonjour!")))
+
+        persistence.close()
     }
 
     @Test
@@ -47,6 +49,9 @@ class DBPersistenceServiceTest {
         // Then it should not show up in the other one
         val greetings = persistence2.findAll(GreetingEntity::class.java).execute()
         assertThat("Greetings should be empty", greetings.isEmpty())
+
+        persistence1.close()
+        persistence2.close()
     }
 
     @Test
@@ -74,6 +79,9 @@ class DBPersistenceServiceTest {
         // Then it should show up in the other one
         val greetings = persistence2.findAll(GreetingEntity::class.java).execute()
         assertThat(greetings, `is`(listOf(hello)))
+
+        persistence1.close()
+        persistence2.close()
     }
 
     @Test
@@ -94,6 +102,8 @@ class DBPersistenceServiceTest {
         // Then it should be the merged version
         assertThat(retrievedHello, `is`(bonjour))
         assertThat(merged, `is`(bonjour))
+
+        persistence.close()
     }
 
     @Test
@@ -116,6 +126,8 @@ class DBPersistenceServiceTest {
         // Then they should be the merged versions
         assertThat(retrievedHellos.toSet(), `is`(setOf(goodEve, gutenAbend)))
         assertThat(merged.toSet(), `is`(setOf(goodEve, gutenAbend)))
+
+        persistence.close()
     }
 
     @Test
@@ -136,6 +148,8 @@ class DBPersistenceServiceTest {
 
         // Then they should be removed successfully
         assertThat(persistence.findAll(GreetingEntity::class.java).execute(), `is`(listOf(greetings[3])))
+
+        persistence.close()
     }
 
     @Test
@@ -146,6 +160,8 @@ class DBPersistenceServiceTest {
         assertThrows<CordaPersistenceException> { persistence.find(BadEntity::class.java, UUID.randomUUID()) }
         assertThrows<CordaPersistenceException> { persistence.merge(BadEntity()) }
         assertThrows<CordaPersistenceException> { persistence.remove(listOf(BadEntity())) }
+
+        persistence.close()
     }
 }
 

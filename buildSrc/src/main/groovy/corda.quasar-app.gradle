@@ -1,53 +1,111 @@
+import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
+import javax.inject.Inject
+
 plugins {
-    id 'net.corda.plugins.quasar-utils'
     id 'corda.common-app'
 }
 
+extensions.create('quasar', QuasarExtension)
+
 quasar {
-    version = quasarVersion
-    suspendableAnnotation = 'net.corda.v5.base.annotations.Suspendable'
-    instrumentTests = false
-    instrumentJavaExec = false
     excludePackages = [
         'co.paralleluniverse**',
         'com.esotericsoftware.**',
         'io.opentelemetry.**',
-        'jdk**',
-        'kotlin**',
         'org.apache.**',
-        'org.slf4j**',
-        'net.corda.sandboxhooks.**',
-        'net.corda.osgi.**'
+        'org.objectweb.asm',
+        'org.objenesis**',
+        'org.osgi.**'
     ]
 }
 
 configurations {
-    runtimeClasspath {
-        exclude group: 'com.esotericsoftware', module: 'reflectasm'
+    quasarBundles {
+        canBeConsumed = false
+        visible = false
     }
 }
 
 dependencies {
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    // OSGi frameworks containing Quasar and Kryo must resolve
+    // the version of ASM as specified in their OSGi metadata.
+    quasarBundles("co.paralleluniverse:quasar-core-osgi:$quasarVersion") {
+        exclude group: 'org.slf4j'
+    }
+
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    systemPackages files(configurations.quasarAgent)
-    systemPackages "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+    runtimeOnly files(configurations.quasarBundles)
+    runtimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension") {
+        transitive = false
+    }
 }
 
 osgiRun {
     frameworkProperties = [
-            "org.osgi.framework.bootdelegation" :
-                    "co.paralleluniverse.fibers.suspend," +
-                            "com.esotericsoftware.reflectasm," +
-                            "org.jolokia.jvmagent,org.jolokia.util",
-            "org.osgi.framework.bundle.parent" : "app"
+        'org.osgi.framework.bootdelegation' : 'org.jolokia.jvmagent,org.jolokia.util',
+        'org.osgi.framework.bundle.parent' : 'framework',
+        'co.paralleluniverse.quasar.suspendableAnnotation': 'net.corda.v5.base.annotations.Suspendable'
     ]
-    javaAgents {
-        quasarAgent {
-            className = 'co.paralleluniverse.fibers.instrument.JavaAgent'
-            args = quasar.options.map { it.substring(1) }
-        }
-    }
+
+    frameworkProperties.putAll quasar.cacheDirectory.asFile.map { dir ->
+        [ 'co.paralleluniverse.quasar.cacheDirectory': dir.absolutePath ]
+    }.orElse([:])
+
+    frameworkProperties.putAll quasar.cacheLocations.map { locations ->
+        optionalMapOf('co.paralleluniverse.quasar.cacheLocations', locations)
+    }.orElse([:])
+
+    frameworkProperties.putAll quasar.excludeLocations.map { locations ->
+        optionalMapOf('co.paralleluniverse.quasar.excludeLocations', locations)
+    }.orElse([:])
+
+    frameworkProperties.putAll quasar.excludePackages.map { packages ->
+        optionalMapOf('co.paralleluniverse.quasar.excludePackages', packages)
+    }.orElse([:])
+
+    frameworkProperties.putAll quasar.verbose.map {
+        [ 'co.paralleluniverse.quasar.verbose': it.toString() ]
+    }.orElse([:])
+
+    frameworkProperties.putAll quasar.debug.map {
+        [ 'co.paralleluniverse.quasar.debug': it.toString() ]
+    }.orElse([:])
+
+    frameworkProperties.putAll quasar.check.map {
+        [ 'co.paralleluniverse.quasar.check': it.toString() ]
+    }.orElse([:])
 
     addOpensAttribute.addAll 'java.base/java.lang', 'java.base/java.lang.invoke', 'java.base/java.nio', 'java.base/java.util'
+}
+
+@CompileStatic
+@PackageScope
+static Map<String, ?> optionalMapOf(String key, Iterable<String> values) {
+    values ? [ (key): values.join(',') ] : [:]
+}
+
+@CompileStatic
+@PackageScope
+class QuasarExtension {
+    final DirectoryProperty cacheDirectory
+
+    final SetProperty<String> cacheLocations
+    final SetProperty<String> excludePackages
+    final SetProperty<String> excludeLocations
+
+    final Property<Boolean> verbose
+    final Property<Boolean> debug
+    final Property<Boolean> check
+
+    @Inject
+    QuasarExtension(ObjectFactory objects) {
+        cacheDirectory = objects.directoryProperty()
+        cacheLocations = objects.setProperty(String)
+        excludeLocations = objects.setProperty(String)
+        excludePackages = objects.setProperty(String)
+        verbose = objects.property(Boolean)
+        debug = objects.property(Boolean)
+        check = objects.property(Boolean)
+    }
 }
