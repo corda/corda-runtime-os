@@ -88,18 +88,14 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
     }
 
     private fun getInitOAuth(): String {
-        val sso = configurationProvider.getSsoSettings()?.azureAd()
-        return if (sso != null) {
-            """
+        return """
                 ui.initOAuth({
-                        clientId: "${sso.getClientId()}",
-                        clientSecret: "${sso.getClientSecret() ?: ""}",
+                        clientId: "Corda5",
+                        clientSecret: "",
                         scopes: ["openid", "profile", "email"],
                         usePkceWithAuthorizationCodeGrant: true
                       })
             """.trimIndent()
-        } else {
-            ""
-        }
+
     }
 }

@@ -52,6 +52,7 @@ internal class OpenApiInfoProvider(
                 )
                 addSecurityItem(SecurityRequirement().addList("basicAuth"))
                 addAzureAdIfNecessary(this@openapi, this)
+                addKeyCloak(this@openapi, this)
             })
         }.also { log.trace { "Generate OpenApi for ${resources.size} resources completed." } }
 
@@ -89,5 +90,16 @@ internal class OpenApiInfoProvider(
 
             openApi.addSecurityItem(SecurityRequirement().addList("azuread", "AzureAd authentication"))
         }
+    }
+
+    private fun addKeyCloak(openApi: OpenAPI, components: Components) {
+        components.addSecuritySchemes(
+            "keyCloak", SecurityScheme()
+                .type(SecurityScheme.Type.OPENIDCONNECT)
+                .openIdConnectUrl("http://localhost:8080/realms/myrealm/.well-known/openid-configuration")
+        )
+
+
+        openApi.addSecurityItem(SecurityRequirement().addList("keyCloak", "KeyCloak authentication"))
     }
 }
