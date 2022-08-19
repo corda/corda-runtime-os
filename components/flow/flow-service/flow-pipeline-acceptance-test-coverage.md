@@ -140,9 +140,11 @@ This document should be maintained so that we can ensure that we have quick visi
 - Sending an external event sends a payload created by an external event factory ✅
 - Receiving an external event response with the correct request id resumes the flow ✅
 - Receiving an external event response with the wrong request id does not resume the flow and ignores the response ✅
+- Given a flow has already received its external event response the flow can send another event and receive a response ✅
 - Receiving an event does not resend the external event unless a 'retriable' error is received ✅
 - Receiving a 'retriable' error response resends the external event if the retry window has been surpassed ✅
 - Receiving a 'retriable' error response does not resend the external event if the retry window has not been surpassed ✅
+- Given a 'retriable' error response has been received receiving a successful response resumes the flow and does not resend the event ✅
 - Receiving a 'platform' error response resumes the flow with an error ✅
 - Receiving a 'fatal' error response DLQs the flow and does not resume ✅
 

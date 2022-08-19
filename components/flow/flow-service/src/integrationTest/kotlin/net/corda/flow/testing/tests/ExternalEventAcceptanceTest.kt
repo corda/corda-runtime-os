@@ -2,10 +2,8 @@ package net.corda.flow.testing.tests
 
 import java.nio.ByteBuffer
 import java.util.stream.Stream
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindEntity
@@ -14,7 +12,6 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -23,7 +20,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
+import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
 
@@ -32,91 +31,40 @@ import org.osgi.test.junit5.service.ServiceExtension
 class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
-        const val requestId = "requestId"
-        val bytes = "bytes".toByteArray()
-        val byteBuffer = ByteBuffer.wrap(bytes)
+        const val REQUEST_ID = "requestId"
+        const val TOPIC = "topic"
+        const val KEY = "key"
 
-        val entityRequest = EntityRequest(
+        val BYTES = "bytes".toByteArray()
+        val BYTE_BUFFER = ByteBuffer.wrap(BYTES)
+
+        val ANY_INPUT = EntityRequest(
             ALICE_HOLDING_IDENTITY,
-            FindEntity("entity class name", byteBuffer),
-            ExternalEventContext(requestId, FLOW_ID1)
+            FindEntity("entity class name", BYTE_BUFFER),
+            ExternalEventContext(REQUEST_ID, FLOW_ID1)
         )
+        val ANY_RESPONSE = EntityResponse(BYTE_BUFFER)
+        const val STRING_INPUT = "this is an input string"
+        const val STRING_RESPONSE = "this is an response string"
+        val BYTE_ARRAY_INPUT = "this is an input byte array".toByteArray()
+        val BYTE_ARRAY_RESPONSE = "this is an response byte array".toByteArray()
 
-//        @JvmStatic
-//        fun factoryToResponse(): Stream<Arguments> {
-//            return Stream.of(
-//                Arguments.of(Wakeup::class.simpleName, { dsl: StepSetup -> dsl.wakeupEventReceived(FLOW_ID1) }),
-//                Arguments.of(
-//                    SessionAck::class.simpleName,
-//                    { dsl: StepSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2) }
-//                )
-//            )
-//        }
-    }
-
-    @Component(service = [ExternalEventFactory::class])
-    class PersistenceFactory : ExternalEventFactory<Any, EntityResponse, Any> {
-
-        override val responseType = EntityResponse::class.java
-
-        override fun createExternalEvent(
-            checkpoint: FlowCheckpoint,
-            flowExternalEventContext: ExternalEventContext,
-            parameters: Any
-        ): ExternalEventRecord {
-            return ExternalEventRecord(
-                "topic",
-                "key",
-                entityRequest
+        @JvmStatic
+        fun factoriesInputAndResponses(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(ConcreteResponseReceivedFactory::class.java, ANY_INPUT, ANY_RESPONSE),
+                Arguments.of(ConcreteResponseReceivedFactory::class.java, STRING_INPUT, ANY_RESPONSE),
+                Arguments.of(ConcreteResponseReceivedFactory::class.java, BYTE_ARRAY_INPUT, ANY_RESPONSE),
+                Arguments.of(AnyResponseReceivedFactory::class.java, ANY_INPUT, ANY_RESPONSE),
+                Arguments.of(AnyResponseReceivedFactory::class.java, STRING_INPUT, ANY_RESPONSE),
+                Arguments.of(AnyResponseReceivedFactory::class.java, BYTE_ARRAY_INPUT, ANY_RESPONSE),
+                Arguments.of(StringResponseReceivedFactory::class.java, ANY_INPUT, STRING_RESPONSE),
+                Arguments.of(StringResponseReceivedFactory::class.java, STRING_INPUT, STRING_RESPONSE),
+                Arguments.of(StringResponseReceivedFactory::class.java, BYTE_ARRAY_INPUT, STRING_RESPONSE),
+                Arguments.of(ByteArrayResponseReceivedFactory::class.java, ANY_INPUT, BYTE_ARRAY_RESPONSE),
+                Arguments.of(ByteArrayResponseReceivedFactory::class.java, STRING_INPUT, BYTE_ARRAY_RESPONSE),
+                Arguments.of(ByteArrayResponseReceivedFactory::class.java, BYTE_ARRAY_INPUT, BYTE_ARRAY_RESPONSE)
             )
-        }
-
-        override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): Any {
-            return "return with this: $response"
-        }
-    }
-
-    @Component(service = [ExternalEventFactory::class])
-    class StringResponseFactory : ExternalEventFactory<Any, String, Any> {
-
-        override val responseType = String::class.java
-
-        override fun createExternalEvent(
-            checkpoint: FlowCheckpoint,
-            flowExternalEventContext: ExternalEventContext,
-            parameters: Any
-        ): ExternalEventRecord {
-            return ExternalEventRecord(
-                "topic",
-                "key",
-                entityRequest
-            )
-        }
-
-        override fun resumeWith(checkpoint: FlowCheckpoint, response: String): Any {
-            return "return with this: $response"
-        }
-    }
-
-    @Component(service = [ExternalEventFactory::class])
-    class ByteArrayResponseFactory : ExternalEventFactory<Any, ByteArray, Any> {
-
-        override val responseType = ByteArray::class.java
-
-        override fun createExternalEvent(
-            checkpoint: FlowCheckpoint,
-            flowExternalEventContext: ExternalEventContext,
-            parameters: Any
-        ): ExternalEventRecord {
-            return ExternalEventRecord(
-                "topic",
-                "key",
-                entityRequest
-            )
-        }
-
-        override fun resumeWith(checkpoint: FlowCheckpoint, response: ByteArray): Any {
-            return "return with this: $response"
         }
     }
 
@@ -131,44 +79,40 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Test
-    fun `Sending an external event sends a payload created by a ExternalEventFactory`() {
+    @ParameterizedTest(name = "Sending an external event sends a {0} payload created by an ExternalEventFactory")
+    @MethodSource("factoriesInputAndResponses")
+    fun `Sending an external event sends a payload created by an ExternalEventFactory`(
+        factory: Class<out ExternalEventFactory<*, *, *>>,
+        input: Any,
+        @Suppress("UNUSED_PARAMETER") response: Any
+    ) {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
-                    )
-                )
+                .suspendsWith(FlowIORequest.ExternalEvent(REQUEST_ID, factory, input))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                externalEvent("topic", "key", entityRequest)
+                externalEvent(TOPIC, KEY, input)
             }
         }
     }
 
-    @Test
-    fun `Receiving an external event response with the correct request id resumes the flow`() {
-
-        val response = EntityResponse(byteBuffer)
+    @ParameterizedTest(name = "Receiving an external event response with a {0} payload with the correct request id resumes the flow")
+    @MethodSource("factoriesInputAndResponses")
+    fun `Receiving an external event response with the correct request id resumes the flow`(
+        factory: Class<out ExternalEventFactory<*, *, *>>,
+        input: Any,
+        @Suppress("UNUSED_PARAMETER") response: Any
+    ) {
 
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
-                    )
-                )
+                .suspendsWith(FlowIORequest.ExternalEvent(REQUEST_ID, factory, input))
         }
 
         `when` {
-            externalEventReceived(FLOW_ID1, requestId, response)
+            externalEventReceived(FLOW_ID1, REQUEST_ID, response)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -181,20 +125,19 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
     @Test
     fun `Receiving an external event response with the wrong request id does not resume the flow and ignores the response`() {
-
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
 
         `when` {
-            externalEventReceived(FLOW_ID1, "incorrect request id", EntityResponse(byteBuffer))
+            externalEventReceived(FLOW_ID1, "incorrect request id", EntityResponse(BYTE_BUFFER))
         }
 
         then {
@@ -205,57 +148,38 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving an string external event response with the correct request id resumes the flow`() {
-
-        val response = "this is my string response"
-
+    fun `Given a flow has already received its external event response the flow can send another event and receive a response`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        StringResponseFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
 
         `when` {
-            externalEventReceived(FLOW_ID1, requestId, response)
+            externalEventReceived(FLOW_ID1, REQUEST_ID, ANY_RESPONSE)
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        REQUEST_ID,
+                        StringResponseReceivedFactory::class.java,
+                        STRING_INPUT
+                    )
+                )
+
+            externalEventReceived(FLOW_ID1, REQUEST_ID, STRING_RESPONSE)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith("return with this: $response")
+                externalEvent(TOPIC, KEY, STRING_INPUT)
             }
-        }
-    }
-
-    @Test
-    fun `Receiving an byte array external event response with the correct request id resumes the flow`() {
-
-        val response = "this is my string response".toByteArray()
-
-        given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        requestId,
-                        ByteArrayResponseFactory::class.java,
-                        "parameters"
-                    )
-                )
-        }
-
-        `when` {
-            externalEventReceived(FLOW_ID1, requestId, response)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
-        then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith("return with this: $response")
+                flowResumedWith("return with this: $STRING_RESPONSE")
             }
         }
     }
@@ -267,9 +191,9 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
@@ -281,7 +205,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                noExternalEvent("topic")
+                noExternalEvent(TOPIC)
             }
         }
     }
@@ -292,21 +216,21 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.RETRY)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                externalEvent("topic", "key", entityRequest)
+                externalEvent(TOPIC, KEY, ANY_INPUT)
             }
         }
     }
@@ -319,21 +243,51 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.RETRY)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                noExternalEvent("topic")
+                noExternalEvent(TOPIC)
+            }
+        }
+    }
+
+    @Test
+    fun `Given a 'retriable' error response has been received receiving a successful response resumes the flow and does not resend the event`() {
+        given {
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
+                    )
+                )
+
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
+        }
+
+        `when` {
+            externalEventReceived(FLOW_ID1, REQUEST_ID, ANY_RESPONSE)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith("return with this: $ANY_RESPONSE")
+                noExternalEvent(TOPIC)
             }
         }
     }
@@ -344,15 +298,15 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.PLATFORM_ERROR)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.PLATFORM_ERROR)
         }
 
         then {
@@ -368,15 +322,15 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
-                        requestId,
-                        PersistenceFactory::class.java,
-                        "parameters"
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
                     )
                 )
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, requestId, ExternalEventResponseErrorType.FATAL_ERROR)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.FATAL_ERROR)
         }
 
         then {
@@ -387,142 +341,91 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-//    @Test
-//    fun `Receive a 'retriable' error response, retry the request max times, error response received always, flow errors`() {
-//        given {
-//            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-//                .suspendsWith(
-//                    FlowIORequest.Find(
-//                        requestId,
-//                        className,
-//                        bytes
-//                    )
-//                )
-//        }
-//
-//        `when` {
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.VIRTUAL_NODE, ExceptionEnvelope("", ""))
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.VIRTUAL_NODE, ExceptionEnvelope("", ""))
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.VIRTUAL_NODE, ExceptionEnvelope("", ""))
-//        }
-//
-//        then {
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowResumedWithError(CordaPersistenceException::class.java)
-//            }
-//        }
-//    }
-//
-//    @Test
-//    fun `Receive a 'retriable' error response, retry the request, receive wakeup events, successful response received, flow continues`() {
-//        given {
-//            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-//                .suspendsWith(
-//                    FlowIORequest.Find(
-//                        requestId,
-//                        className,
-//                        bytes
-//                    )
-//                )
-//        }
-//
-//        `when` {
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.VIRTUAL_NODE, ExceptionEnvelope("", ""))
-//            wakeupEventReceived(FLOW_ID1)
-//            wakeupEventReceived(FLOW_ID1)
-//            wakeupEventReceived(FLOW_ID1)
-//            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
-//                .suspendsWith(FlowIORequest.ForceCheckpoint)
-//        }
-//
-//        then {
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowResumedWith(byteBuffer)
-//                noEntityRequestSent()
-//            }
-//        }
-//    }
-//
-//    @Test
-//    fun `Receive a 'not ready' response, retry the request multiple times, success received eventually, flow continues`() {
-//        given {
-//            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-//                .suspendsWith(
-//                    FlowIORequest.Find(
-//                        requestId,
-//                        className,
-//                        bytes
-//                    )
-//                )
-//        }
-//
-//        `when` {
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.NOT_READY, ExceptionEnvelope("", ""))
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.NOT_READY, ExceptionEnvelope("", ""))
-//            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
-//        }
-//
-//        then {
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowDidNotResume()
-//                entityRequestSent(FindEntity(className, byteBuffer))
-//            }
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowResumedWith(byteBuffer)
-//            }
-//        }
-//    }
-//
-//    @Test
-//    fun `Receive a 'fatal' response, does not retry the request, flow errors`() {
-//        given {
-//            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-//                .suspendsWith(
-//                    FlowIORequest.Find(
-//                        requestId,
-//                        className,
-//                        bytes
-//                    )
-//                )
-//        }
-//
-//        `when` {
-//            entityResponseErrorReceived(FLOW_ID1, requestId, Error.FATAL, ExceptionEnvelope("", ""))
-//        }
-//
-//        then {
-//            expectOutputForFlow(FLOW_ID1) {
-//                flowResumedWithError(CordaPersistenceException::class.java)
-//                noEntityRequestSent()
-//            }
-//        }
-//    }
+    @Component(service = [ExternalEventFactory::class])
+    class ConcreteResponseReceivedFactory : ExternalEventFactory<Any, EntityResponse, Any> {
+
+        override val responseType = EntityResponse::class.java
+
+        override fun createExternalEvent(
+            checkpoint: FlowCheckpoint,
+            flowExternalEventContext: ExternalEventContext,
+            parameters: Any
+        ): ExternalEventRecord {
+            return ExternalEventRecord(
+                TOPIC,
+                KEY,
+                parameters
+            )
+        }
+
+        override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): Any {
+            return "return with this: $response"
+        }
+    }
+
+    @Component(service = [ExternalEventFactory::class])
+    class AnyResponseReceivedFactory : ExternalEventFactory<Any, Any, Any> {
+
+        override val responseType = Any::class.java
+
+        override fun createExternalEvent(
+            checkpoint: FlowCheckpoint,
+            flowExternalEventContext: ExternalEventContext,
+            parameters: Any
+        ): ExternalEventRecord {
+            return ExternalEventRecord(
+                TOPIC,
+                KEY,
+                parameters
+            )
+        }
+
+        override fun resumeWith(checkpoint: FlowCheckpoint, response: Any): Any {
+            return "return with this: $response"
+        }
+    }
+
+    @Component(service = [ExternalEventFactory::class])
+    class StringResponseReceivedFactory : ExternalEventFactory<Any, String, Any> {
+
+        override val responseType = String::class.java
+
+        override fun createExternalEvent(
+            checkpoint: FlowCheckpoint,
+            flowExternalEventContext: ExternalEventContext,
+            parameters: Any
+        ): ExternalEventRecord {
+            return ExternalEventRecord(
+                TOPIC,
+                KEY,
+                parameters
+            )
+        }
+
+        override fun resumeWith(checkpoint: FlowCheckpoint, response: String): Any {
+            return "return with this: $response"
+        }
+    }
+
+    @Component(service = [ExternalEventFactory::class])
+    class ByteArrayResponseReceivedFactory : ExternalEventFactory<Any, ByteArray, Any> {
+
+        override val responseType = ByteArray::class.java
+
+        override fun createExternalEvent(
+            checkpoint: FlowCheckpoint,
+            flowExternalEventContext: ExternalEventContext,
+            parameters: Any
+        ): ExternalEventRecord {
+            return ExternalEventRecord(
+                TOPIC,
+                KEY,
+                parameters
+            )
+        }
+
+        override fun resumeWith(checkpoint: FlowCheckpoint, response: ByteArray): Any {
+            return "return with this: $response"
+        }
+    }
 }

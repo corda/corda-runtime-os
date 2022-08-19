@@ -88,7 +88,13 @@ class ExternalEventManagerImpl(
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
             externalEventState.response = externalEventResponse
-            externalEventResponse.error?.let { error ->
+
+            if (externalEventResponse.error == null) {
+                if (externalEventState.status.type != ExternalEventStateType.OK) {
+                    externalEventState.status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
+                }
+            } else {
+                val error = externalEventResponse.error
                 externalEventState.status = when (error.errorType) {
                     ExternalEventResponseErrorType.RETRY -> {
                         ExternalEventStateStatus(ExternalEventStateType.RETRY, error.exception)
@@ -120,7 +126,7 @@ class ExternalEventManagerImpl(
 
     override fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any? {
         val bytes = externalEventState.response.payload.array()
-        return when(responseType) {
+        return when (responseType) {
             String::class.java -> stringDeserializer.deserialize(bytes)
             ByteArray::class.java -> byteArrayDeserializer.deserialize(bytes)
             else -> anyDeserializer.deserialize(bytes)
@@ -133,23 +139,23 @@ class ExternalEventManagerImpl(
         instant: Instant,
         config: SmartConfig
     ): Pair<ExternalEventState, Record<*, *>?> {
-            return when {
-                hasNotSentOriginalEvent(externalEventState) -> {
-                    log.debug {
-                        "Sending external event request ${externalEventState.requestId} " +
-                                externalEventState.eventToSend
-                    }
-                    getAndUpdateEventToSend(externalEventState, instant, config)
+        return when {
+            hasNotSentOriginalEvent(externalEventState) -> {
+                log.debug {
+                    "Sending external event request ${externalEventState.requestId} " +
+                            externalEventState.eventToSend
                 }
-                canRetryEvent(externalEventState, instant) -> {
-                    log.debug {
-                        "Resending external event request ${externalEventState.requestId} which was last sent at " +
-                                externalEventState.eventToSend.timestamp
-                    }
-                    getAndUpdateEventToSend(externalEventState, instant, config)
-                }
-                else -> externalEventState to null
+                getAndUpdateEventToSend(externalEventState, instant, config)
             }
+            canRetryEvent(externalEventState, instant) -> {
+                log.debug {
+                    "Resending external event request ${externalEventState.requestId} which was last sent at " +
+                            externalEventState.eventToSend.timestamp
+                }
+                getAndUpdateEventToSend(externalEventState, instant, config)
+            }
+            else -> externalEventState to null
+        }
     }
 
     private fun hasNotSentOriginalEvent(externalEventState: ExternalEventState): Boolean {
