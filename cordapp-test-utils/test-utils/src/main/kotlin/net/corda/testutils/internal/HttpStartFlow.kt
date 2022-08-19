@@ -1,5 +1,5 @@
 package net.corda.testutils.internal
 
-import net.corda.testutils.tools.RPCRequestDataMock
+import net.corda.testutils.tools.RPCRequestDataWrapper
 
-data class HttpStartFlow(val httpStartFlow: RPCRequestDataMock)
+data class HttpStartFlow(val httpStartFlow: RPCRequestDataWrapper)

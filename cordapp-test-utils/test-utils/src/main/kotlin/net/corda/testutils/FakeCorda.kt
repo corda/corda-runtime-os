@@ -4,16 +4,15 @@ import net.corda.testutils.internal.BaseFakeFiber
 import net.corda.testutils.internal.BaseFlowFactory
 import net.corda.testutils.internal.DefaultServicesInjector
 import net.corda.testutils.internal.FakeFiber
+import net.corda.testutils.internal.FakeVirtualNodeBase
 import net.corda.testutils.internal.FlowFactory
 import net.corda.testutils.internal.FlowServicesInjector
 import net.corda.testutils.internal.cast
 import net.corda.testutils.tools.CordaFlowChecker
 import net.corda.testutils.tools.FlowChecker
-import net.corda.testutils.tools.RPCRequestDataMock
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import java.io.Closeable
 
@@ -31,8 +30,8 @@ import java.io.Closeable
  * initiator flows in isolation.
  *
  * @flowChecker Checks any flow class. Defaults to checking the various hooks which the real Corda would require
- * @flowServices A factory for constructing services that will be injected into the flows
- * @fiberMock The "fiber" with which responder flows will be registered by protocol
+ * @fakeFiber The "fiber" with which responder flows will be registered by protocol
+ * @injector An injector to initialize services annotated with @CordaInject in flows and subflows
  */
 class FakeCorda(
     private val flowChecker: FlowChecker = CordaFlowChecker(),
@@ -43,15 +42,19 @@ class FakeCorda(
     private val flowFactory: FlowFactory = BaseFlowFactory()
 
     /**
-     * Registers a flow class against a given member with the FakeCorda. Flow classes "uploaded" here will be checked
-     * for validity. Responder flows will also be registered with the "fiber".
+     * Registers a flow class against a given member with the FakeCorda. Flow classes will be checked
+     * for validity. Responder flows will also be registered against their protocols.
      *
-     * @member The member for whom this flow will be registered.
-     * @flowClass The flow to register. Must be an `RPCStartableFlow` or a `ResponderFlow`.
+     * @member The member for whom this node will be created.
+     * @flowClasses The flows which will be available to run in the nodes. Must be `RPCStartableFlow`
+     * or `ResponderFlow`.
      */
-    fun upload(member: MemberX500Name, flowClass: Class<out Flow>) {
-        flowChecker.check(flowClass)
-        registerAnyResponderWithFiber(member, flowClass)
+    fun createVirtualNode(holdingIdentity: HoldingIdentity, vararg flowClasses: Class<out Flow>) : FakeVirtualNode {
+        flowClasses.forEach {
+            flowChecker.check(it)
+            registerAnyResponderWithFiber(holdingIdentity.member, it)
+        }
+        return FakeVirtualNodeBase(holdingIdentity, fakeFiber, injector, flowFactory)
     }
 
     private fun registerAnyResponderWithFiber(
@@ -60,42 +63,26 @@ class FakeCorda(
     ) {
         val protocolIfResponder = flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
         if (protocolIfResponder != null) {
-            val responderFlowClass = castInitiatingFlowToResponder(flowClass)
+            val responderFlowClass = castInitiatedFlowToResponder(flowClass)
             fakeFiber.registerResponderClass(member, protocolIfResponder, responderFlowClass)
         }
     }
 
-    private fun castInitiatingFlowToResponder(flowClass: Class<out Flow>) =
+    private fun castInitiatedFlowToResponder(flowClass: Class<out Flow>) =
         cast<Class<out ResponderFlow>>(flowClass) ?: throw IllegalArgumentException(
             "${flowClass.simpleName} has an @${InitiatedBy::class.java} annotation, but " +
                     "it is not a ${ResponderFlow::class.java}"
         )
 
     /**
-     * Calls the flow with the given request. Note that this call happens on the calling thread, which will wait until
-     * the flow has completed before returning the response.
-     *
-     * @initiator the holding identity of the initating node (not the responder(s), whose identities should be
-     * parsed from input data)
-     * @input the data to input to the flow
-     *
-     * @return the response from the flow
+     * Creates a virtual node holding a concrete instance of a responder flow. Note that this bypasses all
+     * checks for constructor and annotations on the flow.
      */
-    fun invoke(initiator: MemberX500Name, input: RPCRequestDataMock): String {
-        val flowClassName = input.flowClassName
-        val flow = flowFactory.createInitiatingFlow(initiator, flowClassName)
-        injector.injectServices(flow, initiator, fakeFiber, flowFactory)
-        return flow.call(input.toRPCRequestData())
+    fun createVirtualNode(responder: HoldingIdentity, protocol: String, responderFlow: ResponderFlow) : FakeVirtualNode {
+        fakeFiber.registerResponderInstance(responder.member, protocol, responderFlow)
+        return FakeVirtualNodeBase(responder, fakeFiber, injector, flowFactory)
     }
 
-    /**
-     * Uploads a concrete instance of a responder flow.
-     */
-    fun upload(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow) {
-        fakeFiber.registerResponderInstance(responder, protocol, responderFlow)
-    }
-
-    fun getPersistenceServiceFor(member: MemberX500Name): PersistenceService = fakeFiber.getOrCreatePersistenceService(member)
     override fun close() {
         fakeFiber.close()
     }
