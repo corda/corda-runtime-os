@@ -50,10 +50,11 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
-        val requiredSigningKeys = states //TODO: unique? ordering
+        val requiredSigningKeys = states
             .map{it.participants}
             .flatten()
             .map{it.owningKey}
+            .distinct()
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()
         for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
