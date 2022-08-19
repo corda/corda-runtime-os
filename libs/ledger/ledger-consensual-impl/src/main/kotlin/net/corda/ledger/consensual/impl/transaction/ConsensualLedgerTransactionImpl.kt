@@ -35,9 +35,8 @@ class ConsensualLedgerTransactionImpl(
             .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATES.ordinal)
             .mapIndexed{
                 index, state ->
-            //@TODO(continue with net.corda.flow.application.sessions.FlowSessionImpl.deserializeReceivedPayload)
-            serializer.deserialize(state, Class.forName(consensualStateTypes[index])) as ConsensualState
-        }
+                    serializer.deserialize(state, Class.forName(consensualStateTypes[index])) as ConsensualState
+            }
     }
 
     /**
