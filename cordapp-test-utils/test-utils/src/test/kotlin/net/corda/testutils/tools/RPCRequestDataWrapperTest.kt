@@ -7,7 +7,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
 
-class RPCRequestDataMockTest {
+class RPCRequestDataWrapperTest {
 
     private val record = InputMessage(6, 7)
 
@@ -22,13 +22,13 @@ class RPCRequestDataMockTest {
           }
         }
         """.trimIndent()
-        val requestBody = RPCRequestDataMock.fromJSonString(input)
+        val requestBody = RPCRequestDataWrapper.fromJSonString(input)
         assertThat(requestBody.toRPCRequestData().getRequestBody(), `is`("{ \"a\" : 6, \"b\" : 7 }"))
     }
 
     @Test
     fun `should create a valid RPC request from individual values`() {
-        val requestBody = RPCRequestDataMock("r1",
+        val requestBody = RPCRequestDataWrapper("r1",
             "${HelloFlow::class.java.name}",
             "{ \"a\" : 6, \"b\" : 7 }")
         assertThat(
@@ -40,7 +40,7 @@ class RPCRequestDataMockTest {
 
     @Test
     fun `should create a valid RPC request from a input object`() {
-        val requestBody = RPCRequestDataMock.fromData("r1", ValidStartingFlow::class.java, InputMessage(6, 7))
+        val requestBody = RPCRequestDataWrapper.fromData("r1", ValidStartingFlow::class.java, InputMessage(6, 7))
         assertThat(
             requestBody.toRPCRequestData().getRequestBodyAs(
                 SimpleJsonMarshallingService(),
