@@ -2,6 +2,7 @@ package net.cordacon.example
 
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
 class ResponderFlowDelegate {
@@ -10,6 +11,7 @@ class ResponderFlowDelegate {
         val log = contextLogger()
     }
 
+    @Suspendable
     fun callDelegate(session: FlowSession, flowEngine: FlowEngine) {
         log.info("Responder ${flowEngine.virtualNodeName} called")
         session.receive(RollCallRequest::class.java)

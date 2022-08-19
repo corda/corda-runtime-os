@@ -16,9 +16,9 @@ the `CPI_HASH`).
 ```kotlin
     val corda = FakeCorda()
     val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
-    corda.upload(member, HelloFlow::class.java)
+    val node = corda.createVirtualNode(member, HelloFlow::class.java)
 
-    val response = corda.invoke(member,
+    val response = node.callFlow(
         RPCRequestDataMock("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
     )
 ```
@@ -67,7 +67,7 @@ val requestBody = RPCRequestDataMock.fromData("r1",
 
 ## Instance vs Class upload
 
-The FakeCorda has two methods of uploading responder flows:
+The FakeCorda has two methods of creating nodes with responder flows:
 - via a class, which will be constructed when a response flow is initialized.
 - via an instance, which must be uploaded against a protocol.
 
@@ -81,7 +81,7 @@ independently in conjunction with the FakeCorda's instance-upload capability.
 
 ```kotlin
 responder.whenever(CountRequest(7), listOf(CountResponse(1, 2, 3, 4, 5, 6, 7)))
-cordaMock.upload(member, "count-protocol", responder)
+cordaMock.createVirtualNode(member, "count-protocol", responder)
 ```
 
 ## Standalone tools and services
@@ -101,4 +101,5 @@ Note these will eventually move to being `cordaProvided` from a factory.
 - Handle errors for unmatched sends / receives
 - Implement FlowMessaging send / receive methods
 - Make FlowSession and FlowEngine mocks for InitiatingFlow tests
+- Timeouts
 - SigningService, MemberLookup
