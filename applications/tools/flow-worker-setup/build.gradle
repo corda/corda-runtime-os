@@ -30,7 +30,6 @@ dependencies {
     implementation project(":libs:flows:utils")
 
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-    runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
