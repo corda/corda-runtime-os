@@ -7,29 +7,29 @@ flows or handle more than one version of any Flow.  They are intended only for l
 quick feedback and documenting examples of how things work) or demoing CorDapps. For full testing, use a real or
 production-like implementation of Corda.
 
-## FakeCorda
+## CordaSim
 
-The main class for testing your CorDapps is the FakeCorda. "Uploading" your class for a given party will create a fake
-"virtual node" which can then be invoked using the same party name (in the real Corda this would be done using
+The main class for testing your CorDapps is the CordaSim. "Uploading" your class for a given party will create a
+simulated "virtual node" which can then be invoked using the same party name (in the real Corda this would be done using
 the `CPI_HASH`).
 
 ```kotlin
-    val corda = FakeCorda()
+    val corda = CordaSim()
     val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
     val node = corda.createVirtualNode(member, HelloFlow::class.java)
 
     val response = node.callFlow(
-        RPCRequestDataMock("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
+        RPCRequestDataWrapper("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
     )
 ```
 
-The FakeCorda will wire up your flow with lightweight versions of the same injected services that you'd get with
+The CordaSim will wire up your flow with lightweight versions of the same injected services that you'd get with
 the real Corda.
 
-## RPCRequestDataMock
+## RPCRequestDataWrapper
 
 Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted
-by Corda into an `RPCRequestData` interface. This is represented in the FakeCorda by an `RPCRequestDataMock` class,
+by Corda into an `RPCRequestData` interface. This is represented in the CordaSim by an `RPCRequestDataWrapper` class,
 which allows the `RPCRequestData` to be easily constructed. There are three different construction
 methods available:
 
@@ -45,14 +45,14 @@ methods available:
     }
   }
   """.trimIndent()
-  val requestBody = RPCRequestDataMock.fromJSonString(input)
+  val requestBody = RPCRequestDataWrapper.fromJSonString(input)
 ```
 
 - A three-part constructor with the request and flow classname separately, as you would submit through
   Swagger UI:
 
 ```kotlin
-val requestBody = RPCRequestDataMock("r1", 
+val requestBody = RPCRequestDataWrapper("r1", 
     "${CalculatorFlow::class.java.name}",
     "{ \"a\" : 6, \"b\" : 7 }")
 ```
@@ -60,14 +60,14 @@ val requestBody = RPCRequestDataMock("r1",
 - A three-part constructor that is strongly typed:
 
 ```kotlin
-val requestBody = RPCRequestDataMock.fromData("r1", 
+val requestBody = RPCRequestDataWrapper.fromData("r1", 
             CalculatorFlow::class.java, 
             InputMessage(6, 7))
 ```
 
 ## Instance vs Class upload
 
-The FakeCorda has two methods of creating nodes with responder flows:
+The CordaSim has two methods of creating nodes with responder flows:
 - via a class, which will be constructed when a response flow is initialized.
 - via an instance, which must be uploaded against a protocol.
 
@@ -77,16 +77,16 @@ the ResponderMock to be used.
 ## ResponderMock
 
 The ResponderMock allows preset responses to be returned for a given request, enabling initiating flows to be tested
-independently in conjunction with the FakeCorda's instance-upload capability.
+independently in conjunction with the CordaSim's instance-upload capability.
 
 ```kotlin
 responder.whenever(CountRequest(7), listOf(CountResponse(1, 2, 3, 4, 5, 6, 7)))
-cordaMock.createVirtualNode(member, "count-protocol", responder)
+cordaSim.createVirtualNode(member, "count-protocol", responder)
 ```
 
 ## Standalone tools and services
 
-The FakeCorda has several components which can also be used independently:
+The CordaSim has several components which can also be used independently:
 
 - A `CordaFlowChecker` which checks your flow for a default constructor and required Corda annotations.
 - A `SimpleJSonMarshallingService` which can be used to convert objects to JSON and vice-versa.

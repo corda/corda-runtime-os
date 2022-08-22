@@ -1,6 +1,6 @@
 package net.cordacon.example
 
-import net.corda.testutils.FakeCorda
+import net.corda.testutils.CordaSim
 import net.corda.testutils.HoldingIdentity
 import net.corda.testutils.tools.RPCRequestDataWrapper
 import net.corda.v5.base.types.MemberX500Name
@@ -13,7 +13,7 @@ class RollCallTest {
     @Test
     fun `should get roll call from multiple recipients`() {
         // Given a RollCallFlow that's been uploaded to Corda for a teacher
-        val corda = FakeCorda()
+        val corda = CordaSim()
         val teacher = MemberX500Name.parse(
             "CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US")
         val teacherId = HoldingIdentity(teacher)
@@ -68,7 +68,7 @@ class RollCallTest {
     @Test
     fun `should default to using the org name if a student has no common name`() {
         // Given a RollCallFlow that's been uploaded to Corda
-        val corda = FakeCorda()
+        val corda = CordaSim()
         val teacherId = HoldingIdentity(MemberX500Name.parse("O=BEN STEIN, L=Chicago, C=US"))
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 

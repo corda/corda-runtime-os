@@ -14,7 +14,7 @@ class DefaultServicesInjectorTest {
 
         // With some helpful classes to use in services
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
-        val fiber = BaseFakeFiber()
+        val fiber = BaseSimFiber()
 
         // When we inject services into it
         DefaultServicesInjector().injectServices(flow, member, fiber)
