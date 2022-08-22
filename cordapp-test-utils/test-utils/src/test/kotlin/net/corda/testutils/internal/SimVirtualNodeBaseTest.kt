@@ -14,12 +14,12 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class FakeVirtualNodeBaseTest {
+class SimVirtualNodeBaseTest {
 
     @Test
     fun `should instantiate flow, inject services and call flow`() {
         // Given a virtual node with dependencies
-        val fakeFiber = mock<FakeFiber>()
+        val fiber = mock<SimFiber>()
         val flowFactory = mock<FlowFactory>()
         val injector = mock<FlowServicesInjector>()
         val flow = mock<RPCStartableFlow>()
@@ -27,9 +27,9 @@ class FakeVirtualNodeBaseTest {
         whenever(flowFactory.createInitiatingFlow(any(), any())).thenReturn(flow)
 
         val holdingId = HoldingIdentity.create("IRunCordapps")
-        val virtualNode = FakeVirtualNodeBase(
+        val virtualNode = SimVirtualNodeBase(
             holdingId,
-            fakeFiber,
+            fiber,
             injector,
             flowFactory
         )
@@ -40,30 +40,30 @@ class FakeVirtualNodeBaseTest {
         virtualNode.callFlow(input)
 
         // Then it should have instantiated the node and injected the services into it
-        verify(injector, times(1)).injectServices(flow, holdingId.member, fakeFiber, flowFactory)
+        verify(injector, times(1)).injectServices(flow, holdingId.member, fiber, flowFactory)
 
         // And the flow should have been called
         verify(flow, times(1)).call(argThat {request -> request.getRequestBody() == "someData" })
     }
 
     @Test
-    fun `should return any persistence service registered for that member on the FakeFiber`() {
+    fun `should return any persistence service registered for that member on the fiber`() {
         // Given a virtual node with dependencies
-        val fakeFiber = mock<FakeFiber>()
+        val fiber = mock<SimFiber>()
         val flowFactory = mock<FlowFactory>()
         val injector = mock<FlowServicesInjector>()
 
         val holdingId = HoldingIdentity.create("IRunCordapps")
-        val virtualNode = FakeVirtualNodeBase(
+        val virtualNode = SimVirtualNodeBase(
             holdingId,
-            fakeFiber,
+            fiber,
             injector,
             flowFactory
         )
 
         // And a persistence service registered on the fiber
         val persistenceService = mock<PersistenceService>()
-        whenever(fakeFiber.getOrCreatePersistenceService(holdingId.member)).thenReturn(persistenceService)
+        whenever(fiber.getOrCreatePersistenceService(holdingId.member)).thenReturn(persistenceService)
 
         // When we get the persistence service
         val result = virtualNode.getPersistenceService()

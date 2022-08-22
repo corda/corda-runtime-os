@@ -8,8 +8,8 @@ import net.corda.v5.base.types.MemberX500Name
 /**
  * Registers, and looks up, responder flows via their protocol.
  */
-class BaseFakeFiber(private val persistenceServiceFactory : PersistenceServiceFactory = HsqlPersistenceServiceFactory())
-    : FakeFiber {
+class BaseSimFiber(private val persistenceServiceFactory : PersistenceServiceFactory = HsqlPersistenceServiceFactory())
+    : SimFiber {
 
     private val nodeClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
     private val nodeInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
