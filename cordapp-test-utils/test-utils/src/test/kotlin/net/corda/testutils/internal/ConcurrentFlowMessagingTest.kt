@@ -32,8 +32,8 @@ class ConcurrentFlowMessagingTest {
             .thenReturn(responderFlow)
 
         // And flow messaging that can open sessions to the other side,
-        // looking them up in the fake fiber
-        val fiber = mock<FakeFiber>()
+        // looking them up in the fiber
+        val fiber = mock<SimFiber>()
 
         // And a sender and receiver that will be returned by the fiber
         whenever(fiber.lookUpResponderClass(receiverX500, "ping-ack"))
@@ -68,7 +68,7 @@ class ConcurrentFlowMessagingTest {
 
         // And flow messaging that can open sessions to the other side,
         // looking them up in the fiber
-        val flowAndServiceLookUp = mock<FakeFiber>()
+        val flowAndServiceLookUp = mock<SimFiber>()
 
         // And a sender and receiver that will be returned by the fiber
         whenever(flowAndServiceLookUp.lookUpResponderInstance(receiverX500, "ping-ack"))

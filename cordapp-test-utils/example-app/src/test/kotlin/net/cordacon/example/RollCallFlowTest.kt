@@ -1,6 +1,6 @@
 package net.cordacon.example
 
-import net.corda.testutils.FakeCorda
+import net.corda.testutils.CordaSim
 import net.corda.testutils.HoldingIdentity
 import net.corda.testutils.services.SimpleJsonMarshallingService
 import net.corda.testutils.tools.RPCRequestDataWrapper
@@ -23,7 +23,7 @@ class RollCallFlowTest {
     fun `should request each student to respond to roll call`() {
         // Given a teacher with an initiating flow
         val teacherId = HoldingIdentity.create("Teach")
-        val corda = FakeCorda()
+        val corda = CordaSim()
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a list of students who will respond predictably
@@ -66,7 +66,7 @@ class RollCallFlowTest {
     fun `should retry twice if any student fails to respond`() {
         // Given a teacher with an initiating flow
         val teacherId = HoldingIdentity.create("Teach")
-        val corda = FakeCorda()
+        val corda = CordaSim()
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a student who will respond with empty string repeatedly

@@ -14,7 +14,7 @@ import javax.sql.DataSource
 
 @Suppress("TooManyFunctions")
 class JpaPersistenceUnitInfo : PersistenceUnitInfo {
-    override fun getPersistenceUnitName(): String = "FakeCordaPersistenceUnit"
+    override fun getPersistenceUnitName(): String = "CordaSimPersistenceUnit"
 
     override fun getPersistenceProviderClassName(): String = "org.hibernate.jpa.HibernatePersistenceProvider"
 

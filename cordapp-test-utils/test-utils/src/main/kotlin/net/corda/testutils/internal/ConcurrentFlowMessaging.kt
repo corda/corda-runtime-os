@@ -24,14 +24,14 @@ import kotlin.concurrent.thread
  *
  * @initiator The initiating flow
  * @flowClass The class of the initiating flow; used for looking up the protocol
- * @protocolLookUp The "fiber" in which FakeCorda registered "uploaded" responder flow classes in place of "virtual nodes"
+ * @protocolLookUp The "fiber" in which CordaSim registered "uploaded" responder flow classes in place of "virtual nodes"
  * @injector The injector for @CordaInject flow services
  * @flowFactory The factory which will initialize and inject services into the responder flow.
  */
 class ConcurrentFlowMessaging(
     private val initiator: MemberX500Name,
     private val flowClass: Class<out Flow>,
-    private val fakeFiber: FakeFiber,
+    private val fiber: SimFiber,
     private val injector: FlowServicesInjector,
     private val flowFactory: FlowFactory
 ) : FlowMessaging {
@@ -43,15 +43,15 @@ class ConcurrentFlowMessaging(
         val protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
             ?: throw NoInitiatingFlowAnnotationException(flowClass)
 
-        val responderClass = fakeFiber.lookUpResponderClass(x500Name, protocol)
+        val responderClass = fiber.lookUpResponderClass(x500Name, protocol)
         val responderFlow = if (responderClass == null) {
-            fakeFiber.lookUpResponderInstance(x500Name, protocol)
+            fiber.lookUpResponderInstance(x500Name, protocol)
                 ?: throw NoRegisteredResponderException(x500Name, protocol)
         } else {
             flowFactory.createResponderFlow(x500Name, responderClass)
         }
 
-        injector.injectServices(responderFlow, x500Name, fakeFiber, flowFactory)
+        injector.injectServices(responderFlow, x500Name, fiber, flowFactory)
 
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
