@@ -13,7 +13,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType
 import javax.sql.DataSource
 
 class HsqldbPersistenceUnitInfo : PersistenceUnitInfo {
-    override fun getPersistenceUnitName(): String = "FakeCordaPersistenceUnit"
+    override fun getPersistenceUnitName(): String = "CordaSimPersistenceUnit"
 
     override fun getPersistenceProviderClassName(): String = "org.hibernate.jpa.HibernatePersistenceProvider"
 

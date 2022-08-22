@@ -15,7 +15,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class BaseFakeFiberTest {
+class BaseSimFiberTest {
 
     private val memberA = MemberX500Name.parse("CN=CorDapperA, OU=Application, O=R3, L=London, C=GB")
     private val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
@@ -23,7 +23,7 @@ class BaseFakeFiberTest {
     @Test
     fun `should look up concrete implementations for a given protocol and a given party`() {
         // Given a fiber with a concrete implementation registered for a protocol
-        val fiber = BaseFakeFiber()
+        val fiber = BaseSimFiber()
         val flow = Flow1()
         fiber.registerResponderInstance(memberA, "protocol-1", flow)
 
@@ -37,7 +37,7 @@ class BaseFakeFiberTest {
     @Test
     fun `should look up the matching flow class for a given protocol and a given party`() {
         // Given a fiber and two nodes with some shared flow protocol
-        val fiber = BaseFakeFiber()
+        val fiber = BaseSimFiber()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderClass(memberA, "protocol-2", Flow2::class.java)
         fiber.registerResponderClass(memberB, "protocol-1", Flow3InitBy1::class.java)
@@ -53,7 +53,7 @@ class BaseFakeFiberTest {
     @Test
     fun `should prevent us from uploading a responder twice for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = BaseFakeFiber()
+        val fiber = BaseSimFiber()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-1", Flow2())
 
@@ -77,7 +77,7 @@ class BaseFakeFiberTest {
     @Test
     fun `should tell us if it cant find a flow for a given party and protocol`() {
         // Given a fiber and a node with a flow and protocol already
-        val fiber = BaseFakeFiber()
+        val fiber = BaseSimFiber()
         fiber.registerResponderClass(memberA, "protocol-1", Flow1::class.java)
         fiber.registerResponderInstance(memberB, "protocol-2", Flow2())
 
@@ -92,7 +92,7 @@ class BaseFakeFiberTest {
 
     @Test
     fun `should create then retrieve the same persistence service for a member`() {
-        val fiber = BaseFakeFiber()
+        val fiber = BaseSimFiber()
         val persistenceService1 = fiber.getOrCreatePersistenceService(memberA)
         val persistenceService2 = fiber.getOrCreatePersistenceService(memberA)
         assertThat(persistenceService1, `is`(persistenceService2))
@@ -106,7 +106,7 @@ class BaseFakeFiberTest {
         whenever(psFactory.createPersistenceService(any())).thenReturn(persistenceService)
 
         // When we create a persistence service, then close the fiber
-        val fiber = BaseFakeFiber(psFactory)
+        val fiber = BaseSimFiber(psFactory)
         fiber.getOrCreatePersistenceService(memberA)
         fiber.close()
 
