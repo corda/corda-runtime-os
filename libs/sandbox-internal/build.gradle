@@ -38,6 +38,7 @@ dependencies {
 
     cpbs project(path: 'sandbox-cpk-one', configuration: 'cordaCPB')
     cpbs project(path: 'sandbox-cpk-three', configuration: 'cordaCPB')
+    cpbs project(path: 'sandbox-fragment-cpk', configuration: 'cordaCPB')
     cpbs project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPB')
 
     integrationTestImplementation project(':testing:sandboxes')
