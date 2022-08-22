@@ -67,7 +67,9 @@ class FlowStatusFeedSmokeTest {
             startFlow(clientRequestId)
 
             eventually(Duration.ofSeconds(300)) {
-                assertThat(wsHandler.messageQueue).hasSize(3)
+                assertThat(wsHandler.messageQueue.size).isEqualTo(3)
+            }
+            eventually {
                 assertThat(wsHandler.messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
                 assertThat(wsHandler.messageQueue[1]).contains(FlowStates.RUNNING.name)
                 assertThat(wsHandler.messageQueue[2]).contains(FlowStates.COMPLETED.name)
@@ -86,11 +88,13 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId)
 
                 eventually(Duration.ofSeconds(300)) {
-                    assertThat(wsHandler1.messageQueue).hasSize(3)
+                    assertThat(wsHandler1.messageQueue.size).isEqualTo(3)
+                    assertThat(wsHandler2.messageQueue.size).isEqualTo(3)
+                }
+                eventually {
                     assertThat(wsHandler1.messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
                     assertThat(wsHandler1.messageQueue[1]).contains(FlowStates.RUNNING.name)
                     assertThat(wsHandler1.messageQueue[2]).contains(FlowStates.COMPLETED.name)
-                    assertThat(wsHandler2.messageQueue).hasSize(3)
                     assertThat(wsHandler2.messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
                     assertThat(wsHandler2.messageQueue[1]).contains(FlowStates.RUNNING.name)
                     assertThat(wsHandler2.messageQueue[2]).contains(FlowStates.COMPLETED.name)
@@ -108,12 +112,12 @@ class FlowStatusFeedSmokeTest {
         val flowStatusFeedPath2 = "/flow/$bobHoldingId/$clientRequestId2"
 
         fun assertNormalFlowStatusesForRequest(messageQueue: List<String>, clientRequestId1: String) {
-            assertThat(messageQueue).hasSize(3)
-            val flowStatus1 = messageQueue[0]
-            assertThat(flowStatus1).contains(FlowStates.START_REQUESTED.name)
-            assertThat(flowStatus1).contains(clientRequestId1)
+            assertThat(messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
+            assertThat(messageQueue[0]).contains(clientRequestId1)
             assertThat(messageQueue[1]).contains(FlowStates.RUNNING.name)
+            assertThat(messageQueue[1]).contains(clientRequestId1)
             assertThat(messageQueue[2]).contains(FlowStates.COMPLETED.name)
+            assertThat(messageQueue[2]).contains(clientRequestId1)
         }
 
         useWebsocketConnection(flowStatusFeedPath1) { wsHandler1 ->
@@ -122,8 +126,8 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId2)
 
                 eventually(Duration.ofSeconds(300)) {
-                    assertThat(wsHandler1.messageQueue).hasSize(3)
-                    assertThat(wsHandler2.messageQueue).hasSize(3)
+                    assertThat(wsHandler1.messageQueue.size).isEqualTo(3)
+                    assertThat(wsHandler2.messageQueue.size).isEqualTo(3)
                 }
 
                 eventually {
@@ -152,7 +156,9 @@ class FlowStatusFeedSmokeTest {
 
         client.use {
             eventually {
-                assertThat(wsHandler.messageQueue).hasSize(1)
+                assertThat(wsHandler.messageQueue.size).isEqualTo(1)
+            }
+            eventually {
                 assertThat(wsHandler.messageQueue[0]).contains(FlowStates.COMPLETED.name)
             }
 
@@ -183,6 +189,9 @@ class FlowStatusFeedSmokeTest {
 
         eventually {
             assertThat(wsHandler1.messageQueue).hasSize(1)
+        }
+
+        eventually {
             assertThat(wsHandler1.messageQueue[0]).contains(FlowStates.COMPLETED.name)
         }
 
@@ -202,6 +211,9 @@ class FlowStatusFeedSmokeTest {
 
         eventually {
             assertThat(wsHandler2.messageQueue).hasSize(1)
+        }
+
+        eventually {
             assertThat(wsHandler2.messageQueue[0]).contains(FlowStates.COMPLETED.name)
         }
 
