@@ -1,8 +1,9 @@
 package net.cordacon.example
 
-import net.corda.testutils.FakeCorda
+import net.corda.testutils.CordaSim
+import net.corda.testutils.HoldingIdentity
 import net.corda.testutils.services.SimpleJsonMarshallingService
-import net.corda.testutils.tools.RPCRequestDataMock
+import net.corda.testutils.tools.RPCRequestDataWrapper
 import net.corda.testutils.tools.ResponderMock
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -21,9 +22,9 @@ class RollCallFlowTest {
     @Test
     fun `should request each student to respond to roll call`() {
         // Given a teacher with an initiating flow
-        val teacher = MemberX500Name.parse("CN=Teach, OU=Economics, O=Grange Hill, L=London, C=GB")
-        val corda = FakeCorda()
-        corda.upload(teacher, RollCallFlow::class.java)
+        val teacherId = HoldingIdentity.create("Teach")
+        val corda = CordaSim()
+        val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a list of students who will respond predictably
         val students = listOf("Alpha", "Beta", "Gamma").map {
@@ -40,11 +41,11 @@ class RollCallFlowTest {
         responses.forEach {
             val student = students[it.key]!!
             responder.whenever(RollCallRequest(student), listOf(RollCallResponse(it.value)))
-            corda.upload(MemberX500Name.parse(student), "roll-call", responder)
+            corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(student)), "roll-call", responder)
         }
 
         // When we contact the students
-        val result = corda.invoke(teacher, RPCRequestDataMock.fromData(
+        val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students.values.toList())))
@@ -64,24 +65,24 @@ class RollCallFlowTest {
     @Test
     fun `should retry twice if any student fails to respond`() {
         // Given a teacher with an initiating flow
-        val teacher = MemberX500Name.parse("CN=Teach, OU=Economics, O=Grange Hill, L=London, C=GB")
-        val corda = FakeCorda()
-        corda.upload(teacher, RollCallFlow::class.java)
+        val teacherId = HoldingIdentity.create("Teach")
+        val corda = CordaSim()
+        val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a student who will respond with empty string repeatedly
-        val student = "CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB"
+        val studentId = "CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB"
         val responder = ResponderMock<RollCallRequest, RollCallResponse>()
-        responder.whenever(RollCallRequest(student), listOf(RollCallResponse("")))
+        responder.whenever(RollCallRequest(studentId), listOf(RollCallResponse("")))
 
         // ...for both kinds of flow
-        corda.upload(MemberX500Name.parse(student), "roll-call", responder)
-        corda.upload(MemberX500Name.parse(student), "absence-call", responder)
+        corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "roll-call", responder)
+        corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "absence-call", responder)
 
         // When we contact the student
-        val result = corda.invoke(teacher, RPCRequestDataMock.fromData(
+        val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(listOf(student))))
+            RollCallInitiationRequest(listOf(studentId))))
 
         // Then it should just be the teacher calling into empty air
         assertThat(result, `is`("""
@@ -95,21 +96,21 @@ class RollCallFlowTest {
     @Test
     fun `should use the AbsenceFlow to do the retry`() {
         // Given a teacher with an initiating flow
-        val teacher = MemberX500Name.parse("CN=Teach, OU=Economics, O=Grange Hill, L=London, C=GB")
+        val teacherId = HoldingIdentity.create("Teach")
         val flow = RollCallFlow()
         flow.flowMessaging = mock()
         flow.flowEngine = mock()
         flow.persistenceService = mock()
         flow.jsonMarshallingService = SimpleJsonMarshallingService()
 
-        whenever(flow.flowEngine.virtualNodeName).thenReturn(teacher)
+        whenever(flow.flowEngine.virtualNodeName).thenReturn(teacherId.member)
 
         // And a student who we'll mimic being absent
-        val student = "CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB"
+        val studentId = HoldingIdentity.create("Zammo")
 
         val flowSession = mock<FlowSession>()
-        whenever(flowSession.counterparty).thenReturn(MemberX500Name.parse(student))
-        whenever(flow.flowMessaging.initiateFlow(MemberX500Name.parse(student))).thenReturn(flowSession)
+        whenever(flowSession.counterparty).thenReturn(studentId.member)
+        whenever(flow.flowMessaging.initiateFlow(studentId.member)).thenReturn(flowSession)
         whenever(flowSession.sendAndReceive<RollCallResponse>(any(), any()))
             .thenReturn(UntrustworthyData(RollCallResponse("")))
 
@@ -117,10 +118,10 @@ class RollCallFlowTest {
         whenever(flow.flowEngine.subFlow(any<AbsenceSubFlow>())).thenReturn("")
 
         // When we call the flow for a student who is absent
-        flow.call(RPCRequestDataMock.fromData(
+        flow.call(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(listOf(student))).toRPCRequestData())
+            RollCallInitiationRequest(listOf(studentId.member.toString()))).toRPCRequestData())
 
         // Then the subflow should have been called twice
         verify(flow.flowEngine, times(2)).subFlow(any<AbsenceSubFlow>())

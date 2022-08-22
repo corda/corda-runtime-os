@@ -8,13 +8,13 @@ import net.corda.v5.application.marshalling.MarshallingService
 
 /**
  * Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted by Corda into
- * an RPCRequestData interface. This class represents the equivalent for the FakeCorda.
+ * an RPCRequestData interface. This class represents the equivalent for the CordaSim.
  *
  * @clientRequestId the id which uniquely identifies a request
  * @flowClassName the name of the flow class to run
  * @requestData the data for the request
  */
-data class RPCRequestDataMock(val clientRequestId : String, val flowClassName: String, val requestData : String) {
+data class RPCRequestDataWrapper(val clientRequestId : String, val flowClassName: String, val requestData : String) {
 
     companion object {
         private val jms = SimpleJsonMarshallingService()
@@ -32,8 +32,8 @@ data class RPCRequestDataMock(val clientRequestId : String, val flowClassName: S
          * @requestData the data for the request; this will be converted to a string before being converted back again
          * on consumption.
          */
-        fun <T : Any> fromData(clientRequestId: String, flowClass: Class<out RPCStartableFlow>, requestData: T): RPCRequestDataMock =
-            RPCRequestDataMock(clientRequestId, flowClass.name, jms.format(requestData))
+        fun <T : Any> fromData(clientRequestId: String, flowClass: Class<out RPCStartableFlow>, requestData: T): RPCRequestDataWrapper =
+            RPCRequestDataWrapper(clientRequestId, flowClass.name, jms.format(requestData))
     }
 
     /**
