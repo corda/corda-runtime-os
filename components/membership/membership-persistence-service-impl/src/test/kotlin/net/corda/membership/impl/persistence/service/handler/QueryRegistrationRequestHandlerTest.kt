@@ -22,6 +22,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -74,13 +75,13 @@ class QueryRegistrationRequestHandlerTest {
         on { createQuery(query) } doReturn actualQuery
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
-        on {createEntityManager()} doReturn entityManager
+        on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on {getOrCreateEntityManagerFactory(any(), any(), any())} doReturn entityManagerFactory
+        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
     }
     private val nodeInfo = mock<VirtualNodeInfo> {
-        on { holdingIdentity } doReturn holdingIdentity.toCorda()
+        on { vaultDmlConnectionId } doReturn UUID(0, 0)
     }
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(holdingIdentity.toCorda().shortHash) } doReturn nodeInfo
@@ -97,7 +98,6 @@ class QueryRegistrationRequestHandlerTest {
     val request = QueryRegistrationRequest(
         registrationId
     )
-
 
     private val handler = QueryRegistrationRequestHandler(service)
 
@@ -116,7 +116,6 @@ class QueryRegistrationRequestHandlerTest {
             )
         )
 
-
         val result = handler.invoke(context, request)
 
         assertThat(result.registrationRequest?.registrationId)
@@ -124,18 +123,15 @@ class QueryRegistrationRequestHandlerTest {
             .isEqualTo(registrationId)
     }
 
-
     @Test
     fun `invoke return empty response when entity was not found`() {
         whenever(actualQuery.resultList).doReturn(
             emptyList()
         )
 
-
         val result = handler.invoke(context, request)
 
         assertThat(result.registrationRequest)
             .isNull()
     }
-
 }
