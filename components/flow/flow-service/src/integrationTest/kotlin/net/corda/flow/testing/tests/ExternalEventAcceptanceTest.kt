@@ -266,7 +266,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a 'retriable' error response has been received receiving an event will resend the external event if the retry window has been surpassed`() {
         given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10L)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10.seconds.toMillis())
 
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
