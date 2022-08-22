@@ -104,7 +104,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving an external event response with the correct request id resumes the flow`(
         factory: Class<out ExternalEventFactory<*, *, *>>,
         input: Any,
-        @Suppress("UNUSED_PARAMETER") response: Any
+        response: Any
     ) {
 
         given {
