@@ -71,7 +71,9 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
 import java.io.StringWriter
 import java.nio.ByteBuffer
@@ -86,7 +88,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 import org.mockito.kotlin.mock
 import java.time.Instant
 import java.util.UUID
-
 class P2PLayerEndToEndTest {
 
     companion object {
@@ -109,7 +110,7 @@ class P2PLayerEndToEndTest {
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     @Test
-    @Timeout(60)
+    @Timeout(600)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         val numberOfMessages = 10
         val aliceId = Identity("O=Alice, L=London, C=GB", "sslkeystore_alice")
@@ -142,6 +143,9 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
+                //val threeMinutesInMillis: Long = 3*60*1000
+                //Thread.sleep(threeMinutesInMillis)
+
                 eventually(10.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
@@ -155,6 +159,9 @@ class P2PLayerEndToEndTest {
                 hostAApplicationReader.stop()
                 hostBApplicationReaderWriter.stop()
                 hostAMarkerReader.stop()
+
+                //val threeMinutesInMillis: Long = 3*60*1000
+                //Thread.sleep(threeMinutesInMillis)
             }
         }
     }

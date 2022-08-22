@@ -132,7 +132,7 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
-    private val fiveDaysInMilliseconds = 432000000L
+    //private val fiveDaysInMilliseconds = 120000L //432000000L
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -141,13 +141,13 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
-    private val executorService = executorServiceFactory()
+    //private val executorService = executorServiceFactory()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
-        onClose = { executorService.shutdownNow() },
+        //onClose = { executorService.shutdownNow() },
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
@@ -550,7 +550,11 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
-        refreshSessionAndLog(sessionCounterparties, message.header.sessionId)
+       /* executorService.schedule(
+            { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
+            fiveDaysInMilliseconds,
+            TimeUnit.MILLISECONDS
+        )*/
         return null
     }
 
@@ -559,11 +563,7 @@ internal class SessionManagerImpl(
             "Outbound session $sessionId (local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId}) timed " +
                     "out to refresh ephemeral keys and it will be cleaned up."
         )
-        executorService.schedule(
-            { refreshOutboundSession(sessionCounterparties, sessionId) },
-            fiveDaysInMilliseconds,
-            TimeUnit.MILLISECONDS
-        )
+        refreshOutboundSession(sessionCounterparties, sessionId)
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
