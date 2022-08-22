@@ -11,6 +11,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -28,6 +29,11 @@ class TestMembershipQueryClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : TestMembershipQueryClient {
+    companion object {
+        val logger = contextLogger()
+        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
+    }
+
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<MembershipQueryClient>()) { event, coordinator ->
             if (event is StartEvent) {
@@ -36,21 +42,30 @@ class TestMembershipQueryClientImpl @Activate constructor(
         }
 
     override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         queryFilter: Collection<HoldingIdentity>
     ): MembershipQueryResult<Collection<MemberInfo>> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String
     ): MembershipQueryResult<RegistrationRequest> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun queryMembersSignatures(
@@ -73,7 +88,10 @@ class TestMembershipQueryClientImpl @Activate constructor(
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override val isRunning: Boolean

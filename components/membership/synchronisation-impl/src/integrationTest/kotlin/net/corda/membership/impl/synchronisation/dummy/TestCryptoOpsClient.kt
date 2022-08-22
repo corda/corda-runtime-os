@@ -21,7 +21,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
 
 interface TestCryptoOpsClient : CryptoOpsClient
 
@@ -47,11 +47,17 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun generateKeyPair(
@@ -93,11 +99,17 @@ class TestCryptoOpsClientImpl @Activate constructor(
         scheme: String,
         context: Map<String, String>
     ): PublicKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun freshKey(tenantId: String, category: String, scheme: String, context: Map<String, String>): PublicKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun freshKey(
@@ -107,7 +119,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         scheme: String,
         context: Map<String, String>
     ): PublicKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun sign(
@@ -125,7 +140,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun lookup(
@@ -135,7 +153,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         orderBy: CryptoKeyOrderBy,
         filter: Map<String, String>
     ): List<CryptoSigningKey> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
@@ -152,7 +173,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun deriveSharedSecret(
@@ -161,7 +185,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         otherPublicKey: PublicKey,
         context: Map<String, String>
     ): ByteArray {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override val isRunning: Boolean

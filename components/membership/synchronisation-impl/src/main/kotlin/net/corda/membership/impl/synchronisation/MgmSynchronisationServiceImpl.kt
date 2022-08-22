@@ -45,7 +45,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [SynchronisationService::class])

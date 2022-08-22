@@ -79,8 +79,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
-import java.util.concurrent.*
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
 class MgmSynchronisationServiceImplTest {
