@@ -37,6 +37,9 @@ pipeline {
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
         GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
+        E2E_CLUSTER_A_RPC_PORT=8888
+        E2E_CLUSTER_B_RPC_PORT=8887
+        E2E_CLUSTER_C_RPC_PORT=8889
     }
 
     options {
@@ -138,13 +141,22 @@ pipeline {
                 sh '''
                     # Forward ports for testing
                     nohup kubectl port-forward -n ${NAMESPACE} prereqs-kafka-0 9092 > forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-rpc-worker 8888 >> forward.txt 2>&1 &
+
+                    # Forward RPC worker port
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-rpc-worker ${E2E_CLUSTER_A_RPC_PORT}:8888 >> forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-bob-rpc-worker ${E2E_CLUSTER_B_RPC_PORT}:8888 >> forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-caroline-rpc-worker ${E2E_CLUSTER_C_RPC_PORT}:8888 >> forward.txt 2>&1 &
+
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-crypto-worker 7001:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-db-worker 7002:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-flow-worker 7003:7000 >> forward.txt 2>&1 &
                     nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-rpc-worker 7004:7000 >> forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
+
+                    export E2E_CLUSTER_A_P2P_HOST="corda-alice-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+                    export E2E_CLUSTER_B_P2P_HOST="corda-bob-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+                    export E2E_CLUSTER_C_P2P_HOST="corda-caroline-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
 
                     ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
