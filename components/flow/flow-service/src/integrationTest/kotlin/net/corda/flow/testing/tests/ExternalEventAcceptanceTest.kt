@@ -15,6 +15,7 @@ import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -258,6 +259,46 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
                 noExternalEvent(TOPIC)
+            }
+        }
+    }
+
+    @Test
+    fun `Given a 'retriable' error response has been received receiving an event will resend the external event if the retry window has been surpassed`() {
+        given {
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10L)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.ExternalEvent(
+                        REQUEST_ID,
+                        AnyResponseReceivedFactory::class.java,
+                        ANY_INPUT
+                    )
+                )
+        }
+
+        `when` {
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noExternalEvent(TOPIC)
+            }
+        }
+
+        // Wait for the resend window to be passed
+        Thread.sleep(10.seconds.toMillis())
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                externalEvent(TOPIC, KEY, ANY_INPUT)
             }
         }
     }
