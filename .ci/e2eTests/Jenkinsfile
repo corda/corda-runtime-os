@@ -1,5 +1,10 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
+import groovy.transform.Field
+
+@Field
+String k8Namespace = "run-${UUID.randomUUID().toString()}"
+
 pipeline {
     agent {
         docker {
@@ -32,14 +37,17 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        NAMESPACE = "run-${UUID.randomUUID().toString()}"
+        NAMESPACE = "$k8Namespace"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
         GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
-        E2E_CLUSTER_A_RPC_PORT=8888
-        E2E_CLUSTER_B_RPC_PORT=8887
+        E2E_CLUSTER_A_RPC_PORT=8887
+        E2E_CLUSTER_B_RPC_PORT=8888
         E2E_CLUSTER_C_RPC_PORT=8889
+        E2E_CLUSTER_A_P2P_HOST="corda-alice-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+        E2E_CLUSTER_B_P2P_HOST="corda-bob-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+        E2E_CLUSTER_C_P2P_HOST="corda-caroline-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
     }
 
     options {
@@ -133,33 +141,21 @@ pipeline {
         }
         stage('Forward port and run tests') {
             steps {
+                script {
+                    def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
+                    def clusters = ['alice','bob','caroline'] // parameratize fuck you
 
-                //for details see
-                // https://github.com/corda/corda-runtime-os/blob/release/ent/5.0/applications/http-rpc-gateway/src/e2e-test/README.md
+                    portForwarding("prereqs-kafka-0", 9092)
 
+                    clusters.eachWithIndex {c, index  ->
+                       portForwarding("deploy/corda-$c-rpc-worker", 8886 + index+1, 8888)
+                    }
+                    workers.eachWithIndex {w, index  ->
+                       portForwarding("deploy/corda-alice-$w", 7001 + index+1, 7000)
+                    }
+                }
 
-                sh '''
-                    # Forward ports for testing
-                    nohup kubectl port-forward -n ${NAMESPACE} prereqs-kafka-0 9092 > forward.txt 2>&1 &
-
-                    # Forward RPC worker port
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-rpc-worker ${E2E_CLUSTER_A_RPC_PORT}:8888 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-bob-rpc-worker ${E2E_CLUSTER_B_RPC_PORT}:8888 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-caroline-rpc-worker ${E2E_CLUSTER_C_RPC_PORT}:8888 >> forward.txt 2>&1 &
-
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-crypto-worker 7001:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-db-worker 7002:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-flow-worker 7003:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-alice-rpc-worker 7004:7000 >> forward.txt 2>&1 &
-                    procno=$! #remember process number started in background
-                    trap "kill -9 ${procno}" EXIT
-
-                    export E2E_CLUSTER_A_P2P_HOST="corda-alice-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
-                    export E2E_CLUSTER_B_P2P_HOST="corda-bob-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
-                    export E2E_CLUSTER_C_P2P_HOST="corda-caroline-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
-
-                    ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
-                '''
+                sh "./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}"
             }
             post {
                 always {
@@ -167,6 +163,7 @@ pipeline {
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
+                        pgrep nohup | xargs kill -9
                     '''
                     archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
                     sh 'rm -f forward.txt logs.txt describe.txt'
@@ -195,4 +192,18 @@ pipeline {
 // Helper method to sanitize edge cases of very long branch names
 def sanitizedBranchName(){
     return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
+}
+
+        // TODO where needed
+        //  procno=$! #remember process number started in background
+        //  trap 'kill -9 ${procno}' EXIT
+
+def portForwarding(def name, def port, def portMapping = 0){
+    if(name.contains('prereqs-kafka')) {
+        sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port > forward.txt 2>&1 &"
+    } else {
+        sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port:$portMapping >> forward.txt 2>&1 &"
+    }
+      sh '''procno=$! #remember process number started in background
+         trap 'kill -9 ${procno}' EXIT '''
 }
