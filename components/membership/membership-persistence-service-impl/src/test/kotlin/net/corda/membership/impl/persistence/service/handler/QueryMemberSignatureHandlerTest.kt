@@ -10,8 +10,6 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.response.query.MemberSignature
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -55,8 +53,9 @@ class QueryMemberSignatureHandlerTest {
             )
         } doReturn keyValuePairListDeserializer
     }
+    private val vaultDmlConnectionId = UUID(0, 0)
     private val virtualNodeInfo = VirtualNodeInfo(
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cpiIdentifier = CpiIdentifier(
             "", "", null
         ),
@@ -75,9 +74,8 @@ class QueryMemberSignatureHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            getOrCreateEntityManagerFactory(
-                VirtualNodeDbType.VAULT.getConnectionName(virtualNodeInfo.holdingIdentity.shortHash),
-                DbPrivilege.DML,
+            createEntityManagerFactory(
+                vaultDmlConnectionId,
                 jpaEntitiesSet
             )
         } doReturn factory
