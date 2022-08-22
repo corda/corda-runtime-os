@@ -18,6 +18,7 @@ import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 
@@ -167,7 +168,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually {
+                eventually(duration = 1.minutes) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
                     assertThat(registrationStatus?.registrationStatus)
                         .isNotNull
