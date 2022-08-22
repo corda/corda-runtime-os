@@ -34,6 +34,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.time.Instant
+import java.util.Hashtable
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.random.Random.Default.nextBytes
@@ -77,6 +78,7 @@ class SandboxServiceImplTests {
 
         whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
         whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
+        whenever(resolveBundles(any())).thenReturn(true)
 
         cpksAndContents.forEach { contents ->
             val mainBundlePath = contents.cpk.metadata.mainBundle
@@ -94,6 +96,7 @@ class SandboxServiceImplTests {
 
                 val bundle = mockBundle(bundleName, bundleClass, bundleLocation)
                 whenever(getBundle(bundleClass)).thenReturn(bundle)
+                whenever(bundle.headers).thenReturn(Hashtable())
                 whenever(bundle.start()).then {
                     if (bundleName in notStartableBundles) throw BundleException("Start")
                     startedBundles.add(bundle)

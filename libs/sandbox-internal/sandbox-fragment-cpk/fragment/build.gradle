@@ -1,0 +1,15 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'java-library'
+}
+
+group 'com.example'
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Bundle-SymbolicName: com.example.sandbox-fragment
+Fragment-Host: com.example.sandbox-fragment-cpk
+'''
+    }
+}
