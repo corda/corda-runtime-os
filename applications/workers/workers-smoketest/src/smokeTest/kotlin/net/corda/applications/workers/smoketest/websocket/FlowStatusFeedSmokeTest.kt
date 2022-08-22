@@ -67,10 +67,10 @@ class FlowStatusFeedSmokeTest {
             startFlow(clientRequestId)
 
             eventually(Duration.ofSeconds(300)) {
-                assertThat(wsHandler.messageQueue.size).isEqualTo(3)
+                assertThat(wsHandler.messageQueueSnapshot.size).isEqualTo(3)
             }
             eventually {
-                val messageQueue = wsHandler.messageQueue
+                val messageQueue = wsHandler.messageQueueSnapshot
                 assertThat(messageQueue[0]).contains(FlowStates.START_REQUESTED.name)
                 assertThat(messageQueue[1]).contains(FlowStates.RUNNING.name)
                 assertThat(messageQueue[2]).contains(FlowStates.COMPLETED.name)
@@ -89,12 +89,12 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId)
 
                 eventually(Duration.ofSeconds(300)) {
-                    assertThat(wsHandler1.messageQueue.size).isEqualTo(3)
-                    assertThat(wsHandler2.messageQueue.size).isEqualTo(3)
+                    assertThat(wsHandler1.messageQueueSnapshot.size).isEqualTo(3)
+                    assertThat(wsHandler2.messageQueueSnapshot.size).isEqualTo(3)
                 }
                 eventually {
-                    val messageQueue1 = wsHandler1.messageQueue
-                    val messageQueue2 = wsHandler2.messageQueue
+                    val messageQueue1 = wsHandler1.messageQueueSnapshot
+                    val messageQueue2 = wsHandler2.messageQueueSnapshot
                     assertThat(messageQueue1[0]).contains(FlowStates.START_REQUESTED.name)
                     assertThat(messageQueue1[1]).contains(FlowStates.RUNNING.name)
                     assertThat(messageQueue1[2]).contains(FlowStates.COMPLETED.name)
@@ -129,13 +129,13 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId2)
 
                 eventually(Duration.ofSeconds(300)) {
-                    assertThat(wsHandler1.messageQueue.size).isEqualTo(3)
-                    assertThat(wsHandler2.messageQueue.size).isEqualTo(3)
+                    assertThat(wsHandler1.messageQueueSnapshot.size).isEqualTo(3)
+                    assertThat(wsHandler2.messageQueueSnapshot.size).isEqualTo(3)
                 }
 
                 eventually {
-                    assertNormalFlowStatusesForRequest(wsHandler1.messageQueue, clientRequestId1)
-                    assertNormalFlowStatusesForRequest(wsHandler2.messageQueue, clientRequestId2)
+                    assertNormalFlowStatusesForRequest(wsHandler1.messageQueueSnapshot, clientRequestId1)
+                    assertNormalFlowStatusesForRequest(wsHandler2.messageQueueSnapshot, clientRequestId2)
                 }
             }
         }
@@ -159,10 +159,10 @@ class FlowStatusFeedSmokeTest {
 
         client.use {
             eventually {
-                assertThat(wsHandler.messageQueue.size).isEqualTo(1)
+                assertThat(wsHandler.messageQueueSnapshot.size).isEqualTo(1)
             }
             eventually {
-                assertThat(wsHandler.messageQueue[0]).contains(FlowStates.COMPLETED.name)
+                assertThat(wsHandler.messageQueueSnapshot[0]).contains(FlowStates.COMPLETED.name)
             }
             eventually {
                 assertFalse(wsHandler.isConnected)
@@ -190,11 +190,11 @@ class FlowStatusFeedSmokeTest {
         // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
 
         eventually {
-            assertThat(wsHandler1.messageQueue).hasSize(1)
+            assertThat(wsHandler1.messageQueueSnapshot).hasSize(1)
         }
 
         eventually {
-            assertThat(wsHandler1.messageQueue[0]).contains(FlowStates.COMPLETED.name)
+            assertThat(wsHandler1.messageQueueSnapshot[0]).contains(FlowStates.COMPLETED.name)
         }
 
         eventually {
@@ -212,11 +212,11 @@ class FlowStatusFeedSmokeTest {
         // The websocket channel is terminated too quickly to use eventually to assert wsHandler.isConnected
 
         eventually {
-            assertThat(wsHandler2.messageQueue).hasSize(1)
+            assertThat(wsHandler2.messageQueueSnapshot).hasSize(1)
         }
 
         eventually {
-            assertThat(wsHandler2.messageQueue[0]).contains(FlowStates.COMPLETED.name)
+            assertThat(wsHandler2.messageQueueSnapshot[0]).contains(FlowStates.COMPLETED.name)
         }
 
         eventually {
