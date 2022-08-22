@@ -16,6 +16,17 @@ class ConsensualSignedTransactionImpl(
     ): ConsensualSignedTransaction
 {
 
+    override fun equals(other: Any?): Boolean =
+        (other === this) ||
+            ((other is ConsensualSignedTransactionImpl) &&
+                (other.wireTransaction == wireTransaction) &&
+                (other.signatures.size == signatures.size) &&
+                    other.signatures.withIndex().all{
+                        it.value == signatures[it.index]
+                    }
+            )
+    override fun hashCode(): Int = wireTransaction.hashCode() + signatures.hashCode() * 31
+
     init {
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "

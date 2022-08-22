@@ -13,6 +13,13 @@ class ConsensualLedgerTransactionImpl(
     private val serializer: SerializationService
     ) : ConsensualLedgerTransaction {
 
+    override fun equals(other: Any?): Boolean =
+        (other === this) ||
+            ((other is ConsensualLedgerTransactionImpl) &&
+                (other.wireTransaction == wireTransaction)
+            )
+    override fun hashCode(): Int = wireTransaction.hashCode()
+
     override val id: SecureHash
         get() = wireTransaction.id
 

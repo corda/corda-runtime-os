@@ -28,6 +28,16 @@ class ConsensualTransactionBuilderImpl(
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
+    override fun equals(other: Any?): Boolean =
+        (other === this) ||
+            ((other is ConsensualTransactionBuilderImpl) &&
+                (other.states.size == states.size) &&
+                other.states.withIndex().all{
+                    it.value == states[it.index]
+                }
+            )
+    override fun hashCode(): Int = states.hashCode()
+
     private fun copy(
         states: List<ConsensualState> = this.states
     ): ConsensualTransactionBuilderImpl {

@@ -24,5 +24,11 @@ class PrivacySaltImpl(bytes: ByteArray) : OpaqueBytes(bytes), PrivacySalt {
     companion object {
         private const val MINIMUM_SIZE = 32
     }
-}
 
+    override fun equals(other: Any?): Boolean =
+        other === this ||
+                other is PrivacySaltImpl &&
+                other.bytes == bytes
+
+    override fun hashCode(): Int = bytes.hashCode()
+}
