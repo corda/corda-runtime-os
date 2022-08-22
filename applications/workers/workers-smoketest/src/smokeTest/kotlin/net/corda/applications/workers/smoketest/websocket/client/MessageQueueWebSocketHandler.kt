@@ -6,9 +6,12 @@ import net.corda.applications.workers.smoketest.contextLogger
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint
 
-class MessageQueueWebsocketHandler(
-    override val messageQueue: MutableList<String> = LinkedList(),
-) : NoOpEndpoint(), InternalWebsocketHandler {
+class MessageQueueWebSocketHandler : NoOpEndpoint(), InternalWebsocketHandler {
+
+    private val _messageQueue = LinkedList<String>()
+
+    override val messageQueue: List<String>
+        get() = ArrayList(_messageQueue)
 
     private companion object {
         val log = contextLogger()
@@ -26,11 +29,11 @@ class MessageQueueWebsocketHandler(
 
     override fun onWebSocketText(message: String) {
         log.info("Received message: $message")
-        messageQueue.add(message)
+        _messageQueue.add(message)
     }
 
     override fun send(message: String) {
-        if(super.isConnected()) {
+        if (super.isConnected()) {
             try {
                 log.info("Attempting to send message from client websocket handler to server. Message: $message")
                 remote.sendString(message)
