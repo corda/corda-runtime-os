@@ -1,7 +1,6 @@
 package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -35,7 +34,6 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 
 @Suppress("LongParameterList")
 @Component(service = [MembershipPersistenceClient::class])
@@ -44,7 +42,6 @@ class MembershipPersistenceClientImpl(
     publisherFactory: PublisherFactory,
     configurationReadService: ConfigurationReadService,
     private val memberInfoFactory: MemberInfoFactory,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     clock: Clock,
 ) : MembershipPersistenceClient, AbstractPersistenceClient(
     coordinatorFactory,
@@ -63,14 +60,11 @@ class MembershipPersistenceClientImpl(
         configurationReadService: ConfigurationReadService,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
-        @Reference(service = CordaAvroSerializationFactory::class)
-        cordaAvroSerializationFactory: CordaAvroSerializationFactory
     ) : this(
         coordinatorFactory,
         publisherFactory,
         configurationReadService,
         memberInfoFactory,
-        cordaAvroSerializationFactory,
         UTCClock(),
     )
 
@@ -80,11 +74,6 @@ class MembershipPersistenceClientImpl(
 
     override val groupName = "membership.db.persistence.client.group"
     override val clientName = "membership.db.persistence.client"
-
-    private val keyValuePairListSerializer =
-        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
-            logger.error("Failed to serialize key value pair list.")
-        }
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
@@ -141,9 +130,7 @@ class MembershipPersistenceClientImpl(
                 with(registrationRequest) {
                     MembershipRegistrationRequest(
                         registrationId,
-                        ByteBuffer.wrap(
-                            keyValuePairListSerializer.serialize(memberContext.toAvro()),
-                        ),
+                        memberContext,
                         CryptoSignatureWithKey(
                             publicKey,
                             signature,

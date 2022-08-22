@@ -23,7 +23,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -165,7 +164,10 @@ class StartRegistrationHandler(
     }
 
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequest): MemberInfo {
-        val memberContext = registrationRequest.memberContext
+        val memberContext = keyValuePairListDeserializer
+            .deserialize(registrationRequest.memberContext.array())
+            ?.items?.associate { it.key to it.value }?.toSortedMap()
+            ?: emptyMap()
         validateRegistrationRequest(memberContext.entries.isNotEmpty()) {
             "Empty member context in the registration request."
         }
@@ -194,14 +196,11 @@ class StartRegistrationHandler(
     }
 
     private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
-        val context = keyValuePairListDeserializer.deserialize(
-            memberRegistrationRequest.memberContext.array()
-        ) ?: KeyValuePairList(emptyList())
         return RegistrationRequest(
             RegistrationStatus.NEW,
             memberRegistrationRequest.registrationId,
             source.toCorda(),
-            layeredPropertyMapFactory.createMap(context.toMap()),
+            memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature.publicKey,
             memberRegistrationRequest.memberSignature.bytes
         )

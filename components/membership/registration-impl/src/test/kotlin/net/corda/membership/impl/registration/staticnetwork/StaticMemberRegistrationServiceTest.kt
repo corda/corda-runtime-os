@@ -35,6 +35,9 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toSortedMap
@@ -174,6 +177,12 @@ class StaticMemberRegistrationServiceTest {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
     private val persistenceClient = mock<MembershipPersistenceClient>()
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -185,6 +194,7 @@ class StaticMemberRegistrationServiceTest {
         hsmRegistrationClient,
         memberInfoFactory,
         persistenceClient,
+        cordaAvroSerializationFactory,
     )
 
     private fun setUpPublisher() {

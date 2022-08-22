@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.dynamic.mgm
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -35,6 +37,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -80,7 +83,9 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = MembershipPersistenceClient::class)
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -142,6 +147,11 @@ class MGMRegistrationService @Activate constructor(
      */
     private val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
+
+    private val keyValuePairListSerializer =
+        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
+            logger.error("Failed to serialize key value pair list.")
+        }
 
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
@@ -266,13 +276,15 @@ class MGMRegistrationService @Activate constructor(
                 )
                 publisher.publish(listOf(mgmRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
+                val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext.toWire())
+                    ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.APPROVED,
                         registrationId = registrationId.toString(),
                         requester = member,
-                        memberContext = layeredPropertyMapFactory.createMap(memberContext),
+                        memberContext = ByteBuffer.wrap(serializedMemberContext),
                         publicKey = ByteBuffer.wrap(byteArrayOf()),
                         signature = ByteBuffer.wrap(byteArrayOf()),
                     )

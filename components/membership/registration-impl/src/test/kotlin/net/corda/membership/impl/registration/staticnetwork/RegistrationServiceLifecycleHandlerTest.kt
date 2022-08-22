@@ -66,6 +66,7 @@ class RegistrationServiceLifecycleHandlerTest {
         hsmRegistrationClient,
         memberInfoFactory,
         mock(),
+        mock(),
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(

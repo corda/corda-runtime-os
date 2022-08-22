@@ -11,7 +11,6 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -38,7 +37,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -95,8 +93,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipPersistenceClient::class)
     private val membershipPersistenceClient: MembershipPersistenceClient,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -105,7 +101,8 @@ class DynamicMemberRegistrationService @Activate constructor(
         fun register(
             registrationId: UUID,
             member: HoldingIdentity,
-            context: Map<String, String>): MembershipRequestRegistrationResult
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult
     }
 
     private companion object {
@@ -253,7 +250,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         status = RegistrationStatus.NEW,
                         registrationId = registrationId.toString(),
                         requester = member,
-                        memberContext = layeredPropertyMapFactory.createMap(memberContext.toMap()),
+                        memberContext = ByteBuffer.wrap(serializedMemberContext),
                         publicKey = ByteBuffer.wrap(byteArrayOf()),
                         signature = ByteBuffer.wrap(byteArrayOf()),
                     )

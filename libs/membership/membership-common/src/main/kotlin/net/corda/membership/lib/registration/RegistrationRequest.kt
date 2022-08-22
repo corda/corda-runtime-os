@@ -1,7 +1,6 @@
 package net.corda.membership.lib.registration
 
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 
@@ -12,7 +11,7 @@ data class RegistrationRequest(
     val status: RegistrationStatus,
     val registrationId: String,
     val requester: HoldingIdentity,
-    val memberContext: LayeredPropertyMap,
+    val memberContext: ByteBuffer,
     val publicKey: ByteBuffer,
     val signature: ByteBuffer
 )

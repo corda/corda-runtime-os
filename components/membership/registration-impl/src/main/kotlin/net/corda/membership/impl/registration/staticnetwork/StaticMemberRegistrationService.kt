@@ -5,6 +5,9 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -79,6 +82,8 @@ class StaticMemberRegistrationService @Activate constructor(
     private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
     private val persistenceClient: MembershipPersistenceClient,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -97,6 +102,8 @@ class StaticMemberRegistrationService @Activate constructor(
         lifecycleCoordinatorName,
         lifecycleHandler
     )
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -147,13 +154,15 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
+        val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
+            ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
                 status = RegistrationStatus.APPROVED,
                 registrationId = registrationId.toString(),
                 requester = memberInfo.holdingIdentity,
-                memberContext = memberInfo.memberProvidedContext,
+                memberContext = ByteBuffer.wrap(memberContext),
                 publicKey = ByteBuffer.wrap(byteArrayOf()),
                 signature = ByteBuffer.wrap(byteArrayOf()),
             )
