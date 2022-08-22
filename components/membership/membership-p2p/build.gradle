@@ -21,6 +21,9 @@ dependencies {
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
-
     implementation project(':components:crypto:crypto-client')
+
+    testImplementation project(':testing:test-utilities')
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

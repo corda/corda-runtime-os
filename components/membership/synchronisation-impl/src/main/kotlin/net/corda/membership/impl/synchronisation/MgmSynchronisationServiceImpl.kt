@@ -47,6 +47,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.*
 
+@Suppress("LongParameterList")
 @Component(service = [SynchronisationService::class])
 class MgmSynchronisationServiceImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
@@ -190,14 +191,18 @@ class MgmSynchronisationServiceImpl @Activate constructor(
             val requester = request.requester
             val allMembers = membershipGroupReaderProvider.getGroupReader(mgm.toCorda()).lookup()
             val mgmInfo = allMembers.single { it.holdingIdentity == mgm.toCorda() }
-            val requesterInfo = allMembers.singleOrNull { it.holdingIdentity == requester.toCorda() }
-                ?: throw CordaRuntimeException("Requester ${MemberX500Name.parse(requester.x500Name)} is not part of the membership group!")
+            val requesterInfo = allMembers.singleOrNull {
+                it.holdingIdentity == requester.toCorda()
+            } ?: throw CordaRuntimeException("Requester ${MemberX500Name.parse(requester.x500Name)} " +
+                        "is not part of the membership group!")
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 sendPackage(mgm, requester, createMembershipPackage(mgmInfo, allMembers))
             } else {
-                // member has not received the latest updates regarding its own membership, will send its missing updates about themselves only
+                // member has not received the latest updates regarding its own membership
+                // will send its missing updates about themselves only
                 sendPackage(mgm, requester, createMembershipPackage(mgmInfo, listOf(requesterInfo)))
             }
+            logger.info("Sync package is sent to ${requester.x500Name}.")
         }
 
         override fun close() {

@@ -1,6 +1,5 @@
 package net.corda.membership.synchronisation
 
-import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 

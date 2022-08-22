@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 interface TestGroupPolicyProvider : GroupPolicyProvider {
-    fun putGroupPolicy(groupPolicy: GroupPolicy)
+    fun putGroupPolicy(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy)
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -35,13 +35,13 @@ class TestGroupPolicyProviderImpl @Activate constructor(
             }
         }
 
-    private lateinit var policy: GroupPolicy
+    private val policies = mutableMapOf<HoldingIdentity, GroupPolicy>()
 
-    override fun putGroupPolicy(groupPolicy: GroupPolicy) {
-        policy = groupPolicy
+    override fun putGroupPolicy(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy) {
+        policies.put(holdingIdentity, groupPolicy)
     }
 
-    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policy
+    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policies.get(holdingIdentity)
 
     override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         with(UNIMPLEMENTED_FUNCTION) {

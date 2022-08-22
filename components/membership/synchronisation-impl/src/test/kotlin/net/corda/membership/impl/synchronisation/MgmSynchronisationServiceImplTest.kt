@@ -185,13 +185,19 @@ class MgmSynchronisationServiceImplTest {
     private val signatures = createSignatures(memberInfos)
     private val signature = createSignatures(listOf(bobInfo))
     private val membershipQueryClient: MembershipQueryClient = mock {
-        on { queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(bob.toCorda()))) } doReturn MembershipQueryResult.Success(
+        on {
+            queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(bob.toCorda())))
+        } doReturn MembershipQueryResult.Success(
             signature
         )
-        on { queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(daisy.toCorda()))) } doReturn MembershipQueryResult.Failure(
+        on {
+            queryMembersSignatures(eq(mgm.toCorda()), eq(listOf(daisy.toCorda())))
+        } doReturn MembershipQueryResult.Failure(
             PERSISTENCE_EXCEPTION
         )
-        on { queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfos.map { it.holdingIdentity } )) } doReturn MembershipQueryResult.Success(
+        on {
+            queryMembersSignatures(eq(mgm.toCorda()), eq(memberInfos.map { it.holdingIdentity } ))
+        } doReturn MembershipQueryResult.Success(
             signatures
         )
     }
