@@ -47,11 +47,7 @@ openTelemetry:
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
-# Enable dump logging directory to be created
-dumplogging:
-  thread:
-    # -- enables dump log threadding 
-    enabled: false
+
 
 # Database configuration
 db:
@@ -195,6 +191,7 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    # Enable dump logging directory to be created  
     dumplogging:
       thread:
         # -- enables dump log threadding 
