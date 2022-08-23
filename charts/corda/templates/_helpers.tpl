@@ -102,7 +102,7 @@ Worker image
 {{/*
 Pod security context
 */}}
-{{- define "corda.PodSecurityContext" -}}
+{{- define "corda.podSecurityContext" -}}
 {{- if not ( get .Values.workers .worker ).dumplogging.thread.enabled }}
 securityContext:
   runAsUser: 1000
