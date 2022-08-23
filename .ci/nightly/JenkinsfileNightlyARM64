@@ -1,5 +1,5 @@
 #!groovy
-@Library('corda-shared-build-pipeline-steps@ronanb/retire-nightly') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaPipeline(
     dailyBuildCron: 'H 04 * * *',
