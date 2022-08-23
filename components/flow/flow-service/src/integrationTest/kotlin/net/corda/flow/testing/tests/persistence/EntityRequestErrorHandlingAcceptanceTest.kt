@@ -57,7 +57,7 @@ class EntityRequestErrorHandlingAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, "invalidId", byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, "invalidId", listOf(byteBuffer))
         }
 
         then {
@@ -83,7 +83,7 @@ class EntityRequestErrorHandlingAcceptanceTest : FlowServiceTestBase() {
         `when` {
             entityResponseErrorReceived(FLOW_ID1, requestId, Error.VIRTUAL_NODE, ExceptionEnvelope("", ""))
             entityResponseErrorReceived(FLOW_ID1, requestId, Error.VIRTUAL_NODE, ExceptionEnvelope("", ""))
-            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf(byteBuffer))
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -153,7 +153,7 @@ class EntityRequestErrorHandlingAcceptanceTest : FlowServiceTestBase() {
             wakeupEventReceived(FLOW_ID1)
             wakeupEventReceived(FLOW_ID1)
             wakeupEventReceived(FLOW_ID1)
-            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf(byteBuffer))
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -197,7 +197,7 @@ class EntityRequestErrorHandlingAcceptanceTest : FlowServiceTestBase() {
         `when` {
             entityResponseErrorReceived(FLOW_ID1, requestId, Error.NOT_READY, ExceptionEnvelope("", ""))
             entityResponseErrorReceived(FLOW_ID1, requestId, Error.NOT_READY, ExceptionEnvelope("", ""))
-            entityResponseSuccessReceived(FLOW_ID1, requestId, byteBuffer)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf(byteBuffer))
         }
 
         then {
