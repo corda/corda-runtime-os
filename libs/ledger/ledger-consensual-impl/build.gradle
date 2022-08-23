@@ -1,6 +1,6 @@
 plugins {
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions' // for import org.osgi.framework.Bundle
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
@@ -21,12 +21,12 @@ dependencies {
     implementation "net.corda:corda-ledger-consensual"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:crypto:crypto-core") // For Int.toByteArray()
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:ledger:ledger-common-impl")
-    implementation project(':components:flow:flow-service') // For FlowFiberService
-    implementation project(':libs:serialization:serialization-checkpoint-api') // Dependency of FlowFiberService
-    implementation project(":libs:virtual-node:sandbox-group-context") // Dependency of FlowFiberService
-    implementation project(":libs:serialization:serialization-internal") // For internal custom serializer mapping Party to PartyImpl
+    implementation project(':components:flow:flow-service')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(":libs:virtual-node:sandbox-group-context")
+    implementation project(":libs:serialization:serialization-internal")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"  // MERGE ???
     testImplementation "org.mockito:mockito-core:$mockitoVersion"  // MERGE ???
@@ -34,13 +34,13 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":libs:crypto:cipher-suite-impl")
-    testImplementation project(":libs:crypto:crypto-serialization-impl") // For PublicKeySerializer
+    testImplementation project(":libs:crypto:crypto-serialization-impl")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:serialization:serialization-internal")
     testImplementation project(":libs:virtual-node:sandbox-group-context")
     testImplementation project(':libs:virtual-node:virtual-node-info')
-    testImplementation project(':components:membership:membership-group-read') // For MembershipGroupReader
+    testImplementation project(':components:membership:membership-group-read')
 
     testCompileOnly 'org.osgi:osgi.core'  // MERGE ???
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"  // MERGE ???
@@ -51,64 +51,17 @@ dependencies {
          exclude group: 'org.osgi'
     }
 
-    //integrationTestImplementation project(":components:flow:flow-service") // osgi.wiring.package: (&(osgi.wiring.package=net.corda.flow.pipeline.sandbox)(version>=5.0.0)(!(version>=6.0.0)))
-    //integrationTestImplementation project(":libs:serialization:serialization-amqp") // osgi.wiring.package: (&(osgi.wiring.package=net.corda.internal.serialization.amqp)(version>=5.0.0)(!(version>=6.0.0)))
-
-    //From Christian's branch
-    /*
-    integrationTestImplementation 'net.corda:corda-application'
-    integrationTestImplementation project(':components:security-manager')
-    integrationTestImplementation project(':testing:security-manager-utilities')
-    integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':testing:virtual-node')
-    integrationTestRuntimeOnly project(':components:flow:flow-service')
-    integrationTestRuntimeOnly project(':libs:serialization:serialization-amqp')
-    integrationTestRuntimeOnly project(':libs:flows:session-manager')
-    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    integrationTestRuntimeOnly "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    */
-
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    // For osgi.service: (objectClass=net.corda.messagebus.api.configuration.BusConfigMerger)
-
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
-    // osgi.service: (objectClass=net.corda.lifecycle.LifecycleCoordinatorFactory)
-
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    //for osgi.extender: (&(osgi.extender=osgi.serviceloader.processor)(version>=1.0.0)(!(version>=2.0.0)))
-
     integrationTestRuntimeOnly project(':testing:cpi-info-read-service-fake')
-    // osgi.service: (objectClass=net.corda.cpiinfo.read.CpiInfoReadService)
-
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
-    // osgi.service: (objectClass=net.corda.membership.read.MembershipGroupReaderProvider)
-
     integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
-    // osgi.service: (objectClass=net.corda.cpk.read.CpkReadService)
-
     integrationTestRuntimeOnly project(':libs:sandbox-internal')
-    // osgi.service: (objectClass=net.corda.sandbox.SandboxContextService)
-
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
-    // osgi.service: (objectClass=net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory)
-
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    // osgi.service: (objectClass=net.corda.session.manager.SessionManager)
-
-    // I have removed import kotlin.test.assertIs
-    //osgi.wiring.package: (osgi.wiring.package=kotlin.test)
-
-    // Added ledger/ledger-consensual/src/main/java/net/corda/v5/ledger/consensual/transaction/package-info.java
-    // For osgi.wiring.package: (osgi.wiring.package=net.corda.v5.ledger.consensual.transaction)
-
-    ///////// For the mock flow fiber:
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
-    //osgi.wiring.package: (osgi.wiring.package=net.corda.crypto.impl.serialization)
-    //For PublicKeySerializer
-
-    //integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
-    // osgi.wiring.package: (osgi.wiring.package=org.mockito.kotlin)
 }
 

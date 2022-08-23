@@ -34,10 +34,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.ledger.consensual.ConsensualState
-import net.corda.v5.ledger.consensual.Party
-import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
@@ -45,8 +41,6 @@ import org.osgi.framework.Bundle
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.KeyPairGenerator
-import java.security.PublicKey
 
 //TODO(Deduplicate with net.corda.internal.serialization.amqp.testutils and with net.corda.ledger.consensual.MockFlowFiberService)
 
@@ -138,16 +132,6 @@ class MockFlowFiberService @Activate constructor(
 @Suppress("FunctionName")
 class ConsensualLedgerServiceTest {
 
-    private lateinit var testPublicKey: PublicKey
-    private lateinit var testConsensualState: ConsensualState
-
-    class TestConsensualState(
-        val testField: String,
-        override val participants: List<Party>
-    ) : ConsensualState {
-        override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
-    }
-
     @InjectService(timeout = 1000)
     lateinit var consensualLedgerService: ConsensualLedgerService
 
@@ -156,41 +140,4 @@ class ConsensualLedgerServiceTest {
         val transactionBuilder = consensualLedgerService.getTransactionBuilder()
         assertThat(transactionBuilder).isInstanceOf(ConsensualTransactionBuilder::class.java)
     }
-
-    /*
-    Below test fails since the mocked sandbox cannot give proper access to the required classes for the serializer.
-
-    # Execution Finished: ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction() - [engine:bnd-bundle-engine]/[bundle:ledger-consensual-impl-tests;5.0.0.0-SNAPSHOT]/[sub-engine:junit-jupiter]/[class:net.corda.ledger.consensual.ConsensualLedgerServiceTest]/[method:ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction()] - TestExecutionResult [status = FAILED, throwable = java.lang.ClassNotFoundException: net.corda.ledger.common.impl.transaction.TransactionMetaData not found by ledger-consensual-impl-tests [34]]
-java.lang.ClassNotFoundException: net.corda.ledger.common.impl.transaction.TransactionMetaData not found by ledger-consensual-impl-tests [34]
-        at org.apache.felix.framework.BundleWiringImpl.findClassOrResourceByDelegation(BundleWiringImpl.java:1591)
-        at org.apache.felix.framework.BundleWiringImpl.access$300(BundleWiringImpl.java:79)
-        at org.apache.felix.framework.BundleWiringImpl$BundleClassLoader.loadClass(BundleWiringImpl.java:1976)
-        at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:522)
-        at java.base/java.lang.Class.forName0(Native Method)
-        at java.base/java.lang.Class.forName(Class.java:315)
-        at net.corda.ledger.consensual.MockSandboxGroup.getClass(ConsensualLedgerServiceTest.kt:62)
-
-
-    @Test
-    fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-
-        val kpg = KeyPairGenerator.getInstance("RSA")
-        kpg.initialize(512) // Shortest possible to not slow down tests.
-        testPublicKey = kpg.genKeyPair().public
-
-        // val testMemberX500Name = MemberX500Name("R3", "London", "GB")
-
-        testConsensualState = TestConsensualState(
-            "test",
-            listOf(mock(Party::class.java)) // was: listOf(PartyImpl(testMemberX500Name, testPublicKey))
-        )
-
-        val transactionBuilder = consensualLedgerService.getTransactionBuilder()
-        val signedTransaction = transactionBuilder
-            .withStates(testConsensualState)
-            .signInitial(testPublicKey)
-        assertThat(signedTransaction).isInstanceOf(ConsensualSignedTransaction::class.java)
-    }
-
-     */
 }
