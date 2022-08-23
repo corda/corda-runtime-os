@@ -1,14 +1,13 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/retire-nightly') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaPipeline(
     dailyBuildCron: 'H 03 * * *',
-    createPostgresDb: true,
-    e2eTestName: 'corda-runtime-os-e2e-tests',
+    runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
+    createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
     publishHelmChart: true,
-    runIntegrationTests: true,
+    e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true
     )
-    
