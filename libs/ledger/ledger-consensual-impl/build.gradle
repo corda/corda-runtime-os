@@ -7,12 +7,9 @@ plugins {
 description 'Corda consensual ledger - implementation'
 
 dependencies {
-    compileOnly 'org.osgi:osgi.core' // MERGE ???
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion" // MERGE ???
 
-    // TODO: review dependencies
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:membership:membership-common")
     implementation project(':libs:membership:membership-impl')
@@ -28,8 +25,6 @@ dependencies {
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:serialization:serialization-internal")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"  // MERGE ???
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"  // MERGE ???
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
@@ -41,15 +36,6 @@ dependencies {
     testImplementation project(":libs:virtual-node:sandbox-group-context")
     testImplementation project(':libs:virtual-node:virtual-node-info')
     testImplementation project(':components:membership:membership-group-read')
-
-    testCompileOnly 'org.osgi:osgi.core'  // MERGE ???
-    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"  // MERGE ???
-    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"  // MERGE ???
-    testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"  // MERGE ???
-
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {  // MERGE ???
-         exclude group: 'org.osgi'
-    }
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
@@ -64,4 +50,3 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
 }
-
