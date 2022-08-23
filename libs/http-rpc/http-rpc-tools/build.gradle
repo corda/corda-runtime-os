@@ -15,7 +15,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 }
 
-jacocoTestCoverageVerification {
+tasks.named("jacocoTestCoverageVerification", JacocoCoverageVerification) {
     violationRules {
         rule {
             limit {

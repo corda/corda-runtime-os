@@ -29,7 +29,7 @@ tasks.register('copyCliFiles') {
     }
 }
 
-task cliInstallArchive(type: Zip) {
+tasks.register("cliInstallArchive", Zip) {
     dependsOn tasks.named('copyCliFiles')
     from "$buildDir/cli"
     include '*'
