@@ -126,9 +126,11 @@ class FlowSessionManagerImpl @Activate constructor(
     }
 
     override fun getSessionsWithNextMessageClose(
-        checkpoint: FlowCheckpoint
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
     ): List<SessionState> {
-        return checkpoint.sessions.mapNotNull { sessionState ->
+        return sessionIds.mapNotNull { sessionId ->
+            val sessionState = getAndRequireSession(checkpoint, sessionId)
             val receivedEventsState = sessionState.receivedEventsState
             val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
             receivedEventsState.undeliveredMessages.firstOrNull()?.let { message ->

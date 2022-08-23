@@ -173,9 +173,11 @@ interface FlowSessionManager {
      * Get the states whose next ordered message is a SessionClose.
      * This allows for detection of states which have received an ordered close when it is not expected.
      * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
      * @return The list of states whose next received ordered message is a SessionClose
      */
     fun getSessionsWithNextMessageClose(
-        checkpoint: FlowCheckpoint
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
     ): List<SessionState>
 }

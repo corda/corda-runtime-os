@@ -262,7 +262,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 

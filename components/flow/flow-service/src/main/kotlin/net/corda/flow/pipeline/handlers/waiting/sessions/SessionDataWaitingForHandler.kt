@@ -36,7 +36,8 @@ class SessionDataWaitingForHandler @Activate constructor(
                 SessionStateType.ERROR
             )
 
-            val closingSessionEvents = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
+            val closingSessionEvents =
+                flowSessionManager.getSessionsWithNextMessageClose(checkpoint, waitingFor.sessionIds - receivedSessions)
             val terminatedSessions = erroredSessions + closingSessionEvents
 
             when {

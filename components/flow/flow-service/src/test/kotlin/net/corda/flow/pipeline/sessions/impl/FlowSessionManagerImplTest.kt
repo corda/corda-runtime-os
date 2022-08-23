@@ -608,11 +608,29 @@ class FlowSessionManagerImplTest {
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
-        whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
 
-        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
         assertThat(closingList).isNotEmpty
         assertThat(closingList.first().sessionId).isEqualTo(SESSION_ID)
+    }
+
+    @Test
+    fun `validate doesnt find closing state when closing session not listed in given session ids`() {
+        val closingSessionState = buildSessionState(
+            SessionStateType.CLOSING,
+            1,
+            mutableListOf(buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 1, SessionClose())),
+            0,
+            mutableListOf(),
+            sessionId = SESSION_ID,
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
+
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(ANOTHER_SESSION_ID))
+        assertThat(closingList).isEmpty()
     }
 
     @Test
@@ -630,9 +648,9 @@ class FlowSessionManagerImplTest {
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
-        whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
 
-        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
         assertThat(closingList).isEmpty()
     }
 
@@ -650,9 +668,9 @@ class FlowSessionManagerImplTest {
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
-        whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
 
-        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint)
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
         assertThat(closingList).isEmpty()
     }
 
