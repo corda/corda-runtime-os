@@ -29,6 +29,8 @@ dependencies {
     implementation project(':components:virtual-node:entity-processor-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':components:virtual-node:entity-processor-service')
+    implementation project(':components:virtual-node:entity-processor-service-impl')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-admin')

@@ -1,10 +1,16 @@
-package net.corda.processors.ledger.consensual
+package net.corda.processors.ledger
 
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.consensual.PersistTransaction
+import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.persistence.EntityResponse
+import net.corda.data.persistence.EntityResponseFailure
+import net.corda.data.persistence.Error
+import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes
+import net.corda.entityprocessor.impl.internal.EntitySandboxService
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
@@ -30,7 +36,7 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
  *
- * The [EntityRequest] contains the request and a typed payload.
+ * The [ConsensualLedgerRequest] contains the request and a typed payload.
  *
  * The [EntityResponse] contains the response or an exception-like payload whose presence indicates
  * an error has occurred.
@@ -58,7 +64,7 @@ class ConsensualLedgerProcessor(
                         "${virtualNodeContext.holdingIdentity}"
             )
 
-    override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
+    override fun onNext(events: List<Record<String, ConsensualLedgerRequest>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
         val responses = mutableListOf<Record<String, FlowEvent>>()
         events.forEach {
@@ -75,7 +81,7 @@ class ConsensualLedgerProcessor(
         return responses
     }
 
-    private fun processRequest(requestId: String, request: EntityRequest): EntityResponse {
+    private fun processRequest(requestId: String, request: ConsensualLedgerRequest): EntityResponse {
         val holdingIdentity = request.holdingIdentity.toCorda()
 
         // Get the sandbox for the given request.
@@ -99,14 +105,15 @@ class ConsensualLedgerProcessor(
     private fun processRequestWithSandbox(
         sandbox: SandboxGroupContext,
         requestId: String,
-        request: EntityRequest
+        request: ConsensualLedgerRequest
     ): EntityResponse {
         val holdingIdentity = request.holdingIdentity.toCorda()
+        log.info("processRequestWithSandbox, request: ${request}, holding identity: ${holdingIdentity}")
 
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
-        val serializationService = sandbox.getSerializationService()
-        val consensualLedgerDAO = ConsensualLedgerDAO(requestId, clock::instant, entitySandboxService::getClass) // TODO: find a way to delete / invert this dependency
+        // val serializationService = sandbox.getSerializationService()  // TODO: use
+        val consensualLedgerDAO = ConsensualLedgerDAO(requestId, clock::instant, entitySandboxService::getClass)
 
         // We match on the type, and delegate to the appropriate method in the DAO.
         val response = try {
@@ -135,10 +142,8 @@ class ConsensualLedgerProcessor(
 
     private fun failureResponse(requestId: String, e: Exception, errorType: Error): EntityResponse {
         if (errorType == Error.FATAL) {
-            //  Fatal exception here is unrecoverable and serious as far the flow worker is concerned.
-            log.error("Exception occurred (type=$errorType) for flow-worker request $requestId", e)
+            log.error("Fatal exception occurred (type=$errorType) for flow-worker request $requestId", e)
         } else {
-            //  Non-fatal is a warning, and could be 'no cpks', but should still be logged for investigation.
             log.warn("Exception occurred (type=$errorType) for flow-worker request $requestId", e)
         }
 
@@ -151,4 +156,9 @@ class ConsensualLedgerProcessor(
             )
         )
     }
+    override val keyClass: Class<String>
+        get() = String::class.java
+
+    override val valueClass: Class<ConsensualLedgerRequest>
+        get() = ConsensualLedgerRequest::class.java
 }
