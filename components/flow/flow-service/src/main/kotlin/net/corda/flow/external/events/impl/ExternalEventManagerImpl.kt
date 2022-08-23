@@ -124,13 +124,14 @@ class ExternalEventManagerImpl(
         return externalEventState.response != null
     }
 
-    override fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any? {
+    override fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any {
         val bytes = checkNotNull(externalEventState.response).payload.array()
-        return when (responseType) {
+        val deserialized = when (responseType) {
             String::class.java -> stringDeserializer.deserialize(bytes)
             ByteArray::class.java -> byteArrayDeserializer.deserialize(bytes)
             else -> anyDeserializer.deserialize(bytes)
         }
+        return checkNotNull(deserialized)
     }
 
     override fun getEventToSend(

@@ -44,7 +44,6 @@ class ExternalEventManagerImplTest {
         const val TOPIC = "topic"
         const val KEY = "key"
         val BYTES = byteArrayOf(1, 2, 3)
-//        val SERIALIZED_KEY = KEY.toByteArray()
 
         @JvmStatic
         fun responses(): Stream<Arguments> {
@@ -338,7 +337,7 @@ class ExternalEventManagerImplTest {
     fun `getEventToSend returns an external event and updates the state if the state's sendTimestamp is null`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
-        val payload = ByteBuffer.wrap(byteArrayOf(1,2,3))
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
 
         val externalEvent = ExternalEvent().apply {
             this.topic = TOPIC
@@ -374,7 +373,7 @@ class ExternalEventManagerImplTest {
     fun `getEventToSend returns an external event and updates the state if the state is RETRY and the sendTimestamp is surpassed`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
-        val payload = ByteBuffer.wrap(byteArrayOf(1,2,3))
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
 
         val externalEvent = ExternalEvent().apply {
             this.topic = TOPIC
@@ -410,7 +409,7 @@ class ExternalEventManagerImplTest {
     fun `getEventToSend does not return an external event if the state is RETRY and the sendTimestamp is not surpassed`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
-        val payload = ByteBuffer.wrap(byteArrayOf(1,2,3))
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
 
         val externalEvent = ExternalEvent().apply {
             this.topic = TOPIC

@@ -35,9 +35,8 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         context: FlowEventContext<*>,
         waitingFor: net.corda.data.flow.state.waiting.external.ExternalEventResponse
     ): FlowContinuation {
-        val externalEventState =
-            context.checkpoint.externalEventState
-                ?: throw FlowFatalException("Waiting for external event but state not set")
+        val externalEventState = context.checkpoint.externalEventState
+            ?: throw FlowFatalException("Waiting for external event but state not set")
 
         val continuation = when (externalEventState.status.type) {
             ExternalEventStateType.OK -> {

@@ -24,7 +24,7 @@ interface ExternalEventManager {
 
     fun hasReceivedResponse(externalEventState: ExternalEventState): Boolean
 
-    fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any?
+    fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any
 
     fun getEventToSend(
         flowId: String,

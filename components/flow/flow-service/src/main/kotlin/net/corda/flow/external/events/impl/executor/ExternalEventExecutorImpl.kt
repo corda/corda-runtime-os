@@ -19,7 +19,7 @@ class ExternalEventExecutorImpl @Activate constructor(
 ) : ExternalEventExecutor, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
+    override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
         requestId: String,
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
@@ -36,7 +36,7 @@ class ExternalEventExecutorImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
+    override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {

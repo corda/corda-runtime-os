@@ -26,7 +26,7 @@ interface ExternalEventExecutor {
      * @return The object that the flow will resume with.
      */
     @Suspendable
-    fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
+    fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
         requestId: String,
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
@@ -49,7 +49,7 @@ interface ExternalEventExecutor {
      * @return The object that the flow will resume with.
      */
     @Suspendable
-    fun <PARAMETERS : Any, RESPONSE, RESUME> execute(
+    fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME
