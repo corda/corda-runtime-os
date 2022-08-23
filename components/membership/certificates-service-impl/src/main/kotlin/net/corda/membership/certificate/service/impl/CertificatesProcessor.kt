@@ -50,9 +50,10 @@ internal class CertificatesProcessor(
         }
     }
 
-    private interface CertificateProcessor {
+    internal interface CertificateProcessor {
         fun saveCertificates(alias: String, certificates: String)
         fun readCertificates(alias: String): String?
+        fun readAllCertificates(): List<String>
     }
 
     inner class ClusterCertificateProcessor(
@@ -69,6 +70,13 @@ internal class CertificatesProcessor(
         override fun readCertificates(alias: String) = factory.transaction { em ->
             em.find(ClusterCertificate::class.java, ClusterCertificatePrimaryKey(tenantId, alias))?.rawCertificate
         }
+
+        override fun readAllCertificates() = factory.transaction { em ->
+            em.createNamedQuery("ClusterCertificate.findByTenantId", ClusterCertificate::class.java)
+                .setParameter("tenantId", tenantId)
+                .resultList
+                .map { it.rawCertificate }
+        }
     }
 
     inner class NodeCertificateProcessor(
@@ -83,27 +91,36 @@ internal class CertificatesProcessor(
         override fun readCertificates(alias: String) = factory.transaction { em ->
             em.find(Certificate::class.java, alias)?.rawCertificate
         }
+
+        override fun readAllCertificates() = factory.transaction { em ->
+            em.createNamedQuery("Certificate.findAll", Certificate::class.java)
+                .resultList
+                .map { it.rawCertificate }
+        }
     }
 
-    private fun <T> useCertificateProcessor(tenantId: String, block: (CertificateProcessor)->T) {
-        if ((tenantId == CryptoTenants.P2P) || (tenantId == CryptoTenants.RPC_API)) {
-            val processor = ClusterCertificateProcessor(tenantId)
-            block.invoke(processor)
-        } else {
-            val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId))
-                ?: throw NoSuchNode(tenantId)
-            val factory = dbConnectionManager.createEntityManagerFactory(
-                connectionId = node.vaultDmlConnectionId,
-                entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
-                    ?: throw java.lang.IllegalStateException(
-                        "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
-                    )
-            )
-            try {
-                val processor = NodeCertificateProcessor(factory)
+    internal fun <T> useCertificateProcessor(tenantId: String, block: (CertificateProcessor)->T) {
+        when (tenantId) {
+            CryptoTenants.CODE_SIGNER, CryptoTenants.P2P, CryptoTenants.RPC_API -> {
+                val processor = ClusterCertificateProcessor(tenantId)
                 block.invoke(processor)
-            } finally {
-                factory.close()
+            }
+            else -> {
+                val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(tenantId))
+                    ?: throw NoSuchNode(tenantId)
+                val factory = dbConnectionManager.createEntityManagerFactory(
+                    connectionId = node.vaultDmlConnectionId,
+                    entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
+                        ?: throw java.lang.IllegalStateException(
+                            "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
+                        )
+                )
+                try {
+                    val processor = NodeCertificateProcessor(factory)
+                    block.invoke(processor)
+                } finally {
+                    factory.close()
+                }
             }
         }
     }
