@@ -44,8 +44,8 @@ class ExternalEventManagerImpl(
     private companion object {
         val log = contextLogger()
 
-        //Comparing two instants which are the same can yield inconsistent comparison results.
-        //A small buffer is added to make sure we pick up new messages to be sent
+        // Comparing two instants which are the same can yield inconsistent comparison results.
+        // A small buffer is added to make sure we pick up new messages to be sent
         const val INSTANT_COMPARE_BUFFER_MILLIS = 10L
     }
 
@@ -71,7 +71,7 @@ class ExternalEventManagerImpl(
             .setStatus(ExternalEventStateStatus(ExternalEventStateType.OK, null))
             .setEventToSend(event)
             .setFactoryClassName(factoryClassName)
-            .setSendTimestamp(null) // set to null for first send?
+            .setSendTimestamp(null)
             .setResponse(null)
             .build()
     }
@@ -125,7 +125,7 @@ class ExternalEventManagerImpl(
     }
 
     override fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any? {
-        val bytes = externalEventState.response.payload.array()
+        val bytes = checkNotNull(externalEventState.response).payload.array()
         return when (responseType) {
             String::class.java -> stringDeserializer.deserialize(bytes)
             ByteArray::class.java -> byteArrayDeserializer.deserialize(bytes)
