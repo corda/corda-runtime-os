@@ -12,5 +12,5 @@ cordaPipeline(
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false, // change this to true when E2E infrastructure is in place
     linuxArch: 'arm64',
-    gradleAdditionalArgs: '-PcliBaseTag=arm64-nightly'
+    gradleAdditionalArgs: '-PcliBaseTag=arm64-nightly -Dscan.tag.ARM64-Build'
     )
