@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.handler.helpers
+package net.corda.membership.lib.helpers
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -13,7 +13,7 @@ import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 
-internal class MerkleTreeGenerator(
+class MerkleTreeGenerator(
     private val merkleTreeFactory: MerkleTreeFactory,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {

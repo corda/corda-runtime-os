@@ -11,8 +11,8 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeGenerator
-import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
+import net.corda.membership.lib.helpers.P2pRecordsFactory
+import net.corda.membership.lib.helpers.MerkleTreeGenerator
 import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
 import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension

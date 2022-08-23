@@ -1,11 +1,10 @@
-package net.corda.membership.impl.registration.dynamic.handler.mgm.helpers
+package net.corda.membership.lib.helpers
 
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
-import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
+import net.corda.membership.lib.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.test.util.time.TestClock

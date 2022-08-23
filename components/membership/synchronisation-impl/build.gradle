@@ -19,9 +19,12 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:membership:group-policy")
     implementation project(":components:membership:synchronisation")
+    implementation project(':components:membership:membership-group-read')
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:utilities')
+    implementation project(':libs:chunking:chunking-core')
 
     testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

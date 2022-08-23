@@ -26,6 +26,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.helpers.MerkleTreeGenerator
+import net.corda.membership.lib.helpers.P2pRecordsFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -145,12 +147,17 @@ class MemberSynchronisationServiceImplTest {
         on { destination } doReturn member.toAvro()
         on { membershipPackage } doReturn membershipPackage
     }
+    private val p2pRecordsFactory = mock<P2pRecordsFactory>()
+    private val merkleTreeGenerator = mock<MerkleTreeGenerator>()
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
         configurationReadService,
         lifecycleCoordinatorFactory,
         serializationFactory,
-        memberInfoFactory
+        memberInfoFactory,
+        mock(),
+        p2pRecordsFactory,
+        merkleTreeGenerator,
     )
 
     private fun postStartEvent() {

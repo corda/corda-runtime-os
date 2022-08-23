@@ -10,10 +10,18 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(':libs:utilities')
+    implementation 'net.corda:corda-topic-schema'
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:layered-property-map')
 
     implementation "net.corda:corda-base"
     api "net.corda:corda-avro-schema"
     api "net.corda:corda-membership"
     api project(":libs:membership:membership-datamodel")
     api project(":libs:virtual-node:virtual-node-info")
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(':testing:test-utilities')
 }
