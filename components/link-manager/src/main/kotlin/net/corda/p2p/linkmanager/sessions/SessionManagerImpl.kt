@@ -132,7 +132,7 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
-    //private val fiveDaysInMilliseconds = 120000L //432000000L
+    private val fiveDaysInMilliseconds = 120000L //432000000L
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -141,13 +141,13 @@ internal class SessionManagerImpl(
         messagingConfiguration
     )
 
-    //private val executorService = executorServiceFactory()
+    private val executorService = executorServiceFactory()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
-        //onClose = { executorService.shutdownNow() },
+        onClose = { executorService.shutdownNow() },
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
             members.dominoTile.coordinatorName, cryptoProcessor.namedLifecycle.name,
@@ -550,11 +550,11 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
-       /* executorService.schedule(
+        executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
             fiveDaysInMilliseconds,
             TimeUnit.MILLISECONDS
-        )*/
+        )
         return null
     }
 
@@ -564,6 +564,7 @@ internal class SessionManagerImpl(
                     "out to refresh ephemeral keys and it will be cleaned up."
         )
         refreshOutboundSession(sessionCounterparties, sessionId)
+        heartbeatManager.stopTrackingSpecifiedSession(sessionId)
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
@@ -803,6 +804,10 @@ internal class SessionManagerImpl(
 
         fun stopTrackingAllSessions() {
             trackedSessions.clear()
+        }
+
+        fun stopTrackingSpecifiedSession(sessionId: String) {
+            trackedSessions.remove(sessionId)
         }
 
         fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String) {

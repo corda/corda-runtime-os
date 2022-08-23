@@ -463,28 +463,6 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `DRAFT when we applyNewConfiguration, then all queues are destroyed and the outbound session pool is cleared`() {
-        val sessionIds = listOf("firstSession", "anotherSession")
-        whenever(outboundSessionPool.constructed().first().getAllSessionIds()).thenReturn(sessionIds)
-        configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(
-                MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
-            ),
-            SessionManagerImpl.SessionManagerConfig(
-                MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
-            ),
-            mock(),
-        )
-        verify(pendingSessionMessageQueues, times(1)).destroyAllQueues()
-        verify(outboundSessionPool.constructed().first(), times(1)).clearPool()
-        publisherWithDominoLogicByClientId["session-manager"]!!.forEach { publisher ->
-            verify(publisher).publish(sessionIds.map { Record(SESSION_OUT_PARTITIONS, it, null)}.toList())
-        }
-    }
-
-    @Test
     fun `when session is established with a peer, it is returned when processing a new message for the same peer`() {
         val session = mock<Session> {
             on { sessionId } doReturn "sessionId"
@@ -1564,4 +1542,5 @@ class SessionManagerTest {
         sessionManager.stop()
         resourcesHolder.close()
     }
+
 }

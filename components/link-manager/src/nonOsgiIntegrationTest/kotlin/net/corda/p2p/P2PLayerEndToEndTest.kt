@@ -143,9 +143,6 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
-                //val threeMinutesInMillis: Long = 3*60*1000
-                //Thread.sleep(threeMinutesInMillis)
-
                 eventually(10.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
@@ -160,8 +157,8 @@ class P2PLayerEndToEndTest {
                 hostBApplicationReaderWriter.stop()
                 hostAMarkerReader.stop()
 
-                //val threeMinutesInMillis: Long = 3*60*1000
-                //Thread.sleep(threeMinutesInMillis)
+                val threeMinutesInMillis: Long = 3*60*1000
+                Thread.sleep(threeMinutesInMillis)
             }
         }
     }
