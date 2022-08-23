@@ -71,7 +71,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
         val request = FlowIORequest.Merge(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Merge query for class of with id ${request.requestId} " }
+        log.debug { "Preparing to send Merge query for class of type ${entity::class.java} with id ${request.requestId} " }
         val received = fiber.suspend(request)
 
         return received?.let {
