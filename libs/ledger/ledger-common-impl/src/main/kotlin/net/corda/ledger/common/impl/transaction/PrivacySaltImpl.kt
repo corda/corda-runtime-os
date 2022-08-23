@@ -27,8 +27,8 @@ class PrivacySaltImpl(bytes: ByteArray) : OpaqueBytes(bytes), PrivacySalt {
 
     override fun equals(other: Any?): Boolean =
         other === this ||
-                other is PrivacySaltImpl &&
-                other.bytes == bytes
+            other is PrivacySaltImpl &&
+            other.bytes contentEquals bytes
 
     override fun hashCode(): Int = bytes.hashCode()
 }

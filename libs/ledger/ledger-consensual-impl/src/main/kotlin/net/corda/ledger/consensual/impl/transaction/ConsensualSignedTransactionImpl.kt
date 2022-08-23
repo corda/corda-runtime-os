@@ -16,15 +16,17 @@ class ConsensualSignedTransactionImpl(
     ): ConsensualSignedTransaction
 {
 
-    override fun equals(other: Any?): Boolean =
-        (other === this) ||
-            ((other is ConsensualSignedTransactionImpl) &&
-                (other.wireTransaction == wireTransaction) &&
-                (other.signatures.size == signatures.size) &&
-                    other.signatures.withIndex().all{
-                        it.value == signatures[it.index]
-                    }
-            )
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ConsensualSignedTransactionImpl) return false
+        if (other.wireTransaction != wireTransaction) return false
+        if (other.signatures.size != signatures.size) return false
+
+        return other.signatures.withIndex().all{
+            it.value == signatures[it.index]
+        }
+    }
+
     override fun hashCode(): Int = wireTransaction.hashCode() + signatures.hashCode() * 31
 
     init {
