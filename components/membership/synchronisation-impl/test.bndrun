@@ -10,7 +10,6 @@
 -runrequires: \
     bnd.identity;id='net.corda.synchronisation-impl',\
     bnd.identity;id='net.corda.membership-p2p-impl',\
-    bnd.identity;id='net.corda.membership-p2p',\
     bnd.identity;id='net.corda.membership-persistence-client-impl',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\

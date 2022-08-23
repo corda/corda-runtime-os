@@ -23,6 +23,9 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Created for mocking and simplifying crypto functionalities used by the membership services.
+ */
 interface TestCryptoOpsClient : CryptoOpsClient
 
 @ServiceRanking(Int.MAX_VALUE)

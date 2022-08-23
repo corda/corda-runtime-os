@@ -21,6 +21,9 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.nio.ByteBuffer
 
+/**
+ * Created for mocking and simplifying membership query client functionalities used by the membership services.
+ */
 interface TestMembershipQueryClient : MembershipQueryClient
 
 @ServiceRanking(Int.MAX_VALUE)

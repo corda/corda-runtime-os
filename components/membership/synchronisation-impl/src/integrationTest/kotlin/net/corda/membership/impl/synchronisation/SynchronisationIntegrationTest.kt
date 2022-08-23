@@ -77,7 +77,7 @@ import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -94,7 +94,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
-class MemberSynchronisationIntegrationTest {
+class SynchronisationIntegrationTest {
     private companion object {
         @InjectService(timeout = 5000)
         lateinit var publisherFactory: PublisherFactory
@@ -138,12 +138,28 @@ class MemberSynchronisationIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
 
-        lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
-        lateinit var membershipPackageSerializer: CordaAvroSerializer<MembershipPackage>
-        lateinit var merkleTreeGenerator: MerkleTreeGenerator
-        lateinit var syncRequestSerializer: CordaAvroSerializer<MembershipSyncRequest>
-        lateinit var membershipPackageDeserializer: CordaAvroDeserializer<MembershipPackage>
-        lateinit var keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList>
+        val merkleTreeGenerator: MerkleTreeGenerator by lazy {
+            MerkleTreeGenerator(
+                merkleTreeFactory,
+                cordaAvroSerializationFactory
+            )
+        }
+
+        val keyValueSerializer: CordaAvroSerializer<KeyValuePairList> by lazy {
+            cordaAvroSerializationFactory.createAvroSerializer { }
+        }
+        val membershipPackageSerializer: CordaAvroSerializer<MembershipPackage> by lazy {
+            cordaAvroSerializationFactory.createAvroSerializer { }
+        }
+        val syncRequestSerializer: CordaAvroSerializer<MembershipSyncRequest> by lazy {
+            cordaAvroSerializationFactory.createAvroSerializer { }
+        }
+        val membershipPackageDeserializer: CordaAvroDeserializer<MembershipPackage> by lazy {
+            cordaAvroSerializationFactory.createAvroDeserializer({}, MembershipPackage::class.java)
+        }
+        val keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy{
+            cordaAvroSerializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
+        }
         val clock: Clock = TestClock(Instant.ofEpochSecond(100))
         val logger = contextLogger()
         val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
@@ -188,18 +204,45 @@ class MemberSynchronisationIntegrationTest {
         val requester = HoldingIdentity(requesterName, groupId)
         val participant = HoldingIdentity(participantName, groupId)
         val members = listOf(mgmName, requesterName, participantName)
-        lateinit var mgmSessionKey: PublicKey
-        lateinit var mgmInfo: MemberInfo
-        lateinit var requesterSessionKey: PublicKey
-        lateinit var requesterInfo: MemberInfo
-        lateinit var participantSessionKey: PublicKey
-        lateinit var participantInfo: MemberInfo
+        val mgmSessionKey: PublicKey by lazy {
+            cryptoOpsClient.generateKeyPair(
+                mgm.toCorda().shortHash.value,
+                CATEGORY,
+                mgm.toCorda().shortHash.value + "session",
+                SCHEME
+            )
+        }
+        val mgmInfo: MemberInfo by lazy {
+            createTestMemberInfo(mgm, mgmSessionKey)
+        }
+        val requesterSessionKey: PublicKey by lazy {
+            cryptoOpsClient.generateKeyPair(
+                requester.toCorda().shortHash.value,
+                CATEGORY,
+                requester.toCorda().shortHash.value + "session",
+                SCHEME
+            )
+        }
+        val requesterInfo: MemberInfo by lazy {
+            createTestMemberInfo(requester, requesterSessionKey)
+        }
+        val participantSessionKey: PublicKey by lazy {
+            cryptoOpsClient.generateKeyPair(
+                participant.toCorda().shortHash.value,
+                CATEGORY,
+                participant.toCorda().shortHash.value + "session",
+                SCHEME
+            )
+        }
+        val participantInfo: MemberInfo by lazy {
+            createTestMemberInfo(participant, participantSessionKey)
+        }
 
         @JvmStatic
         @BeforeAll
         fun setUp() {
             val coordinator =
-                lifecycleCoordinatorFactory.createCoordinator<MemberSynchronisationIntegrationTest> { e, c ->
+                lifecycleCoordinatorFactory.createCoordinator<SynchronisationIntegrationTest> { e, c ->
                     if (e is StartEvent) {
                         logger.info("Starting test coordinator")
                         c.followStatusChangesByName(
@@ -218,12 +261,6 @@ class MemberSynchronisationIntegrationTest {
                     }
                 }.also { it.start() }
 
-            keyValueSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
-            membershipPackageSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
-            syncRequestSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
-            membershipPackageDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, MembershipPackage::class.java)
-            keyValueDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
-
             setupConfig()
             groupPolicyProvider.start()
             synchronisationProxy.start()
@@ -232,35 +269,6 @@ class MemberSynchronisationIntegrationTest {
             cryptoOpsClient.start()
             membershipQueryClient.start()
             configurationReadService.bootstrapConfig(bootConfig)
-
-            merkleTreeGenerator = MerkleTreeGenerator(
-                merkleTreeFactory,
-                cordaAvroSerializationFactory
-            )
-
-            mgmSessionKey = cryptoOpsClient.generateKeyPair(
-                mgm.toCorda().shortHash.value,
-                CATEGORY,
-                mgm.toCorda().shortHash.value + "session",
-                SCHEME
-            )
-            mgmInfo = createTestMemberInfo(mgm, mgmSessionKey)
-
-            requesterSessionKey = cryptoOpsClient.generateKeyPair(
-                requester.toCorda().shortHash.value,
-                CATEGORY,
-                requester.toCorda().shortHash.value + "session",
-                SCHEME
-            )
-            requesterInfo = createTestMemberInfo(requester, requesterSessionKey)
-
-            participantSessionKey = cryptoOpsClient.generateKeyPair(
-                participant.toCorda().shortHash.value,
-                CATEGORY,
-                participant.toCorda().shortHash.value + "session",
-                SCHEME
-            )
-            participantInfo = createTestMemberInfo(participant, participantSessionKey)
 
             eventually {
                 logger.info("Waiting for required services to start...")
@@ -381,7 +389,7 @@ class MemberSynchronisationIntegrationTest {
         }
         membershipPackageSubscription.close()
 
-        SoftAssertions.assertSoftly { it ->
+        assertSoftly { it ->
             it.assertThat(result).isNotNull
             it.assertThat(result)
                 .isNotNull
@@ -494,7 +502,7 @@ class MemberSynchronisationIntegrationTest {
         }
         persistentMemberListSubscription.close()
 
-        SoftAssertions.assertSoftly {
+        assertSoftly {
             it.assertThat(result).isNotNull
             it.assertThat(result)
                 .isNotNull
@@ -514,18 +522,15 @@ class MemberSynchronisationIntegrationTest {
         }
     }
 
-    private fun getTestProcessor(resultCollector: (Any) -> Unit): PubSubProcessor<String, Any> {
-        class TestProcessor : PubSubProcessor<String, Any> {
-            override fun onNext(
-                event: Record<String, Any>
-            ): CompletableFuture<Unit> {
-                resultCollector(event.value!!)
-                return CompletableFuture.completedFuture(Unit)
-            }
-
-            override val keyClass = String::class.java
-            override val valueClass = Any::class.java
+    private fun getTestProcessor(resultCollector: (Any) -> Unit) = object : PubSubProcessor<String, Any> {
+        override fun onNext(
+            event: Record<String, Any>
+        ): CompletableFuture<Unit> {
+            resultCollector(event.value!!)
+            return CompletableFuture.completedFuture(Unit)
         }
-        return TestProcessor()
+
+        override val keyClass = String::class.java
+        override val valueClass = Any::class.java
     }
 }

@@ -18,6 +18,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 
+/**
+ * Created for mocking and simplifying group reader functionalities used by the membership services.
+ */
 interface TestGroupReaderProvider : MembershipGroupReaderProvider {
     fun loadMembers(holdingIdentity: HoldingIdentity, memberList: List<MemberInfo>)
 }

@@ -13,6 +13,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 
+/**
+ * Created for mocking and simplifying group policy functionalities used by the membership services.
+ */
 interface TestGroupPolicyProvider : GroupPolicyProvider {
     fun putGroupPolicy(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy)
 }

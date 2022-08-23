@@ -59,7 +59,6 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -301,8 +300,8 @@ class MembershipP2PIntegrationTest {
     @Test
     fun `membership p2p service reads verification requests from the p2p topic and puts them on a membership topic for further processing`() {
         val groupId = UUID.randomUUID().toString()
-        val source = createTestHoldingIdentity(MemberX500Name.parse("O=MGM,C=GB,L=London").toString(), groupId)
-        val destination = createTestHoldingIdentity(MemberX500Name.parse("O=Alice,C=GB,L=London").toString(), groupId)
+        val source = createTestHoldingIdentity("O=MGM,C=GB,L=London", groupId)
+        val destination = createTestHoldingIdentity("O=Alice,C=GB,L=London", groupId)
         val registrationId = UUID.randomUUID().toString()
         val requestTimestamp = clock.instant().truncatedTo(ChronoUnit.MILLIS)
         val requestBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
@@ -364,8 +363,8 @@ class MembershipP2PIntegrationTest {
     @Test
     fun `membership p2p service reads verification responses from the p2p topic and puts them on a membership topic for further processing`() {
         val groupId = UUID.randomUUID().toString()
-        val source = createTestHoldingIdentity(MemberX500Name.parse("O=Alice,C=GB,L=London").toString(), groupId)
-        val destination = createTestHoldingIdentity(MemberX500Name.parse("O=MGM,C=GB,L=London").toString(), groupId)
+        val source = createTestHoldingIdentity("O=Alice,C=GB,L=London", groupId)
+        val destination = createTestHoldingIdentity("O=MGM,C=GB,L=London", groupId)
         val registrationId = UUID.randomUUID().toString()
         val requestTimestamp = clock.instant().truncatedTo(ChronoUnit.MILLIS)
         val responseBody = KeyValuePairList(listOf(KeyValuePair("KEY", "dummyKey")))
@@ -424,8 +423,8 @@ class MembershipP2PIntegrationTest {
     @Test
     fun `membership p2p service reads sync requests from the p2p topic and puts them on a synchronisation topic for further processing`() {
         val groupId = UUID.randomUUID().toString()
-        val source = createTestHoldingIdentity(MemberX500Name.parse("O=Alice,C=GB,L=London").toString(), groupId)
-        val destination = createTestHoldingIdentity(MemberX500Name.parse("O=MGM,C=GB,L=London").toString(), groupId)
+        val source = createTestHoldingIdentity("O=Alice,C=GB,L=London", groupId)
+        val destination = createTestHoldingIdentity("O=MGM,C=GB,L=London", groupId)
         val syncId = UUID.randomUUID().toString()
         val requestTimestamp = clock.instant().truncatedTo(ChronoUnit.MILLIS)
         val byteBuffer = ByteBuffer.wrap("1234".toByteArray())
@@ -528,35 +527,31 @@ class MembershipP2PIntegrationTest {
         )
     }
 
-    private fun getTestStateAndEventProcessor(resultCollector: (RegistrationState?, Record<String, RegistrationCommand>) -> Unit): StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
-        class TestStateAndEventProcessor : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
-            override fun onNext(
-                state: RegistrationState?,
-                event: Record<String, RegistrationCommand>
-            ): StateAndEventProcessor.Response<RegistrationState> {
-                resultCollector(state, event)
-                return StateAndEventProcessor.Response(null, emptyList())
-            }
-
-            override val keyClass = String::class.java
-            override val stateValueClass = RegistrationState::class.java
-            override val eventValueClass = RegistrationCommand::class.java
+    private fun getTestStateAndEventProcessor(
+        resultCollector: (RegistrationState?, Record<String, RegistrationCommand>) -> Unit
+    ) = object : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
+        override fun onNext(
+            state: RegistrationState?,
+            event: Record<String, RegistrationCommand>
+        ): StateAndEventProcessor.Response<RegistrationState> {
+            resultCollector(state, event)
+            return StateAndEventProcessor.Response(null, emptyList())
         }
-        return TestStateAndEventProcessor()
+
+        override val keyClass = String::class.java
+        override val stateValueClass = RegistrationState::class.java
+        override val eventValueClass = RegistrationCommand::class.java
     }
 
-    private fun getPubSubTestProcessor(resultCollector: (Any) -> Unit): PubSubProcessor<String, Any> {
-        class TestPubSubProcessor : PubSubProcessor<String, Any> {
-            override fun onNext(
-                event: Record<String, Any>
-            ): CompletableFuture<Unit> {
-                resultCollector(event.value!!)
-                return CompletableFuture.completedFuture(Unit)
-            }
-
-            override val keyClass = String::class.java
-            override val valueClass = Any::class.java
+    private fun getPubSubTestProcessor(resultCollector: (Any) -> Unit) = object : PubSubProcessor<String, Any> {
+        override fun onNext(
+            event: Record<String, Any>
+        ): CompletableFuture<Unit> {
+            resultCollector(event.value!!)
+            return CompletableFuture.completedFuture(Unit)
         }
-        return TestPubSubProcessor()
+
+        override val keyClass = String::class.java
+        override val valueClass = Any::class.java
     }
 }

@@ -6,7 +6,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.merkle.impl.MerkleTreeImpl
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
@@ -58,8 +57,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -171,17 +168,12 @@ class MgmSynchronisationServiceImplTest {
     private val nonMatchingMerkleTree: MerkleTreeImpl = mock {
         on { root } doReturn createSecureHash("algorithm2").toCorda()
     }
-    private val merkleTreeFactory: MerkleTreeFactory = mock()
     private val merkleTreeGenerator: MerkleTreeGenerator = mock {
         on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
         on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on { generateTree(argThat { containsAll(memberInfos) && size == memberInfos.size }) } doReturn matchingMerkleTree
     }
-
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
-    private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
-    private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val signatures = createSignatures(memberInfos)
     private val signature = createSignatures(listOf(bobInfo))
     private val membershipQueryClient: MembershipQueryClient = mock {
@@ -254,11 +246,7 @@ class MgmSynchronisationServiceImplTest {
         coordinatorFactory,
         configurationReadService,
         groupReaderProvider,
-        cordaAvroSerializationFactory,
-        cipherSchemeMetadata,
-        cryptoOpsClient,
         membershipQueryClient,
-        merkleTreeFactory,
         merkleTreeGenerator,
         membershipPackageFactory,
         signerFactory,
