@@ -115,9 +115,12 @@ securityContext:
 Worker security context
 */}}
 {{- define "corda.workerSecurityContext" -}}
-{{- if not ( get .Values.workers .worker ).dumplogging.thread.enabled }}
+{{- if ( get .Values.workers .worker ).dumplogging.thread.enabled }}
 securityContext:
   privileged: true
+{{- else }}
+securityContext:
+  allowPrivilegeEscalation: false
 {{- end }}
 {{- end }}
 
