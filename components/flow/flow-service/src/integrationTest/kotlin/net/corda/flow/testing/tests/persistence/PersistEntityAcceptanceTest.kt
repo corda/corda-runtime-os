@@ -1,7 +1,7 @@
 package net.corda.flow.testing.tests.persistence
 
+import net.corda.data.persistence.PersistEntities
 import java.nio.ByteBuffer
-import net.corda.data.persistence.PersistEntity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.tests.ALICE_HOLDING_IDENTITY
@@ -50,7 +50,7 @@ class PersistEntityAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                entityRequestSent(PersistEntity(byteBuffer))
+                entityRequestSent(PersistEntities(listOf(byteBuffer)))
             }
         }
     }
@@ -66,7 +66,7 @@ class PersistEntityAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            entityResponseSuccessReceived(FLOW_ID1, requestId, null)
+            entityResponseSuccessReceived(FLOW_ID1, requestId, listOf())
         }
 
         then {
