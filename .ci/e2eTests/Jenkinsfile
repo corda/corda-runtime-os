@@ -194,16 +194,11 @@ def sanitizedBranchName(){
     return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
 }
 
-        // TODO where needed
-        //  procno=$! #remember process number started in background
-        //  trap 'kill -9 ${procno}' EXIT
-
-def portForwarding(def name, def port, def portMapping = 0){
+// Helper to expose ports prior to test execution
+def portForwarding(def name, def port, def portMapping){
     if(name.contains('prereqs-kafka')) {
         sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port > forward.txt 2>&1 &"
     } else {
         sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port:$portMapping >> forward.txt 2>&1 &"
     }
-      sh '''procno=$! #remember process number started in background
-         trap 'kill -9 ${procno}' EXIT '''
 }
