@@ -1,47 +1,27 @@
-package net.corda.entityprocessor.impl.tests
+package net.corda.processors.ledger.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.consensual.PersistTransaction
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.DeleteEntityById
-import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.EntityResponseFailure
-import net.corda.data.persistence.EntityResponseSuccess
-import net.corda.data.persistence.Error
-import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
-import net.corda.data.persistence.FindWithNamedQuery
+import net.corda.data.persistence.*
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
-import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
-import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
 import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
-import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.persistCats
-import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.persistDogs
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.DbTestContext
 import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.CAT_CLASS_NAME
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.DOG_CLASS_NAME
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCatInstance
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCatKeyInstance
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDogInstance
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getCatClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getDogClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
+import net.corda.processors.ledger.ConsensualLedgerProcessor
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -58,7 +38,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
-import org.mockito.Mockito
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
@@ -67,10 +46,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
-import java.util.Calendar
 import java.util.UUID
 
 // TODO: Move common parts outside rather than copy-pasting from PersistenceServiceInternalTests.kt
@@ -154,7 +129,7 @@ class ConsensualLedgerDAOTests {
 
         // send request to message processor
         logger.info("Creating entity message processor")
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        val processor = ConsensualLedgerProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))
 
@@ -277,145 +252,8 @@ class ConsensualLedgerDAOTests {
         return results
     }
 
-    private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
+    private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): ConsensualLedgerRequest {
         logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
-        return EntityRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
-    }
-
-    private fun assertQuery(
-        querySetup: QuerySetup,
-        offset: Int = 0, limit: Int = Int.MAX_VALUE,
-        expectFailure: String? = null, sizeLimit: Int = Int.MAX_VALUE
-    ): List<*> {
-        val rec = when(querySetup) {
-            is QuerySetup.NamedQuery -> {
-                val paramsSerialized = querySetup.params.mapValues { ctx.serialize(it.value) }
-                FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit)
-            }
-            is QuerySetup.All -> {
-                FindAll(querySetup.className, offset, limit)
-            }
-        }
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
-            if (sizeLimit != Int.MAX_VALUE && it.array().size > sizeLimit) throw KafkaMessageSizeException("Too large")
-            it
-        }
-        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, rec)
-        val records = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request)))
-        assertThat(records.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
-        val record = records.first()
-        val flowEvent = record.value as FlowEvent
-        if (expectFailure != null) {
-            val response = flowEvent.payload as EntityResponse
-            if (response.responseType is EntityResponseFailure) {
-                logger.error("$response.responseType (expected failure)")
-                assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
-
-            }
-            assertThat(response.responseType.toString()).contains(expectFailure)
-            return listOf<String>()
-        } else {
-            val entityResponse = flowEvent.payload as EntityResponse
-            return assertThatResponseIsAList(entityResponse)
-        }
-    }
-    /** Delete entity and assert
-     * @return the list of successful responses
-     * */
-    private fun assertDeleteEntity(bytes: ByteBuffer): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-
-        return assertSuccessResponses(
-            processor.onNext(
-                listOf(
-                    Record(
-                        TOPIC,
-                        UUID.randomUUID().toString(),
-                        createRequest(ctx.virtualNodeInfo.holdingIdentity, DeleteEntity(bytes))
-                    )
-                )
-            )
-        )
-    }
-
-    /** Delete entity by primary key and do some asserting
-     * @return the list of successful responses
-     * */
-    private fun assertDeleteEntityById(className: String, bytes: ByteBuffer): List<Record<*, *>> {
-        val deleteByPrimaryKey = DeleteEntityById(className, bytes)
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-        val records = listOf(
-            Record(
-                TOPIC,
-                UUID.randomUUID().toString(),
-                createRequest(ctx.virtualNodeInfo.holdingIdentity, deleteByPrimaryKey)
-            )
-        )
-        return processor.onNext(records)
-    }
-
-    /** Find an entity and do some asserting
-     * @return the list of successful responses
-     * */
-    private fun assertFindEntity(className: String, bytes: ByteBuffer): ByteBuffer? {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-
-        val responses = assertSuccessResponses(
-            processor.onNext(
-                listOf(
-                    Record(
-                        TOPIC,
-                        UUID.randomUUID().toString(),
-                        createRequest(
-                            ctx.virtualNodeInfo.holdingIdentity,
-                            FindEntity(className, bytes)
-                        )
-                    )
-                )
-            )
-        )
-
-        val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        val success = response.responseType as EntityResponseSuccess
-
-        return success.result
-    }
-
-    /** Persist an entity and do some asserting
-     * @return the list of successful responses
-     */
-    private fun assertPersistEntity(bytes: ByteBuffer): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-
-        return assertSuccessResponses(
-            processor.onNext(
-                listOf(
-                    Record(
-                        TOPIC,
-                        UUID.randomUUID().toString(),
-                        createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistEntity(bytes))
-                    )
-                )
-            )
-        )
-    }
-
-    /** Merge an entity and do some asserting
-     * @return the list of successful responses
-     */
-    private fun assertMergeEntity(bytes: ByteBuffer): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
-        return assertSuccessResponses(
-            processor.onNext(
-                listOf(
-                    Record(
-                        TOPIC,
-                        UUID.randomUUID().toString(),
-                        createRequest(ctx.virtualNodeInfo.holdingIdentity, MergeEntity(bytes))
-                    )
-                )
-            )
-        )
+        return ConsensualLedgerRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
     }
 }

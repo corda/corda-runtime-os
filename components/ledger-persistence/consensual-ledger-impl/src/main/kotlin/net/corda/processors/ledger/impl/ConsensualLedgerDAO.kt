@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.impl.internal
+package net.corda.processors.ledger.impl
 
 import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.EntityResponse

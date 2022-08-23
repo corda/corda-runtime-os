@@ -15,10 +15,10 @@ import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeExcept
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
-import net.corda.ledger.consensual.impl.internal.ConsensualLedgerDAO
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.processors.ledger.impl.ConsensualLedgerDAO
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.schema.Schemas
