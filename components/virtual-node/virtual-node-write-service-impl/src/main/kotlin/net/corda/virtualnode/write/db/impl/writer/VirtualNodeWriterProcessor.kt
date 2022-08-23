@@ -5,6 +5,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeDBResetRequest
+import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -12,18 +13,17 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
-import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -122,7 +122,7 @@ internal class VirtualNodeWriterProcessor(
 
             runDbMigrations(holdingId, vNodeDbs.values)
 
-            val vaultDb = vNodeDbs[VAULT]
+            val vaultDb = vNodeDbs[VirtualNodeDbType.VAULT]
             if (null == vaultDb) {
                 handleException(respFuture, VirtualNodeWriteServiceException("Vault DB not configured"))
                 return
@@ -151,25 +151,60 @@ internal class VirtualNodeWriterProcessor(
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
         val shortHash = ShortHash.Companion.of(virtualNodeDBResetRequest.holdingIdentityShortHash)
         val holdingIdentityEntity = em.use {
-            virtualNodeEntityRepository.getHoldingIdentityEntity(
+            virtualNodeEntityRepository.getHoldingIdentityEntity(shortHash)
         }!!
-        val holdingId = HoldingIdentity(MemberX500Name.parse(holdingIdentityEntity.x500Name), holdingIdentityEntity.mgmGroupId)
-        val fakeCreateRequest = holdingIdentityEntity.run {
-            VirtualNodeCreateRequest(
-                x500Name,
-                "",
-                vaultDDLConnectionId.toString(),
-                vaultDDLConnectionId.toString(),
-                cryptoDDLConnectionId.toString(),
-                cryptoDMLConnectionId.toString(),
-                virtualNodeDBResetRequest.updateActor
+        val connections = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
+            mapOf(
+                VirtualNodeDbType.VAULT to mapOf(
+                    DDL to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.VAULT.getSchemaName(shortHash), DDL),
+                    DML to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.VAULT.getSchemaName(shortHash), DML)
+                ),
+                VirtualNodeDbType.CRYPTO to mapOf(
+                    DDL to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.CRYPTO.getSchemaName(shortHash), DDL),
+                    DML to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.CRYPTO.getSchemaName(shortHash), DML)
+                )
             )
         }
-
-        val vNodeDbs = vnodeDbFactory.createVNodeDbs(shortHash, fakeCreateRequest)
-        dropCpiMigrations(vNodeDbs.values)
+        val holdingId = HoldingIdentity(MemberX500Name.parse(holdingIdentityEntity.x500Name), holdingIdentityEntity.mgmGroupId)
+        dropVirtualNodeDBs(
+            vnodeDbFactory.createVNodeDbs(
+                shortHash,
+                holdingIdentityEntity.run {
+                    VirtualNodeCreateRequest(
+                        x500Name,
+                        "",
+                        connections[VirtualNodeDbType.VAULT]?.get(DDL)?.config,
+                        connections[VirtualNodeDbType.VAULT]?.get(DML)?.config,
+                        connections[VirtualNodeDbType.CRYPTO]?.get(DDL)?.config,
+                        connections[VirtualNodeDbType.CRYPTO]?.get(DML)?.config,
+                        virtualNodeDBResetRequest.updateActor
+                    )
+                }
+            ).values
+        )
+        val vNodeDbs = vnodeDbFactory.createVNodeDbs(
+            shortHash,
+            holdingIdentityEntity.run {
+                VirtualNodeCreateRequest(
+                    x500Name,
+                    "",
+                    null,
+                    null,
+                    null,
+                    null,
+                    virtualNodeDBResetRequest.updateActor
+                )
+            }
+        )
         createSchemasAndUsers(holdingId, vNodeDbs.values)
         runDbMigrations(holdingId, vNodeDbs.values)
+
+        respFuture.complete(
+            VirtualNodeManagementResponse(
+                instant,
+                VirtualNodeDBResetResponse(shortHash.value)
+            )
+        )
     }
 
     // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
@@ -311,7 +346,11 @@ internal class VirtualNodeWriterProcessor(
 
     private fun createSchemasAndUsers(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
-            vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
+            logger.info("Creating for ${holdingIdentity.shortHash}")
+            vNodeDbs.filter {
+                logger.info("is cluster db: ${it.isClusterDb}")
+                it.isClusterDb
+            }.forEach { it.createSchemasAndUsers() }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e
@@ -330,10 +369,10 @@ internal class VirtualNodeWriterProcessor(
                 .transaction { entityManager ->
                     val dbConnections =
                         VirtualNodeDbConnections(
-                            putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
-                            putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
-                            putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
-                            putConnection(entityManager, vNodeDbs, CRYPTO, DML, updateActor)!!
+                            putConnection(entityManager, vNodeDbs, VirtualNodeDbType.VAULT, DDL, updateActor),
+                            putConnection(entityManager, vNodeDbs, VirtualNodeDbType.VAULT, DML, updateActor)!!,
+                            putConnection(entityManager, vNodeDbs, VirtualNodeDbType.CRYPTO, DDL, updateActor),
+                            putConnection(entityManager, vNodeDbs, VirtualNodeDbType.CRYPTO, DML, updateActor)!!
                         )
                     virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
@@ -370,9 +409,9 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun dropCpiMigrations(vNodeDbs: Collection<VirtualNodeDb>) {
-        vNodeDbs.forEach {
-            it.dropCpiMigrations()
+    private fun dropVirtualNodeDBs(vNodeDbs: Collection<VirtualNodeDb>) {
+        vNodeDbs.forEach { virtualNodeDb ->
+            virtualNodeDb.dropVirtualNodeDBs()
         }
     }
 

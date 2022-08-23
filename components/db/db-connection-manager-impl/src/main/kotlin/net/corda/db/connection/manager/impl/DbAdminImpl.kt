@@ -54,7 +54,7 @@ class DbAdminImpl @Activate constructor(
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.
         log.info("Deleting schema: $schemaName")
-        val sql = "DROP SCHEMA $schemaName CASCADE;"
+        val sql = "DROP SCHEMA IF EXISTS $schemaName CASCADE;"
         dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()
@@ -84,7 +84,7 @@ class DbAdminImpl @Activate constructor(
         // NOTE - This is currently Postgres specific and we will need to provide alternative implementations
         //  for other DBs. So we may need to wrap this in a factory.
         log.info("Deleting user: $user")
-        val sql = "DROP USER $user;"
+        val sql = "DROP USER IF EXISTS $user;"
         dbConnectionManager.getClusterDataSource().connection.use {
             it.createStatement().execute(sql)
             it.commit()

@@ -6,7 +6,6 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.data.virtualnode.VirtualNodeDBRequest
 import net.corda.data.virtualnode.VirtualNodeDBResetRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -99,7 +98,6 @@ class CpiValidatorImpl constructor(
         val nodes = virtualNodeInfoReadService.getAll().filter { it.holdingIdentity.groupId == groupId }
         println(nodes)
         nodes.forEach {
-            log.info("NODE > ${it.holdingIdentity.shortHash}")
             val maintenanceResponse = virtualNodeSender.sendAndReceive(
                 VirtualNodeManagementRequest(
                     clock.instant(),
@@ -162,7 +160,7 @@ class CpiValidatorImpl constructor(
                 log.info("NODE > ${it.holdingIdentity.shortHash}")
                 val request = VirtualNodeManagementRequest(
                     clock.instant(),
-                    VirtualNodeDBRequest(
+                    VirtualNodeDBResetRequest(
                         it.holdingIdentity.shortHash.value,
                         // TODO: Change
                         "ForceCpiUpload"
@@ -171,10 +169,35 @@ class CpiValidatorImpl constructor(
                         //  - ((audit))
                     )
                 )
-                virtualNodeSender.sendAndReceive(request)
+                val resp = virtualNodeSender.sendAndReceive(request)
+                log.info("${it.holdingIdentity.shortHash.value}: ${resp.responseType::class.simpleName}")
             }
         }
-        publisher.update(requestId, "Restoring vitual nodes to active state")
+        publisher.update(requestId, "Restoring virtual nodes to active state")
+        nodes.forEach {
+            val maintenanceResponse = virtualNodeSender.sendAndReceive(
+                VirtualNodeManagementRequest(
+                    clock.instant(),
+                    VirtualNodeStateChangeRequest(
+                        it.holdingIdentity.shortHash.value,
+                        "ACTIVE",
+                        // TODO: Change
+                        "ForceCpiUpload"
+                        // TODO: It might make a lot of sense to have a "why field" here
+                        //  - IE (endpoint, new cpi, etc.)
+                        //  - ((audit))
+                    )
+                )
+            )
+            if (maintenanceResponse.responseType is VirtualNodeManagementResponseFailure) {
+                val exceptionSource = (maintenanceResponse.responseType as VirtualNodeManagementResponseFailure).exception
+                val cause = Exception("${exceptionSource.errorType}: ${exceptionSource.errorMessage}")
+                throw ValidationException(
+                    "Could not take vnode ${it.holdingIdentity.x500Name} out of maintenance mode",
+                    cause
+                )
+            }
+        }
 
         return fileInfo.checksum
     }

@@ -97,15 +97,21 @@ class VirtualNodeDb(
         }
     }
 
-    fun dropCpiMigrations() {
+    @Suppress("ThrowsCount")
+    fun dropVirtualNodeDBs() {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to reset CPI migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
-            dataSource.connection.use { connection ->
-                val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-                connection.createStatement().execute("DROP SCHEMA $dbSchema")
-                connection.commit()
-            }
+
+        dbConnection.let { connection ->
+            val user = connection.getUser()
+                ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
+            val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+            // This covers scenario when previous virtual node on-boarding request failed after user was created
+            // Since connections are persisted at later point, user's password is lost, so user is re-created
+            log.info("User for connection ${connection.description} already exists in DB, schema will be deleted")
+            dbAdmin.deleteSchema(dbSchema)
+            log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
+            dbAdmin.deleteUser(user)
         }
     }
 }

@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import com.sun.tools.javac.jvm.ByteCodes.ret
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
