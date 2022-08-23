@@ -4,39 +4,34 @@ plugins {
     id 'corda.docker-app'
 }
 
-description 'Gateway Application'
+description 'P2P Gateway Worker'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(':applications:workers:worker-common')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:gateway-processor')
-    implementation project(':osgi-framework-api')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation 'org.slf4j:slf4j-api'
-    implementation project(":components:crypto:crypto-client")
+
+    runtimeOnly project(":components:crypto:crypto-client-impl")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-    runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":components:crypto:crypto-client-impl")
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:configuration:configuration-merger")
+    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
 
     dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
