@@ -1,17 +1,13 @@
-package net.corda.ledger.consensual
+package net.corda.ledger.consensual.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.ledger.consensual.impl.ConsensualLedgerServiceImpl
-import net.corda.ledger.consensual.impl.PartyImpl
-import net.corda.ledger.consensual.impl.helper.TestSerializationService
-import net.corda.membership.read.MembershipGroupReader
+import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -22,45 +18,23 @@ import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
-import net.corda.virtualnode.HoldingIdentity
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.security.PublicKey
-import java.time.Instant
 import kotlin.test.assertIs
 
-// TODO(This does not look too healthy... Parts of it came from net.corda.flow.application.services.MockFlowFiberService)
-class MockFlowFiberService(private val schemeMetadata: CipherSchemeMetadata) : FlowFiberService {
-    private val mockFlowFiber: FlowFiber
-
-    init{
-        val serializer = TestSerializationService.getTestSerializationService(schemeMetadata)
-        val mockFlowSandboxGroupContext = mock<FlowSandboxGroupContext>()
-        whenever (mockFlowSandboxGroupContext.amqpSerializer).thenReturn(serializer)
-
-        val membershipGroupReader: MembershipGroupReader = mock()
-        val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
-        val BOB_X500_NAME = MemberX500Name.parse(BOB_X500)
-        val holdingIdentity =  HoldingIdentity(BOB_X500_NAME,"group1")
-        val flowFiberExecutionContext = FlowFiberExecutionContext(
-            mock(),
-            mockFlowSandboxGroupContext,
-            holdingIdentity,
-            membershipGroupReader
-        )
-
-        mockFlowFiber = mock {
-            on { it.getExecutionContext() }.thenReturn(flowFiberExecutionContext)
-        }
-
-    }
+class TestFlowFiberServiceWithSerializationProxy constructor(
+    private val schemeMetadata: CipherSchemeMetadata
+) : FlowFiberService, SingletonSerializeAsToken {
     override fun getExecutingFiber(): FlowFiber {
-        return mockFlowFiber
+        val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
+        testFlowFiberServiceWithSerialization.configureSerializer ({
+            it.register(PartySerializer(), it)
+        }, schemeMetadata)
+        return testFlowFiberServiceWithSerialization.getExecutingFiber()
     }
-
 }
 
 class ConsensualLedgerServiceImplTest {
@@ -88,7 +62,7 @@ class ConsensualLedgerServiceImplTest {
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
 
-            flowFiberService = MockFlowFiberService(schemeMetadata)
+            flowFiberService = TestFlowFiberServiceWithSerializationProxy(schemeMetadata)
             signingService = SigningServiceImpl(flowFiberService, schemeMetadata)
 
             val kpg = KeyPairGenerator.getInstance("RSA")

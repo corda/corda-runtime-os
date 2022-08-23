@@ -6,7 +6,7 @@ import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
 import net.corda.ledger.consensual.impl.PartyImpl
-import net.corda.ledger.consensual.impl.helper.TestSerializationService
+import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
@@ -59,7 +59,7 @@ internal class ConsensualLedgerTransactionImplTest{
             digestService = DigestServiceImpl(schemeMetadata, null)
             secureRandom = schemeMetadata.secureRandom
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
-            serializer = TestSerializationService.getTestSerializationService(schemeMetadata)
+            serializer = ConfiguredTestSerializationService.getTestSerializationService(schemeMetadata)
 
             val flowFiberService = FlowFiberServiceImpl()
             signingService = SigningServiceImpl(flowFiberService, schemeMetadata)

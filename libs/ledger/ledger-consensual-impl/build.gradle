@@ -33,9 +33,7 @@ dependencies {
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:serialization:serialization-internal")
-    testImplementation project(":libs:virtual-node:sandbox-group-context")
-    testImplementation project(':libs:virtual-node:virtual-node-info')
-    testImplementation project(':components:membership:membership-group-read')
+    testImplementation project(':testing:test-serialization')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
@@ -49,4 +47,5 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
+    integrationTestRuntimeOnly project(':testing:test-serialization')
 }
