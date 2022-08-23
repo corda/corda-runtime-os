@@ -22,7 +22,7 @@ import net.corda.entityprocessor.impl.tests.fake.FakeCpiInfoReadService
 import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDogInstance
+import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -224,8 +224,8 @@ class PersistenceExceptionTests {
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
 
         // create dog using dog-aware sandbox
-        val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
-        val serialisedDog = sandboxOne.getSerializer().serialize(dog).bytes
+        val dog = sandboxOne.createDog("Stray", owner="Not Known")
+        val serialisedDog = sandboxOne.getSerializer().serialize(dog.instance).bytes
 
         // create persist request for the sandbox that isn't dog-aware
         val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro(), PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))))
