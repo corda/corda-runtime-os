@@ -4,11 +4,16 @@ import net.corda.db.schema.DbSchema
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.NamedQuery
 import javax.persistence.Table
 
 /**
  * An entity representing a single certificate.
  */
+@NamedQuery(
+    name = "Certificate.findAll",
+    query = "from Certificate"
+)
 @Entity
 @Table(name = DbSchema.VNODE_CERTIFICATE_DB_TABLE)
 data class Certificate(

@@ -13,21 +13,28 @@ import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
+import org.osgi.framework.Constants.FRAGMENT_HOST
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.security.AccessController.doPrivileged
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.security.PrivilegedAction
 import java.util.UUID
 import kotlin.streams.asSequence
 
+
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
+@Suppress("TooManyFunctions")
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @RequireSandboxHooks
 internal class SandboxServiceImpl @Activate constructor(
@@ -155,8 +162,13 @@ internal class SandboxServiceImpl @Activate constructor(
         securityDomain: String,
         startBundles: Boolean
     ): SandboxGroup {
-        if (securityDomain.contains('/'))
-            throw SandboxException("Security domain cannot contain a '/' character.")
+        sandboxForbidsThat(securityDomain.contains('/')) {
+            "Security domain cannot contain a '/' character."
+        }
+
+        // Verify that CPK files were not tampered with
+        // TODO there is a small time window between verification and installation during which CPK files might still be modified
+        verifyCpks(cpks)
 
         // We track the bundles that are being created, so that we can start them all at once at the end if needed.
         val bundles = mutableSetOf<Bundle>()
@@ -171,6 +183,10 @@ internal class SandboxServiceImpl @Activate constructor(
                 sandboxId,
                 securityDomain
             )
+            sandboxForbidsThat(isFragment(mainBundle)) {
+                "CPK main bundle $mainBundle cannot be a fragment"
+            }
+
             val libraryBundles = cpk.metadata.libraries.mapTo(LinkedHashSet()) { libraryJar ->
                 installBundle(
                     "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/$libraryJar",
@@ -179,6 +195,7 @@ internal class SandboxServiceImpl @Activate constructor(
                     securityDomain
                 )
             }
+
             bundles.addAll(libraryBundles)
             bundles.add(mainBundle)
 
@@ -200,6 +217,11 @@ internal class SandboxServiceImpl @Activate constructor(
             newSandbox.grantVisibility(newSandboxes - newSandbox)
         }
 
+        // Ensure that all of these bundles are resolved before we start them.
+        sandboxRequiresThat(bundleUtils.resolveBundles(bundles)) {
+            "Failed to resolve bundles: ${bundles.joinToString()}"
+        }
+
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
         // likely dependencies between the CPKs' bundles.
         if (startBundles) {
@@ -213,6 +235,37 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         return sandboxGroup
+    }
+
+    /**
+     * Verifies that [cpks] haven't been tampered with by calculating their checksum and validating them against
+     * expected values.
+     */
+    private fun verifyCpks(cpks: Iterable<Cpk>) {
+        cpks.forEach(::verifyCpkChecksum)
+    }
+
+    /**
+     * Calculates [cpk]'s checksum and validates it against expected value
+     */
+    private fun verifyCpkChecksum(cpk: Cpk) {
+        sandboxRequiresThat(checksum(cpk.getInputStream()) == cpk.metadata.fileChecksum) {
+            "File checksum validation failed for CPK ${cpk.metadata.cpkId.name} during sandbox creation"
+        }
+    }
+
+    /**
+     * Calculates [inputStream]'s checksum
+     */
+    private fun checksum(inputStream: InputStream): SecureHash {
+        val digest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+        DigestInputStream(inputStream, digest).use {
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (it.read(buffer) != -1) {
+                // read all bytes to calculate digest
+            }
+        }
+        return SecureHash(digest.algorithm, digest.digest())
     }
 
     /**
@@ -245,10 +298,9 @@ internal class SandboxServiceImpl @Activate constructor(
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
         }
 
-        if (bundle.symbolicName == null)
-            throw SandboxException(
-                "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
-            )
+        sandboxForbidsThat(bundle.symbolicName == null) {
+            "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
+        }
         return bundle
     }
 
@@ -258,7 +310,9 @@ internal class SandboxServiceImpl @Activate constructor(
      * Throws [SandboxException] if a bundle cannot be started.
      * */
     private fun startBundles(bundles: Collection<Bundle>) {
-        bundles.forEach { bundle ->
+        // OSGi merges fragments with their host bundle,
+        // and so we only start non-fragment bundles.
+        bundles.filterNot(::isFragment).forEach { bundle ->
             try {
                 bundle.start()
             } catch (e: BundleException) {
@@ -266,4 +320,19 @@ internal class SandboxServiceImpl @Activate constructor(
             }
         }
     }
+
+    private fun isFragment(bundle: Bundle): Boolean {
+        return bundle.headers.get(FRAGMENT_HOST) != null
+    }
 }
+
+// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String) {
+    if (condition) {
+        throw SandboxException(message())
+    }
+}
+
+// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String)
+    = sandboxForbidsThat(!condition, message)

@@ -97,6 +97,7 @@ class RollCallFlow: RPCStartableFlow {
         }
     }
 
+    @Suspendable
     private fun retryRollCall(
         r: Pair<FlowSession, String>
     ) : List<AbsenceResponse> {

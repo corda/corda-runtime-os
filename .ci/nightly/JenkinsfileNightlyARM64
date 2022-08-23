@@ -3,13 +3,15 @@
 
 cordaNightlyPipeline(
     nexusAppId: 'flow-worker-5.0',
+    dailyBuildCron: 'H 04 * * *',
     runIntegrationTests: true,
-    publishRepoPrefix: '', // change this to 'corda-ent-maven', when JARs don't overwrite AMD64 ones
+    publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
     publishOSGiImage: false, // change this to true when images don't overwrite AMD64 ones
-    publishPreTestImage: false, // change this to true when images don't overwrite AMD64 ones
+    publishPreTestImage: true,
     publishHelmChart: false, // change this to true when images don't overwrite AMD64 ones
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false, // change this to true when E2E infrastructure is in place
     linuxArch: 'arm64',
+    gradleAdditionalArgs: '-PcliBasebaseTag=arm64-nightly'
     )
