@@ -100,6 +100,18 @@ Worker image
 {{- end }}
 
 {{/*
+Worker security context
+*/}}
+{{- define "corda.workerSecurityContext" -}}
+{{- if not ( get .Values.workers .worker ).dumplogging.thread.enabled }}
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
 CLI image
 */}}
 {{- define "corda.bootstrapImage" -}}
@@ -283,7 +295,7 @@ Volume mounts for corda workers
   name: "jaas-conf"
   readOnly: true
 {{- end }}
-{{- if .Values.dumplogging.thread.enabled }}
+{{- if ( get .Values.workers .worker ).dumplogging.thread.enabled }}
 - mountPath: /logging/thread/
   name: logging
 {{- end }}
@@ -306,7 +318,7 @@ Volumes for corda workers
   secret:
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
-{{- if .Values.dumplogging.thread.enabled }}
+{{- if ( get .Values.workers .worker ).dumplogging.thread.enabled }}
 - name: logging
   hostPath:
     path: /logging/thread/{{ include "corda.workerName" . }}/

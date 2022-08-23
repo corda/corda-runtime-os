@@ -195,6 +195,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
 
   # DB worker configuration
   db:
@@ -231,6 +235,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
 
   # flow worker configuration
   flow:
@@ -263,6 +271,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the flow worker containers
       limits: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
     # -- run flow worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
 
@@ -297,6 +309,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the membership worker containers
       limits: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
 
   # RPC worker configuration
   rpc:
@@ -339,6 +355,10 @@ workers:
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
       annotations: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
 
   # P2P Link Manager worker configuration
   p2pLinkManager:
@@ -373,6 +393,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-link-manager worker containers
       limits: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
 
   # P2P Gateway worker configuration
   p2pGateway:
@@ -407,7 +431,12 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-gateway worker containers
       limits: {}
+    dumplogging:
+      thread:
+        # -- enables dump log threadding 
+        enabled: false
     # p2p-gateway worker worker service configuration
     service:
       # -- The Gateway HTTP port
       port: 8080
+
