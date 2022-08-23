@@ -195,7 +195,7 @@ def sanitizedBranchName(){
 }
 
 // Helper to expose ports prior to test execution
-def portForwarding(def name, def port, def portMapping){
+def portForwarding(def name, def port, def portMapping = 0){
     if(name.contains('prereqs-kafka')) {
         sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port > forward.txt 2>&1 &"
     } else {
