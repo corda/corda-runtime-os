@@ -100,14 +100,24 @@ Worker image
 {{- end }}
 
 {{/*
-Worker security context
+Pod security context
 */}}
-{{- define "corda.workerSecurityContext" -}}
+{{- define "corda.PodSecurityContext" -}}
 {{- if not ( get .Values.workers .worker ).dumplogging.thread.enabled }}
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
+Worker security context
+*/}}
+{{- define "corda.workerSecurityContext" -}}
+{{- if not ( get .Values.workers .worker ).dumplogging.thread.enabled }}
+securityContext:
+  privileged: true
 {{- end }}
 {{- end }}
 
