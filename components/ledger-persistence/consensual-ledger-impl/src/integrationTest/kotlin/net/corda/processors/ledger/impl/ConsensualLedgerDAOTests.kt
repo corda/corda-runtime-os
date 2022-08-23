@@ -21,7 +21,7 @@ import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
-import net.corda.processors.ledger.ConsensualLedgerProcessor
+import net.corda.processors.ledger.impl.ConsensualLedgerProcessor
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService

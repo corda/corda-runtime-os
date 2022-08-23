@@ -1,4 +1,4 @@
-package net.corda.processors.ledger
+package net.corda.processors.ledger.impl
 
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory

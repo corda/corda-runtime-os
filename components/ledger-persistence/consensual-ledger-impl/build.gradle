@@ -95,7 +95,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestImplementation "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
