@@ -22,6 +22,8 @@
     bnd.identity;id='net.corda.db-orm-impl',\
     bnd.identity;id='net.corda.db-connection-manager-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
+    bnd.identity;id='net.corda.merkle-impl',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
