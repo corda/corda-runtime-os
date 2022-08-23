@@ -2,6 +2,7 @@ package net.corda.libs.permissions.endpoints.v1.role.impl
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.HttpResponse
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
@@ -50,7 +51,7 @@ class RoleEndpointImpl @Activate constructor(
         return allRoles.map { it.convertToEndpointType() }.toSet()
     }
 
-    override fun createRole(createRoleType: CreateRoleType): RoleResponseType {
+    override fun createRole(createRoleType: CreateRoleType): HttpResponse<RoleResponseType> {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
@@ -58,7 +59,7 @@ class RoleEndpointImpl @Activate constructor(
             createRole(createRoleType.convertToDto(principal))
         }
 
-        return createRoleResult!!.convertToEndpointType()
+        return HttpResponse.resourceCreated(createRoleResult!!.convertToEndpointType())
     }
 
     override fun getRole(id: String): RoleResponseType {
@@ -72,7 +73,7 @@ class RoleEndpointImpl @Activate constructor(
         return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", id)
     }
 
-    override fun addPermission(roleId: String, permissionId: String): RoleResponseType {
+    override fun addPermission(roleId: String, permissionId: String): HttpResponse<RoleResponseType> {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
@@ -80,10 +81,10 @@ class RoleEndpointImpl @Activate constructor(
             addPermissionToRole(roleId, permissionId, principal)
         }
 
-        return updatedRoleResult!!.convertToEndpointType()
+        return HttpResponse.resourceUpdated(updatedRoleResult!!.convertToEndpointType())
     }
 
-    override fun removePermission(roleId: String, permissionId: String): RoleResponseType {
+    override fun removePermission(roleId: String, permissionId: String): HttpResponse<RoleResponseType> {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
@@ -91,7 +92,7 @@ class RoleEndpointImpl @Activate constructor(
             removePermissionFromRole(roleId, permissionId, principal)
         }
 
-        return updatedRoleResult!!.convertToEndpointType()
+        return HttpResponse.resourceDeleted(updatedRoleResult!!.convertToEndpointType())
     }
 
     override val isRunning: Boolean

@@ -1,5 +1,9 @@
 package net.corda.httprpc.annotations
 
+import net.corda.httprpc.response.HttpResponse
+import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.exception.ResourceNotFoundException
+
 /**
  * Annotation that is meant to be applied on annotations to flag the fact that they are meant for exposing
  * an HTTP Endpoint.
@@ -10,6 +14,14 @@ annotation class HttpRpcEndpoint
 /**
  * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a POST endpoint by the HTTP RPC
  * generated web service.
+ *
+ * - If an endpoint successfully creates a resource, it should return a [HttpResponse] with [ResponseCode.CREATED] (status code 201).
+ * - If an endpoint successfully updates a resource or does some processing without creating a new resource, it should return a
+ * [HttpResponse] with [ResponseCode.OK] (status code 200).
+ * - If an endpoint performs processing asynchronously, it should return a [HttpResponse] with [ResponseCode.ACCEPTED] (status code 202).
+ * The response payload for such an endpoint should contain a representation of the status of the request.
+ * - If an endpoint method does some processing but has no result to return, the method can have no return type and by default
+ * [ResponseCode.NO_CONTENT] (status code 204) is returned, unless an exception is thrown.
  *
  * @property path The relative path of the endpoint within its resource.
  *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
@@ -31,6 +43,14 @@ annotation class HttpRpcPOST(
  * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a PUT endpoint by the HTTP RPC
  * generated web service.
  *
+ * - If an endpoint successfully creates a resource, it should return a [HttpResponse] with [ResponseCode.CREATED] (status code 201).
+ * - If an endpoint successfully updates a resource or does some processing without creating a new resource, it should return a
+ * [HttpResponse] with [ResponseCode.OK] (status code 200).
+ * - If an endpoint performs processing asynchronously, it should return a [HttpResponse] with [ResponseCode.ACCEPTED] (status code 202).
+ * The response payload for such an endpoint should contain a representation of the status of the request.
+ * - If an endpoint method does some processing but has no result to return, the method can have no return type and by default
+ * [ResponseCode.NO_CONTENT] (status code 204) is returned, unless an exception is thrown.
+ *
  * @property path The relative path of the endpoint within its resource.
  *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
@@ -51,6 +71,11 @@ annotation class HttpRpcPUT(
  * Marks a function or a property getter of an @[HttpRpcResource] annotated interface to be exposed as a `GET`
  * endpoint by the HTTP RPC generated web service.
  *
+ * - Successful invocation of a GET API should return the representation of the requested resource.
+ * - By default an endpoint does not need to return a [HttpResponse], the return type will be converted to the response payload with
+ * [ResponseCode.OK] (status code 200).
+ * - If a resource cannot be found it should throw a [ResourceNotFoundException].
+ *
  * @property path The relative path of the endpoint within its resource.
  *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
@@ -70,6 +95,12 @@ annotation class HttpRpcGET(
 /**
  * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a `DELETE`
  * endpoint by the HTTP RPC generated web service.
+ *
+ * - If an endpoint successfully deletes a resource, it should return either a [HttpResponse] with [ResponseCode.OK] (status code 200) and
+ * response payload containing a representation of the status, or a [ResponseCode.NO_CONTENT] and no response payload.
+ * - By default if the method has no return type [ResponseCode.NO_CONTENT] (status code 204) is returned, unless an exception is thrown.
+ * - If an endpoint performs processing asynchronously, it should return a [HttpResponse] with [ResponseCode.ACCEPTED] (status code 202).
+ * The response payload for such an endpoint should contain a representation of the status of the request.
  *
  * @property path The relative path of the endpoint within its resource.
  *           Defaults to an empty string, meaning that path of the enclosing [HttpRpcResource] should be used.

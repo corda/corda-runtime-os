@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import java.lang.IllegalArgumentException
 import javax.security.auth.login.FailedLoginException
+import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.response.HttpResponse
 
 internal object ContextUtils {
 
@@ -141,13 +143,22 @@ internal object ContextUtils {
     private fun buildJsonResult(result: Any?, ctx: Context, routeInfo: RouteInfo) {
         when {
             (result as? String) != null ->
-                ctx.contentType(contentTypeApplicationJson).result(result)
-            result != null ->
-                ctx.json(result)
+                ctx.contentType(contentTypeApplicationJson).result(result).status(ResponseCode.OK.statusCode)
+            result is HttpResponse<*> -> {
+                // if the responseBody is null, we return null json
+                ctx.json(result.responseBody ?: "null").status(result.responseCode.statusCode)
+            }
+            result != null -> {
+                // If the return type does not specify a response code (is not a HttpResponse) we default the status to 200 - OK.
+                ctx.json(result).status(ResponseCode.OK.statusCode)
+            }
             else -> {
-                // if the method has no return type we don't return null
                 if (routeInfo.method.method.returnType != Void.TYPE) {
-                    ctx.result("null")
+                    // if the method has no return type we return a status code 200 - OK with null payload
+                    ctx.result("null").status(ResponseCode.OK.statusCode)
+                } else {
+                    // if the method has no return type we return a status code 204 - No Content.
+                    ctx.status(ResponseCode.NO_CONTENT.statusCode)
                 }
             }
         }

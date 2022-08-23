@@ -36,8 +36,10 @@ class CreateUserE2eTest {
 
             with(proxy.createUser(createUserType)) {
                 assertSoftly {
-                    it.assertThat(loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                    it.assertThat(this.responseBody).isNotNull
+                    it.assertThat(this.responseBody!!.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody!!.passwordExpiry).isEqualTo(passwordExpirySet)
                 }
             }
 

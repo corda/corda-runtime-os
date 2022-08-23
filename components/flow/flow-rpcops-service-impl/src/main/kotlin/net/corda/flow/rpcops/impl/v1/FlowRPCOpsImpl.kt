@@ -14,6 +14,7 @@ import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.HttpResponse
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
@@ -67,7 +68,7 @@ class FlowRPCOpsImpl @Activate constructor(
     override fun startFlow(
         holdingIdentityShortHash: String,
         startFlow: StartFlowParameters
-    ): FlowStatusResponse {
+    ): HttpResponse<FlowStatusResponse> {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
@@ -107,7 +108,7 @@ class FlowRPCOpsImpl @Activate constructor(
             throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", e)
         }
 
-        return messageFactory.createFlowStatusResponse(status)
+        return HttpResponse.requestAccepted(messageFactory.createFlowStatusResponse(status))
     }
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {

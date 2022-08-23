@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
+import net.corda.httprpc.response.HttpResponse
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
@@ -39,6 +40,14 @@ class CreatePermissionE2eTest {
                     it.assertThat(permissionType).isEqualTo(PermissionType.ALLOW)
                 }
                 return this
+            }
+            fun HttpResponse<PermissionResponseType>.assertAsExpected(): PermissionResponseType {
+                assertSoftly {
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                    it.assertThat(this.responseBody).isNotNull
+                    this.responseBody!!.assertAsExpected()
+                }
+                return this.responseBody!!
             }
 
             val permId = proxy.createPermission(createPermType).assertAsExpected().id

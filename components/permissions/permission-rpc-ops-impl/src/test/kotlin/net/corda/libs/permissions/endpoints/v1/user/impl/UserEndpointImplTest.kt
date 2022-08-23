@@ -90,9 +90,12 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.createUser(createUserType)
+        val response = endpoint.createUser(createUserType)
+        val responseType = response.responseBody
 
-        assertEquals("uuid", responseType.id)
+        assertEquals(ResponseCode.CREATED, response.responseCode)
+        assertNotNull(responseType)
+        assertEquals("uuid", responseType!!.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("fullName1", responseType.fullName)
@@ -160,7 +163,10 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.addRoleToUser(capture.capture())).thenReturn(userResponseDtoWithRole)
 
         endpoint.start()
-        val responseType = endpoint.addRole("userLogin1", "roleId1")
+        val response = endpoint.addRole("userLogin1", "roleId1")
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
@@ -168,7 +174,7 @@ internal class UserEndpointImplTest {
         assertEquals("roleId1", capture.firstValue.roleId)
 
         assertNotNull(responseType)
-        assertEquals("uuid", responseType.id)
+        assertEquals("uuid", responseType!!.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("fullName1", responseType.fullName)
@@ -202,7 +208,10 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.removeRoleFromUser(capture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.removeRole("userLogin1", "roleId1")
+        val response = endpoint.removeRole("userLogin1", "roleId1")
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
@@ -210,7 +219,7 @@ internal class UserEndpointImplTest {
         assertEquals("roleId1", capture.firstValue.roleId)
 
         assertNotNull(responseType)
-        assertEquals("uuid", responseType.id)
+        assertEquals("uuid", responseType!!.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("fullName1", responseType.fullName)
