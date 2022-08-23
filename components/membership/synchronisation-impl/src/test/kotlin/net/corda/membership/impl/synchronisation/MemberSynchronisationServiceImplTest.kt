@@ -25,6 +25,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
@@ -52,12 +53,12 @@ import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isA
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -279,7 +280,7 @@ class MemberSynchronisationServiceImplTest {
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
         whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
-        whenever(signedMemberships.hashCheck) doReturn SecureHash("alg", ByteBuffer.wrap(byteArrayOf()))
+        whenever(signedMemberships.hashCheck) doReturn null
 
         synchronisationService.processMembershipUpdates(updates)
 
@@ -292,6 +293,68 @@ class MemberSynchronisationServiceImplTest {
                 }
                 .contains(synchronisationRequest)
         }
+    }
+
+    @Test
+    fun `processMembershipUpdates asks for synchronization when hashes are misaligned`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        val publishedMemberList = capturedPublishedList.firstValue
+        SoftAssertions.assertSoftly {
+            it.assertThat(publishedMemberList)
+                .hasSize(2)
+                .anySatisfy {
+                    assertThat(it.topic).isEqualTo(MEMBER_LIST_TOPIC)
+                }
+                .contains(synchronisationRequest)
+        }
+    }
+
+    @Test
+    fun `processMembershipUpdates hash the correct members`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val mgmContextMgm = mock<MGMContext> {
+            on {
+                parseOrNull(
+                    MemberInfoExtension.IS_MGM,
+                    Boolean::class.javaObjectType
+                )
+            } doReturn true
+        }
+        val mgmInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn mgmContextMgm
+        }
+        val memberContext = mock<MemberContext> {
+            on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn GROUP_NAME
+        }
+        val memberInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn mgmProvidedContext
+            on { memberProvidedContext } doReturn memberContext
+            on { name } doReturn MemberX500Name("Member", "London", "GB")
+        }
+        whenever(groupReader.lookup()).doReturn(
+            listOf(
+                mgmInfo,
+                memberInfo,
+            )
+        )
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(
+            merkleTreeGenerator
+        ).generateTree(
+            argThat {
+                this.contains(memberInfo) && this.contains(participant) && !this.contains(mgmInfo)
+            }
+        )
     }
 
     @Test

@@ -198,8 +198,8 @@ class MemberSynchronisationServiceImpl internal constructor(
                     )
                 }
 
-                val packageHash = updates.membershipPackage.memberships.hashCheck.toCorda()
-                val allRecords = if (packageHash.bytes.isEmpty()) {
+                val packageHash = updates.membershipPackage.memberships.hashCheck?.toCorda()
+                val allRecords = if (packageHash == null) {
                     persistentMemberInfoRecords + createSynchronisationRequestMessage(updates)
                 } else {
                     val groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember)
