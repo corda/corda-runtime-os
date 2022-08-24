@@ -45,7 +45,7 @@ class CpiValidatorImpl constructor(
         private const val CERTIFICATE_TYPE = "codesigner"
     }
 
-    @Suppress("ForbiddenComment")
+    @Suppress("ForbiddenComment", "ComplexMethod")
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
         log.debug("Validating $requestId")

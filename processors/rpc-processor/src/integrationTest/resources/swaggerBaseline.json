@@ -1312,6 +1312,11 @@
                     "format" : "binary",
                     "nullable" : false,
                     "example" : "No example available for this type"
+                  },
+                  "resetDb" : {
+                    "type" : "boolean",
+                    "nullable" : false,
+                    "example" : true
                   }
                 }
               }
