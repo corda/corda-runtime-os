@@ -19,6 +19,7 @@ import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,

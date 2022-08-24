@@ -44,12 +44,15 @@ internal class ConsensualLedgerTransactionImplTest{
             val testField: String,
             override val participants: List<Party>
         ) : ConsensualState {
-            override fun verify(ledgerTransaction: ConsensualLedgerTransaction){}
-            override fun equals(other: Any?): Boolean =
-                other === this ||
-                        other is TestConsensualState &&
-                        other.testField == testField &&
-                        other.participants == participants
+            override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is TestConsensualState) return false
+                if (other.testField != testField) return false
+                if (other.participants.size != participants.size) return false
+                return other.participants.containsAll(participants)
+            }
+            override fun hashCode(): Int = testField.hashCode() + participants.hashCode() * 31
         }
 
         @BeforeAll
