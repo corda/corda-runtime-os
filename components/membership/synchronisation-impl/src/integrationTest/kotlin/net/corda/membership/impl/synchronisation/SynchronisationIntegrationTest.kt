@@ -203,7 +203,7 @@ class SynchronisationIntegrationTest {
         val mgm = HoldingIdentity(mgmName, groupId)
         val requester = HoldingIdentity(requesterName, groupId)
         val participant = HoldingIdentity(participantName, groupId)
-        val members = listOf(mgmName, requesterName, participantName)
+        val members = listOf(requesterName, participantName)
         val mgmSessionKey: PublicKey by lazy {
             cryptoOpsClient.generateKeyPair(
                 mgm.toCorda().shortHash.value,
@@ -398,7 +398,7 @@ class SynchronisationIntegrationTest {
             val authenticatedMessage = result.message as AuthenticatedMessage
             with(membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array()) as MembershipPackage) {
                 it.assertThat(this.distributionType).isEqualTo(DistributionType.SYNC)
-                it.assertThat(this.memberships.memberships.size).isEqualTo(3)
+                it.assertThat(this.memberships.memberships.size).isEqualTo(2)
                 this.memberships.memberships.forEach {
                     val member = memberInfoFactory.create(
                         keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),

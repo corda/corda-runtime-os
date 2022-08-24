@@ -65,8 +65,26 @@ class SynchronisationProxyImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationProxy {
+        /**
+         * Retrieves the appropriate instance of [MemberSynchronisationService] for a holding identity as specified in the CPI
+         * configuration, and delegates the processing of membership updates to it.
+         *
+         * @param updates Data package distributed by the MGM containing membership updates.
+         *
+         * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
+         * @throws [SynchronisationProtocolTypeException] if the configured protocol is not an [MemberSynchronisationService].
+         */
         fun processMembershipUpdates(updates: ProcessMembershipUpdates)
 
+        /**
+         * Retrieves the appropriate instance of [MgmSynchronisationService] for a holding identity as specified in the CPI
+         * configuration, and delegates the processing of membership sync requests to it.
+         *
+         * @param request The sync request which needs to be processed.
+         *
+         * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
+         * @throws [SynchronisationProtocolTypeException] if the configured protocol is not an [MgmSynchronisationService].
+         */
         fun processSyncRequest(request: ProcessSyncRequest)
     }
 
@@ -99,10 +117,10 @@ class SynchronisationProxyImpl @Activate constructor(
 
     private var impl: InnerSynchronisationProxy = InactiveImpl
 
-    override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
+    fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
         impl.processMembershipUpdates(updates)
 
-    override fun processSyncRequest(request: ProcessSyncRequest) =
+    fun processSyncRequest(request: ProcessSyncRequest) =
         impl.processSyncRequest(request)
 
     override val isRunning: Boolean

@@ -45,7 +45,6 @@ import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.synchronisation.MemberSynchronisationService
 import net.corda.membership.synchronisation.MgmSynchronisationService
 import net.corda.membership.synchronisation.SynchronisationException
-import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
@@ -146,7 +145,7 @@ class SynchronisationProxyImplTest {
         on { synchronisationMetaData } doReturn synchronisationMetadata
         on { syncRequest } doReturn syncRequest
     }
-    private lateinit var synchronisationProxy: SynchronisationProxy
+    private lateinit var synchronisationProxy: SynchronisationProxyImpl
 
     private fun createHoldingIdentity() = createTestHoldingIdentity("O=Alice, L=London, C=GB", DUMMY_GROUP_ID)
 

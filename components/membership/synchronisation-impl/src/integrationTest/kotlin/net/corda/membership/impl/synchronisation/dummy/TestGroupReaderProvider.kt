@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.CPIWhiteList
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name
@@ -89,12 +90,7 @@ class TestGroupReader : MembershipGroupReader {
 
     override fun lookup(): Collection<MemberInfo> = members
 
-    override fun lookup(name: MemberX500Name): MemberInfo? {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
-        }
-    }
+    override fun lookup(name: MemberX500Name): MemberInfo? = members.firstOrNull { it.holdingIdentity.x500Name == name }
 
     override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {

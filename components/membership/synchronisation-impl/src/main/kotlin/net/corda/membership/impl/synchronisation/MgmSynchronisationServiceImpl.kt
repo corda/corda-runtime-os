@@ -201,14 +201,15 @@ class MgmSynchronisationServiceImpl internal constructor(
             val memberHashFromTheReq = request.syncRequest.membersHash
             val mgm = request.synchronisationMetaData.mgm
             val requester = request.synchronisationMetaData.member
-            val allMembers = membershipGroupReaderProvider.getGroupReader(mgm.toCorda()).lookup()
-            val mgmInfo = allMembers.firstOrNull {
-                it.holdingIdentity == mgm.toCorda()
-            } ?: throw CordaRuntimeException("MGM ${MemberX500Name.parse(mgm.x500Name)} " + IDENTITY_EX_MESSAGE)
-            val requesterInfo = allMembers.firstOrNull {
-                it.holdingIdentity == requester.toCorda()
-            } ?: throw CordaRuntimeException("Requester ${MemberX500Name.parse(requester.x500Name)} " +
-                        IDENTITY_EX_MESSAGE)
+            val groupReader = membershipGroupReaderProvider.getGroupReader(mgm.toCorda())
+            val mgmName = MemberX500Name.parse(mgm.x500Name)
+            val mgmInfo = groupReader.lookup(mgmName)
+                ?: throw CordaRuntimeException("MGM $mgmName $IDENTITY_EX_MESSAGE")
+            val requesterName = MemberX500Name.parse(requester.x500Name)
+            val requesterInfo = groupReader.lookup(requesterName)
+                ?: throw CordaRuntimeException("Requester $requesterName $IDENTITY_EX_MESSAGE")
+            // we don't want to include the MGM in the data package since MGM information comes from the group policy
+            val allMembers = groupReader.lookup().filterNot { it.holdingIdentity == mgm.toCorda() }
             if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
