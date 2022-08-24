@@ -22,9 +22,13 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransac
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.v5.application.uniqueness.model.*
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_REJECTED_REPRESENTATION
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
