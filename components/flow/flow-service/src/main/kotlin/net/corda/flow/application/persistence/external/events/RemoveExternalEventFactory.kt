@@ -1,7 +1,7 @@
 package net.corda.flow.application.persistence.external.events
 
 import java.nio.ByteBuffer
-import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.DeleteEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import org.osgi.service.component.annotations.Component
 
@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Component
 class RemoveExternalEventFactory : AbstractPersistenceExternalEventFactory<RemoveParameters>() {
 
     override fun createRequest(parameters: RemoveParameters): Any {
-        return DeleteEntity(parameters.serializedEntity)
+        return DeleteEntities(listOf(parameters.serializedEntity))
     }
 }
 
