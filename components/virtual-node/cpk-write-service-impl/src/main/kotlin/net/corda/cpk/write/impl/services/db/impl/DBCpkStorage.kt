@@ -26,7 +26,7 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
                     null
                 } else {
                     try {
-                        SecureHash.create(checksumStr)
+                        SecureHash.parse(checksumStr)
                     } catch (e: Exception) {
                         logger.warn("Failed when tried to parse a CPK checksum with", e)
                         null
@@ -45,7 +45,7 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
                 .setParameter("checksum", checksum.toString())
                 .singleResult
 
-            CpkChecksumToData(SecureHash.create(cpkDataEntity.fileChecksum), cpkDataEntity.data)
+            CpkChecksumToData(SecureHash.parse(cpkDataEntity.fileChecksum), cpkDataEntity.data)
         }
     }
 }
