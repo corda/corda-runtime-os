@@ -13,7 +13,6 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import java.util.Collections.unmodifiableMap
-import kotlin.math.log
 
 /**
  * An implementation of the [SandboxGroup] interface.
