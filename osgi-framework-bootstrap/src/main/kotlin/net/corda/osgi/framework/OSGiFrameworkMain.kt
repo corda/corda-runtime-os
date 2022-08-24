@@ -4,6 +4,8 @@ import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.Policy
 import java.security.URIParameter
 import kotlin.concurrent.thread
@@ -137,8 +139,14 @@ class OSGiFrameworkMain {
                             osgiFrameworkWrap.stop()
                         }
                     })
+
+                    // WARNING:  comment this and the installFromDirectory line to disable loading of the
+                    // jdbc driver specified on the command line as -ddatabase.jdbc.directory=/some/where
+                    val driverDirectory = getDbDriverDirectory(args)
+
                     osgiFrameworkWrap
                         .start()
+                        .installFromDirectory(driverDirectory)
                         .install(APPLICATION_BUNDLES)
                         .activate()
                         .startApplication(NO_TIMEOUT, args)
@@ -158,6 +166,20 @@ class OSGiFrameworkMain {
             if (exitCode != 0) {
                 exitProcess(exitCode)
             }
+        }
+
+        /**
+         * Get the db driver path up front, rather than in the [Application]
+         *
+         * We need this cli arg *before* the application parses the args
+         * as we need it to find the location of the jdbc drivers so that
+         * we can install them here.
+         */
+        private fun getDbDriverDirectory(args: Array<String>): Path? {
+            val value = args.find { it.contains("database.jdbc.directory") } ?: return null
+            if (! value.contains("=")) return null
+            val path = value.split("=", limit = 2)[1]
+            return Paths.get(path)
         }
     } //~ companion object
 }

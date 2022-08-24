@@ -80,8 +80,6 @@ interface StepSetup {
 
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
 
-    // test receiving a payload that cannot be avro deserialized, have an overload that takes a byte array for that test
-
     fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup
 
     fun externalEventErrorReceived(flowId: String, requestId: String, errorType: ExternalEventResponseErrorType): FlowIoRequestSetup

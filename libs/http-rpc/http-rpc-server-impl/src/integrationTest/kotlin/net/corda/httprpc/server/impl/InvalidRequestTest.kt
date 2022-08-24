@@ -40,7 +40,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
             )
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

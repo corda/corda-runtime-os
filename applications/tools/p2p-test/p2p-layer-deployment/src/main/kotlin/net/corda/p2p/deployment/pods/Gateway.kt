@@ -5,6 +5,7 @@ class Gateway(
     details: P2PDeploymentDetails,
 ) : P2pPod(kafkaServers, details, details.gatewayCount) {
     companion object {
+        const val IMAGE_NAME = "p2p-gateway-worker"
         fun gateways(
             kafkaServers: String,
             details: P2PDeploymentDetails,
@@ -14,7 +15,7 @@ class Gateway(
             )
             val balancer = when (details.lbType) {
                 LbType.K8S -> K8sLoadBalancer(
-                    "p2p-gateway",
+                    IMAGE_NAME,
                     listOf(Port.Gateway),
                 )
                 LbType.NGINX -> if (details.nginxCount <= 1) {
@@ -30,13 +31,13 @@ class Gateway(
                 }
 
                 LbType.HEADLESS -> HeadlessService(
-                    "p2p-gateway"
+                    IMAGE_NAME
                 )
             }
             return gateways + balancer
         }
     }
-    override val imageName = "p2p-gateway"
+    override val imageName = IMAGE_NAME
 
     override val readyLog = ".*Gateway-1.* - Starting child.*".toRegex()
 

@@ -11,7 +11,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.PersistEntities
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
@@ -225,7 +225,7 @@ class PersistenceExceptionTests {
         // create persist request for the sandbox that isn't dog-aware
         val request = EntityRequest(
             virtualNodeInfoOne.holdingIdentity.toAvro(),
-            PersistEntity(ByteBuffer.wrap(serialisedDog)),
+            PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
             ExternalEventContext("request id", "flow id")
         )
         return Pair(dbConnectionManager, request)

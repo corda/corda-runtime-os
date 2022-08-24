@@ -8,7 +8,7 @@ import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
 
 /**
- * This fake responder can be uploaded to FakeCorda to respond to a given protocol.
+ * An instance of this responder can be uploaded to CordaSim to respond to a given protocol.
  * It can be set up to respond to particular messages by sending back a list of responses
  * (the list can be empty).
  *

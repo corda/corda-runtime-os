@@ -1,13 +1,13 @@
 package net.corda.entityprocessor.impl.internal
 
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.DeleteEntityById
+import net.corda.data.persistence.DeleteEntitiesById
+import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.FindWithNamedQuery
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.MergeEntities
+import net.corda.data.persistence.PersistEntities
 import net.corda.entityprocessor.impl.internal.exceptions.InvalidPaginationException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.v5.application.serialization.SerializationService
@@ -62,11 +62,10 @@ class PersistenceServiceInternal(
     fun persist(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: PersistEntity
+        payload: PersistEntities
     ): EntityResponse {
-        val entity = serializationService.deserialize(payload.entity.array(), Any::class.java)
-        entityManager.persist(entity)
-        return EntityResponse(null)
+        payload.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
+        return EntityResponse(emptyList())
     }
 
     fun find(
@@ -77,53 +76,60 @@ class PersistenceServiceInternal(
     ): EntityResponse {
         val id = serializationService.deserialize(payload.id.array(), Any::class.java)
         val clazz = classProvider(holdingIdentity, payload.entityClassName)
-        val result = entityManager.find(clazz, id)
-            ?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
+        val result = when (val entity = entityManager.find(clazz, id)) {
+            null -> emptyList()
+            else -> listOf(payloadCheck(serializationService.toBytes(entity)))
+        }
         return EntityResponse(result)
     }
 
     fun merge(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: MergeEntity
+        payload: MergeEntities
     ): EntityResponse {
-        val entity = serializationService.deserialize(payload.entity.array(), Any::class.java)
-        return EntityResponse(payloadCheck(serializationService.toBytes(entityManager.merge(entity))))
+        val results = payload.entities.map {
+            val entity = serializationService.deserialize(it.array(), Any::class.java)
+            entityManager.merge(entity)
+        }
+        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) })
     }
 
-    fun remove(
+    fun deleteEntities(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: DeleteEntity
+        payload: DeleteEntities
     ): EntityResponse {
-        val entity = serializationService.deserialize(payload.entity.array(), Any::class.java)
         // NOTE: JPA expects the entity to be managed before removing, hence the merge.
-
-        entityManager.remove(entityManager.merge(entity))
-        return EntityResponse(null)
+        payload.entities.map {
+            val entity = serializationService.deserialize(it.array(), Any::class.java)
+            entityManager.remove(entityManager.merge(entity))
+        }
+        return EntityResponse(emptyList())
     }
 
     /**
      * Remove by id / primary key.
      */
-    fun removeById(
+    fun deleteEntitiesByIds(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: DeleteEntityById,
+        payload: DeleteEntitiesById,
         holdingIdentity: HoldingIdentity
     ): EntityResponse {
-        val id = serializationService.deserialize(payload.id.array(), Any::class.java)
-        val clazz = classProvider(holdingIdentity, payload.entityClassName)
-
-        val entity = entityManager.find(clazz, id)
-        if (entity != null) {
-            // NOTE: JPA expects the entity to be managed before removing, hence the merge.
-            entityManager.remove(entityManager.merge(entity))
-        } else {
-            logger.debug("Entity not found for deletion:  ${payload.entityClassName} and id: $id")
+        payload.ids.map {
+            val id = serializationService.deserialize(it.array(), Any::class.java)
+            val clazz = classProvider(holdingIdentity, payload.entityClassName)
+            logger.info("Deleting $id")
+            val entity = entityManager.find(clazz, id)
+            if (entity != null) {
+                // NOTE: JPA expects the entity to be managed before removing, hence the merge.
+                entityManager.remove(entityManager.merge(entity))
+            } else {
+                logger.debug("Entity not found for deletion: ${payload.entityClassName} and id: $id")
+            }
         }
-
-        return EntityResponse(null)
+        return EntityResponse(emptyList())
     }
 
     /**
@@ -200,9 +206,10 @@ class PersistenceServiceInternal(
             query.maxResults = limit
         }
 
-        val result = query.resultList
-            ?.let { results -> payloadCheck(serializationService.toBytes(results))}
-
+        val result = when (val results = query.resultList) {
+            null -> emptyList()
+            else -> results.filterNotNull().map { item -> payloadCheck(serializationService.toBytes(item)) }
+        }
         return EntityResponse(result)
     }
 }
