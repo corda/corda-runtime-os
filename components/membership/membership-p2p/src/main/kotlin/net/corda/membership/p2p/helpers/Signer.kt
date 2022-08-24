@@ -20,8 +20,8 @@ class Signer(
 ) {
     private companion object {
         val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
             GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
             RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
