@@ -1,9 +1,9 @@
 package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.data.uniqueness.UniquenessCheckRequest
-import net.corda.data.uniqueness.UniquenessCheckResponse
-import net.corda.data.uniqueness.UniquenessCheckResultSuccess
+import net.corda.data.uniqueness.UniquenessCheckExternalRequest
+import net.corda.data.uniqueness.UniquenessCheckExternalResponse
+import net.corda.data.uniqueness.UniquenessCheckExternalResultSuccess
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.testkit.DbUtils
 import net.corda.lifecycle.LifecycleStatus
@@ -62,9 +62,9 @@ class UniquenessCheckerImplIntegrationTests {
     private fun currentTime(): Instant = testClock.peekTime()
 
     private fun newRequestBuilder(txId: SecureHash = SecureHashUtils.randomSecureHash())
-            : UniquenessCheckRequest.Builder =
-        UniquenessCheckRequest.newBuilder(
-            UniquenessCheckRequest(
+            : UniquenessCheckExternalRequest.Builder =
+        UniquenessCheckExternalRequest.newBuilder(
+            UniquenessCheckExternalRequest(
                 txId.toString(),
                 emptyList(),
                 emptyList(),
@@ -74,7 +74,7 @@ class UniquenessCheckerImplIntegrationTests {
             )
         )
 
-    private fun processRequests(vararg requests: UniquenessCheckRequest) =
+    private fun processRequests(vararg requests: UniquenessCheckExternalRequest) =
         uniquenessChecker.processRequests(requests.asList())
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
@@ -247,7 +247,7 @@ class UniquenessCheckerImplIntegrationTests {
                 .setInputStates(generateUnspentStates(1))
                 .build()
 
-            var initialResponse: UniquenessCheckResponse? = null
+            var initialResponse: UniquenessCheckExternalResponse? = null
 
             processRequests(
                 request
@@ -307,7 +307,7 @@ class UniquenessCheckerImplIntegrationTests {
                     .build()
             }
 
-            val allResponses = LinkedList<UniquenessCheckResponse>()
+            val allResponses = LinkedList<UniquenessCheckExternalResponse>()
 
             repeat(5) { count ->
                 processRequests(requests[count]).also { responses ->
@@ -380,7 +380,7 @@ class UniquenessCheckerImplIntegrationTests {
                     .build()
             )
 
-            val allResponses = LinkedList<UniquenessCheckResponse>()
+            val allResponses = LinkedList<UniquenessCheckExternalResponse>()
 
             repeat(3) { count ->
                 processRequests(requests[count]).also { responses ->
@@ -645,7 +645,7 @@ class UniquenessCheckerImplIntegrationTests {
                 .setReferenceStates(generateUnspentStates(1))
                 .build()
 
-            var initialResponse: UniquenessCheckResponse? = null
+            var initialResponse: UniquenessCheckExternalResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -691,7 +691,7 @@ class UniquenessCheckerImplIntegrationTests {
         fun `Multiple txs, no input states, single shared ref state in different batch is successful`() {
             val sharedState = generateUnspentStates(1)
 
-            val allResponses = LinkedList<UniquenessCheckResponse>()
+            val allResponses = LinkedList<UniquenessCheckExternalResponse>()
 
             processRequests(
                 newRequestBuilder()
@@ -747,7 +747,7 @@ class UniquenessCheckerImplIntegrationTests {
 
         @Test
         fun `Multiple txs, no input states, multiple distinct ref states in different batch is successful`() {
-            val allResponses = LinkedList<UniquenessCheckResponse>()
+            val allResponses = LinkedList<UniquenessCheckExternalResponse>()
 
             processRequests(
                 newRequestBuilder()
@@ -863,7 +863,7 @@ class UniquenessCheckerImplIntegrationTests {
                 .setReferenceStates(state1)
                 .build()
 
-            var initialResponse: UniquenessCheckResponse? = null
+            var initialResponse: UniquenessCheckExternalResponse? = null
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
@@ -983,7 +983,7 @@ class UniquenessCheckerImplIntegrationTests {
         @Test
         fun `Replaying an issuance transaction in different batch is successful`() {
             val issueTxId = SecureHashUtils.randomSecureHash()
-            lateinit var initialResponse: UniquenessCheckResponse
+            lateinit var initialResponse: UniquenessCheckExternalResponse
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1074,7 +1074,7 @@ class UniquenessCheckerImplIntegrationTests {
                 .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                 .build()
 
-            var initialResponse: UniquenessCheckResponse? = null
+            var initialResponse: UniquenessCheckExternalResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -1125,7 +1125,7 @@ class UniquenessCheckerImplIntegrationTests {
             val request = newRequestBuilder()
                 .setTimeWindowLowerBound(lowerBound)
                 .build()
-            var initialResponse: UniquenessCheckResponse? = null
+            var initialResponse: UniquenessCheckExternalResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -1187,7 +1187,7 @@ class UniquenessCheckerImplIntegrationTests {
         @Test
         fun `Empty request list returns no results`() {
             assertEquals(
-                emptyList<UniquenessCheckResponse>(),
+                emptyList<UniquenessCheckExternalResponse>(),
                 uniquenessChecker.processRequests(emptyList())
             )
         }
@@ -1397,8 +1397,8 @@ class UniquenessCheckerImplIntegrationTests {
                 )
                 .build()
 
-            var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponse? = null
-            var initialRetryableFailedRequestResponse: UniquenessCheckResponse? = null
+            var initialRetryableSuccessfulRequestResponse: UniquenessCheckExternalResponse? = null
+            var initialRetryableFailedRequestResponse: UniquenessCheckExternalResponse? = null
 
             processRequests(retryableSuccessfulRequest, retryableFailedRequest).let { responses ->
                 assertAll(
@@ -1509,7 +1509,7 @@ class UniquenessCheckerImplIntegrationTests {
                     { UniquenessAssertions.assertStandardSuccessResponse(responses[9], testClock) },
                     {
                         UniquenessAssertions.assertUniqueCommitTimestamps(responses.filter {
-                            it.result is UniquenessCheckResultSuccess
+                            it.result is UniquenessCheckExternalResultSuccess
                         })
                     }
                 )
