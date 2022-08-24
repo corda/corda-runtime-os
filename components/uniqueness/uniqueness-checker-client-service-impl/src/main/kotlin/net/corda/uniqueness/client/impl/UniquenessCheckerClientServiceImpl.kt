@@ -92,8 +92,6 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
             )
         }
 
-        log.info("Returning fjucsor")
-
         // TODO For now this is not an actual async call, once we start interacting
         //  with the message bus this will become an actual async call
         return CompletableFuture.completedFuture(result)
