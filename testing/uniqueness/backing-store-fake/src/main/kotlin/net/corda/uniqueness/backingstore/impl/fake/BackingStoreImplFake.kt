@@ -16,7 +16,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.v5.application.uniqueness.model.*
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
