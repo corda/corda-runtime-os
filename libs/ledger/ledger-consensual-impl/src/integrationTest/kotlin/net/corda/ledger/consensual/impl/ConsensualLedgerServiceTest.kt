@@ -1,6 +1,5 @@
 package net.corda.ledger.consensual.impl
 
-import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
