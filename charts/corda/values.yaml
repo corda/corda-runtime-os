@@ -11,7 +11,7 @@ nameOverride: ""
 # worker and cli image defaults
 image:
   # -- worker image registry
-  registry: "corda-os-docker.software.r3.com"
+  registry: "docker-js-temp.software.r3.com"
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
 

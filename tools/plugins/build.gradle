@@ -42,29 +42,76 @@ artifacts {
     cliInstallArchive
 }
 
+
 tasks.register('publishBuildkitImage' , BuildkitBuild) {
     def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
-
-    if (cordaCliIncluded) {
-        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
-        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
-    }
-    it.sourceFiles.setFrom(sourceTasks)
-    it.subDir = "plugins/"
-    it.setEntry = false
+    def containerizationDir = it.temporaryDir.toString()
+    def containerLocation = '/opt/override/'
+    def subDir = "plugins/"
+    String containerName = project.name
+    String containerTag = ''
 
     if (project.hasProperty('cliBaseImage')) {
-        baseImageName = cliBaseImage
+        it.baseImageName = cliBaseImage
     } else {
         // cater for local composite build
-        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+        it.baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
     if (project.hasProperty('baseTag')) {
-        baseImageTag = baseTag
+        it.baseImageTag = baseTag
     } else {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+    }
+
+    if(project.hasProperty('Tag')){
+        containerTag = Tag
+    }
+
+    List<String> javaArgs = new ArrayList<String>(it.arguments.get())
+    javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
+    javaArgs.add("-Dlog4j.configurationFile=log4j2-console.xml")
+    javaArgs.add("-Dpf4j.pluginsDir=${containerLocation + subDir}")
+
+    if (cordaCliIncluded) {
+        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
+        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishBuildkitImage')
+    }
+    it.sourceFiles.setFrom(sourceTasks)
+    sourceFiles.forEach{
+        logger.quiet("${it.name.toString()}")
+    }
+
+    def imageName = "${it.baseImageTag.get().empty ? it.baseImageName.get() : "${it.baseImageName.get()}:${it.baseImageTag.get()}"}"
+    def finalName = "${containerTag.isEmpty() ? containerName : "${containerName}:${containerTag}"}"
+
+    // Task executes the buildctl build command below
+
+    // see
+
+    // buildctl \
+    //         --addr {address of the buildkit pod} \
+    // build --frontend=dockerfile.v0 \
+    //         --local context= {working directory} \
+    //         --local dockerfile= {location of the dockerfile} \
+    //         --opt build-arg:BASE_IMAGE= {base image of the worker, should be worker-cli for os-plugins and azul zulu jdk for everythign else} \
+    //         --opt build-arg:BUILD_PATH={location of a folder with fat jars} \
+    //         --opt build-arg:JAR_LOCATION={where to save said fat jars on an image}}\
+    //         --opt build-arg:IMAGE_ENTRYPOINT={entrypoint: exec of the fat jar with some argument} \
+    //         --output type=image,name=docker-js-temp.software.r3.com/IMAGE_NAME:IMAGE_TAG,push=true \
+    //         --export-cache type=registry,ref=docker-js-temp.software.r3.com/IMAGE_NAME:IMAGE_TAG-cache \
+    //         --import-cache type=registry,ref=docker-js-temp.software.r3.com/IMAGE_NAME:IMAGE_TAG-cache
+
+
+    doLast {
+
+        logger.quiet("buildctl --addr tcp://localhost:3476 build --frontend=dockerfile.v0 --local context=/ --local dockerfile=${project.rootDir.toString() + "/docker"} --opt build-arg:BASE_IMAGE=${imageName} --opt build-arg:BUILD_PATH=${containerizationDir} --opt build-arg:JAR_LOCATION=${containerLocation + subDir} --opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}cli.jar\" --output type=image,name=docker-js-temp.software.r3.com/corda-os-${finalName},push=true --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache")
+
+        exec{
+            workingDir("${project.rootDir}")
+            commandLine 'bash', '-c', "buildctl --addr tcp://localhost:3476 build --frontend=dockerfile.v0 --local context=/ --local dockerfile=${project.rootDir.toString() + "/docker"} --opt build-arg:BASE_IMAGE=${imageName} --opt build-arg:BUILD_PATH=${containerizationDir} --opt build-arg:JAR_LOCATION=${containerLocation + subDir} --opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}cli.jar\" --output type=image,name=docker-js-temp.software.r3.com/corda-os-${finalName},push=true --export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache --import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache"
+        }
     }
 
 }
