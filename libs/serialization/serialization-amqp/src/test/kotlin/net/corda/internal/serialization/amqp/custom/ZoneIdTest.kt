@@ -4,7 +4,7 @@ import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.factory
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Test

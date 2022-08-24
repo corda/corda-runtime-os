@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.deserialize
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Disabled
