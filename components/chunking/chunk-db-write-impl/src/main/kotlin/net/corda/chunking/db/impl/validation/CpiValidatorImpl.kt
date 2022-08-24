@@ -95,7 +95,6 @@ class CpiValidatorImpl constructor(
         log.info("All nodes for Cpi ${cpi.metadata.cpiId}<${cpi.metadata.cpiId}> has been set to response")
         publisher.update(requestId, "Putting all virtual nodes into maintenance mode")
         val nodes = virtualNodeInfoReadService.getAll().filter { it.holdingIdentity.groupId == groupId }
-        println(nodes)
         nodes.forEach {
             val maintenanceResponse = virtualNodeSender.sendAndReceive(
                 VirtualNodeManagementRequest(
@@ -150,8 +149,7 @@ class CpiValidatorImpl constructor(
         )
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
-        // TODO: Change
-        val resetDB = true
+        val resetDB = fileInfo.forceUpload && fileInfo.resetDb
         if (resetDB) {
             // update vnode
             publisher.update(requestId, "Performing reset of virtual node DBs and Re-running migrations")

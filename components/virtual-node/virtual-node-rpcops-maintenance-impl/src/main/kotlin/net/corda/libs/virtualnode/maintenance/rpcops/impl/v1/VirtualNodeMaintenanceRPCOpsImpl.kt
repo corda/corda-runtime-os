@@ -123,14 +123,17 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
+    override fun forceCpiUpload(upload: HttpFileUpload, resetDb: Boolean): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
         val cpiUploadRequestId = cpiUploadRPCOpsService.cpiUploadManager.uploadCpi(
             upload.fileName, upload.content,
-            mapOf(PropertyKeys.FORCE_UPLOAD to true.toString())
+            mapOf(
+                PropertyKeys.FORCE_UPLOAD to true.toString(),
+                /*PropertyKeys.RESET_DB*/"resetDb" to resetDb.toString()
+            )
         )
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
