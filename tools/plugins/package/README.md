@@ -98,6 +98,8 @@ After QA, CorDapp developers will want to release sign their files. This command
 ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy TestGroupPolicy.json \
+    --cpi-name "cpi name" \
+    --cpi-version "1.0.0.0-SNAPSHOT" \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
@@ -109,6 +111,8 @@ After QA, CorDapp developers will want to release sign their files. This command
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create-cpi \
     --cpb mycpb.cpb \
     --group-policy - \
+    --cpi-name "cpi name" \
+    --cpi-version "1.0.0.0-SNAPSHOT" \
     --file output.cpi \
     --keystore signingkeys.pfx \
     --storepass "keystore password" \
